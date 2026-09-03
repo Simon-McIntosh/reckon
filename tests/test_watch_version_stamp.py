@@ -2,18 +2,25 @@
 
 A watcher imports its detection module once at startup and then runs for
 hours, so a fix that lands after it started is inert on that seat and nothing
-distinguishes it from a seat running current code. These tests assert that
-the seat stamps its version and start time where a follower can read them,
-and that the arming path replaces a seat whose stamp is stale or missing
-rather than reusing it.
+distinguishes it from a seat running current code. These tests assert that the
+seat stamps its version and start time where a follower can read them, and that
+a seat whose stamp is stale or missing is replaced rather than reused when the
+replacement is asked for.
+
+They also record what the stamp does not do. It names the install rather than
+the code, so it is constant across exactly the transition above, and nothing in
+the package asks for the replacement — both asserted below, so a reader finds
+the limitation measured instead of inferring the mechanism is live.
 """
 
 from __future__ import annotations
 
+import inspect
 import json
 import os
 import subprocess
 import sys
+from importlib import metadata
 from pathlib import Path
 
 import pytest
@@ -187,3 +194,58 @@ def test_replacement_goes_through_the_existing_unwatch_path(
     assert calls == ["proj"]
     assert result is not None
     assert result["registration_released"] is True
+
+
+def test_the_version_stamp_names_the_install_and_not_the_code(
+    home, watcher_processes, monkeypatch
+) -> None:
+    """The stamp is constant across the transition it exists to detect.
+
+    ``reckon.__version__`` is read from the installed distribution's metadata,
+    written once at install time, so the writer of a seat record and every
+    later reader of it resolve one string however far the checkout has moved in
+    between. The seat therefore still reads as current once the fix it predates
+    lands -- the case the stamp was added to catch. Measured on one workstation
+    install: the stamp stayed at its installed value while eighty-five commits
+    reached the package, ``reckon/crew/runs.py`` among them.
+    """
+    _arm_watcher("proj", watcher_processes)
+    recorded = runs.watch_state("proj")["watcher"]["reckon_version"]
+
+    assert recorded == metadata.version("reckon-plans")
+    assert recorded == __version__
+    assert runs.watch_seat_version_current("proj") is True
+
+    # No edit to the checkout moves either side of that comparison, so nothing
+    # short of a reinstall under a live seat flips the answer -- an install
+    # event, not a code change. Standing in for one shows the installed version
+    # is the signal's only input beyond the record itself.
+    monkeypatch.setattr(runs, "__version__", f"{__version__}+reinstalled")
+
+    assert runs.watch_seat_version_current("proj") is False
+    assert runs.watch_seat_needs_replacement("proj") is True
+
+
+def test_the_replacement_records_that_nothing_calls_it() -> None:
+    """A helper may not claim a caller the package does not give it.
+
+    Its account of itself and the source have to move together. While no module
+    reaches ``replace_stale_watch_seat`` the docstring says so, and wiring one
+    in fails this until that sentence is rewritten -- which is the moment to
+    check that the condition it gates on can now become true.
+    """
+    package = Path(__file__).parents[1] / "reckon"
+    definition = Path(runs.__file__).resolve()
+    callers = sorted(
+        path.resolve().relative_to(package.resolve()).as_posix()
+        for path in package.rglob("*.py")
+        if path.resolve() != definition
+        and "replace_stale_watch_seat" in path.read_text()
+    )
+    doc = inspect.getdoc(runs.replace_stale_watch_seat) or ""
+    records_the_gap = "Nothing calls it" in doc
+
+    assert callers == []
+    assert records_the_gap == (callers == []), (
+        f"docstring records the gap: {records_the_gap}; callers found: {callers}"
+    )
