@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-observability-truth-landed">
+  <meta name="plan-title" content="Crew observability truth — cumulative execution-evidence record">
+  <meta name="plan-summary" content="Fifteen anchors: one per distinct run-outcome comment recorded against crew-observability-truth (11), plus three corrections and one refuted peer finding kept as their own anchors so the reason a reading changed is not lost. Covers §2 liveness, §3 gc repository scoping, §4 the working-bucket honesty defect surfaced by the plan's own execution, §5 budget visibility and the duplicate-backend-key refusal, and §6 provider-refusal classification, against the backdrop of one Anthropic spend-limit outage that killed seven local workers in two waves.">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-verifies" content="crew-observability-truth#s2,crew-observability-truth#s3,crew-observability-truth#s4,crew-observability-truth#s5,crew-observability-truth#s6">
+  <meta name="plan-recorded-at" content="2026-09-03">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; git worktrees; local backend clive (deepseek-v4-flash, glm-5.3) alongside claude-sonnet-5 during an Anthropic per-account spend-limit outage">
+  <title>Crew observability truth — cumulative execution-evidence record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Crew observability truth — cumulative execution-evidence record</h1>
+    <p class="plan-summary">Eleven run-outcome comments recorded against
+    <code>crew-observability-truth</code>, each with its own anchor below naming its commit and
+    the quantitative measure it reported. Four more anchors record the plan's own corrections and
+    a refuted peer finding — kept separate from the run outcomes because a record that keeps only
+    the final verdict loses the reason it changed, and this plan's whole subject is exactly that
+    kind of loss.</p>
+  </header>
+
+  <section id="outage-timeline">
+    <h2>The outage this plan's own execution ran through</h2>
+    <p>Recorded because it is the sequential story several anchors below reference, and a timeline
+    is clearer here than restating five timestamps in prose each time. An Anthropic per-account
+    spend limit was hit twice in one morning, and the disposition of the second denial — resumed
+    in seconds rather than reconciled and redispatched — is the operational finding
+    <a href="#provider-refusal-blocks">§ provider-refusal-blocks</a> and its companion narrative
+    turn on.</p>
+    <figure>
+      <img src="/reckon/figures/crew-observability-truth/spend-limit-outage-timeline.svg"
+           alt="Timeline of the Anthropic spend-limit outage, 2026-09-03, Europe/Paris: 09:45 last clean claude-lane run; 10:02 first denial killing five workers, recorded as a success terminal event rather than a failure; 10:12 the fleet pane still reads six working while the five are already dead; 10:32 second denial killing two runs, both resumed within seconds rather than reconciled; 12:00 the spend limit resets."
+           style="max-width:760px;width:100%">
+      <figcaption>First denial: promoting the five as infrastructure failures deleted their live
+      pointers and captured sessions, forcing four redispatches from scratch. Second denial: both
+      runs still held live pointers and session ids, so both resumed directly — one command each,
+      against four redispatches for the equivalent runs an hour earlier.</figcaption>
+    </figure>
+  </section>
+
+  <section id="anchors">
+    <h2>Fifteen anchors</h2>
+    <table>
+      <thead><tr><th>Section</th><th>Anchor</th><th>Commit</th><th>Kind</th></tr></thead>
+      <tbody>
+        <tr><td>§5</td><td><a href="#duplicate-backend-key-refused">duplicate-backend-key-refused</a></td><td>8c1b637</td><td>run outcome</td></tr>
+        <tr><td>§5</td><td><a href="#spec-level-names-backend-provenance">spec-level-names-backend-provenance</a></td><td>957c042</td><td>run outcome</td></tr>
+        <tr><td>§2</td><td><a href="#display-reuse-map">display-reuse-map</a></td><td>commitless</td><td>run outcome</td></tr>
+        <tr><td>§2</td><td><a href="#liveness-killed-by-spend-limit">liveness-killed-by-spend-limit</a></td><td>none — interrupted</td><td>run outcome</td></tr>
+        <tr><td>§2</td><td><a href="#liveness-reconciled">liveness-reconciled</a></td><td>896ba48</td><td>run outcome</td></tr>
+        <tr><td>§3</td><td><a href="#gc-killed-by-spend-limit">gc-killed-by-spend-limit</a></td><td>none — interrupted</td><td>run outcome</td></tr>
+        <tr><td>§3</td><td><a href="#gc-pairing-carried-forward">gc-pairing-carried-forward</a></td><td>45fc1b9</td><td>run outcome</td></tr>
+        <tr><td>§4</td><td><a href="#working-bucket-killed-by-spend-limit">working-bucket-killed-by-spend-limit</a></td><td>none — interrupted</td><td>run outcome</td></tr>
+        <tr><td>§4</td><td><a href="#working-count-excludes-dead-runs">working-count-excludes-dead-runs</a></td><td>9f9b464</td><td>run outcome</td></tr>
+        <tr><td>§4</td><td><a href="#release-path-never-signals-own-runner">release-path-never-signals-own-runner</a></td><td>17f8686</td><td>run outcome</td></tr>
+        <tr><td>§6</td><td><a href="#provider-refusal-blocks">provider-refusal-blocks</a></td><td>71b50b0</td><td>run outcome</td></tr>
+        <tr><td>§5</td><td><a href="#spend-limit-signature-count-corrected">spend-limit-signature-count-corrected</a></td><td>—</td><td>correction</td></tr>
+        <tr><td>§4</td><td><a href="#stall-check-permanence-corrected">stall-check-permanence-corrected</a></td><td>—</td><td>correction</td></tr>
+        <tr><td>§5</td><td><a href="#stale-spec-level-claim-corrected">stale-spec-level-claim-corrected</a></td><td>—</td><td>correction</td></tr>
+        <tr><td>§4</td><td><a href="#ledger-reachability-finding-refuted">ledger-reachability-finding-refuted</a></td><td>—</td><td>refuted peer finding</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="duplicate-backend-key-refused">
+    <h3>§5 — A duplicate backend key is refused</h3>
+    <p>Run <code>r-20260903T080317198353-a-duplicate-backend-key-is-refused</code>, member flash-c
+    on the local lane. Commit <code>8c1b637</code> merged, 121 insertions over 2 files, 3 tests
+    added, 296 worker-seconds against a 30-minute budget, full-diff audited.</p>
+    <p><strong>Measure:</strong> <code>tests/test_flight.py</code> 59 passed, up from 56. A layer
+    repeating a mapping key is now refused while the raw mapping is constructed, naming the key's
+    dotted path — caught at parse time because <code>yaml.safe_load</code> has already discarded
+    the earlier definition by the time any post-hoc check could see the collision. The stricter
+    loader immediately refused the live host layer: <code>backends.clive-glm</code> repeated its
+    <code>sandbox</code>, <code>session_reuse</code> and <code>time_budget</code> trio
+    value-identically, four lines below a comment documenting the previous instance of the same
+    defect.</p>
+  </section>
+
+  <section id="spec-level-names-backend-provenance">
+    <h3>§5 — A specification level names a backend with provenance</h3>
+    <p>Run <code>r-20260903T083356777926-spec-level-names-a-backend-with-provenance</code>, member
+    impl-display on claude-sonnet-5 at medium, resumed once through a spend-limit denial. Commit
+    <code>957c042</code> merged as <code>862d8cf</code>, 69 insertions in one file, no source
+    change.</p>
+    <p><strong>Measure:</strong> <code>tests/test_flight.py</code> 61 passed against a 59
+    baseline. The node confirmed rather than implemented: a <code>by_spec_level</code> entry
+    naming a backend already resolves it, an undeclared backend is already refused at validation,
+    and the provenance link through <code>ResolvedFlight.origin</code> already attributes the
+    supplying layer. This closes the currency correction at
+    <a href="#stale-spec-level-claim-corrected">§ stale-spec-level-claim-corrected</a> by pinning
+    what was already true with two new tests.</p>
+  </section>
+
+  <section id="display-reuse-map">
+    <h3>§2 — Reuse map for the display repairs</h3>
+    <p>Run <code>r-20260903T074446888083-display-reuse-map</code>, member scout-display on the
+    local lane at deepseek-v4-flash, 770 worker-seconds against a 15-minute budget. Commitless by
+    design (artifact <code>~/.config/reckon/crew/reports/display-reuse-map.md</code>).</p>
+    <p><strong>Measure:</strong> 10 surfaces over 25 verdict statements and 16 file:symbol
+    citations, with one measure-to-surface row for each of the 13 measures across §2–§5. Named the
+    exact seam for every section's repair, and separately found §5's claim that nothing maps a
+    specification level to a backend for the Claude lanes to be stale against the tree — see
+    <a href="#stale-spec-level-claim-corrected">§ stale-spec-level-claim-corrected</a>.</p>
+  </section>
+
+  <section id="liveness-killed-by-spend-limit">
+    <h3>§2 — Liveness node killed by the spend limit</h3>
+    <p>Run <code>r-20260903T080238660957-liveness-is-derived-not-remembered</code>, member
+    impl-display. No commit — killed before delivering anything.</p>
+    <p><strong>Measure:</strong> killed by the claude account's individual spend limit (reset 12pm
+    Europe/Paris); the stream's terminal event was type <code>result</code> subtype
+    <code>success</code> carrying the refusal text, so nothing downstream classified it as a
+    failure. Re-cut, landing as
+    <a href="#liveness-reconciled">§ liveness-reconciled</a>.</p>
+  </section>
+
+  <section id="liveness-reconciled">
+    <h3>§2 — Liveness is reconciled against the process table</h3>
+    <p>Run <code>r-20260903T082137638704-liveness-reconciled-against-the-process-table</code>,
+    member glm-b on the local lane. Commit <code>896ba48</code> merged, 314 insertions and 23
+    deletions over 2 files, 4 tests added, full-diff audited.</p>
+    <p><strong>Measure:</strong> <code>tests/test_crew_watch_visibility.py</code> 5 passed, plus a
+    regression set of 273 across the watch surface (20 over watchlife/version-stamp/dispatch-arming/
+    dispatch-guard; 48 over orphan/monitor-output/session-delivery; 189 over the watch-and-arming
+    selection in <code>test_crew.py</code>; 16 over live-listing/surface-parity/watch-lifetime/
+    arming-isolation), ruff clean on both files. A producer whose process is gone reports absent
+    and a running one reports live regardless of the seat record; reading liveness repairs a stale
+    record in place without taking the seat lock. Closed against the exact failure it was written
+    from: the registry reported watcher pid None while a producer had been running for twenty
+    minutes.</p>
+  </section>
+
+  <section id="gc-killed-by-spend-limit">
+    <h3>§3 — gc node killed by the spend limit</h3>
+    <p>Run <code>r-20260903T080227590786-gc-scans-the-repository-it-names</code>, member
+    impl-obs-gc. No commit — killed before delivering anything.</p>
+    <p><strong>Measure:</strong> killed by the claude account's individual spend limit (reset 12pm
+    Europe/Paris); the stream's terminal event was type <code>result</code> subtype
+    <code>success</code> carrying the refusal text, so nothing classified it as a failure. Re-cut,
+    landing as <a href="#gc-pairing-carried-forward">§ gc-pairing-carried-forward</a>.</p>
+  </section>
+
+  <section id="gc-pairing-carried-forward">
+    <h3>§3 — gc resolves the named project's registered checkout</h3>
+    <p>Run <code>r-20260903T082008869264-gc-pairing-carried-forward</code>, member flash-b on the
+    local lane. Commit <code>45fc1b9</code> merged, 215 insertions over 3 files, 419
+    worker-seconds against a 35-minute budget, full-diff audited.</p>
+    <p><strong>Measure:</strong> <code>tests/test_crew_gc.py</code> 14 passed against 9 at base
+    <code>9cfde98</code>, zero added failures, ruff delta 13 findings before and 13 after (none
+    added). With no <code>--repo</code>, a named project resolves its mounts-registered checkout;
+    an explicit <code>--repo</code> disagreeing with the registration is refused before
+    <code>garbage_collect</code>, naming both paths, with <code>--confirm-cross-repo</code> as the
+    deliberate override. It carried the commit of the worker killed at
+    <a href="#gc-killed-by-spend-limit">§ gc-killed-by-spend-limit</a>, verifying byte-identity of
+    the three fenced files between that commit's parent and this base before applying it, rather
+    than trusting the carry.</p>
+  </section>
+
+  <section id="working-bucket-killed-by-spend-limit">
+    <h3>§4 — Working-bucket node killed by the spend limit</h3>
+    <p>Run <code>r-20260903T080329021153-the-working-bucket-counts-only-work</code>, member
+    impl-fit. No commit — killed before delivering anything.</p>
+    <p><strong>Measure:</strong> killed by the claude account's individual spend limit (reset 12pm
+    Europe/Paris); the stream's terminal event was type <code>result</code> subtype
+    <code>success</code> carrying the refusal text, so nothing classified it as a failure. Re-cut,
+    landing as
+    <a href="#working-count-excludes-dead-runs">§ working-count-excludes-dead-runs</a>. This same
+    kill is the incident §4's own narrative comments (recorded in
+    <a href="#stall-check-permanence-corrected">§ stall-check-permanence-corrected</a>) analyse in
+    detail: five workers on the claude lane died within seconds of each other and four independent
+    detectors each failed to surface it for a different, separately named reason.</p>
+  </section>
+
+  <section id="working-count-excludes-dead-runs">
+    <h3>§4 — The working count excludes dead runs</h3>
+    <p>Run <code>r-20260903T082158964606-the-working-count-excludes-dead-runs</code>, member
+    scout-display on the local lane. Commit <code>9f9b464</code> merged as <code>a945195</code>,
+    103 insertions over 2 files, 6 tests added, full-diff audited.</p>
+    <p><strong>Measure:</strong> <code>tests/test_crew_recovery.py</code> 11 passed, exit 0. A run
+    whose process is gone, or whose manifest is terminal, no longer enters the working count in
+    any phase a pointer can hold, and the three buckets still sum to the runs in flight. This
+    landing also carries the correction at
+    <a href="#stall-check-permanence-corrected">§ stall-check-permanence-corrected</a>.</p>
+  </section>
+
+  <section id="release-path-never-signals-own-runner">
+    <h3>§4 — The release path never signals its own runner</h3>
+    <p>Run <code>r-20260903T085945598383-the-release-path-never-signals-its-own-runner</code>,
+    member impl-obs-gc on claude-sonnet-5 at medium. Commit <code>17f8686</code> merged, 92
+    insertions over 2 files, 2 tests added, ruff delta 36 findings at base against 33 after (none
+    added).</p>
+    <p><strong>Measure:</strong> <code>tests/test_ledger.py</code> 65 passed RAW at exit 0, with no
+    runtime neutralisation, against the self-kill at exit 143 that motivated the node. The guard
+    landed in <code>routing.py</code>'s <code>_signal_process_group</code> — the single shared
+    choke point also reached from <code>recovery.py</code> twice and <code>dispatch.py</code>
+    twice — refusing on both pid-equals-releaser and process-group-equals-releaser's-group. The
+    node declined to re-run the pre-fix case raw, since re-triggering the self-kill as a
+    measurement would kill its own runner, and used the earlier node's neutralised 63 as baseline
+    instead.</p>
+  </section>
+
+  <section id="provider-refusal-blocks">
+    <h3>§6 — A provider refusal blocks rather than completes</h3>
+    <p>Run <code>r-20260903T083237507413-a-provider-refusal-blocks</code>, member sonnet-a on
+    claude-sonnet-5 at medium, resumed once through a spend-limit denial mid-implementation.
+    Commit <code>71b50b0</code> merged, 308 insertions over 2 files.</p>
+    <p><strong>Measure:</strong> <code>tests/test_failure_classification.py</code> 12 passed (10
+    added), plus 93 across observation, backends and budget with zero added findings. A recognised
+    refusal now carries an explicit budget-refusal boolean, kept distinct from
+    <code>threshold_status</code>/<code>surpassed_threshold</code>; the phase resolves to
+    <code>blocked</code> only when a terminal event is an error AND that boolean is set, so a bad
+    model id or context overflow still resolves to <code>failed</code>. The node also corrected
+    this plan's own §6 text, which had cited <code>verify-the-merged-head</code> as killed rather
+    than blocked: measured against its recorded stream, that run hit the spend limit mid-stream
+    three times, recovered, produced two further genuine non-error turns, and was killed
+    externally afterwards with no refusal terminal event at all — so classifying it complete was
+    correct both before and after this change, and it was used as the required negative fixture
+    rather than asserted as a sixth positive.</p>
+  </section>
+
+  <section id="spend-limit-signature-count-corrected">
+    <h3>Correction — the spend-limit signature count, prose against event</h3>
+    <p><strong>Claimed</strong> (§5, <code>c-20260903-spend-limit-unparsed</code>, 08:30): "Twelve
+    run directories on this workstation carry the signature" of the spend-limit denial, found by
+    grepping for the refusal prose.</p>
+    <p><strong>Measured</strong> (§4, <code>c-20260903-ledger-claims-unmerged</code>, 08:50): the
+    prose grep also matches observability nodes reading other runs' streams as their own subject
+    matter. Discriminating on the event rather than the prose, <code>grep -c
+    '"status":"rejected"'</code>, gives 15 prose hits against 11 real denials.</p>
+    <p><strong>Superseded:</strong> "twelve run directories" (prose-matched) →
+    <strong>11 real denials</strong> (event-discriminated). The instrument had flattered the
+    incident, which is the direction that survives review.</p>
+  </section>
+
+  <section id="stall-check-permanence-corrected">
+    <h3>Correction — the stall check's permanence claim</h3>
+    <p><strong>Claimed</strong> (§4, <code>c-20260903T1017</code>, 08:17): the five runs killed by
+    the first spend-limit denial were "permanently ineligible" for the stall and terminal-manifest
+    checks, because those checks evaluate over the literal <code>working</code> phase and the five
+    died at phase <code>starting</code> and never advanced past it.</p>
+    <p><strong>Measured</strong> (§4, within
+    <a href="#working-count-excludes-dead-runs">§ working-count-excludes-dead-runs</a>'s landing
+    comment, 08:46): observation the same hour refutes the permanence —
+    <code>verify-the-merged-head</code> transitioned <code>dispatched</code> to <code>stalled</code>
+    on a 901-second quiet window, from a non-working phase, so the stall check does fire from a
+    pre-working phase.</p>
+    <p><strong>Superseded:</strong> "permanently ineligible for the stall check" →
+    <strong>the true defect is narrower</strong>: the stall window is fifteen minutes while a
+    provider refusal is legible in the stream immediately, so the five were undetected for the ten
+    minutes before the window would have expired, not undetectable — which strengthens rather than
+    weakens the case for §6's separate refusal-classification fix
+    (<a href="#provider-refusal-blocks">§ provider-refusal-blocks</a>).</p>
+  </section>
+
+  <section id="stale-spec-level-claim-corrected">
+    <h3>Correction — §5's "nothing maps a spec level to a backend" claim</h3>
+    <p><strong>Claimed</strong> (plan §5, original text): nothing maps a specification level to a
+    backend for the Claude lanes, so the tier-routing decision needed new mechanism.</p>
+    <p><strong>Measured</strong> (§2, <a href="#display-reuse-map">§ display-reuse-map</a>, 07:59):
+    <code>RoutingOverlay.backend</code>, <code>by_spec_level</code> resolution and its validation
+    already carry <code>by_spec_level.&lt;level&gt;.backend</code>; independently confirmed by
+    <a href="#spec-level-names-backend-provenance">§ spec-level-names-backend-provenance</a>
+    (08:45), which added two tests pinning the existing behaviour and changed no source, raising
+    <code>tests/test_flight.py</code> from 59 to 61 passing.</p>
+    <p><strong>Superseded:</strong> "absent mechanism, needs building" →
+    <strong>already implemented</strong>; the tier-routing decision is expressible as configuration
+    today, and only the open-level entry itself remained to be set.</p>
+  </section>
+
+  <section id="ledger-reachability-finding-refuted">
+    <h3>Refuted peer finding — a ledger commit "not reachable from origin/main"</h3>
+    <p><strong>Claimed</strong> (a peer session's characterisation, relayed in §4's
+    <code>c-20260903-ledger-claims-unmerged</code>, 08:50): run
+    <code>r-20260903T083356777926-spec-level-names-a-backend-with-provenance</code> is promoted
+    with gate passed and commit <code>957c042</code>, and that commit is not an ancestor of
+    <code>origin/main</code> — so the ledger asserts a landed commit that main does not have, with
+    the worktree already removed and the object surviving only as a dangling one (tagged
+    <code>rescue/spec-level-names-a-backend-957c042</code> as a precaution).</p>
+    <p><strong>Measured, first pass</strong> (<code>c-20260903T1052</code>, 08:52):
+    <code>git merge-base --is-ancestor 957c042 origin/main</code> succeeds; the merge commit is
+    <code>862d8cf</code> with parents <code>56d13fc</code> and <code>957c042</code>; the 69
+    insertions are in the tree, not only in a dangling object. The commit is, and was, reachable.
+    This first measurement attributed the false original finding to a stale local
+    remote-tracking ref that had not been fetched.</p>
+    <p><strong>Measured, second pass, correcting the mechanism</strong>
+    (<code>c-20260903T1103</code>, 09:03, and independently confirmed by the peer's own
+    <code>c-20260903T085741678595</code>): the stale-ref mechanism was itself wrong. This checkout
+    shares one <code>.git</code> ref store across 20 worktrees, so a peer's push updates
+    <code>origin/main</code> directly and there is nothing to fetch — <code>git reflog show
+    refs/remotes/origin/main</code> records every entry as "update by push," never "fetch." The
+    real mechanism is shelf life: the merge was created at 10:46:24, the ref moved to it at
+    10:49:05, and the original finding was authored at 10:50:27 — so the reachability check ran
+    before 10:49:05, when "not reachable" was the momentarily correct answer, and was published at
+    least 82 seconds after it stopped being true, into a wave that put four pushes on the branch in
+    21 minutes.</p>
+    <p><strong>Superseded:</strong> "the ledger asserts a commit main does not have" (false) →
+    "the reading was correct at the instant it was taken and stale by the time it was published;
+    fetch-before-judging is hygiene for a separate clone or CI, not the remedy here." The
+    agreed-and-surviving half of the original proposal stands: promotion should verify a recorded
+    commit is reachable from the integration branch, or record explicitly that it is not, and must
+    stamp that verdict with the instant it was taken and the ref it was taken against — because an
+    unstamped reachability claim gives a reader no way to tell whether it has expired, and
+    "reachable" is itself ambiguous between merged-locally and pushed.</p>
+  </section>
+</main>
+</body>
+</html>

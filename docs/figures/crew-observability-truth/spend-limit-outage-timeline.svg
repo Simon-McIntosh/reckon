@@ -1,0 +1,55 @@
+<svg viewBox="0 0 760 220" width="100%" style="max-width:760px" xmlns="http://www.w3.org/2000/svg"
+     role="img" aria-label="Timeline of the Anthropic spend-limit outage, 2026-09-03, Europe/Paris. 09:45 last clean claude-lane run. 10:02 first denial, five workers killed within seconds, all recorded as a success terminal event rather than a failure. 10:12 the fleet pane still reads six working while the five are already dead. 10:32 second denial, two runs killed; both had live pointers and captured sessions and were resumed within seconds rather than reconciled. 12:00 the per-account spend limit resets.">
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #3a3a38; }
+    .t { font-size: 11px; fill: #6b6a63; }
+    .lbl { font-size: 12px; }
+    .note { font-size: 11px; fill: #6b6a63; }
+  </style>
+  <text x="16" y="24" font-size="14" font-weight="600" fill="#1a1a19">Anthropic spend-limit outage — 2026-09-03, Europe/Paris</text>
+
+  <!-- axis: 09:45 to 12:00, x from 60 to 700 -->
+  <line x1="60" y1="60" x2="700" y2="60" stroke="#c3c2b7" stroke-width="2"/>
+
+  <!-- helper: map time to x. 09:45->60, 12:00->700, linear over 135 minutes -->
+  <!-- 09:45 = 0min -> x=60 ; 10:02 = 17min -> x~140 ; 10:12 = 27min -> x~185 ; 10:32 = 47min -> x~275 ; 12:00 = 135min -> x=700 -->
+
+  <g>
+    <circle cx="60" cy="60" r="5" fill="#2a78d6"/>
+    <text x="60" y="46" class="lbl" text-anchor="middle">09:45</text>
+    <text x="60" y="84" class="note" text-anchor="middle">last clean run</text>
+  </g>
+
+  <g>
+    <circle cx="140" cy="60" r="6" fill="#e34948"/>
+    <text x="140" y="46" class="lbl" text-anchor="middle" font-weight="600">10:02</text>
+    <text x="140" y="100" class="note" text-anchor="middle">first denial —</text>
+    <text x="140" y="114" class="note" text-anchor="middle">5 workers killed</text>
+    <text x="140" y="128" class="note" text-anchor="middle">(recorded success,</text>
+    <text x="140" y="142" class="note" text-anchor="middle">not failure)</text>
+  </g>
+
+  <g>
+    <circle cx="185" cy="60" r="5" fill="#eda100"/>
+    <text x="185" y="46" class="lbl" text-anchor="middle">10:12</text>
+    <text x="185" y="164" class="note" text-anchor="middle">pane reads 6 working</text>
+    <text x="185" y="178" class="note" text-anchor="middle">while 5 are dead</text>
+  </g>
+
+  <g>
+    <circle cx="275" cy="60" r="6" fill="#e34948"/>
+    <text x="275" y="46" class="lbl" text-anchor="middle" font-weight="600">10:32</text>
+    <text x="275" y="100" class="note" text-anchor="middle">second denial —</text>
+    <text x="275" y="114" class="note" text-anchor="middle">2 killed, both</text>
+    <text x="275" y="128" class="note" text-anchor="middle">resumed in seconds</text>
+  </g>
+
+  <g>
+    <circle cx="700" cy="60" r="5" fill="#1baf7a"/>
+    <text x="700" y="46" class="lbl" text-anchor="middle">12:00</text>
+    <text x="700" y="84" class="note" text-anchor="middle">limit resets</text>
+  </g>
+
+  <text x="16" y="200" class="t">First denial: promoted as infrastructure failures, reconciling deleted 5 live pointers and their captured sessions, forcing 4 redispatches from scratch.</text>
+  <text x="16" y="214" class="t">Second denial: both runs still held live pointers and session ids, so both resumed directly — one command each, versus four redispatches for the first.</text>
+</svg>
