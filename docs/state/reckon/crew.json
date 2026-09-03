@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T07:32:02",
+  "updated": "2026-09-03T07:39:54",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -38031,9 +38031,114 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260903T053528937279-finished-work-is-never-displayed-as-working",
+        "plan": "clive-local-workers",
+        "section": "\u00a77",
+        "node": "finished-work-is-never-displayed-as-working",
+        "node_definition": {
+          "done_when": "Two sessions independently watched finished runs display as working: one saw six nodes whose worker processes had all exited and whose manifests were all terminal on disk sit as '6 working' for 38 minutes with zero events, and one saw a run whose classifier read completed_unpromoted with a complete manifest while its phase still read starting. The mechanism is in reckon/crew/recovery.py and has two parts that compound. First, in classify_pointer around lines 186 to 196, when the process appears alive AND the log file's mtime is newer than the manifest's, the manifest is discarded wholesale: manifest_present set false, manifest_data emptied, manifest_status set to empty string. That staleness heuristic is right for a manifest written mid-run and then superseded, but it is wrong for a TERMINAL status: complete, blocked and failed are facts a later log line cannot undo, and discarding them is what erases the strongest completion signal available. Second, in _watch_snapshot around lines 556 to 578, state resolves to dispatched when phase is starting and the stall check that follows is gated on state being exactly working, while FLEET_WORKING_STATES at line 610 counts dispatched among the working bucket. So a run that dies before its phase advances is counted as alive and is permanently ineligible for the stall check. Fix both, leading with the manifest because it turns a timing question into a fact-on-disk question: never discard a terminal manifest status through the staleness path, and evaluate the stall check over every non-terminal state rather than working alone. Tests in tests/test_crew_finished_display.py assert: a pointer whose manifest reports complete while its log is newer and its process appears alive still resolves to a terminal state rather than dispatched, and the same for blocked and failed; a run killed immediately after dispatch, before its phase ever advances past starting, is still detected from its manifest alone; a run with no manifest and no activity past the stall window resolves to stalled from the dispatched state, which it cannot today; and a genuinely mid-run pointer whose manifest is non-terminal and whose log is newer still has that manifest treated as superseded, so the staleness heuristic is narrowed rather than removed. Your gate is that new test file plus tests/test_crew_recovery.py, tests/test_crew_ticker.py and tests/test_crew_watch_stream.py. Do NOT run the full suite and do NOT run any browser-driven test. Judge by delta against base 937c2169a873d4e91102a5c5465cdca057788350",
+          "estimated_hours": null,
+          "goal": "Stop a finished run being displayed as working, and make a terminal manifest on disk the signal that ends it",
+          "id": "finished-work-is-never-displayed-as-working",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T053528937279-finished-work-is-never-displayed-as-working/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_crew_finished_display.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "sonnet-a",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "backend": "claude",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T05:35:34Z",
+        "completed_at": "2026-09-03T05:38:48.371Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 182,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 194,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "937c2169a873d4e91102a5c5465cdca057788350",
+        "commits": [
+          "1b7e72e8543a6038eccd1d426f13bf8fc45f58cd"
+        ],
+        "changed_lines": {
+          "added": 128,
+          "removed": 2,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_crew_finished_display.py tests/test_crew_recovery.py tests/test_crew_ticker.py tests/test_crew_watch_stream.py",
+          "exit_status": 0,
+          "log_path": "/tmp/gate_after2.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T053528937279-finished-work-is-never-displayed-as-working/manifest.md",
+        "scope_changed": false,
+        "session_id": "45d77702-2536-41d0-9bd0-7eb5e58c1c71",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 1.21,
+          "rate_limit_type": "overage",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-10-01T00:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 1,
+          "tokens": {
+            "cache_creation_input_tokens": 82463,
+            "cache_creation_input_tokens_cumulative": 82463,
+            "cache_read_input_tokens": 2670738,
+            "cache_read_input_tokens_cumulative": 2670738,
+            "inference_geo": "not_available",
+            "input_tokens": 60,
+            "input_tokens_cumulative": 60,
+            "output_tokens": 13887,
+            "output_tokens_cumulative": 13887,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 1.0029896,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 1.0029896
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [],
-    "_version": 615
+    "_version": 616
   }
 }
