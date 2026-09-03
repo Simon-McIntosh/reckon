@@ -800,6 +800,11 @@ def _watch_snapshot(
         # way — the snapshot carries the raw spelling and the renderer narrows
         # it to fit its column.
         "role": _pointer_role(pointer),
+        # Whether this run is a shadow of a committed primary. Dispatch decides
+        # shadowship at launch and writes the lineage onto the pointer; the
+        # renderer dims a shadow row end to end from that fact, so the snapshot
+        # carries it under its own name rather than as a flattened display flag.
+        "lineage": pointer.get("lineage"),
         "state": state,
         # The full, untruncated reason. The bounded clause a reader can act on
         # is derived from it at render time, so nothing here is shaped for the
@@ -924,6 +929,10 @@ def _watch_transition(
         "node": snapshot.get("node"),
         "session": snapshot.get("session") or "",
         "role": snapshot.get("role") or "",
+        # The shadow lineage the snapshot carried from the pointer, threaded
+        # through the field-by-field rebuild so the events log records the same
+        # fact the renderer reads to dim the row.
+        "lineage": snapshot.get("lineage"),
         "backend": str(snapshot.get("backend") or ""),
         "model": str(snapshot.get("model") or ""),
         "effort": str(snapshot.get("effort") or ""),
