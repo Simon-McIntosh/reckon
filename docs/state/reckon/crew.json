@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T17:16:55",
+  "updated": "2026-09-03T17:31:51",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -21,7 +21,8 @@
         "session_model": "claude-sonnet-5",
         "sessions": {
           "claude-sonnet-5": "f8e24777-00b7-4e26-853a-45e35ad401b8",
-          "{\"backend\":\"claude\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "f8e24777-00b7-4e26-853a-45e35ad401b8"
+          "{\"backend\":\"claude\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "f8e24777-00b7-4e26-853a-45e35ad401b8",
+          "{\"alias\":\"opus 5\",\"backend\":\"claude-opus\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"claude-opus-5\",\"sandbox\":\"worktree-full\"}": "19062f03-d406-4967-a3da-0a4ef866b173"
         },
         "created": "2026-08-26"
       },
@@ -45146,6 +45147,328 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260903T151849870666-a-spend-hold-dates-itself-and-expires",
+        "plan": "crew-observability-truth",
+        "section": "\u00a77",
+        "node": "a-spend-hold-dates-itself-and-expires",
+        "node_definition": {
+          "done_when": "A hold written from a provider refusal stores no reset time, and nothing ages it out, so it refuses a lane the provider is serving for as long as the process lives. Live case measured today: hold-claude-opus-20260903100221 was written from a refusal whose own text named a 15:40 Europe/Paris reset, and at 17:14 it was still refusing with resets_at null - ninety minutes past the expiry it was told and seven hours after it was written. The preflight asymmetry is the same fact twice: the opus lane carries observed_at 14:10 with resets_at 15:00 and reports expired true and held false, while the sonnet lane carries observed_at 09:22:10Z with resets_at null and reports expired false and held true. It cannot self-clear, because only a served run writes a budget record while the hold refuses every run; nor can it be overridden, because the schema caps utilisation_ceiling_pct at 100 and the comparison is greater-or-equal, so a lane recorded at 100.0 is refused under every permitted setting. FOUR REQUIREMENTS. ONE, THE REFUSAL DATES THE HOLD: the rejection body carries the clause verbatim, measured as 'your session limit resets 3:40pm (Europe/Paris)', so parse that clause into resets_at with the zone it names, and assert a hold built from that exact string reports expired false before the stated time and expired true after it, with both comparison times supplied by the test. TWO, A HOLD WITH NO STATED RESET AGES OUT: when a refusal names no reset, decide() returns held false once the observation age exceeds a bound declared in the policy block, reporting headroom unknown with a reason naming the age and the bound, and returns held true for the same judgement at an age inside that bound. A hold that does carry a reset keeps its current verdict under both ages, so the bound governs only judgements with no reset. THREE, THE ABSENCE IS RECORDED AS AN ABSENCE: a refusal stating no reset writes resets_at null and a detail saying no reset was stated, never a computed or defaulted time, asserted by reading the stored hold back. FOUR, THE FENCE READS THE WINDOW AND NOT THE ACCOUNT: utilisation is taken from the per-window utilization value inside the event's unifiedWindows block, compared against that same window's own resetsAt, and never from the top-level overage figure. Assert it with one event carrying a top-level overage of 1.21 beside a five_hour window utilization of 0.05, which is a shape measured today on a lane that was serving, and require held false. ASSERT THROUGH THE ENTRY POINT decide() that preflight calls, over states built the way the ledger reader builds them, not over the helpers. No assertion may contain a date literal or a fixed elapsed figure: supply the observation time, the stated reset and the current time from the test and derive every age from those. At least one added assertion must fail against base 65dc70e. Measured over tests/test_budget.py in one invocation: zero failures against its count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 3.0,
+          "goal": "A spend hold carries an expiry taken from the refusal that created it, and a hold that carries none stops holding the lane once it is older than a declared bound.",
+          "id": "a-spend-hold-dates-itself-and-expires",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/spend-hold-dates-itself-manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/budget.py",
+            "tests/test_budget.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "opus-a",
+        "backend": "claude-opus",
+        "local": false,
+        "agent": {
+          "alias": "opus 5",
+          "backend": "claude-opus",
+          "effort": "high",
+          "launch": "cli",
+          "model": "claude-opus-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T15:18:55Z",
+        "completed_at": "2026-09-03T15:24:24.298Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 317,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 329,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "65dc70ec44f2e022e17a51ff029b3f35e6f7fd12",
+        "commits": [
+          "11321a382c6dcbf77b67c8332903acd063685713"
+        ],
+        "changed_lines": {
+          "added": 234,
+          "removed": 6,
+          "files": 2
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_budget.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vb.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/spend-hold-dates-itself-manifest.md",
+        "scope_changed": false,
+        "session_id": "3e81786c-e969-4c9e-9fed-220afdde1bf7",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 0.77,
+          "rate_limit_type": "seven_day",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-09-03T18:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 0.75,
+          "tokens": {
+            "cache_creation_input_tokens": 39102,
+            "cache_creation_input_tokens_cumulative": 39102,
+            "cache_read_input_tokens": 5481546,
+            "cache_read_input_tokens_cumulative": 5481546,
+            "inference_geo": "not_available",
+            "input_tokens": 48,
+            "input_tokens_cumulative": 48,
+            "output_tokens": 20315,
+            "output_tokens_cumulative": 20315,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 3.639908,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 3.639908
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260903T151438606163-the-arming-path-replaces-a-stale-watch-seat",
+        "plan": "crew-observability-truth",
+        "section": "\u00a77",
+        "node": "the-arming-path-replaces-a-stale-watch-seat",
+        "node_definition": {
+          "done_when": "replace_stale_watch_seat is defined in reckon/crew/runs.py and no source file calls it; only tests/test_watch_version_stamp.py does. Its docstring states that this is the mechanism the arming path already uses, and that sentence is false. So a version-stale seat is reused. ESTABLISH THE SIGNAL BEFORE WIRING ANYTHING, because wiring a caller onto a signal that cannot change produces a second dead feature rather than a fix: reckon.__version__ is dynamic via vcs and is frozen at install time, so determine by measurement whether watch_seat_version_current can ever report stale for a seat armed by this install after a working-tree change. Report the measurement either way. IF THE SIGNAL CAN CHANGE, done when the arming path calls the replacement, asserted through the arming entry point rather than the helper: arm a seat, make it version-stale the way the signal actually moves, arm again, and observe the seat replaced; then arm twice with no staleness and observe the seat retained. IF THE SIGNAL CANNOT CHANGE, done when no caller is added, the false docstring sentence is replaced by one stating what the function does and what still has to reach it, and a test asserts the signal is constant across the transition it claims to detect, so the next reader finds the limitation recorded rather than inferring the feature works. Either way the docstring must not assert a call site that does not exist. At least one added assertion must fail against base 2322564. Measured over tests/test_watch_version_stamp.py in one invocation: zero failures against its count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 2.0,
+          "goal": "A version-stale watch seat is replaced by the path that arms it, or the staleness signal is shown to be unreadable and that is recorded instead of wired.",
+          "id": "the-arming-path-replaces-a-stale-watch-seat",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/watch-seat-manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/crew/runs.py",
+            "tests/test_watch_version_stamp.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "impl-guard",
+        "backend": "claude-opus",
+        "local": false,
+        "agent": {
+          "alias": "opus 5",
+          "backend": "claude-opus",
+          "effort": "high",
+          "launch": "cli",
+          "model": "claude-opus-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T15:14:42Z",
+        "completed_at": "2026-09-03T15:23:37.765Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 525,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 535,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "2322564aa326bcbb6d124608c62c845b1201a119",
+        "commits": [
+          "4949833254b8237c709ce003ab154eca28f3c042"
+        ],
+        "changed_lines": {
+          "added": 96,
+          "removed": 11,
+          "files": 2
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_watch_version_stamp.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vw.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/watch-seat-manifest.md",
+        "scope_changed": false,
+        "session_id": "599cad91-e729-4614-b174-135c8390f8a7",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 0.77,
+          "rate_limit_type": "seven_day",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-09-03T18:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 0.75,
+          "tokens": {
+            "cache_creation_input_tokens": 95430,
+            "cache_creation_input_tokens_cumulative": 95430,
+            "cache_read_input_tokens": 3007182,
+            "cache_read_input_tokens_cumulative": 3007182,
+            "inference_geo": "not_available",
+            "input_tokens": 78,
+            "input_tokens_cumulative": 78,
+            "output_tokens": 33955,
+            "output_tokens_cumulative": 33955,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 3.307156,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 3.307156
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260903T152304992054-the-ledger-row-carries-what-the-observation-measured",
+        "plan": "crew-observability-truth",
+        "section": "\u00a76",
+        "node": "the-ledger-row-carries-what-the-observation-measured",
+        "node_definition": {
+          "done_when": "Two signals are measured during a run and discarded at promotion. FIRST, THROUGHPUT: the Observation carries generation_seconds, machine_seconds, tokens_per_second and input_utilisation_pct, and the string throughput appears in no line of ledger.py, promotion.py, dispatch.py or recovery.py; zero of the 67 ledger rows written on 2026-09-03 carry any of those four keys. An earlier node's own measure had required both figures to reach the run record beside elapsed so a past slice could be recomputed without redispatch, and they do not reach it. SECOND, THE BUDGET FALLBACK: the requested lane, the used lane and the hold are written to the live pointer, which promotion deletes, so the string budget_fallback exists only in dispatch.py and tests/test_budget.py and never appears in a record. Done when a run promoted through the same crew complete path a coordinator invokes writes a ledger row carrying the four throughput keys its observation measured and the budget fallback its pointer held, asserted by promoting a synthesised run and reading the row back from the written ledger file rather than from the pointer or the Observation object. A run whose observation measured no throughput writes a row omitting those keys, and a run whose pointer carried no fallback writes a row omitting that key - never a zero or an empty mapping, which would read as a measurement that was taken. ASSERT THROUGH THE PROMOTION ENTRY POINT, not the row builder: this defect class has passed four green suites in this repository by asserting against a synthetic record the live path never produces. Write and read the ledger under a temporary config home and assert the real ledger directory is untouched afterwards. At least one added assertion must fail against base 65dc70e. Measured over tests/test_ledger.py in one invocation: zero failures against its count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 2.5,
+          "goal": "A promoted ledger row carries the throughput its observation measured and the budget fallback its pointer held, so a past run can be read back without redispatch.",
+          "id": "the-ledger-row-carries-what-the-observation-measured",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/ledger-carries-manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/ledger.py",
+            "reckon/crew/promotion.py",
+            "tests/test_ledger.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "impl-display",
+        "backend": "claude-opus",
+        "local": false,
+        "agent": {
+          "alias": "opus 5",
+          "backend": "claude-opus",
+          "effort": "high",
+          "launch": "cli",
+          "model": "claude-opus-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T15:23:10Z",
+        "completed_at": "2026-09-03T15:31:04.670Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 469,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 474,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "3318dfdbe0e221ff7798fe106724e37b4797344b",
+        "commits": [
+          "541687d3e148e38f196455fd857f2cf0dc0ff700"
+        ],
+        "changed_lines": {
+          "added": 294,
+          "removed": 3,
+          "files": 3
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_ledger.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vl.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/ledger-carries-manifest.md",
+        "scope_changed": false,
+        "session_id": "25cb2ed4-bb6e-4da7-9fd6-9828c6f3a7cf",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 0.78,
+          "rate_limit_type": "seven_day",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-09-03T18:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 0.75,
+          "tokens": {
+            "cache_creation_input_tokens": 120850,
+            "cache_creation_input_tokens_cumulative": 120850,
+            "cache_read_input_tokens": 5290359,
+            "cache_read_input_tokens_cumulative": 5290359,
+            "inference_geo": "not_available",
+            "input_tokens": 112,
+            "input_tokens_cumulative": 112,
+            "output_tokens": 29837,
+            "output_tokens_cumulative": 29837,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 4.600164499999998,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 4.600164499999998
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -45168,13 +45491,13 @@
         "backend": "claude",
         "purpose": "dispatch",
         "opened_at": "2026-09-03T10:15:34Z",
-        "closed_at": null,
-        "held_seconds": null,
+        "closed_at": "2026-09-03T15:27:26Z",
+        "held_seconds": 18712,
         "utilisation_pct": 100.0,
         "resets_at": null,
         "effective_ceiling_pct": 95.0,
         "reason": "utilisation 100.0% is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
-        "closed_by_purpose": null,
+        "closed_by_purpose": "dispatch",
         "resumption_fired": false
       },
       {
@@ -45218,8 +45541,64 @@
         "reason": "utilisation 100.0% is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
         "closed_by_purpose": "dispatch",
         "resumption_fired": false
+      },
+      {
+        "hold_id": "hold-codex-20260903152726",
+        "backend": "codex",
+        "purpose": "dispatch",
+        "opened_at": "2026-09-03T15:27:26Z",
+        "closed_at": null,
+        "held_seconds": null,
+        "utilisation_pct": 100.0,
+        "resets_at": "2026-09-08T05:38:19Z",
+        "effective_ceiling_pct": 95.0,
+        "reason": "utilisation 100.0% is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
+        "closed_by_purpose": null,
+        "resumption_fired": false
+      },
+      {
+        "hold_id": "hold-codex-luna-20260903152726",
+        "backend": "codex-luna",
+        "purpose": "dispatch",
+        "opened_at": "2026-09-03T15:27:26Z",
+        "closed_at": null,
+        "held_seconds": null,
+        "utilisation_pct": 100.0,
+        "resets_at": "2026-09-08T05:38:19Z",
+        "effective_ceiling_pct": 95.0,
+        "reason": "utilisation 100.0% is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
+        "closed_by_purpose": null,
+        "resumption_fired": false
+      },
+      {
+        "hold_id": "hold-codex-spark-20260903152726",
+        "backend": "codex-spark",
+        "purpose": "dispatch",
+        "opened_at": "2026-09-03T15:27:26Z",
+        "closed_at": null,
+        "held_seconds": null,
+        "utilisation_pct": 100.0,
+        "resets_at": "2026-09-08T05:38:18Z",
+        "effective_ceiling_pct": 95.0,
+        "reason": "utilisation 100.0% is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
+        "closed_by_purpose": null,
+        "resumption_fired": false
+      },
+      {
+        "hold_id": "hold-codex-terra-20260903152726",
+        "backend": "codex-terra",
+        "purpose": "dispatch",
+        "opened_at": "2026-09-03T15:27:26Z",
+        "closed_at": null,
+        "held_seconds": null,
+        "utilisation_pct": 100.0,
+        "resets_at": "2026-09-08T05:38:18Z",
+        "effective_ceiling_pct": 95.0,
+        "reason": "utilisation 100.0% is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
+        "closed_by_purpose": null,
+        "resumption_fired": false
       }
     ],
-    "_version": 734
+    "_version": 739
   }
 }

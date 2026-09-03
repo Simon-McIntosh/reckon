@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="fleet-monitor-legibility-landed">
+  <meta name="plan-title" content="The Fleet Pane — Execution Record">
+  <meta name="plan-summary" content="Cumulative execution evidence for the fleet display: colour, reason, role, alias, measured width, counters, the facts-log split, baseline suppression and shadow lineage — one anchor per landed outcome, with the rendered rows before and after.">
+  <meta name="plan-evidence-for" content="fleet-monitor-legibility">
+  <meta name="plan-tags" content="crew,reckon-tooling,evidence">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <title>The Fleet Pane — Execution Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+  <style>
+    .rowsample {
+      overflow-x: auto;
+      background: #1c1c1c;
+      color: #e8e6e1;
+      padding: 0.9rem 1rem;
+      border-radius: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      white-space: pre;
+    }
+    .rowsample .dim { opacity: 0.55; }
+    .rowsample b { font-weight: 600; color: #ffd479; }
+    table.measures { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+    table.measures th, table.measures td {
+      text-align: left; padding: 0.35rem 0.6rem; border-bottom: 1px solid rgba(0,0,0,0.12);
+      vertical-align: top;
+    }
+    table.measures th { font-weight: 600; }
+    table.measures td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="overview">Record scope</h2>
+    <p>
+      Twelve landed outcomes are recorded against
+      <a href="/reckon/fleet-monitor-legibility">fleet-monitor-legibility</a>, all on
+      2026-09-03. Each anchor below names its commit and the measure its landing comment
+      reported, rather than restating a verdict. Two entries record work that produced no
+      new capability and are kept because the absence is the finding.
+    </p>
+    <p>
+      The plan's subject is a display, so the primary evidence is a rendered row. The
+      samples are real lines taken from the pane, not reconstructions.
+    </p>
+
+    <h2 id="the-row">The row, before and after</h2>
+    <p>
+      One line carries every question a coordinator asks of a run. The first sample is the
+      pane as it read at the start of the day; the second is the same grammar after the
+      wave. Both are 207 columns wide and trimmed here for the page.
+    </p>
+
+    <h3>Before</h3>
+    <div class="rowsample">15:44:28  impl  the-log-stores-facts-not-renders      dispatched → working     dsv4-flash·me                                        2w · 0b · 0u</div>
+    <p>
+      The model and the effort share one cell with a separator, and the effort is
+      abbreviated to two characters. The counters sit last, so a pane narrower than the
+      resolved width clips them and not the free text. A row emitted when a follower
+      attaches is drawn in the same arrow grammar as a transition.
+    </p>
+
+    <h3>After</h3>
+    <div class="rowsample">17:22:39  impl  a-claim-is-scoped-to-a-repository-a…  <b>•</b> dispatched  <b>opus 5</b>  <b>high</b>   3w · 0b · 0u
+17:23:17  impl  the-arming-path-replaces-a-stale-wa…  dispatched <b>→</b> complete   opus 5  high   3w · 0b · 0u</div>
+    <p>
+      The model and the effort hold separate columns and the effort is spelled in full.
+      The counters precede the reason, so the flexible column absorbs a clip. A baseline
+      row — an inventory of what already existed when the follower attached — carries a
+      bullet where a transition carries an arrow, and a run already terminal at attach is
+      not drawn at all.
+    </p>
+
+    <h2 id="measures">Landed outcomes</h2>
+    <table class="measures">
+      <thead>
+        <tr><th>Outcome</th><th>Commit</th><th>Measure</th></tr>
+      </thead>
+      <tbody>
+        <tr id="colour-survives-the-emit-path">
+          <td>Painted lines keep their escapes through both emit sites into a non-terminal stream; an unpainted line stays plain.</td>
+          <td class="num">0c4d36f</td>
+          <td class="num">15 passed against 11 at base</td>
+        </tr>
+        <tr id="the-reason-says-what-the-worker-asked">
+          <td>A blocked reason is the worker's own headline with a marker saying whether a resume can answer it.</td>
+          <td class="num">81d35f9</td>
+          <td class="num">285 passed across seven modules, against 1 pre-existing failure at base</td>
+        </tr>
+        <tr id="the-line-carries-the-role">
+          <td>The role occupies a fixed column left of the node, in the dispatch vocabulary, dim rather than hued.</td>
+          <td class="num">e535dd4</td>
+          <td class="num">29 passed, being 9 new role cases plus 20 pre-existing layout cases</td>
+        </tr>
+        <tr id="the-snapshot-threads-the-role">
+          <td>The role threads from the pointer through the snapshot <em>and</em> the transition rebuild, with a contract test that fails if a later column is added without threading.</td>
+          <td class="num">0e9cdb2</td>
+          <td class="num">35 passed against 30 at base</td>
+        </tr>
+        <tr id="aliases-live-in-configuration">
+          <td>Alias and effort spelling are declared configuration, stamped onto the pointer at dispatch; no model id, vendor name or effort ladder enters code.</td>
+          <td class="num">51230b3</td>
+          <td class="num">39 passed against 29, plus 61 flight tests</td>
+        </tr>
+        <tr id="the-counters-carry-a-letter">
+          <td>Each counter renders as its number then a single letter, holding a fixed column at every count width including double digits.</td>
+          <td class="num">0580cbc</td>
+          <td class="num">41 passed against 39 at base</td>
+        </tr>
+        <tr id="the-agent-label-honours-the-alias">
+          <td>The label composer honours the declared alias and effort spelling, composing through the renderer's own helper so the snapshot and the display cannot drift.</td>
+          <td class="num">d805e6d</td>
+          <td class="num">79 passed across two modules</td>
+        </tr>
+        <tr id="the-effort-is-spelled-in-full">
+          <td>The effort word renders in full beside the alias; the widest configured label fits without elision.</td>
+          <td class="num">a2e1d2e</td>
+          <td class="num">layout suite green</td>
+        </tr>
+        <tr id="the-role-abbreviates">
+          <td>The role derives as its first four characters from the vocabulary, with no table and no exception.</td>
+          <td class="num">b5752fe</td>
+          <td class="num">every configured role distinct</td>
+        </tr>
+        <tr id="the-width-is-measured">
+          <td>The render width is resolved from the hosting terminal by walking process ancestry to the first readable tty, tracking a resize.</td>
+          <td class="num">7e99433</td>
+          <td class="num">45 passed against 41; resolves 207 on a 208-column terminal, corroborated by a peer session's independent reading</td>
+        </tr>
+        <tr id="the-grid-is-built-at-the-measured-width">
+          <td>The reader's grid is constructed at the resolved width, so a rendered line measures the pane rather than the stated fallback.</td>
+          <td class="num">31b218e</td>
+          <td class="num">a line renders at exactly the resolved width, not the 180 default</td>
+        </tr>
+        <tr id="the-log-stores-facts">
+          <td>The producer persists transition facts — model, effort, alias, backend, the untruncated detail, and the boolean a block's glyph derives from — and the monitor derives every display value at render time.</td>
+          <td class="num">8a7b56d</td>
+          <td class="num">92 passed, from a base carrying 3 failures which this fixed</td>
+        </tr>
+        <tr id="the-follow-command-renders-the-log">
+          <td>Baseline rows are visually distinct and suppressed when already terminal at attach; effort takes its own column; the counters precede the reason so an over-wide line loses only trailing free text.</td>
+          <td class="num">23a133d</td>
+          <td class="num">118 passed against a base of 8 failures</td>
+        </tr>
+        <tr id="the-assertions-do-not-read-the-host">
+          <td>No assertion in the render modules reads the machine it runs on; the column-budget test pins the width it renders at and asserts the equal-column property instead of a number.</td>
+          <td class="num">42b5fac</td>
+          <td class="num">148 passed, exit 0, in a session resolving 207 columns where the prior revision failed at 180</td>
+        </tr>
+        <tr id="the-shadow-lineage">
+          <td>The shadow lineage threads from the pointer through both the snapshot and the transition rebuild, so a shadow row dims on the live path; the contract test now covers every field the renderer reads by any means, not only those holding a column.</td>
+          <td class="num">7d141d9</td>
+          <td class="num">150 passed, exit 0</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="the-fence-pattern">The finding that outlived the plan</h2>
+    <p>
+      <strong>Five times a capability landed in the module owning the mechanism while the
+      call site sat outside the node's fence, so a green suite covered a dead
+      feature.</strong> The role reached the snapshot and not the transition builder. The
+      reason reached the parser and not the deriver. The alias reached the ticker and not
+      the label composer. The width resolver reached the ticker and not the grid
+      constructor. The shadow dimming reached the renderer while the producer carried no
+      lineage at all — that one had never fired once, and the renderer's own docstring
+      stated it read a fact the producer never wrote.
+    </p>
+    <p>
+      The counter-evidence sits in the same day and settles the cause: every node whose
+      done-when named the <em>entry point a reader reaches</em> — asserted through the
+      dispatch path rather than the helper, constructed from a real pointer rather than a
+      synthetic event, routed through the follow command's own grid construction — worked
+      first time. The defect was in the measures, not the work.
+    </p>
+    <p>
+      A contract test was introduced to catch the class and caught neither of the last
+      two, for two separate reasons worth keeping. It asserted the snapshot carries a
+      <em>value</em> for every field the ticker's column set reads, and presence is not
+      correctness — it passed while the value was present and wrong. And it was keyed to
+      the column set, while shadow dimming is a whole-row attribute rather than a column.
+      It now covers every event field the renderer reads by any means.
+    </p>
+
+    <h2 id="absences">Two records of no capability</h2>
+    <p>
+      Kept because in each case the absence is the result.
+    </p>
+    <ul>
+      <li>
+        <strong>The pane's own width is not measurable from inside the process.</strong>
+        Process ancestry reaches the hosting terminal and reports 208 columns, tracking a
+        resize. The pane drawn inside it is not a pty, so no ioctl reaches it, and the
+        harness bundle that draws it carries the pane's label as a bare string literal far
+        from any layout arithmetic. Any frame inset is therefore inference. The remedy was
+        positional rather than numeric: move the counters ahead of the reason and the line
+        stops depending on the width being exact. That reversed an earlier directive for
+        flush-right counters, because flush right means last and last means sacrificial.
+      </li>
+      <li>
+        <strong>Two sessions read inventory rows as live failures for most of a day.</strong>
+        The watch log tagged every row <code>baseline</code> or <code>transition</code> and
+        recorded a null from-state on all 167 baseline rows against 367 transitions, while
+        the renderer routed both through one formatter and contained no reference to the
+        event kind. So each follower restart emitted one alarming row per live run, and a
+        terminal one carried a full failure reason that read exactly like news. The cost
+        was diagnostic rather than cosmetic: an implausible-looking abandonment note
+        prompted a classifier investigation which found a real defect, while the row that
+        prompted it was inventory from a restart seconds earlier.
+      </li>
+    </ul>
+
+  </main>
+</body>
+</html>
