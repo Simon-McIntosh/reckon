@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="doc">
+  <meta name="plan-slug" content="brief-conformance-review">
+  <meta name="plan-title" content="The Day Reviewed Against Its Briefs — 2026-09-03">
+  <meta name="plan-summary" content="A retrospective reading of every code-bearing commit landed 2026-09-03 against the goal and done-when its node was actually given, not its exit status: 11 of 40 met their brief in letter only, one gate figure could not be reproduced from the ledger, and a call-site-unreachable failure class was found independently six times against four the sprint recorded.">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-tags" content="reckon-tooling,crew,verification">
+  <meta name="plan-informs" content="clive-local-workers,native-agent-dispatch-guard,crew-observability-truth">
+  <title>The Day Reviewed Against Its Briefs — 2026-09-03 | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — What this is, and where it lives otherwise</h2>
+    <p>
+      This is a repository copy of a retrospective review that existed only at
+      <code>~/.config/reckon/crew/reports/s15-day-review.md</code> — outside every checkout,
+      reachable from no fresh clone, no CI run, no peer worktree and no reader on another
+      machine. That source file is <strong>24451 bytes, 379 lines</strong>, dated
+      2026-09-03, and it is <strong>not deleted or edited by this page</strong>: it remains
+      the provenance, and every figure below is reproduced from it verbatim rather than
+      re-derived. Its own opening line states its method: <em>"A retrospective reading of
+      recorded history. Every judgement below is against the brief the node was given (the
+      <code>goal</code> and <code>done_when</code> on its promoted ledger row in
+      <code>docs/state/reckon/crew.json</code>), not against its exit status. No file was
+      edited and no check was invoked to produce it."</em>
+    </p>
+    <p>
+      §7 below carries one addition the source could not: three of the four still-open
+      items it named have since been repaired, and a reader of the source alone would not
+      know that.
+    </p>
+
+    <h2 id="s2">§2 — Headline</h2>
+    <p>
+      Verbatim from the source: <strong>"11 of 40 code-bearing commits merged to main today
+      are MET-IN-LETTER-ONLY — 27.5 per cent. One is EXCEEDED, and 28 are MET."</strong>
+      Every one of those 40 commits came from a node whose gate reads <code>passed</code>;
+      the gate is not wrong, it is narrow — it measures the assertion the worker was told to
+      make, and eleven times the assertion was satisfiable without the goal being reached.
+    </p>
+    <p>
+      On the widely quoted 92 per cent figure, the source is explicit that it could not be
+      reproduced: <em>"Today's 67 dispatch rows give <code>gate=passed</code> 48,
+      <code>failed</code> 18, <code>not-run</code> 1 — 71.6 per cent by row. Collapsing
+      retries to distinct node ids (59 of them) and counting a node as passed if any attempt
+      passed gives 81.4 per cent by node. A running cumulative rate over the day never
+      touches 92 per cent at any point, and no denominator I tried (non-malformed rows, rows
+      with a completion timestamp, rows with commits) produces it either."</em> All 18
+      failures carry a harness classification — 10 <code>infrastructure-failure</code>, 8
+      <code>malformed-node</code> — so a rate computed over worker-attributable failures
+      alone is 48/48, i.e. <strong>0 of 48 passed rows carry a worker-attributable
+      failure</strong>.
+    </p>
+
+    <h2 id="s3">§3 — Method and scope</h2>
+    <ul>
+      <li>Walked <code>git log --since=2026-09-03T00:00:00 --until=2026-09-04T00:00:00
+        main</code>: <strong>165 commits, 122 non-merge</strong>. The day's session begins
+        at <code>1908947</code> (05:46 +0200); the boundary was checked in both directions.
+      </li>
+      <li>Excluded commits whose every path is under <code>docs/plans/</code>,
+        <code>docs/state/</code>, <code>docs/evidence/</code>, <code>docs/research/</code>,
+        <code>docs/sprints/</code>, <code>docs/figures/</code> or a top-level
+        <code>docs/*.html</code> — the plan-state and docs-only commits, including
+        <code>cc6fbed</code>, <code>56d3c9b</code>, <code>40b06cc</code>, <code>07e2d90</code>,
+        <code>f0f8800</code>.</li>
+      <li><strong>40 code-bearing commits remain.</strong> Each maps to exactly one promoted
+        ledger row by sha; there were no unattributable commits and no ledger row claiming a
+        commit main does not have.</li>
+    </ul>
+
+    <h2 id="s4">§4 — Verdict distribution over the 40 code-bearing commits</h2>
+    <svg viewBox="0 0 760 150" width="100%" role="img"
+         aria-label="Stacked bar of 40 code-bearing commits: 1 exceeded, 28 met, 11 met in letter only">
+      <g font-family="system-ui, sans-serif" font-size="13" fill="#1a1a1c">
+        <text x="0" y="20">Verdict, 40 commits (1 EXCEEDED · 28 MET · 11 MET-IN-LETTER-ONLY)</text>
+        <!-- stacked bar: total width 700 px = 40 commits, 17.5px per commit -->
+        <rect x="0" y="40" width="17.5" height="40" fill="#2f6f4f"/>
+        <rect x="17.5" y="40" width="490" height="40" fill="#c7c9cf"/>
+        <rect x="507.5" y="40" width="192.5" height="40" fill="#c2410c"/>
+        <text x="8.75" y="100" text-anchor="middle" font-size="11.5" fill="#4a4a50">1</text>
+        <text x="262.5" y="100" text-anchor="middle" font-size="11.5" fill="#4a4a50">28</text>
+        <text x="603.75" y="100" text-anchor="middle" font-size="11.5" fill="#4a4a50">11</text>
+        <g font-size="12">
+          <rect x="0" y="118" width="12" height="12" fill="#2f6f4f"/>
+          <text x="18" y="128">EXCEEDED (1)</text>
+          <rect x="140" y="118" width="12" height="12" fill="#c7c9cf"/>
+          <text x="158" y="128">MET (28)</text>
+          <rect x="260" y="118" width="12" height="12" fill="#c2410c"/>
+          <text x="278" y="128">MET-IN-LETTER-ONLY (11 — 27.5%)</text>
+        </g>
+      </g>
+    </svg>
+
+    <h3 id="s4a">The failure class behind most of the eleven</h3>
+    <p>
+      Source, verbatim: <em>"a change lands in a module while the call site that would reach
+      it sits outside the node's fence, so the node's tests pass over a feature no caller can
+      touch."</em> <strong>The sprint records it four times; the review looked for it from
+      the commits rather than from the record, and found six instances among the 40 — four
+      repaired within the same day, two still live at HEAD when it was written.</strong>
+    </p>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Commit</th><th>What landed</th><th>The surface that never reached it</th><th>Repaired by</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td><code>e535dd4</code></td>
+          <td><code>ticker._display_role</code> + an 11-column role field</td>
+          <td><code>recovery.py</code> at <code>e535dd4</code> contains no <code>"role"</code>
+            key at all — every rendered line showed <code>?</code></td>
+          <td><code>0e9cdb2</code> (same day)</td></tr>
+        <tr><td>2</td><td><code>51230b3</code></td>
+          <td><code>ticker._agent_label</code> renders a configured alias</td>
+          <td><code>recovery.py</code> at <code>51230b3</code> neither imports nor calls it;
+            the pane's agent string came from <code>recovery.agent_label</code></td>
+          <td><code>d805e6d</code> (same day)</td></tr>
+        <tr><td>3</td><td><code>7e99433</code></td>
+          <td><code>ticker.resolve_terminal_width</code> (177 lines, 4 tests)</td>
+          <td><code>cli.py:1362</code> at <code>7e99433</code> still reads
+            <code>ticker_module.DEFAULT_WIDTH</code>; zero callers of the resolver</td>
+          <td><code>31b218e</code> (same day)</td></tr>
+        <tr><td>4</td><td><code>eab6ed7</code></td>
+          <td><code>ledger.new_failure_attribution</code></td>
+          <td><code>promotion.py</code> at <code>eab6ed7</code> computes the added-failure
+            set inline (line 906) and never calls the new helper</td>
+          <td><code>a60fad1</code> (same day)</td></tr>
+        <tr><td>5</td><td><code>31d4e8d</code></td>
+          <td><code>runs.replace_stale_watch_seat</code></td>
+          <td>no arming path calls it; its own docstring asserted a mechanism that was not
+            true</td>
+          <td>see §7 — corrected, not wired</td></tr>
+        <tr><td>6</td><td><code>736dbfd</code></td>
+          <td><code>reckon/hooks/native_agent_guard.py</code> (472 lines, 13 tests)</td>
+          <td>nothing registers the hook; <code>PreToolUse</code> appears nowhere in the
+            tree; no settings file carries a <code>hooks</code> key</td>
+          <td>see §7 — still open</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s5">§5 — Gate pass rate, two ways</h2>
+    <svg viewBox="0 0 760 180" width="100%" role="img"
+         aria-label="Gate pass rate by row (48 of 67, 71.6 percent) and by distinct node (48 of 59, 81.4 percent), neither reaching 92 percent">
+      <g font-family="system-ui, sans-serif" font-size="13" fill="#1a1a1c">
+        <text x="0" y="18">By row — 67 dispatch rows</text>
+        <rect x="0" y="30" width="700" height="28" fill="#eef0f4" stroke="#8a8a8f"/>
+        <rect x="0" y="30" width="501" height="28" fill="#2f6f4f"/>
+        <rect x="501" y="30" width="188" height="28" fill="#c2410c"/>
+        <rect x="689" y="30" width="11" height="28" fill="#8a8a8f"/>
+        <text x="8" y="49" fill="#ffffff" font-size="11.5">48 passed</text>
+        <text x="509" y="49" fill="#ffffff" font-size="11.5">18 failed</text>
+        <text x="620" y="80" font-size="11.5" fill="#4a4a50">1 not-run</text>
+        <text x="0" y="80" font-size="12.5" fill="#4a4a50">71.6% by row</text>
+
+        <text x="0" y="112" font-size="13">By distinct node — 59 node ids (retries collapsed)</text>
+        <rect x="0" y="124" width="700" height="28" fill="#eef0f4" stroke="#8a8a8f"/>
+        <rect x="0" y="124" width="570" height="28" fill="#2f6f4f"/>
+        <rect x="570" y="124" width="130" height="28" fill="#c2410c"/>
+        <text x="8" y="143" fill="#ffffff" font-size="11.5">48 passed</text>
+        <text x="578" y="143" fill="#ffffff" font-size="11.5">11 never passed</text>
+        <text x="0" y="168" font-size="12.5" fill="#4a4a50">81.4% by node — never 92% at any point in the day</text>
+      </g>
+    </svg>
+    <p>
+      All 18 row-level failures carry a harness classification: <strong>10
+      <code>infrastructure-failure</code>, 8 <code>malformed-node</code></strong>. A rate
+      computed over worker-attributable failures alone is therefore <strong>0 of 48
+      passed</strong>. Source, verbatim, on the 92 per cent figure: <em>"Whatever
+      denominator produced 92 per cent, the honest correction stands on its own terms: of
+      the work that did land and did pass, better than a quarter did not reach the goal its
+      brief stated."</em>
+    </p>
+
+    <h2 id="s6">§6 — Verdicts in full</h2>
+    <p><strong>EXCEEDED (1):</strong> <code>6201ad5</code> — delivered against the goal, not
+      merely the measure; its done-when asked only for no added failures, which an empty
+      commit would have satisfied.</p>
+    <p><strong>MET-IN-LETTER-ONLY (11):</strong> <code>7e99433</code>, <code>e535dd4</code>,
+      <code>51230b3</code>, <code>31d4e8d</code> <em>(still open)</em>,
+      <code>736dbfd</code> <em>(still open)</em>, <code>eab6ed7</code>, <code>3ff87b2</code>,
+      <code>de5e86a</code>, <code>0974fc0</code>, <code>34e1d10</code>, <code>1b7e72e</code>.
+      Each entry in the source names the gap between what the measure asked and what a
+      reader of the brief would have wanted; <code>1b7e72e</code> is marked in the source as
+      <em>"a brief defect, not a worker defect"</em> — the measure named no resume case in
+      either direction, so nothing in the node could have caught the regression it
+      introduced.</p>
+    <p><strong>MET (28):</strong> <code>1908947</code>, <code>da054f7</code>,
+      <code>1a77ce8</code>, <code>5717d69</code>, <code>9b609d9</code>, <code>73ed06d</code>,
+      <code>95e5e2c</code>, <code>a5110cd</code>, <code>ba754c9</code>, <code>8c1b637</code>,
+      <code>45fc1b9</code>, <code>a60fad1</code>, <code>9f9b464</code>, <code>957c042</code>,
+      <code>896ba48</code>, <code>cdec546</code>, <code>71b50b0</code>, <code>17f8686</code>,
+      <code>0c4d36f</code>, <code>81d35f9</code>, <code>2c08140</code>, <code>0e9cdb2</code>,
+      <code>d805e6d</code>, <code>0580cbc</code>, <code>a2e1d2e</code>, <code>b5752fe</code>,
+      <code>31b218e</code>, <code>3251ec9</code>.</p>
+
+    <h2 id="s7">§7 — Status now: three of the source's four open items have since closed</h2>
+    <p>
+      The source named two defects still live at HEAD when it was written, and two signals
+      it found measured in flight and then discarded at promotion. Re-checked against this
+      worktree's HEAD, three of the four have since landed a repair; the fourth has not, and
+      a reader of the source alone would not know which is which.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Item</th><th>Kind</th><th>Source verdict</th><th>Status now</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>3ff87b2</code>, <code>de5e86a</code> — throughput</td>
+          <td>signal measured, discarded at promotion</td>
+          <td><em>"the string <code>throughput</code> appears nowhere in
+            <code>ledger.py</code>… 0 of today's 67 ledger rows carry a throughput
+            block."</em></td>
+          <td><strong>Repaired.</strong> <code>541687d</code> —
+            <em>feat(ledger): promote the throughput and lane hand-over a run measured</em>.
+            <code>reckon/ledger.py</code> now writes <code>record["throughput"]</code> from
+            <code>measured_throughput()</code>; a run's rate figures reach the promoted
+            row.</td>
+        </tr>
+        <tr>
+          <td><code>0974fc0</code> — <code>budget_fallback</code></td>
+          <td>signal measured, discarded at promotion</td>
+          <td><em>"promotion deletes the live pointer and nothing carries
+            <code>budget_fallback</code> into the ledger row."</em></td>
+          <td><strong>Repaired.</strong> Same commit, <code>541687d</code>. Ledger row
+            construction now writes <code>record["budget_fallback"]</code> from
+            <code>promoted_budget_fallback()</code>.</td>
+        </tr>
+        <tr>
+          <td><code>31d4e8d</code> — <code>replace_stale_watch_seat</code></td>
+          <td>defect, live at HEAD</td>
+          <td><em>"no arming path calls it… its own docstring asserts 'this is the mechanism
+            the arming path already uses', which is not true."</em></td>
+          <td><strong>Repaired — as a correction, not a wiring.</strong>
+            <code>4949833</code> — <em>fix(crew): record that the seat version stamp names
+            the install, not the code</em>. Measured that the version stamp is
+            <code>importlib.metadata.version("reckon-plans")</code>, fixed at install time
+            and constant across every commit in a working-tree checkout (one workstation
+            held the same stamp across 282 commits, 85 touching the package). Wiring a
+            caller on would gate dispatch on a condition that cannot become true, so none was
+            added; the three docstrings that implied a live mechanism now state what the
+            signal actually discriminates, and a new test pins that no caller exists until a
+            code-level staleness signal replaces the version stamp.
+            <code>replace_stale_watch_seat</code> is still uncalled in production — that
+            fact did not change — but the record no longer claims otherwise.</td>
+        </tr>
+        <tr>
+          <td><code>736dbfd</code> — the spawn guard hook</td>
+          <td>defect, live at HEAD</td>
+          <td><em>"nothing registers the hook… no commit today touched sync."</em></td>
+          <td><strong>Still open.</strong> <code>2322564</code> —
+            <em>plan(native-agent-dispatch-guard): the spawn guard is on disk and wired to
+            nothing</em> — confirms the same finding independently and four ways: zero
+            <code>PreToolUse</code> occurrences in the tree, no <code>hooks</code> key in any
+            settings file, no reference to the hooks package in <code>reckon</code>, and no
+            hook logic in the <code>sync</code> command. No commit after
+            <code>2322564</code> touches hooks, sync, or a settings file. The guard script
+            itself is real and executable; nothing installs it.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="s8">§8 — Limits the source carries, unchanged</h2>
+    <p>
+      Verbatim: <em>"A limit of this reading, stated rather than hidden: this determination
+      is static. This node edits no file and invokes no check, so I did not check out any
+      base revision and run its tests. Each judgement above is from reading whether the
+      asserted behaviour existed in the source at that commit's parent. For the two
+      test-only commits the conclusion is structural and certain; for the rest it is a
+      reading, and a test that passes at base for a reason invisible in the diff would not
+      have been caught by it."</em> This page does not lift that limit — it reports figures
+      from the source and, in §7, later commit history; it does not itself check out any
+      base revision or invoke a test suite either.
+    </p>
+
+    <h2 id="s9">§9 — Follow-ons the source names, outside this page's scope</h2>
+    <ul>
+      <li><code>replace_stale_watch_seat</code> remains uncalled; what would make it callable
+        — a code-level staleness signal comparing the seat's <code>started_at</code> against
+        when the imported module last changed — does not exist yet (§7).</li>
+      <li>The spawn guard cannot fire on this machine until something writes a
+        <code>PreToolUse</code> hook registration; the sprint dispatched two nodes for it and
+        neither reached distribution (§7).</li>
+      <li>The source's own follow-on 5 — <em>"a done-when that a no-op satisfies"</em>
+        (<code>6201ad5</code>) — is a note about how done-whens are composed, not a code
+        defect; it is carried here for completeness and is not tracked as open.</li>
+    </ul>
+
+    <h2 id="s10">§10 — Source and reproduction</h2>
+    <p>
+      Full text: <code>~/.config/reckon/crew/reports/s15-day-review.md</code> (24451 bytes,
+      379 lines, unedited by this page). The per-commit reachability table and the
+      commit-by-commit verdict rationale live only there; this page carries the headline
+      figures, the failure-class table, the gate-rate figures, and the §7 status update the
+      source could not contain because it postdates the source. Commit shas above resolve
+      against this repository's <code>main</code> history.
+    </p>
+
+  </main>
+</body>
+</html>
