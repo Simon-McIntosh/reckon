@@ -245,6 +245,7 @@ class RoleConfig(ConfiguredBaseModel):
     sandbox: Optional[SandboxMode] = Field(default=None, description="""Filesystem blast radius granted to workers of this backend.""")
     session_reuse: Optional[bool] = Field(default=None, description="""Whether a finished worker session can be resumed rather than respawned.""")
     time_budget: Optional[str] = Field(default=None, description="""Wall-clock allowance, written as an integer followed by a unit — `s`, `m` or `h`.""")
+    write_paths: Optional[list[str]] = Field(default=None, description="""Default write scope granted to a node of this role when it declares no write_paths of its own. Entries are relative and are resolved against the dispatching run's own durable report-and-log directory — the same directory `manifest_path` already defaults into — never against the repository being worked on. A shipped or host layer therefore names no host-specific location, and a role whose entries all stay under that directory grants no reach into repository source.""")
     by_spec_level: Optional[SpecificationRouting] = Field(default=None, description="""Routing overlays selected by the specification completeness declared for a node. An undeclared level applies no overlay.""")
 
     @field_validator('time_budget')

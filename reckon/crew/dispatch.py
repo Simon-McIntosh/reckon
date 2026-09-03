@@ -980,6 +980,22 @@ def _path_is_tmpfs(path: str | Path) -> bool:
     return bool(best and best[1] in {"tmpfs", "ramfs"})
 
 
+def _resolved_write_paths(
+    backend: Mapping[str, Any], *, run_directory: Path
+) -> list[str]:
+    """Return a role's default write scope, or [] when it declares none.
+
+    A role's ``write_paths`` are relative and resolve against this dispatch's
+    own run directory rather than the repository, so the shipped default names
+    no host-specific location and grants no reach into repository source. A
+    node that declares its own write_paths is never touched here.
+    """
+    declared = backend.get("write_paths")
+    if not declared:
+        return []
+    return [str((run_directory / str(entry)).resolve()) for entry in declared]
+
+
 def _require_write_paths_in_authority(
     node: TaskNode, authority: Mapping[str, Any]
 ) -> None:
@@ -1101,6 +1117,10 @@ def plan_dispatch(
         warnings.append(
             f"manifest path {node.manifest_path!r} is on tmpfs; use the durable "
             f"default {durable_manifest!r} so delivery survives session cleanup"
+        )
+    if not node.write_paths:
+        node.write_paths = _resolved_write_paths(
+            backend, run_directory=run_dir(resolved_run_id)
         )
     node.peer_scopes = {
         name: list(paths) for name, paths in (peer_scopes or {}).items()

@@ -276,6 +276,17 @@ slots:
   backend:
     description: Backend this role dispatches to. Absent means `default_backend`.
 
+  write_paths:
+    description: >-
+      Default write scope granted to a node of this role when it declares no
+      write_paths of its own. Entries are relative and are resolved against
+      the dispatching run's own durable report-and-log directory — the same
+      directory `manifest_path` already defaults into — never against the
+      repository being worked on. A shipped or host layer therefore names no
+      host-specific location, and a role whose entries all stay under that
+      directory grants no reach into repository source.
+    multivalued: true
+
   by_spec_level:
     description: >-
       Routing overlays selected by the specification completeness declared for
@@ -415,6 +426,7 @@ classes:
       - sandbox
       - session_reuse
       - time_budget
+      - write_paths
       - by_spec_level
 
   SpecificationRouting:
