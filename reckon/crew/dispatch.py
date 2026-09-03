@@ -53,10 +53,12 @@ from reckon.crew.routing import (
     mounted_repository_projects,
     reap_idle_session_members,
     require_plan_section_visible,
+    resolve_budget_fallback,
     resolve_dispatch_authority,
     resolve_dispatch_ledger_root,
     resolve_scope_repository,
     resolve_role,
+    resolve_role_override,
     resolved_time_budget,
     resolved_time_ceiling,
     shadow_worktree_session,
@@ -1079,12 +1081,20 @@ def plan_dispatch(
     authority: Mapping[str, Any] | None = None,
     report_live_conflicts: bool = False,
     local: bool = False,
+    backend_override: str | None = None,
 ) -> DispatchPlan:
     """Resolve routing and defaults for one node and judge it. No side effects.
 
     Mutates only the node it was handed, filling the defaults a dispatch would
     fill — the time budget from the resolved fence and the manifest path from
     the run directory — so the verdict is the one a real dispatch would reach.
+
+    ``backend_override`` re-resolves the role's own overlay against an
+    explicitly named backend instead of the one the role or default_backend
+    would select — the re-resolution a budget hold's declared fallback needs,
+    kept here rather than duplicated so it inherits every other check this
+    function already makes (execution fit, sandbox reachability, write-path
+    scope) for the substituted backend rather than the original.
     """
     if not _SAFE_ID.fullmatch(node.id):
         raise CrewError(f"node id {node.id!r} must match {_SAFE_ID.pattern}")
@@ -1097,7 +1107,12 @@ def plan_dispatch(
     # documented job is to validate the call, cannot report a dispatchable
     # node that the real dispatch then refuses on a missing precondition.
     _fleet_script()
-    backend_name, backend = resolve_role(config, node.role, node.spec_level)
+    if backend_override:
+        backend_name, backend = resolve_role_override(
+            config, node.role, node.spec_level, backend_override
+        )
+    else:
+        backend_name, backend = resolve_role(config, node.role, node.spec_level)
     launch_kind = backend.get("launch")
     if launch_kind not in ("cli", "in-harness"):
         raise CrewError(
@@ -1511,6 +1526,11 @@ def dispatch(
         raise CrewError("only shadow lineage may be supplied explicitly at dispatch")
     authority = resolve_dispatch_authority(project, repo_root)
     ledger_root = resolve_dispatch_ledger_root(authority)
+    # Captured before plan_dispatch fills in per-backend defaults, so a budget
+    # fallback's re-resolution (below) starts from what the caller actually
+    # asked for rather than carrying the held backend's defaults forward.
+    caller_time_budget = node.time_budget
+    caller_write_paths = list(node.write_paths)
     resolution = plan_dispatch(
         node=node,
         config=config,
@@ -1576,9 +1596,11 @@ def dispatch(
     )
 
     budget_warnings: list[str] = []
+    budget_fallback: dict[str, Any] | None = None
     if check_budget:
         # Before the worktree, not after: a hold that had already cut a worktree
         # would leave write scope claimed by a node nobody is running.
+        requested_backend_name = resolution.backend
         verdict = _budget_verdict(
             project=project,
             root=ledger_root,
@@ -1590,7 +1612,65 @@ def dispatch(
         )
         budget_warnings.extend(verdict.get("warnings") or ())
         if verdict["held"]:
-            raise BudgetHold(verdict)
+            substitute = resolve_budget_fallback(
+                config,
+                node.role,
+                node.spec_level,
+                resolution.backend,
+                resolution.backend_settings,
+            )
+            if substitute is None:
+                raise BudgetHold(verdict)
+            fallback_name, _fallback_settings = substitute
+            # Re-resolve fully rather than patch the existing DispatchPlan, so
+            # the fallback gets its own execution-fit, sandbox and write-path
+            # checks instead of inheriting the held backend's. The caller's
+            # own time_budget/write_paths are restored first because the held
+            # backend's plan_dispatch call already defaulted them in place.
+            node.time_budget = caller_time_budget
+            node.write_paths = caller_write_paths
+            resolution = plan_dispatch(
+                node=node,
+                config=config,
+                locked_decisions=locked_decisions,
+                peer_scopes=peer_scopes,
+                project=project,
+                repo=repo_root,
+                base=base,
+                execution_override=execution_override,
+                authority=authority,
+                local=local,
+                run_id=resolution.run_id,
+                backend_override=fallback_name,
+            )
+            if not resolution.validation.ok:
+                raise CrewError(
+                    f"node is not dispatchable on budget fallback {fallback_name!r} — "
+                    + "; ".join(
+                        f"{finding['property']}: {finding['detail']}"
+                        for finding in resolution.validation.findings
+                    )
+                )
+            fallback_verdict = _budget_verdict(
+                project=project,
+                root=ledger_root,
+                config=config,
+                backend_name=resolution.backend,
+                backend=resolution.backend_settings,
+                purpose="dispatch",
+                budget_state=budget_state,
+            )
+            budget_warnings.extend(fallback_verdict.get("warnings") or ())
+            if fallback_verdict["held"]:
+                # No fallback-of-fallback chain: a declared fallback is a single
+                # named substitute, not a search, so a held fallback refuses on
+                # its own verdict rather than guessing a third lane.
+                raise BudgetHold(fallback_verdict)
+            budget_fallback = {
+                "requested_backend": requested_backend_name,
+                "used_backend": resolution.backend,
+                "hold": verdict,
+            }
 
     backend_name = resolution.backend
     backend = resolution.backend_settings
@@ -1811,6 +1891,7 @@ def dispatch(
             "argv": None,
             "dialect": None,
             "budget": _backends.unknown_budget("no events yet"),
+            "budget_fallback": budget_fallback,
             "warnings": [*resolution.warnings, *budget_warnings],
             "lineage": lineage,
             "unreconciled_override": waiver,

@@ -237,6 +237,16 @@ slots:
       is never a model call and consumes no worker budget.
     range: boolean
 
+  fallback:
+    description: >-
+      Backend to substitute when this one is held on budget. Declared, never
+      inferred: a backend naming no fallback still refuses a held dispatch
+      exactly as one would with this key absent. The substitution is recorded
+      on the run — the backend asked for, the backend used and the hold that
+      caused it — so a calibration slice never attributes a fallback run to
+      the backend the caller named. A fallback that is itself held still
+      refuses; this key does not chain into a search across backends.
+
   utilisation_ceiling_pct:
     description: >-
       Reported utilisation, as a percentage, at or above which a wave will not
@@ -399,6 +409,7 @@ classes:
       - sandbox
       - session_reuse
       - budget_check
+      - fallback
       - time_budget
 
   CatalogConfig:

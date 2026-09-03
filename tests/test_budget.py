@@ -585,6 +585,160 @@ def test_a_window_that_has_already_reset_stops_holding(home, repo) -> None:
     assert report["held"] is False
 
 
+# ── A held lane hands over to its declared fallback ─────────────────────────
+
+
+def test_a_held_backend_with_a_declared_fallback_dispatches_on_it(home, repo) -> None:
+    """A held lane hands over rather than refuse, and the run says so.
+
+    Measured motivation: an account spend limit killed seven workers across
+    two waves while a locally served lane sat idle with headroom, and the
+    substitution was done by hand. The run must record the lane asked for,
+    the lane used and the hold that caused it, so a calibration slice never
+    attributes a fallback run to the backend the caller named.
+    """
+    config = {
+        **CONFIG,
+        "backends": {
+            **CONFIG["backends"],
+            "alpha": {**CONFIG["backends"]["alpha"], "fallback": "beta"},
+        },
+    }
+    _record("proj", repo, backend="alpha", budget_block=_known(100.0), run_id="r-1")
+
+    record = crew.dispatch(
+        node=_node(),
+        project="proj",
+        repo=repo,
+        config=config,
+        session="sess",
+        launcher=lambda *a, **k: 1,
+    )
+
+    assert record["backend"] == "beta"
+    assert record["agent"]["backend"] == "beta"
+    fallback = record["budget_fallback"]
+    assert fallback["requested_backend"] == "alpha"
+    assert fallback["used_backend"] == "beta"
+    assert fallback["hold"]["held"] is True
+    assert fallback["hold"]["backend"] == "alpha"
+    assert fallback["hold"]["state"]["utilisation_pct"] == 100.0
+    assert [item["run_id"] for item in crew.list_live()] == [record["run_id"]]
+
+
+def test_a_held_backend_with_no_declared_fallback_still_refuses(home, repo) -> None:
+    """Absence of a declared fallback must never be filled in by guessing one.
+
+    Both alpha and beta are defined in this config, but alpha names no
+    fallback, so a hold on alpha still refuses exactly as before this
+    mechanism existed — it must not silently land on beta merely because
+    beta happens to be defined.
+    """
+    _record("proj", repo, backend="alpha", budget_block=_known(100.0), run_id="r-1")
+
+    with pytest.raises(crew.BudgetHold) as excinfo:
+        crew.dispatch(
+            node=_node(),
+            project="proj",
+            repo=repo,
+            config=CONFIG,
+            session="sess",
+            launcher=lambda *a, **k: 1,
+        )
+
+    assert excinfo.value.verdict["backend"] == "alpha"
+    assert crew.list_live() == []
+
+
+def test_unknown_headroom_on_a_fallback_declaring_backend_neither_holds_nor_falls_back(
+    home, repo
+) -> None:
+    """Absence of a signal is not evidence of exhaustion, fallback or not.
+
+    A declared fallback must fire only on a genuine hold; a backend merely
+    reporting unknown headroom dispatches on itself, unsubstituted, the same
+    as a backend declaring no fallback at all.
+    """
+    config = {
+        **CONFIG,
+        "backends": {
+            **CONFIG["backends"],
+            "alpha": {**CONFIG["backends"]["alpha"], "fallback": "beta"},
+        },
+    }
+    _record(
+        "proj",
+        repo,
+        backend="alpha",
+        budget_block=_backends.unknown_budget("backend reports no headroom"),
+        run_id="r-1",
+    )
+
+    record = crew.dispatch(
+        node=_node(),
+        project="proj",
+        repo=repo,
+        config=config,
+        session="sess",
+        launcher=lambda *a, **k: 1,
+    )
+
+    assert record["backend"] == "alpha"
+    assert record["budget_fallback"] is None
+
+
+def test_a_fallback_that_is_itself_held_still_refuses(home, repo) -> None:
+    """A held fallback must not chain into guessing a third lane.
+
+    A declared fallback is a single named substitute, not a search: when the
+    fallback is itself held, dispatch refuses on the fallback's own verdict.
+    """
+    config = {
+        **CONFIG,
+        "backends": {
+            **CONFIG["backends"],
+            "alpha": {**CONFIG["backends"]["alpha"], "fallback": "beta"},
+        },
+    }
+    _record("proj", repo, backend="alpha", budget_block=_known(100.0), run_id="r-1")
+    _record("proj", repo, backend="beta", budget_block=_known(100.0), run_id="r-2")
+
+    with pytest.raises(crew.BudgetHold) as excinfo:
+        crew.dispatch(
+            node=_node(),
+            project="proj",
+            repo=repo,
+            config=config,
+            session="sess",
+            launcher=lambda *a, **k: 1,
+        )
+
+    assert excinfo.value.verdict["backend"] == "beta"
+    assert crew.list_live() == []
+
+
+def test_a_fallback_naming_an_undefined_backend_is_refused(home, repo) -> None:
+    """A fallback is declared data, so a broken declaration fails loud."""
+    config = {
+        **CONFIG,
+        "backends": {
+            **CONFIG["backends"],
+            "alpha": {**CONFIG["backends"]["alpha"], "fallback": "ghost"},
+        },
+    }
+    _record("proj", repo, backend="alpha", budget_block=_known(100.0), run_id="r-1")
+
+    with pytest.raises(crew.CrewError, match="ghost"):
+        crew.dispatch(
+            node=_node(),
+            project="proj",
+            repo=repo,
+            config=config,
+            session="sess",
+            launcher=lambda *a, **k: 1,
+        )
+
+
 # ── Holds are per-backend ───────────────────────────────────────────────────
 
 

@@ -67,6 +67,13 @@
                         "null"
                     ]
                 },
+                "fallback": {
+                    "description": "Backend to substitute when this one is held on budget. Declared, never inferred: a backend naming no fallback still refuses a held dispatch exactly as one would with this key absent. The substitution is recorded on the run \u2014 the backend asked for, the backend used and the hold that caused it \u2014 so a calibration slice never attributes a fallback run to the backend the caller named. A fallback that is itself held still refuses; this key does not chain into a search across backends.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
                 "launch": {
                     "$ref": "#/$defs/LaunchMode",
                     "description": "How this backend's workers are started."
@@ -172,6 +179,13 @@
                     "description": "Environment variables added when this backend's worker is spawned, keyed by variable name. Values are strings and may reference a variable from the dispatcher's environment using `${NAME}`.",
                     "type": [
                         "object",
+                        "null"
+                    ]
+                },
+                "fallback": {
+                    "description": "Backend to substitute when this one is held on budget. Declared, never inferred: a backend naming no fallback still refuses a held dispatch exactly as one would with this key absent. The substitution is recorded on the run \u2014 the backend asked for, the backend used and the hold that caused it \u2014 so a calibration slice never attributes a fallback run to the backend the caller named. A fallback that is itself held still refuses; this key does not chain into a search across backends.",
+                    "type": [
+                        "string",
                         "null"
                     ]
                 },
