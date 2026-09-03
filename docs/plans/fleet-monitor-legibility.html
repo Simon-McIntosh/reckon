@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="fleet-monitor-legibility">
+  <meta name="plan-title"     content="The Monitor Reads At The Width It Is Read At">
+  <meta name="plan-summary"   content="Make the fleet pane legible: colour that survives the emit path, a reason that says what the worker asked, role, aliases, measured width.">
+  <meta name="plan-status"    content="active">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="standard">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="low">
+  <meta name="plan-sprint"    content="S15">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-tags"      content="crew,reckon-tooling">
+  <meta name="plan-north-star" content="legible-to-human-and-agent">
+  <meta name="plan-blocks"    content="crew-observability-truth">
+  <title>The Monitor Reads At The Width It Is Read At | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — The pane, and what it was actually showing</h2>
+    <p>
+      One line per transition, about eight lines visible, read down a column
+      rather than across: which worker, what state, how many still running.
+      That contract is already implemented and tested. What reached the reader
+      was not it. A fleet session followed on 2026-09-03 rendered every line
+      monochrome, truncated the model to <code>claude-sonnet-5/m…</code>, left
+      the counters floating short of the right edge, and printed a worker's
+      request for help as a single character:
+    </p>
+<pre>09:47:11  test-role-declares-its-write-scope    dispatched → blocked     claude-sonnet-5/m…  |                     5 working ·  1 blocked ·  0 unpromoted</pre>
+    <p>
+      Three separate defects, measured this session, none of them in the grid
+      the tests cover:
+    </p>
+    <ol>
+      <li>
+        <strong>The palette never leaves the process.</strong>
+        <code>click.echo</code> strips every SGR escape when its stream is not a
+        terminal, and both ticker emit sites call it without
+        <code>color=True</code>. The hues chosen by contrast measurement are
+        computed, formatted into the line, and deleted on the way out. Nothing
+        errors, so nothing reports it — the pane simply looks like a renderer
+        that was never written.
+      </li>
+      <li>
+        <strong>The reason renders a YAML artefact instead of the question.</strong>
+        The stored event carries <code>"reason": "|"</code> verbatim. A blocked
+        run's reason is derived from the manifest's <code>blockers:</code> line,
+        and the manifest parser takes a line value, so a worker writing a block
+        scalar hands the grid the scalar indicator. An earlier event in the same
+        stream shows the other half of the same fault:
+        <code>"\"scope authority for tests/test_backends.py is required</code> —
+        a leaked opening quote. Meanwhile the worker's actual
+        <code>NEEDS-HELP:</code> headline was already parsed, and unused.
+      </li>
+      <li>
+        <strong>The width was guessed because the conventional probe fails.</strong>
+        <code>COLUMNS</code> is unset, <code>stdout.isatty()</code> is false and
+        <code>shutil.get_terminal_size()</code> returns its 80-column fallback,
+        so the renderer defaults to a stated 180 in a pane that is neither 80
+        nor 180 wide.
+      </li>
+    </ol>
+    <p>
+      The first and second are the expensive kind: both report success while
+      failing. A line that says <code>|</code> where a question should be is
+      worse than a blank, because it looks like the display working.
+    </p>
+
+    <h2 id="s2">§2 — Colour survives the emit path</h2>
+    <p>
+      The grid decides whether to paint; the emit path must not second-guess it.
+      Passing <code>color=True</code> at both call sites is safe precisely
+      because it does not force colour on — it only stops click deleting what is
+      already there. When <code>--no-color</code> or <code>NO_COLOR</code> is in
+      force the ticker emits no escapes, so there is nothing to keep.
+    </p>
+    <p>
+      <strong>Done when</strong> a line rendered by a painting grid still carries
+      its <code>\x1b[38;5;</code> sequences after passing through the follow
+      emit path into a non-terminal stream, asserted by a test that fails
+      against the current code; and the same holds for the watch command's emit
+      site. This section is two lines of production change and is sequenced
+      first because a peer session needs the same file for its next wave.
+    </p>
+
+    <h2 id="s3">§3 — The reason says what the worker asked</h2>
+    <p>
+      A blocked transition explains itself from the best source available, in
+      order: the parsed <code>NEEDS-HELP:</code> headline when the report is
+      complete, then the manifest's blockers, then the classifier's own detail.
+      The headline is the sentence a coordinator can answer in one turn, which
+      is the whole purpose of the escape hatch, and it is already parsed.
+    </p>
+    <p>
+      The manifest parser is fixed alongside it: a key whose value is a block
+      scalar indicator or an opening quote has no value on that line, and the
+      indented body below it is the value. Returning the indicator is how a
+      parse failure became a display that lied.
+    </p>
+    <p>
+      Two markers distinguish what the reader must do, painted in the blocked
+      hue: <code>?</code> for a request a <code>reckon crew resume --advice</code>
+      can answer, <code>!</code> for a blocker that has to be read at the
+      manifest. The distinction is already computed — a needs-help report is
+      complete only when all four fields and a headline are present — and today
+      it is discarded.
+    </p>
+    <p>
+      <strong>Done when</strong> a manifest carrying a block-scalar
+      <code>blockers:</code> and a complete <code>NEEDS-HELP:</code> report
+      produces a transition whose reason is the headline's first clause and
+      whose marker is <code>?</code>; a manifest with blockers and no needs-help
+      report produces <code>!</code> and the blocker text; and no reason
+      anywhere can be a bare punctuation character. This section touches the
+      same module a concurrent session is rewriting, so it lands after that
+      wave merges, not beside it.
+    </p>
+
+    <h2 id="s4">§4 — The line carries the worker's role</h2>
+    <p>
+      A reader judging whether a stall is the model or the work needs to know
+      what kind of work it was, and had to leave the pane to find out. The role
+      is already on the run pointer. It goes in a fixed column to the left of
+      the node, in the dispatch vocabulary verbatim —
+      <code>implement</code>, <code>cleanup</code>, <code>review</code>,
+      <code>investigate</code>, <code>test</code> — so that no glossary exists
+      to fall out of date. <code>documentation</code> alone is displayed as
+      <code>docs</code>, because at thirteen characters it would set the column
+      width for all six and nobody misreads it; that is the substitution the
+      display map already makes for <code>completed_unpromoted</code>.
+    </p>
+    <p>
+      The role is rendered dim rather than hued. Colour here answers exactly two
+      questions — <em>which worker is this</em> and <em>does this need me</em> —
+      and a third colour axis would make the first two harder to read.
+    </p>
+    <p>
+      <strong>Done when</strong> every role in the configured vocabulary renders
+      whole in its column, an unknown role renders a marker rather than a
+      truncated word, and the column budget test still finds every field on the
+      same screen column on every row.
+    </p>
+
+    <h2 id="s5">§5 — Aliases live in configuration, not in code</h2>
+    <p>
+      <code>claude-sonnet-5/medium</code> spends eighteen columns to say what
+      <code>sonnet5·me</code> says in ten, and today it is elided to
+      <code>claude-sonnet-5/m…</code>, which hides the effort — the half a
+      reader actually compares. But the shortening cannot be a table in the
+      renderer. The flight schema states the rule it would break: no concrete
+      model identifier, provider name or relative hierarchy is baked into
+      reckon or its generated artifacts, and effort is deliberately an open
+      string with no enumeration. A regex table matching vendor prefixes inside
+      the ticker would hardcode three vendors into a repo-agnostic tool and
+      would render nothing at all for a model nobody has configured yet.
+    </p>
+    <p>
+      So the spelling belongs beside the model id it shortens, in the operator's
+      own flight configuration, and is stamped into the run pointer at dispatch
+      — because the agent label is read from what was persisted when the run
+      started, so that a later configuration edit cannot silently restate what
+      ran. Code keeps only a mechanical fallback for an unaliased backend.
+    </p>
+    <p>
+      The effort suffix is derived rather than tabulated: the first two
+      characters, lowercased. That is collision-free across the whole real
+      ladder — <code>lo</code>, <code>me</code>, <code>hi</code>,
+      <code>xh</code>, <code>ma</code>, <code>mi</code>, <code>ex</code> — so
+      <code>medium</code>, <code>max</code> and <code>minimal</code> stay
+      distinct, and an effort word invented next month still renders.
+    </p>
+    <table>
+      <caption>
+        Proposed alias spellings, as configuration values, with the shorter
+        forms rejected and why. Every alias keeps its version number.
+      </caption>
+      <thead>
+        <tr><th>Configured model</th><th>Alias</th><th>Rejected, and the distinction it loses</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>claude-sonnet-5</code></td><td><code>sonnet5</code></td><td><code>claude5</code> — drops the tier, which is the routing distinction from opus</td></tr>
+        <tr><td><code>claude-opus-5</code></td><td><code>opus5</code></td><td><code>opus</code> — drops the version</td></tr>
+        <tr><td><code>deepseek-v4-flash</code></td><td><code>dsv4-flash</code></td><td><code>deepseek4</code> — drops <code>flash</code>, a different serving tier</td></tr>
+        <tr><td><code>glm-5.3</code></td><td><code>glm5.3</code></td><td><code>glm5</code> — 5.3 and 5.4 route differently</td></tr>
+        <tr><td><code>gpt-5.6-sol</code></td><td><code>sol5.6</code></td><td><code>gpt5.6</code> — three backends share this version; the codename is the only discriminator</td></tr>
+        <tr><td><code>gpt-5.3-codex-spark</code></td><td><code>spark5.3</code></td><td><code>codex5.3</code> — hides the quota-gated lane</td></tr>
+        <tr><td><code>gpt-5.6-luna</code>, <code>gpt-5.6-terra</code></td><td><code>luna5.6</code>, <code>terra5.6</code></td><td>—</td></tr>
+        <tr><td>in-harness, no model</td><td><code>harness</code></td><td>the empty cell it renders today, which reads as missing data</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>Done when</strong> a configured alias renders in place of the
+      model id, a backend with no alias renders a mechanically shortened form
+      rather than an empty cell, an unknown effort word renders its first two
+      characters, and a pointer written before this change still renders a
+      label.
+    </p>
+
+    <h2 id="s6">§6 — Width is measured, not stated</h2>
+    <p>
+      The conventional probes fail in this pane, and the note this project was
+      carrying drew the wrong conclusion from that: <em>therefore width must be
+      a flag</em>. It does not follow. The follower's own stdout is a pipe, but
+      the follower has ancestry, and the harness process at the top of it owns a
+      terminal. Walking <code>/proc/&lt;pid&gt;/stat</code> to the first
+      ancestor with a controlling tty and reading that tty's window size
+      answered it on the first attempt. Measured across all eight live followers
+      on this machine: each resolves to its own session's pseudo-terminal, and
+      each reports 45 × 208.
+    </p>
+    <figure>
+      <svg viewBox="0 0 720 210" width="100%" style="max-width:720px" role="img"
+           aria-label="The follower's stdout is a pipe with no width; walking its process ancestry reaches the harness process, whose controlling terminal reports its window size.">
+        <g fill="none" stroke="#333" stroke-width="1">
+          <rect x="8"   y="24" width="120" height="34" fill="#fff"/>
+          <rect x="188" y="24" width="120" height="34" fill="#fff"/>
+          <rect x="368" y="24" width="110" height="34" fill="#fff"/>
+          <rect x="538" y="24" width="174" height="34" fill="#fff"/>
+          <rect x="8"   y="128" width="180" height="34" fill="#fff"/>
+          <rect x="538" y="128" width="174" height="34" fill="#fff" stroke="#999"/>
+        </g>
+        <g font-family="system-ui, sans-serif" font-size="13" fill="#1a1a1a">
+          <text x="68"  y="46" text-anchor="middle">claude</text>
+          <text x="248" y="46" text-anchor="middle">bash -c</text>
+          <text x="423" y="46" text-anchor="middle">uv run</text>
+          <text x="625" y="46" text-anchor="middle">reckon crew follow</text>
+          <text x="98"  y="150" text-anchor="middle">/dev/pts/19 → 45 × 208</text>
+          <text x="625" y="150" text-anchor="middle" fill="#666">stdout (pipe)</text>
+        </g>
+        <g stroke="#333" stroke-width="1" fill="none">
+          <path d="M188 41 L136 41"/><path d="M144 37 L136 41 L144 45"/>
+          <path d="M368 41 L316 41"/><path d="M324 37 L316 41 L324 45"/>
+          <path d="M538 41 L486 41"/><path d="M494 37 L486 41 L494 45"/>
+          <path d="M68 58 L68 128"/><path d="M64 120 L68 128 L72 120"/>
+        </g>
+        <g stroke="#999" stroke-width="1" stroke-dasharray="3 3" fill="none">
+          <path d="M625 128 L625 62"/>
+        </g>
+        <g font-family="system-ui, sans-serif" font-size="13" fill="#444">
+          <text x="252" y="16" text-anchor="middle">walk ppid until a controlling tty appears</text>
+          <text x="196" y="98">ioctl TIOCGWINSZ — tracks a resize</text>
+          <text x="625" y="182" text-anchor="middle" fill="#666">isatty false · COLUMNS unset · fallback 80</text>
+        </g>
+      </svg>
+      <figcaption>
+        The width the renderer needs is not on the stream it writes to. It is on
+        the terminal owned by an ancestor, three processes up, and the kernel
+        keeps that value current when the pane is resized.
+      </figcaption>
+    </figure>
+    <p>
+      Two cautions bound the mechanism. The value read is the terminal, not the
+      inner text width of the harness box drawn inside it, so a calibrated inset
+      is subtracted and the bias is conservative: under-filling by a column
+      leaves a harmless gap, over-filling loses the counters off the right edge.
+      And a stale read would produce a <em>wrong</em> width rather than no
+      width, which is the failure class this whole plan is about — so the claim
+      that it follows a resize is verified against a resized pane before it is
+      relied on, not assumed from the fact that the kernel maintains the field.
+      Where no ancestor terminal exists — a detached or nohup'd follower — the
+      stated <code>--width</code> is the fallback, and it remains the override
+      everywhere.
+    </p>
+    <p>
+      Width earned this way is spent in priority order, so that one grid serves
+      every pane size without a field ever changing screen column between rows:
+      the node column to 24, then a clause to 12, then the node to 44, then the
+      clause to its bounded maximum. Whatever remains is padding in front of the
+      counters, which stay flush right. Below the floor the width is raised
+      rather than wrapped, because a wrapped row costs a quarter of the visible
+      history.
+    </p>
+    <table>
+      <caption>
+        Where the columns go, and what widening buys. Node names on record:
+        median 24, 95th percentile 36, longest 53 of 460.
+      </caption>
+      <thead>
+        <tr><th>Field</th><th>Now</th><th>Proposed</th><th>Why</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>clock</td><td>8</td><td>8</td><td>local wall clock, unchanged</td></tr>
+        <tr><td>role</td><td>—</td><td>11</td><td>the dispatch word, never truncated</td></tr>
+        <tr><td>node</td><td>36</td><td>24–44, elastic</td><td>36 elides 22 of 460 names; 44 elides 3</td></tr>
+        <tr><td>state → state</td><td>23</td><td>23</td><td>both sides painted, unchanged</td></tr>
+        <tr><td>agent</td><td>18</td><td>14</td><td>alias plus a two-letter effort</td></tr>
+        <tr><td>reason</td><td>46</td><td>12–96, elastic</td><td>gets the surplus after the node</td></tr>
+        <tr><td>counters</td><td>39</td><td>39</td><td>words kept, flush right</td></tr>
+      </tbody>
+    </table>
+    <p>
+      The counters keep their words rather than compressing to
+      <code>6w·0b·1u</code>. The compression only works if colour carries the
+      meaning, and the wake-up notification an agent receives strips colour
+      while keeping text — so a colour-only encoding would fail in the one
+      consumer that cannot ask again. A non-zero count is additionally painted
+      in its own state's hue, which is the same axis the states already use; a
+      zero stays dim, because a reader waiting for a drain needs to watch the
+      number reach zero rather than watch it disappear.
+    </p>
+    <p>
+      <strong>Done when</strong> the resolved width comes from the ancestor
+      terminal with <code>--width</code> overriding it, the same grid renders
+      without wrapping at 208, 198 and 150 columns with every field on a stable
+      column, the counters end on the last cell at each of those widths, a
+      follower with no ancestor terminal falls back to the stated width, and the
+      resize claim is confirmed by two readings taken across an actual resize.
+    </p>
+    <p>
+      The specimen below is the real renderer's output at 150 columns, from the
+      recorded events of the session in §1, with the worker's actual question
+      restored:
+    </p>
+<pre>09:41:32  investigate  test-attribution-reuse-map        dispatched → complete    dsv4-flash·xh                  2 working ·  0 blocked ·  1 unpromoted
+09:47:11  implement    test-role-declares-its-write-s…   dispatched → blocked     sonnet5·me      ? adding a…    5 working ·  1 blocked ·  0 unpromoted
+09:49:19  implement    test-role-declares-its-write-s…      blocked → working     sonnet5·me                     6 working ·  0 blocked ·  0 unpromoted
+09:52:27  docs         clive-cumulative-evidence-record  dispatched → complete    sonnet5·me                     4 working ·  0 blocked ·  2 unpromoted</pre>
+
+    <h2 id="s7">§7 — What this plan inherits, and what it leaves alone</h2>
+    <p>
+      This plan is about the pane's <em>format</em>. Its truth obligations are
+      not restated here: they are owned by
+      <a href="/reckon/crew-observability-truth">crew-observability-truth</a>
+      §4, whose standing rules — a wrong answer is worse than no answer,
+      activity is generation rather than bytes — govern every section above. The
+      colour and reason defects are truth defects and would fit on that plan;
+      they live here because splitting one renderer's work across two plans to
+      honour the boundary costs more than it buys, and because that plan is
+      being shipped concurrently from another session and took twenty versions
+      in a day.
+    </p>
+    <p>
+      The dependency runs the other way for §3 in particular: that plan's
+      spend-limit work makes a provider refusal classify as blocked, and a
+      refusal whose reason renders as <code>|</code> is still untriageable. This
+      plan's §3 is what makes that classification readable.
+    </p>
+    <p>
+      Two things are deliberately out of scope. A live-redrawn dashboard — a
+      sortable table of the fleet with per-worker rows — cannot render in this
+      pane at all, which is append-only captured output where a repainting
+      region would garble; it is a separate surface for a real terminal and gets
+      its own plan. And the fleet counters' own definition, which states which
+      run states are working, blocked or unpromoted, belongs to the concurrent
+      session's live wave; this plan prints those numbers and does not redefine
+      them.
+    </p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+
+      <div class="r-dec" data-key="role-badge-placement" data-choice="left-full-words"
+           data-by="Simon McIntosh" data-when="2026-09-03">
+        <p class="r-dec-q">Where does the role sit, and how is it spelled?</p>
+        <p class="r-dec-ctx">
+          A four-character tag was tried first and failed on its own reading:
+          <code>invs</code> did not communicate <code>investigate</code>.
+        </p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="left-full-words">Left of the node, dispatch words</button>
+          <button class="r-opt" data-value="left-four-char">Left of the node, four characters</button>
+          <button class="r-opt" data-value="right-of-node">Right of the node</button>
+        </p>
+        <p class="r-dec-rat">
+          Spend the columns on words a reader does not have to decode. The badge
+          goes left because the eye should land on the node as the primary
+          identifier and because it keeps the node adjacent to the transition
+          arrow it belongs to.
+        </p>
+      </div>
+
+      <div class="r-dec" data-key="effort-spelling" data-choice="derived-two-letters"
+           data-by="Simon McIntosh" data-when="2026-09-03">
+        <p class="r-dec-q">How is the effort rendered beside the model alias?</p>
+        <p class="r-dec-ctx">
+          A single letter collapses <code>medium</code>, <code>max</code> and
+          <code>minimal</code> into one glyph. A lookup table would enumerate a
+          ladder the schema deliberately leaves open.
+        </p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="derived-two-letters">First two characters, derived</button>
+          <button class="r-opt" data-value="single-letter">Single letter</button>
+          <button class="r-opt" data-value="full-word">The whole effort word</button>
+        </p>
+        <p class="r-dec-rat">
+          Derivation is collision-free across the real ladder and needs no
+          table, so a configured effort nobody has used yet still renders.
+        </p>
+      </div>
+
+      <div class="r-dec" data-key="width-resolution" data-choice="ancestry-with-override"
+           data-by="Simon McIntosh" data-when="2026-09-03">
+        <p class="r-dec-q">How is the render width resolved?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="ancestry-with-override">Ancestor terminal, <code>--width</code> overrides</button>
+          <button class="r-opt" data-value="stated-in-config">Stated once in flight configuration</button>
+          <button class="r-opt" data-value="conservative-only">Detect, but always under-fill</button>
+        </p>
+        <p class="r-dec-rat">
+          The measurement exists and follows a resize; a stated width does not.
+          The override stays because a detached follower has no ancestor
+          terminal to read, and because a stale read must have a manual remedy.
+        </p>
+      </div>
+
+      <div class="r-dec" data-key="rendering-library" data-choice="hand-rolled-plus-later-dashboard"
+           data-by="Simon McIntosh" data-when="2026-09-03">
+        <p class="r-dec-q">Should the ticker be rebuilt on a rendering library?</p>
+        <p class="r-dec-ctx">
+          Rich was the candidate. Its width detection returns 80 in a pipe and
+          its colour detection switches off in a pipe, so it needs the same
+          forced width and forced colour this plan establishes — it consumes the
+          solution rather than providing one — and it is not currently a
+          dependency.
+        </p>
+        <p class="r-dec-opts">
+          <button class="r-opt chosen" data-value="hand-rolled-plus-later-dashboard">Keep the ticker; a library dashboard is a separate surface</button>
+          <button class="r-opt" data-value="rewrite-on-library">Rewrite the ticker on a library</button>
+          <button class="r-opt" data-value="never">No library anywhere</button>
+        </p>
+        <p class="r-dec-rat">
+          The streaming pane keeps its measured palette and its zero-dependency
+          renderer. The library earns its place on a surface that can repaint,
+          which this pane cannot, so that becomes its own plan rather than a
+          rewrite of this one.
+        </p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-fml-001" data-status="open"
+               data-capability-version="1.0" data-capability-class="general"
+               data-written-by="reckon-create" data-written-at="2026-09-03"
+               data-recommends-skill="/reckon-ship fleet-monitor-legibility §2">
+        <h4 class="r-fu-title">Land the emit-path fix while the file is free, then the format sections</h4>
+        <div class="r-fu-body">
+          <p>
+            §2 goes first and alone: it is two lines of production change, and a
+            concurrent session is holding <code>reckon/cli.py</code> for it
+            before starting a large change of its own in the same file. Landing
+            a two-line edit ahead of that change is strictly cheaper than
+            rebasing behind it.
+          </p>
+          <p>
+            §4, §5 and §6 are independent of that session and can run together;
+            they share one module, so they are one write scope, not three. §3
+            waits for the concurrent wave on the shared classifier module to
+            merge — that session will report when it does. §6 carries a
+            measurement obligation no worker can discharge alone: the inset
+            calibration and the resize confirmation both need a reading taken
+            from the pane by the operator.
+          </p>
+        </div>
+        <pre class="r-fu-prompt">/reckon-ship fleet-monitor-legibility §2</pre>
+      </article>
+    </section>
+
+  </main>
+</body>
+</html>
