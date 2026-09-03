@@ -138,35 +138,49 @@ def test_topbar_keeps_one_ordered_row_with_tools_flush_right(
     assert geometry["headerReceipt"] is False
 
 
-def test_primary_project_control_lists_every_mounted_project_and_routes_hidden_entry() -> (
-    None
-):
+def test_mounted_rows_include_projects_reporting_zero_plans() -> None:
+    """Mount means registered; plans_count is a label, never a predicate."""
+    projects = [
+        {"project": "alpha", "plans_count": 0},
+        {"project": "beta", "plans_count": 0},
+        {"project": "gamma", "plans_count": 5},
+    ]
+    mounted = _evaluate(
+        [(SHELL, "mountedProjectRows")],
+        f"mountedProjectRows({json.dumps(projects)}).map(project => project.project)",
+    )
+
+    assert mounted == ["alpha", "beta", "gamma"]
+
+
+def test_picker_renders_only_the_visible_set_with_no_hidden_suffix() -> None:
     projects = [
         {"project": "alpha", "plans_count": 4},
         {"project": "beta", "plans_count": 7},
+        {"project": "gamma", "plans_count": 2},
+        {"project": "delta", "plans_count": 1},
     ]
-    mounted = _evaluate(
-        [(SHELL, "manageableProjectRows")],
-        f"manageableProjectRows({json.dumps(projects)}).map(project => project.project)",
-    )
+    hidden = ["beta", "delta"]
     shown = _evaluate(
         [
             (SHELL, "mountedProjectRows"),
             (SHELL, "effectiveHiddenProjects"),
             (SHELL, "visibleProjectRows"),
         ],
-        f"visibleProjectRows({json.dumps(projects)}, ['beta']).map(project => project.project)",
+        f"visibleProjectRows({json.dumps(projects)}, {json.dumps(hidden)})"
+        ".map(project => project.project)",
     )
     source = _function_source(SHELL, "TopBar")
 
-    assert mounted == ["alpha", "beta"]
-    assert shown == ["alpha"]
+    assert shown == ["alpha", "gamma"]
+    assert "visibleProjects.map(project => (" in source
     assert "manageableProjects.map(project" in source
-    assert "{visibleProjects.map(project => (" not in source
     assert "onClick={() => navProject(project.project)}" in source
-    assert "visibleProjectNames.has(project.project)" in source
     assert "project.plans_count" in source
     assert "project.live_count" in source
+    dropdown = source[source.index("r-project-menu") : source.index("Configure visibility")]
+    assert "is-hidden" not in dropdown
+    assert ">hidden<" not in dropdown
     assert "Configure visibility…" in source
 
 
@@ -261,16 +275,72 @@ def test_first_visit_renders_live_runs_from_every_mounted_project(
     assert "12 shown / 12 mounted" in rendered["summary"]
 
 
-def test_configure_shortcut_opens_the_settings_visibility_panel() -> None:
+def test_configure_shortcut_and_gear_both_open_the_visibility_sheet() -> None:
     topbar = _function_source(SHELL, "TopBar")
     settings = _function_source(SHARED, "SettingsMenu")
-    shared = SHARED.read_text()
 
-    assert 'setRequestedSettingsPanel("visibility")' in topbar
-    assert 'requestedPanel !== "visibility"' in settings
-    assert settings.count("<ProjectVisibilityPanel") == 1
-    assert topbar.count("<ProjectVisibilityPanel") == 0
-    assert shared.count('className="settings-project-visibility"') == 1
+    assert "openVisibilitySheet" in topbar
+    assert topbar.count("<VS") == 1
+    assert "onOpenVisibility?.()" in settings
+    assert settings.count("<ProjectVisibilitySheet") == 0
+    assert "<ProjectVisibilityPanel" not in topbar
+    assert "<ProjectVisibilityPanel" not in settings
+
+
+def test_sheet_renders_one_row_per_registered_project_and_the_consequence_sentence() -> (
+    None
+):
+    sheet = _function_source(SHARED, "ProjectVisibilitySheet")
+
+    assert "rows.map(project =>" in sheet
+    assert (
+        "Hidden projects leave the picker, the crew feed and the fleet roll-up; "
+        "registration is unaffected." in sheet
+    )
+
+
+def test_last_visible_project_is_locked_in_the_sheet_and_the_change_helper() -> None:
+    sheet = _function_source(SHARED, "ProjectVisibilitySheet")
+
+    assert 'locked = isVisible && visible.size === 1' in sheet
+    assert 'disabled={locked}' in sheet
+    assert '"locked"' in sheet
+
+    projects = [
+        {"project": "alpha", "plans_count": 4},
+        {"project": "beta", "plans_count": 7},
+    ]
+    change = _evaluate(
+        [
+            (SHELL, "mountedProjectRows"),
+            (SHELL, "effectiveHiddenProjects"),
+            (SHELL, "visibleProjectRows"),
+            (SHELL, "projectVisibilityChange"),
+        ],
+        f"projectVisibilityChange({json.dumps(projects)}, ['beta'], 'alpha', 'alpha')",
+    )
+
+    assert change["changed"] is False
+    assert change["locked"] is True
+
+
+def test_toggling_a_hidden_project_back_on_reports_changed() -> None:
+    projects = [
+        {"project": "alpha", "plans_count": 4},
+        {"project": "beta", "plans_count": 7},
+    ]
+    change = _evaluate(
+        [
+            (SHELL, "mountedProjectRows"),
+            (SHELL, "effectiveHiddenProjects"),
+            (SHELL, "visibleProjectRows"),
+            (SHELL, "projectVisibilityChange"),
+        ],
+        f"projectVisibilityChange({json.dumps(projects)}, ['beta'], 'alpha', 'beta')",
+    )
+
+    assert change["changed"] is True
+    assert change["locked"] is False
 
 
 def test_hidden_projects_leave_crew_and_overview_aggregates() -> None:

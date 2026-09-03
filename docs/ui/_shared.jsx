@@ -1,6 +1,6 @@
 // Shared UI primitives — project picker, sparkline, chips, project card.
 // Depends on window.GLYPHS and window.ACCENTS from glyphs.jsx.
-// Exposes: window.ProjectPicker, window.Sparkline, window.Chip, window.ProjectCard, window.SettingsMenu
+// Exposes: window.ProjectPicker, window.ProjectVisibilitySheet, window.Sparkline, window.Chip, window.ProjectCard, window.SettingsMenu
 
 const {useState, useEffect, useRef, useMemo} = React;
 
@@ -49,31 +49,55 @@ function ProjectPicker({current, projects, onNav}) {
   );
 }
 
-function ProjectVisibilityPanel({projects, visibleProjects, onToggleProject}) {
+function ProjectVisibilitySheet({open, projects, visibleProjects, onToggleProject, onClose}) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === "Escape") onClose?.(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+  if (!open) return null;
+  const rows = projects || [];
   const visible = new Set((visibleProjects || []).map(project => project.project));
   return (
-    <section className="settings-project-visibility" aria-labelledby="settings-project-visibility-title">
-      <div className="settings-title" id="settings-project-visibility-title">Project visibility</div>
-      <div className="settings-project-count">
-        {visible.size} shown · {(projects || []).length} mounted
+    <div className="r-visibility-overlay" onClick={onClose}>
+      <div className="r-visibility-sheet" role="dialog" aria-labelledby="r-visibility-sheet-title" onClick={e => e.stopPropagation()}>
+        <div className="r-visibility-sheet-header">
+          <h3 id="r-visibility-sheet-title">Project visibility</h3>
+          <span className="settings-project-count">{visible.size} shown · {(projects || []).length} mounted</span>
+          <button type="button" className="r-visibility-sheet-close" onClick={onClose}>esc</button>
+        </div>
+        <p className="r-visibility-sheet-copy">
+          Hidden projects leave the picker, the crew feed and the fleet roll-up; registration is unaffected.
+        </p>
+        <div className="r-visibility-sheet-rows">
+          {rows.map(project => {
+            const isVisible = visible.has(project.project);
+            const locked = isVisible && visible.size === 1;
+            const state = locked ? "locked" : isVisible ? "visible" : "hidden";
+            return (
+              <button
+                type="button"
+                key={project.project}
+                className={`r-visibility-row ${state}`}
+                disabled={locked}
+                aria-pressed={isVisible}
+                onClick={() => onToggleProject(project.project)}
+              >
+                <span className={`r-visibility-switch ${isVisible ? "on" : ""}`} aria-hidden="true"><i/></span>
+                <span className="r-visibility-name">{project.project}</span>
+                <span className="r-visibility-counts">{project.plans_count} plans · {project.live_count || 0} live</span>
+                <span className="r-visibility-state">{state}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
-      {(projects || []).map(project => (
-        <button
-          type="button"
-          key={project.project}
-          className={`settings-item settings-project-row ${visible.has(project.project) ? "on" : ""}`}
-          aria-pressed={visible.has(project.project)}
-          onClick={() => onToggleProject(project.project)}
-        >
-          <span>{project.project}</span>
-          <span>{visible.has(project.project) ? "visible" : "hidden"}</span>
-        </button>
-      ))}
-    </section>
+    </div>
   );
 }
 
-function SettingsMenu({theme, setTheme, density, setDensity, projects, visibleProjects, onToggleProject, requestedPanel, onPanelOpened, snapshot, onRefresh}) {
+function SettingsMenu({theme, setTheme, density, setDensity, projects, visibleProjects, onOpenVisibility, snapshot, onRefresh}) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -81,11 +105,6 @@ function SettingsMenu({theme, setTheme, density, setDensity, projects, visiblePr
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, []);
-  useEffect(() => {
-    if (requestedPanel !== "visibility") return;
-    setOpen(true);
-    onPanelOpened?.();
-  }, [requestedPanel, onPanelOpened]);
   return (
     <div className="settings" ref={ref}>
       <button className="icon-btn" onClick={() => setOpen(v => !v)} title="Settings">
@@ -104,11 +123,15 @@ function SettingsMenu({theme, setTheme, density, setDensity, projects, visiblePr
             <button key={d} className={`settings-item ${density === d ? "on" : ""}`}
                     onClick={() => setDensity(d)} style={{textTransform: "capitalize"}}>{d}</button>
           ))}
-          <ProjectVisibilityPanel
-            projects={projects}
-            visibleProjects={visibleProjects}
-            onToggleProject={onToggleProject}
-          />
+          <div className="settings-title" style={{marginTop: 6}}>Projects</div>
+          <div className="settings-project-count">
+            {(visibleProjects || []).length} shown · {(projects || []).length} mounted
+          </div>
+          <button
+            type="button"
+            className="settings-item"
+            onClick={() => { setOpen(false); onOpenVisibility?.(); }}
+          >Project visibility…</button>
           {snapshot && (
             <section className="settings-snapshot" aria-labelledby="settings-snapshot-title">
               <div className="settings-title" id="settings-snapshot-title">Snapshot</div>
@@ -194,7 +217,7 @@ function ProjectCard({p, onOpen}) {
 }
 
 window.ProjectPicker = ProjectPicker;
-window.ProjectVisibilityPanel = ProjectVisibilityPanel;
+window.ProjectVisibilitySheet = ProjectVisibilitySheet;
 window.SettingsMenu = SettingsMenu;
 window.Sparkline = Sparkline;
 window.Chip = Chip;
