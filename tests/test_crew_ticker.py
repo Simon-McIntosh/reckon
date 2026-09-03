@@ -459,16 +459,15 @@ def test_the_ticker_states_the_model_and_effort_that_ran_the_node(home) -> None:
             from_state="dispatched",
         )
     )
-    assert "gpt-5.6-sol" in line
-    # The effort is spelled in full in its own column, never fused to the model
-    # by a separator the machine reader would have to parse back.
-    assert "high" in line
+    # The effort is spelled in full, fused with the model by one separator: a
+    # model at an effort is one routing fact, not two read from a gap between
+    # columns wide enough to look like a missing field.
+    assert "gpt-5.6-sol\u00b7high" in line
     assert "gpt-5.6-sol/high" not in line
-    assert "gpt-5.6-sol\u00b7high" not in line
     # After the state, not before the node. On a uniform wave this column
     # repeats the same value on every row, so it must not occupy the position
     # the eye reaches first; the node and its state vary and go there instead.
-    assert line.index("ticker-node") < line.index("gpt-5.6-sol") < line.index("high")
+    assert line.index("ticker-node") < line.index("gpt-5.6-sol")
     assert line.index("gpt-5.6-sol") > line.index(
         ticker_module.local_clock(_event()["observed_at"])
     )
@@ -637,15 +636,14 @@ def test_a_baseline_row_reads_differently_from_a_transition_into_it(
     assert ticker_module.BASELINE_ARROW not in first_sighting
 
 
-def test_effort_stands_in_its_own_column_and_a_legacy_line_leaves_it_empty(
+def test_effort_rejoins_the_alias_and_a_legacy_line_renders_whole(
     monkeypatch,
 ) -> None:
-    """The effort is a fact of its own, spelled in full beside the model.
+    """The effort is a fact of its own, spelled in full and fused with the alias.
 
     A line written before the facts switch has model and effort already fused
-    into one string and nothing to split, so it renders that string whole in the
-    model column and leaves the effort column empty rather than raising or
-    re-parsing a composed value into a guess.
+    into one string and nothing to split, so it renders that string whole
+    rather than raising or re-parsing a composed value into a guess.
     """
     rows = _follow_rows(
         monkeypatch,
@@ -662,19 +660,15 @@ def test_effort_stands_in_its_own_column_and_a_legacy_line_leaves_it_empty(
     )
     facts, legacy = rows
 
-    assert "sonnet5" in facts
-    assert "medium" in facts
-    # Separate columns, so a machine reader is handed neither a separator to
-    # parse nor an abbreviation to expand.
+    # One cell, one separator: the alias and its effort word read as a single
+    # routing fact rather than two fields with a gap between them.
+    assert "sonnet5·medium" in facts
     assert "sonnet5/medium" not in facts
-    assert "sonnet5·medium" not in facts
-    assert facts.index("sonnet5") < facts.index("medium")
 
-    # The composed legacy value renders whole, and the column beside it — the
-    # same screen columns the effort word occupies above — is blank.
+    # The composed legacy value renders whole, at the same column the fused
+    # cell above starts at.
     assert "dsv4-flash·xh" in legacy
-    start = facts.index("medium")
-    assert legacy[start : start + len("medium")].strip() == ""
+    assert facts.index("sonnet5") == legacy.index("dsv4-flash")
 
 
 def test_a_row_wider_than_the_pane_loses_reason_characters_and_no_counter(

@@ -36,12 +36,14 @@ NODE = 36
 # reader gets nothing, because every row it receives is its own by construction.
 OWNER = 1
 STATE = 10
-# Model identity and effort each earn their own column: a reader scans effort
-# down a column instead of parsing it out of a fused label. MODEL is wide enough
-# to hold the widest real alias and every legacy composed model/effort string a
-# line written before the facts switch carries; EFFORT fits the full effort word.
-MODEL = 18
-EFFORT = 8
+# A model at an effort is one routing fact, not two, so identity and effort
+# share one cell rather than reading down separate columns: a gap wide enough
+# for the widest pair left a hole in every ordinary row, which reads as a
+# missing field rather than a column boundary. AGENT is wide enough for the
+# widest real alias, one separator, and the widest configured effort word in
+# full, and for every legacy composed model/effort string a line written
+# before the facts switch carries.
+AGENT = 18
 GAP = 2
 
 # Identity hues, one set per background. Picked by measurement rather than eye:
@@ -184,9 +186,7 @@ MIN_WIDTH = (
     + GAP
     + (STATE * 2 + 3)
     + GAP
-    + MODEL
-    + GAP
-    + EFFORT
+    + AGENT
     + GAP
     + STATS
     + GAP
@@ -388,6 +388,22 @@ def _effort_label(event: Mapping[str, Any]) -> str:
     return _derive_effort(effort) if effort else ""
 
 
+def _agent_column(event: Mapping[str, Any]) -> str:
+    """The routing identity and its effort as one cell, joined by one separator.
+
+    A model at an effort is one fact a reader compares row to row, not a pair to
+    parse apart, so the two share a column rather than reading down separate
+    ones. A record carrying no effort renders the identity alone — appending a
+    bare separator would read as a missing field rather than the absence it
+    actually is.
+    """
+    base = _model_label(event)
+    effort = _effort_label(event)
+    if not effort:
+        return base
+    return f"{base}\N{MIDDLE DOT}{effort}" if base else effort
+
+
 def _display_marker(event: Mapping[str, Any]) -> str:
     """The needs-action glyph a blocked state may carry, derived at render time.
 
@@ -532,9 +548,7 @@ class Ticker:
             (" ", None),
             (f"{to_state:<{STATE}}", hues.get(to_state, "dim")),
             (" " * GAP, None),
-            (f"{elide(_model_label(event), MODEL):<{MODEL}}", "dim"),
-            (" " * GAP, None),
-            (f"{elide(_effort_label(event), EFFORT):<{EFFORT}}", "dim"),
+            (f"{elide(_agent_column(event), AGENT):<{AGENT}}", "dim"),
             (" " * GAP, None),
         ]
         cells.extend(self._stats(event))
