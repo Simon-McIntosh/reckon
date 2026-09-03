@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T08:12:25",
+  "updated": "2026-09-03T08:25:00",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -38458,9 +38458,220 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260903T061007597842-tests-never-arm-a-real-producer",
+        "plan": "clive-local-workers",
+        "section": "\u00a77",
+        "node": "tests-never-arm-a-real-producer",
+        "node_definition": {
+          "done_when": "reckon crew dispatch arms a project's producer detached so ending the dispatching process does not orphan it, which is correct for a coordinator and wrong under a test: a test that dispatches arms a producer against its fixture project, the test ends, and the producer survives with nothing left that knows it exists. Measured on this workstation before a manual reap: 25 live producers for the fixture project named proj, the oldest 204 hours old, 14 of them polling a pytest temp config home already deleted, and four spawned within eight minutes by a worker running the suite as its gate. Named culprits read from their own process environments: test_execution_measure_require, test_dispatch_into_an_occupied, test_cli_dispatch_arms_a_missing, test_cli_competence_refusal. Two locks in the REAL config home, watch/does-not-exist-xyz and watch/empty-probe-xyz, carry test input names, so at least one path arms against the real config home rather than the fixture temp one. Fix it in two independent places because a convention alone will not hold. First, the shared pytest fixture that points RECKON_HOME at a temp tree must also suppress arming by default through the existing no-watch seam that dispatch already records as watch_override, so a test opts IN to a real producer rather than having to opt out. Second, the arming path itself must refuse when the resolved config home lies under a pytest temp directory, so a test bypassing the fixture still cannot spawn one, and that refusal must be returned to the caller and readable rather than a silent skip. Tests in tests/test_watch_arming_isolation.py assert: a dispatch under the fixture creates no watch producer process and records the override; a direct arming call whose config home is a pytest temp directory is refused and names the reason; the same call with an ordinary config home still arms; and the existing no-watch behaviour and its recorded waiver are unchanged. Your gate is that new file plus tests/test_crew_dispatch_arming.py, tests/test_crew_watchlife.py and tests/test_crew_watch_lifetime.py. Do NOT run the full suite, which is itself the thing that leaks, and do NOT run any browser-driven test. Judge by delta against base 71cf138d321f65dceb8b95161e996252616bd605",
+          "estimated_hours": null,
+          "goal": "Stop the test suite spawning detached watch producers that outlive it",
+          "id": "tests-never-arm-a-real-producer",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T061007597842-tests-never-arm-a-real-producer/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "tests/conftest.py",
+            "tests/test_watch_arming_isolation.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "opus-a",
+        "backend": "claude-opus",
+        "local": false,
+        "agent": {
+          "backend": "claude-opus",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-opus-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T06:10:12Z",
+        "completed_at": "2026-09-03T06:23:58.152Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 820,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 826,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "71cf138d321f65dceb8b95161e996252616bd605",
+        "commits": [
+          "73ed06d282d4d7934b5fd848b0209615f8cdcb12"
+        ],
+        "changed_lines": {
+          "added": 478,
+          "removed": 1,
+          "files": 3
+        },
+        "tests_added": 7,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_watch_arming_isolation.py tests/test_crew_dispatch_arming.py tests/test_crew_watchlife.py tests/test_crew_watch_lifetime.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T061007597842-tests-never-arm-a-real-producer/gate-after.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T061007597842-tests-never-arm-a-real-producer/manifest.md",
+        "scope_changed": false,
+        "session_id": "4e3a0bc5-44cb-4fb4-b056-3a11147ef701",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 1.21,
+          "rate_limit_type": "overage",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-10-01T00:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 1,
+          "tokens": {
+            "cache_creation_input_tokens": 125495,
+            "cache_creation_input_tokens_cumulative": 125495,
+            "cache_read_input_tokens": 5188043,
+            "cache_read_input_tokens_cumulative": 5188043,
+            "inference_geo": "not_available",
+            "input_tokens": 108,
+            "input_tokens_cumulative": 108,
+            "output_tokens": 43762,
+            "output_tokens_cumulative": 43762,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 4.9435615,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 4.9435615
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "running the suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260903T061339956387-a-producer-declares-the-code-it-runs",
+        "plan": "clive-local-workers",
+        "section": "\u00a77",
+        "node": "a-producer-declares-the-code-it-runs",
+        "node_definition": {
+          "done_when": "A watch producer imports its detection module once at startup and then runs for hours, so a change to that module is inert on every seat armed before it and nothing distinguishes a seat running current code from one running last week's. Measured today: two recovery.py fixes merged at 07:38 and 07:49 could not reach a reckon producer started 07:33, and a peer session's producer had been running twelve hours across both fixes; that peer found the discrepancy only by deliberately hunting for a confound, and reported that until they did, every observation they made was against pre-fix code without either of us knowing. Make the producer declare what it runs. It must stamp the reckon version it started with, together with its own start time, into the first line it emits when a follower attaches, so the operator reading the pane sees which code produced every subsequent line. And the arming path, which already replaces a seat it judges stale under a lock, must gain a second staleness criterion: a live seat whose recorded version differs from the installed one is replaced at the next arming rather than reused. Absence stays absence: a seat with no recorded version is treated as stale rather than as current, because an unstamped seat predates the stamp. Tests in tests/test_watch_version_stamp.py assert that the attach line names the version and the producer start time; that a seat whose recorded version matches the installed one is reused by a later arming; that one whose version differs is replaced; that one with no recorded version is replaced; and that the replacement path is the existing locked one rather than a second mechanism. Your gate is that new file plus tests/test_crew_watchlife.py, tests/test_crew_watch_lifetime.py and tests/test_crew_watch_visibility.py. Do NOT run the full suite and do NOT run any browser-driven test. Judge by delta against base f4cf41a7173f8840199bac5db74b54022671610f",
+          "estimated_hours": null,
+          "goal": "Let an operator tell which version of the detection code a live ticker is running",
+          "id": "a-producer-declares-the-code-it-runs",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T061339956387-a-producer-declares-the-code-it-runs/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/crew/runs.py",
+            "tests/test_watch_version_stamp.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "sonnet-a",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "backend": "claude",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T06:13:45Z",
+        "completed_at": "2026-09-03T06:24:05.373Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 612,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 620,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "f4cf41a7173f8840199bac5db74b54022671610f",
+        "commits": [
+          "31d4e8d0c8f5bdbd846513ab011767ba3b7d3835"
+        ],
+        "changed_lines": {
+          "added": 275,
+          "removed": 1,
+          "files": 2
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_crew_watchlife.py tests/test_crew_watch_lifetime.py tests/test_crew_watch_visibility.py tests/test_watch_version_stamp.py",
+          "exit_status": 0,
+          "log_path": "/tmp/gate_after.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T061339956387-a-producer-declares-the-code-it-runs/manifest.md",
+        "scope_changed": false,
+        "session_id": "96cccc2f-01d0-40f6-9bcd-c2ddf8c1cddf",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 1.21,
+          "rate_limit_type": "overage",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-10-01T00:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 1,
+          "tokens": {
+            "cache_creation_input_tokens": 135876,
+            "cache_creation_input_tokens_cumulative": 135876,
+            "cache_read_input_tokens": 7744370,
+            "cache_read_input_tokens_cumulative": 7744370,
+            "inference_geo": "not_available",
+            "input_tokens": 136,
+            "input_tokens_cumulative": 136,
+            "output_tokens": 46818,
+            "output_tokens_cumulative": 46818,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 2.56083,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 2.56083
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [],
-    "_version": 620
+    "_version": 622
   }
 }
