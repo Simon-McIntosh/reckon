@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="3">
 </head>
 <body>
   <main class="plan-doc">
@@ -35,10 +35,11 @@
       and every node was refused per-request on a spend limit within seconds.
       The refusal was <strong>temporary</strong>: the operator re-authenticated
       and the same lane was proved to serve at 19:44Z by a direct one-token
-      probe. Ten minutes of provider unavailability cost
-      <strong>sixty-four turns of accumulated worker orientation</strong>, and
-      not one token of that loss was caused by the outage. It was caused by the
-      recovery.
+      probe. <strong>This occurrence cost minutes, and no artifacts</strong> —
+      a figure corrected below, because it was overstated twice in opposite
+      directions before it was measured. What the occurrence demonstrates is a
+      sequence that is available on every metered lane and that a future
+      refusal arriving a few turns later would make expensive.
     </p>
     <p>
       The coordinator read <code>session_id: null</code> on each live pointer,
@@ -290,6 +291,11 @@
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s3" data-id="c-20260904T0000" data-who="reckon-ship" data-when="2026-09-03T21:58:00+00:00">
+    <div class="r-comment-body">SECTION 3 IS RESHAPED BY A PEER RCA THAT IS SHARPER THAN WHAT I AUTHORED, and it comes with a severity correction that must travel with it. THE SEVERITY FIRST, BECAUSE I REPEATED THE WRONG FIGURE. The five streams were measured for file-writing tool calls and carry Write 0, Edit 0, MultiEdit 0 and NotebookEdit 0 across all five, against nine Read calls and nineteen Bash calls on the three substantive runs. That agrees with the git status and the empty commit range taken before promotion. So there was never a work product: the transcripts were never endangered by promotion, and recreating the worktrees recovered a working directory rather than any artifact. The incident cost minutes. Both earlier framings were wrong in opposite directions - first unrecoverable loss, then sixty-four turns of orientation not lost - and neither survived measurement. The defect below is real and a refusal arriving a few turns later would make it expensive; the occurrence that exposed it was cheap. THE ROOT CAUSE IS NARROWER AND WORSE THAN PROMOTION CLOSES TREES. The release path is careful: it delegates to the gc classification and reclaims only trees classified integrated or disposable, withholding a dirty tree because nothing reclaims a worktree holding work that exists nowhere else, and an unintegrated one because removing it would destroy the only copy of that commit. Those verdicts are right, and they mean the catastrophic version of this cannot happen through promotion at all. THE DEFECT IS THAT THE ONE GUARD WHICH WOULD HAVE FIRED IS GUARANTEED FALSE AT THE MOMENT IT IS CHECKED. A tree is withheld as live-referenced when a live run pointer still claims it, and release runs only after the ledger append and the pointer delete have both succeeded - so the pointer whose existence would raise that verdict is removed one step before the classifier looks for it. The live claim list is empty by construction on every promotion-triggered release. The guard protects a tree from gc and gives promotion a free pass, which is the ninth instance in this repository of a capability that reads as protection while being unreachable. AND THE CLASSIFICATION ANSWERS THE WRONG QUESTION. It asks whether a tree holds work that exists nowhere else, which is a question about artifacts. It never asks whether a tree serves a session that could still continue, which is a question about capability. The five trees were clean at base, so integrated was the correct verdict about artifacts and simultaneously the wrong decision, because each was the working directory of a live resumable session. The vocabulary has no term for that state, and a state nothing can name is a state nothing can guard. FIVE FIXES, ADOPTED IN THE PEER'S ORDER OF VALUE PER LINE. One, release on a passing gate only, which becomes this section's primary measure: a passing gate is a closure and its tree is spent, while a failed or not-run gate is by definition a triage step whose node will be resumed, retried or reshaped. It keys on data promotion already holds, needs no new classification, composes with the section 2 guard rather than duplicating it, and would have withheld all five. Two, the waiver of section 2 retains the tree - a waiver means record this now, never and burn the working directory. Three, either classify before the pointer delete or pass the record being promoted into the inspection, so a live-referenced verdict is reachable in a test rather than dead code. Four, add the missing term, a clean tree whose record carries a session id and whose gate is not passing, with a withheld reason stating that removal leaves the session with no working directory. Five, report the consequence rather than the act: a released flag reading true is a true statement phrased as an accomplishment, and naming the session whose resume it forecloses puts the cost on the same line as the act.</div>
+</div>
+</section>
+</main>
 </body>
 </html>
