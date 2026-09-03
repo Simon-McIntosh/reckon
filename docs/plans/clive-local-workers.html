@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="69">
+<meta name="plan-version" content="71">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,~/.config/reckon/crew/reports/local-effort-probe.md,~/.config/reckon/crew/reports/read-only-tier-delivery-discriminator.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
-<meta name="plan-impl" content="0.72">
+<meta name="plan-impl" content="0.68">
 <meta name="plan-commits" content="a91abe9,a56eae9,42a339f,a2e488b,ca6288d,0226835,e099fc5,5dc92ce,8b80bdc,8abc064,6f99ac2,7f41635,1908947">
 </head>
 <body>
@@ -93,6 +93,45 @@
         <tr><td>Endpoint ignores the budget</td><td>The four-budget probe above, re-run against both releases and recorded with its raw block sizes.</td></tr>
         <tr><td>No effort axis in config</td><td>Both local backends carry one pinned effort whose comment states the measurement; no role or spec-level overlay varies effort for them, asserted through <code>reckon flight</code>.</td></tr>
         <tr><td>Shadows do not claim it</td><td>A local shadow records effort under <code>inherited</code> and never as a substituted variable, so no pair reads as an effort comparison.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s11">&#167;11 &mdash; The dispatch grade the fleet is missing is context fit, and it is derivable</h2>
+    <p><strong>The fleet now spans eight backends</strong> &mdash; two local releases, four
+    codex models, sonnet and opus &mdash; against one declared dial with three values,
+    <code>--spec-level exact|guided|open</code>, designed when there were effectively two
+    lanes. The obvious response is a finer declared grade. That is the wrong move, and this
+    session is the evidence: I mis-sized nodes for GLM's window <em>twice</em>, while
+    actively working on the context problem, with the numbers in front of me. An
+    orchestrator will not hold eight models' windows in mind, and a dial that depends on it
+    doing so fails silently and expensively.</p>
+    <p><strong>A finer grade already exists, and it is learned rather than declared.</strong>
+    The capability cache derives a <code>competence_horizon_hours</code> per configuration
+    from measured outcomes &mdash; the largest node size that configuration has actually
+    passed &mdash; alongside a success curve and a speed distribution, and
+    <code>_competence_verdict</code> already refuses a dispatch that exceeds it with the
+    typed capability refusal at exit 5. That is the right shape: measured, per
+    configuration, refusing before a worktree exists. It needs the shadow programme to
+    populate it, not a new vocabulary.</p>
+    <p><strong>What is missing is one dimension nothing models at all.</strong> The flight
+    schema has no notion of a backend's usable context window, and nothing estimates a
+    node's context need, so the constraint that actually killed work tonight is invisible to
+    the dispatcher. The wrapper already knows the number and prints it &mdash; 73,728 usable
+    input tokens for GLM against 492,288 for flash. The node's need is equally computable:
+    standing instruction load, plus the declared write paths, plus the files the node names.
+    Both sides are knowable at dispatch, which makes this a refusal rather than a judgement.</p>
+    <p>So the answer to a wider fleet is not more dials. Keep <code>--spec-level</code> as
+    the single declared signal, because who owns the design is genuinely not derivable from
+    the node; let the ledger grade capability, which it already does; and <strong>compute
+    context fit and refuse a backend that cannot hold the work</strong>, which turns two
+    silent runtime deaths into one refusal naming the shortfall.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>The window is declared</td><td>Each backend carries its usable input budget in flight config, validated through the layered schema with leaf provenance and regenerated into both derived artifacts; a backend that declares none is treated as unbounded rather than as zero.</td></tr>
+        <tr><td>The need is estimated</td><td>A dispatch computes the node's context need from the standing instruction load plus the declared write paths and named files, and records the estimate and its inputs on the run so a later reader can check the arithmetic against what actually happened.</td></tr>
+        <tr><td>A misfit is refused, not discovered</td><td>A node whose estimated need exceeds the resolved backend's window is refused before worktree creation through the existing capability envelope at exit 5, naming the estimate, the window and the shortfall. Asserted by test, including the negative: a node that fits is dispatched unchanged, and an unbounded backend never refuses.</td></tr>
+        <tr><td>Checked against the two real failures</td><td>Replaying the two GLM nodes stopped tonight against their recorded write paths produces a refusal, and the flash runs that succeeded on the same repository do not.</td></tr>
       </tbody>
     </table>
 
@@ -738,6 +777,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-20260903-effort-scan-added" data-who="reckon-ship" data-when="2026-09-03T04:35:00Z">
     <div class="r-comment-body">§10 added on the lead's instruction, and it corrects §8 rather than extending it. My endpoint probe asked each model what 17 times 23 is at four thinking budgets, saw a flat 37-to-43 characters of thinking on flash, and I wrote that the local lane has no effort dimension at all. A single-step arithmetic question gives a model nothing to deliberate about, so a flat response across budgets is what it would return whether or not the parameter reaches anything. The measurement was sound; the generalisation to agentic work was not earned and should not have been recorded as a routing conclusion. The lead's prior is the more plausible one and is now what the section tests: a model with less capability per token has MORE to gain from deliberating, so if effort reaches these checkpoints it should matter more here than on a frontier model. The scan is ordered so the precondition comes first — whether declared effort reaches the agentic loop at all, measured from emitted thinking blocks and their volume across paired real-node runs, because the harness counter is known to report the request rather than the response (it read zero on runs whose streams carried 40, 30 and 38 blocks). Only if it reaches does the second half become an ordinary calibration slice per model and effort. Two controls the session already proved necessary are written in: worker minutes are dominated by local suite execution rather than inference, so tool time must be recorded separately from generation; and a session must never be reused across efforts or the higher arm inherits the lower one's context, which makes this scan dependent on the open §7 session-keying fence. Denominator grows to 18 executable nodes; impl 13 of 18.</div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-20260903-dispatch-grade" data-who="reckon-ship" data-when="2026-09-03T05:00:00Z">
+    <div class="r-comment-body">§11 answers the lead's question about whether a wider fleet needs a finer dispatch grade, and the answer is no in the direction expected and yes in one that was not. Checked against the code rather than reasoned from the outside: the capability cache already derives competence_horizon_hours per configuration from measured outcomes, alongside a success curve and a speed distribution, and routing._competence_verdict already refuses a dispatch exceeding that horizon with the typed capability refusal at exit 5 before any worktree exists. So a finer capability grade exists, it is learned from the ledger rather than declared, and what it needs is the shadow programme to populate it rather than a richer vocabulary. What genuinely does not exist is any notion of context. The flight schema models no usable window per backend — grepping it for context or window returns nothing — and nothing estimates a node's context need, which is why the constraint that actually killed work tonight was invisible to the dispatcher. Both sides are knowable at dispatch: the wrapper already prints the window, 73,728 for GLM against 492,288 for flash, and the need is standing load plus declared write paths plus named files, which I computed by hand twice this evening. The argument against adding declared dials is this session itself: I mis-sized nodes for GLM's window twice while actively working on the context problem with the numbers in front of me. An orchestrator will not hold eight windows in mind, and a dial depending on it doing so fails silently and expensively. Keep --spec-level as the one declared signal because design ownership is genuinely not derivable; let the ledger grade capability; compute context fit and refuse. Denominator grows to 19; impl 13 of 19. The node is specified but not yet dispatched because routing.py is held by the in-flight shadow-path run.</div>
 </div>
 </section>
 </main>
