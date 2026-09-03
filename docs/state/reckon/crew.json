@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T01:55:52",
+  "updated": "2026-09-04T01:57:00",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -48031,6 +48031,135 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260903T215355983365-crew-scope-and-scroll",
+        "plan": "spa-shell-scope-and-visibility",
+        "section": "\u00a74",
+        "node": "crew-scope-and-scroll",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_spa_crew_geometry.py tests/test_spa_crew_cards.py tests/test_spa_shell_container.py -q passes with every case \u00a74 names, including scrollHeight exceeding clientHeight at 1374x900 while documentElement scrollHeight stays 900, and every flex ancestor of .r-crew-view reporting computed min-height 0px",
+          "estimated_hours": 2.0,
+          "goal": "The Crew surface scrolls within the viewport and lists the selected project runs by default",
+          "id": "crew-scope-and-scroll",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T215355983365-crew-scope-and-scroll/manifest.md",
+          "plan": "spa-shell-scope-and-visibility",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "docs/ui/crew.jsx",
+            "docs/ui/crew.css",
+            "docs/ui/shell.jsx",
+            "docs/ui/styles.css",
+            "tests/test_spa_crew_geometry.py",
+            "tests/test_spa_crew_cards.py",
+            "tests/test_spa_shell_container.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-crew",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "alias": "sonnet 5",
+          "backend": "claude",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T21:54:13Z",
+        "completed_at": "2026-09-03T23:56:23.414Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 7323,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 7330,
+        "stalled": true,
+        "time_budget": "40m",
+        "base_sha": "5958f485d571735925883e55c2ee63ee1cc92917",
+        "commits": [
+          "77a473b1b6b68b44893b8b018c98b24c060e1b6f"
+        ],
+        "changed_lines": {
+          "added": 252,
+          "removed": 13,
+          "files": 6
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_crew_geometry.py tests/test_spa_crew_cards.py tests/test_spa_shell_container.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T215355983365-crew-scope-and-scroll/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T215355983365-crew-scope-and-scroll/manifest.md",
+        "scope_changed": false,
+        "session_id": "8f18edbd-00e2-4762-9a4d-ad2f1453d0fd",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 0.82,
+          "rate_limit_type": "seven_day",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-09-07T20:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 0.75,
+          "tokens": {
+            "cache_creation_input_tokens": 195221,
+            "cache_creation_input_tokens_cumulative": 195221,
+            "cache_read_input_tokens": 7400132,
+            "cache_read_input_tokens_cumulative": 7400132,
+            "inference_geo": "not_available",
+            "input_tokens": 78,
+            "input_tokens_cumulative": 78,
+            "output_tokens": 19824,
+            "output_tokens_cumulative": 19824,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 2.4593063999999996,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 2.4593063999999996
+        },
+        "lineage": {
+          "attempt": 2,
+          "kind": "redispatch",
+          "previous_run_id": "r-20260903T193522859587-crew-scope-and-scroll",
+          "root_run_id": "r-20260903T193522859587-crew-scope-and-scroll"
+        },
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 269.681,
+          "generated_tokens": 19824,
+          "generation_seconds": 226.167,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 21.4,
+          "machine_seconds": 43.514,
+          "peak_input_tokens": 214452,
+          "tokens_per_second": 87.65,
+          "wall_tokens_per_second": 73.51
+        },
+        "attempt": 3,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_spa_crew_geometry.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -48189,6 +48318,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 787
+    "_version": 788
   }
 }
