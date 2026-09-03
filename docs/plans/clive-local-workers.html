@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="99">
-<meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,~/.config/reckon/crew/reports/local-effort-probe.md,~/.config/reckon/crew/reports/read-only-tier-delivery-discriminator.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
-<meta name="plan-impl" content="0.92">
+<meta name="plan-version" content="104">
+<meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,~/.config/reckon/crew/reports/local-effort-probe.md,~/.config/reckon/crew/reports/read-only-tier-delivery-discriminator.md,~/.config/reckon/crew/reports/test-attribution-reuse-map.md,~/.config/reckon/crew/reports/context-fit-reuse-map.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md,docs/evidence/archive/clive-local-workers-landed.html,docs/figures/clive-local-workers/local-lane-model-outcomes.svg">
+<meta name="plan-impl" content="0.93">
 <meta name="plan-commits" content="a91abe9,a56eae9,42a339f,a2e488b,ca6288d,0226835,e099fc5,5dc92ce,8b80bdc,8abc064,6f99ac2,7f41635,1908947,da054f7,1a77ce8,3ff87b2,5717d69,1badb66,1b7e72e,9b609d9,34e1d10,73ed06d,31d4e8d">
 </head>
 <body>
@@ -703,6 +703,59 @@
       </tbody>
     </table>
 
+    <h2 id="s14">§14 — A time budget should charge the worker, not the machine it waited on</h2>
+    <p>Every duration this plan compares is a wall clock reading, and wall clock is not what a
+    worker spends. A node told to run a suite is charged for the suite; a node that waits on a
+    queued job is charged for the queue. The charge therefore moves with machine load and with
+    other people's work, which is the one thing a measurement of a model must not do.</p>
+
+    <p><strong>This is not the elastic bound §7 rejects, and the distinction is the whole
+    point.</strong> That section says a bound that stretches under load stops being a bound, and
+    that stands. Nothing here stretches: the budget keeps its number and changes its
+    <em>unit</em>, from time elapsed to time the agent was generating. An elastic bound stops
+    being a bound; a bound on the right quantity starts being one. §7's remedy was to record the
+    contention so a reader could see the confound; charging only generation removes the confound
+    from the number instead, which is strictly better and leaves the recorded load as a
+    diagnostic rather than an excuse.</p>
+
+    <p><strong>Both halves are already on disk.</strong> The recorded stream carries a timestamp
+    per event, so the span between a tool call and its result is machine time and the remainder
+    is generation. The two are separable and wildly unequal: one measured run carried 30,461
+    stream records of which 156 were assistant turns while it sat blocked on a ten-minute wait.
+    Nothing new needs instrumenting, and no counter inside the harness needs trusting — the
+    one that reports thinking tokens already reported zero on runs whose streams carried forty
+    thinking blocks, because it measures the request rather than the response.</p>
+
+    <p><strong>What it has cost, twice, measured.</strong> A §4 node blocked at its 25-minute
+    fence with its work already committed, because the suite it was told to run could not finish
+    while four peer suites contended for the same machine; the untouched baseline alone took
+    814 s. And on 2026-09-03 a local-lane investigate node overran a 12-minute fence by 146
+    seconds while still generating normally. In both cases the fence fired on the machine's
+    behaviour and was recorded against the model's.</p>
+
+    <p><strong>What must not be lost.</strong> A budget denominated in generation cannot bound
+    wall clock, and a worker parked on a three-hour queue would never trip it. So the ceiling
+    that protects the fleet from a hang stays, under its own name and at its own much larger
+    value, and every run keeps elapsed, generation and machine seconds side by side so a past
+    slice can be recomputed on either basis without redispatching anything.</p>
+
+    <p><strong>One coupling to settle deliberately, not twice.</strong> A run waiting on an
+    external job generates nothing, and crew-observability-truth §4 requires that liveness and
+    stall judgements derive from generation rather than file mtime. Read alone, that rule calls a
+    legitimate wait dead. The two rules meet exactly here, so whichever lands second must
+    reconcile them rather than assume the other did: a wait is quiet and alive, a hang is quiet
+    and not, and only the declared external job separates them.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Generation and machine time are separable</td><td>Every observation records generation seconds and machine seconds derived from the recorded stream's own event timestamps, the two summing to elapsed within a stated tolerance. Asserted against a recorded stream carrying a long tool span, and against one carrying none.</td></tr>
+        <tr><td>The fence charges generation</td><td>A run whose elapsed wall clock exceeds its budget while its generation time does not is inside its fence; one whose generation time exceeds the budget is over it. Asserted by test in both directions against recorded streams, including the two real overruns named above replayed from their own records.</td></tr>
+        <tr><td>A hang is still refused</td><td>A separate wall-clock ceiling, named distinctly from the budget so the record distinguishes the two, still refuses a run that has stopped producing. Asserted by test, including the negative: a run inside both bounds is untouched.</td></tr>
+        <tr><td>Past runs are re-readable</td><td>Elapsed, generation and machine seconds are all present on the run record, so a calibration slice recomputes on either basis from the committed ledger with no redispatch. Asserted against the committed ledger rather than a fixture.</td></tr>
+      </tbody>
+    </table>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="default-effort-by-spec-level" data-choice="medium-guided-exact-high-open" data-by="Simon McIntosh" data-when="2026-09-02T12:43:41+00:00">
@@ -769,6 +822,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-20260902-reuse-map-detail" data-who="reckon-ship" data-when="2026-09-02T13:30:00Z">
     <div class="r-comment-body">Reconnaissance landed — run r-20260902T131713796175-local-lane-reuse-map, member local-scout at gpt-5.6-sol/high read-only, 546 worker-seconds, first attempt, gate passed on 82/82 symbol and test-name resolutions at base 33a1315 plus a structural check of eight capability sections. Commitless by design; artifact ~/.config/reckon/crew/reports/local-lane-reuse-map.md. Verdict across the eight areas this plan would otherwise rebuild: one runtime-sufficient, seven bounded-extension, none absent — every section extends a controlling abstraction that already exists rather than adding a competing one. The four that decide the wave's shape: peer worktree enumeration is runtime-sufficient (_registered_worktrees plus _live_worktree_claims), so §6 needs a dispatch-time tree snapshot and a promotion-time comparison and no new enumerator; the failure taxonomy already carries infrastructure-failure and ledger.summary already excludes it from worker_gate.pass_rate, but derive_capabilities sets success from gate == passed alone, so §7's classification work is one eligibility policy applied in the capability cache; compose_prompt and dispatch.observe are the right hooks for §7 orientation, with the expected side (worktree, base_sha, write_paths) already on the pointer and only the reported side missing; and §2's model availability is genuinely absent — probe_availability never passes the configured model to the wrapper and crew_dispatch never consults availability, though the exit-5 refusal envelope is ready to reuse. The map also names the scope boundaries: observe lives in dispatch.py and _cumulative_diff in promotion.py, which is why the crew-core sections serialise rather than fan out. Denominator set at 11 executable nodes across §1–§7. impl 1 of 11.</div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260903T074543157557-clive-cumulative-evidence-record" data-who="doc-evidence" data-when="2026-09-03T07:52:31.670Z">
+    <div class="r-comment-body"><p>Cumulative evidence record created: 33 anchors against 33 c-run comments read, plus a per-model gate-outcome figure from the committed ledger</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260902T133132431763-silent-delivery-becomes-a-repairable-row" data-who="harness-manifest" data-when="2026-09-02T13:54:04Z">
     <div class="r-comment-body"><p>Recovery derives a non-delivered manifest from a terminal run's final message and worktree diff; abandoned classification and the refusal to advise promotion preserved. Focused 8/8, full suite 2656 passed 0 failed in 710s, ruff finding delta 0.</p></div>
@@ -965,6 +1021,12 @@
 <div class="r-comment" data-section="s11" data-id="c-20260903-dispatch-grade" data-who="reckon-ship" data-when="2026-09-03T05:00:00Z">
     <div class="r-comment-body">§11 answers the lead's question about whether a wider fleet needs a finer dispatch grade, and the answer is no in the direction expected and yes in one that was not. Checked against the code rather than reasoned from the outside: the capability cache already derives competence_horizon_hours per configuration from measured outcomes, alongside a success curve and a speed distribution, and routing._competence_verdict already refuses a dispatch exceeding that horizon with the typed capability refusal at exit 5 before any worktree exists. So a finer capability grade exists, it is learned from the ledger rather than declared, and what it needs is the shadow programme to populate it rather than a richer vocabulary. What genuinely does not exist is any notion of context. The flight schema models no usable window per backend — grepping it for context or window returns nothing — and nothing estimates a node's context need, which is why the constraint that actually killed work tonight was invisible to the dispatcher. Both sides are knowable at dispatch: the wrapper already prints the window, 73,728 for GLM against 492,288 for flash, and the need is standing load plus declared write paths plus named files, which I computed by hand twice this evening. The argument against adding declared dials is this session itself: I mis-sized nodes for GLM's window twice while actively working on the context problem with the numbers in front of me. An orchestrator will not hold eight windows in mind, and a dial depending on it doing so fails silently and expensively. Keep --spec-level as the one declared signal because design ownership is genuinely not derivable; let the ledger grade capability; compute context fit and refuse. Denominator grows to 19; impl 13 of 19. The node is specified but not yet dispatched because routing.py is held by the in-flight shadow-path run.</div>
 </div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20260903T073117859231-context-fit-reuse-map" data-who="flash-a" data-when="2026-09-03T07:49:59.672Z">
+    <div class="r-comment-body"><p>Reuse map for §11: 6 required surfaces plus 5 further candidates, 17 mechanisms with verdicts; a usable-window key is the only absent datum, and the refusal folds into the existing exit-5 competence envelope before _create_worktree</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-20260903T0757" data-who="reckon-ship" data-when="2026-09-03T07:57:00+00:00">
+    <div class="r-comment-body">context-fit-reuse-map landed — no commit by design; gate passed; measure 6 required surfaces plus 5 further candidates, 17 mechanisms carrying an explicit verdict over 19 file:symbol citations, verified at 6eff81b; 1092 worker-seconds against a 12m budget on the local lane at deepseek-v4-flash, so the run overran its fence by 146 seconds while still generating — recorded because it is an instance of what §14 now measures rather than a worker defect. Map at ~/.config/reckon/crew/reports/context-fit-reuse-map.md. The finding is that a usable-window key is the only genuinely absent datum: the per-backend scalar shape already exists beside utilisation_ceiling_pct, layered validation already records which layer supplied a leaf, the regeneration script already keeps both derived artifacts in step, and the refusal folds into the existing exit-5 competence envelope at the gate immediately before _create_worktree, where dry-run parity is already asserted by tests/test_crew.py:1965. Only the run-record home for the estimate needs extension: mirror the competence block with a context block carrying need, window, shortfall and inputs, and feed the declared window into throughput_block's input_budget_tokens, which the clive dialect currently records as None. Two consequences for sequencing. First, the schema slot lands in the same three files the in-flight test-role node holds, so §11 waits on it rather than racing it. Second, and correcting the node contract rather than the plan: §11's fourth measure replays the two stopped GLM nodes, and those were dispatched against imas-ambix, not this project — the reckon-ledger clive-glm rows are test fixtures with no write paths, so the replay must read imas-ambix's ledger with the report's fixture windows of 73,728 for glm-5.3 against 492,288 for flash.</div>
+</div>
 <div class="r-comment" data-section="s12" data-id="c-20260903-test-role-designed" data-who="reckon-ship" data-when="2026-09-03T05:20:00Z">
     <div class="r-comment-body">§12 added on the lead's design, and the investigation behind it exonerates the framework and indicts me. gates.suite_command is undeclared and the worker protocol makes baseline_suite and after_suite required only when it is armed, so the harness never asked any worker for a full suite. Every full-suite run this session came from text I wrote into done-whens. reckon's test rules are not too strict; the orchestrator was. The real gap is structural and the lead named it exactly: an implementation worker fenced to a few paths cannot open the files a suite-wide failure lives in, so asking it to triage asks it to reason about what it is blind to by construction, and the best it can produce is an absolute count that measures the fleet rather than its change. Nothing pushes back either — the EVIDENCE fence states the done-when and never states the division of labour. And the test role already exists as a label rather than a contract: execution_capable and a sandbox tier, no time budget for a suite that takes 700 to 900 seconds, no distinct prompt, no different deliverable. Nineteen runs have gone through it, each receiving the implementation prompt with ROLE test printed as a word. The section gives it the contract the work actually has — read the whole repository because triage requires opening the failing file, write only its report because a verifier that fixes is an implementation worker under the wrong name and its verdict stops being independent, deliver an attribution rather than a verdict, and receive the base, the head and the merged commits because attribution needs the candidate set. Denominator grows to 21; impl 16 of 21.</div>
 </div>
@@ -979,6 +1041,9 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-20260903T0743" data-who="reckon-ship" data-when="2026-09-03T07:43:00+00:00">
     <div class="r-comment-body">test-attribution-reuse-map landed — no commit by design, the deliverable is the report; gate passed; measure 5 surfaces each carrying a fitness verdict over 16 file:symbol citations, verified against worktree HEAD 6eff81b; 224 worker-seconds against a 12m budget on the local lane at deepseek-v4-flash. Map at ~/.config/reckon/crew/reports/test-attribution-reuse-map.md. Its finding narrows §12 to three shallow gaps rather than new machinery: no per-role write-scope default exists anywhere in the flight schema, so a test node lands as report-only by orchestrator discipline rather than by contract; compose_prompt receives no base, head or merged-commit set, so the attribution sentence already on main at 5717d69 has no candidate set to work from; and no manifest, parser or ledger field can hold which merged commit introduced a given new failure. The arithmetic is already exact and must be reused rather than reimplemented — _evaluate_suite_delta computes added = after.failure_ids minus baseline.failure_ids at promotion with a reasoned waiver, and nothing else in the codebase compares suites. Noted for later: gates.suite_command is undeclared by default, so the whole delta chain is unarmed until a host layer names a suite command.</div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20260903T074425759141-manifest-carries-failure-attribution" data-who="impl-attrib" data-when="2026-09-03T07:52:56.694Z">
+    <div class="r-comment-body"><p>Manifest carries per-failure candidate-commit attribution; 22 tests in test_gate_evidence.py pass, up from 15, and added_failure_ids is pinned to promotion's own suite-delta arithmetic by test</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20260903T060422443082-promotion-releases-the-transient" data-who="sonnet-a" data-when="2026-09-03T06:11:42.903Z">
     <div class="r-comment-body"><p>Promotion now releases the worktree and any lingering process group after the ledger append and pointer delete, reusing gc's own conditions rather than a second policy, and naming every withheld release with the condition it failed. 34 passed. This is the first promotion to exercise it.</p></div>
