@@ -17,6 +17,7 @@ by newly added failure identities rather than absolute suite health.
 
 from __future__ import annotations
 
+import inspect
 import json
 import subprocess
 from pathlib import Path
@@ -26,6 +27,7 @@ from click.testing import CliRunner
 
 from reckon import capabilities, ledger
 from reckon.cli import main as cli_main
+from reckon.crew import promotion
 from reckon.crew.reports import audit_manifest, parse_manifest
 from reckon.crew.runs import _write_json, pointer_path
 
@@ -1010,3 +1012,128 @@ def test_added_failure_ids_matches_promotions_suite_delta_arithmetic(
         )
         == attribution
     )
+
+
+def test_promotion_uses_ledger_added_failure_ids_not_a_second_expression() -> None:
+    """The promotion delta gate reuses the ledger's added-failure arithmetic.
+
+    A second set-difference over failure_ids inside promotion would be a
+    second notion of "new" that could drift from the one the attribution is
+    filtered against. The gate must call ledger.added_failure_ids and must
+    fail the moment the inline expression is reintroduced.
+    """
+    source = inspect.getsource(promotion._evaluate_suite_delta)
+    assert "ledger.added_failure_ids(" in source
+    assert '["failure_ids"]) - set(' not in source
+
+
+def test_promoted_run_stores_failure_attribution_beside_added_ids(
+    repository: Path, tmp_path: Path
+) -> None:
+    run_id = "r-20260903T000100000000-node-a"
+    manifest = tmp_path / "attributed-waived.md"
+    baseline = _suite_observation("base-abc", ["tests/test_old.py::test_old"])
+    after = _suite_observation(
+        "after-abc",
+        ["tests/test_old.py::test_old", "tests/test_new.py::test_regression"],
+    )
+    attribution = {"tests/test_new.py::test_regression": "deadbeef1234"}
+    _write_suite_manifest(
+        manifest, baseline=baseline, after=after, failure_attribution=attribution
+    )
+    _write_pointer(
+        run_id,
+        repository,
+        suite_command="pytest -q",
+        manifest_path=str(manifest),
+    )
+
+    result = CliRunner().invoke(
+        cli_main,
+        [
+            *_complete_arguments(run_id, repository),
+            "--waive-suite-delta",
+            "attributed regression accepted",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    suite_delta = json.loads(result.output)["record"]["suite_delta"]
+    assert suite_delta["added_failure_ids"] == ["tests/test_new.py::test_regression"]
+    assert suite_delta["failure_attribution"] == {
+        "tests/test_new.py::test_regression": "deadbeef1234"
+    }
+
+
+def test_added_failure_with_no_attribution_entry_still_refuses(
+    repository: Path, tmp_path: Path
+) -> None:
+    run_id = "r-20260903T000200000000-node-a"
+    manifest = tmp_path / "unattributed-added.md"
+    baseline = _suite_observation("base-abc", ["tests/test_old.py::test_old"])
+    after = _suite_observation(
+        "after-abc",
+        ["tests/test_old.py::test_old", "tests/test_new.py::test_regression"],
+    )
+    # An attribution naming only pre-existing failures leaves the added
+    # failure unattributed; the added failure must still refuse the promotion
+    # exactly as if no attribution had been offered.
+    attribution = {"tests/test_old.py::test_old": "pre-existing-commit"}
+    _write_suite_manifest(
+        manifest, baseline=baseline, after=after, failure_attribution=attribution
+    )
+    _write_pointer(
+        run_id,
+        repository,
+        suite_command="pytest -q",
+        manifest_path=str(manifest),
+    )
+
+    result = CliRunner().invoke(cli_main, _complete_arguments(run_id, repository))
+
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["error"] == "suite-delta-refused"
+    assert payload["added_failure_ids"] == ["tests/test_new.py::test_regression"]
+
+
+def test_attribution_naming_a_pre_existing_failure_is_dropped(
+    repository: Path, tmp_path: Path
+) -> None:
+    run_id = "r-20260903T000300000000-node-a"
+    manifest = tmp_path / "pre-existing-attribution.md"
+    baseline = _suite_observation("base-abc", ["tests/test_old.py::test_old"])
+    after = _suite_observation(
+        "after-abc",
+        ["tests/test_old.py::test_old", "tests/test_new.py::test_regression"],
+    )
+    attribution = {
+        "tests/test_old.py::test_old": "not-a-new-failure",
+        "tests/test_new.py::test_regression": "deadbeef1234",
+    }
+    _write_suite_manifest(
+        manifest, baseline=baseline, after=after, failure_attribution=attribution
+    )
+    _write_pointer(
+        run_id,
+        repository,
+        suite_command="pytest -q",
+        manifest_path=str(manifest),
+    )
+
+    result = CliRunner().invoke(
+        cli_main,
+        [
+            *_complete_arguments(run_id, repository),
+            "--waive-suite-delta",
+            "new failure accepted for attribution",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    suite_delta = json.loads(result.output)["record"]["suite_delta"]
+    # The pre-existing failure's entry is dropped rather than stored; only
+    # the newly added failure's candidate commit survives onto the record.
+    assert suite_delta["failure_attribution"] == {
+        "tests/test_new.py::test_regression": "deadbeef1234"
+    }
