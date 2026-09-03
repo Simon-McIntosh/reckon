@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T14:29:36",
+  "updated": "2026-09-03T14:42:51",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -42938,6 +42938,114 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260903T122108264935-the-grid-is-built-at-the-measured-width",
+        "plan": "fleet-monitor-legibility",
+        "section": "\u00a76",
+        "node": "the-grid-is-built-at-the-measured-width",
+        "node_definition": {
+          "done_when": "_ticker_grid in reckon/cli.py resolves its default width by calling ticker.resolve_terminal_width rather than using DEFAULT_WIDTH, so an unspecified --width means the measured pane rather than the stated fallback; an explicit --width still wins over the measurement, asserted as the negative; and a rendered follow line measures exactly the resolved width with the stats as its final characters, asserted THROUGH the follow command's own grid construction rather than by instantiating a Ticker directly, because the defect being fixed is that the module-level resolver was never reached from the call site. The ticker test module passes in full with its count recorded. Measured: resolve_terminal_width returns 207 in this session while _ticker_grid at cli.py:1361 passes DEFAULT_WIDTH of 180, so every rendered line was flush right to a 180-column line inside a 207-column pane. The renderer needs no change, verified by rendering one event at both widths and getting exactly 180 and exactly 207 characters, both ending in the stats",
+          "estimated_hours": null,
+          "goal": "The grid a reader actually sees is built at the resolved terminal width, so the stats land at the pane's right edge",
+          "id": "the-grid-is-built-at-the-measured-width",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T122108264935-the-grid-is-built-at-the-measured-width/manifest.md",
+          "plan": "fleet-monitor-legibility",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/cli.py",
+            "tests/test_crew_ticker.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "flash-b",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T12:21:12Z",
+        "completed_at": "2026-09-03T12:41:57.718Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1237,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1245,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "28ae6000abf36f174938dd526bd3c9b9de7bb7ff",
+        "commits": [
+          "31b218ef7ce8f2205de5a8a906daaece0e22ba31"
+        ],
+        "changed_lines": {
+          "added": 62,
+          "removed": 5,
+          "files": 2
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_crew_ticker.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T122108264935-the-grid-is-built-at-the-measured-width/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T122108264935-the-grid-is-built-at-the-measured-width/manifest.md",
+        "scope_changed": false,
+        "session_id": "09a00d1d-7dac-4ac9-8f12-347bcb337f81",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 3125363,
+            "input_tokens_cumulative": 3125363,
+            "output_tokens": 27652,
+            "output_tokens_cumulative": 27652,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 16.318115000000002,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 16.318115000000002
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -42970,6 +43078,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 704
+    "_version": 705
   }
 }
