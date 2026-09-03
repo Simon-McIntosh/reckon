@@ -1121,6 +1121,26 @@ def replace_stale_watch_seat(project: str) -> dict[str, Any] | None:
     return unwatch(project)
 
 
+def _erase_confirmed_dead_seat(path: Path, stale: Mapping[str, Any]) -> None:
+    """Erase a seat record only if it still names the process just confirmed dead.
+
+    Lock-free and best-effort: nothing here takes the seat lock, so a concurrent
+    arming or teardown may already have replaced the file between the read that
+    confirmed death and this write. Re-reading and comparing against what was
+    read guards that race — when the content has moved on, this leaves the
+    newer state alone rather than clobbering it. Writes the same empty payload
+    an explicit :func:`~reckon.crew.recovery.unwatch` writes, so the two
+    erasure paths can never leave the record disagreeing with each other.
+    """
+    try:
+        with path.open("r+b") as handle:
+            if _read_watch_record(handle) != dict(stale):
+                return
+            _write_watch_record(handle, {})
+    except OSError:
+        return
+
+
 def producer_live(project: str) -> bool:
     """Report whether a project's stream is being written, without locking it.
 
@@ -1128,7 +1148,12 @@ def producer_live(project: str) -> bool:
     one makes an observer able to deny an arming for the microseconds it holds
     it, which is a producer that fails to start because something looked at it.
     The registered pid, paired with its start time so a recycled pid cannot
-    impersonate it, answers the same question and touches nothing.
+    impersonate it, answers the same question.
+
+    A record confirmed dead — its pid is gone, or alive under a start time that
+    disagrees with what was registered, the recycled-pid case — is erased here
+    rather than merely reported, so the next reader finds no record instead of
+    the same stale one. A live record is left untouched.
 
     Deliberately *not* the orphan check that :func:`watch_state` applies. A
     producer whose supervisor died is reparented to init and stops satisfying
@@ -1144,11 +1169,16 @@ def producer_live(project: str) -> bool:
         return False
     with path.open("rb") as handle:
         record = _read_watch_record(handle)
-    pid = record.get("pid")
-    if process_alive(pid) is not True:
+    if not record:
         return False
-    expected = record.get("pid_start_time")
-    return expected is None or _process_start_time(pid) == expected
+    pid = record.get("pid")
+    alive = process_alive(pid) is True
+    if alive:
+        expected = record.get("pid_start_time")
+        alive = expected is None or _process_start_time(pid) == expected
+    if not alive:
+        _erase_confirmed_dead_seat(path, record)
+    return alive
 
 
 def _record_producer_running(record: Mapping[str, Any]) -> bool:
