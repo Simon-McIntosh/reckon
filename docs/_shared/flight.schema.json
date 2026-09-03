@@ -288,6 +288,13 @@
             "additionalProperties": false,
             "description": "Thresholds that decide whether a wave opens. They are compared against whatever a backend actually reported; a backend that reports nothing is never held by them.",
             "properties": {
+                "evidence_shelf_life_minutes": {
+                    "description": "Minutes a refusal that names no reset time keeps describing the present before it is treated as stale and stops holding the wave on its own. Has no effect on a refusal that named a reset, since a stated reset is stronger evidence than an age and already carries its own expiry. A value at or below zero disables ageing and restores an indefinite hold.",
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
                 "exhausted_statuses": {
                     "description": "Threshold-status values that count as exhausted whatever the utilisation reads \u2014 the overage question, answered as data so that the schema enumerates no backend's vocabulary. Empty leaves the ceiling as the only test.",
                     "items": {

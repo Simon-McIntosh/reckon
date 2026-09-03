@@ -298,6 +298,15 @@ slots:
       test.
     multivalued: true
 
+  evidence_shelf_life_minutes:
+    description: >-
+      Minutes a refusal that names no reset time keeps describing the present
+      before it is treated as stale and stops holding the wave on its own. Has
+      no effect on a refusal that named a reset, since a stated reset is
+      stronger evidence than an age and already carries its own expiry. A
+      value at or below zero disables ageing and restores an indefinite hold.
+    range: float
+
   time_budget:
     description: >-
       Wall-clock allowance, written as an integer followed by a unit — `s`, `m`
@@ -501,6 +510,7 @@ classes:
       - utilisation_ceiling_pct
       - resume_reserve_pct
       - exhausted_statuses
+      - evidence_shelf_life_minutes
 
   FenceConfig:
     description: Limits a worker applies to itself before asking for help.
