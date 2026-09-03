@@ -26,6 +26,8 @@
   <title>What the Server Must Serve Before the Canvas Can Land | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-03">
+<meta name="plan-version" content="1">
 </head>
 <body>
 <main class="plan-doc">
@@ -92,44 +94,48 @@
 <div class="r-dec" data-key="figure-dimension-source" data-choice="file-header-no-imaging-dependency" data-by="reckon-ship (deduced from the canvas and the dependency policy)" data-when="2026-09-03">
     <p class="r-dec-q">Where do figure dimensions come from?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="file-header-no-imaging-dependency">Read the PNG header and SVG viewBox directly; no imaging dependency</button>
+      <button class="r-opt chosen" data-value="file-header-no-imaging-dependency">Read the PNG header and SVG viewBox directly; no imaging dependency</button>
       <button class="r-opt" data-value="pillow">Add an imaging library</button>
       <button class="r-opt" data-value="sidecar-only">Only figures with a geometry sidecar get dimensions</button>
-    </p>
+      </p>
     <p class="r-dec-rat">The canvas shows dimensions on every figure row. Twelve of the forty figures have a geometry sidecar, so sidecars alone would leave most rows blank, and an imaging dependency for two integers per file is a cost every install pays. The PNG IHDR chunk and the SVG viewBox are eleven lines of standard library.</p>
-</div>
+    </div>
 <div class="r-dec" data-key="edited-stamp-source" data-choice="git-last-commit-or-mtime-when-dirty" data-by="reckon-ship (deduced from the canvas)" data-when="2026-09-03">
-    <p class="r-dec-q">What is an artifact's edited time?</p>
+    <p class="r-dec-q">What is an artifact&#x27;s edited time?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="git-last-commit-or-mtime-when-dirty">Last git commit time, replaced by mtime when the working tree differs</button>
+      <button class="r-opt chosen" data-value="git-last-commit-or-mtime-when-dirty">Last git commit time, replaced by mtime when the working tree differs</button>
       <button class="r-opt" data-value="plan-modified-meta">The plan-modified meta date</button>
       <button class="r-opt" data-value="mtime-only">File mtime</button>
-    </p>
-    <p class="r-dec-rat">The canvas sorts feeds by edited at minute resolution and the meta is a date. mtime alone resets on every clone and worktree, which would make a fresh checkout report every document as edited today. Git time is stable and mtime covers the served working tree's uncommitted edits, which the server deliberately serves.</p>
-</div>
+      </p>
+    <p class="r-dec-rat">The canvas sorts feeds by edited at minute resolution and the meta is a date. mtime alone resets on every clone and worktree, which would make a fresh checkout report every document as edited today. Git time is stable and mtime covers the served working tree&#x27;s uncommitted edits, which the server deliberately serves.</p>
+    </div>
 <div class="r-dec" data-key="empty-activity-series" data-choice="empty-list-not-zeros" data-by="reckon-ship (deduced from the canvas)" data-when="2026-09-03">
     <p class="r-dec-q">How is a project with no plan edits in the window represented?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="empty-list-not-zeros">An empty list</button>
+      <button class="r-opt chosen" data-value="empty-list-not-zeros">An empty list</button>
       <button class="r-opt" data-value="thirty-zeros">Thirty zeros</button>
-    </p>
-    <p class="r-dec-rat">The canvas prints "no recorded activity" for a silent project and never draws a zero-height polyline; the surface can only make that distinction if the payload does.</p>
-</div>
+      </p>
+    <p class="r-dec-rat">The canvas prints &quot;no recorded activity&quot; for a silent project and never draws a zero-height polyline; the surface can only make that distinction if the payload does.</p>
+    </div>
 </section>
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-ssdc-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-03" data-recommends-skill="/reckon-ship served-surface-data-contracts" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Land the two server contracts, figure rows first</h4>
-    <div class="r-fu-body"><p>Both nodes write <code>reckon/serve.py</code>, so they are one serial lane on one roster member: &#167;2 first because the artifact feeds are the longer downstream chain, then &#167;3. Each lands with its named test and a recorded run against this checkout for the gate.</p></div>
+    <div class="r-fu-body"><p>Both nodes write <code>reckon/serve.py</code>, so they are one serial lane on one roster member: §2 first because the artifact feeds are the longer downstream chain, then §3. Each lands with its named test and a recorded run against this checkout for the gate.</p></div>
     <pre class="r-fu-prompt">/reckon-ship served-surface-data-contracts</pre>
-</article>
+    </article>
 </section>
 
 <section data-reckon="research" id="research" class="r-research-list">
 <h2><span class="sec">§</span> Research</h2>
-<div class="r-research" data-id="r1" data-type="design" data-url="design/reckon-spa-handoff.md">
-  <span class="r-research-title">The designer's triage of the landed SPA, part E: the served-data contracts the landing depends on, four verified and six checked here.</span>
+<div class="r-research" data-id="r1" data-type="design" data-source="" data-added-by="" data-when="" data-url="design/reckon-spa-handoff.md">
+    <span class="r-research-title"><a href="design/reckon-spa-handoff.md">The designer&#x27;s triage of the landed SPA, part E: the served-data contracts the landing depends on, four verified and six checked here.</a></span></div>
+</section>
+<section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260903T193435669457-figure-rows-and-edited-stamps" data-who="s16-serve" data-when="2026-09-03T19:37:21.206Z">
+    <div class="r-comment-body"><p>denied by the claude lane spend limit at 19:37Z with no session captured, so resume was impossible; the refusal named a reset of 1:50am Europe/Paris but the operator re-authenticated the lane at 19:40Z; no commit, no uncommitted work, no manifest</p></div>
 </div>
 </section>
 </main>
