@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T16:13:03",
+  "updated": "2026-09-03T16:28:16",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -44842,6 +44842,118 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260903T141438821859-the-render-assertions-do-not-read-the-host",
+        "plan": "fleet-monitor-legibility",
+        "section": "\u00a77",
+        "node": "the-render-assertions-do-not-read-the-host",
+        "node_definition": {
+          "done_when": "Measured with PYTHONPATH=$PWD and the root interpreter over tests/test_crew_ticker.py tests/test_crew_ticker_layout.py tests/test_crew_watch_stream.py tests/test_crew_recovery.py tests/test_crew_session_delivery.py in ONE pytest invocation: zero failures, against the merged base which has 5. Two are code, three are stale assertions, and they must be told apart rather than all edited to agree with current output. THE TWO CODE FAULTS: ticker's needs-action set omits the 'unreadable' pointer state that recovery's explained-states set carries, so the two sets have drifted and the test comparing them fails - reconcile them at the source rather than by editing the comparison; and the unreadable-pointer branch still populates the snapshot's old 'reason' key while every other path now writes the untruncated 'detail', so an unreadable pointer renders no explanation - populate the field the renderer actually reads. THE THREE STALE ASSERTIONS encode behaviour deliberately removed and must be updated to assert the NEW rule, never deleted or skipped: one expects a readable session id in a row where the owning session is now a single glyph; one expects an attaching follower to report its fleet as transitions, where a settled run is now suppressed at attach; and one expects every row to be exactly the stated fallback width. THAT LAST ONE IS THE IMPORTANT ONE AND IT IS A DEFECT IN ITS OWN RIGHT: it reads the hosting terminal through the width resolver, so it passes for a detached worker with no tty ancestor and fails for a session that has one - 180 against 207 on this machine. Pin the width the assertion renders at so the result cannot depend on the machine, and assert the equal-column property the test exists for rather than any particular number. Then prove the independence: the same invocation must give the same result twice, once with a resolvable terminal ancestor and once without, and no assertion in these five modules may read a width the resolver discovered. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 1.5,
+          "goal": "The five render-path test modules are green at the merged head, and no assertion among them depends on the machine it runs on.",
+          "id": "the-render-assertions-do-not-read-the-host",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/render-assertions-manifest.md",
+          "plan": "fleet-monitor-legibility",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/crew/ticker.py",
+            "reckon/crew/recovery.py",
+            "tests/test_crew_ticker.py",
+            "tests/test_crew_ticker_layout.py",
+            "tests/test_crew_recovery.py",
+            "tests/test_crew_session_delivery.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "flash-b",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T14:14:46Z",
+        "completed_at": "2026-09-03T14:27:30.737Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 757,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 764,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "277a782d7743b6054e7073900436d784422e855d",
+        "commits": [
+          "42b5fac3153ba296b687270cdecd0657e8c64794"
+        ],
+        "changed_lines": {
+          "added": 55,
+          "removed": 8,
+          "files": 4
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_ticker.py tests/test_crew_ticker_layout.py tests/test_crew_watch_stream.py tests/test_crew_recovery.py tests/test_crew_session_delivery.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/ra.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/render-assertions-manifest.md",
+        "scope_changed": false,
+        "session_id": "d0528df7-ee5d-4bf4-b056-8395f57c2540",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 7291064,
+            "input_tokens_cumulative": 7291064,
+            "output_tokens": 45054,
+            "output_tokens_cumulative": 45054,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 37.58166999999999,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 37.58166999999999
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest invocation:",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -44916,6 +45028,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 730
+    "_version": 731
   }
 }
