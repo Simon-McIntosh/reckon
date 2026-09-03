@@ -267,6 +267,77 @@ def normalized_suite_observation(observation: Mapping[str, Any]) -> dict[str, An
     }
 
 
+def added_failure_ids(
+    baseline: Mapping[str, Any] | None, after: Mapping[str, Any] | None
+) -> list[str]:
+    """Return failure ids present in ``after`` but absent from ``baseline``.
+
+    This is the exact set-difference arithmetic the suite-delta promotion gate
+    already computes to separate new failures from pre-existing ones. A per-
+    failure attribution reuses it here rather than defining a second, looser
+    notion of "new".
+    """
+    baseline_ids = (
+        set(baseline.get("failure_ids") or [])
+        if isinstance(baseline, Mapping)
+        else set()
+    )
+    after_ids = (
+        set(after.get("failure_ids") or []) if isinstance(after, Mapping) else set()
+    )
+    return sorted(after_ids - baseline_ids)
+
+
+def failure_attribution_missing_fields(
+    attribution: Any,
+    after: Mapping[str, Any] | None,
+    *,
+    name: str = "failure_attribution",
+) -> list[str]:
+    """Name attribution entries that cannot be trusted as evidence.
+
+    An attributed failure id absent from the after observation cannot be a
+    real failure the worker saw, and an entry with no candidate commit is
+    prose rather than an attribution.
+    """
+    if attribution is None:
+        return []
+    if not isinstance(attribution, Mapping):
+        return [name]
+    after_ids = (
+        set(after.get("failure_ids") or []) if isinstance(after, Mapping) else set()
+    )
+    missing: list[str] = []
+    for failure_id, commit in attribution.items():
+        label = f"{name}[{failure_id}]"
+        if str(failure_id) not in after_ids:
+            missing.append(f"{label} not in after_suite.failure_ids")
+        elif not str(commit or "").strip():
+            missing.append(f"{label} has no candidate commit")
+    return missing
+
+
+def new_failure_attribution(
+    baseline: Mapping[str, Any] | None,
+    after: Mapping[str, Any] | None,
+    attribution: Mapping[str, Any] | None,
+) -> dict[str, str]:
+    """Return each newly added failure's candidate commit.
+
+    "New" is exactly :func:`added_failure_ids` — an entry naming a
+    pre-existing failure (one also present in ``baseline``) is dropped rather
+    than treated as an attribution, so a worker cannot attribute a failure it
+    did not introduce.
+    """
+    added = set(added_failure_ids(baseline, after))
+    mapping = attribution if isinstance(attribution, Mapping) else {}
+    return {
+        str(failure_id): str(commit).strip()
+        for failure_id, commit in mapping.items()
+        if str(failure_id) in added and str(commit or "").strip()
+    }
+
+
 def evidence_records_for_plan(
     project: str,
     plan: str,
