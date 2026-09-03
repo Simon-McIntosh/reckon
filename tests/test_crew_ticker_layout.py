@@ -482,7 +482,7 @@ def test_a_narrow_width_still_widens_to_fit_the_role_column():
     assert len(line) == grid.width
 
 
-# ── The model and effort columns: facts from the log, derived by the renderer ──
+# ── The agent column: alias and effort fused into one cell, one separator ──
 
 
 def _fact_event(**overrides):
@@ -497,35 +497,33 @@ def _fact_event(**overrides):
     return _event(**event)
 
 
-def test_a_declared_alias_renders_in_place_of_the_model_id(grid):
-    """The alias spares the reader the model line, in its own model column."""
+def test_a_declared_alias_renders_fused_with_its_effort(grid):
+    """The alias spares the reader the model line, fused with its effort."""
     line = plain(grid.render(_fact_event(alias="sonnet5")))
-    assert "sonnet5" in line
-    assert "medium" in line
+    assert "sonnet5\N{MIDDLE DOT}medium" in line
     assert "claude-sonnet-5" not in line
-    assert "sonnet5·medium" not in line
     assert len(line) == 180
 
 
 def test_a_backend_with_no_alias_renders_the_model_id_not_an_empty_cell(grid):
     """An unaliased model must not read as missing data.
 
-    Without an alias the model column shows the model id itself rather than
-    the empty cell it used to render.
+    Without an alias the cell shows the model id itself rather than the empty
+    identity it used to render. This model id alone reaches the column
+    budget, so the fused effort elides rather than truncating the identity —
+    the more useful half to keep.
     """
     line = plain(
         grid.render(_event(model="deepseek-v4-flash", alias="", effort="xhigh"))
     )
     assert "deepseek-v4-flash" in line
-    assert "xhigh" in line
     assert len(line) == 180
 
 
-def test_effort_renders_in_full_in_its_own_column(grid):
-    """The effort renders whole, never abbreviated, in a column of its own."""
+def test_effort_renders_in_full_beside_the_alias(grid):
+    """The effort renders whole, never abbreviated, beside the alias."""
     line = plain(grid.render(_fact_event(effort="xhigh")))
-    assert "xhigh" in line
-    assert "sonnet5·xhigh" not in line
+    assert "sonnet5\N{MIDDLE DOT}xhigh" in line
 
 
 def test_the_derivation_lowercases_the_effort_word(grid):
@@ -536,31 +534,46 @@ def test_the_derivation_lowercases_the_effort_word(grid):
 def test_max_renders_in_full_not_abbreviated(grid):
     """`max` spells in full beside the alias; no mx shorthand survives."""
     line = plain(grid.render(_fact_event(effort="max")))
-    assert "max" in line
-    assert "sonnet5·mx" not in line
+    assert "sonnet5\N{MIDDLE DOT}max" in line
+    assert "sonnet5\N{MIDDLE DOT}mx" not in line
 
 
 def test_a_declared_effort_spelling_does_not_abbreviate_the_full_word(grid):
-    """The separate effort column spells the effort whole.
+    """The fused cell spells the effort whole.
 
-    The abbreviation served a fused alias-effort cell; with effort in its own
-    column the full word is the point of the column, so a declared spelling is
-    not consulted by the effort column at all.
+    The abbreviation served the fused cell before the twin-column split; the
+    rejoin keeps the full word, so a declared spelling is not consulted here
+    at all.
     """
     line = plain(grid.render(_fact_event(effort="high")))
-    assert "high" in line
-    assert "sonnet5·hi" not in line
+    assert "sonnet5\N{MIDDLE DOT}high" in line
 
 
-def test_the_model_and_effort_columns_are_separate(grid):
-    """No fused separator: model identity and effort read down their own columns."""
+def test_the_model_and_effort_share_one_cell_with_one_separator(grid):
+    """One cell, one separator: no gap wide enough to read as a missing field."""
     line = plain(
         grid.render(_fact_event(model="deepseek-v4-flash", alias="dsv4-flash"))
     )
-    assert "dsv4-flash" in line
-    assert "medium" in line
-    assert "dsv4-flash·medium" not in line
+    assert "dsv4-flash\N{MIDDLE DOT}medium" in line
     assert len(line) == 180
+
+
+def test_the_widest_configured_pair_renders_without_elision(grid):
+    """Ten characters of alias, one separator, seven of effort: eighteen exactly.
+
+    dsv4-flash and minimal are the widest real alias and effort word; the
+    resolved column must hold the whole pair with no padding beyond the single
+    separator and no truncation.
+    """
+    line = plain(
+        grid.render(
+            _fact_event(model="deepseek-v4-flash", alias="dsv4-flash", effort="minimal")
+        )
+    )
+    fused = "dsv4-flash\N{MIDDLE DOT}minimal"
+    assert len(fused) == ticker_module.AGENT
+    start = line.index(fused)
+    assert line[start + len(fused)] == " "
 
 
 def test_a_pointer_written_before_this_change_still_renders_a_label(grid):
@@ -575,10 +588,25 @@ def test_a_pointer_written_before_this_change_still_renders_a_label(grid):
     assert len(line) == 180
 
 
-def test_an_effort_only_record_renders_without_a_stray_separator(grid):
-    line = plain(grid.render(_event(effort="high")))
+def test_a_record_with_no_effort_renders_the_alias_alone(grid):
+    """No effort, no trailing separator: a bare separator would look like a
+    truncated identity rather than the absence it is."""
+    line = plain(
+        grid.render(
+            _event(model="claude-sonnet-5", alias="sonnet5", agent="", effort="")
+        )
+    )
+    assert "sonnet5" in line
+    assert "sonnet5\N{MIDDLE DOT}" not in line
+    assert len(line) == 180
+
+
+def test_an_effort_only_record_renders_without_a_leading_separator(grid):
+    """Effort with no identity beside it renders alone, not prefixed by a
+    separator that has nothing to attach to."""
+    line = plain(grid.render(_event(agent="", effort="high")))
     assert "high" in line
-    assert "·high" not in line
+    assert "\N{MIDDLE DOT}high" not in line
     assert len(line) == 180
 
 
