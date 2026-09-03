@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T06:49:24",
+  "updated": "2026-09-03T06:57:00",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -522,6 +522,15 @@
         "created": "2026-09-02"
       },
       {
+        "id": "opus-a",
+        "harness": "claude",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-03"
+      },
+      {
         "id": "routing-priors",
         "harness": "codex",
         "role": "implement",
@@ -538,6 +547,15 @@
         "role": "implement",
         "session_id": "01a00aa8-4a6c-78a0-9c90-c5ef82985fc1",
         "created": "2026-08-16"
+      },
+      {
+        "id": "sonnet-a",
+        "harness": "claude",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-03"
       },
       {
         "id": "spa-render-fault",
@@ -37332,9 +37350,115 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260903T045118699895-boundary-refusal-carries-a-waiver",
+        "plan": "clive-local-workers",
+        "section": "\u00a76",
+        "node": "boundary-refusal-carries-a-waiver",
+        "node_definition": {
+          "done_when": "The promotion boundary check in reckon/crew/promotion.py refuses a run whose footprint reached another tree at a declared path, and it is the only refusal in this surface with no way to proceed deliberately: --allow-unreconciled-runs waives an unreconciled backlog and --waive-suite-delta waives added suite failures, both recording what was waived on the promoted record. On 2026-09-02 that check was wrong for an hour and blocked six runs across three sessions, and the absence of any override is what turned a wrong verdict into a fleet-wide stop, since a revert was refused by permission policy and a forward fix was the only route. Add an explicit waiver flag to reckon crew complete that takes a required reason string, permits promotion despite a boundary refusal, and records on the ledger row both the reason and the exact paths and owning trees that were waived, so the waiver is evidence rather than an erasure. A promotion with no boundary violation must not accept the flag, because a waiver that can be passed unconditionally stops meaning anything. Tests in tests/test_crew_boundary_waiver.py assert: a run refused for a stray path in the main checkout promotes under the flag and its record carries the reason and the waived paths; the same run without the flag is still refused unchanged; passing the flag on a clean run is refused naming that nothing was waived; and the waived paths recorded are exactly those the refusal named. Your gate is that new test file plus tests/test_crew_promotion_scope.py and tests/test_crew_promotion.py. Do NOT run the full suite and do NOT run any browser-driven test. Judge by delta against base 10cc90dc97187f3ae4fa4b8aa8c4c96aad4e9e8a",
+          "estimated_hours": null,
+          "goal": "Give the worktree-boundary refusal the explicit override every other refusal in this surface already has",
+          "id": "boundary-refusal-carries-a-waiver",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T045118699895-boundary-refusal-carries-a-waiver/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "reckon/cli.py",
+            "tests/test_crew_boundary_waiver.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "sonnet-a",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "backend": "claude",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T04:51:24Z",
+        "completed_at": "2026-09-03T04:56:05.385Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 275,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 281,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "10cc90dc97187f3ae4fa4b8aa8c4c96aad4e9e8a",
+        "commits": [
+          "da054f797eac22368915f6536c47534ef3beaffd"
+        ],
+        "changed_lines": {
+          "added": 218,
+          "removed": 7,
+          "files": 3
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_crew_boundary_waiver.py tests/test_crew_promotion_scope.py tests/test_crew_promotion.py",
+          "exit_status": 0,
+          "log_path": "/tmp/boundary_test.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T045118699895-boundary-refusal-carries-a-waiver/manifest.md",
+        "scope_changed": false,
+        "session_id": "c4c6c68a-9bf6-42a2-97ad-bbf075599eb8",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 1.01,
+          "rate_limit_type": "overage",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-10-01T00:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 1,
+          "tokens": {
+            "cache_creation_input_tokens": 100027,
+            "cache_creation_input_tokens_cumulative": 100027,
+            "cache_read_input_tokens": 4930076,
+            "cache_read_input_tokens_cumulative": 4930076,
+            "inference_geo": "not_available",
+            "input_tokens": 104,
+            "input_tokens_cumulative": 104,
+            "output_tokens": 22275,
+            "output_tokens_cumulative": 22275,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 1.6090812,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 1.6090812
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [],
-    "_version": 607
+    "_version": 610
   }
 }
