@@ -57,6 +57,7 @@ from reckon.crew.routing import (
     resolve_role,
     resolved_time_budget,
     resolved_time_ceiling,
+    shadow_worktree_session,
 )
 from reckon.crew.runs import (
     _expanded_scope_paths,
@@ -1357,7 +1358,7 @@ def shadow(
         project=project,
         repo=repo,
         config=shadow_config,
-        session=f"shadow-{run_id}",
+        session=shadow_worktree_session(run_id, _backend_name),
         base=base_sha,
         locked_decisions=node.requires_decisions,
         peer_scopes={},
