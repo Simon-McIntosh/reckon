@@ -24,8 +24,8 @@
   <title>What May Run Together, and What Should Run Next | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-08-26">
-<meta name="plan-version" content="68">
+<meta name="plan-modified" content="2026-09-03">
+<meta name="plan-version" content="69">
 <meta name="plan-impl" content="0.96">
 </head>
 <body>
@@ -674,15 +674,15 @@
       </p>
     <p class="r-dec-rat">Locked 2026-08-24 by the lead. The window makes how much work may be in flight an explicit policy number rather than a consequence of the rule&#x27;s shape. Earliest-open-sprint was rejected because with five sprints holding open work it would defer almost everything behind S5 on the day it shipped, which reads as the tool breaking rather than the horizon being five deep. Every-active-sprint was rejected because the active label cannot currently be evaluated - S5, S9 and S12 are all active while active_sprint_id names S5 - making it a two-step change gated on a sprint cleanup. The accepted cost is that N must be justified.</p>
     </div>
-<div class="r-dec" data-key="concurrent-sprint-integration" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="concurrent-sprint-integration" data-choice="retry-and-race" data-by="lead" data-when="2026-09-03T07:42:12+00:00">
     <p class="r-dec-q">How do two sessions shipping two sprints share the primary branch?</p>
     <p class="r-dec-ctx">Sprint state is already per-sprint, so the contention is the run ledger and the primary branch. Both are version-paired, so this decides who waits, not whether anything is lost.</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="single-pusher">One session owns pushes for the window, the other hands it merged commits</button>
       <button class="r-opt" data-value="per-sprint-branch">Each sprint integrates on its own branch, merged to primary at sprint close</button>
-      <button class="r-opt" data-value="retry-and-race">Both push, with the ledger write retried on version conflict</button>
+      <button class="r-opt chosen" data-value="retry-and-race">Both push, with the ledger write retried on version conflict</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Locked 2026-09-03 by the lead. Both sessions push and the ledger write retries on version conflict. Sprint state is already per-sprint and both the ledger and the branch are version-paired, so a collision costs a retry rather than data, and this is the only option consistent with the repository&#x27;s binding rule that work commits to the primary branch. A single pusher was rejected because it needs a live peer channel and a handover protocol that does not exist, and it idles the second session behind the first&#x27;s integration beat. A branch per sprint was rejected because it creates topic branches unilaterally against the repository&#x27;s branch hygiene, and defers every integration failure to sprint close where it is most expensive to unpick. The accepted cost is that a losing push pulls and retries, and that two sessions&#x27; commits interleave on the primary branch.</p>
     </div>
 <div class="r-dec" data-key="adjacency-definition" data-choice="import-or-call-edge" data-by="lead" data-when="2026-08-24T20:13:58+00:00">
     <p class="r-dec-q">What makes two nodes adjacent enough to be wired together by default?</p>
