@@ -25,6 +25,10 @@ allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon_
 
 Full detail below.
 
+## Fan-out boundary
+
+In a crew-managed repository, investigation and review fan-out is `reckon crew dispatch` work under the investigate and review roles; harness-native background agents bypass the run ledger, manifests and calibration and are refused by the guard.
+
 ## Canonical authoring exemplar
 
 Read `docs/_exemplar-plan.html` in the Reckon repository before writing a

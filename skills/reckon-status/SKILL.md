@@ -30,6 +30,10 @@ Full detail below.
 **Never writes.** This skill does not modify any file and does not call `edit_plan` or POST
 to the docs-server. Fixes go through `reckon-edit`.
 
+## Fan-out boundary
+
+In a crew-managed repository, investigation and review fan-out is `reckon crew dispatch` work under the investigate and review roles; harness-native background agents bypass the run ledger, manifests and calibration and are refused by the guard.
+
 ## Hard rules
 
 1. **Pure read.** Never write a file. Never call `edit_plan`. Never POST to the docs-server.
