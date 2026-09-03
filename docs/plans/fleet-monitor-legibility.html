@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="fleet-monitor-legibility">
   <meta name="plan-title" content="The Monitor Reads At The Width It Is Read At">
   <meta name="plan-summary" content="Make the fleet pane legible: colour that survives the emit path, a reason that says what the worker asked, role, aliases, measured width.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
@@ -25,9 +25,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="36">
+<meta name="plan-version" content="38">
 <meta name="plan-commits" content="0c4d36f,e535dd4,81d35f9,0e9cdb2,51230b3,0580cbc,d805e6d,7e99433">
-<meta name="plan-impl" content="0.95">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -556,6 +556,12 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260903T154059533473-the-effort-rejoins-the-model-name" data-who="sonnet-a" data-when="2026-09-03T15:48:02.152Z">
     <div class="r-comment-body"><p>The alias and the effort share one cell with a single separator and the effort still spelled in full, so no row shows padding between them; ten plus one plus seven returns the recovered column to the reason with no other budget moved.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260903T155608934243-the-legacy-line-assertion-reads-one-cell" data-who="impl-testrole" data-when="2026-09-03T15:57:42.357Z">
+    <div class="r-comment-body"><p>The legacy-line test now pins the exact fused cell and rules out padding around the separator, which is tighter than the two substring checks it replaced; the render set is green at 158.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260903T1810" data-who="reckon-ship" data-when="2026-09-03T16:10:00+00:00">
+    <div class="r-comment-body">THE EFFORT REJOIN LANDED AND THE PLAN RETURNS TO SHIPPED. Commit 9967f9b merged, with the assertion follow-on at 934a158; the render set measures 158 passed and exit 0 at merged head 40973e6, and 301 passed across the wider crew surface at 8474967. The pane renders opus 5 then a separator then high, one cell, effort in full, no padding - confirmed from a live follower rather than from a test. THE ASSERTION FOLLOW-ON IS THE RECORD WORTH KEEPING, because it is the eighth instance of this plan's own pattern and the clearest demonstration of why a merged-head run exists. tests/test_crew_recovery.py carried an assertion whose NAME stated it expected the twin columns being reversed, and that file sat outside the rejoin node's fence. It passed 156 of 156 inside the worker's worktree and failed the instant the change met main, because the worktree predated the merge and was therefore asserting against the old renderer. The worker was honest, its gate was green, and the result was still wrong at the merge - which is the case no worker can detect by construction and the orchestrator's single integration run is for. Its replacement is tighter than what it replaced: the old test asserted that the alias and the effort each appeared somewhere in the line, two loose substring checks, while the new one pins the exact fused cell and rules out padding around the separator. A stale assertion updated to the new rule ended up stronger than the one that encoded the old one.</div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260903T090449100092-the-reason-says-what-the-worker-asked" data-who="impl-fit" data-when="2026-09-03T09:16:13.522Z">
     <div class="r-comment-body"><p>A blocked reason is the worker's own headline with a marker saying whether a resume can answer it; 285 passed across seven modules against 1 pre-existing failure present at base</p></div>
