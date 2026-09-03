@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T21:42:49",
+  "updated": "2026-09-04T00:02:21",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -764,7 +764,7 @@
         "id": "s16-serve",
         "harness": "claude",
         "role": "implement",
-        "session_id": null,
+        "session_id": "aca581b6-8b7c-49e1-8e27-06bdb7814079",
         "session_model": null,
         "sessions": {},
         "created": "2026-09-03"
@@ -782,9 +782,11 @@
         "id": "s16-tokens",
         "harness": "claude",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "1b8fe446-11c9-4502-b4e3-9532c12da8ed",
+        "session_model": "claude-sonnet-5",
+        "sessions": {
+          "{\"alias\":\"sonnet 5\",\"backend\":\"claude\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "1b8fe446-11c9-4502-b4e3-9532c12da8ed"
+        },
         "created": "2026-09-03"
       },
       {
@@ -47163,6 +47165,249 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260903T215004421663-a-promotion-cannot-discard-a-live-session",
+        "plan": "work-survives-a-provider-outage",
+        "section": "\u00a72",
+        "node": "a-promotion-cannot-discard-a-live-session",
+        "node_definition": {
+          "done_when": "Ten minutes of provider unavailability destroyed sixty-four turns of worker orientation twice in one day, in two different sessions, by the same sequence: a wave is refused per-request on a spend limit, the coordinator promotes the blocked runs, and promotion returns ok true while removing the pointer. Promotion is already unconditional about evidence - a passing gate is refused unless it carries the check that produced it - and silent about recoverability. Done when crew complete refuses to promote a run classified blocked whose session is recoverable, and the refusal names reckon crew resume as the remedy and states the session id it found. RECOVERABLE MEANS EITHER SOURCE, and this is the load-bearing part: the session id present on the live pointer, OR absent there and present in the run's stream, because resume_plan in reckon/crew/dispatch.py already recovers the second case by calling observe and re-reading - so a null session_id on a pointer is not evidence of an unresumable run and the incident turned on exactly that misreading. An explicit waiver flag promotes anyway, and the waiver together with its stated reason lands on the ledger row, so a deliberate discard is afterwards distinguishable from an accidental one. THREE NEGATIVES MUST BE ASSERTED so the existing paths stay reachable: a blocked run with a session id in neither place promotes unchanged; a run with a passing gate promotes unchanged whatever its session; and a run already terminal for a reason other than blocked is unaffected. ASSERT THROUGH THE CREW COMPLETE ENTRY POINT a coordinator invokes, never through a helper, over pointers and streams built the way dispatch writes them under a temporary config home, and assert the real config home and the real ledger are untouched afterwards. At least one added assertion must fail against base 5958f48. Measured over tests/test_crew_promotion.py tests/test_crew_promotion_scope.py tests/test_promotion_release.py in ONE invocation: zero failures against their combined count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 2.5,
+          "goal": "Promoting a run whose session is still recoverable is refused and names the resume command, unless an explicit waiver is passed and recorded.",
+          "id": "a-promotion-cannot-discard-a-live-session",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/promotion-guard-manifest.md",
+          "plan": "work-survives-a-provider-outage",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "tests/test_crew_promotion.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "opus-a",
+        "backend": "claude-opus",
+        "local": false,
+        "agent": {
+          "alias": "opus 5",
+          "backend": "claude-opus",
+          "effort": "high",
+          "launch": "cli",
+          "model": "claude-opus-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T21:50:21Z",
+        "completed_at": "2026-09-03T21:55:50.445Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 319,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 329,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "5958f485d571735925883e55c2ee63ee1cc92917",
+        "commits": [
+          "a6bc1b07b3032738b3077c2a80886a4b0b9b3cc9"
+        ],
+        "changed_lines": {
+          "added": 330,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_promotion.py tests/test_crew_promotion_scope.py tests/test_promotion_release.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vg.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/promotion-guard-manifest.md",
+        "scope_changed": false,
+        "session_id": "3e81786c-e969-4c9e-9fed-220afdde1bf7",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 1.21,
+          "rate_limit_type": "overage",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-10-01T00:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 1,
+          "tokens": {
+            "cache_creation_input_tokens": 266663,
+            "cache_creation_input_tokens_cumulative": 305765,
+            "cache_read_input_tokens": 1951324,
+            "cache_read_input_tokens_cumulative": 7432870,
+            "inference_geo": "not_available",
+            "input_tokens": 4,
+            "input_tokens_cumulative": 52,
+            "output_tokens": 705,
+            "output_tokens_cumulative": 21020,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 3.6599369999999984,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 7.299844999999999
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 325.688,
+          "generated_tokens": 21020,
+          "generation_seconds": 276.872,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 31.6,
+          "machine_seconds": 48.816,
+          "peak_input_tokens": 316467,
+          "tokens_per_second": 75.92,
+          "wall_tokens_per_second": 64.54
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260903T215430606145-white-ground-and-type",
+        "plan": "spa-shell-scope-and-visibility",
+        "section": "\u00a75",
+        "node": "white-ground-and-type",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_shared_token_contrast.py tests/test_css_layering.py \"tests/test_build.py::test_spa_entry_points_load_the_same_surface_stylesheets\" \"tests/test_build.py::test_served_and_static_pages_request_only_their_own_origin\" -q passes; grep -c fbfaf7 docs/index.html docs/_shared/foundation.css prints 0 for both; grep -c '<style' docs/index.html prints 0; grep -c '\"Geist\"' docs/_shared/foundation.css prints at least 1; grep -c fonts.googleapis docs/_shared/foundation.css docs/index.html prints 0 for both",
+          "estimated_hours": 1.0,
+          "goal": "The light theme uses the canvas ground and type tokens with contrast preserved and the entry point stops overriding the token layer",
+          "id": "white-ground-and-type",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T215430606145-white-ground-and-type/manifest.md",
+          "plan": "spa-shell-scope-and-visibility",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "25m",
+          "write_paths": [
+            "docs/_shared/foundation.css",
+            "docs/index.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s16-tokens",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "alias": "sonnet 5",
+          "backend": "claude",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T21:54:48Z",
+        "completed_at": "2026-09-03T22:01:03.066Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 368,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 375,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "2bf4ee43837de31bb84bbbda3607bf23eaaa98d3",
+        "commits": [
+          "98ff44ccc00272895f2a4dbe6b37830b7ba7e8ca"
+        ],
+        "changed_lines": {
+          "added": 0,
+          "removed": 36,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "grep -c fbfaf7/<style/Geist/fonts.googleapis over docs/index.html and docs/_shared/foundation.css at 98ff44c, plus the section's four named pytest targets",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T215430606145-white-ground-and-type/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T215430606145-white-ground-and-type/manifest.md",
+        "scope_changed": false,
+        "session_id": "1b8fe446-11c9-4502-b4e3-9532c12da8ed",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 0.95,
+          "rate_limit_type": "five_hour",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-09-04T01:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 0.9,
+          "tokens": {
+            "cache_creation_input_tokens": 82133,
+            "cache_creation_input_tokens_cumulative": 82133,
+            "cache_read_input_tokens": 2663728,
+            "cache_read_input_tokens_cumulative": 2663728,
+            "inference_geo": "not_available",
+            "input_tokens": 60,
+            "input_tokens_cumulative": 60,
+            "output_tokens": 8962,
+            "output_tokens_cumulative": 8962,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 0.9510176000000001,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 0.9510176000000001
+        },
+        "lineage": {
+          "attempt": 2,
+          "kind": "redispatch",
+          "previous_run_id": "r-20260903T193653285453-white-ground-and-type",
+          "root_run_id": "r-20260903T193653285453-white-ground-and-type"
+        },
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 371.6,
+          "generated_tokens": 8962,
+          "generation_seconds": 113.045,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 10.7,
+          "machine_seconds": 258.555,
+          "peak_input_tokens": 106554,
+          "tokens_per_second": 79.28,
+          "wall_tokens_per_second": 24.12
+        },
+        "attempt": 2,
+        "attempt_kind": "redispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_shared_token_contrast.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -47291,8 +47536,36 @@
         "reason": "utilisation 100.0% is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
         "closed_by_purpose": null,
         "resumption_fired": false
+      },
+      {
+        "hold_id": "hold-claude-20260903194319",
+        "backend": "claude",
+        "purpose": "dispatch",
+        "opened_at": "2026-09-03T19:43:19Z",
+        "closed_at": "2026-09-03T21:51:05Z",
+        "held_seconds": 7666,
+        "utilisation_pct": 100.0,
+        "resets_at": null,
+        "effective_ceiling_pct": 95.0,
+        "reason": "utilisation 100.0% is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
+        "closed_by_purpose": "dispatch",
+        "resumption_fired": false
+      },
+      {
+        "hold_id": "hold-claude-opus-20260903195030",
+        "backend": "claude-opus",
+        "purpose": "dispatch",
+        "opened_at": "2026-09-03T19:50:30Z",
+        "closed_at": "2026-09-03T21:50:16Z",
+        "held_seconds": 7186,
+        "utilisation_pct": 100.0,
+        "resets_at": null,
+        "effective_ceiling_pct": 95.0,
+        "reason": "utilisation 100.0% is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
+        "closed_by_purpose": "dispatch",
+        "resumption_fired": false
       }
     ],
-    "_version": 770
+    "_version": 778
   }
 }

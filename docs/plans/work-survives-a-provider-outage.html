@@ -23,8 +23,8 @@
   <title>Work Survives A Provider Outage | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="3">
+<meta name="plan-modified" content="2026-09-04">
+<meta name="plan-version" content="5">
 </head>
 <body>
   <main class="plan-doc">
@@ -237,6 +237,70 @@
       recovery is not lost if that session ends.
     </p>
 
+    <h2 id="s7">§7 — A refused wave resumes itself</h2>
+    <p>
+      Everything above is defence. It refuses a promotion that would destroy a
+      resume path, keeps the worktree alive, makes recoverability legible and
+      names the remedy in the record — and after all of it, a human or a
+      coordinator still has to notice the outage and type the command. That is
+      the wrong shape for this failure, because the failure's defining property
+      is that it happens while nobody is watching, on a lane that returns
+      minutes later, to a session whose only need is the word
+      <strong>continue</strong>. A recovery that requires attention is not a
+      recovery; it is a second chance to make the same mistake, and this
+      workstation used both of its chances today.
+    </p>
+    <p>
+      The trigger already exists and needs no provider polling. A refusal that
+      names a reset time is dated by it, and a refusal that names none ages out
+      of a declared shelf life — so the moment a held lane becomes eligible is
+      computable from records already on disk, without spending a token to
+      discover it. What is missing is the actor that acts on that moment.
+    </p>
+    <p>
+      <strong>The recovery is one idempotent command, and something already
+      running calls it.</strong> A sweep takes a project, finds every run
+      blocked by a provider refusal whose hold is no longer in force, whose
+      session is recoverable and whose worktree is present, and resumes each
+      with an advice naming the reset as passed and instructing it to continue
+      from where it stopped. Being idempotent and safe to repeat is what lets
+      the existing per-project watch producer invoke it on a cadence, so the
+      capability becomes automatic without a new daemon and without the display
+      process holding the logic itself. An operator can run the same command by
+      hand, which is also how it is tested.
+    </p>
+    <p>
+      Four bounds keep the sweep from becoming its own hazard, and each is a
+      measure rather than a hope. It resumes a given run <em>at most once per
+      hold</em>, so a lane that refuses again produces no retry storm — a second
+      refusal re-arms the hold and the sweep waits for that hold's own expiry.
+      It skips a run whose write scope has since been claimed by another run,
+      because resuming into a scope somebody else now owns is a collision it
+      would be creating rather than recovering from. It skips a run whose
+      worktree is absent and says so, since a resume with no working directory
+      cannot start — that is the state §3 exists to prevent and the sweep must
+      not paper over it. And it refuses to resume onto a lane whose hold is
+      still in force, so the sweep can never be the thing that spends the last
+      of a recovering quota.
+    </p>
+    <p>
+      Done when a sweep over a project resumes every run held by a lapsed
+      provider refusal whose session is recoverable and whose worktree is
+      present, one resume per run, each carrying a continue advice; when running
+      the sweep twice in succession performs the resumes once and reports the
+      second pass as nothing to do; when a run whose hold is still in force,
+      whose scope is claimed elsewhere, or whose worktree is gone is skipped
+      with its reason named rather than silently; when the sweep records what it
+      resumed and what it skipped so an operator reading afterwards can see the
+      recovery happen; and when the watch producer invokes it on a cadence so no
+      attention is required. Asserted through the sweep's own entry point over
+      pointers and streams built the way dispatch writes them under a temporary
+      configuration home, from a real refused stream rather than a synthesised
+      one, with the real configuration home asserted untouched. The
+      once-per-hold bound is asserted by refusing the resumed run a second time
+      and requiring the sweep to wait rather than retry.
+    </p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="waiver-strictness" data-choice="" data-by="" data-when="">
@@ -294,6 +358,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s3" data-id="c-20260904T0000" data-who="reckon-ship" data-when="2026-09-03T21:58:00+00:00">
     <div class="r-comment-body">SECTION 3 IS RESHAPED BY A PEER RCA THAT IS SHARPER THAN WHAT I AUTHORED, and it comes with a severity correction that must travel with it. THE SEVERITY FIRST, BECAUSE I REPEATED THE WRONG FIGURE. The five streams were measured for file-writing tool calls and carry Write 0, Edit 0, MultiEdit 0 and NotebookEdit 0 across all five, against nine Read calls and nineteen Bash calls on the three substantive runs. That agrees with the git status and the empty commit range taken before promotion. So there was never a work product: the transcripts were never endangered by promotion, and recreating the worktrees recovered a working directory rather than any artifact. The incident cost minutes. Both earlier framings were wrong in opposite directions - first unrecoverable loss, then sixty-four turns of orientation not lost - and neither survived measurement. The defect below is real and a refusal arriving a few turns later would make it expensive; the occurrence that exposed it was cheap. THE ROOT CAUSE IS NARROWER AND WORSE THAN PROMOTION CLOSES TREES. The release path is careful: it delegates to the gc classification and reclaims only trees classified integrated or disposable, withholding a dirty tree because nothing reclaims a worktree holding work that exists nowhere else, and an unintegrated one because removing it would destroy the only copy of that commit. Those verdicts are right, and they mean the catastrophic version of this cannot happen through promotion at all. THE DEFECT IS THAT THE ONE GUARD WHICH WOULD HAVE FIRED IS GUARANTEED FALSE AT THE MOMENT IT IS CHECKED. A tree is withheld as live-referenced when a live run pointer still claims it, and release runs only after the ledger append and the pointer delete have both succeeded - so the pointer whose existence would raise that verdict is removed one step before the classifier looks for it. The live claim list is empty by construction on every promotion-triggered release. The guard protects a tree from gc and gives promotion a free pass, which is the ninth instance in this repository of a capability that reads as protection while being unreachable. AND THE CLASSIFICATION ANSWERS THE WRONG QUESTION. It asks whether a tree holds work that exists nowhere else, which is a question about artifacts. It never asks whether a tree serves a session that could still continue, which is a question about capability. The five trees were clean at base, so integrated was the correct verdict about artifacts and simultaneously the wrong decision, because each was the working directory of a live resumable session. The vocabulary has no term for that state, and a state nothing can name is a state nothing can guard. FIVE FIXES, ADOPTED IN THE PEER'S ORDER OF VALUE PER LINE. One, release on a passing gate only, which becomes this section's primary measure: a passing gate is a closure and its tree is spent, while a failed or not-run gate is by definition a triage step whose node will be resumed, retried or reshaped. It keys on data promotion already holds, needs no new classification, composes with the section 2 guard rather than duplicating it, and would have withheld all five. Two, the waiver of section 2 retains the tree - a waiver means record this now, never and burn the working directory. Three, either classify before the pointer delete or pass the record being promoted into the inspection, so a live-referenced verdict is reachable in a test rather than dead code. Four, add the missing term, a clean tree whose record carries a session id and whose gate is not passing, with a withheld reason stating that removal leaves the session with no working directory. Five, report the consequence rather than the act: a released flag reading true is a true statement phrased as an accomplishment, and naming the session whose resume it forecloses puts the cost on the same line as the act.</div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260903T215004421663-a-promotion-cannot-discard-a-live-session" data-who="opus-a" data-when="2026-09-03T21:55:50.445Z">
+    <div class="r-comment-body"><p>Promoting a blocked run whose session is recoverable from either the pointer or the stream is refused and names crew resume; an explicit waiver promotes and records itself on the ledger row; a run with no recoverable session and a run with a passing gate are unaffected.</p></div>
 </div>
 </section>
 </main>
