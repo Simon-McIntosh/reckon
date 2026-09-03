@@ -1354,6 +1354,20 @@ def _echo_follow_line(line: str, *, stream=None) -> None:
 TICKER_THEMES = ("dark", "light")
 
 
+def _row_is_stale_inventory(event) -> bool:
+    """Whether a text reader is better served by this row's absence.
+
+    A follower emits one baseline per live run the moment it attaches, so a
+    restart prints a burst of rows for work that already finished, each reading
+    exactly like a landing that just happened. The machine stream still carries
+    them — a consumer reconstructing the fleet needs the inventory — so the
+    judgement is made here, on the human path only.
+    """
+    from reckon.crew import ticker as ticker_module
+
+    return ticker_module.settled_at_attach(event)
+
+
 def _ticker_grid(width, theme, no_color):
     """Build the reader's grid, deferring the import that owns its defaults."""
     from reckon.crew import ticker as ticker_module
@@ -1475,7 +1489,7 @@ def crew_follow(
         ):
             if json_output:
                 _emit({"ok": True, **event}, pretty)
-            else:
+            elif not _row_is_stale_inventory(event):
                 _echo_follow_line(
                     format_watch_transition(
                         event, with_session=session is None, ticker=grid
@@ -1572,7 +1586,7 @@ def crew_watch(
             ):
                 if json_output or result.get("event") not in {"baseline", "transition"}:
                     _emit({"ok": True, **result}, pretty)
-                else:
+                elif not _row_is_stale_inventory(result):
                     click.echo(format_watch_transition(result, ticker=grid), color=True)
             return
         result = crew_module.watch(
