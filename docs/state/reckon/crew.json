@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T07:51:03",
+  "updated": "2026-09-03T08:12:25",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -412,9 +412,11 @@
         "id": "flash-b",
         "harness": "claude",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "4cf8ee7b-63ed-45dc-aa78-3b6de9e0ede2",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "deepseek-v4-flash": "4cf8ee7b-63ed-45dc-aa78-3b6de9e0ede2"
+        },
         "created": "2026-09-02"
       },
       {
@@ -38241,9 +38243,224 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260903T053706528896-orientation-checked-at-first-observation",
+        "plan": "clive-local-workers",
+        "section": "\u00a77",
+        "node": "orientation-checked-at-first-observation",
+        "node_definition": {
+          "done_when": "The composed prompt asks the worker to open its manifest with three orientation facts \u2014 the worktree path it is working in, the base revision it sees there, and its declared write scope \u2014 stated as the first thing it writes rather than at the end; the first observation of a run parses those facts and compares them with the live pointer's own worktree, base_sha and write_paths, and classifies the run blocked with a detail naming which of the three mismatched and both values, while a report that matches leaves the phase untouched and an absent report is not treated as a mismatch because an early observation legitimately precedes the manifest; tests assert the mismatching case blocks and names the field, the matching case does not, and the absent case does not, each in tests/test_crew_orientation.py so no existing test file is contended; the section-6 promotion check remains the backstop and is not weakened or duplicated; and the full suite adds no failure against base 33e6addde32cf609a0106e980258804a611f6693",
+          "estimated_hours": null,
+          "goal": "Catch a worker that is working in the wrong tree within a minute rather than at promotion",
+          "id": "orientation-checked-at-first-observation",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T053706528896-orientation-checked-at-first-observation/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/prompts.py",
+            "reckon/crew/dispatch.py",
+            "tests/test_crew_orientation.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "flash-b",
+        "backend": "clive",
+        "local": false,
+        "agent": {
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T05:37:07Z",
+        "completed_at": "2026-09-03T06:09:07.693Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1912,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1920,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "33e6addde32cf609a0106e980258804a611f6693",
+        "commits": [],
+        "changed_lines": {
+          "added": 302,
+          "removed": 3,
+          "files": 3
+        },
+        "tests_added": null,
+        "gate": "not-run",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "Stopped at 1,800s having generated nothing for the last stretch: blocked on TaskOutput with block true and a 600s timeout, waiting on a background full-suite run it had spawned. The cause is that a shadow REPLAYS its primary's done-when, and that primary was specified before this session's gate policy changed, so it still demanded 'the full suite adds no failure against base 33e6add' \u2014 my own pre-policy text, executing hours after the policy replaced it, browser tests included. Two consequences. The measurement is void: worker time here is dominated by suite execution rather than inference, which is the confound already recorded, so this arm measured a test suite and not a model. And the leak reaped an hour ago was being refilled, with fresh pytest browser profiles on disk. Recorded as a finding rather than a worker failure: the local model did nothing wrong.",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T053706528896-orientation-checked-at-first-observation/manifest.md",
+        "scope_changed": false,
+        "session_id": "4cf8ee7b-63ed-45dc-aa78-3b6de9e0ede2",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no rate-limit event in the stream yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": {
+          "configuration": {
+            "inherited": {
+              "effort": "medium",
+              "launch": "cli",
+              "sandbox": "worktree-full",
+              "time_budget": "40m"
+            },
+            "substituted": {
+              "backend": {
+                "primary": "codex",
+                "shadow": "clive",
+                "via": "backend"
+              },
+              "model": {
+                "primary": "gpt-5.6-sol",
+                "shadow": "deepseek-v4-flash",
+                "via": "backend"
+              }
+            }
+          },
+          "kind": "shadow",
+          "primary_run_id": "r-20260902T151528945034-orientation-checked-at-first-observation"
+        },
+        "shadow_controlled": true,
+        "shadow_patch": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T053706528896-orientation-checked-at-first-observation/shadow.patch",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "shadow",
+        "no_commit": "shadow stopped; it was measuring a test suite rather than a model",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260903T060422443082-promotion-releases-the-transient",
+        "plan": "clive-local-workers",
+        "section": "\u00a713",
+        "node": "promotion-releases-the-transient",
+        "node_definition": {
+          "done_when": "reckon/crew/promotion.py appends the ledger row and deletes the live pointer, in that order so an interruption stays recoverable, and releases nothing else: the run's worktree survives until someone runs crew gc by hand and the worker process survives until it exits on its own. Measured on this workstation: 274 worktrees on disk against 458 promoted runs in one ledger, and a run observed process_alive true while its classification already read completed_unpromoted. Extend complete so that AFTER the ledger append and the pointer delete it also releases the run's own worktree and, if still alive, the run's own process group. Reuse the classification crew gc already applies in reckon/crew/routing.py rather than writing a second policy: a worktree is released only when git status --porcelain in it reports zero entries AND its HEAD is an ancestor of the integration branch as git merge-base --is-ancestor decides; a worktree failing either condition is left in place and never removed with force; and a shadow releases through the existing lineage rule against its committed record and retained patch. The process group is signalled only when a terminal manifest was delivered, because a live process with no manifest is a recovery case rather than a cleanup one. Every withheld release is named in the returned completion result with the condition it failed, so a retained worktree is visible at the moment it is created rather than discovered by a later path collision. A failure inside the release step must never undo or obscure the ledger append. Tests in tests/test_promotion_release.py assert: a promoted run whose worktree reports zero porcelain entries and whose HEAD is an ancestor of the integration branch leaves no worktree on disk and no live process, asserted through complete end to end rather than by unit-testing a helper; a promoted run whose worktree reports a porcelain entry keeps that worktree and names it in the result with the failed condition; one whose HEAD is not an ancestor of the integration branch does the same; a run with no terminal manifest is never signalled; and a simulated failure raised inside the release step still leaves the promoted ledger row intact and the run recoverable. Your gate is that new file plus tests/test_crew_promotion.py, tests/test_crew_promotion_scope.py and tests/test_crew_gc.py. Do NOT run the full suite and do NOT run any browser-driven test. Judge by delta against base 71cf138d321f65dceb8b95161e996252616bd605",
+          "estimated_hours": null,
+          "goal": "Make promotion release the worktree and the lingering process it made transient, conservatively and audibly",
+          "id": "promotion-releases-the-transient",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T060422443082-promotion-releases-the-transient/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a713",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "tests/test_promotion_release.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "sonnet-a",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "backend": "claude",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T06:04:27Z",
+        "completed_at": "2026-09-03T06:11:42.903Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 427,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 435,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "71cf138d321f65dceb8b95161e996252616bd605",
+        "commits": [
+          "34e1d10e648ec15b2aa2c7fcd69c03c0a4fc2984"
+        ],
+        "changed_lines": {
+          "added": 456,
+          "removed": 1,
+          "files": 2
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_promotion_release.py tests/test_crew_promotion.py tests/test_crew_promotion_scope.py tests/test_crew_gc.py",
+          "exit_status": 0,
+          "log_path": null,
+          "log_digest": "in-worktree run, 34 passed"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T060422443082-promotion-releases-the-transient/manifest.md",
+        "scope_changed": false,
+        "session_id": "f0133b18-30e8-41d7-9a5f-5d9e2c174ed6",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 1.21,
+          "rate_limit_type": "overage",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-10-01T00:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 1,
+          "tokens": {
+            "cache_creation_input_tokens": 124321,
+            "cache_creation_input_tokens_cumulative": 124321,
+            "cache_read_input_tokens": 6619373,
+            "cache_read_input_tokens_cumulative": 6619373,
+            "inference_geo": "not_available",
+            "input_tokens": 122,
+            "input_tokens_cumulative": 122,
+            "output_tokens": 32127,
+            "output_tokens_cumulative": 32127,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 2.1426726,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 2.1426726
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [],
-    "_version": 617
+    "_version": 620
   }
 }

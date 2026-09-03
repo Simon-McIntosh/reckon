@@ -23,10 +23,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="88">
+<meta name="plan-version" content="90">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,~/.config/reckon/crew/reports/local-effort-probe.md,~/.config/reckon/crew/reports/read-only-tier-delivery-discriminator.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
-<meta name="plan-impl" content="0.86">
-<meta name="plan-commits" content="a91abe9,a56eae9,42a339f,a2e488b,ca6288d,0226835,e099fc5,5dc92ce,8b80bdc,8abc064,6f99ac2,7f41635,1908947,da054f7,1a77ce8,3ff87b2,5717d69,1badb66,1b7e72e,9b609d9">
+<meta name="plan-impl" content="0.79">
+<meta name="plan-commits" content="a91abe9,a56eae9,42a339f,a2e488b,ca6288d,0226835,e099fc5,5dc92ce,8b80bdc,8abc064,6f99ac2,7f41635,1908947,da054f7,1a77ce8,3ff87b2,5717d69,1badb66,1b7e72e,9b609d9,34e1d10">
 </head>
 <body>
   <main class="plan-doc">
@@ -936,6 +936,12 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-20260903-test-role-landed" data-who="reckon-ship" data-when="2026-09-03T05:16:00Z">
     <div class="r-comment-body">§12's first node landed — run r-20260903T051130267963, member sonnet-a on claude-sonnet-5, first attempt, no scope change; commit 5717d69 merged, 108 insertions, 5 tests added, 253 passed across the new file plus flight, orientation and crew. The test role now carries a 30-minute default sized for the two suite runs an attribution needs against the locally measured 700-to-900-second ceiling, and the EVIDENCE fence is role-aware in exactly the two ways the section asked for and no more. A non-test node is now told, where it actually reads it, that its gate measures only its own change, that verifying the merged result belongs to a separately dispatched test node, and that a failure outside its declared scope is reported under follow_ons rather than triaged or fixed. A test node is told its deliverable is an attribution rather than a verdict, listing new failures against the stated base separately from pre-existing ones and naming the candidate commit for each. The division no longer depends on whoever wrote the done-when remembering it, which is the whole point given that every full-suite run this session came from my done-when text rather than from the framework. One thing the worker did that is worth recording as a standard: it touched three of its six permitted paths. It found that RoleConfig already modelled time_budget in the LinkML source, so no schema change and no regeneration were needed, and it left reckon/_flight_schema.py and docs/_shared/flight.schema.json byte-identical rather than rewriting them because they were in scope. Declared write scope is permission, not obligation, and a worker that understands the difference produces a smaller diff to audit.</div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20260903T060422443082-promotion-releases-the-transient" data-who="sonnet-a" data-when="2026-09-03T06:11:42.903Z">
+    <div class="r-comment-body"><p>Promotion now releases the worktree and any lingering process group after the ledger append and pointer delete, reusing gc's own conditions rather than a second policy, and naming every withheld release with the condition it failed. 34 passed. This is the first promotion to exercise it.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-20260903-promotion-releases" data-who="reckon-ship" data-when="2026-09-03T06:15:00Z">
+    <div class="r-comment-body">§13 landed — run r-20260903T060422443082, member sonnet-a, first attempt; commit 34e1d10 merged, 456 insertions, 5 tests added, 34 passed. Promotion now releases the worktree and any lingering process group after the ledger append and the pointer delete, in that order so an interruption anywhere after the append still leaves a promoted row and a recoverable pointer. It reuses the conditions crew gc already applies rather than inventing a second policy — zero porcelain entries and a HEAD that is an ancestor of the integration branch — and every withheld release is named in the completion result with the condition it failed, so a retained worktree is visible when it is created rather than discovered by a later path collision. Verified on its own promotion, which is the first to exercise it: release reported worktree_released true, process_signalled false with the reason 'process is not alive'. That is the shape the section asked for — a release that says what it did AND what it declined and why. The lead's framing was the right one and it is the third time this session that binding work to a moment that always happens has replaced a rule someone had to remember: creation provisions the environment, promotion releases the transient, and the naming check binds to git add. In each case the previous design was correct as a rule and unreliable as a practice, and the count is what showed it — 113 worktrees missing a symlink, 274 worktrees against 458 promoted runs, 25 orphaned producers over 8.5 days.</div>
 </div>
 </section>
 </main>
