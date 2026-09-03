@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import json
 import subprocess
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -118,14 +118,26 @@ def _known(utilisation: float, *, resets_in: int = 3600, status=None) -> dict:
     return block
 
 
-def _record(project: str, root: Path, *, backend: str, budget_block: dict, run_id: str):
-    """Promote one completed run carrying a budget block into the ledger."""
+def _record(
+    project: str,
+    root: Path,
+    *,
+    backend: str,
+    budget_block: dict,
+    run_id: str,
+    completed_at: str | None = None,
+):
+    """Promote one completed run carrying a budget block into the ledger.
+
+    ``completed_at`` is the moment the reading was taken, which a test about the
+    age of evidence has to own rather than inherit from the clock.
+    """
     record = ledger.build_record(
         run_id=run_id,
         plan="plan-a",
         gate="passed",
         agent={"backend": backend},
-        completed_at=_stamp(-60),
+        completed_at=completed_at or _stamp(-60),
         budget=budget_block,
     )
     ledger.append_run(project, record, root=root)
@@ -1203,3 +1215,144 @@ def test_cli_dispatch_reports_a_hold_on_its_own_exit_code(home, repo) -> None:
     assert result.exit_code == 3
     assert payload["error"] == "budget-hold"
     assert payload["hold"]["state"]["utilisation_pct"] == 100.0
+
+
+# ── A judgement with no stated reset has a shelf life ───────────────────────
+#
+# The measured defect these close: a hold written from a provider refusal that
+# named no reset time refused its lane for as long as the record survived. It
+# could not clear itself — only a served run writes a budget record, and the
+# hold refuses every run — and it could not be overridden, because a refusal
+# records full utilisation while the ceiling is capped at the same figure. Every
+# moment below is supplied by the test and every age derived from that pair, so
+# no assertion here can rot into a date.
+
+
+def _spent_with_no_stated_reset() -> dict:
+    """What a refusal that named no reset time parses to: spent, undated."""
+    block = _known(100.0)
+    block.update({"resets_at": None, "threshold_status": "exhausted"})
+    return block
+
+
+def _aged_state(
+    repo: Path,
+    block: dict,
+    *,
+    observed: datetime,
+    now: datetime,
+    run_id: str = "r-aged",
+):
+    """One backend's state, read back the way the pre-flight reads it."""
+    _record(
+        "proj",
+        repo,
+        backend="alpha",
+        budget_block=block,
+        run_id=run_id,
+        completed_at=observed.isoformat(timespec="seconds").replace("+00:00", "Z"),
+    )
+    recorded = budget.latest_recorded("proj", root=repo, config=CONFIG)
+    return budget.state_for("alpha", recorded=recorded.get("alpha"), now=now)
+
+
+def test_an_undated_exhaustion_stops_holding_once_it_outlives_its_shelf_life(
+    home, repo
+) -> None:
+    """A refusal naming no reset describes the past, and says how far past.
+
+    The reason has to carry both figures: a reader who sees a lane released
+    needs to know the reading's age and the bound it outran, or the release is
+    as unarguable as the indefinite hold it replaces.
+    """
+    bound = budget.policy(CONFIG)["evidence_shelf_life_minutes"]
+    observed = datetime.now(tz=UTC) - timedelta(minutes=bound * 4)
+    now = observed + timedelta(minutes=bound * 3)
+    state = _aged_state(repo, _spent_with_no_stated_reset(), observed=observed, now=now)
+
+    assert state.headroom == "known"
+    assert state.resets_at is None
+    verdict = budget.decide(state, budget.policy(CONFIG), now=now)
+
+    assert verdict["held"] is False
+    assert verdict["state"]["headroom"] == "unknown"
+    age_minutes = int((now - observed).total_seconds() // 60)
+    assert f"{age_minutes} minutes old" in verdict["reason"]
+    assert f"{bound:g} minute shelf life" in verdict["reason"]
+
+
+def test_the_same_undated_exhaustion_still_holds_inside_its_shelf_life(
+    home, repo
+) -> None:
+    """Fresh evidence of a spent lane is exactly what a hold is for."""
+    bound = budget.policy(CONFIG)["evidence_shelf_life_minutes"]
+    observed = datetime.now(tz=UTC) - timedelta(minutes=bound)
+    now = observed + timedelta(minutes=bound / 2)
+    state = _aged_state(repo, _spent_with_no_stated_reset(), observed=observed, now=now)
+
+    verdict = budget.decide(state, budget.policy(CONFIG), now=now)
+
+    assert verdict["held"] is True
+    assert verdict["state"]["headroom"] == "known"
+    assert "shelf life" not in verdict["reason"]
+
+
+def test_a_stated_reset_governs_its_own_expiry_at_both_ages(home, repo) -> None:
+    """The bound reaches only judgements that state no reset.
+
+    A reading that names its window's end already decays through that, and a
+    second mechanism aging it would release a hold whose window is demonstrably
+    still open — the opposite failure, and the expensive one.
+    """
+    bound = budget.policy(CONFIG)["evidence_shelf_life_minutes"]
+    observed = datetime.now(tz=UTC) - timedelta(minutes=bound * 4)
+    inside = observed + timedelta(minutes=bound / 2)
+    outside = observed + timedelta(minutes=bound * 3)
+    # The window outlives both comparison moments, so only the shelf life could
+    # release this hold — and it must not.
+    block = _known(100.0)
+    block["resets_at"] = (
+        (outside + timedelta(minutes=bound))
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z")
+    )
+
+    for index, moment in enumerate((inside, outside)):
+        state = _aged_state(
+            repo, block, observed=observed, now=moment, run_id=f"r-window-{index}"
+        )
+        verdict = budget.decide(state, budget.policy(CONFIG), now=moment)
+        assert verdict["held"] is True, moment
+        assert verdict["state"]["expired"] is False, moment
+        assert "shelf life" not in verdict["reason"]
+
+
+def test_a_shelf_life_of_zero_keeps_the_indefinite_hold(home, repo) -> None:
+    """An indefinite hold is available, but only to a project that asks for one."""
+    config = {
+        **CONFIG,
+        "budget": {**CONFIG["budget"], "evidence_shelf_life_minutes": 0},
+    }
+    bound = budget.policy(CONFIG)["evidence_shelf_life_minutes"]
+    observed = datetime.now(tz=UTC) - timedelta(minutes=bound * 10)
+    now = observed + timedelta(minutes=bound * 9)
+    state = _aged_state(repo, _spent_with_no_stated_reset(), observed=observed, now=now)
+
+    assert budget.decide(state, budget.policy(config), now=now)["held"] is True
+
+
+def test_an_unset_shelf_life_still_ages_an_undated_hold(home, repo) -> None:
+    """A project that declared no bound must not inherit the indefinite hold.
+
+    This is the one place the module's usual `unset means permissive` reading
+    inverts: the permissive reading of an absent bound is a hold nothing can
+    clear, which is the failure rather than the safe default.
+    """
+    config = {**CONFIG, "budget": {"utilisation_ceiling_pct": 100}}
+    bound = budget.policy(config)["evidence_shelf_life_minutes"]
+    assert bound == budget.DEFAULT_SHELF_LIFE_MINUTES
+    observed = datetime.now(tz=UTC) - timedelta(minutes=bound * 4)
+    now = observed + timedelta(minutes=bound * 3)
+    state = _aged_state(repo, _spent_with_no_stated_reset(), observed=observed, now=now)
+
+    assert budget.decide(state, budget.policy(config), now=now)["held"] is False

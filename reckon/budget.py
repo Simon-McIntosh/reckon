@@ -38,7 +38,7 @@ lets the wave resume without a human.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
@@ -57,6 +57,24 @@ PURPOSES = ("dispatch", "resume")
 # second copy here would be indistinguishable from a value nobody ever set.
 UNSET_CEILING_PCT = 100.0
 UNSET_RESERVE_PCT = 0.0
+
+# How long a recorded exhaustion that names no reset time keeps describing now.
+# This one is a real default rather than a permissive placeholder, because the
+# permissive reading is the defect: a judgement carrying no reset decays through
+# nothing, so an hour-old refusal and a day-old one hold a lane identically and
+# for as long as the record survives. The hold cannot clear itself either — only
+# a served run writes a budget record, and the hold refuses every run — so the
+# lane is unreachable by the one thing that would update it. Nor can a reader
+# override it: a refusal records full utilisation and the ceiling is capped at
+# the same figure, so the comparison refuses under every permitted setting.
+#
+# An hour balances the two costs this module already weighs against each other.
+# It is longer than a wave takes to rediscover a genuine refusal — which is
+# cheap, announces itself, and writes a fresh record as it does so — and it is a
+# fraction of the shortest metered window measured, so a lane that really is
+# spent is re-recorded by the very dispatch that tests it. Set the key to zero
+# or less to disable ageing and keep the indefinite hold.
+DEFAULT_SHELF_LIFE_MINUTES = 60.0
 
 
 @dataclass
@@ -104,17 +122,26 @@ class BudgetState:
 
 
 def policy(config: Mapping[str, Any] | None) -> dict[str, Any]:
-    """Read the three thresholds that decide a hold out of flight config."""
+    """Read the thresholds that decide a hold out of flight config.
+
+    The shelf life is one of them, and it governs only a judgement that states
+    no reset time. One that states a reset already names its own decay and is
+    left to it, so the two mechanisms never both apply to the same record.
+    """
     block = (config or {}).get("budget") or {}
     ceiling = block.get("utilisation_ceiling_pct")
     reserve = block.get("resume_reserve_pct")
     statuses = block.get("exhausted_statuses") or ()
+    shelf_life = block.get("evidence_shelf_life_minutes")
     return {
         "utilisation_ceiling_pct": (
             UNSET_CEILING_PCT if ceiling is None else float(ceiling)
         ),
         "resume_reserve_pct": UNSET_RESERVE_PCT if reserve is None else float(reserve),
         "exhausted_statuses": [str(status) for status in statuses],
+        "evidence_shelf_life_minutes": (
+            DEFAULT_SHELF_LIFE_MINUTES if shelf_life is None else float(shelf_life)
+        ),
     }
 
 
@@ -490,17 +517,47 @@ def _is_known(block: Mapping[str, Any]) -> bool:
 # ── The decision ────────────────────────────────────────────────────────────
 
 
+def _lapsed_minutes(
+    state: BudgetState, policy_block: Mapping[str, Any], now: datetime
+) -> tuple[int, float] | None:
+    """The evidence's age and its bound, when the age has outrun the bound.
+
+    Only a judgement that states no reset time is aged this way. One that states
+    a reset carries its own expiry and is already degraded by that, and applying
+    both would let the shelf life clear a hold whose window is demonstrably still
+    open. An observation with no readable stamp has no age to compare, so it is
+    left alone rather than aged on a guess.
+    """
+    if state.resets_at:
+        return None
+    bound = float(
+        policy_block.get("evidence_shelf_life_minutes", DEFAULT_SHELF_LIFE_MINUTES)
+    )
+    if bound <= 0:
+        return None
+    observed = _parse_stamp(state.observed_at) if state.observed_at else None
+    if observed is None:
+        return None
+    minutes = int((now - observed).total_seconds() // 60)
+    return (minutes, bound) if minutes > bound else None
+
+
 def decide(
     state: BudgetState,
     policy_block: Mapping[str, Any],
     *,
     purpose: str = "dispatch",
+    now: datetime | None = None,
 ) -> dict[str, Any]:
     """Judge one backend: is the wave held, and on what evidence?
 
     Every branch names its reason in the verdict. A hold whose reason is not
     legible cannot be argued with, and the lead reading a held wave needs to see
     which backend, what utilisation, and against which threshold.
+
+    ``now`` is what the age of the evidence is measured against, so a caller
+    that already knows the moment it is deciding at states it rather than
+    letting two readings of the clock disagree inside one verdict.
     """
     if purpose not in PURPOSES:
         raise ValueError(f"purpose {purpose!r} must be one of {', '.join(PURPOSES)}")
@@ -518,6 +575,24 @@ def decide(
         verdict["reason"] = (
             "headroom is unknown, and absence of a signal is never read as "
             f"exhaustion — {state.detail or 'nothing recorded for this backend'}"
+        )
+        return verdict
+
+    if (lapse := _lapsed_minutes(state, policy_block, _now(now))) is not None:
+        minutes, bound = lapse
+        stale = replace(
+            state,
+            headroom="unknown",
+            detail=(
+                f"the reading is {minutes} minutes old, past the {bound:g} minute "
+                "shelf life, and states no reset time to decay through"
+            ),
+        )
+        verdict["state"] = stale.as_dict()
+        verdict["reason"] = (
+            f"the only evidence is {minutes} minutes old against a {bound:g} minute "
+            "shelf life and names no reset, so it describes the past rather than "
+            "now — headroom is unknown until a run records a fresh reading"
         )
         return verdict
 
