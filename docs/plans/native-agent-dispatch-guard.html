@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="native-agent-dispatch-guard">
   <meta name="plan-title" content="Native Background Agents Are Refused Where the Crew Ledger Rules">
   <meta name="plan-summary" content="A tool-boundary hook refuses new harness-native background agents in crew-managed repos; waivers cover crew-prepared in-harness runs and explicit override.">
-  <meta name="plan-status" content="draft">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
@@ -21,6 +21,8 @@
   <title>Native Background Agents Are Refused Where the Crew Ledger Rules | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-03">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -98,37 +100,32 @@
       next skill rewrite cannot silently drop it.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="enforcement-mode" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">Does the guard hard-refuse new native background agents, or warn and allow?</p>
-        <p class="r-dec-ctx">Both sessions in the motivating incident had counter-signals available
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="enforcement-mode" data-choice="hard-refuse" data-by="lead" data-when="2026-09-03T07:38:38+00:00">
+    <p class="r-dec-q">Does the guard hard-refuse new native background agents, or warn and allow?</p>
+    <p class="r-dec-ctx">Both sessions in the motivating incident had counter-signals available
           (a memory rule in one, general crew discipline in both) and rationalized past them; the
           reviewing session explicitly judged that a hard block would have caught its batch cleanly
           with a one-to-one re-route into crew dispatches and zero lost work. A warn is the same
           prose rule wearing a checkmark.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="hard-refuse">hard refuse with waivers (recommended)</button>
-          <button class="r-opt" data-value="warn-once">warn and allow</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-    </section>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="hard-refuse">hard refuse with waivers (recommended)</button>
+      <button class="r-opt" data-value="warn-once">warn and allow</button>
+      </p>
+    <p class="r-dec-rat">Locked 2026-09-03 by the lead. The spawn is refused in crew-managed repositories, with the two waivers §2 specifies: a crew-prepared in-harness run awaiting attachment, and an explicit environment override the refusal message names, so the escape is one visible deliberate step rather than a default. Warn-and-allow was rejected because it is the same prose rule wearing a checkmark: both sessions in the motivating incident had counter-signals available and rationalised past them, and this repository has already paid twice for warnings that were scrolled past. The reviewing session judged that a hard block would have caught its whole batch cleanly, with a one-to-one re-route into crew dispatches and zero lost work. The accepted cost is that a legitimate spawn pattern nobody anticipated is blocked until someone sets the override, which the refusal message states.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-nag-001" data-status="open"
-               data-capability-version="1.0" data-capability-class="general"
-               data-capability-verification="strict"
-               data-written-by="reckon-3a" data-written-at="2026-08-26"
-               data-recommends-skill="/reckon-ship native-agent-dispatch-guard"
-               data-resolved-at="" data-resolved-by="">
-        <h4 class="r-fu-title">Ship the guard once the enforcement mode is locked</h4>
-        <div class="r-fu-body"><p>The enforcement-mode decision is user-owned: it changes the
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-nag-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-verification="strict" data-written-by="reckon-3a" data-written-at="2026-08-26" data-recommends-skill="/reckon-ship native-agent-dispatch-guard" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Ship the guard once the enforcement mode is locked</h4>
+    <div class="r-fu-body"><p>The enforcement-mode decision is user-owned: it changes the
           default behavior of every session in every crew-managed repository. §2–§4 are executable
           the moment it locks; the recommended choice is hard-refuse with waivers.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship native-agent-dispatch-guard</pre>
-      </article>
-    </section>
+    <pre class="r-fu-prompt">/reckon-ship native-agent-dispatch-guard</pre>
+    </article>
+</section>
   </main>
 </body>
 </html>

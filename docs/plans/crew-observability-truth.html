@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 </head>
 <body>
   <main class="plan-doc">
@@ -187,34 +187,34 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="liveness-source" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="liveness-source" data-choice="reconcile-on-read" data-by="lead" data-when="2026-09-03T07:38:29+00:00">
     <p class="r-dec-q">Where does a liveness answer come from?</p>
     <p class="r-dec-ctx">The registry and the process table disagreed in a measured case. Deriving from the process on every read is truthful but costs a scan; reconciling the record on read keeps the cheap path and repairs drift; keeping the record authoritative is what produced the defect.</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="derive-from-process">Derive from the process table on every read</button>
-      <button class="r-opt" data-value="reconcile-on-read">Keep the record, reconcile it against the process on read</button>
+      <button class="r-opt chosen" data-value="reconcile-on-read">Keep the record, reconcile it against the process on read</button>
       <button class="r-opt" data-value="record-authoritative">Leave the record authoritative</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Locked 2026-09-03 by the lead. The record stays as the cheap path and every read checks it against the process table, repairing drift in place without taking the seat lock. This is the only option that satisfies all three of §2&#x27;s measures at once: deriving on every read is truthful and satisfies the first two but leaves the stale record for the next reader to trip over, failing &#x27;a desync is repaired, not merely reported&#x27;; leaving the record authoritative is the mechanism that produced the measured defect, where crew list reported watcher_live None while pid 85432 had been emitting transitions for twenty minutes. The accepted cost is that a read now performs a process check, and that the reconciliation path must never take the seat lock, so observing still cannot deny an arming.</p>
     </div>
-<div class="r-dec" data-key="cross-repo-gc" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="cross-repo-gc" data-choice="resolve-from-mounts" data-by="lead" data-when="2026-09-03T07:38:29+00:00">
     <p class="r-dec-q">What should gc do when the named project&#x27;s checkout is not the enclosing repository?</p>
     <p class="r-dec-ctx">It currently scans the enclosing repository silently. Refusing is safest but blocks a legitimate cross-checkout call; resolving from mounts is convenient but changes existing behaviour for callers relying on the default.</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="refuse-unless-stated">Refuse unless the cross-pairing is stated</button>
-      <button class="r-opt" data-value="resolve-from-mounts">Resolve the project&#x27;s registered checkout by default</button>
+      <button class="r-opt chosen" data-value="resolve-from-mounts">Resolve the project&#x27;s registered checkout by default</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Locked 2026-09-03 by the lead. With no --repo a named project resolves the checkout registered in mounts rather than the current directory, which makes the measured failure impossible: three different projects returned byte-identical counts from the reckon checkout, and nova&#x27;s 124 reclaimable worktrees were reported as zero. Refusing unless the cross-pairing is stated was rejected as the default because it turns every legitimate cross-checkout call into two steps and would leave §3&#x27;s third measure declared and undelivered. The refusal survives where it belongs, on an explicit --repo that disagrees with the named project&#x27;s registered checkout, which is §3&#x27;s first measure. The accepted cost is a behaviour change for any caller relying on the enclosing-directory default.</p>
     </div>
-<div class="r-dec" data-key="anthropic-tier-routing" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="anthropic-tier-routing" data-choice="sonnet-default-opus-by-level" data-by="lead" data-when="2026-09-03T07:38:29+00:00">
     <p class="r-dec-q">Which Anthropic tier is the default, and how is the other reached?</p>
     <p class="r-dec-ctx">Asked by the lead on 2026-09-03 while the codex account was spent. Measured over this session&#x27;s ledger: claude-sonnet-5 passed 8 of 8 at a 228-second median, claude-opus-5 passed 2 of 2 at 753 seconds. Sonnet is 3.3 times faster with four times the sample and both are clean, so speed decides the common case. The case for reserving opus is specific rather than general: on two nodes it caught traps its specification did not name — that writing a literal exhausted headroom would be silently downgraded by budget.py&#x27;s own _is_known and hold nothing, reproducing the defect it was fixing, and that summing per-event usage undercounts generation 67-fold in a way that looks entirely plausible. Sonnet&#x27;s contribution was different in kind: it declined to add an exception type and explained why, and it corrected a wrong diagnosis of mine mid-implementation. The coordinator has already set default_backend to the sonnet lane, so this ratifies or reverses a change already made rather than proposing an untried one. Note the coupling: reaching opus by specification level is not expressible until by_spec_level can name a backend, which is a measure of this same section.</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="sonnet-default-opus-explicit">Sonnet default; opus reached explicitly per dispatch</button>
-      <button class="r-opt" data-value="sonnet-default-opus-by-level">Sonnet default; open-level nodes map to opus once by_spec_level can name a backend</button>
+      <button class="r-opt chosen" data-value="sonnet-default-opus-by-level">Sonnet default; open-level nodes map to opus once by_spec_level can name a backend</button>
       <button class="r-opt" data-value="opus-default">Opus default; sonnet for mechanical work</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Locked 2026-09-03 by the lead. This ratifies default_backend already pointing at the sonnet lane and puts the frontier tier where the evidence says it earns its cost rather than everywhere: on open-level nodes, the least-specified work, which is where opus caught two traps its specification did not name. Sonnet is 8 of 8 at a 228-second median against opus 2 of 2 at 753 seconds, so speed decides the common case on the larger sample. Reaching opus explicitly per dispatch was rejected because it leaves &#x27;route an open node to the frontier tier&#x27; as a rule with no bound check, which is this sprint&#x27;s own thesis about what decays. Opus as default was rejected as paying 3.3 times the wall clock on every node for depth the larger sample does not show is needed. The accepted coupling is that this choice is not fully expressible until §5&#x27;s by_spec_level-names-a-backend measure lands, and degrades to per-dispatch selection until it does.</p>
     </div>
 </section>
 
