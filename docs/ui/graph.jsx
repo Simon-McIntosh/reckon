@@ -159,6 +159,215 @@ function _graphHandleView(endpoint, members, hopCount, fallbackProject) {
   };
 }
 
+// ─── One DAG layout, shared by every dependency surface ───────────────────
+//
+// Positions derive from structural dependency depth and row order, never from
+// execution ordering or wall-clock time. Geometry is published so a stylesheet
+// and a stage can agree on card size without either restating the numbers.
+const DAG_GEOMETRY = {
+  cardWidth: 216,
+  cardHeight: 82,
+  columnGap: 92,
+  rowGap: 22,
+  // Room above the first row for the column label.
+  topInset: 34,
+  stageMargin: 20,
+  // A routed detour runs this far below the bottom of every column it crosses.
+  detourClearance: 24,
+  // Co-terminating arrivals are offset by this much around the card centre so
+  // two arrowheads into one card stay distinguishable.
+  arrivalFan: 8,
+  // Horizontal room reserved for the arrowhead in front of the target card.
+  arrowLength: 9,
+  // A detour is the lowest ink on the stage, so the stage must clear it.
+  detourBottomMargin: 30,
+  // Quarter-turn control offsets: a short one for the in-column cubic, a
+  // longer pair for the shoulders of a routed detour.
+  cubicHandle: 38,
+  turnHandle: 34,
+  turnRun: 68,
+};
+
+const DAG_STROKE = "#c9ccd4";
+const DAG_HELD_STROKE = "oklch(0.58 0.20 25)";
+
+// Prerequisites that exist in the drawn set. A dependency on a slug outside it
+// is not a missing node, it is context the caller chose not to draw, so it
+// contributes neither depth nor an edge.
+function _dagPrerequisites(plan, bySlug) {
+  return (plan?.depends_on || [])
+    .map(_refSlug)
+    .filter(slug => bySlug[slug] && slug !== plan.slug);
+}
+
+// depth = 1 + max(depth of known prerequisites), zero without any. A cycle is
+// terminated by the seen set rather than detected: re-entering a slug already
+// on the current walk contributes zero, so every depth stays finite.
+function _dagDepths(plans, bySlug) {
+  const depth = {};
+  const resolve = (slug, seen) => {
+    if (depth[slug] != null) return depth[slug];
+    const plan = bySlug[slug];
+    if (!plan || seen.has(slug)) return 0;
+    seen.add(slug);
+    const prerequisites = _dagPrerequisites(plan, bySlug);
+    depth[slug] = prerequisites.length
+      ? 1 + Math.max(...prerequisites.map(dep => resolve(dep, new Set(seen))))
+      : 0;
+    return depth[slug];
+  };
+  plans.forEach(plan => resolve(plan.slug, new Set()));
+  return depth;
+}
+
+function _dagLayout(plans, prefix) {
+  const G = DAG_GEOMETRY;
+  const drawn = (plans || []).filter(plan => plan && plan.slug);
+  const bySlug = {};
+  drawn.forEach(plan => { bySlug[plan.slug] = plan; });
+  const depth = _dagDepths(drawn, bySlug);
+
+  const columnMembers = {};
+  drawn.forEach(plan => {
+    (columnMembers[depth[plan.slug]] ||= []).push(plan);
+  });
+  Object.values(columnMembers).forEach(column => column.sort((left, right) =>
+    String(left.slug).localeCompare(String(right.slug))
+  ));
+
+  const position = {};
+  Object.keys(columnMembers).forEach(key => {
+    columnMembers[key].forEach((plan, row) => {
+      position[plan.slug] = {
+        x: Number(key) * (G.cardWidth + G.columnGap),
+        y: G.topInset + row * (G.cardHeight + G.rowGap),
+      };
+    });
+  });
+
+  // The bottom edge of a column, which is what a skip-level edge must clear.
+  const columnBottom = key => G.topInset
+    + Math.max(0, (columnMembers[key] || []).length - 1) * (G.cardHeight + G.rowGap)
+    + G.cardHeight;
+
+  const dependedOn = new Set();
+  drawn.forEach(plan => _dagPrerequisites(plan, bySlug).forEach(dep => dependedOn.add(dep)));
+
+  const nodes = drawn.map(plan => {
+    const at = position[plan.slug];
+    const ghost = Boolean(plan.ghost);
+    return {
+      key: `${prefix}-${plan.slug}`,
+      slug: plan.slug,
+      project: plan.project || plan.repo || null,
+      title: plan.title || plan.slug,
+      status: plan.status || "pending",
+      // A context node names the sprint it actually belongs to, so a dimmed
+      // card explains itself against the sprint in the header.
+      statusText: ghost
+        ? `${plan.status || "pending"} · ${plan.sprint || "unscheduled"}`
+        : (plan.status || "pending"),
+      hours: `${Number(plan.effort_hours || 0)}h`,
+      percent: Math.round(Number(plan.impl || 0) * 100),
+      depth: depth[plan.slug],
+      ghost,
+      blocked: plan.status === "blocked",
+      // A card with neither a prerequisite nor a dependent is an isolate, and
+      // reads as one: the connected cards carry the stronger border.
+      connected: _dagPrerequisites(plan, bySlug).length > 0 || dependedOn.has(plan.slug),
+      borderStyle: ghost ? "dashed" : "solid",
+      background: ghost ? "transparent" : "var(--bg)",
+      opacity: ghost ? 0.62 : 1,
+      x: at.x,
+      y: at.y,
+      width: G.cardWidth,
+      height: G.cardHeight,
+    };
+  });
+
+  const arrivals = {};
+  drawn.forEach(plan => {
+    const prerequisites = _dagPrerequisites(plan, bySlug);
+    if (prerequisites.length) arrivals[plan.slug] = prerequisites;
+  });
+
+  const edges = [];
+  let deepestDetour = 0;
+  drawn.forEach(plan => {
+    (arrivals[plan.slug] || []).forEach((dep, index, all) => {
+      const from = position[dep], to = position[plan.slug];
+      const x1 = from.x + G.cardWidth;
+      const y1 = from.y + G.cardHeight / 2;
+      const x2 = to.x - G.arrowLength;
+      const y2 = to.y + G.cardHeight / 2
+        + (index - (all.length - 1) / 2) * G.arrivalFan;
+      const span = depth[plan.slug] - depth[dep];
+      let d = null;
+      let detourY = null;
+      if (span > 1) {
+        // Explicit routed path: quarter-turn down, a flat run AT the clearance
+        // depth, quarter-turn up. A cubic with both control points at that
+        // depth reaches only three quarters of it and passes beneath the
+        // intervening cards, which is why this is not a curve.
+        let clear = Math.max(y1, y2);
+        for (let k = depth[dep] + 1; k < depth[plan.slug]; k += 1) {
+          clear = Math.max(clear, columnBottom(k));
+        }
+        detourY = clear + G.detourClearance;
+        deepestDetour = Math.max(deepestDetour, detourY);
+        d = `M ${x1} ${y1} C ${x1 + G.turnHandle} ${y1}, ${x1 + G.turnHandle} ${detourY}, ${x1 + G.turnRun} ${detourY}`
+          + ` L ${x2 - G.turnRun} ${detourY}`
+          + ` C ${x2 - G.turnHandle} ${detourY}, ${x2 - G.turnHandle} ${y2}, ${x2} ${y2}`;
+      } else {
+        d = `M ${x1} ${y1} C ${x1 + G.cubicHandle} ${y1}, ${x2 - G.cubicHandle} ${y2}, ${x2} ${y2}`;
+      }
+      const shipped = bySlug[dep].status === "shipped";
+      const held = !shipped && plan.status === "blocked";
+      edges.push({
+        key: `${prefix}-${dep}-${plan.slug}`,
+        from: dep,
+        to: plan.slug,
+        span,
+        skip: span > 1,
+        d,
+        detourY,
+        endY: y2,
+        head: `${x2},${y2 - 4.5} ${x2 + G.arrowLength},${y2} ${x2},${y2 + 4.5}`,
+        held,
+        dashed: !shipped,
+        stroke: held ? DAG_HELD_STROKE : DAG_STROKE,
+        strokeWidth: held ? 1.8 : 1.4,
+        dash: shipped ? "0" : "4 3",
+      });
+    });
+  });
+
+  const depths = Object.keys(columnMembers).map(Number);
+  const columnCount = Math.max(1, ...depths.map(value => value + 1));
+  const rowCount = Math.max(1, ...Object.values(columnMembers).map(column => column.length));
+  const columns = [...depths].sort((left, right) => left - right).map(value => ({
+    depth: value,
+    label: value === 0 ? "no prerequisites" : `depth ${value}`,
+    x: value * (G.cardWidth + G.columnGap),
+    width: G.cardWidth,
+  }));
+
+  return {
+    nodes,
+    edges,
+    columns,
+    depth,
+    geometry: G,
+    width: columnCount * (G.cardWidth + G.columnGap) - G.columnGap + G.stageMargin,
+    // The stage clears the row extent and the deepest detour actually emitted,
+    // so a routed edge is never drawn outside it.
+    height: Math.max(
+      G.topInset + rowCount * (G.cardHeight + G.rowGap) + G.stageMargin,
+      deepestDetour ? deepestDetour + G.detourBottomMargin : 0,
+    ),
+  };
+}
+
 // ─── Path prompt modal ────────────────────────────────────────────────────
 
 function PathPromptModal({ chain, fullPrereqItems, bySlug, onClose }) {
@@ -837,3 +1046,5 @@ function RadialFan({ focalSlug, onNav, compact = false }) {
   );
 }
 window.RadialFan = RadialFan;
+
+window.ReckonGraph = { layout: _dagLayout, geometry: DAG_GEOMETRY };
