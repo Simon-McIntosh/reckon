@@ -191,6 +191,86 @@ def _stream_refusal_block(record: Mapping[str, Any]) -> dict[str, Any] | None:
     return None
 
 
+# A print-mode invocation makes exactly one turn and exits when it ends, so a
+# worker still waiting on a background task at that moment leaves one of two
+# traces rather than a clean result. The ceiling message is the harness's own
+# stderr line when it gave up waiting and terminated the task itself. The
+# duration is read from the environment and varies, so only the sentence
+# around it is fixed.
+_BACKGROUND_WAIT_CEILING_RE = re.compile(
+    r"Background tasks still running after \d+s; terminating\.\s*"
+    r"Set CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0 to wait indefinitely\.",
+)
+# The agent's own last words when its turn ended before the background work
+# it was waiting on did. Matched loosely around the fixed clause so a run
+# naming a different suite or task still recognises the same shape.
+_BACKGROUND_WAIT_FINAL_MESSAGE_RE = re.compile(
+    r"waiting for (the )?background .+? before finalizing the manifest",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def _background_wait_signal(record: Mapping[str, Any]) -> str | None:
+    """The one sentence proving a vanished process was waiting on background work.
+
+    A dead process with no complete manifest is indistinguishable from one
+    that simply crashed, unless the run directory itself says otherwise. Two
+    traces say otherwise: the harness's own ceiling message on stderr, or the
+    agent's last turn stating in its own words that it was waiting on
+    background work before finalizing the manifest — with nothing after that
+    turn because a print-mode invocation has no next one to write. Neither is
+    a crash; both name a run whose session is intact and whose only
+    outstanding step is a resume long enough to collect the manifest it was
+    already about to write.
+    """
+    stderr_path = record.get("stderr_path")
+    if stderr_path:
+        try:
+            stderr_text = Path(str(stderr_path)).read_text()
+        except OSError:
+            stderr_text = ""
+        if _BACKGROUND_WAIT_CEILING_RE.search(stderr_text):
+            return (
+                "the worker's stderr recorded the background-wait ceiling "
+                "before the process terminated"
+            )
+
+    final_message = str(record.get("final_message") or "")
+    if not final_message and record.get("launch") == "cli":
+        # observe() folds the stream's final message onto the pointer, but a
+        # caller reading the raw pointer — the watch producer's path — has
+        # none of it cached yet. Reading the log directly keeps that path
+        # answering the same question the folded record would.
+        log = Path(str(record.get("log_path") or ""))
+        if log.is_file():
+            argv = record.get("argv")
+            command = (
+                argv[0] if isinstance(argv, list) and argv else record.get("dialect")
+            )
+            if command:
+                from reckon import _backends
+
+                try:
+                    observation = _backends.observe_log(
+                        backend_name=str(record.get("backend") or ""),
+                        backend={"command": command},
+                        log_path=log,
+                    )
+                except (_backends.BackendError, CrewError, OSError, ValueError):
+                    observation = None
+                if observation is not None:
+                    final_message = str(
+                        observation.as_dict().get("final_message") or ""
+                    )
+
+    if final_message and _BACKGROUND_WAIT_FINAL_MESSAGE_RE.search(final_message):
+        return (
+            "the worker's last turn reported waiting on background work "
+            f"before finalizing the manifest: {final_message.strip()}"
+        )
+    return None
+
+
 def classify_pointer(
     record: Mapping[str, Any],
     *,
@@ -269,6 +349,11 @@ def classify_pointer(
     # resumable once the limit lifts. Detected from the same stream observe
     # reads, so the two paths agree.
     refusal_block = _stream_refusal_block(record)
+    # A background wait is checked alongside the refusal, at the same
+    # priority, and only consulted when no refusal already explains the stop:
+    # both name a process that is gone but resumable, and a refusal is the
+    # more specific of the two when both happen to be present.
+    background_wait = None if refusal_block else _background_wait_signal(record)
     terminal = phase in ("complete", "failed")
     terminal_at = None
     terminal_age_seconds = None
@@ -350,6 +435,21 @@ def classify_pointer(
             )
         detail = f"blocked: {block}; {delivery}"
         action = f"reckon crew resume --run {run_id} once the limit lifts"
+    elif background_wait:
+        # A vanished process is not the same fact as a crashed one: the run
+        # directory itself says it was waiting on background work when it
+        # ended, so it blocks and resumes rather than reading as abandoned
+        # and inviting a redispatch that throws away an intact session.
+        classification = "blocked"
+        if not manifest_file_present:
+            delivery = "no manifest was delivered and nothing has landed yet"
+        else:
+            delivery = (
+                "the in-progress manifest at "
+                f"{manifest} records what was already delivered"
+            )
+        detail = f"blocked: {background_wait}; {delivery}"
+        action = f"reckon crew resume --run {run_id}"
     elif manifest_error and manifest_present:
         # The third manifest outcome next to absent and readable-and-terminal:
         # a file that is present but that no supported reader can parse is

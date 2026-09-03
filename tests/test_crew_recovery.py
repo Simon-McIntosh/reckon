@@ -488,6 +488,219 @@ def test_a_crash_without_a_refusal_still_abandons(home) -> None:
     assert observation.budget.get("refusal") is not True
 
 
+# ── A background wait is not a vanished process ────────────────────────────
+#
+# Both fixtures below are transcribed verbatim from run directories a live
+# fleet actually wrote (a print-mode Claude Code CLI worker whose background
+# task outlived its own turn), not from a paraphrase of what such a run might
+# write. The match this classifier makes is on what the harness writes.
+
+# The literal stderr line, byte for byte, from a run that hit the ceiling.
+_BACKGROUND_WAIT_CEILING_STDERR = (
+    "Background tasks still running after 600s; terminating. Set "
+    "CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0 to wait indefinitely."
+)
+
+# The literal `result` field, byte for byte, from a run whose last turn ended
+# normally (is_error false, subtype success) while a background suite was
+# still running — the print-mode invocation then had no next turn to write.
+_BACKGROUND_WAIT_RESULT_TEXT = (
+    "Waiting for the background `tests/standard_names` suite run to "
+    "complete before finalizing the manifest."
+)
+
+
+def _claude_stream_pointer(
+    home: Path,
+    run_id: str,
+    events: list[dict],
+    *,
+    manifest: str | None = None,
+    **kw,
+) -> dict:
+    """A live cli pointer over a Claude Code print-mode stream built in place.
+
+    The refusal fixtures above read a recorded backend log from disk; this
+    node's write scope holds no fixtures directory, so the stream this
+    reproduces is written inline from the exact quoted production text
+    instead, into the same temporary home every other pointer in this file
+    uses.
+    """
+    stream = home / "streams" / f"{run_id}.jsonl"
+    stream.parent.mkdir(parents=True, exist_ok=True)
+    stream.write_text("".join(json.dumps(event) + "\n" for event in events))
+    record = {
+        "run_id": run_id,
+        "project": "proj",
+        "node": {"id": run_id, "plan": "plan-a", "time_budget": "20m"},
+        "backend": "claude",
+        "launch": "cli",
+        "argv": ["claude"],
+        "log_path": str(stream),
+        "stderr_path": str(home / f"{run_id}-stderr.log"),
+        "phase": "working",
+        "process_alive": False,
+        "session": "s",
+        "manifest_path": str(home / "manifests" / f"{run_id}.md"),
+    }
+    if manifest is not None:
+        manifest_path = home / "manifests" / f"{run_id}.md"
+        manifest_path.parent.mkdir(parents=True, exist_ok=True)
+        manifest_path.write_text(manifest)
+    record.update(kw)
+    return record
+
+
+def test_stderr_wait_ceiling_classifies_blocked_not_abandoned(home) -> None:
+    # First measured signal: the process is gone, no manifest was ever
+    # written, and the only trace is the harness's own ceiling line on
+    # stderr. The previous behaviour read this as abandoned — true and
+    # useless, since the session is intact and a resume would collect the
+    # manifest — so it must now block and name the wait instead.
+    pointer = _claude_stream_pointer(home, "r-ceiling", [])
+    (Path(pointer["stderr_path"])).write_text(_BACKGROUND_WAIT_CEILING_STDERR)
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+    assert row["classification"] == "blocked"
+    assert row["classification"] not in {"abandoned", "completed_unpromoted"}
+    assert "background-wait ceiling" in row["detail"]
+    assert "no manifest was delivered" in row["detail"]
+    assert row["next_action"] == f"reckon crew resume --run {pointer['run_id']}"
+    assert "redispatch" not in row["next_action"]
+
+
+def test_final_message_background_wait_classifies_blocked_not_abandoned(
+    home,
+) -> None:
+    # Second measured signal: the worker's own last turn ended normally
+    # (is_error false, subtype success) while stating it was waiting on
+    # background work, and a print-mode invocation has no turn after that one
+    # to write the manifest it was about to write. Nothing terminated it.
+    pointer = _claude_stream_pointer(
+        home,
+        "r-waiting",
+        [
+            {
+                "type": "result",
+                "is_error": False,
+                "subtype": "success",
+                "result": _BACKGROUND_WAIT_RESULT_TEXT,
+            }
+        ],
+    )
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+    assert row["classification"] == "blocked"
+    assert row["classification"] not in {"abandoned", "completed_unpromoted"}
+    assert "waiting on background work" in row["detail"]
+    assert "standard_names" in row["detail"]
+    assert row["next_action"] == f"reckon crew resume --run {pointer['run_id']}"
+
+
+def test_background_wait_names_delivery_from_an_unverdict_manifest(home) -> None:
+    # Delivery reporting matches the refusal block's: a manifest that never
+    # reached a verdict still names what it holds rather than implying
+    # nothing landed.
+    pointer = _claude_stream_pointer(
+        home,
+        "r-waiting-partial",
+        [
+            {
+                "type": "result",
+                "is_error": False,
+                "subtype": "success",
+                "result": _BACKGROUND_WAIT_RESULT_TEXT,
+            }
+        ],
+        manifest="node: r-waiting-partial\nstatus: in-progress\n"
+        "artifacts: two suite logs\n",
+    )
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+    assert row["classification"] == "blocked"
+    assert "records what was already delivered" in row["detail"]
+    assert "no manifest was delivered" not in row["detail"]
+
+
+def test_background_wait_survives_the_observe_fold(home, monkeypatch) -> None:
+    # observe() would fold this stream to phase "complete" (a terminal result
+    # with is_error false), which the terminal branch would otherwise read as
+    # abandoned for want of a manifest. The background-wait check must win
+    # ahead of that branch, exercised here through recover() the same way
+    # observe()'s caller would reach classify_pointer.
+    pointer = _claude_stream_pointer(
+        home,
+        "r-waiting-folded",
+        [
+            {
+                "type": "result",
+                "is_error": False,
+                "subtype": "success",
+                "result": _BACKGROUND_WAIT_RESULT_TEXT,
+            }
+        ],
+        phase="complete",
+        final_message=_BACKGROUND_WAIT_RESULT_TEXT,
+    )
+    crew._write_json(crew.pointer_path(pointer["run_id"]), pointer)
+    monkeypatch.setattr(
+        importlib.import_module("reckon.crew.dispatch"),
+        "observe",
+        lambda _run_id, config=None: pointer,
+    )
+
+    result = recovery.recover(project="proj", config={})
+
+    row = result["runs"][0]
+    assert row["classification"] == "blocked"
+    assert row["classification"] not in {"abandoned", "completed_unpromoted"}
+    assert "waiting on background work" in row["detail"]
+
+
+def test_background_wait_snapshots_as_blocked_in_the_watch_producer_path(
+    home,
+) -> None:
+    # The watch producer never calls observe(); it reduces the raw pointer
+    # straight through classify_pointer, which is the path the two measured
+    # runs actually hit. Both signals must reach the same state there too.
+    ceiling_pointer = _claude_stream_pointer(home, "r-ceiling-watch", [])
+    Path(ceiling_pointer["stderr_path"]).write_text(_BACKGROUND_WAIT_CEILING_STDERR)
+    ceiling_snapshot = recovery._watch_snapshot(
+        ceiling_pointer, moment=time.time(), stall_seconds=3600
+    )
+    assert ceiling_snapshot["state"] == "blocked"
+    assert ceiling_snapshot["state"] in recovery.FLEET_BLOCKED_STATES
+    assert "background-wait ceiling" in ceiling_snapshot["detail"]
+
+    waiting_pointer = _claude_stream_pointer(
+        home,
+        "r-waiting-watch",
+        [
+            {
+                "type": "result",
+                "is_error": False,
+                "subtype": "success",
+                "result": _BACKGROUND_WAIT_RESULT_TEXT,
+            }
+        ],
+    )
+    waiting_snapshot = recovery._watch_snapshot(
+        waiting_pointer, moment=time.time(), stall_seconds=3600
+    )
+    assert waiting_snapshot["state"] == "blocked"
+    assert waiting_snapshot["state"] in recovery.FLEET_BLOCKED_STATES
+    assert "waiting on background work" in waiting_snapshot["detail"]
+
+
+def test_a_vanished_process_with_neither_wait_signal_stays_abandoned(home) -> None:
+    # The negative the done-when requires: a run that is gone, carrying
+    # neither the stderr ceiling nor a background-wait final message, keeps
+    # its present classification. Otherwise the new arm becomes the
+    # catch-all "unreadable" was written to guard against.
+    pointer = _claude_stream_pointer(home, "r-plain-crash", [])
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+    assert row["classification"] == "abandoned"
+    snapshot = recovery._watch_snapshot(pointer, moment=time.time(), stall_seconds=3600)
+    assert snapshot["state"] == "abandoned"
+
+
 # ── An unreadable manifest is its own outcome ──────────────────────────────
 
 
