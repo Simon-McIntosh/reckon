@@ -20,7 +20,7 @@ from reckon.crew.node import (
 )
 from reckon.crew.reports import parse_manifest
 from reckon.crew.routing import _signal_process_group
-from reckon.crew.ticker import NEEDS_ACTION, Ticker, _agent_label, single_clause
+from reckon.crew.ticker import NEEDS_ACTION, Ticker, _agent_label
 from reckon.crew.runs import (
     _manifest_freshness,
     _mutate_pointer,
@@ -34,18 +34,6 @@ from reckon.crew.runs import (
     process_alive,
     watch_lock_path,
 )
-
-
-# Shaping free text into one bounded clause belongs with the field that has to
-# fit it, so it lives beside the grid. This module additionally refuses a
-# clause that collapses to bare punctuation — a parse failure upstream (a
-# block-scalar indicator returned as if it were the value) must not survive as
-# a "reason" no reader can act on.
-def _single_clause(value: Any, *, limit: int = 96) -> str:
-    clause = single_clause(value, limit=limit)
-    if clause and not re.search(r"[A-Za-z0-9]", clause):
-        return ""
-    return clause
 
 
 # ── Recovery: what an interrupted orchestrator left behind ───────────────────
@@ -285,6 +273,7 @@ def classify_pointer(
         terminal_age_seconds = max(0, int(moment - terminal_seconds))
 
     marker = None
+    needs_help_complete_value = None
     if manifest_status == "complete":
         classification = "completed_unpromoted"
         detail = (
@@ -309,6 +298,7 @@ def classify_pointer(
         reason_text = headline or blocker or "the manifest reports a blocker"
         if not re.search(r"[A-Za-z0-9]", reason_text):
             reason_text = "the manifest reports a blocker"
+        needs_help_complete_value = needs_help_complete
         detail = f"the worker manifest reports blocked: {reason_text}"
         if needs_help_complete:
             marker = "?"
@@ -427,8 +417,10 @@ def classify_pointer(
         "next_action": action,
         # Set only for a blocked run: "?" when the escape-hatch question is
         # complete enough that `reckon crew resume --advice` can answer it,
-        # "!" when the reader has to read the manifest itself.
+        # "!" when the reader has to read the manifest itself. The fact behind
+        # it travels too so the renderer derives the glyph instead of persisting it.
         "marker": marker,
+        "needs_help_complete": needs_help_complete_value,
     }
 
 
@@ -745,26 +737,38 @@ def _watch_snapshot(
         # routine progress read as a warning.
         detail = ""
 
+    # What ran it, as facts rather than a display string. The alias and effort
+    # spelling were decided at dispatch and frozen onto the pointer; a later
+    # configuration edit must not restate what ran, so the facts are read from
+    # the record. Composition is the renderer's, so the model and effort travel
+    # separately and the monitor decides how they read.
+    agent_map = (
+        pointer.get("agent") if isinstance(pointer.get("agent"), Mapping) else {}
+    )
     return {
         "run_id": str(row.get("run_id") or ""),
         "node": str(row.get("node") or row.get("run_id") or "unknown"),
         # The dispatching session, so a reader can tell its own fleet from a
         # peer's on a stream that is necessarily project-wide.
         "session": str(pointer.get("session") or ""),
-        # What ran it. A reader comparing two nodes' progress, or judging whether
-        # a stall is the model or the work, needs this and had to leave the
-        # ticker to get it.
-        "agent": agent_label(pointer),
+        "backend": str(agent_map.get("backend") or "").strip(),
+        "model": str(agent_map.get("model") or "").strip(),
+        "effort": str(agent_map.get("effort") or "").strip(),
+        "alias": str(agent_map.get("alias") or "").strip(),
         # What kind of work it is, on the record the same way. Read beside the
         # agent because the two describe the same run and are reduced the same
         # way — the snapshot carries the raw spelling and the renderer narrows
         # it to fit its column.
         "role": _pointer_role(pointer),
         "state": state,
-        "reason": _single_clause(detail),
-        # Only a "blocked" state carries a marker; a run entering any other
-        # state has nothing for the reader to answer or read a manifest for.
-        "marker": row.get("marker") if state == "blocked" else None,
+        # The full, untruncated reason. The bounded clause a reader can act on
+        # is derived from it at render time, so nothing here is shaped for the
+        # grid before it is stored.
+        "detail": detail,
+        # The fact a block's glyph is derived from. Only a "blocked" state
+        # carries a marker; a run entering any other state has nothing for the
+        # reader to answer or read a manifest for.
+        "needs_help_complete": row.get("needs_help_complete"),
     }
 
 
@@ -823,7 +827,7 @@ def fleet_transitions(
         # A departure is its own fact and inherits no clause or marker from the
         # state it left. Carrying one forward reports a block on the line
         # announcing that the block is over.
-        departed = {**known[run_id], "reason": "", "marker": None}
+        departed = {**known[run_id], "detail": "", "needs_help_complete": None}
         changes.append((departed, str(known[run_id]["state"]), "promoted"))
     for run_id in (item for item in current if item not in known):
         changes.append(
@@ -831,8 +835,8 @@ def fleet_transitions(
                 {
                     **current[run_id],
                     "state": "dispatched",
-                    "reason": "",
-                    "marker": None,
+                    "detail": "",
+                    "needs_help_complete": None,
                 },
                 None,
                 "dispatched",
@@ -864,28 +868,34 @@ def _watch_transition(
     current: str,
     counts: Mapping[str, int],
 ) -> dict[str, Any]:
-    """Build one lossless transition object for text or JSON rendering."""
-    event = {
+    """Build one lossless transition object for text or JSON rendering.
+
+    This is the surface the events log persists, so it carries facts only: the
+    model, effort, alias and backend separately, the full untruncated detail,
+    and the structured fact a block's glyph is derived from. No composed label,
+    no pre-claused reason and no display glyph are written here — the monitor
+    derives those from these facts, so the log stays re-renderable.
+    """
+    return {
         "project": project,
         "event": kind,
         "observed_at": _utc_now(),
         "run_id": snapshot.get("run_id"),
         "node": snapshot.get("node"),
         "session": snapshot.get("session") or "",
-        "agent": snapshot.get("agent") or "",
         "role": snapshot.get("role") or "",
+        "backend": str(snapshot.get("backend") or ""),
+        "model": str(snapshot.get("model") or ""),
+        "effort": str(snapshot.get("effort") or ""),
+        "alias": str(snapshot.get("alias") or ""),
         "from_state": previous,
         "to_state": current,
         "working": counts["working"],
         "blocked": counts["blocked"],
         "unpromoted": counts["unpromoted"],
+        "detail": str(snapshot.get("detail") or ""),
+        "needs_help_complete": snapshot.get("needs_help_complete"),
     }
-    reason = _single_clause(snapshot.get("reason"))
-    if reason:
-        event["reason"] = reason
-    if current == "blocked" and snapshot.get("marker"):
-        event["marker"] = snapshot["marker"]
-    return event
 
 
 # Rendering a transition is a layout concern with its own contract, so it lives

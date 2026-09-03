@@ -31,7 +31,12 @@ ROLE = 4
 NODE = 36
 SESSION = 18
 STATE = 10
-AGENT = 18
+# Model identity and effort each earn their own column: a reader scans effort
+# down a column instead of parsing it out of a fused label. MODEL is wide enough
+# to hold the widest real alias and every legacy composed model/effort string a
+# line written before the facts switch carries; EFFORT fits the full effort word.
+MODEL = 18
+EFFORT = 8
 GAP = 2
 
 # Identity hues, one set per background. Picked by measurement rather than eye:
@@ -147,7 +152,9 @@ MIN_WIDTH = (
         + GAP
         + (STATE * 2 + 3)
         + GAP
-        + AGENT
+        + MODEL
+        + GAP
+        + EFFORT
         + GAP
     )
     + STATS
@@ -263,11 +270,18 @@ def single_clause(value: Any, *, limit: int = 96) -> str:
     boundary keeps the sentence that states the problem and drops the elaboration
     after it, which is what survives a hard truncation anyway — and truncating
     alone would let a second clause occupy room the first one needed.
+
+    A clause that collapses to bare punctuation is refused outright: a parse
+    failure upstream (a block-scalar indicator returned as if it were the value)
+    must not render as a "reason" no reader can act on. The refusal lives here,
+    where the clause is derived, so the producer never has to make it.
     """
     compact = " ".join(str(value or "").split())
     clause = re.split(
         r";|(?<=[.!?])\s+|\s+[\N{EM DASH}\N{EN DASH}]\s+", compact, maxsplit=1
     )[0].strip()
+    if clause and not re.search(r"[A-Za-z0-9]", clause):
+        return ""
     if len(clause) <= limit:
         return clause
     boundary = clause.rfind(" ", 0, limit)
@@ -312,6 +326,47 @@ def _derive_effort(effort: Any) -> str:
     """
     word = str(effort or "").strip()
     return word.lower()
+
+
+def _model_label(event: Mapping[str, Any]) -> str:
+    """Model column: the alias when one is declared, else the model id, else a
+    legacy composed agent string.
+
+    The facts are preferred and the composed string is only a fallback for a
+    line written before the switch, when model and effort were fused at write
+    time and no facts were persisted to re-derive from. A legacy value is never
+    re-parsed, so it renders whole rather than holding a fragment.
+    """
+    alias = str(event.get("alias") or "").strip()
+    if alias:
+        return alias
+    model = str(event.get("model") or "").strip()
+    if model:
+        return model
+    return str(event.get("agent") or "").strip()
+
+
+def _effort_label(event: Mapping[str, Any]) -> str:
+    """Effort column: the full effort word lowercased, or empty.
+
+    A new-shape line persists effort as a fact and renders it whole here. A
+    legacy line carries no separate effort and shows nothing beside its composed
+    agent string, which already holds the effort it could not split.
+    """
+    effort = str(event.get("effort") or "").strip()
+    return _derive_effort(effort) if effort else ""
+
+
+def _display_marker(event: Mapping[str, Any]) -> str:
+    """The needs-action glyph a blocked state may carry, derived at render time.
+
+    New-shape lines persist ``needs_help_complete`` — the fact — and the glyph is
+    derived from it. A legacy line persisted the glyph itself and has no fact
+    underneath, so it renders its persisted value. Never written back to the log.
+    """
+    if "needs_help_complete" in event:
+        return "?" if event.get("needs_help_complete") else "!"
+    return str(event.get("marker") or "")
 
 
 def _agent_label(agent: Any) -> str:
@@ -404,7 +459,9 @@ class Ticker:
             (" ", None),
             (f"{to_state:<{STATE}}", hues.get(to_state, "dim")),
             (" " * GAP, None),
-            (f"{elide(_agent_label(event.get('agent')), AGENT):<{AGENT}}", "dim"),
+            (f"{elide(_model_label(event), MODEL):<{MODEL}}", "dim"),
+            (" " * GAP, None),
+            (f"{elide(_effort_label(event), EFFORT):<{EFFORT}}", "dim"),
             (" " * GAP, None),
         ]
 
@@ -421,11 +478,21 @@ class Ticker:
 
         Only the state being entered may explain itself. Keying on the state
         being left is how a promotion ends up still reporting the block it
-        recovered from — describing a problem that is already over.
+        recovered from — describing a problem that is already over. A blocked
+        entry carries a glyph saying whether a resume can answer it, derived from
+        the persisted fact at render time rather than written into the record.
         """
         if to_state not in NEEDS_ACTION or room < MIN_REASON:
             return ""
-        return single_clause(event.get("reason"), limit=room)
+        detail = event.get("detail")
+        if detail is None:
+            detail = event.get("reason")
+        marker = _display_marker(event) if to_state == "blocked" else ""
+        reserve = len(marker) + (1 if marker else 0)
+        clause = single_clause(detail, limit=max(0, room - reserve))
+        if marker and clause:
+            return f"{marker} {clause}"
+        return marker or clause
 
     def _stats(self, event: Mapping[str, Any]) -> list[tuple[str, Any]]:
         """The fleet after this transition, as a grid whose digits line up.

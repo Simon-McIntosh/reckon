@@ -16,7 +16,8 @@ from click.testing import CliRunner
 
 from reckon import _backends, crew
 from reckon import cli as cli_module
-from reckon.crew import recovery, reports
+from reckon.crew import recovery, reports, runs
+from reckon.crew import ticker as ticker_module
 
 # Recorded worker event streams, read as repository fixtures so a refusal is
 # asserted against what a real harness wrote rather than against text a test
@@ -491,7 +492,7 @@ def test_refusal_blocked_pointer_snapshots_as_blocked_in_the_ticker_path(home) -
     snapshot = recovery._watch_snapshot(pointer, moment=time.time(), stall_seconds=3600)
     assert snapshot["state"] == "blocked"
     assert snapshot["state"] in recovery.FLEET_BLOCKED_STATES
-    assert "usage-limit" in snapshot["reason"]
+    assert "usage-limit" in snapshot["detail"]
     crash = _cli_pointer(home, "r-crash", "codex-failed-turn.jsonl")
     crash_snapshot = recovery._watch_snapshot(
         crash, moment=time.time(), stall_seconds=3600
@@ -558,14 +559,15 @@ def test_a_complete_needs_help_report_becomes_the_reason_with_a_question_marker(
 
     assert row["classification"] == "blocked"
     assert row["marker"] == "?"
+    assert row["needs_help_complete"] is True
     assert "the schema rejects an enum value" in row["detail"]
     assert row["detail"].strip() != "|"
 
     snapshot = recovery._watch_snapshot(record, moment=time.time(), stall_seconds=3600)
     assert snapshot["state"] == "blocked"
-    assert snapshot["marker"] == "?"
+    assert snapshot["needs_help_complete"] is True
     assert (
-        snapshot["reason"] == "the schema rejects an enum value the config file needs"
+        snapshot["detail"] == "the schema rejects an enum value the config file needs"
     )
 
     transition = recovery._watch_transition(
@@ -576,10 +578,15 @@ def test_a_complete_needs_help_report_becomes_the_reason_with_a_question_marker(
         current=str(snapshot["state"]),
         counts=recovery._fleet_counts({"r-asked": snapshot}),
     )
-    assert transition["marker"] == "?"
+    assert transition["needs_help_complete"] is True
     assert (
-        transition["reason"] == "the schema rejects an enum value the config file needs"
+        transition["detail"] == "the schema rejects an enum value the config file needs"
     )
+
+    # The glyph is derived at render time from the persisted fact.
+    line = recovery.format_watch_transition(transition)
+    assert "?" in line
+    assert "the schema rejects an enum value" in line
 
 
 def test_blockers_without_a_needs_help_report_get_the_blocker_text_and_a_bang_marker(
@@ -591,12 +598,13 @@ def test_blockers_without_a_needs_help_report_get_the_blocker_text_and_a_bang_ma
 
     assert row["classification"] == "blocked"
     assert row["marker"] == "!"
+    assert row["needs_help_complete"] is False
     assert "the credential file is missing" in row["detail"]
 
     snapshot = recovery._watch_snapshot(record, moment=time.time(), stall_seconds=3600)
     assert snapshot["state"] == "blocked"
-    assert snapshot["marker"] == "!"
-    assert snapshot["reason"] == (
+    assert snapshot["needs_help_complete"] is False
+    assert snapshot["detail"] == (
         "the credential file is missing on this host and dispatch cannot proceed"
     )
 
@@ -616,12 +624,14 @@ def test_a_block_scalar_indicator_is_never_read_as_the_value(home) -> None:
     assert "|" not in row["detail"]
 
     snapshot = recovery._watch_snapshot(record, moment=time.time(), stall_seconds=3600)
-    assert snapshot["reason"] != "|"
+    assert snapshot["detail"] != "|"
 
 
 @pytest.mark.parametrize("bare", ["|", ">", '"', "'", "|-", ">+"])
 def test_single_clause_refuses_a_bare_punctuation_reason(bare) -> None:
-    assert recovery._single_clause(bare) == ""
+    # The refusal moved to the derive site (the renderer), where the clause is
+    # actually produced, so it lives beside the single_clause it guards.
+    assert ticker_module.single_clause(bare) == ""
 
 
 def test_a_block_scalar_blockers_value_is_parsed_from_its_indented_body() -> None:
@@ -720,7 +730,7 @@ def test_transition_carries_the_role_its_pointer_carried(home) -> None:
 
     assert transition["role"] == "implement"
     line = recovery.format_watch_transition(transition)
-    assert "implement" in line
+    assert "impl" in line
 
 
 def test_the_role_stamped_on_the_node_reaches_the_transition_tool(home) -> None:
@@ -736,7 +746,7 @@ def test_documentation_is_narrowed_to_docs_by_the_renderer(home) -> None:
 
     assert transition["role"] == "documentation"
     line = recovery.format_watch_transition(transition)
-    assert "docs" in line
+    assert "docu" in line
 
 
 def test_a_pointer_without_a_role_renders_the_marker_without_raising(home) -> None:
@@ -754,7 +764,9 @@ def test_a_pointer_without_a_role_renders_the_marker_without_raising(home) -> No
 # column added later that reads a key the snapshot never threads would render
 # its marker forever while the suite stayed green — the treadmill this section
 # exists to close — so the contract is that every key the renderer consumes is
-# carried on every transition it is given.
+# carried on every transition it is given. The facts the display is derived from
+# travel under their own names, and the display-shaped fields themselves must
+# never reappear on the record.
 _TICKER_READ_FIELDS = (
     "observed_at",
     "role",
@@ -763,21 +775,29 @@ _TICKER_READ_FIELDS = (
     "session",
     "to_state",
     "from_state",
-    "agent",
-    "reason",
+    "backend",
+    "model",
+    "effort",
+    "alias",
+    "detail",
     "working",
     "blocked",
     "unpromoted",
 )
 
+# A display-shaped field is exactly what the log must not persist: the composed
+# agent label, a pre-claused reason, and the marker glyph are all derived by the
+# renderer from the facts above.
+_DISPLAY_SHAPED_FIELDS = ("agent", "reason", "marker")
+
 
 def test_snapshot_carries_every_field_the_ticker_column_set_reads(home) -> None:
-    # Constructed from a pointer whose manifest is blocked so the reason clause
-    # is populated; a snapshot whose state supplied nothing to explain would not
+    # Constructed from a pointer whose manifest is blocked so the detail is
+    # populated; a snapshot whose state supplied nothing to explain would not
     # exercise the reason slot the renderer reads. The aliased agent keeps the
     # presence check honest: a field that is present but reduces stale passes a
-    # presence-only assertion, so each field must also equal the reduction the
-    # renderer expects — here, the alias rather than the model the record also
+    # presence-only assertion, so the reduction must equal what the renderer
+    # expects — the alias in its own column, not the model the record also
     # carries.
     snapshot = _role_snapshot(
         home,
@@ -806,11 +826,17 @@ def test_snapshot_carries_every_field_the_ticker_column_set_reads(home) -> None:
         assert field in transition, (
             f"the renderer reads {field!r} but the transition does not carry it"
         )
-    assert transition["agent"] == "dsv4-flash·me"
+    for field in _DISPLAY_SHAPED_FIELDS:
+        assert field not in transition, (
+            f"the producer must not persist the display-shaped field {field!r}"
+        )
+    assert transition["model"] == "deepseek-v4-flash"
+    assert transition["alias"] == "dsv4-flash"
     line = recovery.format_watch_transition(transition)
     assert "dsv4-flash" in line
     assert "deepseek-v4-flash" not in line
-    assert "implement" in line
+    assert "medium" in line
+    assert "impl" in line
 
 
 def test_agent_label_returns_the_declared_alias_and_effort_spelling() -> None:
@@ -841,7 +867,9 @@ def test_a_pointer_without_an_alias_keeps_the_model_effort_form() -> None:
 def test_an_aliased_pointer_renders_the_alias_not_the_model_id(home) -> None:
     # Screened through the snapshot and the renderer together, not the renderer
     # alone: the alias has to survive the pointer-to-snapshot reduction and then
-    # the render, which is the path the measured bug dropped it on.
+    # the render, which is the path the measured bug dropped it on. The model
+    # and effort travel as separate facts and both survive; the display shows
+    # the alias and the full effort, never the model id underneath.
     snapshot = _role_snapshot(
         home,
         "r-alias",
@@ -864,7 +892,133 @@ def test_an_aliased_pointer_renders_the_alias_not_the_model_id(home) -> None:
         current=str(snapshot["state"]),
         counts=recovery._fleet_counts({"r-alias": snapshot}),
     )
-    assert transition["agent"] == "dsv4-flash·me"
+    assert transition["model"] == "deepseek-v4-flash"
+    assert transition["alias"] == "dsv4-flash"
+    assert transition["effort"] == "medium"
+    assert "agent" not in transition
     line = recovery.format_watch_transition(transition)
     assert "dsv4-flash" in line
     assert "deepseek-v4-flash" not in line
+    assert "medium" in line
+
+
+# ── The log stores facts, the monitor derives the display ────────────────────
+
+
+def _fact_snapshot(
+    home: Path,
+    run_id: str,
+    *,
+    manifest_status: str,
+    agent: Mapping[str, Any] | None = None,
+) -> dict:
+    """A snapshot whose only moving parts are the facts the log must carry."""
+    return _role_snapshot(
+        home,
+        run_id,
+        role="implement",
+        manifest_status=manifest_status,
+        agent=agent
+        or {
+            "backend": "claude",
+            "model": "deepseek-v4-flash",
+            "effort": "medium",
+            "alias": "dsv4-flash",
+        },
+    )
+
+
+def _fact_transition(home: Path, run_id: str, **kw) -> dict:
+    snapshot = _fact_snapshot(home, run_id, **kw)
+    return recovery._watch_transition(
+        "proj",
+        kind="baseline",
+        snapshot=snapshot,
+        previous=None,
+        current=str(snapshot["state"]),
+        counts=recovery._fleet_counts({run_id: snapshot}),
+    )
+
+
+def test_a_written_log_line_persists_facts_and_no_display_values(
+    home, tmp_path
+) -> None:
+    # Read out of the events file, not off a function's return value: the log is
+    # what a later reader gets, and the producer's returned object could carry a
+    # field the writer drops or the reader loses.
+    transition = _fact_transition(home, "r-facts", manifest_status="blocked")
+    events = tmp_path / "proj.events"
+    runs._append_watch_lines(events, [transition])
+
+    written = list(runs.read_stream_events(events))
+    assert len(written) == 1
+    line = written[0]
+    for key in ("backend", "model", "effort", "alias", "detail", "needs_help_complete"):
+        assert key in line, f"the log line must carry the fact {key!r}"
+    assert line["model"] == "deepseek-v4-flash"
+    assert line["alias"] == "dsv4-flash"
+    assert line["effort"] == "medium"
+    assert line["detail"]  # the full untruncated detail is present
+    for key in _DISPLAY_SHAPED_FIELDS:
+        assert key not in line, (
+            f"the log line must not persist the display-shaped field {key!r}"
+        )
+
+
+def test_legacy_log_line_renders_and_new_line_renders_separate_columns(home) -> None:
+    # A real line taken from the project's events log, written before the facts
+    # switch: it has only the composed agent, a pre-claused reason, and no raw
+    # fields underneath, and must still render without raising.
+    legacy = {
+        "agent": "gpt-5.6-sol/medium",
+        "blocked": 1,
+        "event": "transition",
+        "from_state": "dispatched",
+        "node": "n-resolve-cross-module-refs",
+        "observed_at": "2026-09-01T14:01:14Z",
+        "project": "reckon",
+        "reason": "the same focused pytest command failed twice after different fixes",
+        "run_id": "r-1",
+        "session": "d8-repair",
+        "to_state": "blocked",
+        "unpromoted": 0,
+        "working": 0,
+    }
+    legacy_line = recovery.format_watch_transition(legacy)
+    assert "gpt-5.6-sol/medium" in legacy_line
+    assert "the same focused pytest command failed twice" in legacy_line
+
+    # A line in the new shape renders model and effort into their own columns.
+    transition = _fact_transition(
+        home,
+        "r-new",
+        manifest_status="blocked",
+        agent={
+            "backend": "claude",
+            "model": "deepseek-v4-flash",
+            "effort": "high",
+            "alias": "dsv4-flash",
+        },
+    )
+    new_line = recovery.format_watch_transition(transition)
+    assert "dsv4-flash" in new_line
+    assert "high" in new_line
+    assert "dsv4-flash·high" not in new_line  # no fused separator remains
+
+
+def test_one_stored_new_line_renders_differently_at_two_display_settings(home) -> None:
+    # The re-renderable-history property: the same persisted facts redraw when
+    # the display rule changes, without the producer running again. A narrower
+    # grid gives the reason less room, so the stored line changes shape.
+    transition = _fact_transition(home, "r-rerender", manifest_status="blocked")
+    narrow = recovery.format_watch_transition(
+        transition, ticker=ticker_module.Ticker(width=146, color=False)
+    )
+    wide = recovery.format_watch_transition(
+        transition, ticker=ticker_module.Ticker(width=180, color=False)
+    )
+    assert narrow != wide
+    assert "medium" in narrow
+    assert "medium" in wide
+    assert "dsv4-flash" in narrow
+    assert "dsv4-flash" in wide
