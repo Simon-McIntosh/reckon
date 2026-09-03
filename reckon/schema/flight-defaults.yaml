@@ -47,6 +47,13 @@ roles:
     # Sized for two runs at the measured 700-900s suite ceiling on this
     # machine: an attribution pass against base plus one against candidate.
     time_budget: 30m
+    # "." names this run's own durable report-and-log directory in full (see
+    # write_paths in flight.yaml) — never the repository under test — so a
+    # test node that declares no write_paths of its own lands its manifest
+    # and any log it writes, and nothing else, by contract rather than by
+    # orchestrator discipline.
+    write_paths:
+      - "."
   documentation:
     execution_capable: true
     sandbox: worktree-full

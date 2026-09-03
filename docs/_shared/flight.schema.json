@@ -607,6 +607,16 @@
                         "string",
                         "null"
                     ]
+                },
+                "write_paths": {
+                    "description": "Default write scope granted to a node of this role when it declares no write_paths of its own. Entries are relative and are resolved against the dispatching run's own durable report-and-log directory \u2014 the same directory `manifest_path` already defaults into \u2014 never against the repository being worked on. A shipped or host layer therefore names no host-specific location, and a role whose entries all stay under that directory grants no reach into repository source.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
                 }
             },
             "required": [
@@ -678,6 +688,16 @@
                     "pattern": "^[0-9]+[smh]$",
                     "type": [
                         "string",
+                        "null"
+                    ]
+                },
+                "write_paths": {
+                    "description": "Default write scope granted to a node of this role when it declares no write_paths of its own. Entries are relative and are resolved against the dispatching run's own durable report-and-log directory \u2014 the same directory `manifest_path` already defaults into \u2014 never against the repository being worked on. A shipped or host layer therefore names no host-specific location, and a role whose entries all stay under that directory grants no reach into repository source.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": [
+                        "array",
                         "null"
                     ]
                 }
