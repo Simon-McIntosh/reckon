@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T18:01:20",
+  "updated": "2026-09-03T20:02:52",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -46187,6 +46187,124 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260903T175500534989-the-days-review-is-readable-from-the-repository",
+        "plan": "crew-observability-truth",
+        "section": "\u00a76",
+        "node": "the-days-review-is-readable-from-the-repository",
+        "node_definition": {
+          "done_when": "The review exists only at /home/ITER/mcintos/.config/reckon/crew/reports/s15-day-review.md, 24451 bytes and 379 lines, outside every checkout. A find across docs returns zero matching files, so its figures reach no fresh clone, no CI, no peer worktree and no reader on another machine - which this workstation's guidance calls a record nobody can read, and therefore not a record. It carries the numbers that correct this project's own account of the day and they are currently unciteable. Done when docs/research/brief-conformance-review.html exists carrying meta docs-project reckon, reckon-type research, and plan-informs naming the plans it reports on, and reproduces the source's figures VERBATIM rather than re-deriving or re-summarising them: that 165 commits are dated 2026-09-03 of which 122 are non-merge and 40 are code-bearing after excluding docs-only and plan-state commits, that all 40 map to exactly one promoted ledger row by sha with none unattributable, that the verdicts are 11 met-in-letter-only against 1 exceeded and 28 met, that the fenced-call-site failure class was found 6 times independently against 4 recorded by the sprint with 4 repaired same-day, and that the gate pass rate is 48 passed against 18 failed and 1 not-run over 67 rows giving 71.6 percent by row and 48 of 59 distinct nodes giving 81.4 percent by node, never reaching 92 percent at any point in the day, with all 18 failures carrying a harness classification of 10 infrastructure-failure and 8 malformed-node so worker-attributable failures are 0 of 48. The source's own stated limit must be carried too, that the pass-against-base determination is static because the review's fence forbade invoking a check. Include the two defects it found live at HEAD and the two signals it found measured then discarded at promotion, each marked with what has since landed against it, since three of those four were repaired after the review was written and a reader must not be left believing they are open. Illustrate it: a graphic is expected wherever one aids the reader, and a verdict distribution over the 40 commits plus the by-row against by-node pass rates are both figure-shaped. Anything inline must be a table or an inline SVG rather than an external asset, since the served page loads project-absolute paths only. The source markdown is NOT deleted and NOT edited - it is the provenance, and the new document names it as its source. Assert by fetching the rendered page from the running docs server and requiring each verbatim figure above to appear in the response, and by confirming the source file is byte-identical afterwards. Report the ruff-equivalent check for this repository's docs, the link and anchor validation, against its count at base.",
+          "estimated_hours": 2.0,
+          "goal": "The day's brief-conformance review is a repository document, so its figures are readable by anyone with the checkout rather than only on this workstation.",
+          "id": "the-days-review-is-readable-from-the-repository",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/review-into-repo-manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "documentation",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "docs/research/brief-conformance-review.html"
+          ]
+        },
+        "role": "documentation",
+        "spec_level": "guided",
+        "member": "doc-evidence",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "alias": "sonnet 5",
+          "backend": "claude",
+          "effort": "high",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T17:55:06Z",
+        "completed_at": "2026-09-03T18:02:00.704Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 408,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 414,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "51f74875db3b73af6307c6fae8a7fd62ad6c9b8a",
+        "commits": [
+          "a54fb1c3689089f49bdac3fd2dc37d6a027c495b"
+        ],
+        "changed_lines": {
+          "added": 309,
+          "removed": 0,
+          "files": 1
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "reckon audit-doc docs/plans/*.html docs/research/*.html --check-links",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/review-into-repo-manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/review-into-repo-manifest.md",
+        "scope_changed": false,
+        "session_id": "568cd652-916e-4de4-9299-15d59f0e11c2",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 1.01,
+          "rate_limit_type": "overage",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-10-01T00:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 1,
+          "tokens": {
+            "cache_creation_input_tokens": 119032,
+            "cache_creation_input_tokens_cumulative": 119032,
+            "cache_read_input_tokens": 5808657,
+            "cache_read_input_tokens_cumulative": 5808657,
+            "inference_geo": "not_available",
+            "input_tokens": 114,
+            "input_tokens_cumulative": 114,
+            "output_tokens": 33033,
+            "output_tokens_cumulative": 33033,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 2.0601846,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 2.0601846
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 411.757,
+          "generated_tokens": 35136,
+          "generation_seconds": 403.455,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 13.8,
+          "machine_seconds": 8.302,
+          "peak_input_tokens": 138263,
+          "tokens_per_second": 87.09,
+          "wall_tokens_per_second": 85.33
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "documentation",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -46317,6 +46435,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 745
+    "_version": 746
   }
 }
