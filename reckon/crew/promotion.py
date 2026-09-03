@@ -14,8 +14,16 @@ from reckon import _backends, _store, ledger
 from reckon.crew.dispatch import _backend_settings, _capture_member_session
 from reckon.crew.node import CrewError, STALL_BUDGET_MULTIPLE, parse_duration
 from reckon.crew.reports import parse_manifest
-from reckon.crew.routing import _repository_tree_snapshot
+from reckon.crew.routing import (
+    RECLAIMABLE_CLASSES,
+    WITHHELD_REASONS,
+    _git,
+    _inspect_workspace,
+    _repository_tree_snapshot,
+    _signal_process_group,
+)
 from reckon.crew.runs import (
+    _live_worktree_claims,
     _manifest_freshness,
     _pointer_lock,
     _utc_now,
@@ -925,6 +933,115 @@ def _evaluate_suite_delta(
     }
 
 
+def _release_terminal_manifest(record: Mapping[str, Any]) -> bool:
+    """Return whether a terminal manifest was delivered for this attempt.
+
+    A live process with no manifest at all is a recovery case, not a cleanup
+    one, so signalling it here would race whatever is meant to observe it.
+    """
+    manifest_present, fresh = _manifest_freshness(record)
+    if not manifest_present or not fresh:
+        return False
+    try:
+        parsed = parse_manifest(
+            Path(str(record["manifest_path"])).read_text(encoding="utf-8")
+        )
+    except (OSError, KeyError, ValueError):
+        return False
+    return str(parsed.get("status") or "").strip().lower() in {
+        "complete",
+        "blocked",
+        "failed",
+    }
+
+
+def _release_run_workspace(record: Mapping[str, Any]) -> dict[str, Any]:
+    """Release a promoted run's own worktree and, if still alive, its process.
+
+    Reuses the classification `crew gc` already applies rather than writing a
+    second policy: a worktree is released only when it is clean and its HEAD
+    is an ancestor of the repository's integration branch, or when it is a
+    shadow whose patch was already retained. Everything else is left in place
+    and named with the condition that withheld it. Called only after the
+    ledger append and pointer delete already succeeded; any exception raised
+    here is caught by the caller and folded into the result instead of being
+    allowed to obscure those two writes.
+    """
+    result: dict[str, Any] = {"worktree_released": False, "process_signalled": False}
+
+    worktree_value = str(record.get("worktree") or "")
+    repo_value = str(record.get("repo") or "")
+    worktree = Path(worktree_value) if worktree_value else None
+    repo = Path(repo_value) if repo_value else None
+    if worktree is None:
+        result["worktree_withheld"] = "no worktree recorded for this run"
+    elif not worktree.is_dir():
+        result["worktree_withheld"] = "tree is no longer available"
+    elif repo is None or not repo.is_dir():
+        result["worktree_withheld"] = "repository root is unavailable"
+    else:
+        claims = _live_worktree_claims().get(worktree.resolve(), [])
+        shadow_record = record if _is_shadow(record) else None
+        inspected = _inspect_workspace(repo, worktree, "HEAD", claims, shadow_record)
+        classification = str(inspected["classification"])
+        if classification not in RECLAIMABLE_CLASSES:
+            result["worktree_withheld"] = WITHHELD_REASONS.get(
+                classification, "unrecognised classification"
+            )
+        else:
+            force = classification == "disposable"
+            removal = _git(
+                repo,
+                "worktree",
+                "remove",
+                *(("--force",) if force else ()),
+                str(worktree),
+                check=False,
+            )
+            if removal.returncode or worktree.is_dir():
+                result["worktree_withheld"] = (
+                    removal.stderr.strip()
+                    or removal.stdout.strip()
+                    or "worktree remove did not report success"
+                )
+            else:
+                _git(repo, "worktree", "prune", check=False)
+                result["worktree_released"] = True
+
+    pid = record.get("pid")
+    if not _release_terminal_manifest(record):
+        result["process_withheld"] = "no terminal manifest was delivered"
+    elif process_alive(pid) is not True:
+        result["process_withheld"] = "process is not alive"
+    else:
+        try:
+            _signal_process_group(int(pid), record.get("pid_start_time"))
+        except (ProcessLookupError, PermissionError, OSError, CrewError) as exc:
+            result["process_withheld"] = f"could not signal pid {pid} — {exc}"
+        else:
+            result["process_signalled"] = True
+
+    return result
+
+
+def _release_after_promotion(run_id: str, record: Mapping[str, Any]) -> dict[str, Any]:
+    """Release what promotion made transient, never at the cost of the ledger.
+
+    A failure here — a git command that raises, a permission error signalling
+    a process — must never read as a failed promotion: the ledger row and the
+    pointer deletion that precede this call have already succeeded, and this
+    step is strictly additional cleanup on top of them.
+    """
+    try:
+        return _release_run_workspace(record)
+    except Exception as exc:  # noqa: BLE001 - cleanup must never mask promotion
+        return {
+            "worktree_released": False,
+            "process_signalled": False,
+            "worktree_withheld": f"run {run_id!r} release step raised: {exc}",
+        }
+
+
 def _complete_locked(
     run_id: str,
     *,
@@ -986,6 +1103,7 @@ def _complete_locked(
         capture = _capture_member_session(record)
         path = pointer_path(run_id)
         path.unlink(missing_ok=True)
+        release = _release_after_promotion(run_id, record)
         return {
             "run_id": run_id,
             "project": project,
@@ -996,6 +1114,7 @@ def _complete_locked(
             "already_promoted": True,
             "session_capture": capture,
             "plan_comment": comment,
+            "release": release,
         }
 
     stream = _terminal_stream_data(record)
@@ -1183,6 +1302,7 @@ def _complete_locked(
     # it has to be captured before the pointer goes.
     capture = _capture_member_session(record)
     pointer_path(run_id).unlink(missing_ok=True)
+    release = _release_after_promotion(run_id, record)
     return {
         "run_id": run_id,
         "project": project,
@@ -1193,6 +1313,7 @@ def _complete_locked(
         "already_promoted": already_promoted,
         "session_capture": capture,
         "plan_comment": comment,
+        "release": release,
     }
 
 
