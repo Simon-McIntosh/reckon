@@ -903,8 +903,16 @@ def _evaluate_suite_delta(
         )
     normalized_baseline = ledger.normalized_suite_observation(baseline)
     normalized_after = ledger.normalized_suite_observation(after)
-    added = sorted(
-        set(normalized_after["failure_ids"]) - set(normalized_baseline["failure_ids"])
+    # "New" is defined exactly here: the single set-difference lives in
+    # ledger.added_failure_ids, so the refusal and the per-failure attribution
+    # share one notion of a newly added failure rather than a second expression
+    # that could drift from it.
+    added = ledger.added_failure_ids(normalized_baseline, normalized_after)
+    # Surface the worker's attribution on the stored record: each added
+    # failure id beside the candidate merged commit that introduced it.
+    # An entry naming a pre-existing failure is dropped rather than stored.
+    attribution = ledger.new_failure_attribution(
+        baseline, after, manifest.get("failure_attribution")
     )
     waiver = str(waiver_reason).strip()
     if added and not waiver:
@@ -915,6 +923,7 @@ def _evaluate_suite_delta(
             "after_suite": normalized_after,
             "missing_fields": [],
             "added_failure_ids": added,
+            "failure_attribution": attribution,
         }
         updated = dict(record)
         updated["suite_delta_refusal"] = refusal
@@ -929,6 +938,7 @@ def _evaluate_suite_delta(
         "baseline_suite": normalized_baseline,
         "after_suite": normalized_after,
         "added_failure_ids": added,
+        "failure_attribution": attribution,
         "waiver_reason": waiver or None,
     }
 
