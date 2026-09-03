@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 </head>
 <body>
   <main class="plan-doc">
@@ -130,6 +130,40 @@
       <tbody>
         <tr><td>The buckets partition honestly</td><td>A run whose process is gone or whose manifest is terminal never appears in the working count, asserted across every phase a pointer can hold including those it never advanced past.</td></tr>
         <tr><td>Activity means generation</td><td>Any liveness or stall judgement is derived from generation events rather than file mtime, asserted against a recorded stream that is byte-active and generation-idle.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s6">&#167;6 &mdash; A transition names the label it last emitted, not the state it was in</h2>
+    <p><strong>Every run's first transition is labelled <code>dispatched</code> regardless of
+    what it actually was.</strong> The arrival branch of the transition fold appends
+    <code>{**current[run_id], "state": "dispatched"}</code> as a literal, discarding whatever
+    the snapshot computed; subsequent polls then compare against that stored label. So
+    <code>from_state</code> is the last <em>emitted</em> label rather than the state at
+    evaluation, and a pane reading <code>dispatched &rarr; X</code> learns nothing about the
+    phase the run was in when X was decided.</p>
+    <p>This is not cosmetic, because it makes the ticker unusable as evidence about the
+    detector itself. A peer session reasoned that a <code>dispatched &rarr; stalled</code>
+    event proved the pre-fix stall gate could evaluate a <code>dispatched</code> run, and
+    therefore that widening the gate was not the fix for their case. The event is in fact
+    fully reachable under the old gate: the run arrives and is labelled
+    <code>dispatched</code>, its phase later advances to <code>working</code> so the
+    <code>state == "working"</code> gate does fire, the quiet exceeds the window, and the
+    transition is emitted with the stale label as its origin. The inference was sound given
+    what the pane shows and wrong given what the code does, which is the defect &mdash; a
+    display that cannot be reasoned from is worse than one that is merely sparse.</p>
+    <p><strong>The same event carried a second, independent defect.</strong> That run was not
+    stalled; it was finished, with a <code>complete</code> manifest, a landed commit and a
+    clean worktree, and the last assistant turn 914 seconds before the event. The detector
+    read the quiet correctly and then chose the wrong verdict, because it consulted elapsed
+    silence and not the terminal manifest sitting beside it. Terminal manifests are checked
+    before the stall gate in the current code, so this needs its own reproduction: either the
+    manifest was unreadable to the classifier at that moment, or the ordering does not hold
+    on the path the producer takes. Reproduce before repairing.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>An origin state is real</td><td>A transition's <code>from_state</code> is the state the run was actually in at the previous evaluation, so a first transition from a run already working reports <code>working</code> rather than <code>dispatched</code>. Asserted against a fold whose first observation is a mid-flight run.</td></tr>
+        <tr><td>A terminal manifest outranks silence</td><td>A run whose manifest is terminal is never reported <code>stalled</code>, whatever its quiet interval. Asserted by reproducing the recorded case first, then fixing it.</td></tr>
       </tbody>
     </table>
 
