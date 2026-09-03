@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="27">
+<meta name="plan-version" content="28">
 <meta name="plan-commits" content="0c4d36f,e535dd4,81d35f9,0e9cdb2,51230b3,0580cbc,d805e6d,7e99433">
 <meta name="plan-impl" content="0.75">
 </head>
@@ -580,6 +580,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260903T122439370265-the-effort-is-spelled-in-full" data-who="flash-c" data-when="2026-09-03T12:44:02.024Z">
     <div class="r-comment-body"><p>The effort renders in full beside the alias; the widest real label fits the agent column without elision</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-20260903T1545" data-who="reckon-ship" data-when="2026-09-03T13:45:00+00:00">
+    <div class="r-comment-body">A RENDERED ROW WITHOUT A TRANSITION IS A RUMOUR ABOUT TIME — contributed by session imas-codex-75, verified here, and it is this section's defect one layer out. Their measurement: a follower one second old emitted a row reading n-loader-refuses-a-broken-sidecar arrow abandoned with the full failure reason, in transition grammar, with an EMPTY from-state. Nothing had transitioned; the follower was rendering an inventory of what already existed. Their lead asked for five or six monitor restarts today and each produced a burst of these in the first seconds, every burst reading as fresh failures, and they read them that way themselves for most of the day. VERIFIED HERE, AND THE NUMBERS ARE WORSE THAN THEY COULD SEE. The log records the distinction EXPLICITLY: 167 rows carry event baseline against 367 carrying event transition, and all 167 baseline rows have from_state null. cli.py routes both kinds to the same renderer in a single set-membership test, and ticker.py contains no reference to baseline at all. So the fact is captured, persisted, and discarded at the last step. One sampled baseline row carries to_state blocked with a full pytest failure reason, drawn identically to a block that had just happened. THIS SESSION PAID THE SAME COST AND MISATTRIBUTED IT. The lead questioned a gone-without-a-complete-manifest row as implausible; the classifier investigation that followed found a real defect and fixed it, and the row they were reacting to was an inventory row from a restart moments earlier. I restarted the follower roughly seven times today, each emitting one baseline per live run, so the lead saw dozens. I even USED the asymmetry as a diagnostic — baseline correct with transitions stale means a stale producer — so I knew baseline rows existed and still never asked whether they looked like alerts. THE FIX IS PRESENTATION, NOT CLASSIFICATION, and their verdict was correct in the instance: that run genuinely died with no manifest on disk. Done when a baseline row is visually distinct from a transition row, by any of a separate startup block, an explicit current-state marker, or suppression for runs already terminal at attach — a pre-existing terminal run being the operator's least urgent information at the moment they attach; a transition row is unchanged; and the distinction is driven by the event kind the log already carries rather than inferred from an empty from-state. Asserted by rendering one baseline and one transition with identical states and requiring the outputs to differ.</div>
 </div>
 </section>
 </main>
