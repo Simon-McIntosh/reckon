@@ -33,7 +33,7 @@ def git(repo: Path, *args: str) -> str:
 
 def repository(tmp_path: Path) -> Path:
     repo = tmp_path / "repo"
-    repo.mkdir()
+    repo.mkdir(parents=True)
     git(repo, "init", "-q", "-b", "main")
     git(repo, "config", "user.name", "Test User")
     git(repo, "config", "user.email", "test@example.invalid")
@@ -77,6 +77,16 @@ def write_pointer(home: Path, run_id: str, worktree: Path) -> None:
             }
         )
     )
+
+
+def register_mount(home: Path, project: str, repo: Path) -> None:
+    mounts_file = home / "mounts.json"
+    mounts_file.parent.mkdir(parents=True, exist_ok=True)
+    payload = {}
+    if mounts_file.is_file():
+        payload = json.loads(mounts_file.read_text())
+    payload.setdefault("mounts", {})[project] = str(repo / "docs")
+    mounts_file.write_text(json.dumps(payload))
 
 
 def record_shadow(
@@ -360,3 +370,127 @@ def test_the_reclaimable_set_is_exactly_what_apply_removes(tmp_path, monkeypatch
     branch = source.split('if item["classification"] not in (', 1)[1].split(")", 1)[0]
     for name in routing.RECLAIMABLE_CLASSES:
         assert f'"{name}"' in branch, f"{name} is reported reclaimable but not removed"
+
+
+def test_gc_with_no_repo_resolves_the_named_projects_registered_checkout(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A named project must resolve its own checkout, never the caller's cwd.
+
+    Measured defect: `--repo` defaulted to the enclosing repository, so three
+    different projects run from the reckon checkout returned byte-identical
+    counts scanned from reckon's own worktrees rather than each project's.
+    Asserted from a third directory belonging to neither the registered
+    checkout nor any other registered project.
+    """
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    nova = repository(tmp_path / "nova")
+    register_mount(home, "nova", nova)
+    reclaimable = create_worktree(nova, "audit", "reclaimable")
+    git(nova, "worktree", "prune")  # no-op; keeps intent explicit
+    third_directory = tmp_path / "elsewhere"
+    third_directory.mkdir()
+    monkeypatch.chdir(third_directory)
+
+    result = CliRunner().invoke(cli.main, ["crew", "gc", "--project", "nova"])
+    payload = json.loads(result.output)
+
+    assert result.exit_code == 0, result.output
+    assert payload["repo"] == str(nova.resolve())
+    by_path = {item["path"]: item for item in payload["worktrees"]}
+    assert str(reclaimable) in by_path
+
+
+def test_gc_refuses_an_explicit_repo_disagreeing_with_the_registered_checkout(
+    tmp_path: Path, monkeypatch
+) -> None:
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    nova = repository(tmp_path / "nova")
+    register_mount(home, "nova", nova)
+    other = repository(tmp_path / "other")
+
+    result = CliRunner().invoke(
+        cli.main, ["crew", "gc", "--project", "nova", "--repo", str(other)]
+    )
+
+    assert result.exit_code != 0
+    assert str(nova.resolve()) in result.output
+    assert str(other.resolve()) in result.output
+    assert "--confirm-cross-repo" in result.output
+
+
+def test_gc_confirm_cross_repo_scans_the_stated_repository_deliberately(
+    tmp_path: Path, monkeypatch
+) -> None:
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    nova = repository(tmp_path / "nova")
+    register_mount(home, "nova", nova)
+    other = repository(tmp_path / "other")
+    reclaimable = create_worktree(other, "audit", "reclaimable")
+
+    result = CliRunner().invoke(
+        cli.main,
+        [
+            "crew",
+            "gc",
+            "--project",
+            "nova",
+            "--repo",
+            str(other),
+            "--confirm-cross-repo",
+        ],
+    )
+    payload = json.loads(result.output)
+
+    assert result.exit_code == 0, result.output
+    assert payload["repo"] == str(other.resolve())
+    by_path = {item["path"]: item for item in payload["worktrees"]}
+    assert str(reclaimable) in by_path
+
+
+def test_gc_explicit_repo_matching_the_registered_checkout_is_not_refused(
+    tmp_path: Path, monkeypatch
+) -> None:
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    nova = repository(tmp_path / "nova")
+    register_mount(home, "nova", nova)
+
+    result = CliRunner().invoke(
+        cli.main, ["crew", "gc", "--project", "nova", "--repo", str(nova)]
+    )
+    payload = json.loads(result.output)
+
+    assert result.exit_code == 0, result.output
+    assert payload["repo"] == str(nova.resolve())
+
+
+def test_gc_result_names_the_repository_and_the_ledger_it_read(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A result cannot be attributed to the wrong project by a reader."""
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    repo = repository(tmp_path)
+    record_shadow(
+        repo,
+        home,
+        primary_run_id="primary",
+        run_id="shadow-run",
+        node="candidate",
+        retain_patch=True,
+    )
+
+    result = CliRunner().invoke(
+        cli.main, ["crew", "gc", "--repo", str(repo), "--project", "test"]
+    )
+    payload = json.loads(result.output)
+
+    assert result.exit_code == 0, result.output
+    assert payload["repo"] == str(repo.resolve())
+    assert payload["ledger"] == [
+        str((repo / "docs" / "state" / "test" / "crew.json").resolve())
+    ]
