@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="native-agent-dispatch-guard-landed">
+  <meta name="plan-title" content="Native Background Agent Guard — Execution Record">
+  <meta name="plan-summary" content="Cumulative execution evidence for the pre-tool-use spawn guard: the reuse survey, the hook itself, and the rule-locality fix — one anchor per landed outcome.">
+  <meta name="plan-evidence-for" content="native-agent-dispatch-guard">
+  <meta name="plan-verifies" content="native-agent-dispatch-guard#s2,native-agent-dispatch-guard#s4">
+  <meta name="plan-tags" content="crew,reckon-tooling,evidence">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <title>Native Background Agent Guard — Execution Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="overview">Record scope</h2>
+    <p>
+      Three distinct run outcomes are recorded against
+      <a href="/reckon/native-agent-dispatch-guard">native-agent-dispatch-guard</a> as of
+      this writing, matching the three landed comments the plan itself carries: one
+      reuse survey with no commit by design, and two code landings. This record holds one
+      anchor per outcome, each naming its commit (or the absence of one) and the
+      quantitative measure the landing comment reported, not a restatement of pass or
+      fail.
+    </p>
+
+    <h2 id="s2-guard-reuse-map">&sect;2 &mdash; The reuse survey found ten direct fits and three real gaps</h2>
+    <p>
+      <strong>No commit, by design</strong> &mdash; this node produced a report, not code.
+      <strong>15 mechanisms carried a verdict over 17 file:symbol citations</strong>: 10
+      direct fits, 4 needing extension, 1 explicit non-fit. 467 worker-seconds against a
+      12-minute budget on the local lane at deepseek-v4-flash. Map at
+      <code>~/.config/reckon/crew/reports/guard-reuse-map.md</code>.
+    </p>
+    <p>
+      The scope test the hook needs already existed as <code>dispatch.py</code>'s
+      repository-local <code>shadow_source</code> branch, which scans
+      <code>docs/state/*/crew.json</code> without consulting host state &mdash; the survey
+      is explicit that the mounts-based resolvers must stay excluded from that same test.
+      The in-harness waiver needs no new stored state: an in-harness dispatch already
+      writes <code>launch: in-harness</code> with a directive and a null task, so
+      &ldquo;awaiting attachment&rdquo; is readable as the existing predicate
+      <code>launch == in-harness and not record.task</code>. The refusal-that-teaches
+      pattern was already in production in <code>node.py</code>'s
+      <code>WatcherRequired</code>, reused verbatim rather than hand-rolled. Three gaps
+      were genuine: no composer emitted a full <code>reckon crew dispatch</code>
+      invocation from a node (only <code>crew verb --run</code> lines existed); nothing in
+      reckon wrote a harness hook setting, making &sect;3's sync step a new artifact class
+      rather than a step beside CSS and mounts; and an explicit awaiting-attach
+      classification face was judged optional because the predicate was already readable.
+    </p>
+
+    <h2 id="s2-spawn-guard-lands">&sect;2 &mdash; The hook refuses, waives twice, and teaches the re-route</h2>
+    <p>
+      <strong>Commit <code>736dbfd</code></strong>, merged. <strong>13 hook tests pass, 15
+      including the only other module importing <code>crew.node</code></strong>; ruff
+      delta zero new findings over all four changed files; 472 insertions over 4 files,
+      388 worker-seconds against a 40-minute budget on claude-sonnet-5 at medium effort.
+    </p>
+    <p>
+      The hook is stdlib-only and self-contained: a pure <code>decide(payload)</code> and a
+      <code>main()</code> matching the harness pre-tool-use contract, denying with exit 2
+      and passing with exit 0. All four fenced branches are covered, plus two negative
+      cases the fence did not name and should have &mdash; an already-attached pointer
+      does not waive, and a pointer for a different repository does not waive. The
+      scope-test isolation test is the strongest assertion in the set: it proves detection
+      reads only the repository's own <code>docs/state</code> tree while a mounts file
+      naming an unrelated project sits in the same config home, and the module contains no
+      reference to that file at all.
+    </p>
+    <p>
+      One deliberate duplication was kept visible rather than removed: the hook carries a
+      literal copy of the dispatch-invocation shape instead of importing the
+      <code>crew.node</code> composer, because it must run in target repositories that
+      have no reckon package installed. A test asserts the two copies stay textually
+      identical, so an edit to one that forgets the other fails visibly instead of
+      drifting.
+    </p>
+
+    <h2 id="s4-routing-rule-lands">&sect;4 &mdash; The fan-out rule is pinned in four skills plus the crew guidance</h2>
+    <p>
+      <strong>Commit <code>ba754c9</code></strong>, merged. <strong><code>tests/test_skill_contracts.py</code>
+      49 passed, exit 0, against base <code>0bfa110</code></strong>; 49 insertions over 6
+      files, 1 test added, 151 worker-seconds against a 30-minute budget on the local lane
+      at deepseek-v4-flash, full-diff audited per the write-access lock in force at the
+      time.
+    </p>
+    <p>
+      The same line now sits in <code>reckon-status</code>, <code>reckon-roadmap</code>,
+      <code>reckon-sprint</code> and <code>reckon-create</code> plus the repository crew
+      guidance, phrased against the mechanism &mdash; the run ledger, manifests and
+      calibration &mdash; and naming no incident. The contract test asserts four verbatim
+      fragments across all five files, so a later skill rewrite fails the suite rather
+      than quietly dropping the rule. The ship skill was deliberately left unchanged,
+      since &sect;4 gives it a pointer at most and it already carries the full rule at a
+      measured size ceiling.
+    </p>
+    <p>
+      A fleet observation recorded alongside this landing, worth carrying forward rather
+      than treating as noise: this worker's manifest carried <code>failure_attribution</code>
+      as a declared field, meaning a manifest-schema addition from one wave earlier was
+      already in use by the next worker within the hour, with no prompt telling it to.
+    </p>
+
+    <h2 id="s3-open">&sect;3 remains open</h2>
+    <p>
+      Of the plan's four numbered sections, this record closes two. &sect;1 is scene-setting
+      rather than a gated deliverable &mdash; it carries no &ldquo;done when&rdquo; clause
+      of its own and neither needs nor produces a landing entry. &sect;2 and &sect;4 are
+      recorded above. <strong>&sect;3 &mdash; distributing the hook wiring through
+      <code>reckon sync</code> &mdash; has landed nothing</strong>: no commit, no artifact,
+      and no comment against it anywhere in the plan. The reuse survey above named the
+      reason: nothing in reckon currently writes a harness hook setting, so &sect;3 is a
+      new artifact class for sync rather than a step beside the CSS and mounts wiring it
+      already owns, and no node has yet been dispatched to build it. The plan's own
+      <code>plan-impl</code> of 0.75 is consistent with this record: three of the plan's
+      four executable outcomes have landed, and the fourth &mdash; the sync-side
+      installation and removal path &mdash; is still undispatched.
+    </p>
+
+  </main>
+</body>
+</html>
