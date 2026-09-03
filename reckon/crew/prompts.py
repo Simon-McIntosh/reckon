@@ -74,6 +74,20 @@ RUNTIME FILESYSTEM
   The repository at the assigned worktree path {worktree} is read-only.
 """
     orientation_scope = json.dumps(list(node.write_paths), separators=(",", ":"))
+    if node.role == "test":
+        evidence_role_note = (
+            " Your deliverable is an attribution, not a verdict: list new "
+            "failures against the stated base separately from pre-existing "
+            "ones, and name the candidate commit each new failure is "
+            "attributed to."
+        )
+    else:
+        evidence_role_note = (
+            " This gate measures only this node's own change; verifying the "
+            "merged result belongs to a separately dispatched test node, and "
+            "a failure outside this node's declared scope is reported under "
+            "follow_ons rather than triaged or fixed."
+        )
     return f"""You are a worker on one node. Read the live plan first; it is the
 semantic authority for context, decisions, evidence inputs and constraints.
 
@@ -100,7 +114,7 @@ FENCE — TIME
   {time_budget}. Exceeding it means stop and report, never push on.
 
 FENCE — EVIDENCE (this measure is the done-when; state it quantitatively)
-  {node.done_when}
+  {node.done_when}{evidence_role_note}
 
 FENCE — DELIVERY
   Write your manifest to {manifest_path} BEFORE finishing, then reply with that path and a summary.
