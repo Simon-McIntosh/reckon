@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T12:09:38",
+  "updated": "2026-09-03T12:18:25",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -42264,6 +42264,112 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260903T100445528345-the-display-test-asserts-the-honest-bucket",
+        "plan": "crew-observability-truth",
+        "section": "\u00a74",
+        "node": "the-display-test-asserts-the-honest-bucket",
+        "node_definition": {
+          "done_when": "tests/test_crew_finished_display.py::test_dispatched_with_no_manifest_and_no_activity_resolves_to_stalled is updated to assert the contract that now holds: a dispatched run with no manifest whose PROCESS IS GONE resolves to abandoned, not stalled, because a dead process has stopped working whatever phase label it holds. Keep a stalled case as its own test for what stalled still means \u2014 a run whose process is ALIVE and whose stream has been quiet past the window \u2014 so the distinction is asserted in both directions rather than one assertion being flipped. tests/test_crew_finished_display.py passes in full with its count recorded, and the manifest states which assertion changed and why. Attribution, measured rather than assumed: this is the single new failure between base 6eff81b at 879 passed 3 failed and head 4f5c404 at 911 passed 4 failed, both suites reaching 31 to 32 percent, the other three failures being identical and pre-existing in tests/test_doctor.py. It was introduced by commit 9f9b464, the working-bucket change, which was deliberate and correct",
+          "estimated_hours": null,
+          "goal": "The finished-display test asserts the current bucket contract rather than the behaviour it superseded",
+          "id": "the-display-test-asserts-the-honest-bucket",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T100445528345-the-display-test-asserts-the-honest-bucket/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "exact",
+          "time_budget": "25m",
+          "write_paths": [
+            "tests/test_crew_finished_display.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "flash-a",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T10:04:50Z",
+        "completed_at": "2026-09-03T10:15:16.178Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 612,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 626,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "829e521b55ef2f064d720d12b39b2c90d0458e80",
+        "commits": [
+          "2c08140cf840391aa1fd8a1f307191334cda150f"
+        ],
+        "changed_lines": {
+          "added": 17,
+          "removed": 2,
+          "files": 1
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_crew_finished_display.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T100445528345-the-display-test-asserts-the-honest-bucket/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T100445528345-the-display-test-asserts-the-honest-bucket/manifest.md",
+        "scope_changed": false,
+        "session_id": "72f2f292-4169-4518-9929-4a177ffbcd89",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 1920833,
+            "input_tokens_cumulative": 1920833,
+            "output_tokens": 14423,
+            "output_tokens_cumulative": 14423,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 9.964739999999999,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 9.964739999999999
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -42280,8 +42386,22 @@
         "reason": "utilisation 100.0% is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
         "closed_by_purpose": null,
         "resumption_fired": false
+      },
+      {
+        "hold_id": "hold-claude-20260903101534",
+        "backend": "claude",
+        "purpose": "dispatch",
+        "opened_at": "2026-09-03T10:15:34Z",
+        "closed_at": null,
+        "held_seconds": null,
+        "utilisation_pct": 100.0,
+        "resets_at": null,
+        "effective_ceiling_pct": 95.0,
+        "reason": "utilisation 100.0% is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
+        "closed_by_purpose": null,
+        "resumption_fired": false
       }
     ],
-    "_version": 690
+    "_version": 692
   }
 }
