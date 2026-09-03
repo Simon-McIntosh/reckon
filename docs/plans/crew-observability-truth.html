@@ -24,10 +24,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="18">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md">
-<meta name="plan-impl" content="0.22">
-<meta name="plan-commits" content="8c1b637">
+<meta name="plan-impl" content="0.33">
+<meta name="plan-commits" content="8c1b637,45fc1b9">
 </head>
 <body>
   <main class="plan-doc">
@@ -292,6 +292,12 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260903T080227590786-gc-scans-the-repository-it-names" data-who="impl-obs-gc" data-when="2026-09-03T08:08:56.547Z">
     <div class="r-comment-body"><p>Killed by the claude account's individual spend limit, reset 12pm Europe/Paris; the stream's terminal event was type result subtype success carrying the refusal text, so nothing classified it as a failure</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260903T082008869264-gc-pairing-carried-forward" data-who="flash-b" data-when="2026-09-03T08:27:15.297Z">
+    <div class="r-comment-body"><p>gc resolves the named project's registered checkout and names what it scanned; tests/test_crew_gc.py 14 passed against 9 at base, zero added failures, ruff delta zero</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260903T1028" data-who="reckon-ship" data-when="2026-09-03T08:28:00+00:00">
+    <div class="r-comment-body">gc-pairing-carried-forward landed — commit 45fc1b9, merged; gate passed; measure tests/test_crew_gc.py 14 passed against 9 at base 9cfde98 with zero added failures, ruff delta 13 findings before and 13 after so nothing added; 215 insertions over 3 files, 5 of the new tests covering the three measures, 419 worker-seconds against a 35m budget on the local lane at deepseek-v4-flash, full-diff audited. All three measures are met: with no --repo a named project resolves its mounts-registered checkout, asserted from a third directory belonging to neither; an explicit --repo disagreeing with the registration is refused before garbage_collect naming both paths, with --confirm-cross-repo as the deliberate statement, and a matching --repo is not refused; and every result names the repository scanned and the ledger read. Two things about how this landed rather than what landed. It carried the commit of a worker killed mid-run by the account spend limit, and it verified the carry rather than trusting it: the three fenced files were byte-identical between that commit's parent and this base, so the patch applied cleanly and the result matched. Its only deviation from the dead run's version was to scrub a plan slug out of a docstring, which is the repository's naming rule applied unprompted — the node contract said nothing about it. And it produced a real baseline-versus-after suite pair by archiving the base tree to a temporary path, which is the honest form of the delta measure rather than an absolute count.</div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260903T080329021153-the-working-bucket-counts-only-work" data-who="impl-fit" data-when="2026-09-03T08:08:56.320Z">
     <div class="r-comment-body"><p>Killed by the claude account's individual spend limit, reset 12pm Europe/Paris; the stream's terminal event was type result subtype success carrying the refusal text, so nothing classified it as a failure</p></div>
