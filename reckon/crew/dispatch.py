@@ -6,6 +6,7 @@ import ctypes
 import fcntl
 import json
 import os
+import re
 import select
 import shutil
 import subprocess
@@ -16,7 +17,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from reckon import _backends, capability, ledger
+from reckon import _backends, _store, capability, ledger
 from reckon.crew.node import (
     BudgetHold,
     CompetenceLimit,
@@ -94,6 +95,60 @@ _INOTIFY_EVENTS = 0x00000100 | 0x00000008 | 0x00000080
 WATCHER_LOAD_BOUND_SECONDS = 30.0
 
 
+# Arming spawns a detached supervisor on purpose: a coordinator's producer has
+# to outlive the process that armed it. Under a test the same act is a leak —
+# the test ends, its configuration home is deleted, and the producer keeps
+# polling a directory nothing will ever write to again. Measured before a
+# manual reap: 25 live producers for one fixture project, the oldest 204 hours
+# old, 14 of them polling an already-deleted temporary home. So arming refuses
+# when the resolved configuration home lies under a pytest temporary
+# directory, and the refusal is raised at the caller rather than skipped
+# quietly. A test whose own subject is the producer lifecycle, and which reaps
+# what it starts, says so through this variable.
+WATCH_ARMING_ENV = "RECKON_WATCH_ARMING"
+_PYTEST_TEMPORARY_ROOT = re.compile(r"^(pytest-of-.+|pytest-\d+)$")
+
+
+def _watch_arming_intent() -> str:
+    """Return the environment's stated arming intent: ``on``, ``off`` or ``""``."""
+    return os.environ.get(WATCH_ARMING_ENV, "").strip().lower()
+
+
+def watch_arming_suppressed() -> bool:
+    """True when the environment forbids arming, so callers waive the watch.
+
+    The suppression is expressed through the same waiver a `--no-watch`
+    dispatch records, so a suppressed run is visible on its own record rather
+    than being a producer that silently never existed.
+    """
+    return _watch_arming_intent() == "off"
+
+
+def _temporary_home_root(home: Path) -> Path | None:
+    """Return the throwaway test root containing ``home``, if there is one."""
+    for candidate in (home, *home.parents, *home.resolve().parents):
+        if _PYTEST_TEMPORARY_ROOT.match(candidate.name):
+            return candidate
+    return None
+
+
+def _refuse_arming_under_a_throwaway_home(project: str) -> None:
+    """Refuse to arm a producer that would outlive the home it reports into."""
+    if _watch_arming_intent() == "on":
+        return
+    home = _store._config_home()
+    root = _temporary_home_root(home)
+    if root is None:
+        return
+    raise CrewError(
+        f"refusing to arm the watch producer for {project}: the resolved "
+        f"configuration home {home} lies under the throwaway test directory "
+        f"{root}, so a detached producer would outlive the run that armed it "
+        f"and poll a deleted home. Set {WATCH_ARMING_ENV}=on for a caller "
+        "that reaps the producer it starts, or waive the watch instead."
+    )
+
+
 def _watch_executable() -> str:
     """Resolve the console entry point beside the running interpreter first."""
     adjacent = Path(sys.executable).with_name("reckon")
@@ -107,6 +162,7 @@ def _watch_executable() -> str:
 
 def _start_watch_producer(project: str) -> subprocess.Popen[bytes]:
     """Start a detached supervisor that remains the watcher's live parent."""
+    _refuse_arming_under_a_throwaway_home(project)
     supervisor = (
         "import subprocess, sys; "
         "producer = subprocess.Popen(sys.argv[1:], stdin=subprocess.DEVNULL, "
@@ -1611,6 +1667,11 @@ def dispatch(
         }
 
     dispatch_watch = watch_state(project, session=session)
+    if watch_required and not watch_override and watch_arming_suppressed():
+        # Opting in is the caller's act. An environment that forbids arming
+        # turns the requirement into the recorded waiver below rather than
+        # into a producer nobody will reap.
+        watch_override = True
     if watch_required and not watch_override:
         dispatch_watch = _ensure_watch_producer(project, session=session)
         # A producer exists now. Whether this session hears what it writes is a
