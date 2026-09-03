@@ -230,6 +230,7 @@ def unknown_budget(reason: str) -> dict[str, Any]:
         "surpassed_threshold": None,
         "tokens": None,
         "cost_usd": None,
+        "refusal": False,
         "detail": reason,
     }
 
@@ -332,10 +333,19 @@ def budget_exhausted(budget: Mapping[str, Any] | None) -> bool | None:
 
 
 # A harness that refuses a turn for want of budget says so in prose on its error
-# event rather than in a field. Both recorded spellings state the limit and then
-# name the moment it lifts; the second also names the model, which this module
-# must not record, so only the two load-bearing parts are matched.
+# event rather than in a field. Both recorded spellings of a usage refusal state
+# the limit and then name the moment it lifts; the second also names the model,
+# which this module must not record, so only the two load-bearing parts are
+# matched. A spend-ceiling refusal is a different surface from a usage window —
+# measured 2026-09-03, an account crossed its spend limit with rate-limit
+# utilisation still low — so it is matched and named separately rather than
+# folded into the same limit kind.
 _USAGE_LIMIT_PHRASE = re.compile(r"hit your usage limit", re.IGNORECASE)
+_SPEND_LIMIT_PHRASE = re.compile(r"hit your (?:individual )?spend limit", re.IGNORECASE)
+_LIMIT_PHRASES = (
+    ("usage-limit", _USAGE_LIMIT_PHRASE),
+    ("spend-limit", _SPEND_LIMIT_PHRASE),
+)
 _RESET_PHRASE = re.compile(
     r"try again at\s+"
     r"(?P<month>[A-Za-z]{3,9})\s+(?P<day>\d{1,2})(?:st|nd|rd|th)?,?\s+"
@@ -375,13 +385,19 @@ def _reset_moment_to_iso(text: str) -> str | None:
 def refusal_budget(text: str) -> dict[str, Any] | None:
     """Turn a quota refusal message into a budget block, or decline.
 
-    Declining is the important half. Only a message that states the limit *and*
-    names its reset is read as exhaustion; an ordinary failed turn — a bad model
-    id, a lost stream, a context overflow — carries neither and must leave the
+    Declining is the important half. Only a message naming a recognised limit
+    phrase is read as exhaustion; an ordinary failed turn — a bad model id, a
+    lost stream, a context overflow — carries none of them and must leave the
     budget exactly as unknown as it was, because a failure read as exhaustion
-    holds every later wave on evidence that was never a measurement.
+    holds every later wave on evidence that was never a measurement. The reset
+    is read where the message states one; where it does not (a spend-ceiling
+    refusal names only a time of day, with no date to anchor it), it is left
+    unset rather than guessed, and the caller states that plainly as unknown.
     """
-    if not _USAGE_LIMIT_PHRASE.search(text):
+    limit_kind = next(
+        (kind for kind, phrase in _LIMIT_PHRASES if phrase.search(text)), None
+    )
+    if limit_kind is None:
         return None
     budget = unknown_budget("")
     budget.update(
@@ -392,11 +408,12 @@ def refusal_budget(text: str) -> dict[str, Any] | None:
             # utilisation because that is what every reader of this block already
             # compares against a ceiling.
             "utilisation_pct": 100.0,
-            "rate_limit_type": "usage-limit",
+            "rate_limit_type": limit_kind,
             "resets_at": _reset_moment_to_iso(text),
             "threshold_status": "exhausted",
             "surpassed_threshold": True,
-            "detail": "backend refused the turn: the account's usage limit is reached",
+            "refusal": True,
+            "detail": f"backend refused the turn: the account's {limit_kind} is reached",
         }
     )
     return budget
@@ -1035,9 +1052,20 @@ def _clip(text: str, limit: int = 400) -> str:
 
 
 def _phase(obs: Observation) -> str:
-    """Derive the reported phase from what the stream contains."""
+    """Derive the reported phase from what the stream contains.
+
+    A terminal event carrying a recognised provider refusal is ``blocked``
+    rather than ``failed``: the harness reports the turn as an error like any
+    other, but the account is not broken, only spent until a known or unknown
+    moment, and blocked is the state a fleet display can triage and resume
+    rather than write off.
+    """
     if obs.terminal:
-        return "complete" if obs.exit_status == "ok" else "failed"
+        if obs.exit_status == "ok":
+            return "complete"
+        if obs.budget.get("refusal"):
+            return "blocked"
+        return "failed"
     return "working" if obs.events else "starting"
 
 
@@ -1274,7 +1302,27 @@ def observe_stream(
     obs = dialect.observe(events, elapsed_seconds=elapsed_seconds)
     obs.backend = backend_name
     obs.malformed_lines = malformed
+    if obs.phase == "blocked":
+        obs.detail = _blocked_detail(obs)
     return obs
+
+
+def _blocked_detail(obs: Observation) -> str:
+    """Name what a triager needs to route around a blocked backend.
+
+    A spend limit is the most triageable stop a fleet can suffer: it says
+    exactly what is wrong and exactly when it stops being wrong. Naming the
+    backend, the limit kind and the reset beside each other means the
+    transition line alone answers the triage question, needing nothing else
+    read. The reset is stated as unknown rather than left out when the
+    refusal carried none, because an omitted field reads as forgotten rather
+    than as absent evidence.
+    """
+    limit_kind = obs.budget.get("rate_limit_type") or "quota"
+    resets_at = obs.budget.get("resets_at") or "unknown"
+    return (
+        f"backend {obs.backend!r} refused the turn on a {limit_kind}; reset {resets_at}"
+    )
 
 
 def classify_stream_failure(
