@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -1184,6 +1185,81 @@ def test_local_selection_survives_pointer_promotion(home, repo) -> None:
     promoted = crew.complete(record["run_id"], gate="passed")["record"]
     assert promoted["local"] is True
     assert promoted["agent"]["local"] is True
+
+
+# ── Release path safety ──────────────────────────────────────────────────────
+
+
+def test_completing_a_record_whose_pid_is_the_releasing_process_never_signals_it(
+    home, repo
+) -> None:
+    """A run record naming the releasing process's own pid must never kill it.
+
+    Measured: the release path used to call os.killpg on a recorded pid's own
+    process group unconditionally, and every dispatch helper in this file
+    substitutes os.getpid() for the launched pid — so the very first
+    completed run to reach the signal branch killed the pytest runner
+    executing it (exit 143). Asserted on the release outcome rather than on
+    survival alone, though survival to this assertion is itself part of the
+    evidence: a regression here would take this process down before the
+    assertion could run.
+    """
+    record = _dispatch(repo)
+    _deliver(record)
+
+    promoted = crew.complete(
+        record["run_id"], gate="passed", commits=[record["base_sha"]]
+    )
+
+    release = promoted["release"]
+    assert release["process_signalled"] is False
+    assert "own" in release.get("process_withheld", "")
+
+
+def test_completing_a_record_with_a_genuine_foreign_pid_still_signals_and_releases_it(
+    home, repo
+) -> None:
+    """The guard must not disarm release for an actual spawned worker.
+
+    The positive to the refusal above: a record naming a real, separate
+    process is signalled and released exactly as it was before the guard
+    existed. Asserted by confirming the spawned process actually terminates,
+    not only that the report claims it did.
+    """
+    spawned: dict[str, subprocess.Popen] = {}
+
+    def launcher(plan, *, log_path, stderr_path, prompt_path):
+        process = subprocess.Popen(
+            [sys.executable, "-c", "import time; time.sleep(60)"],
+            cwd=plan.cwd,
+            start_new_session=True,
+        )
+        spawned["process"] = process
+        return process.pid
+
+    record = crew.dispatch(
+        node=_node(),
+        project=PROJECT,
+        repo=repo,
+        config=CONFIG,
+        session="sess-foreign-pid",
+        launcher=launcher,
+    )
+    _deliver(record)
+    process = spawned["process"]
+    try:
+        promoted = crew.complete(
+            record["run_id"], gate="passed", commits=[record["base_sha"]]
+        )
+
+        release = promoted["release"]
+        assert release["process_signalled"] is True
+        process.wait(timeout=5)
+        assert process.returncode is not None
+    finally:
+        if process.poll() is None:
+            process.terminate()
+            process.wait(timeout=5)
 
 
 # ── Calibration inputs ──────────────────────────────────────────────────────
