@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T15:25:45",
+  "updated": "2026-09-03T15:54:05",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -582,7 +582,8 @@
         "session_id": "cc02e920-760b-40e8-aa15-07a89f2a244f",
         "session_model": "claude-sonnet-5",
         "sessions": {
-          "{\"backend\":\"claude\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "cc02e920-760b-40e8-aa15-07a89f2a244f"
+          "{\"backend\":\"claude\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "cc02e920-760b-40e8-aa15-07a89f2a244f",
+          "{\"alias\":\"opus 5\",\"backend\":\"claude-opus\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"claude-opus-5\",\"sandbox\":\"read-only\"}": "f657e51f-7ae7-4321-8c5f-281f0a63a5e7"
         },
         "created": "2026-09-03"
       },
@@ -44403,6 +44404,225 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260903T131423195755-the-log-stores-facts-not-renders",
+        "plan": "fleet-monitor-legibility",
+        "section": "\u00a77",
+        "node": "the-log-stores-facts-not-renders",
+        "node_definition": {
+          "done_when": "A transition written by the producer carries model, effort, alias and backend as separate keys, the full untruncated detail, and the structured facts a marker is derived from, and carries NO composed agent label, no single-clause reason and no glyph \u2014 asserted by reading a written line out of the events file rather than a function's return value, because the log is what a later reader gets. The composed agent label, the single clause and the marker are produced by the renderer from those facts, with no second composition site left in the producer, asserted by a test that fails if any display-shaped field reappears there. A log line in the PRE-CHANGE shape still renders without raising, using its persisted composed values, while a new-shape line renders into separate model and effort columns \u2014 both asserted in one test, the old-shape case taken from a real line in the existing events file. And one stored new-shape line renders differently at two different display settings without the producer running again, which is the re-renderable-history property this section exists to buy. The effort renders in FULL in its own column, per the lead's earlier directive. role is already persisted raw and abbreviated at render time: copy that pattern and do not change it. tests/test_crew_recovery.py and tests/test_crew_ticker_layout.py both pass in full with counts recorded against 44 and their current count",
+          "estimated_hours": null,
+          "goal": "The events log persists facts only, and every display value is derived by the renderer",
+          "id": "the-log-stores-facts-not-renders",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T131423195755-the-log-stores-facts-not-renders/manifest.md",
+          "plan": "fleet-monitor-legibility",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "reckon/crew/ticker.py",
+            "tests/test_crew_recovery.py",
+            "tests/test_crew_ticker_layout.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "flash-b",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T13:14:28Z",
+        "completed_at": "2026-09-03T13:47:47.675Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1992,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1999,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "52f0ebb9f947fe3b22f4b4cc5fbf14b6828c3a14",
+        "commits": [
+          "8a7b56dbb7374a9345890a464926a103bdd8c701"
+        ],
+        "changed_lines": {
+          "added": 383,
+          "removed": 157,
+          "files": 4
+        },
+        "tests_added": 14,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_crew_recovery.py tests/test_crew_ticker_layout.py",
+          "exit_status": 0,
+          "log_path": "/tmp/after_suite.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T131423195755-the-log-stores-facts-not-renders/manifest.md",
+        "scope_changed": false,
+        "session_id": "9c446db5-4cc4-4a66-a7a5-823deb4c2a00",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 16409035,
+            "input_tokens_cumulative": 16409035,
+            "output_tokens": 110125,
+            "output_tokens_cumulative": 110125,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 84.79830000000001,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 84.79830000000001
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260903T133538534595-the-day-is-reviewed-against-its-briefs",
+        "plan": "clive-local-workers",
+        "section": "\u00a712",
+        "node": "the-day-is-reviewed-against-its-briefs",
+        "node_definition": {
+          "done_when": "The report at the declared path covers every code-bearing commit merged to main today, found by walking git log for 2026-09-03 and excluding docs-only and plan-state commits. For each one it states the node's brief, taken from the goal and done-when on its promoted ledger row in docs/state/reckon/crew.json, the diff it produced, and a verdict from exactly three: MET, MET-IN-LETTER-ONLY, or EXCEEDED. A met-in-letter-only verdict must name the specific gap between what the measure asked and what a reader of the brief would have wanted. It must independently look for the failure class this session recorded four times \u2014 a change landing in a module while the call site that would reach it sat outside the node's fence, so its tests passed over a dead feature \u2014 and say for each commit whether the changed code is reachable from the surface a caller actually touches. It must flag any added test that would pass unchanged against its own base revision, since such a test asserts nothing new. It must count and headline how many commits are met-in-letter-only, because that figure is the honest correction to today's 92 per cent gate pass rate. Cite commit shas so every judgement is checkable. This is a reading of recorded history: it edits no file and invokes no check",
+          "estimated_hours": null,
+          "goal": "A retrospective judgement of today's landed work against the brief each node was given, not against its exit status",
+          "id": "the-day-is-reviewed-against-its-briefs",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T133538534595-the-day-is-reviewed-against-its-briefs/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "review",
+          "section": "\u00a712",
+          "spec_level": "open",
+          "time_budget": "55m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/s15-day-review.md"
+          ]
+        },
+        "role": "review",
+        "spec_level": "open",
+        "member": "impl-guard",
+        "backend": "claude-opus",
+        "local": false,
+        "agent": {
+          "alias": "opus 5",
+          "backend": "claude-opus",
+          "effort": "high",
+          "launch": "cli",
+          "model": "claude-opus-5",
+          "sandbox": "read-only"
+        },
+        "dispatched_at": "2026-09-03T13:35:44Z",
+        "completed_at": "2026-09-03T13:53:16.004Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1041,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1052,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "7dc716db521e8239129eeb041777cf15f848311e",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "static reading of 122 non-merge commits dated 2026-09-03 against their promoted ledger rows; review role, no check invoked by design",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/s15-day-review.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T133538534595-the-day-is-reviewed-against-its-briefs/manifest.md",
+        "scope_changed": false,
+        "session_id": "f657e51f-7ae7-4321-8c5f-281f0a63a5e7",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 1.21,
+          "rate_limit_type": "overage",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-10-01T00:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 1,
+          "tokens": {
+            "cache_creation_input_tokens": 186602,
+            "cache_creation_input_tokens_cumulative": 186602,
+            "cache_read_input_tokens": 7682674,
+            "cache_read_input_tokens_cumulative": 7682674,
+            "inference_geo": "not_available",
+            "input_tokens": 124,
+            "input_tokens_cumulative": 124,
+            "output_tokens": 58391,
+            "output_tokens_cumulative": 58391,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 7.167752000000001,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 7.167752000000001
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "Review role writing its report to the reports directory outside the repository; the worktree is clean at 7dc716d by design.",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "review",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -44433,8 +44653,50 @@
         "reason": "utilisation 100.0% is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
         "closed_by_purpose": null,
         "resumption_fired": false
+      },
+      {
+        "hold_id": "hold-codex-luna-20260903135131",
+        "backend": "codex-luna",
+        "purpose": "dispatch",
+        "opened_at": "2026-09-03T13:51:31Z",
+        "closed_at": null,
+        "held_seconds": null,
+        "utilisation_pct": 100.0,
+        "resets_at": "2026-09-08T05:38:18Z",
+        "effective_ceiling_pct": 95.0,
+        "reason": "utilisation 100.0% is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
+        "closed_by_purpose": null,
+        "resumption_fired": false
+      },
+      {
+        "hold_id": "hold-codex-spark-20260903135131",
+        "backend": "codex-spark",
+        "purpose": "dispatch",
+        "opened_at": "2026-09-03T13:51:31Z",
+        "closed_at": null,
+        "held_seconds": null,
+        "utilisation_pct": 100.0,
+        "resets_at": "2026-09-08T05:38:19Z",
+        "effective_ceiling_pct": 95.0,
+        "reason": "utilisation 100.0% is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
+        "closed_by_purpose": null,
+        "resumption_fired": false
+      },
+      {
+        "hold_id": "hold-codex-terra-20260903135131",
+        "backend": "codex-terra",
+        "purpose": "dispatch",
+        "opened_at": "2026-09-03T13:51:31Z",
+        "closed_at": null,
+        "held_seconds": null,
+        "utilisation_pct": 100.0,
+        "resets_at": "2026-09-08T05:38:18Z",
+        "effective_ceiling_pct": 95.0,
+        "reason": "utilisation 100.0% is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
+        "closed_by_purpose": null,
+        "resumption_fired": false
       }
     ],
-    "_version": 723
+    "_version": 727
   }
 }
