@@ -25,9 +25,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="2">
-<meta name="plan-commits" content="0c4d36f">
-<meta name="plan-impl" content="0.17">
+<meta name="plan-version" content="4">
+<meta name="plan-commits" content="0c4d36f,e535dd4">
+<meta name="plan-impl" content="0.33">
 </head>
 <body>
   <main class="plan-doc">
@@ -449,6 +449,12 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260903T1109" data-who="reckon-ship" data-when="2026-09-03T09:09:02+00:00">
     <div class="r-comment-body">colour-survives-the-emit-path landed — commit 0c4d36f, merged; gate passed; measure tests/test_crew_ticker.py 15 passed against an 11 baseline, exit 0; 73 insertions and 5 deletions over 2 files, 4 tests added, 144 worker-seconds against a 25m budget on claude-sonnet-5 at medium. Both emit sites now pass color=True: the follow path's _echo_follow_line and the watch command's transition echo. The section's own framing is what made this two lines rather than a rewrite — the grid decides whether to paint and the emit path must not second-guess it, so the flag is safe precisely because it does not force colour on. The negative is asserted alongside the positive: a line the ticker chose not to paint, under --no-color or NO_COLOR, still arrives carrying no escapes. Worth recording that the docstring the node left behind states the mechanism rather than the incident — that the destination is almost never a terminal, that Click's auto-detection would therefore strip what was already painted, and that the paint decision was made upstream. This defect was invisible for the same reason the others in this plan were: nothing errored, so the pane simply looked like a renderer nobody had written.</div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260903T090502681280-the-line-carries-the-workers-role" data-who="claude-a" data-when="2026-09-03T09:11:15.677Z">
+    <div class="r-comment-body"><p>The ticker carries the worker's role in a fixed column in the dispatch vocabulary, dim rather than hued, with documentation shown as docs and an unknown role marked rather than truncated</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260903T1111" data-who="reckon-ship" data-when="2026-09-03T09:11:39+00:00">
+    <div class="r-comment-body">the-line-carries-the-workers-role landed — commit e535dd4, merged; gate passed; measure tests/test_crew_ticker_layout.py 29 passed 0 failed, being 9 new role cases plus the 20 pre-existing layout cases all still green; 159 insertions over 2 files, on claude-sonnet-5 at medium. The role now occupies a fixed column left of the node in the dispatch vocabulary verbatim, rendered dim rather than hued so the two questions colour already answers stay readable, with documentation shown as docs and an unknown role marked rather than truncated. The load-bearing part of that count is the 20 pre-existing cases: the layout module asserts the grid's column arithmetic, so a node that adds a column and does not run it is claiming a result it cannot see. Fencing those tests WITH the source was the peer's advice on dispatch and it is the rule this session was already bitten by twice today. §5 is sequenced next but cannot start yet: it needs ticker.py, which is now free, together with the flight schema and dispatch.py to stamp an alias onto the run pointer, and all three are currently held by the held-lane fallback node on crew-observability-truth §5. Waiting rather than fencing against it.</div>
 </div>
 </section>
 </main>
