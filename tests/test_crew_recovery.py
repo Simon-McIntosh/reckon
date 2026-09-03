@@ -6,8 +6,10 @@ import importlib
 import json
 import subprocess
 import time
+from collections.abc import Mapping
 from datetime import UTC, datetime, timezone
 from pathlib import Path
+from typing import Any
 
 import pytest
 from click.testing import CliRunner
@@ -548,6 +550,7 @@ def _role_snapshot(
     role: str | None = None,
     node_role: str | None = None,
     manifest_status: str | None = None,
+    agent: Mapping[str, Any] | None = None,
 ) -> dict:
     """Reduce a pointer built from scratch, so the role field is the only
     difference between tests and cannot be smuggled in by a shared fixture."""
@@ -567,6 +570,8 @@ def _role_snapshot(
     }
     if role:
         record["role"] = role
+    if agent is not None:
+        record["agent"] = agent
     if manifest_status:
         manifest.parent.mkdir(parents=True, exist_ok=True)
         manifest.write_text(f"node: {run_id}\nstatus: {manifest_status}\n")
@@ -646,9 +651,24 @@ _TICKER_READ_FIELDS = (
 def test_snapshot_carries_every_field_the_ticker_column_set_reads(home) -> None:
     # Constructed from a pointer whose manifest is blocked so the reason clause
     # is populated; a snapshot whose state supplied nothing to explain would not
-    # exercise the reason slot the renderer reads.
+    # exercise the reason slot the renderer reads. The aliased agent keeps the
+    # presence check honest: a field that is present but reduces stale passes a
+    # presence-only assertion, so each field must also equal the reduction the
+    # renderer expects — here, the alias rather than the model the record also
+    # carries.
     snapshot = _role_snapshot(
-        home, "r-contract", role="implement", manifest_status="blocked"
+        home,
+        "r-contract",
+        role="implement",
+        manifest_status="blocked",
+        agent={
+            "backend": "claude",
+            "launch": "cli",
+            "model": "deepseek-v4-flash",
+            "effort": "medium",
+            "alias": "dsv4-flash",
+            "effort_spelling": "me",
+        },
     )
     transition = recovery._watch_transition(
         "proj",
@@ -663,5 +683,65 @@ def test_snapshot_carries_every_field_the_ticker_column_set_reads(home) -> None:
         assert field in transition, (
             f"the renderer reads {field!r} but the transition does not carry it"
         )
+    assert transition["agent"] == "dsv4-flash·me"
     line = recovery.format_watch_transition(transition)
+    assert "dsv4-flash" in line
+    assert "deepseek-v4-flash" not in line
     assert "implement" in line
+
+
+def test_agent_label_returns_the_declared_alias_and_effort_spelling() -> None:
+    # A run dispatched under an aliased backend carries alias and spelling beside
+    # the model it shortens; both were decided at dispatch and must thread, not
+    # be re-invented from the model and effort the pointing record still holds.
+    pointer = {
+        "agent": {
+            "backend": "claude",
+            "launch": "cli",
+            "model": "deepseek-v4-flash",
+            "effort": "medium",
+            "alias": "dsv4-flash",
+            "effort_spelling": "me",
+        }
+    }
+    assert recovery.agent_label(pointer) == "dsv4-flash·me"
+
+
+def test_a_pointer_without_an_alias_keeps_the_model_effort_form() -> None:
+    # The backward-compatibility negative: a run recorded before aliases
+    # existed (or a backend that never declared one) keeps the precomposed
+    # model/effort string the pane rendered before, rather than a new form.
+    pointer = {"agent": {"model": "deepseek-v4-flash", "effort": "medium"}}
+    assert recovery.agent_label(pointer) == "deepseek-v4-flash/medium"
+
+
+def test_an_aliased_pointer_renders_the_alias_not_the_model_id(home) -> None:
+    # Screened through the snapshot and the renderer together, not the renderer
+    # alone: the alias has to survive the pointer-to-snapshot reduction and then
+    # the render, which is the path the measured bug dropped it on.
+    snapshot = _role_snapshot(
+        home,
+        "r-alias",
+        role="implement",
+        manifest_status="blocked",
+        agent={
+            "backend": "claude",
+            "launch": "cli",
+            "model": "deepseek-v4-flash",
+            "effort": "medium",
+            "alias": "dsv4-flash",
+            "effort_spelling": "me",
+        },
+    )
+    transition = recovery._watch_transition(
+        "proj",
+        kind="baseline",
+        snapshot=snapshot,
+        previous=None,
+        current=str(snapshot["state"]),
+        counts=recovery._fleet_counts({"r-alias": snapshot}),
+    )
+    assert transition["agent"] == "dsv4-flash·me"
+    line = recovery.format_watch_transition(transition)
+    assert "dsv4-flash" in line
+    assert "deepseek-v4-flash" not in line
