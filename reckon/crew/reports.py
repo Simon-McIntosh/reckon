@@ -5,7 +5,7 @@ import re
 from typing import Any, TypedDict
 
 from reckon import ledger
-from reckon.crew.node import NEEDS_HELP_FIELDS, NEEDS_HELP_MARKER, TaskNode
+from reckon.crew.node import NEEDS_HELP_FIELDS, NEEDS_HELP_MARKER, CrewError, TaskNode
 from reckon.crew.runs import _utc_now
 
 # ── Worker reports ──────────────────────────────────────────────────────────
@@ -32,6 +32,16 @@ def _is_block_indicator(value: str) -> bool:
     return bool(_BLOCK_SCALAR_RE.match(value)) or value in ('"', "'")
 
 
+class ManifestParseError(CrewError, ValueError):
+    """A manifest the reader can read as neither supported format.
+
+    Subclasses both :class:`CrewError` and :class:`ValueError` so the refusal
+    lands loudly on the classification and CLI surfaces (which catch
+    ``CrewError``) and is still accepted by the promotion guards (which
+    tolerate ``ValueError`` around a worker-authored file).
+    """
+
+
 class SuiteObservation(TypedDict):
     """One machine-readable suite result carried by a worker manifest."""
 
@@ -45,13 +55,34 @@ class SuiteObservation(TypedDict):
     failure_ids: list[str] | None
 
 
-def parse_manifest(text: str) -> dict[str, Any]:
+def parse_manifest(text: str, *, path: str | None = None) -> dict[str, Any]:
     """Parse a worker manifest into structured fields.
 
-    Tolerant on purpose: a worker writes prose around its manifest and a strict
-    parser would reject a delivered report over formatting. Unknown keys are
-    kept so nothing a worker took the trouble to state is silently dropped.
+    Two formats are read. A body whose first character is ``{`` or ``[`` is a
+    JSON document and must be a JSON object; any other body is the tolerant
+    ``key: value`` text form a worker writes around prose. A body that
+    declares itself JSON and is not a readable object raises
+    :class:`ManifestParseError` rather than falling back to the text reader —
+    the text reader would return a well-formed-looking partial mapping, which
+    is how a JSON manifest carrying ``"status": "complete"`` once came back
+    with eight recognised keys and no status. Unknown keys are kept in both
+    forms so nothing a worker took the trouble to state is silently dropped.
+
+    Tolerant on purpose for the text form: a worker writes prose around its
+    manifest and a strict parser would reject a delivered report over
+    formatting.
     """
+    if text.lstrip().startswith(("{", "[")):
+        fields = _read_json_manifest(text, path=path)
+    else:
+        fields = _parse_text_manifest(text)
+    fields = _normalise_manifest_fields(fields)
+    fields["needs_help"] = parse_needs_help(text) if NEEDS_HELP_MARKER in text else None
+    return fields
+
+
+def _parse_text_manifest(text: str) -> dict[str, Any]:
+    """Read the tolerant ``key: value`` text form, keeping unknown keys."""
     fields: dict[str, Any] = {}
     key = None
     block_key: str | None = None
@@ -87,15 +118,59 @@ def parse_manifest(text: str) -> dict[str, Any]:
             addition = line.lstrip("-* ").strip()
             fields[key] = f"{fields[key]}, {addition}" if fields[key] else addition
     flush_block()
+    return fields
+
+
+def _read_json_manifest(text: str, *, path: str | None) -> dict[str, Any]:
+    """Read a JSON manifest body, refusing anything that is not an object."""
+    try:
+        raw = json.loads(text)
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise ManifestParseError(_unreadable_manifest_message(path)) from exc
+    if not isinstance(raw, dict):
+        raise ManifestParseError(_unreadable_manifest_message(path))
+    return raw
+
+
+def _unreadable_manifest_message(path: str | None) -> str:
+    where = f" at {path}" if path else ""
+    return (
+        f"cannot read manifest{where}: the body starts as JSON but is not a "
+        "well-formed JSON object; expected a JSON object or the "
+        "'key: value' text form"
+    )
+
+
+def _normalise_manifest_fields(fields: dict[str, Any]) -> dict[str, Any]:
+    """Apply the typed post-processing shared by both manifest formats."""
     for name in _MANIFEST_LIST_KEYS:
-        fields[name] = _as_list(fields.get(name))
+        fields[name] = _coerce_list_field(fields.get(name))
     for name in ("baseline_suite", "after_suite"):
-        fields[name] = _parse_suite_observation(fields.get(name))
-    fields["failure_attribution"] = _parse_failure_attribution(
+        fields[name] = _typed_suite_observation(fields.get(name))
+    fields["failure_attribution"] = _typed_failure_attribution(
         fields.get("failure_attribution")
     )
-    fields["needs_help"] = parse_needs_help(text) if NEEDS_HELP_MARKER in text else None
     return fields
+
+
+def _coerce_list_field(value: Any) -> Any:
+    """Type a list-carrying field, keeping a structured value intact.
+
+    A JSON manifest may carry a dict where the text form carries a comma- or
+    newline-separated list (structured ``evidence_inputs`` is the real case);
+    splitting a dict's repr would mangle it, so only a list or a string is
+    split.
+    """
+    if value is None or isinstance(value, (list, str)):
+        return _as_list(value)
+    return value
+
+
+def _typed_suite_observation(value: Any) -> SuiteObservation | str | None:
+    """Type a suite observation whether it arrived as text or a JSON object."""
+    if isinstance(value, dict):
+        return _validate_suite_observation(value)
+    return _parse_suite_observation(value)
 
 
 def _parse_suite_observation(value: Any) -> SuiteObservation | str | None:
@@ -108,7 +183,11 @@ def _parse_suite_observation(value: Any) -> SuiteObservation | str | None:
         return str(value)
     if not isinstance(raw, dict):
         return str(value)
+    return _validate_suite_observation(raw)
 
+
+def _validate_suite_observation(raw: dict[str, Any]) -> SuiteObservation:
+    """Type the fields of an already-decoded suite observation."""
     exit_status = raw.get("exit_status")
     if isinstance(exit_status, bool) or not isinstance(exit_status, int):
         exit_status = None
@@ -144,6 +223,13 @@ def _parse_suite_observation(value: Any) -> SuiteObservation | str | None:
     }
 
 
+def _typed_failure_attribution(value: Any) -> dict[str, str] | str | None:
+    """Type a failure attribution whether it arrived as text or a JSON object."""
+    if isinstance(value, dict):
+        return _validate_failure_attribution(value)
+    return _parse_failure_attribution(value)
+
+
 def _parse_failure_attribution(value: Any) -> dict[str, str] | str | None:
     """Decode an inline JSON failure-id -> candidate-commit map.
 
@@ -159,6 +245,11 @@ def _parse_failure_attribution(value: Any) -> dict[str, str] | str | None:
         return str(value)
     if not isinstance(raw, dict):
         return str(value)
+    return _validate_failure_attribution(raw)
+
+
+def _validate_failure_attribution(raw: dict[str, Any]) -> dict[str, str]:
+    """Type the entries of an already-decoded failure attribution map."""
     attribution: dict[str, str] = {}
     for failure_id, commit in raw.items():
         if not isinstance(failure_id, str) or not failure_id.strip():
