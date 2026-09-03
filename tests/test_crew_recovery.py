@@ -1354,7 +1354,7 @@ def test_a_written_log_line_persists_facts_and_no_display_values(
         )
 
 
-def test_legacy_log_line_renders_and_new_line_renders_separate_columns(home) -> None:
+def test_legacy_log_line_renders_and_new_line_renders_one_fused_cell(home) -> None:
     # A real line taken from the project's events log, written before the facts
     # switch: it has only the composed agent, a pre-claused reason, and no raw
     # fields underneath, and must still render without raising.
@@ -1377,7 +1377,9 @@ def test_legacy_log_line_renders_and_new_line_renders_separate_columns(home) -> 
     assert "gpt-5.6-sol/medium" in legacy_line
     assert "the same focused pytest command failed twice" in legacy_line
 
-    # A line in the new shape renders model and effort into their own columns.
+    # A line in the new shape renders the model and its effort as one routing
+    # fact: a single cell, alias and effort word joined by exactly one
+    # separator with no padding between them.
     transition = _fact_transition(
         home,
         "r-new",
@@ -1390,9 +1392,8 @@ def test_legacy_log_line_renders_and_new_line_renders_separate_columns(home) -> 
         },
     )
     new_line = recovery.format_watch_transition(transition)
-    assert "dsv4-flash" in new_line
-    assert "high" in new_line
-    assert "dsv4-flash·high" not in new_line  # no fused separator remains
+    assert "dsv4-flash·high" in new_line
+    assert "dsv4-flash · high" not in new_line  # no padding around the separator
 
 
 def test_one_stored_new_line_renders_differently_at_two_display_settings(home) -> None:
