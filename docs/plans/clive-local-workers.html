@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="76">
+<meta name="plan-version" content="78">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,~/.config/reckon/crew/reports/local-effort-probe.md,~/.config/reckon/crew/reports/read-only-tier-delivery-discriminator.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
-<meta name="plan-impl" content="0.84">
+<meta name="plan-impl" content="0.76">
 <meta name="plan-commits" content="a91abe9,a56eae9,42a339f,a2e488b,ca6288d,0226835,e099fc5,5dc92ce,8b80bdc,8abc064,6f99ac2,7f41635,1908947,da054f7,1a77ce8,3ff87b2">
 </head>
 <body>
@@ -93,6 +93,52 @@
         <tr><td>Endpoint ignores the budget</td><td>The four-budget probe above, re-run against both releases and recorded with its raw block sizes.</td></tr>
         <tr><td>No effort axis in config</td><td>Both local backends carry one pinned effort whose comment states the measurement; no role or spec-level overlay varies effort for them, asserted through <code>reckon flight</code>.</td></tr>
         <tr><td>Shadows do not claim it</td><td>A local shadow records effort under <code>inherited</code> and never as a substituted variable, so no pair reads as an effort comparison.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s12">&#167;12 &mdash; Verification is a role, not a chore appended to every node</h2>
+    <p><strong>The rules were never the problem; the done-whens were.</strong> Checked
+    against the code: <code>gates.suite_command</code> is undeclared, and the worker protocol
+    makes <code>baseline_suite</code> and <code>after_suite</code> required only when it is
+    armed. So the harness never asked any worker for a full suite. Every full-suite run this
+    session came from text I wrote into done-whens, and the workers did exactly as told. The
+    strictness was the orchestrator's, not the framework's.</p>
+    <p><strong>But there is a real gap, and it is structural.</strong> An implementation
+    worker is fenced to a few paths and cannot open the files a suite-wide failure lives in.
+    Asking it to run the whole suite and triage the result asks it to reason about what it is
+    blind to by construction; the best it can do is report an absolute count, which measures
+    the fleet rather than its change. Nothing in the prompt says so &mdash; the EVIDENCE
+    fence states the done-when and never states the division of labour &mdash; so a sloppy
+    done-when meets no resistance anywhere.</p>
+    <p><strong>The <code>test</code> role exists and is a label rather than a contract.</strong>
+    It carries <code>execution_capable</code> and a sandbox tier and nothing else: no time
+    budget for a suite that takes 700&ndash;900 seconds, no distinct prompt, no different
+    deliverable. Nineteen runs have been dispatched under it and each received the same
+    prompt an implementation worker gets, with <code>ROLE test</code> printed as a word. Give
+    it the contract the work actually has:</p>
+    <table>
+      <thead><tr><th>Property</th><th>Test role</th><th>Why it differs from an implement node</th></tr></thead>
+      <tbody>
+        <tr><td>Read scope</td><td>the whole repository</td><td>Triage requires opening the file a failure lives in; this is the exact capability a fenced implementation worker lacks.</td></tr>
+        <tr><td>Write scope</td><td>its report and logs, never source</td><td>A verifier that fixes is an implementation worker under the wrong name, and its verdict stops being independent of the change.</td></tr>
+        <tr><td>Deliverable</td><td>an attribution, not a verdict</td><td>Which failures are new against a stated base, which pre-existed, and for each new one the merged commit that introduced it.</td></tr>
+        <tr><td>Inputs</td><td>base revision, head revision, the commits merged between them</td><td>Attribution needs the candidate set; without it a triage can only say that something broke.</td></tr>
+        <tr><td>Time budget</td><td>sized for two suite runs</td><td>A base and an after measurement, which at 700&ndash;900 seconds each is the one role where the default budget is genuinely too small.</td></tr>
+      </tbody>
+    </table>
+    <p>With that in place the division states itself: an implementation node's gate measures
+    its own change, the orchestrator dispatches a test node once per wave to measure the
+    merge, and a failure outside a worker's scope is reported in <code>follow_ons</code>
+    rather than triaged or fixed. That is cheaper and it is also more honest &mdash; the
+    verifier is the one worker positioned to attribute a failure, and it is the only one
+    whose verdict was not written by the author of the change.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>The role carries a contract</td><td>The test role declares its own sandbox, budget and scope defaults in the flight schema, validated with leaf provenance and regenerated into both derived artifacts.</td></tr>
+        <tr><td>The prompt states the division</td><td>An implementation node's EVIDENCE fence says its gate measures its own change and that integration belongs to a test node; a test node's prompt states the attribution deliverable and names the base, head and merged commits it was given. Asserted against the composed prompt for both roles.</td></tr>
+        <tr><td>Attribution over verdict</td><td>A test node's manifest reports new failures against a stated base separately from pre-existing ones, and each new one names a candidate commit. Asserted against a synthesised wave with one deliberately broken merge among several clean ones.</td></tr>
+        <tr><td>A verifier cannot edit source</td><td>A test node whose commit touches a source path is refused at promotion. Asserted by test.</td></tr>
       </tbody>
     </table>
 
@@ -795,6 +841,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-20260903-dispatch-grade" data-who="reckon-ship" data-when="2026-09-03T05:00:00Z">
     <div class="r-comment-body">§11 answers the lead's question about whether a wider fleet needs a finer dispatch grade, and the answer is no in the direction expected and yes in one that was not. Checked against the code rather than reasoned from the outside: the capability cache already derives competence_horizon_hours per configuration from measured outcomes, alongside a success curve and a speed distribution, and routing._competence_verdict already refuses a dispatch exceeding that horizon with the typed capability refusal at exit 5 before any worktree exists. So a finer capability grade exists, it is learned from the ledger rather than declared, and what it needs is the shadow programme to populate it rather than a richer vocabulary. What genuinely does not exist is any notion of context. The flight schema models no usable window per backend — grepping it for context or window returns nothing — and nothing estimates a node's context need, which is why the constraint that actually killed work tonight was invisible to the dispatcher. Both sides are knowable at dispatch: the wrapper already prints the window, 73,728 for GLM against 492,288 for flash, and the need is standing load plus declared write paths plus named files, which I computed by hand twice this evening. The argument against adding declared dials is this session itself: I mis-sized nodes for GLM's window twice while actively working on the context problem with the numbers in front of me. An orchestrator will not hold eight windows in mind, and a dial depending on it doing so fails silently and expensively. Keep --spec-level as the one declared signal because design ownership is genuinely not derivable; let the ledger grade capability; compute context fit and refuse. Denominator grows to 19; impl 13 of 19. The node is specified but not yet dispatched because routing.py is held by the in-flight shadow-path run.</div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-20260903-test-role-designed" data-who="reckon-ship" data-when="2026-09-03T05:20:00Z">
+    <div class="r-comment-body">§12 added on the lead's design, and the investigation behind it exonerates the framework and indicts me. gates.suite_command is undeclared and the worker protocol makes baseline_suite and after_suite required only when it is armed, so the harness never asked any worker for a full suite. Every full-suite run this session came from text I wrote into done-whens. reckon's test rules are not too strict; the orchestrator was. The real gap is structural and the lead named it exactly: an implementation worker fenced to a few paths cannot open the files a suite-wide failure lives in, so asking it to triage asks it to reason about what it is blind to by construction, and the best it can produce is an absolute count that measures the fleet rather than its change. Nothing pushes back either — the EVIDENCE fence states the done-when and never states the division of labour. And the test role already exists as a label rather than a contract: execution_capable and a sandbox tier, no time budget for a suite that takes 700 to 900 seconds, no distinct prompt, no different deliverable. Nineteen runs have gone through it, each receiving the implementation prompt with ROLE test printed as a word. The section gives it the contract the work actually has — read the whole repository because triage requires opening the failing file, write only its report because a verifier that fixes is an implementation worker under the wrong name and its verdict stops being independent, deliver an attribution rather than a verdict, and receive the base, the head and the merged commits because attribution needs the candidate set. Denominator grows to 21; impl 16 of 21.</div>
 </div>
 </section>
 </main>
