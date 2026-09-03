@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T13:57:08",
+  "updated": "2026-09-03T14:16:24",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -420,7 +420,8 @@
         "sessions": {
           "{\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"read-only\"}": "11be0d7d-54d7-4b5f-b1ea-37a53a473baa",
           "{\"backend\":\"clive\",\"effort\":\"medium\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\"}": "cb19e931-95c3-47a6-a43e-71b0ef90137a",
-          "{\"backend\":\"claude\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "f1f4e1d4-9231-4d48-9d19-99fdd2addb4b"
+          "{\"backend\":\"claude\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "f1f4e1d4-9231-4d48-9d19-99fdd2addb4b",
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"medium\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\"}": "7b2a09f6-1bc0-4905-bd5f-8808188819bc"
         },
         "created": "2026-09-02"
       },
@@ -445,7 +446,8 @@
         "session_model": "deepseek-v4-flash",
         "sessions": {
           "{\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"read-only\"}": "47656431-a278-41dd-abe4-7e8d01cd91aa",
-          "{\"backend\":\"clive\",\"effort\":\"medium\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\"}": "f123a5eb-ed78-4ab1-8b10-e3694733c479"
+          "{\"backend\":\"clive\",\"effort\":\"medium\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\"}": "f123a5eb-ed78-4ab1-8b10-e3694733c479",
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"medium\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\"}": "f03de1a9-640e-4121-9bad-b1614f472018"
         },
         "created": "2026-09-02"
       },
@@ -665,6 +667,15 @@
           "{\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"read-only\"}": "286babeb-5dc5-4f73-861a-c417d470eb5a",
           "{\"backend\":\"clive\",\"effort\":\"medium\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\"}": "3c03edc0-2541-4530-b218-3ad2f9c0871d"
         },
+        "created": "2026-09-03"
+      },
+      {
+        "id": "session-5847658970b3694c317c",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
         "created": "2026-09-03"
       },
       {
@@ -42684,6 +42695,222 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260903T115818426352-the-agent-label-honours-the-alias",
+        "plan": "fleet-monitor-legibility",
+        "section": "\u00a75",
+        "node": "the-agent-label-honours-the-alias",
+        "node_definition": {
+          "done_when": "agent_label returns the pointer's declared alias in place of its model id and its declared effort spelling in place of the derived suffix, asserted against a real pointer shape carrying agent.alias and agent.effort_spelling; a pointer with no alias returns the existing model-and-effort form unchanged, asserted as the backward-compatibility negative; and a rendered line for such a pointer shows the alias rather than the model id, asserted through snapshot and renderer together rather than the renderer alone. EXTEND the contract test that landed with the role: it asserts the transition carries a VALUE for every field the ticker's columns read, which passes while the value is present and wrong \u2014 add that each carried value equals the reduction the renderer expects, so a reduction ignoring a declared field fails rather than rendering a stale form. tests/test_crew_recovery.py and tests/test_crew_ticker_layout.py both pass in full with counts recorded against 35 and 41. Measured: a pointer carrying agent.alias dsv4-flash rendered deepseek-v4-flash/medium, because the alias work was fenced to ticker.py while the snapshot's agent string is built by recovery.agent_label",
+          "estimated_hours": null,
+          "goal": "The agent string the snapshot carries uses the pointer's declared alias and effort spelling",
+          "id": "the-agent-label-honours-the-alias",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T115818426352-the-agent-label-honours-the-alias/manifest.md",
+          "plan": "fleet-monitor-legibility",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_crew_recovery.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "flash-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T11:58:24Z",
+        "completed_at": "2026-09-03T12:10:45.409Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 734,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 741,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "df179d792135176486bf405ef2c901b0d4f8493c",
+        "commits": [
+          "d805e6d563b9452e13fba26760c37274f3571530"
+        ],
+        "changed_lines": {
+          "added": 98,
+          "removed": 11,
+          "files": 2
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_crew_recovery.py tests/test_crew_ticker_layout.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T115818426352-the-agent-label-honours-the-alias/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T115818426352-the-agent-label-honours-the-alias/manifest.md",
+        "scope_changed": false,
+        "session_id": "f03de1a9-640e-4121-9bad-b1614f472018",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 3008811,
+            "input_tokens_cumulative": 3008811,
+            "output_tokens": 24085,
+            "output_tokens_cumulative": 24085,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 15.646179999999998,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 15.646179999999998
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260903T120332631714-the-width-is-measured-not-stated",
+        "plan": "fleet-monitor-legibility",
+        "section": "\u00a76",
+        "node": "the-width-is-measured-not-stated",
+        "node_definition": {
+          "done_when": "The follower resolves its render width by walking its own process ancestry to the hosting terminal and reading that terminal's column count, falling back to the current stated default when no ancestor terminal can be read, asserted by test in both directions with the ancestry walk stubbed; the resolved width is reduced by a DECLARED inset whose default is stated in one line of comment as provisional and awaiting calibration, never a guessed number presented as measured; the composed line never exceeds the resolved width, asserted with a long node name, a long reason and double-digit counts together, because a line that overflows wraps and is worse than one that falls short; and the three stats end at the final column of the resolved width, asserted by measuring the rendered line rather than by inspecting the format string. tests/test_crew_ticker_layout.py passes in full with its count recorded against its current 41. Context that bounds this node: the conventional probes all fail here, COLUMNS unset and isatty false and get_terminal_size returning its 80 fallback, which is why the default is stated at 180 today; a peer session measured the hosting terminal at 208 columns by the ancestry route and confirmed it tracks a resize, but the box drawn inside that terminal is narrower by an inset neither of us has calibrated. So discover the terminal honestly, keep the inset a declared knob, and do not invent its value",
+          "estimated_hours": null,
+          "goal": "The rendered width is resolved from the pane the follower is actually writing to, so the stats end at the right edge",
+          "id": "the-width-is-measured-not-stated",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T120332631714-the-width-is-measured-not-stated/manifest.md",
+          "plan": "fleet-monitor-legibility",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/ticker.py",
+            "tests/test_crew_ticker_layout.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "flash-a",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T12:03:38Z",
+        "completed_at": "2026-09-03T12:15:22.029Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 691,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 704,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "df179d792135176486bf405ef2c901b0d4f8493c",
+        "commits": [
+          "7e99433d1d88a4772af367fae20ad81e799d54e6"
+        ],
+        "changed_lines": {
+          "added": 177,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_crew_ticker_layout.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T120332631714-the-width-is-measured-not-stated/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T120332631714-the-width-is-measured-not-stated/manifest.md",
+        "scope_changed": false,
+        "session_id": "7b2a09f6-1bc0-4905-bd5f-8808188819bc",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 3455458,
+            "input_tokens_cumulative": 3455458,
+            "output_tokens": 34414,
+            "output_tokens_cumulative": 34414,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 18.137639999999998,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 18.137639999999998
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -42716,6 +42943,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 696
+    "_version": 701
   }
 }
