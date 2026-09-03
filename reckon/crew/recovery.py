@@ -20,7 +20,7 @@ from reckon.crew.node import (
 )
 from reckon.crew.reports import parse_manifest
 from reckon.crew.routing import _signal_process_group
-from reckon.crew.ticker import NEEDS_ACTION, Ticker, single_clause
+from reckon.crew.ticker import NEEDS_ACTION, Ticker, _agent_label, single_clause
 from reckon.crew.runs import (
     _manifest_freshness,
     _mutate_pointer,
@@ -558,21 +558,28 @@ def unwatch(project: str) -> dict[str, Any]:
 
 
 def agent_label(pointer: Mapping[str, Any]) -> str:
-    """Compact `model/effort` for the ticker, from the run's own record.
+    """Compact `model/effort` — or `alias·spelling` — for the ticker.
 
     Read from the configuration persisted at dispatch rather than from current
     flight config, because a later config change must not silently restate what
-    ran. Absent fields are simply omitted: a partial label is still useful and
-    an invented one is not.
+    ran. The alias and its declared effort spelling are display decisions frozen
+    at dispatch, so an aliased run renders the alias in place of the model it
+    shortens; the composition is the renderer's so the two cannot drift. A run
+    dispatched before aliases existed carries no alias and keeps the
+    precomposed `model/effort` form it rendered then. Absent fields are simply
+    omitted: a partial label is still useful and an invented one is not.
     """
     agent = pointer.get("agent")
     if not isinstance(agent, Mapping):
         return ""
-    model = str(agent.get("model") or "").strip()
-    effort = str(agent.get("effort") or "").strip()
-    if model and effort:
-        return f"{model}/{effort}"
-    return model or effort
+    alias = str(agent.get("alias") or "").strip()
+    if not alias:
+        model = str(agent.get("model") or "").strip()
+        effort = str(agent.get("effort") or "").strip()
+        if model and effort:
+            return f"{model}/{effort}"
+        return model or effort
+    return _agent_label(agent)
 
 
 def _pointer_role(pointer: Mapping[str, Any]) -> str:
