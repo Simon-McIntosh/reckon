@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T17:40:37",
+  "updated": "2026-09-03T17:55:04",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -45588,6 +45588,368 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260903T154059533473-the-effort-rejoins-the-model-name",
+        "plan": "fleet-monitor-legibility",
+        "section": "\u00a74",
+        "node": "the-effort-rejoins-the-model-name",
+        "node_definition": {
+          "done_when": "The pane currently renders the alias and the effort as two columns sized to their widest configured members, ten characters for dsv4-flash and seven for minimal, so a row carrying sonnet 5 at medium shows four spaces of padding after the alias and reads as a missing field rather than a column boundary. Done when one cell carries the alias, a single separator and the effort word IN FULL - sonnet 5 then the separator then medium, opus 5 then high, dsv4-flash then medium - with no padding between the alias and the effort beyond that separator at any configured pair. Keep the full word: an earlier revision fused these two with the effort abbreviated to two derived characters and that abbreviation is not being restored. The widest configured pair renders without elision at the resolved width. The column the merge recovers is returned to the reason, and no other column budget changes: ten plus one plus seven is eighteen, which is the single-cell budget the grid carried before the split, so the arithmetic closes without touching the clock, role, node, state or counter widths. A run whose record carries no effort renders the alias alone with no trailing separator. The column-budget assertion still finds every field on one screen column across baseline, transition, shadow and foreign-session rows, and the counters still precede the reason so an over-wide line loses only trailing free text. ASSERT THROUGH THE FOLLOW COMMAND'S OWN RENDERING PATH, not a helper: render a stored log line of the current shape and measure the character offset of the effort word against the offset of the alias, requiring exactly one separator between them. At least one added assertion must fail against base 4059480. Measured over tests/test_crew_ticker_layout.py and tests/test_crew_ticker.py in ONE invocation: zero failures against their combined count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 1.0,
+          "goal": "The model alias and the effort word share one cell, so no row shows a gap between them.",
+          "id": "the-effort-rejoins-the-model-name",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/effort-rejoin-manifest.md",
+          "plan": "fleet-monitor-legibility",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "reckon/crew/ticker.py",
+            "tests/test_crew_ticker_layout.py",
+            "tests/test_crew_ticker.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "sonnet-a",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "alias": "sonnet 5",
+          "backend": "claude",
+          "effort": "high",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T15:41:06Z",
+        "completed_at": "2026-09-03T15:48:02.152Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 410,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 416,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "4059480951bb0fee16e5db40c9b7c09edb6a7e4c",
+        "commits": [
+          "9967f9b2fbc4d2eb6f055249f28abc25c842b152"
+        ],
+        "changed_lines": {
+          "added": 98,
+          "removed": 62,
+          "files": 3
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_ticker_layout.py tests/test_crew_ticker.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/ve.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/effort-rejoin-manifest.md",
+        "scope_changed": false,
+        "session_id": "b940449d-2baf-49f4-b58b-ee87cb392f7f",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 0.79,
+          "rate_limit_type": "seven_day",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-09-03T18:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 0.75,
+          "tokens": {
+            "cache_creation_input_tokens": 133975,
+            "cache_creation_input_tokens_cumulative": 133975,
+            "cache_read_input_tokens": 6938516,
+            "cache_read_input_tokens_cumulative": 6938516,
+            "inference_geo": "not_available",
+            "input_tokens": 118,
+            "input_tokens_cumulative": 118,
+            "output_tokens": 33038,
+            "output_tokens_cumulative": 33038,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 2.2542192,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 2.2542192
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 413.402,
+          "generated_tokens": 33038,
+          "generation_seconds": 377.466,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 15.3,
+          "machine_seconds": 35.936,
+          "peak_input_tokens": 153206,
+          "tokens_per_second": 87.53,
+          "wall_tokens_per_second": 79.92
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260903T152233863998-a-claim-is-scoped-to-a-repository-and-to-a-living-run",
+        "plan": "crew-observability-truth",
+        "section": "\u00a76",
+        "node": "a-claim-is-scoped-to-a-repository-and-to-a-living-run",
+        "node_definition": {
+          "done_when": "The check at reckon/crew/node.py builds exclusivity from the run's project, and a claim is registered until promotion deletes the pointer. Two measured consequences, both live today. FIRST, THE KEY IS THE WRONG NOUN: two runs declaring project reckon and project imas-codex fenced reckon/budget.py and tests/test_budget.py three seconds apart and BOTH dispatches returned ok true with live pointers, because exclusivity is enforced per project on a resource that is per repository. The same check refused a peer three times the same day on one file inside one project, so it is keyed rather than weak. The repository is already available to the check: every one of those pointers carries a worktree path under /home/ITER/mcintos/Code/reckon, so the value exists and is unused. SECOND, A CLAIM OUTLIVES ITS PROCESS: measured now, four of eight live pointers are held by runs whose process group no longer exists, stranding thirteen write paths across three projects at ages between 21.2 and 22.8 hours. From the registry those runs are still working, so a file one of them named cannot be claimed by anyone until a coordinator promotes it, which is unbounded. Done when a dispatch whose write path is claimed by a run in the SAME repository is refused even when the two runs declare different projects, and a dispatch whose write path is claimed only by a run whose process group is gone is admitted, with the disregarded claim named in the returned payload so the admission is visible rather than silent. A claim held by a run whose process is running is still refused, and a path claimed in a DIFFERENT repository is still admitted. Take the repository from the pointer's own worktree rather than from a new field, and resolve it so that two spellings of one path do not read as two repositories. THE LIFECYCLE ALTERNATIVE IS DELIBERATELY NOT TAKEN and the reason belongs in the code: releasing a claim when the run turns terminal would need an actor that notices, while terminal runs are already surfaced by the separate unreconciled-runs fence, so the check disregarding a dead claim adds no new actor. ASSERT THROUGH THE DISPATCH-FACING ENTRY POINT the coordinator calls, not the helper that formats the message. Build each pointer the way dispatch writes one, under a temporary config home, and assert the real pointer directory is untouched afterwards. At least one added assertion must fail against base 65dc70e. Measured over tests/test_crew_node.py in one invocation: zero failures against its count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 2.5,
+          "goal": "The write-scope check refuses a second writer of the same repository file, and disregards a claim held by a run whose process is gone.",
+          "id": "a-claim-is-scoped-to-a-repository-and-to-a-living-run",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/claim-scope-manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/crew/node.py",
+            "reckon/crew/dispatch.py",
+            "tests/test_crew_node.py",
+            "tests/test_crew_cross_project_claims.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "claude-a",
+        "backend": "claude-opus",
+        "local": false,
+        "agent": {
+          "alias": "opus 5",
+          "backend": "claude-opus",
+          "effort": "high",
+          "launch": "cli",
+          "model": "claude-opus-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T15:22:38Z",
+        "completed_at": "2026-09-03T15:50:17.361Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1651,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1659,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "3318dfdbe0e221ff7798fe106724e37b4797344b",
+        "commits": [
+          "188fdf2ab2e62e1753986d6b81ac5d7199fcfc86",
+          "922fa370367a6e33bbd4a7ef136bead2c1c2ea58",
+          "8352dc99efac67f00ef9de817cdcee9b153f6afb"
+        ],
+        "changed_lines": {
+          "added": 923,
+          "removed": 6,
+          "files": 4
+        },
+        "tests_added": 12,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_node.py tests/test_crew_cross_project_claims.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vc.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/claim-scope-manifest.md",
+        "scope_changed": true,
+        "session_id": "19062f03-d406-4967-a3da-0a4ef866b173",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 0.8,
+          "rate_limit_type": "seven_day",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-09-03T18:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 0.75,
+          "tokens": {
+            "cache_creation_input_tokens": 47469,
+            "cache_creation_input_tokens_cumulative": 47469,
+            "cache_read_input_tokens": 5386904,
+            "cache_read_input_tokens_cumulative": 5386904,
+            "inference_geo": "not_available",
+            "input_tokens": 64,
+            "input_tokens_cumulative": 64,
+            "output_tokens": 37776,
+            "output_tokens_cumulative": 37776,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 4.112862000000001,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 4.112862000000001
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 799.8,
+          "generated_tokens": 37776,
+          "generation_seconds": 492.954,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 19.3,
+          "machine_seconds": 306.846,
+          "peak_input_tokens": 192887,
+          "tokens_per_second": 76.63,
+          "wall_tokens_per_second": 47.23
+        },
+        "attempt": 3,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260903T154253727332-a-background-wait-is-not-a-vanished-process",
+        "plan": "crew-observability-truth",
+        "section": "\u00a77",
+        "node": "a-background-wait-is-not-a-vanished-process",
+        "node_definition": {
+          "done_when": "Two measured runs classify as gone without a complete manifest, and in both the verdict is true and useless: the process is gone, no manifest exists, and the actionable fact is that the session is intact and a resume would collect the manifest. The evidence sits in each run directory and the classifier reads neither file. FIRST SIGNAL, THE STDERR: run r-20260903T150951659670 wrote 'Background tasks still running after 600s; terminating. Set CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0 to wait indefinitely.' to stderr.log beside its stream, and a grep for that string and for that environment key across the whole of reckon returns nothing today. Three run directories carry the line. SECOND SIGNAL, THE WORKER'S OWN LAST WORDS: run r-20260903T151737849884 has an empty stderr, fifty-six turns, and a terminal result record reporting is_error false with stop_reason end_turn, carrying the text 'Waiting for the background full tests/standard_names suite run to complete before finalizing the manifest.' Nothing terminated it; a print-mode invocation has no turn after end_turn, so the process exited while the worker expected to continue. Done when classification distinguishes these two from a process that vanished, using the two signals the run directory already holds: a stderr naming the background-wait ceiling, and a terminal result whose own text states the run was waiting on background work before finalizing. Such a run reports an outcome naming the wait, and its recorded remedy is resume rather than redispatch. A run that is gone carrying neither signal keeps its present classification unchanged, and that negative must be asserted so the existing outcome stays reachable. A run carrying a complete manifest is unaffected. ASSERT THROUGH THE CLASSIFIER ENTRY POINT that observe and the watch producer call, over run directories built the way a dispatch lays one out under a temporary config home, with the real run directory asserted untouched afterwards - not over a synthetic record, which is how four earlier defects in this repository passed a green suite. Reproduce both measured cases as fixtures from the two texts quoted above rather than from paraphrases, since the match is on what the harness writes. At least one added assertion must fail against base 97f5b02. Measured over tests/test_crew_recovery.py in one invocation: zero failures against its count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 2.0,
+          "goal": "A run that ended while waiting on background work classifies as waiting and is reported as resumable, instead of as a process that vanished.",
+          "id": "a-background-wait-is-not-a-vanished-process",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/background-wait-manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_crew_recovery.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "impl-fit",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "alias": "sonnet 5",
+          "backend": "claude",
+          "effort": "high",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T15:42:57Z",
+        "completed_at": "2026-09-03T15:54:09.840Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 663,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 672,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "97f5b02e2134282650a7d1ce6118ce9e38bd8b1f",
+        "commits": [
+          "1e7356f30e7f97684cd0a8cc1d7496fe7b78fc57"
+        ],
+        "changed_lines": {
+          "added": 313,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_recovery.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vbg.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/background-wait-manifest.md",
+        "scope_changed": false,
+        "session_id": "bc65c582-168f-4d25-b724-9820eaadfe5b",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 0.8,
+          "rate_limit_type": "seven_day",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-09-03T18:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 0.75,
+          "tokens": {
+            "cache_creation_input_tokens": 160488,
+            "cache_creation_input_tokens_cumulative": 160488,
+            "cache_read_input_tokens": 7178124,
+            "cache_read_input_tokens_cumulative": 7178124,
+            "inference_geo": "not_available",
+            "input_tokens": 110,
+            "input_tokens_cumulative": 110,
+            "output_tokens": 57244,
+            "output_tokens_cumulative": 57244,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 2.6502368,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 2.6502368
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 669.84,
+          "generated_tokens": 57244,
+          "generation_seconds": 652.993,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 18.5,
+          "machine_seconds": 16.847,
+          "peak_input_tokens": 184909,
+          "tokens_per_second": 87.66,
+          "wall_tokens_per_second": 85.46
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -45718,6 +46080,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 740
+    "_version": 743
   }
 }
