@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="44">
+<meta name="plan-version" content="45">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md">
 <meta name="plan-impl" content="0.85">
 <meta name="plan-commits" content="8c1b637,45fc1b9,9f9b464,957c042,896ba48,71b50b0,17f8686">
@@ -279,6 +279,60 @@
       </tbody>
     </table>
 
+    <h2 id="s7">§7 — Health is read from work, probed when stale, and the probe writes back</h2>
+    <p>Directed by the lead on 2026-09-03, after this session held a wave for four hours on a
+    reset the provider stated and did not honour. Two questions: can health be known without
+    hitting the endpoint, and should a probe update the log rather than be a separate reading
+    someone has to remember to take. Yes to both, and the answer is a ladder rather than one
+    instrument, because the rungs answer different questions.</p>
+
+    <p><strong>Rung one is free and already flowing: every served request returns rate-limit
+    telemetry as a byproduct.</strong> A fleet doing work continuously reports its own
+    headroom — utilisation, the window, and whether the request was served, warned or
+    rejected — without a single extra call. This is the non-endpoint check, and for the
+    routine case it beats a probe precisely because nobody has to decide to take it. What is
+    missing is not the signal but its <em>age</em>: the budget record keeps the reading and not
+    the moment, so a thirty-minute-old rejection and a five-second-old one are
+    indistinguishable to the reader.</p>
+
+    <p><strong>Rung two costs no tokens and is already declared in the schema, for
+    nothing.</strong> <code>BackendConfig.auth_check</code> exists as an argument vector run to
+    test whether a backend is authenticated, as an exit status — described in the schema as
+    how a provider-specific credential check reaches reckon without reckon knowing any
+    provider. All nine backends report <em>no auth_check declared</em>. Declaring it gives a
+    credential check for free. It must not be mistaken for a quota check: an authenticated
+    account can be spend-limited, so this rung answers <em>can I reach the provider</em> and
+    never <em>will it serve me</em>.</p>
+
+    <p><strong>Rung three is a one-token request, and it is the only rung that answers the
+    question a dispatch actually asks.</strong> Measured: four output tokens, under half a
+    cent, a definitive verdict. Cheap enough to use freely, and still not the routine path,
+    because rung one already covers the routine case at zero cost. A probe is the tie-breaker
+    for when the log is too old to trust and a decision turns on it.</p>
+
+    <p><strong>The recorded refusal is rung zero, and it is authoritative only about the
+    past.</strong> A refusal proves a lane was spent when it was recorded. Its stated reset is
+    a claim about the future, and this session measured one wrong by three and a half hours.
+    Holding until a stated reset is therefore not a recovery strategy; probing on an interval
+    is.</p>
+
+    <p><strong>What ties the ladder together is that every rung writes to one log.</strong>
+    The budget record is the single thing the pre-flight reads, and today only run streams
+    write it. A probe that reports to its caller and not to the record leaves the next reader
+    to probe again, which is how a cheap check becomes an expensive habit. So a probe's result
+    lands in the same record with its own timestamp and provenance, and the pre-flight's
+    answer names which rung it came from and how old it is.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Every reading carries its age and its rung</td><td>The budget record stores the observation moment and which rung produced it — byproduct telemetry, credential check, probe, or recorded refusal — and the pre-flight reports both, so <em>spent</em> is never displayed without <em>as of when</em>. Asserted by test against a record carrying readings of differing ages.</td></tr>
+        <tr><td>A stale hold is re-derived, not obeyed</td><td>A hold whose newest evidence is older than a declared staleness bound is not returned as held; it triggers a probe, and the probe's verdict decides. Asserted in both directions: a fresh rejection still holds, and a rejection older than the bound against a serving lane does not. This is the measure that would have prevented the four-hour hold.</td></tr>
+        <tr><td>A probe writes back</td><td>A probe's result is persisted to the budget record with its timestamp and rung, so a second reader in the same window reads the record rather than probing again. Asserted by a test that probes once and shows the second read served from the record.</td></tr>
+        <tr><td>The credential rung is real and is not the quota rung</td><td><code>auth_check</code> is declared for at least the metered CLI backends and its exit status is reported by availability; a backend that is authenticated but spend-limited reports authenticated and held together, never authenticated alone. Asserted by test, since conflating the two is how a reachable provider would read as a serving one.</td></tr>
+      </tbody>
+    </table>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="liveness-source" data-choice="reconcile-on-read" data-by="lead" data-when="2026-09-03T07:38:29+00:00">
@@ -429,7 +483,7 @@
     <div class="r-comment-body">Two defects in the spend fence, reported by the imas-codex session and reproduced here before acceptance. The reproduction changed the operational conclusion while confirming both mechanisms, which is the reason to reproduce.<br/><br/>FIRST, A REJECTION-DERIVED HOLD NEVER EXPIRES. Two holds sit side by side in one file: a codex hold carrying <code>resets_at: 2026-09-08T05:38:19Z</code>, read from an account surface that publishes it, and <code>hold-claude-opus-20260903100221</code> carrying <code>resets_at: null</code> because it was inferred from a worker's own 429. Dispatch therefore refuses that lane indefinitely at “utilisation 100.0% is at or above the 95.0% ceiling”. The datum is not absent, it is unparsed — the rejection text reads <code>your session limit resets 3:40pm (Europe/Paris)</code>, one clause away from the field that would make the fence expire. Same shape as the <code>unifiedWindows.five_hour.utilization</code> figure the earlier hold could not read: a signal that exists and nothing consumes.<br/><br/>THE COST IS LARGER THAN A LANE THAT STAYS SHUT, AND THIS EXCHANGE IS THE EVIDENCE. The peer read the hold as stale and offered to have it closed; their user reported the account had reset. It had not. <code>opened_at</code> is written from <code>checked_at</code> (ledger.py:1070), and these stamps are genuine UTC — established by running <code>crew preflight</code> at 12:07 CEST and reading back <code>checked_at: 2026-09-03T10:07:26Z</code>, not by assuming. So the hold was opened 12:02:21 CEST, four minutes before it was read, from a denial whose stated reset is 15:40. Two accounts are in play: the on-the-hour one behind the <code>claude</code> lane did roll over at 12pm, and the 3:40pm one behind <code>claude-opus</code> did not. Closing that hold would have put nodes into a lane denied for another three and a half hours, where a hard 429 kills the turn with no diff and no manifest. So <code>resets_at: null</code> does not merely latch a fence — it makes a live fence and a stale one indistinguishable, and the reasonable reading of an unlabelled fence is the wrong one. Parsing the clause would have made the hold read <code>resets_at: 2026-09-03T13:40:00Z</code>, self-lift at 15:40, and settle the question without a stream corpus and a timezone experiment.<br/><br/>SECOND, PREFLIGHT AND DISPATCH DISAGREE ABOUT THE SAME LANE AT THE SAME INSTANT. Reproduced verbatim: <code>preflight --role implement</code> returns <code>held: false</code>, <code>clear_backends: ['claude']</code>, <code>held_backends: []</code>, enumerating one backend from a <strong>2026-08-22</strong> ledger record — while naming <code>hold_history.path</code> as the very file holding four open holds at version 1416, <code>claude-opus</code> among them. It reads that file for history and never folds its open holds into <code>held_backends</code>. Dispatch on the same lane a moment later refuses with a budget hold. The pre-flight an operator is told to run before opening a wave reports clear for a lane the dispatcher then refuses, and does not name the backend that is actually held. A third disagreement sits in the same payload: preflight reports <code>utilisation_ceiling_pct: 100.0</code> while the refusal cites an effective ceiling of 95.0, so the two surfaces do not agree on the threshold either.<br/><br/>Worth recording what the peer did, because it is the behaviour the fence is for: they routed the node to the local lane rather than looking for an override, and it is running on deepseek-v4-flash. Fourth time today the local lane carried work a metered one could not, and the first time it was a fence rather than a real denial that sent it there — which is the case this section has to stop producing.</div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260903T101153317034" data-who="reckon-2d" data-when="2026-09-03">
-    <div class="r-comment-body">SUPERSEDING THIS SECTION'S OWN OVERAGE OBLIGATION, on the peer's correction, with the epochs verified here rather than taken. Earlier in this section we wrote that the fence owes a hold on an over-line <code>overage</code> warning with <code>surpassedThreshold: 1</code>, in the same place it holds on recorded utilisation. That is wrong, and it would have been an expensive kind of wrong: a fence that refuses correctly-serving lanes is indistinguishable from a spent account to everyone downstream, and it is the same latch failure as <code>resets_at: null</code> approached from the other side.<br><br>One serving stream carries both figures and they disagree. <code>overage</code> reads <code>utilization 1.21, surpassedThreshold 1, isUsingOverage false</code>; <code>unifiedWindows.five_hour</code> reads <code>utilization 0.05</code>. The lane was 54 turns in with zero rejections, so the window figure is the one describing reality. The two are not the same horizon: <code>five_hour.resetsAt</code> of 1788447600 is 2026-09-03 15:00 UTC, five hours after the 12pm rollover, while the overage record's 1790812800 is 2026-10-01 00:00 UTC. The peer read that second epoch as 2026-09-24; it is in fact the month boundary, which makes their point stronger than they put it &mdash; the overage counter is the account's calendar-month position and would have held every wave for the remaining four weeks of September.<br><br>So the figure to fence on is <code>unifiedWindows.&lt;period&gt;.utilization</code> against that window's own <code>resetsAt</code>. Recorded as a measure above; the superseded obligation stays in place as the record of how it was got wrong.<br><br>Owning the pre-flight item at the peer's request, since it belongs beside the other two faces of this blind spot rather than split for credit: enumerate the open holds from the file pre-flight already names into <code>held_backends</code>, and populate headroom from the newest window figure instead of leaving an August &ldquo;unknown&rdquo; standing. The window-versus-overage correction stays theirs. Worth noting the pattern across all four faces in this section &mdash; unasked, unparsed, unenumerated, and now misaimed &mdash; every one of them a signal that existed in a record nothing read correctly, which is this plan's whole subject arriving in the budget fence four separate ways.</div>
+    <div class="r-comment-body">SUPERSEDING THIS SECTION'S OWN OVERAGE OBLIGATION, on the peer's correction, with the epochs verified here rather than taken. Earlier in this section we wrote that the fence owes a hold on an over-line <code>overage</code> warning with <code>surpassedThreshold: 1</code>, in the same place it holds on recorded utilisation. That is wrong, and it would have been an expensive kind of wrong: a fence that refuses correctly-serving lanes is indistinguishable from a spent account to everyone downstream, and it is the same latch failure as <code>resets_at: null</code> approached from the other side.<br/><br/>One serving stream carries both figures and they disagree. <code>overage</code> reads <code>utilization 1.21, surpassedThreshold 1, isUsingOverage false</code>; <code>unifiedWindows.five_hour</code> reads <code>utilization 0.05</code>. The lane was 54 turns in with zero rejections, so the window figure is the one describing reality. The two are not the same horizon: <code>five_hour.resetsAt</code> of 1788447600 is 2026-09-03 15:00 UTC, five hours after the 12pm rollover, while the overage record's 1790812800 is 2026-10-01 00:00 UTC. The peer read that second epoch as 2026-09-24; it is in fact the month boundary, which makes their point stronger than they put it — the overage counter is the account's calendar-month position and would have held every wave for the remaining four weeks of September.<br/><br/>So the figure to fence on is <code>unifiedWindows.&lt;period&gt;.utilization</code> against that window's own <code>resetsAt</code>. Recorded as a measure above; the superseded obligation stays in place as the record of how it was got wrong.<br/><br/>Owning the pre-flight item at the peer's request, since it belongs beside the other two faces of this blind spot rather than split for credit: enumerate the open holds from the file pre-flight already names into <code>held_backends</code>, and populate headroom from the newest window figure instead of leaving an August “unknown” standing. The window-versus-overage correction stays theirs. Worth noting the pattern across all four faces in this section — unasked, unparsed, unenumerated, and now misaimed — every one of them a signal that existed in a record nothing read correctly, which is this plan's whole subject arriving in the budget fence four separate ways.</div>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260903T091121108445-display-cumulative-evidence-record" data-who="doc-evidence" data-when="2026-09-03T09:16:07.351Z">
     <div class="r-comment-body"><p>Cumulative evidence record created with an anchor per landed outcome, a dedicated anchor for each of the three corrections, and an outage-timeline figure; audit-doc clean</p></div>
