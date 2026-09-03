@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping
 
 from reckon import _backends, _store, capability, ledger
+from reckon.calibration import agent_configuration_key
 from reckon.crew.node import (
     BudgetHold,
     CompetenceLimit,
@@ -1619,13 +1620,15 @@ def dispatch(
             repo=repo_root,
             explicitly_named=explicitly_named_peers,
         )
-    resolved_model = str(backend.get("model") or "")
+    agent = _agent_configuration(backend_name, launch_kind, backend)
+    if local:
+        agent["local"] = True
+    committed_runs = ledger.runs(project, root=ledger_root)
     reuse_session = (
-        ledger.session_for_model(roster_member, resolved_model)
+        _session_for_configuration(roster_member, agent, committed_runs)
         if roster_member and backend.get("session_reuse")
         else None
     )
-    committed_runs = ledger.runs(project, root=ledger_root)
     prior_node_runs = [
         item
         for item in committed_runs
@@ -1734,9 +1737,6 @@ def dispatch(
         stderr_path = directory / "stderr.log"
         final_path = directory / "final.txt"
 
-        agent = _agent_configuration(backend_name, launch_kind, backend)
-        if local:
-            agent["local"] = True
         record: dict[str, Any] = {
             "run_id": run_id,
             "project": project,
@@ -2096,28 +2096,115 @@ def _apply_orientation_check(record: dict[str, Any], manifest: Path | None) -> N
     record["detail"] = detail
 
 
+def _session_for_configuration(
+    member: Mapping[str, Any],
+    agent: Mapping[str, Any],
+    runs: Iterable[Mapping[str, Any]] = (),
+) -> str | None:
+    """Return the member session proved to belong to this configuration.
+
+    Configuration-keyed roster entries are authoritative. Model-keyed entries
+    predate that representation, so they are eligible only when the committed
+    run that captured the session identifies one unambiguous matching agent
+    configuration.
+    """
+    configuration_key = agent_configuration_key({"agent": agent})
+    sessions = member.get("sessions")
+    if isinstance(sessions, Mapping) and sessions.get(configuration_key):
+        return str(sessions[configuration_key])
+
+    model = str(agent.get("model") or "").strip()
+    if not model:
+        return None
+    legacy_session = None
+    if isinstance(sessions, Mapping) and sessions.get(model):
+        legacy_session = str(sessions[model])
+    elif str(member.get("session_model") or "").strip() == model and member.get(
+        "session_id"
+    ):
+        legacy_session = str(member["session_id"])
+    if not legacy_session:
+        return None
+
+    member_id = str(member.get("id") or "")
+    captured_configurations = {
+        agent_configuration_key(run)
+        for run in runs
+        if str(run.get("member") or "") == member_id
+        and str(run.get("session_id") or "") == legacy_session
+        and isinstance(run.get("agent"), Mapping)
+        and run.get("agent")
+    }
+    return legacy_session if captured_configurations == {configuration_key} else None
+
+
 def _capture_member_session(record: Mapping[str, Any]) -> dict[str, Any] | None:
-    """Persist a run's session id onto its roster member, if it has one.
+    """Persist a run's session id under its exact agent configuration.
 
     Observation is where a backend's session id first becomes knowable, so it is
     also where the roster learns it — waiting for completion would leave a second
-    node dispatched in the meantime unable to reach the same session.
+    node dispatched in the meantime unable to reach the same session. Keying by
+    the full resolved configuration (rather than the model alone) keeps an
+    effort or model change from inheriting incompatible session context while
+    letting every distinct configuration reuse its own history independently.
     """
     member = record.get("member")
     session_id = record.get("session_id")
-    if not member or not session_id:
+    agent = record.get("agent")
+    if not member or not session_id or not isinstance(agent, Mapping) or not agent:
         return None
+    configuration_key = agent_configuration_key(record)
     try:
-        return ledger.capture_session(
-            str(record.get("project") or ""),
-            str(member),
-            str(session_id),
-            root=record.get("repo"),
-            model=str((record.get("agent") or {}).get("model") or ""),
+        data, version = ledger.load(
+            str(record.get("project") or ""), root=record.get("repo")
         )
+        for entry in data["members"]:
+            if str(entry.get("id")) != str(member):
+                continue
+            sessions = dict(entry.get("sessions") or {})
+            current = sessions.get(configuration_key)
+            if current:
+                return {
+                    "captured": False,
+                    "member": dict(entry),
+                    "detail": (
+                        "unchanged"
+                        if str(current) == str(session_id)
+                        else (
+                            f"member {member!r} already reuses session {current!r} "
+                            "for this agent configuration; run reported "
+                            f"{session_id!r} and it was not written over the top"
+                        )
+                    ),
+                }
+            sessions[configuration_key] = str(session_id)
+            entry["sessions"] = sessions
+            if not entry.get("session_id"):
+                entry["session_id"] = str(session_id)
+                entry["session_model"] = str(agent.get("model") or "") or None
+            elif str(entry.get("session_id")) == str(session_id) and not entry.get(
+                "session_model"
+            ):
+                entry["session_model"] = str(agent.get("model") or "") or None
+            ledger.write(
+                str(record.get("project") or ""),
+                data,
+                version,
+                root=record.get("repo"),
+            )
+            return {
+                "captured": True,
+                "member": dict(entry),
+                "detail": "first run for agent configuration",
+            }
+        return {
+            "captured": False,
+            "member": None,
+            "detail": f"project {record.get('project')!r} has no member {member!r}",
+        }
     except (ledger.LedgerError, OSError) as exc:
-        # The record being promoted carries the session id anyway, so a roster
-        # write that cannot happen must not fail the promotion around it.
+        # The run record retains the session id even when the roster write is
+        # unavailable, so observation and promotion remain recoverable.
         return {"captured": False, "member": None, "detail": str(exc)}
 
 
