@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T17:55:04",
+  "updated": "2026-09-03T18:01:20",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -45950,6 +45950,243 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260903T155608934243-the-legacy-line-assertion-reads-one-cell",
+        "plan": "fleet-monitor-legibility",
+        "section": "\u00a74",
+        "node": "the-legacy-line-assertion-reads-one-cell",
+        "node_definition": {
+          "done_when": "tests/test_crew_recovery.py::test_legacy_log_line_renders_and_new_line_renders_separate_columns fails at merged head b0c3162 and passed in the worktree it was written in, because that worktree predated the merge that rejoined the effort into the model's own cell. The assertion and its name both encode the twin-column rendering that was deliberately reversed: a model at an effort is one routing fact and now renders as one cell with a single separator and the effort word in full. Done when the assertion requires the new-shape line to render the alias and the effort in ONE cell separated by exactly one separator with no padding between them, and the test's name states that rather than separate columns; the legacy-line half of the same test is unchanged and still requires a line carrying only a pre-composed agent string to render without raising. Do not delete or skip the test and do not weaken it to a substring check - it is the only assertion covering the legacy and new shapes side by side. Measured over tests/test_crew_recovery.py tests/test_crew_ticker.py tests/test_crew_ticker_layout.py tests/test_crew_watch_stream.py tests/test_crew_session_delivery.py in ONE invocation: zero failures against a merged-head base of 1 failure. Report ruff findings on the staged path against the count at base.",
+          "estimated_hours": 0.5,
+          "goal": "The legacy-line assertion expects the model and effort in one cell, so the render set is green at the merged head.",
+          "id": "the-legacy-line-assertion-reads-one-cell",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/legacy-line-assertion-manifest.md",
+          "plan": "fleet-monitor-legibility",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "exact",
+          "time_budget": "15m",
+          "write_paths": [
+            "tests/test_crew_recovery.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "impl-testrole",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "alias": "sonnet 5",
+          "backend": "claude",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T15:56:14Z",
+        "completed_at": "2026-09-03T15:57:42.357Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 83,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 88,
+        "stalled": false,
+        "time_budget": "15m",
+        "base_sha": "fa8301d9e04e73972b0a03e18e55936dc038dda8",
+        "commits": [
+          "934a15814c36813e8c076e05ac313b36a3909635"
+        ],
+        "changed_lines": {
+          "added": 6,
+          "removed": 5,
+          "files": 1
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_recovery.py tests/test_crew_ticker.py tests/test_crew_ticker_layout.py tests/test_crew_watch_stream.py tests/test_crew_session_delivery.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/legacy-line-assertion-manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/legacy-line-assertion-manifest.md",
+        "scope_changed": false,
+        "session_id": "31f6413b-7f49-47da-9491-f64d1c2efece",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 0.8,
+          "rate_limit_type": "seven_day",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-09-03T18:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 0.75,
+          "tokens": {
+            "cache_creation_input_tokens": 54788,
+            "cache_creation_input_tokens_cumulative": 54788,
+            "cache_read_input_tokens": 1453601,
+            "cache_read_input_tokens_cumulative": 1453601,
+            "inference_geo": "not_available",
+            "input_tokens": 42,
+            "input_tokens_cumulative": 42,
+            "output_tokens": 5944,
+            "output_tokens_cumulative": 5944,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 0.5693962,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 0.5693962
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 85.308,
+          "generated_tokens": 5944,
+          "generation_seconds": 76.22,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 7.9,
+          "machine_seconds": 9.088,
+          "peak_input_tokens": 79209,
+          "tokens_per_second": 77.98,
+          "wall_tokens_per_second": 69.68
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260903T155035666793-the-contract-says-the-turn-is-the-lifetime",
+        "plan": "crew-observability-truth",
+        "section": "\u00a77",
+        "node": "the-contract-says-the-turn-is-the-lifetime",
+        "node_definition": {
+          "done_when": "Two runs were lost today because a worker waited on background work it had started and never received the turn in which it intended to write its manifest. One was killed at a six hundred second harness ceiling whose message it wrote to stderr; the other had fifty-six turns, an empty stderr, and a terminal result reading 'Waiting for the background full tests/standard_names suite run to complete before finalizing the manifest' - nothing terminated it, the process exited on end_turn because a print-mode invocation has no turn after that. THE CONTRACT CONTAINS THE AMBIGUITY THAT PERMITS THIS. reckon/crew/prompts.py contains no occurrence of the word background, and its manifest instruction reads 'Write your manifest to {manifest_path} BEFORE finishing, then reply with that path and a summary.' A worker waiting on a background suite has not finished by its own reading, so it defers the manifest and is correct about the instruction and wrong about its lifetime. Done when the composed contract states that the worker's process ends when its turn ends, that a backgrounded command is not waited across, and that a manifest is written with whatever is known BEFORE any background command is started and updated afterwards if a later turn arrives - so the instruction is keyed to starting a wait rather than to finishing work. The same paragraph names the recovery a coordinator will use, that a run ending mid-wait is resumable, so a worker that runs out of turns leaves a record saying what it was waiting for. ASSERT ON THE COMPOSED PROMPT the dispatch path actually produces, not on a constant: build a contract through the same composer dispatch calls and require the rendered text to contain the lifetime statement and the write-before-you-wait instruction, with a case for a role whose sandbox forbids execution to confirm the wording is present for every role rather than only the implementing one. Assert also that the existing NEEDS-HELP and manifest-path instructions survive unchanged, since this adds a rule rather than replacing one. At least one added assertion must fail against base 27c07c4. Measured over tests/test_crew_prompts.py plus any existing module asserting on composed prompts, in ONE invocation: zero failures against their combined count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 1.5,
+          "goal": "The dispatch contract states that a worker's process ends with its turn, so a manifest is written before any background wait rather than after it.",
+          "id": "the-contract-says-the-turn-is-the-lifetime",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/contract-lifetime-manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "reckon/crew/prompts.py",
+            "tests/test_crew_prompts.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "impl-attrib",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "alias": "sonnet 5",
+          "backend": "claude",
+          "effort": "high",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T15:50:40Z",
+        "completed_at": "2026-09-03T16:00:35.813Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 585,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 595,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "27c07c4cebda433b71a9b25b5c75cac1dcc8e0f4",
+        "commits": [
+          "c860b104e315543e286b18ee8ee19f704b894874"
+        ],
+        "changed_lines": {
+          "added": 151,
+          "removed": 1,
+          "files": 2
+        },
+        "tests_added": 9,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_prompts.py tests/test_crew_orientation.py tests/test_gate_evidence.py tests/test_crew_test_role.py tests/test_crew.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/contract-lifetime-manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/contract-lifetime-manifest.md",
+        "scope_changed": false,
+        "session_id": "57032aa3-f182-4e6c-886c-624806f8f547",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 0.8,
+          "rate_limit_type": "seven_day",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-09-03T18:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 0.75,
+          "tokens": {
+            "cache_creation_input_tokens": 119725,
+            "cache_creation_input_tokens_cumulative": 119725,
+            "cache_read_input_tokens": 7219509,
+            "cache_read_input_tokens_cumulative": 7219509,
+            "inference_geo": "not_available",
+            "input_tokens": 136,
+            "input_tokens_cumulative": 136,
+            "output_tokens": 41205,
+            "output_tokens_cumulative": 41205,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 2.3351237999999994,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 2.3351237999999994
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 592.687,
+          "generated_tokens": 41205,
+          "generation_seconds": 499.13,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 14.4,
+          "machine_seconds": 93.557,
+          "peak_input_tokens": 144146,
+          "tokens_per_second": 82.55,
+          "wall_tokens_per_second": 69.52
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -46080,6 +46317,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 743
+    "_version": 745
   }
 }
