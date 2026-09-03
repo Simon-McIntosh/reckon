@@ -1050,6 +1050,16 @@ def watch_producer_identity(project: str) -> dict[str, Any]:
 def watch_seat_version_current(project: str) -> bool:
     """Report whether an armed seat's recorded version matches the installed one.
 
+    This names the *install* and not the code. ``__version__`` is read from the
+    installed distribution's metadata, written once when the package was
+    installed, so every seat this install arms records one string and every
+    process it runs compares against that same string — whichever revision of
+    these files each is executing. A fix that lands in the checkout after a seat
+    was armed therefore leaves this answer True, which is the case the stamp was
+    introduced to catch and cannot. Measured on one workstation install: the
+    stamp stayed put while eighty-five commits reached the package, this module
+    among them. Only a reinstall under a live seat moves it.
+
     Absence stays absence: a seat with no recorded version predates the stamp
     and is treated as stale rather than as current, exactly like a seat whose
     recorded version differs from what is installed now.
@@ -1068,11 +1078,16 @@ def watch_seat_needs_replacement(project: str) -> bool:
 
     Two independent conditions make a seat untrustworthy: its supervisor died
     (``observer_alive`` is False), or it is running code other than what is
-    installed now. Either is sufficient on its own, so this folds them into
-    one answer for the arming path without collapsing the death-of-supervisor
-    signal into the version one — a caller that wants to know why can still
-    read :func:`project_watch_visibility` and :func:`watch_seat_version_current`
+    installed now. Either is sufficient on its own, so this folds them into one
+    answer without collapsing the death-of-supervisor signal into the version
+    one — a caller that wants to know why can still read
+    :func:`project_watch_visibility` and :func:`watch_seat_version_current`
     separately.
+
+    Only the first half carries information today. The version half is a
+    constant for any seat this install armed, for the reason
+    :func:`watch_seat_version_current` records, so this currently answers the
+    dead-supervisor question alone.
     """
     visibility = project_watch_visibility(project)
     if not visibility["seat_held"]:
@@ -1087,9 +1102,17 @@ def replace_stale_watch_seat(project: str) -> dict[str, Any] | None:
 
     Returns the :func:`~reckon.crew.recovery.unwatch` result when a
     replacement happened, else ``None`` when the seat is current and nothing
-    was touched. This is the mechanism the arming path already uses for a
-    dead-supervisor seat; a version-stale seat is replaced the same way
-    rather than through a second one.
+    was touched.
+
+    Nothing calls it. The arming path clears a dead-supervisor seat with its own
+    ``observer_alive`` check and a direct ``unwatch``, so routing that case
+    through here would be a refactor rather than a repair; the case that would
+    be a repair — a version-stale seat — cannot arise, because the stamp
+    :func:`watch_seat_version_current` compares names the install and not the
+    code. A caller wired on today would gate on a condition that never becomes
+    true. What has to reach this first is a staleness signal that moves when the
+    code does: the seat's ``started_at``, which the record already carries,
+    against the moment the module a watcher imports last changed.
     """
     if not watch_seat_needs_replacement(project):
         return None
