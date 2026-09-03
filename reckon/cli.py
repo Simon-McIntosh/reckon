@@ -564,6 +564,52 @@ def _repo_root(repo) -> Path:
     return Path(result.stdout.strip()).resolve()
 
 
+def _resolved_gc_repo(
+    crew_module, flight_module, repo, project, confirm_cross_repo
+) -> Path:
+    """Resolve the repository a gc pass scans.
+
+    With no ``--project`` the enclosing repository is the only sensible
+    default, so this defers to ``_repo_root`` unchanged. With a ``--project``,
+    the checkout registered in mounts is the answer gc must give even when the
+    caller's current directory belongs to a different repository entirely —
+    the measured defect: three different projects returned byte-identical
+    counts scanned from the reckon checkout, and nova's 124 reclaimable
+    worktrees were reported as zero. An explicit
+    ``--repo`` that disagrees with that registration is refused naming both
+    paths, unless the caller states the cross-pairing deliberately with
+    ``--confirm-cross-repo``.
+    """
+    registered_checkout: Path | None = None
+    if project:
+        try:
+            mounts = flight_module.mounted_project_docs()
+        except flight_module.FlightConfigError as exc:
+            raise crew_module.CrewError(str(exc)) from exc
+        docs = mounts.get(project)
+        if docs is not None:
+            registered_checkout = docs.parent.resolve()
+
+    if repo is not None:
+        resolved_repo = Path(repo).resolve()
+        if (
+            registered_checkout is not None
+            and resolved_repo != registered_checkout
+            and not confirm_cross_repo
+        ):
+            raise crew_module.CrewError(
+                f"--repo {resolved_repo} disagrees with the checkout registered "
+                f"for project {project!r} ({registered_checkout}); pass "
+                "--confirm-cross-repo to scan --repo deliberately"
+            )
+        return resolved_repo
+
+    if registered_checkout is not None:
+        return registered_checkout
+
+    return _repo_root(None)
+
+
 def _peer_scopes(values) -> dict:
     """Parse repeated ``name=path[,path]`` peer scope declarations."""
     peers: dict[str, list[str]] = {}
@@ -1706,13 +1752,26 @@ def crew_drain(project, leaves, pretty):
     is_flag=True,
     help="Perform eligible removals; omission reports the exact dry run.",
 )
+@click.option(
+    "--confirm-cross-repo",
+    is_flag=True,
+    help=(
+        "Allow --repo to disagree with --project's registered checkout, "
+        "stating the cross-pairing deliberately."
+    ),
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_gc(repo, project, integrated_into, retention_days, apply, pretty):
+def crew_gc(
+    repo, project, integrated_into, retention_days, apply, confirm_cross_repo, pretty
+):
     """Report disposable crew workspaces, applying removals only on request."""
-    crew_module, _ = _crew_modules()
+    crew_module, flight_module = _crew_modules()
     try:
+        repo_root = _resolved_gc_repo(
+            crew_module, flight_module, repo, project, confirm_cross_repo
+        )
         report = crew_module.garbage_collect(
-            repo=_repo_root(repo),
+            repo=repo_root,
             project=project,
             integrated_into=integrated_into,
             retention_days=retention_days,

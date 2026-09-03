@@ -322,14 +322,19 @@ def _inspect_workspace(
     }
 
 
+def _gc_projects(repo: Path, project: str | None) -> list[str]:
+    """Return the project names whose ledgers a gc pass reads."""
+    if project:
+        return [project]
+    state_root = repo / "docs" / "state"
+    if state_root.is_dir():
+        return sorted(path.name for path in state_root.iterdir() if path.is_dir())
+    return []
+
+
 def _ledgered_records(repo: Path, project: str | None) -> list[dict[str, Any]]:
-    projects = [project] if project else []
-    if not projects:
-        state_root = repo / "docs" / "state"
-        if state_root.is_dir():
-            projects = [path.name for path in state_root.iterdir() if path.is_dir()]
     result: list[dict[str, Any]] = []
-    for name in projects:
+    for name in _gc_projects(repo, project):
         result.extend(ledger.runs(str(name), root=repo))
     return result
 
@@ -540,9 +545,16 @@ def garbage_collect(
         )
     }
     counts["reclaimable"] = sum(bool(item["reclaimable"]) for item in worktrees)
+    ledgers = sorted(
+        {
+            str(ledger.ledger_path(name, root=repo_root))
+            for name in _gc_projects(repo_root, project)
+        }
+    )
     return {
         "dry_run": not apply,
         "repo": str(repo_root),
+        "ledger": ledgers,
         "integrated_into": integrated_into,
         "counts": counts,
         "worktrees": worktrees,
