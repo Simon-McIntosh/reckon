@@ -1359,7 +1359,7 @@ def _ticker_grid(width, theme, no_color):
     from reckon.crew import ticker as ticker_module
 
     return ticker_module.Ticker(
-        width=ticker_module.DEFAULT_WIDTH if width is None else width,
+        width=ticker_module.resolve_terminal_width() if width is None else width,
         theme=ticker_module.DEFAULT_THEME if theme is None else theme,
         color=not no_color,
     )
@@ -1368,10 +1368,12 @@ def _ticker_grid(width, theme, no_color):
 def _ticker_options(command):
     """Attach the reader's grid choices to a command that prints ticker lines.
 
-    Width cannot be detected. The pane the stream is read in is a pipe, so
-    `isatty` is false and `COLUMNS` is unset there, and the conventional
-    terminal probe would switch formatting off in exactly the place it is
-    wanted. Both the width and the colour are therefore stated, not inferred.
+    The follower's own stdout is a pipe, so ``isatty`` is false and ``COLUMNS``
+    is unset where the stream is read; the pane it fills is owned by a terminal
+    further up the process tree, and width is resolved from that ancestor's
+    window so it stays current across a resize. Colour is stated, not
+    inferred. ``--width`` is the override, and the fallback for a detached
+    follower whose ancestry holds no terminal.
     """
     for option in reversed(
         (
