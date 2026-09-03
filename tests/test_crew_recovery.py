@@ -486,6 +486,91 @@ def test_a_crash_without_a_refusal_still_abandons(home) -> None:
     assert observation.budget.get("refusal") is not True
 
 
+# ── An unreadable manifest is its own outcome ──────────────────────────────
+
+
+def test_a_truncated_json_manifest_classifies_unreadable_not_abandoned(home) -> None:
+    # A worker dying mid-write leaves a truncated manifest that declares JSON
+    # and is not a readable object. The classifier must degrade to a named
+    # refusal rather than raising — an escaped exception would fail every
+    # ticker refresh for every session — and must not fold into abandoned,
+    # which implies nothing can be done about a file that needs repair.
+    pointer = _cli_pointer(
+        home,
+        "r-trunc",
+        "codex-failed-turn.jsonl",
+        manifest='{"node": "x", "status": "complete", ',
+        process_alive=False,
+    )
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+    assert row["classification"] == "unreadable"
+    assert row["classification"] not in {"abandoned", "completed_unpromoted"}
+    assert row["manifest_present"] is True
+    assert row["manifest_error"]
+    assert "could not be read" in row["detail"]
+    assert "JSON" in row["manifest_error"]
+
+
+def test_the_three_manifest_outcomes_stay_distinct(home) -> None:
+    # Absent, readable-and-terminal and present-but-unreadable each reach the
+    # classifier as their own label, so a future collapse into one of the
+    # other two fails this assertion instead of the display.
+    absent = _cli_pointer(home, "r-absent", "codex-failed-turn.jsonl")
+    truncated = _cli_pointer(
+        home,
+        "r-truncated",
+        "codex-failed-turn.jsonl",
+        manifest='{"node": "x", "status": "complete", ',
+    )
+    readable = _cli_pointer(
+        home,
+        "r-readable",
+        "codex-failed-turn.jsonl",
+        manifest="node: r-readable\nstatus: complete\ncommits: abc\n",
+        phase="complete",
+    )
+    labels = {
+        recovery.classify_pointer(p, now_seconds=time.time())["classification"]
+        for p in (absent, truncated, readable)
+    }
+    assert labels == {"abandoned", "unreadable", "completed_unpromoted"}
+
+
+def test_unreadable_pointer_snapshots_unreadable_in_the_ticker_path(home) -> None:
+    # The ticker's state reduction must keep the third outcome distinct too:
+    # a dead process with an unreadable manifest reads as unreadable, never as
+    # abandoned (the bucket the liveness checks would otherwise assign it).
+    truncated = _cli_pointer(
+        home,
+        "r-trunc",
+        "codex-failed-turn.jsonl",
+        manifest='{"node": "x", "status": "complete", ',
+        process_alive=False,
+    )
+    snapshot = recovery._watch_snapshot(
+        truncated, moment=time.time(), stall_seconds=3600
+    )
+    assert snapshot["state"] == "unreadable"
+    assert snapshot["state"] not in recovery.FLEET_WORKING_STATES
+    assert snapshot["state"] not in recovery.FLEET_UNPROMOTED_STATES
+    # The refusal survives into the snapshot's reason rather than being cleared
+    # with the routine-progress states. The clause is elided to the ticker
+    # width, so assert it names the file rather than a substring that a long
+    # path may push past the elision boundary.
+    assert snapshot["reason"]
+    assert "manifest" in snapshot["reason"]
+    # The negative for the new arm: a dead process that delivered no manifest
+    # at all still abandons, so unreadable cannot become the catch-all that
+    # abandoned would be folded into.
+    absent = _cli_pointer(
+        home, "r-nothing", "codex-failed-turn.jsonl", process_alive=False
+    )
+    absent_snapshot = recovery._watch_snapshot(
+        absent, moment=time.time(), stall_seconds=3600
+    )
+    assert absent_snapshot["state"] == "abandoned"
+
+
 def test_refusal_blocked_pointer_snapshots_as_blocked_in_the_ticker_path(home) -> None:
     pointer = _cli_pointer(home, "r-refused", "codex-usage-limit.jsonl")
     snapshot = recovery._watch_snapshot(pointer, moment=time.time(), stall_seconds=3600)
