@@ -391,6 +391,31 @@ def test_the_shipped_layer_carries_the_budget_thresholds(layers):
     # config's job, so no backend's vocabulary is enumerated by the schema.
     assert thresholds["exhausted_statuses"] == []
     assert resolved.origin("budget.resume_reserve_pct") == "shipped"
+    # No shipped layer declares a shelf life, so a host that never opts in
+    # observes no change to the module's own fallback.
+    assert thresholds.get("evidence_shelf_life_minutes") is None
+    assert resolved.origin("budget.evidence_shelf_life_minutes") is None
+
+
+def test_a_host_may_declare_the_evidence_shelf_life(layers):
+    write(layers["host"], "budget:\n  evidence_shelf_life_minutes: 1\n")
+    resolved = resolve_files(layers)
+
+    assert resolved.config["budget"]["evidence_shelf_life_minutes"] == 1
+    assert resolved.origin("budget.evidence_shelf_life_minutes") == "host"
+    # Every sibling key survives — this is a deep merge, not a block replacement.
+    assert resolved.config["budget"]["resume_reserve_pct"] == 5
+
+
+def test_a_shelf_life_of_zero_or_less_is_accepted_as_ageing_disabled(layers):
+    """No ceiling in the schema: the ageing rule itself treats <= 0 as off."""
+    write(layers["host"], "budget:\n  evidence_shelf_life_minutes: 0\n")
+    resolved = resolve_files(layers)
+    assert resolved.config["budget"]["evidence_shelf_life_minutes"] == 0
+
+    write(layers["host"], "budget:\n  evidence_shelf_life_minutes: -5\n")
+    resolved = resolve_files(layers)
+    assert resolved.config["budget"]["evidence_shelf_life_minutes"] == -5
 
 
 def test_unreconciled_run_grace_resolves_with_layer_provenance(layers):
@@ -950,6 +975,19 @@ def test_override_flag_reaches_the_override_layer():
     payload = json.loads(run_cli("--set", "gates.enforce=advisory").output)
     assert payload["config"]["gates"]["enforce"] == "advisory"
     assert payload["provenance"]["gates.enforce"] == "override"
+
+
+def test_override_flag_reaches_the_evidence_shelf_life():
+    """An operator holding a live incident has a command-line lever on it.
+
+    Before the key was declared, this exact invocation failed with `Extra
+    inputs are not permitted` because BudgetConfig forbids unknown fields.
+    """
+    result = run_cli("--set", "budget.evidence_shelf_life_minutes=1")
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["config"]["budget"]["evidence_shelf_life_minutes"] == 1
+    assert payload["provenance"]["budget.evidence_shelf_life_minutes"] == "override"
 
 
 def test_overrides_parse_as_yaml_scalars():
