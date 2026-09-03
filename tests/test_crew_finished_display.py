@@ -127,12 +127,27 @@ def test_manifest_reporting_terminal_is_read_before_the_phase_ever_advances(
     assert snapshot["state"] == "complete"
 
 
-def test_dispatched_with_no_manifest_and_no_activity_resolves_to_stalled(
+def test_dispatched_with_no_manifest_and_a_dead_process_resolves_to_abandoned(
     tmp_path,
 ) -> None:
-    """A run that dies before its phase ever leaves "starting" can still stall."""
+    """A run whose process is gone has stopped working whatever phase label it
+    held, so it resolves to abandoned rather than stalled."""
     record, log, manifest = _record(
         tmp_path=tmp_path, phase="starting", process_alive=False
+    )
+    started = time.time()
+    _touch(log, text='{"type":"turn.started"}\n', mtime=started)
+
+    snapshot = recovery._watch_snapshot(record, moment=started + 700, stall_seconds=600)
+    assert snapshot["state"] == "abandoned"
+    assert "quiet" not in snapshot["reason"]
+
+
+def test_dispatched_alive_process_quiet_past_window_stalls(tmp_path) -> None:
+    """A run only stalls when its process is still alive but its stream has been
+    quiet past the window — a dead process abandons instead."""
+    record, log, manifest = _record(
+        tmp_path=tmp_path, phase="starting", process_alive=True
     )
     started = time.time()
     _touch(log, text='{"type":"turn.started"}\n', mtime=started)
