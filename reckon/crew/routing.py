@@ -342,6 +342,18 @@ def _ledgered_run_ids(repo: Path, project: str | None) -> set[str]:
     }
 
 
+def shadow_worktree_session(primary_run_id: str, candidate_backend: str) -> str:
+    """Return the session token a shadow worktree lives under.
+
+    Named by its primary run and its candidate backend so several candidates can
+    shadow one primary concurrently; the candidate is what stops a second shadow
+    from colliding with the first. The dispatcher passes this same token when it
+    provisions the worktree, so routing can reconstruct the location from a
+    committed record without re-deriving the format by inspection.
+    """
+    return f"shadow-{primary_run_id}-{candidate_backend}"
+
+
 def _shadow_patch_retained(record: Mapping[str, Any]) -> bool:
     run_id = str(record.get("run_id") or "")
     artifact = Path(str(record.get("shadow_patch") or ""))
@@ -364,8 +376,19 @@ def _shadow_worktree_records(
         node = str(record.get("node") or "")
         if not primary_run_id or not node:
             continue
+        # The candidate backend comes from the committed record, not current
+        # flight config: the record is what says which candidate actually ran.
+        candidate = str(record.get("backend") or "").strip()
+        # A record that predates the candidate-named path (or never named one)
+        # still resolves its single legacy worktree; only one candidate could
+        # have produced a shadow before the candidate entered the path.
+        session = (
+            shadow_worktree_session(primary_run_id, candidate)
+            if candidate
+            else f"shadow-{primary_run_id}"
+        )
         for root in roots:
-            result[(root / f"shadow-{primary_run_id}" / node).resolve()] = record
+            result[(root / session / node).resolve()] = record
     return result
 
 
