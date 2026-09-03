@@ -62,6 +62,35 @@ def test_ship_routing_is_prompt_owned_and_worktree_first() -> None:
     assert "opus" not in ship
 
 
+def test_fan_out_rule_lands_in_every_skill_a_session_holds() -> None:
+    """The routing rule travels with the skill held at the spawn temptation.
+
+    Each skill a session can be holding when it is tempted to spawn a
+    background reviewer or investigator, plus the repository crew guidance,
+    states the same boundary: fan-out is crew-dispatch work, and a
+    harness-native background agent bypasses the run ledger, manifests and
+    calibration and is refused by the guard. The line is asserted verbatim so
+    a later rewrite cannot silently drop it.
+    """
+    fragments = [
+        "reckon crew dispatch",
+        "under the investigate and review roles",
+        "harness-native background agents bypass the run ledger, manifests and calibration",
+        "refused by the guard",
+    ]
+    targets = {
+        ROOT / "reckon" / "crew" / "AGENTS.md": "reckon/crew/AGENTS.md",
+        **{
+            ROOT / "skills" / name / "SKILL.md": f"skills/{name}/SKILL.md"
+            for name in ("reckon-status", "reckon-roadmap", "reckon-sprint", "reckon-create")
+        },
+    }
+    for path, label in targets.items():
+        text = normalized(path.read_text())
+        for fragment in fragments:
+            assert fragment in text, f"{label} missing fan-out rule: {fragment!r}"
+
+
 def test_followup_handoffs_are_single_line_plan_invocations() -> None:
     edit = (ROOT / "skills" / "reckon-edit" / "SKILL.md").read_text().lower()
     create = (ROOT / "skills" / "reckon-create" / "SKILL.md").read_text().lower()

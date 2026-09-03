@@ -25,6 +25,10 @@ allowed-tools: Read Write Edit Bash(*) Grep mcp__reckon___read_plan mcp__reckon_
 Full detail below. Sprint state is a typed resource, not a plan. This
 skill never dispatches workers; `/reckon-ship S1` executes the sprint.
 
+## Fan-out boundary
+
+In a crew-managed repository, investigation and review fan-out is `reckon crew dispatch` work under the investigate and review roles; harness-native background agents bypass the run ledger, manifests and calibration and are refused by the guard.
+
 ## The model — independently versioned resources
 
 Sprints live under `docs/sprints/`, milestones under `docs/milestones/`,

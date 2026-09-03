@@ -23,6 +23,10 @@ allowed-tools: Read Bash(*) Grep mcp__reckon___roadmap mcp__reckon___read_plan m
 Never rebuild the dependency graph by hand when the `roadmap` tool is
 available. The analyzer is shared by MCP, CLI, and audit.
 
+## Fan-out boundary
+
+In a crew-managed repository, investigation and review fan-out is `reckon crew dispatch` work under the investigate and review roles; harness-native background agents bypass the run ledger, manifests and calibration and are refused by the guard.
+
 ## Hard rules
 
 1. **Read-only.** Never call a write tool or change a file.
