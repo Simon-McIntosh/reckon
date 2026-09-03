@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib
 import json
 import subprocess
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -283,6 +284,94 @@ def test_cli_follow_streams_each_event_as_one_json_document(home, monkeypatch) -
     assert result.exit_code == 0
     assert [payload["run_id"] for payload in payloads] == ["r-one", "r-two"]
     assert all(payload["ok"] is True for payload in payloads)
+
+
+def _snapshot_pointer(
+    home: Path,
+    run_id: str,
+    *,
+    phase: str,
+    alive: bool | None,
+    manifest_status: str | None = None,
+) -> dict:
+    manifest = home / "manifests" / f"{run_id}.md"
+    record = {
+        "run_id": run_id,
+        "project": "proj",
+        "node": {"id": run_id, "plan": "plan-a", "time_budget": "20m"},
+        "phase": phase,
+        "created_at": datetime.now(tz=timezone.utc).isoformat(),
+        "manifest_path": str(manifest),
+        "log_path": str(home / "streams" / f"{run_id}.jsonl"),
+        "process_alive": alive,
+    }
+    if manifest_status:
+        manifest.parent.mkdir(parents=True, exist_ok=True)
+        manifest.write_text(f"node: {run_id}\nstatus: {manifest_status}\n")
+    return recovery._watch_snapshot(record, moment=time.time(), stall_seconds=3600)
+
+
+def test_dead_process_never_counts_as_working_at_any_phase(home) -> None:
+    # A run whose process is gone must leave the working bucket no matter which
+    # phase its pointer last held, the starting phase the measured incident
+    # never advanced past included. Counting it as working is the lie this
+    # section exists to retire: five runs died at starting and read as working
+    # for ten minutes.
+    phases = (
+        "",
+        "starting",
+        "working",
+        "running",
+        "complete",
+        "failed",
+        "stopped",
+        "blocked",
+        "orphaned",
+    )
+    for phase in phases:
+        snapshot = _snapshot_pointer(
+            home, f"r-dead-{phase or 'empty'}", phase=phase, alive=False
+        )
+        assert snapshot["state"] not in recovery.FLEET_WORKING_STATES, (
+            f"a dead process at phase {phase!r} read as {snapshot['state']!r}, "
+            "which counts as working"
+        )
+
+
+def test_terminal_manifest_never_counts_as_working(home) -> None:
+    # A manifest that has reached a verdict is a finished run no matter what the
+    # record phase claims, so none of the terminal readings may land in the
+    # working bucket.
+    for status in ("complete", "blocked", "failed"):
+        snapshot = _snapshot_pointer(
+            home,
+            f"r-term-{status}",
+            phase="working",
+            alive=True,
+            manifest_status=status,
+        )
+        assert snapshot["state"] not in recovery.FLEET_WORKING_STATES, (
+            f"a terminal manifest ({status!r}) read as {snapshot['state']!r}, "
+            "which counts as working"
+        )
+
+
+def test_fleet_counts_still_partition_the_runs_in_flight(home) -> None:
+    # A live worker, a run that died at starting, and a delivered-but-unpromoted
+    # run each land in exactly one bucket, and the three buckets still add back
+    # to the number of runs in flight — a figure a reader adds up must add up.
+    snapshots = {
+        "r-live": _snapshot_pointer(home, "r-live", phase="working", alive=True),
+        "r-dead-starting": _snapshot_pointer(
+            home, "r-dead-starting", phase="starting", alive=False
+        ),
+        "r-done": _snapshot_pointer(
+            home, "r-done", phase="working", alive=True, manifest_status="complete"
+        ),
+    }
+    counts = recovery._fleet_counts(snapshots)
+    assert counts == {"working": 1, "blocked": 1, "unpromoted": 1}
+    assert sum(counts.values()) == len(snapshots)
 
 
 def test_single_event_watch_still_returns_the_first_terminal_run(home) -> None:
