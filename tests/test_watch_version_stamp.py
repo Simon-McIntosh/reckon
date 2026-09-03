@@ -98,6 +98,13 @@ def _rewrite_seat_record(project: str, record: dict) -> None:
     path.write_text(json.dumps(record, sort_keys=True) + "\n")
 
 
+def _read_seat_record(project: str) -> dict:
+    """Read the seat's raw on-disk record, the way a fresh reader would."""
+    path = runs.watch_lock_path(project)
+    text = path.read_text() if path.is_file() else ""
+    return json.loads(text) if text.strip() else {}
+
+
 def test_no_seat_reports_no_identity_and_no_replacement_need(home) -> None:
     assert runs.watch_producer_identity("unarmed") == {}
     assert runs.watch_seat_version_current("unarmed") is False
@@ -224,6 +231,78 @@ def test_the_version_stamp_names_the_install_and_not_the_code(
 
     assert runs.watch_seat_version_current("proj") is False
     assert runs.watch_seat_needs_replacement("proj") is True
+
+
+def test_producer_live_erases_a_confirmed_dead_seat_record(
+    home, watcher_processes
+) -> None:
+    """A liveness check that finds the process gone must not leave the lie behind."""
+    process = _arm_watcher("proj", watcher_processes)
+    assert runs.producer_live("proj") is True
+
+    process.terminate()
+    process.wait(timeout=5)
+
+    assert runs.producer_live("proj") is False
+    assert runs.watch_producer_identity("proj") == {}
+    assert _read_seat_record("proj") == {}
+
+
+def test_producer_live_erases_a_seat_whose_pid_was_recycled(
+    home, watcher_processes
+) -> None:
+    """A pid that is alive but under a disagreeing start time is confirmed dead too."""
+    _arm_watcher("proj", watcher_processes)
+    recycled = dict(runs.watch_state("proj")["watcher"])
+    recycled["pid_start_time"] = "0"
+    _rewrite_seat_record("proj", recycled)
+
+    assert runs.producer_live("proj") is False
+    assert runs.watch_producer_identity("proj") == {}
+    assert _read_seat_record("proj") == {}
+
+
+def test_producer_live_leaves_a_live_seat_record_untouched(
+    home, watcher_processes
+) -> None:
+    _arm_watcher("proj", watcher_processes)
+    before = dict(runs.watch_state("proj")["watcher"])
+
+    assert runs.producer_live("proj") is True
+
+    assert dict(runs.watch_state("proj")["watcher"]) == before
+
+
+def test_producer_live_leaves_a_record_replaced_mid_check_alone(
+    home, watcher_processes, monkeypatch
+) -> None:
+    """Erasure is best-effort: a record replaced between the read and the write
+    must survive it rather than be clobbered back to empty. Content written by
+    a concurrent arming or teardown after the confirming read is stood in for
+    here by rewriting the file from inside the very ``process_alive`` call the
+    check makes, landing squarely between the read that confirmed death and
+    the erase's own re-read.
+    """
+    process = _arm_watcher("proj", watcher_processes)
+    stale = dict(runs.watch_state("proj")["watcher"])
+    process.terminate()
+    process.wait(timeout=5)
+
+    newer = dict(stale)
+    newer["pid"] = os.getpid()
+    newer["pid_start_time"] = runs._process_start_time(os.getpid())
+    assert newer != stale
+
+    real_process_alive = runs.process_alive
+
+    def racing_process_alive(pid):
+        _rewrite_seat_record("proj", newer)
+        return real_process_alive(pid)
+
+    monkeypatch.setattr(runs, "process_alive", racing_process_alive)
+
+    assert runs.producer_live("proj") is False
+    assert _read_seat_record("proj") == newer
 
 
 def test_the_replacement_records_that_nothing_calls_it() -> None:
