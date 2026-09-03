@@ -1911,6 +1911,16 @@ def _ledger_module():
     metavar="REASON",
     help="Promote despite added suite failures and record the reason and delta.",
 )
+@click.option(
+    "--waive-boundary-refusal",
+    default="",
+    metavar="REASON",
+    help=(
+        "Promote despite a stray uncommitted edit in another dispatch-visible "
+        "tree at a declared path, and record the reason and the waived paths. "
+        "Refused if the run has no boundary violation to waive."
+    ),
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_complete(
     run_id,
@@ -1928,6 +1938,7 @@ def crew_complete(
     gate_log_path,
     gate_log_digest,
     waive_suite_delta,
+    waive_boundary_refusal,
     pretty,
 ):
     """Promote a finished run into the owning repository's committed ledger.
@@ -1962,6 +1973,7 @@ def crew_complete(
             gate_check=gate_check,
             require_gate_check=True,
             suite_delta_waiver=waive_suite_delta,
+            boundary_waiver=waive_boundary_refusal,
         )
     except ledger_module.SuiteDeltaError as exc:
         _emit(

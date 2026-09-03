@@ -393,14 +393,16 @@ def _snapshot_entries(tree: Mapping[str, Any]) -> set[tuple[str, str]]:
     }
 
 
-def _require_repository_tree_boundary(run_id: str, record: Mapping[str, Any]) -> None:
-    """Refuse a stray uncommitted edit in another dispatch-visible tree."""
+def _repository_tree_boundary_violations(
+    run_id: str, record: Mapping[str, Any]
+) -> list[str]:
+    """Return the stray uncommitted edits found in another dispatch-visible tree."""
     snapshot = record.get("repository_tree_snapshot")
     if not isinstance(snapshot, Mapping):
-        return
+        return []
     before_trees = snapshot.get("trees")
     if not isinstance(before_trees, list):
-        return
+        return []
     roots = [
         str(tree.get("path") or "")
         for tree in before_trees
@@ -449,11 +451,34 @@ def _require_repository_tree_boundary(run_id: str, record: Mapping[str, Any]) ->
             violations.extend(
                 f"{changed} in {label} {path}" for changed in sorted(changed_paths)
             )
+    return violations
+
+
+def _require_repository_tree_boundary(
+    run_id: str, record: Mapping[str, Any], *, waiver_reason: str = ""
+) -> dict[str, Any] | None:
+    """Refuse a stray uncommitted edit in another dispatch-visible tree.
+
+    A genuine violation may be waived with a required reason, which is
+    recorded on the promoted run rather than erased. A waiver offered against
+    a run with nothing to waive is itself refused, naming that nothing was
+    waived — an unconditional waiver would stop meaning anything.
+    """
+    reason = str(waiver_reason).strip()
+    violations = _repository_tree_boundary_violations(run_id, record)
     if violations:
+        if not reason:
+            raise CrewError(
+                f"run {run_id!r} has uncommitted changes at its declared paths "
+                f"outside its own worktree: {', '.join(violations)}"
+            )
+        return {"reason": reason, "waived_paths": list(violations)}
+    if reason:
         raise CrewError(
-            f"run {run_id!r} has uncommitted changes at its declared paths "
-            f"outside its own worktree: {', '.join(violations)}"
+            f"run {run_id!r} has no repository-tree boundary violation for "
+            f"--waive-boundary-refusal {reason!r} to waive"
         )
+    return None
 
 
 def _is_shadow(record: Mapping[str, Any]) -> bool:
@@ -755,6 +780,7 @@ def complete(
     require_gate_check: bool = False,
     no_commit: str = "",
     suite_delta_waiver: str = "",
+    boundary_waiver: str = "",
 ) -> dict[str, Any]:
     """Promote a run, or finish cleanup when its record already landed."""
     verdict = str(gate).strip().lower()
@@ -811,6 +837,7 @@ def complete(
             gate_check=gate_check,
             require_gate_check=require_gate_check,
             suite_delta=suite_delta,
+            boundary_waiver=boundary_waiver,
         )
 
 
@@ -914,6 +941,7 @@ def _complete_locked(
     gate_check: Mapping[str, Any] | None = None,
     require_gate_check: bool = False,
     suite_delta: Mapping[str, Any] | None = None,
+    boundary_waiver: str = "",
 ) -> dict[str, Any]:
     """Promote a finished run into the owning repository's committed ledger.
 
@@ -1032,7 +1060,9 @@ def _complete_locked(
         changed_lines = cumulative.changed_lines
     else:
         changed_lines = None
-    _require_repository_tree_boundary(run_id, record)
+    boundary_waived = _require_repository_tree_boundary(
+        run_id, record, waiver_reason=boundary_waiver
+    )
 
     session_id = record.get("session_id") or stream.session_id
     previous = next(
@@ -1116,6 +1146,8 @@ def _complete_locked(
     # so a later reader can tell it from one that recorded nothing by accident.
     if str(no_commit).strip():
         run["no_commit"] = str(no_commit).strip()
+    if boundary_waived is not None:
+        run["boundary_waiver"] = boundary_waived
     watch_override = record.get("watch_override")
     if isinstance(watch_override, Mapping):
         run["watch_override"] = dict(watch_override)
