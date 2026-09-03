@@ -265,6 +265,75 @@ def test_schema_rejects_an_unknown_specification_level(layers):
     assert excinfo.value.key_path == "roles.implement.by_spec_level.partial"
 
 
+def test_specification_level_backend_resolves_with_attributable_origin(layers):
+    """Routing an open node to a named backend is a config value like any
+    other: it resolves through the merge and names the layer that set it."""
+    write(
+        layers["host"],
+        "backends:\n"
+        "  frontier:\n"
+        "    launch: cli\n"
+        "    command: frontier-cli\n"
+        "roles:\n"
+        "  implement:\n"
+        "    by_spec_level:\n"
+        "      open:\n"
+        "        backend: frontier\n"
+        "      guided:\n"
+        "        effort: medium\n",
+    )
+
+    resolved = resolve_files(layers)
+    routing = resolved.config["roles"]["implement"]["by_spec_level"]
+
+    assert routing["open"]["backend"] == "frontier"
+    assert resolved.origin("roles.implement.by_spec_level.open.backend") == "host"
+
+    # A level naming only an effort resolves that effort and leaves backend
+    # selection untouched — no backend key is invented for it, so there is no
+    # origin to report for one.
+    assert routing["guided"] == {"effort": "medium"}
+    assert "backend" not in routing["guided"]
+    assert resolved.origin("roles.implement.by_spec_level.guided.backend") is None
+
+
+def test_specification_level_backend_origin_tracks_the_overriding_layer(layers):
+    """A project layer overriding a level's backend is attributed to itself,
+    not to the host layer that first declared the level."""
+    write(
+        layers["host"],
+        "backends:\n"
+        "  frontier:\n"
+        "    launch: cli\n"
+        "    command: frontier-cli\n"
+        "  swift:\n"
+        "    launch: cli\n"
+        "    command: swift-cli\n"
+        "roles:\n"
+        "  implement:\n"
+        "    by_spec_level:\n"
+        "      open:\n"
+        "        backend: frontier\n"
+        "        effort: deep\n",
+    )
+    write(
+        layers["project"],
+        "roles:\n"
+        "  implement:\n"
+        "    by_spec_level:\n"
+        "      open:\n"
+        "        backend: swift\n",
+    )
+
+    resolved = resolve_files(layers)
+    routing = resolved.config["roles"]["implement"]["by_spec_level"]
+
+    assert routing["open"]["backend"] == "swift"
+    assert routing["open"]["effort"] == "deep"
+    assert resolved.origin("roles.implement.by_spec_level.open.backend") == "project"
+    assert resolved.origin("roles.implement.by_spec_level.open.effort") == "host"
+
+
 # ── 2. Layer precedence and deep merge ──────────────────────────────────────
 
 
