@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="22">
 <meta name="plan-commits" content="0c4d36f,e535dd4,81d35f9,0e9cdb2,51230b3,0580cbc,d805e6d,7e99433">
 <meta name="plan-impl" content="0.75">
 </head>
@@ -521,6 +521,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260903T1411" data-who="reckon-ship" data-when="2026-09-03T12:11:00+00:00">
     <div class="r-comment-body">the-agent-label-honours-the-alias landed — commit d805e6d, merged; gate passed; measure 79 passed across tests/test_crew_recovery.py at 38 and tests/test_crew_ticker_layout.py at 41, exit 0; 98 insertions over 2 files, on the local lane at deepseek-v4-flash, full-diff audited. Verified against a live pointer: agent.alias dsv4-flash now renders dsv4-flash·me where it rendered deepseek-v4-flash/medium, so eighteen columns become fourteen and the effort is visible rather than elided — which was the half a reader compares. The design choice worth keeping is that agent_label composes through the renderer's own _agent_label helper rather than reimplementing the format, so the snapshot and the display cannot drift apart; drift between exactly those two is what produced this defect. A run dispatched before aliases existed carries none and keeps its precomposed model-and-effort form rather than raising.</div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260903T122439370265-the-effort-is-spelled-in-full" data-who="flash-c" data-when="2026-09-03T12:44:02.024Z">
+    <div class="r-comment-body"><p>The effort renders in full beside the alias; the widest real label fits the agent column without elision</p></div>
 </div>
 </section>
 </main>

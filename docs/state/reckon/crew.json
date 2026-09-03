@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T14:42:51",
+  "updated": "2026-09-03T14:45:11",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -458,7 +458,8 @@
         "session_id": "8d9ff563-527a-45b4-a308-17854278f55b",
         "session_model": "glm-5.3",
         "sessions": {
-          "glm-5.3": "8d9ff563-527a-45b4-a308-17854278f55b"
+          "glm-5.3": "8d9ff563-527a-45b4-a308-17854278f55b",
+          "{\"alias\":\"glm5.3\",\"backend\":\"clive-glm\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"glm-5.3\",\"sandbox\":\"worktree-full\"}": "0c0b6d28-b766-4c1e-ac20-9fa533eb87bd"
         },
         "created": "2026-09-02"
       },
@@ -469,7 +470,8 @@
         "session_id": "063752f4-89d9-4f6c-ba81-ae9acf81c64f",
         "session_model": "deepseek-v4-flash",
         "sessions": {
-          "{\"backend\":\"clive\",\"effort\":\"medium\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\"}": "063752f4-89d9-4f6c-ba81-ae9acf81c64f"
+          "{\"backend\":\"clive\",\"effort\":\"medium\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\"}": "063752f4-89d9-4f6c-ba81-ae9acf81c64f",
+          "{\"alias\":\"glm5.3\",\"backend\":\"clive-glm\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"glm-5.3\",\"sandbox\":\"worktree-full\"}": "252febca-e9a5-4e9c-8e15-8dc7a89ee2e0"
         },
         "created": "2026-09-02"
       },
@@ -477,27 +479,33 @@
         "id": "glm-c",
         "harness": "claude",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "76a96dba-46ef-472b-89fa-ed380c102910",
+        "session_model": "glm-5.3",
+        "sessions": {
+          "{\"alias\":\"glm5.3\",\"backend\":\"clive-glm\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"glm-5.3\",\"sandbox\":\"worktree-full\"}": "76a96dba-46ef-472b-89fa-ed380c102910"
+        },
         "created": "2026-09-03"
       },
       {
         "id": "glm-d",
         "harness": "claude",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "ce4619fe-2d61-41b6-9cb9-06eba2f0c503",
+        "session_model": "glm-5.3",
+        "sessions": {
+          "{\"alias\":\"glm5.3\",\"backend\":\"clive-glm\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"glm-5.3\",\"sandbox\":\"worktree-full\"}": "ce4619fe-2d61-41b6-9cb9-06eba2f0c503"
+        },
         "created": "2026-09-03"
       },
       {
         "id": "glm-e",
         "harness": "claude",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "639276e3-b046-4397-a3f0-a4abdf8a5967",
+        "session_model": "glm-5.3",
+        "sessions": {
+          "{\"alias\":\"glm5.3\",\"backend\":\"clive-glm\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"glm-5.3\",\"sandbox\":\"worktree-full\"}": "639276e3-b046-4397-a3f0-a4abdf8a5967"
+        },
         "created": "2026-09-03"
       },
       {
@@ -43046,6 +43054,716 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260903T122938955014-the-display-test-asserts-the-honest-bucket",
+        "plan": "crew-observability-truth",
+        "section": "\u00a74",
+        "node": "the-display-test-asserts-the-honest-bucket",
+        "node_definition": {
+          "done_when": "tests/test_crew_finished_display.py::test_dispatched_with_no_manifest_and_no_activity_resolves_to_stalled is updated to assert the contract that now holds: a dispatched run with no manifest whose PROCESS IS GONE resolves to abandoned, not stalled, because a dead process has stopped working whatever phase label it holds. Keep a stalled case as its own test for what stalled still means \u2014 a run whose process is ALIVE and whose stream has been quiet past the window \u2014 so the distinction is asserted in both directions rather than one assertion being flipped. tests/test_crew_finished_display.py passes in full with its count recorded, and the manifest states which assertion changed and why. Attribution, measured rather than assumed: this is the single new failure between base 6eff81b at 879 passed 3 failed and head 4f5c404 at 911 passed 4 failed, both suites reaching 31 to 32 percent, the other three failures being identical and pre-existing in tests/test_doctor.py. It was introduced by commit 9f9b464, the working-bucket change, which was deliberate and correct",
+          "estimated_hours": null,
+          "goal": "The finished-display test asserts the current bucket contract rather than the behaviour it superseded",
+          "id": "the-display-test-asserts-the-honest-bucket",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T122938955014-the-display-test-asserts-the-honest-bucket/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "exact",
+          "time_budget": "25m",
+          "write_paths": [
+            "tests/test_crew_finished_display.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "glm-b",
+        "backend": "clive-glm",
+        "local": false,
+        "agent": {
+          "alias": "glm5.3",
+          "backend": "clive-glm",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "glm-5.3",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T12:29:41Z",
+        "completed_at": "2026-09-03T12:33:29.021Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 27,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 228,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "829e521b55ef2f064d720d12b39b2c90d0458e80",
+        "commits": [],
+        "changed_lines": {
+          "added": 0,
+          "removed": 0,
+          "files": 0
+        },
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "malformed-node",
+        "outcome": "Context overflow: the node exceeded glm-5.3's 73,728-token window through generated thinking at effort medium, about 2,118 thinking records per turn against flash's 317, dying in five turns. The failure measures the node-to-backend pairing rather than the model, so it is classified malformed-node and excluded from the configuration's pass rate; \u00a711's context-fit refusal is the mechanism that should have refused it before launch",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T122938955014-the-display-test-asserts-the-honest-bucket/manifest.md",
+        "scope_changed": false,
+        "session_id": "252febca-e9a5-4e9c-8e15-8dc7a89ee2e0",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 47758,
+            "input_tokens_cumulative": 47758,
+            "output_tokens": 10934,
+            "output_tokens_cumulative": 10934,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 0.51214,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 0.51214
+        },
+        "lineage": {
+          "configuration": {
+            "inherited": {
+              "effort": "medium",
+              "launch": "cli",
+              "sandbox": "worktree-full",
+              "time_budget": "25m"
+            },
+            "substituted": {
+              "backend": {
+                "primary": "clive",
+                "shadow": "clive-glm",
+                "via": "backend"
+              },
+              "model": {
+                "primary": "deepseek-v4-flash",
+                "shadow": "glm-5.3",
+                "via": "backend"
+              }
+            }
+          },
+          "kind": "shadow",
+          "primary_run_id": "r-20260903T100445528345-the-display-test-asserts-the-honest-bucket"
+        },
+        "shadow_controlled": true,
+        "shadow_patch": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T122938955014-the-display-test-asserts-the-honest-bucket/shadow.patch",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "shadow",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260903T122950897279-a-duplicate-backend-key-is-refused",
+        "plan": "crew-observability-truth",
+        "section": "\u00a75",
+        "node": "a-duplicate-backend-key-is-refused",
+        "node_definition": {
+          "done_when": "A layer file declaring one backend key twice is refused naming the key, reusing the existing validation error shape rather than a new channel, asserted by test; a layer with no duplicate validates unchanged, and two different backends remain unaffected, both asserted as negatives. tests/test_flight.py passes in full with its count recorded. The reuse map at /home/ITER/mcintos/.config/reckon/crew/reports/display-reuse-map.md states that YAML silently drops the duplicate at the layer read, so the refusal must be added at parse or validate time, and names the error shape to reuse",
+          "estimated_hours": null,
+          "goal": "A configuration layer defining the same backend twice is refused at validation instead of silently taking the last",
+          "id": "a-duplicate-backend-key-is-refused",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T122950897279-a-duplicate-backend-key-is-refused/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/flight.py",
+            "tests/test_flight.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "glm-c",
+        "backend": "clive-glm",
+        "local": false,
+        "agent": {
+          "alias": "glm5.3",
+          "backend": "clive-glm",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "glm-5.3",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T12:29:52Z",
+        "completed_at": "2026-09-03T12:32:40.025Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 70,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 168,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "0bfa110db16bc2b07d42b1765e8a7e865a7452c8",
+        "commits": [],
+        "changed_lines": {
+          "added": 0,
+          "removed": 0,
+          "files": 0
+        },
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "malformed-node",
+        "outcome": "Context overflow: the node exceeded glm-5.3's 73,728-token window through generated thinking at effort medium, about 2,118 thinking records per turn against flash's 317, dying in five turns. The failure measures the node-to-backend pairing rather than the model, so it is classified malformed-node and excluded from the configuration's pass rate; \u00a711's context-fit refusal is the mechanism that should have refused it before launch",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T122950897279-a-duplicate-backend-key-is-refused/manifest.md",
+        "scope_changed": false,
+        "session_id": "76a96dba-46ef-472b-89fa-ed380c102910",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 47609,
+            "input_tokens_cumulative": 47609,
+            "output_tokens": 4558,
+            "output_tokens_cumulative": 4558,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 0.351995,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 0.351995
+        },
+        "lineage": {
+          "configuration": {
+            "inherited": {
+              "effort": "medium",
+              "launch": "cli",
+              "sandbox": "worktree-full",
+              "time_budget": "30m"
+            },
+            "substituted": {
+              "backend": {
+                "primary": "clive",
+                "shadow": "clive-glm",
+                "via": "backend"
+              },
+              "model": {
+                "primary": "deepseek-v4-flash",
+                "shadow": "glm-5.3",
+                "via": "backend"
+              }
+            }
+          },
+          "kind": "shadow",
+          "primary_run_id": "r-20260903T080317198353-a-duplicate-backend-key-is-refused"
+        },
+        "shadow_controlled": true,
+        "shadow_patch": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T122950897279-a-duplicate-backend-key-is-refused/shadow.patch",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "shadow",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260903T123002352380-blocked-is-a-question-not-a-verdict",
+        "plan": "clive-local-workers",
+        "section": "\u00a77",
+        "node": "blocked-is-a-question-not-a-verdict",
+        "node_definition": {
+          "done_when": "Commit 1b7e72e narrowed the staleness discard in reckon/crew/recovery.py from 'manifest_status == blocked' to 'manifest_status and manifest_status not in {complete, blocked, failed}', which removed blocked from the discard and introduced a regression. Reproduced directly against the merged code: a pointer whose manifest reports blocked, whose process is alive, and whose log is NEWER than that manifest now resolves manifest_status blocked, classification blocked and ticker state blocked, where before the merge the discard cleared the stale manifest and the state fell through to working. That is the resumed-worker case and it is well exercised: this ledger holds 49 runs with attempt_kind resume, and three runs in this session alone went blocked then working after a resume. The distinction the previous change missed is that complete and failed are VERDICTS a later log line cannot undo, while blocked is a SOLICITATION that resume answers, and the discard is how the system notices it was answered. Narrow the exclusion set to complete and failed only, so a blocked manifest is discardable again under the unchanged surrounding conditions of an alive process and a newer log, while complete and failed remain protected as 1b7e72e intended. Add to tests/test_crew_finished_display.py: a blocked manifest with an alive process and a newer log resolves to working rather than blocked, named for the resumed worker it represents; a blocked manifest with a DEAD process or an older log still resolves blocked, so the fix does not simply delete the signal; and the existing complete and failed protections still hold, which the parametrised test already covers and must keep passing. Your gate is tests/test_crew_finished_display.py plus tests/test_crew_recovery.py, tests/test_crew_ticker.py and tests/test_crew_watch_stream.py, which were 28 passed at 8692c0aa245b82ed05ce46c108f6729abf261203. Do NOT run the full suite and do NOT run any browser-driven test",
+          "estimated_hours": null,
+          "goal": "Restore resume visibility: a blocked manifest must go stale once its worker is producing again",
+          "id": "blocked-is-a-question-not-a-verdict",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T123002352380-blocked-is-a-question-not-a-verdict/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "exact",
+          "time_budget": "25m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_crew_finished_display.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "glm-d",
+        "backend": "clive-glm",
+        "local": false,
+        "agent": {
+          "alias": "glm5.3",
+          "backend": "clive-glm",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "glm-5.3",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T12:30:04Z",
+        "completed_at": "2026-09-03T12:42:23.767Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 598,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 739,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "8692c0aa245b82ed05ce46c108f6729abf261203",
+        "commits": [],
+        "changed_lines": {
+          "added": 0,
+          "removed": 0,
+          "files": 0
+        },
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "malformed-node",
+        "outcome": "Context overflow: the node exceeded glm-5.3's 73,728-token window through generated thinking at effort medium, about 2,118 thinking records per turn against flash's 317, dying in five turns. The failure measures the node-to-backend pairing rather than the model, so it is classified malformed-node and excluded from the configuration's pass rate; \u00a711's context-fit refusal is the mechanism that should have refused it before launch",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T123002352380-blocked-is-a-question-not-a-verdict/manifest.md",
+        "scope_changed": false,
+        "session_id": "ce4619fe-2d61-41b6-9cb9-06eba2f0c503",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 252345,
+            "input_tokens_cumulative": 252345,
+            "output_tokens": 1859,
+            "output_tokens_cumulative": 1859,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 2.773375,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 2.773375
+        },
+        "lineage": {
+          "configuration": {
+            "inherited": {
+              "effort": "medium",
+              "launch": "cli",
+              "sandbox": "worktree-full",
+              "time_budget": "25m"
+            },
+            "substituted": {
+              "backend": {
+                "primary": "claude",
+                "shadow": "clive-glm",
+                "via": "backend"
+              },
+              "model": {
+                "primary": "claude-sonnet-5",
+                "shadow": "glm-5.3",
+                "via": "backend"
+              }
+            }
+          },
+          "kind": "shadow",
+          "primary_run_id": "r-20260903T054823867999-blocked-is-a-question-not-a-verdict"
+        },
+        "shadow_controlled": true,
+        "shadow_patch": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T123002352380-blocked-is-a-question-not-a-verdict/shadow.patch",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "shadow",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260903T123348139014-finished-work-is-never-displayed-as-working",
+        "plan": "clive-local-workers",
+        "section": "\u00a77",
+        "node": "finished-work-is-never-displayed-as-working",
+        "node_definition": {
+          "done_when": "Two sessions independently watched finished runs display as working: one saw six nodes whose worker processes had all exited and whose manifests were all terminal on disk sit as '6 working' for 38 minutes with zero events, and one saw a run whose classifier read completed_unpromoted with a complete manifest while its phase still read starting. The mechanism is in reckon/crew/recovery.py and has two parts that compound. First, in classify_pointer around lines 186 to 196, when the process appears alive AND the log file's mtime is newer than the manifest's, the manifest is discarded wholesale: manifest_present set false, manifest_data emptied, manifest_status set to empty string. That staleness heuristic is right for a manifest written mid-run and then superseded, but it is wrong for a TERMINAL status: complete, blocked and failed are facts a later log line cannot undo, and discarding them is what erases the strongest completion signal available. Second, in _watch_snapshot around lines 556 to 578, state resolves to dispatched when phase is starting and the stall check that follows is gated on state being exactly working, while FLEET_WORKING_STATES at line 610 counts dispatched among the working bucket. So a run that dies before its phase advances is counted as alive and is permanently ineligible for the stall check. Fix both, leading with the manifest because it turns a timing question into a fact-on-disk question: never discard a terminal manifest status through the staleness path, and evaluate the stall check over every non-terminal state rather than working alone. Tests in tests/test_crew_finished_display.py assert: a pointer whose manifest reports complete while its log is newer and its process appears alive still resolves to a terminal state rather than dispatched, and the same for blocked and failed; a run killed immediately after dispatch, before its phase ever advances past starting, is still detected from its manifest alone; a run with no manifest and no activity past the stall window resolves to stalled from the dispatched state, which it cannot today; and a genuinely mid-run pointer whose manifest is non-terminal and whose log is newer still has that manifest treated as superseded, so the staleness heuristic is narrowed rather than removed. Your gate is that new test file plus tests/test_crew_recovery.py, tests/test_crew_ticker.py and tests/test_crew_watch_stream.py. Do NOT run the full suite and do NOT run any browser-driven test. Judge by delta against base 937c2169a873d4e91102a5c5465cdca057788350",
+          "estimated_hours": null,
+          "goal": "Stop a finished run being displayed as working, and make a terminal manifest on disk the signal that ends it",
+          "id": "finished-work-is-never-displayed-as-working",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T123348139014-finished-work-is-never-displayed-as-working/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_crew_finished_display.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "glm-e",
+        "backend": "clive-glm",
+        "local": false,
+        "agent": {
+          "alias": "glm5.3",
+          "backend": "clive-glm",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "glm-5.3",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T12:33:49Z",
+        "completed_at": "2026-09-03T12:35:29.607Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 41,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 100,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "937c2169a873d4e91102a5c5465cdca057788350",
+        "commits": [],
+        "changed_lines": {
+          "added": 0,
+          "removed": 0,
+          "files": 0
+        },
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "malformed-node",
+        "outcome": "Context overflow: the node exceeded glm-5.3's 73,728-token window through generated thinking at effort medium, about 2,118 thinking records per turn against flash's 317, dying in five turns. The failure measures the node-to-backend pairing rather than the model, so it is classified malformed-node and excluded from the configuration's pass rate; \u00a711's context-fit refusal is the mechanism that should have refused it before launch",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T123348139014-finished-work-is-never-displayed-as-working/manifest.md",
+        "scope_changed": false,
+        "session_id": "639276e3-b046-4397-a3f0-a4abdf8a5967",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 48054,
+            "input_tokens_cumulative": 48054,
+            "output_tokens": 1982,
+            "output_tokens_cumulative": 1982,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 0.28981999999999997,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 0.28981999999999997
+        },
+        "lineage": {
+          "configuration": {
+            "inherited": {
+              "effort": "medium",
+              "launch": "cli",
+              "sandbox": "worktree-full",
+              "time_budget": "35m"
+            },
+            "substituted": {
+              "backend": {
+                "primary": "claude",
+                "shadow": "clive-glm",
+                "via": "backend"
+              },
+              "model": {
+                "primary": "claude-sonnet-5",
+                "shadow": "glm-5.3",
+                "via": "backend"
+              }
+            }
+          },
+          "kind": "shadow",
+          "primary_run_id": "r-20260903T053528937279-finished-work-is-never-displayed-as-working"
+        },
+        "shadow_controlled": true,
+        "shadow_patch": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T123348139014-finished-work-is-never-displayed-as-working/shadow.patch",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "shadow",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260903T123359161378-promotion-releases-the-transient",
+        "plan": "clive-local-workers",
+        "section": "\u00a713",
+        "node": "promotion-releases-the-transient",
+        "node_definition": {
+          "done_when": "reckon/crew/promotion.py appends the ledger row and deletes the live pointer, in that order so an interruption stays recoverable, and releases nothing else: the run's worktree survives until someone runs crew gc by hand and the worker process survives until it exits on its own. Measured on this workstation: 274 worktrees on disk against 458 promoted runs in one ledger, and a run observed process_alive true while its classification already read completed_unpromoted. Extend complete so that AFTER the ledger append and the pointer delete it also releases the run's own worktree and, if still alive, the run's own process group. Reuse the classification crew gc already applies in reckon/crew/routing.py rather than writing a second policy: a worktree is released only when git status --porcelain in it reports zero entries AND its HEAD is an ancestor of the integration branch as git merge-base --is-ancestor decides; a worktree failing either condition is left in place and never removed with force; and a shadow releases through the existing lineage rule against its committed record and retained patch. The process group is signalled only when a terminal manifest was delivered, because a live process with no manifest is a recovery case rather than a cleanup one. Every withheld release is named in the returned completion result with the condition it failed, so a retained worktree is visible at the moment it is created rather than discovered by a later path collision. A failure inside the release step must never undo or obscure the ledger append. Tests in tests/test_promotion_release.py assert: a promoted run whose worktree reports zero porcelain entries and whose HEAD is an ancestor of the integration branch leaves no worktree on disk and no live process, asserted through complete end to end rather than by unit-testing a helper; a promoted run whose worktree reports a porcelain entry keeps that worktree and names it in the result with the failed condition; one whose HEAD is not an ancestor of the integration branch does the same; a run with no terminal manifest is never signalled; and a simulated failure raised inside the release step still leaves the promoted ledger row intact and the run recoverable. Your gate is that new file plus tests/test_crew_promotion.py, tests/test_crew_promotion_scope.py and tests/test_crew_gc.py. Do NOT run the full suite and do NOT run any browser-driven test. Judge by delta against base 71cf138d321f65dceb8b95161e996252616bd605",
+          "estimated_hours": null,
+          "goal": "Make promotion release the worktree and the lingering process it made transient, conservatively and audibly",
+          "id": "promotion-releases-the-transient",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T123359161378-promotion-releases-the-transient/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a713",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "tests/test_promotion_release.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "glm-a",
+        "backend": "clive-glm",
+        "local": false,
+        "agent": {
+          "alias": "glm5.3",
+          "backend": "clive-glm",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "glm-5.3",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T12:34:00Z",
+        "completed_at": "2026-09-03T12:39:37.786Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 274,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 337,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "71cf138d321f65dceb8b95161e996252616bd605",
+        "commits": [],
+        "changed_lines": {
+          "added": 0,
+          "removed": 0,
+          "files": 0
+        },
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "malformed-node",
+        "outcome": "Context overflow: the node exceeded glm-5.3's 73,728-token window through generated thinking at effort medium, about 2,118 thinking records per turn against flash's 317, dying in five turns. The failure measures the node-to-backend pairing rather than the model, so it is classified malformed-node and excluded from the configuration's pass rate; \u00a711's context-fit refusal is the mechanism that should have refused it before launch",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T123359161378-promotion-releases-the-transient/manifest.md",
+        "scope_changed": false,
+        "session_id": "0c0b6d28-b766-4c1e-ac20-9fa533eb87bd",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no rate-limit event in the stream yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": {
+          "configuration": {
+            "inherited": {
+              "effort": "medium",
+              "launch": "cli",
+              "sandbox": "worktree-full",
+              "time_budget": "35m"
+            },
+            "substituted": {
+              "backend": {
+                "primary": "claude",
+                "shadow": "clive-glm",
+                "via": "backend"
+              },
+              "model": {
+                "primary": "claude-sonnet-5",
+                "shadow": "glm-5.3",
+                "via": "backend"
+              }
+            }
+          },
+          "kind": "shadow",
+          "primary_run_id": "r-20260903T060422443082-promotion-releases-the-transient"
+        },
+        "shadow_controlled": true,
+        "shadow_patch": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T123359161378-promotion-releases-the-transient/shadow.patch",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "shadow",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260903T122439370265-the-effort-is-spelled-in-full",
+        "plan": "fleet-monitor-legibility",
+        "section": "\u00a75",
+        "node": "the-effort-is-spelled-in-full",
+        "node_definition": {
+          "done_when": "A pointer whose agent carries an alias and an effort renders alias then separator then the FULL effort word, asserted through the snapshot and the renderer together against a live-shaped pointer rather than through the renderer alone; a pointer with no alias keeps its existing model-and-effort form; a pointer carrying a declared effort_spelling still honours it, since the schema key and its tests remain and only the host layer stopped declaring one; and the widest real label fits the agent column without elision, asserted with dsv4-flash and medium, which measures 17 against the column's 18. tests/test_crew_recovery.py and tests/test_crew_ticker_layout.py both pass in full with counts recorded against 38 and 45. This reverses the two-character derivation: the lead directed full spelling, which dissolves the ambiguity the max-to-mx mapping existed to resolve, and the host layer no longer declares any spelling",
+          "estimated_hours": null,
+          "goal": "The agent column renders the effort word in full beside the alias",
+          "id": "the-effort-is-spelled-in-full",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T122439370265-the-effort-is-spelled-in-full/manifest.md",
+          "plan": "fleet-monitor-legibility",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/crew/ticker.py",
+            "reckon/crew/recovery.py",
+            "tests/test_crew_ticker_layout.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "flash-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T12:24:44Z",
+        "completed_at": "2026-09-03T12:44:02.024Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1138,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1158,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "28ae6000abf36f174938dd526bd3c9b9de7bb7ff",
+        "commits": [
+          "a2e1d2eeeca92d3f3365b220eeb29ed542b83380"
+        ],
+        "changed_lines": {
+          "added": 55,
+          "removed": 34,
+          "files": 3
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_crew_recovery.py tests/test_crew_ticker_layout.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T122439370265-the-effort-is-spelled-in-full/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T122439370265-the-effort-is-spelled-in-full/manifest.md",
+        "scope_changed": false,
+        "session_id": "ee617b41-5d11-42c5-8c40-0e136469b97b",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 3196882,
+            "input_tokens_cumulative": 3196882,
+            "output_tokens": 23536,
+            "output_tokens_cumulative": 23536,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 16.57281,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 16.57281
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -43078,6 +43796,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 705
+    "_version": 716
   }
 }
