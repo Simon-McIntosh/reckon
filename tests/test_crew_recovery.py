@@ -14,7 +14,7 @@ from click.testing import CliRunner
 
 from reckon import cli as cli_module
 from reckon import crew
-from reckon.crew import recovery
+from reckon.crew import recovery, reports
 
 
 @pytest.fixture()
@@ -384,3 +384,155 @@ def test_single_event_watch_still_returns_the_first_terminal_run(home) -> None:
     assert event["run_id"] == "r-first"
     assert crew.pointer_path("r-first").is_file()
     assert crew.pointer_path("r-second").is_file()
+
+
+# ── The reason says what the worker asked ───────────────────────────────────
+
+
+def _blocked_record(home: Path, run_id: str, *, manifest_text: str) -> dict:
+    manifest = home / "manifests" / f"{run_id}.md"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text(manifest_text)
+    return {
+        "run_id": run_id,
+        "project": "proj",
+        "node": {"id": run_id, "plan": "plan-a", "time_budget": "20m"},
+        "phase": "working",
+        "created_at": datetime.now(tz=timezone.utc).isoformat(),
+        "manifest_path": str(manifest),
+        "log_path": str(home / "streams" / f"{run_id}.jsonl"),
+        "process_alive": True,
+    }
+
+
+_NEEDS_HELP_BLOCK = """\
+node: r-node
+status: blocked
+blockers: |
+  NEEDS-HELP: the schema rejects an enum value the config file needs
+  tried: set gates.enforce to off; validation rejected the boolean
+  options: spell the value disabled; or coerce the boolean
+  leaning: spell it disabled, because the coercion would be invisible
+  cost-if-wrong: the generated schema and its committed JSON regenerate
+"""
+
+_BLOCKER_ONLY_BLOCK = """\
+node: r-node
+status: blocked
+blockers: |
+  the credential file is missing on this host and dispatch cannot proceed
+"""
+
+
+def test_a_complete_needs_help_report_becomes_the_reason_with_a_question_marker(
+    home,
+) -> None:
+    record = _blocked_record(home, "r-asked", manifest_text=_NEEDS_HELP_BLOCK)
+
+    row = recovery.classify_pointer(record, now_seconds=time.time())
+
+    assert row["classification"] == "blocked"
+    assert row["marker"] == "?"
+    assert "the schema rejects an enum value" in row["detail"]
+    assert row["detail"].strip() != "|"
+
+    snapshot = recovery._watch_snapshot(record, moment=time.time(), stall_seconds=3600)
+    assert snapshot["state"] == "blocked"
+    assert snapshot["marker"] == "?"
+    assert (
+        snapshot["reason"] == "the schema rejects an enum value the config file needs"
+    )
+
+    transition = recovery._watch_transition(
+        "proj",
+        kind="baseline",
+        snapshot=snapshot,
+        previous=None,
+        current=str(snapshot["state"]),
+        counts=recovery._fleet_counts({"r-asked": snapshot}),
+    )
+    assert transition["marker"] == "?"
+    assert (
+        transition["reason"] == "the schema rejects an enum value the config file needs"
+    )
+
+
+def test_blockers_without_a_needs_help_report_get_the_blocker_text_and_a_bang_marker(
+    home,
+) -> None:
+    record = _blocked_record(home, "r-blocked", manifest_text=_BLOCKER_ONLY_BLOCK)
+
+    row = recovery.classify_pointer(record, now_seconds=time.time())
+
+    assert row["classification"] == "blocked"
+    assert row["marker"] == "!"
+    assert "the credential file is missing" in row["detail"]
+
+    snapshot = recovery._watch_snapshot(record, moment=time.time(), stall_seconds=3600)
+    assert snapshot["state"] == "blocked"
+    assert snapshot["marker"] == "!"
+    assert snapshot["reason"] == (
+        "the credential file is missing on this host and dispatch cannot proceed"
+    )
+
+
+def test_a_block_scalar_indicator_is_never_read_as_the_value(home) -> None:
+    # The measured incident this section retires: a manifest's `blockers:`
+    # value was the literal block-scalar indicator, and that single
+    # punctuation character rode all the way into a stored transition's
+    # reason.
+    manifest_text = "node: r-empty-block\nstatus: blocked\nblockers: |\n"
+    record = _blocked_record(home, "r-empty-block", manifest_text=manifest_text)
+
+    row = recovery.classify_pointer(record, now_seconds=time.time())
+
+    assert row["marker"] == "!"
+    assert row["detail"].strip() != "|"
+    assert "|" not in row["detail"]
+
+    snapshot = recovery._watch_snapshot(record, moment=time.time(), stall_seconds=3600)
+    assert snapshot["reason"] != "|"
+
+
+@pytest.mark.parametrize("bare", ["|", ">", '"', "'", "|-", ">+"])
+def test_single_clause_refuses_a_bare_punctuation_reason(bare) -> None:
+    assert recovery._single_clause(bare) == ""
+
+
+def test_a_block_scalar_blockers_value_is_parsed_from_its_indented_body() -> None:
+    fields = reports.parse_manifest(_NEEDS_HELP_BLOCK)
+    assert fields["blockers"] != ["|"]
+    assert any("credential" not in item for item in fields["blockers"])
+    assert fields["needs_help"]["complete"] is True
+    assert fields["needs_help"]["headline"] == (
+        "the schema rejects an enum value the config file needs"
+    )
+
+
+@pytest.mark.parametrize("indicator", ["|", "|-", "|+", ">", ">-", ">+", '"', "'"])
+def test_parse_manifest_reads_the_indented_body_not_the_indicator(indicator) -> None:
+    text = (
+        f"node: r-node\nstatus: blocked\nblockers: {indicator}\n"
+        "  the actual blocker text lives here\n"
+    )
+
+    fields = reports.parse_manifest(text)
+
+    assert fields["blockers"] == ["the actual blocker text lives here"]
+
+
+def test_parse_manifest_stops_the_block_at_the_next_top_level_key() -> None:
+    text = (
+        "node: r-node\nstatus: blocked\nblockers: |\n"
+        "  the first line of the block\n"
+        "  the second line of the block\n"
+        "commits: abc123\n"
+    )
+
+    fields = reports.parse_manifest(text)
+
+    assert fields["blockers"] == [
+        "the first line of the block",
+        "the second line of the block",
+    ]
+    assert fields["commits"] == ["abc123"]

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import fcntl
 import os
+import re
 import shlex
 import subprocess
 import time
@@ -34,10 +35,18 @@ from reckon.crew.runs import (
     watch_lock_path,
 )
 
+
 # Shaping free text into one bounded clause belongs with the field that has to
-# fit it, so it lives beside the grid. The private name is kept for the callers
-# in this module that already read it.
-_single_clause = single_clause
+# fit it, so it lives beside the grid. This module additionally refuses a
+# clause that collapses to bare punctuation — a parse failure upstream (a
+# block-scalar indicator returned as if it were the value) must not survive as
+# a "reason" no reader can act on.
+def _single_clause(value: Any, *, limit: int = 96) -> str:
+    clause = single_clause(value, limit=limit)
+    if clause and not re.search(r"[A-Za-z0-9]", clause):
+        return ""
+    return clause
+
 
 # ── Recovery: what an interrupted orchestrator left behind ───────────────────
 
@@ -214,6 +223,7 @@ def classify_pointer(
         )
         terminal_age_seconds = max(0, int(moment - terminal_seconds))
 
+    marker = None
     if manifest_status == "complete":
         classification = "completed_unpromoted"
         detail = (
@@ -224,11 +234,26 @@ def classify_pointer(
         action += "".join(f" --commit {commit}" for commit in manifest_commits)
     elif manifest_status == "blocked":
         classification = "blocked"
-        blocker = "; ".join(manifest_blockers) or "the manifest reports a blocker"
-        detail = f"the worker manifest reports blocked: {blocker}"
-        if isinstance(needs_help, Mapping) and needs_help.get("complete"):
+        # A blocked transition explains itself from the best source available,
+        # in order: the worker's own escape-hatch question (already parsed and
+        # complete — the sentence a coordinator can answer in one turn), then
+        # the manifest's blockers, then a generic fallback. A bare-punctuation
+        # result (a block-scalar indicator misread as its value, upstream)
+        # explains nothing, so it is treated as absent too.
+        needs_help_complete = isinstance(needs_help, Mapping) and bool(
+            needs_help.get("complete")
+        )
+        headline = str(needs_help.get("headline") or "") if needs_help_complete else ""
+        blocker = "; ".join(manifest_blockers)
+        reason_text = headline or blocker or "the manifest reports a blocker"
+        if not re.search(r"[A-Za-z0-9]", reason_text):
+            reason_text = "the manifest reports a blocker"
+        detail = f"the worker manifest reports blocked: {reason_text}"
+        if needs_help_complete:
+            marker = "?"
             action = f"reckon crew resume --run {run_id} --advice <answer>"
         else:
+            marker = "!"
             action = f"read {manifest}; resolve the blocker before resuming the run"
     elif manifest_status == "failed":
         classification = "failed"
@@ -319,6 +344,10 @@ def classify_pointer(
         "worktree": record.get("worktree"),
         "detail": detail,
         "next_action": action,
+        # Set only for a blocked run: "?" when the escape-hatch question is
+        # complete enough that `reckon crew resume --advice` can answer it,
+        # "!" when the reader has to read the manifest itself.
+        "marker": marker,
     }
 
 
@@ -619,6 +648,9 @@ def _watch_snapshot(
         "agent": agent_label(pointer),
         "state": state,
         "reason": _single_clause(detail),
+        # Only a "blocked" state carries a marker; a run entering any other
+        # state has nothing for the reader to answer or read a manifest for.
+        "marker": row.get("marker") if state == "blocked" else None,
     }
 
 
@@ -674,15 +706,20 @@ def fleet_transitions(
     changes: list[tuple[Mapping[str, Any], str | None, str]] = []
 
     for run_id in (item for item in known if item not in current):
-        # A departure is its own fact and inherits no clause from the state it
-        # left. Carrying one forward reports a block on the line announcing that
-        # the block is over.
-        departed = {**known[run_id], "reason": ""}
+        # A departure is its own fact and inherits no clause or marker from the
+        # state it left. Carrying one forward reports a block on the line
+        # announcing that the block is over.
+        departed = {**known[run_id], "reason": "", "marker": None}
         changes.append((departed, str(known[run_id]["state"]), "promoted"))
     for run_id in (item for item in current if item not in known):
         changes.append(
             (
-                {**current[run_id], "state": "dispatched", "reason": ""},
+                {
+                    **current[run_id],
+                    "state": "dispatched",
+                    "reason": "",
+                    "marker": None,
+                },
                 None,
                 "dispatched",
             )
@@ -731,6 +768,8 @@ def _watch_transition(
     reason = _single_clause(snapshot.get("reason"))
     if reason:
         event["reason"] = reason
+    if current == "blocked" and snapshot.get("marker"):
+        event["marker"] = snapshot["marker"]
     return event
 
 

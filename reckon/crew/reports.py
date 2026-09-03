@@ -21,6 +21,16 @@ _MANIFEST_LIST_KEYS = (
 )
 _NONE_VALUES = {"", "none", "n/a", "-", "nil"}
 
+# A line whose value is one of these has no value on that line at all — the
+# indented body below it is the value, YAML block-scalar style. Returning the
+# indicator itself is how a parse failure became a display that lied: a
+# blocked run's reason once read as a single "|" character.
+_BLOCK_SCALAR_RE = re.compile(r"^[|>][+-]?$")
+
+
+def _is_block_indicator(value: str) -> bool:
+    return bool(_BLOCK_SCALAR_RE.match(value)) or value in ('"', "'")
+
 
 class SuiteObservation(TypedDict):
     """One machine-readable suite result carried by a worker manifest."""
@@ -44,15 +54,39 @@ def parse_manifest(text: str) -> dict[str, Any]:
     """
     fields: dict[str, Any] = {}
     key = None
+    block_key: str | None = None
+    block_lines: list[str] = []
+
+    def flush_block() -> None:
+        nonlocal block_key, block_lines
+        if block_key is not None:
+            fields[block_key] = "\n".join(block_lines).strip()
+        block_key = None
+        block_lines = []
+
     for raw in text.splitlines():
         line = raw.strip()
+        if block_key is not None:
+            # A blank or indented line continues the block; only a line with
+            # content starting at column 0 is a new top-level entry.
+            if line == "" or raw[:1] in (" ", "\t"):
+                block_lines.append(line)
+                continue
+            flush_block()
         match = re.match(r"^([a-z][a-z0-9_-]*)\s*:\s*(.*)$", line, re.IGNORECASE)
         if match:
             key = match.group(1).lower().replace("-", "_")
-            fields[key] = match.group(2).strip()
+            value = match.group(2).strip()
+            if _is_block_indicator(value):
+                fields.setdefault(key, "")
+                block_key = key
+                block_lines = []
+            else:
+                fields[key] = value
         elif key and line.startswith(("-", "*")):
             addition = line.lstrip("-* ").strip()
             fields[key] = f"{fields[key]}, {addition}" if fields[key] else addition
+    flush_block()
     for name in _MANIFEST_LIST_KEYS:
         fields[name] = _as_list(fields.get(name))
     for name in ("baseline_suite", "after_suite"):
