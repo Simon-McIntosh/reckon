@@ -44,7 +44,7 @@ def _record(*, tmp_path: Path, phase: str, process_alive: bool | None, **overrid
     return record, log, manifest
 
 
-@pytest.mark.parametrize("status", ["complete", "blocked", "failed"])
+@pytest.mark.parametrize("status", ["complete", "failed"])
 def test_terminal_manifest_survives_an_alive_process_and_a_newer_log(
     tmp_path, status
 ) -> None:
@@ -58,8 +58,55 @@ def test_terminal_manifest_survives_an_alive_process_and_a_newer_log(
 
     assert row["manifest_status"] == status
     assert row["manifest_present"] is True
-    assert row["classification"] in {"completed_unpromoted", "blocked", "failed"}
+    assert row["classification"] in {"completed_unpromoted", "failed"}
     assert row["classification"] != "running"
+
+
+def test_blocked_manifest_is_discarded_by_a_resumed_workers_newer_log(
+    tmp_path,
+) -> None:
+    """Blocked is a solicitation, not a verdict: resume clears it once the
+    worker's process is alive again and has produced a newer log line."""
+    record, log, manifest = _record(tmp_path=tmp_path, phase="working", process_alive=True)
+    now = time.time()
+    _touch(manifest, text="node: the-node\nstatus: blocked\ncommits: HEAD\n", mtime=now - 10)
+    _touch(log, text='{"type":"turn.started"}\n', mtime=now)
+
+    row = recovery.classify_pointer(record, now_seconds=now + 1)
+
+    assert row["manifest_present"] is False
+    assert row["manifest_status"] is None
+    assert row["classification"] != "blocked"
+
+
+def test_blocked_manifest_survives_a_dead_process(tmp_path) -> None:
+    """A newer log line from a dead process is not a resume, so the
+    solicitation still stands."""
+    record, log, manifest = _record(tmp_path=tmp_path, phase="working", process_alive=False)
+    now = time.time()
+    _touch(manifest, text="node: the-node\nstatus: blocked\ncommits: HEAD\n", mtime=now - 10)
+    _touch(log, text='{"type":"turn.started"}\n', mtime=now)
+
+    row = recovery.classify_pointer(record, now_seconds=now + 1)
+
+    assert row["manifest_present"] is True
+    assert row["manifest_status"] == "blocked"
+    assert row["classification"] == "blocked"
+
+
+def test_blocked_manifest_survives_an_older_log(tmp_path) -> None:
+    """An alive process with no activity since the manifest was written has
+    not answered the solicitation yet."""
+    record, log, manifest = _record(tmp_path=tmp_path, phase="working", process_alive=True)
+    now = time.time()
+    _touch(log, text='{"type":"turn.started"}\n', mtime=now - 10)
+    _touch(manifest, text="node: the-node\nstatus: blocked\ncommits: HEAD\n", mtime=now)
+
+    row = recovery.classify_pointer(record, now_seconds=now + 1)
+
+    assert row["manifest_present"] is True
+    assert row["manifest_status"] == "blocked"
+    assert row["classification"] == "blocked"
 
 
 def test_manifest_reporting_terminal_is_read_before_the_phase_ever_advances(

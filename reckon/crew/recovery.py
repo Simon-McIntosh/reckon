@@ -181,13 +181,15 @@ def classify_pointer(
     age = None
     if log.is_file():
         age = max(0, int(_utc_seconds() - log.stat().st_mtime))
-    # Superseded-by-newer-activity applies only to a manifest that is not yet a
-    # verdict. Complete, blocked and failed are facts a later log line cannot
-    # undo — discarding one of those through this staleness path is how the
-    # strongest completion signal on disk gets erased.
+    # Superseded-by-newer-activity applies to any manifest that is not yet a
+    # verdict. Complete and failed are facts a later log line cannot undo, so
+    # they stay protected from this staleness path. Blocked is a solicitation
+    # rather than a verdict: a worker that resumes and produces a newer log
+    # line has answered it, and discarding the stale manifest is how that
+    # answer becomes visible again.
     if (
         manifest_status
-        and manifest_status not in {"complete", "blocked", "failed"}
+        and manifest_status not in {"complete", "failed"}
         and alive is True
         and log.is_file()
         and manifest.is_file()
