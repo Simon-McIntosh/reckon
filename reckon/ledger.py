@@ -536,6 +536,45 @@ def register_member(
 # ── Completed runs ──────────────────────────────────────────────────────────
 
 
+def measured_throughput(throughput: Mapping[str, Any] | None) -> dict[str, Any] | None:
+    """Keep only the rates a throughput block actually measured, or nothing.
+
+    An unmeasured figure is dropped rather than stored as null, and a block that
+    measured nothing at all returns ``None`` so the caller omits the field. The
+    distinction is the point: a stored zero, or an empty mapping, reads to every
+    later consumer as a rate that was taken and found to be nil, which is a
+    different claim from never having had a span to rate tokens against.
+    """
+    if not throughput:
+        return None
+    measured = {
+        key: value
+        for key, value in throughput.items()
+        if key != "detail" and value is not None
+    }
+    if not measured:
+        return None
+    detail = str(throughput.get("detail") or "")
+    if detail:
+        measured["detail"] = detail
+    return dict(sorted(measured.items()))
+
+
+def promoted_budget_fallback(
+    fallback: Mapping[str, Any] | None,
+) -> dict[str, Any] | None:
+    """Carry a lane substitution onto the record, or nothing when none happened.
+
+    Absent rather than empty for the same reason as the rate above: a run that
+    ran on the lane its caller named and one that was handed over from a held
+    lane must not read alike, or a calibration slice credits the substitute's
+    work to the backend nobody dispatched to.
+    """
+    if not fallback:
+        return None
+    return dict(fallback)
+
+
 def build_record(
     *,
     run_id: str,
@@ -567,6 +606,8 @@ def build_record(
     scope_changed: bool = False,
     session_id: str | None = None,
     budget: Mapping[str, Any] | None = None,
+    throughput: Mapping[str, Any] | None = None,
+    budget_fallback: Mapping[str, Any] | None = None,
     lineage: Mapping[str, Any] | None = None,
     shadow_patch: str = "",
     unreconciled_override: Mapping[str, Any] | None = None,
@@ -613,7 +654,7 @@ def build_record(
     stored_shadow_controlled = (
         shadow_controlled(stored_lineage) if is_shadow_lineage else None
     )
-    return {
+    record: dict[str, Any] = {
         "run_id": str(run_id),
         "plan": str(plan),
         "section": normalize_section(section),
@@ -661,6 +702,18 @@ def build_record(
             None if unreconciled_override is None else dict(unreconciled_override)
         ),
     }
+    # Both of these are absent from a record that has nothing to say about them,
+    # which is why they are set after the literal rather than in it. The rate a
+    # run generated at and the lane it was handed over to are measurements; a
+    # record carrying the key with a null or an empty value would assert that
+    # the measurement was taken.
+    stored_throughput = measured_throughput(throughput)
+    if stored_throughput is not None:
+        record["throughput"] = stored_throughput
+    stored_fallback = promoted_budget_fallback(budget_fallback)
+    if stored_fallback is not None:
+        record["budget_fallback"] = stored_fallback
+    return record
 
 
 def measurement_exclusion_reason(record: Mapping[str, Any]) -> str | None:

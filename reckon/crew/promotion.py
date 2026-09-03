@@ -5,7 +5,7 @@ import json
 import os
 import re
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
@@ -640,6 +640,10 @@ class StreamMeasures:
     worker_seconds: int | None
     budget: dict[str, Any]
     session_id: str | None
+    # The rate the run generated at, read from the same terminal observation the
+    # budget comes from. It has to be carried out of here because the streams it
+    # is derived from are the run's, and nothing downstream re-parses them.
+    throughput: dict[str, Any] = field(default_factory=dict)
 
 
 def _section_anchor(section: Any) -> str:
@@ -731,6 +735,7 @@ def _terminal_stream_data(
 
     timestamps: list[tuple[datetime, str]] = []
     session_id = None
+    throughput: dict[str, Any] = {}
     for candidate in paths:
         observation = _backends.observe_log(
             backend_name=backend_name,
@@ -739,6 +744,10 @@ def _terminal_stream_data(
         )
         if observation.terminal:
             budget = dict(observation.budget)
+            # The last turn that finished, not a fold across turns: the spans a
+            # resume reports are its own, and adding them to an earlier turn's
+            # would rate tokens against a clock that never ran for them.
+            throughput = dict(observation.throughput)
         session_id = observation.session_id or session_id
         with candidate.open(encoding="utf-8", errors="replace") as handle:
             events, _malformed = _backends.parse_events(handle)
@@ -761,6 +770,7 @@ def _terminal_stream_data(
             max(0, int((last[0] - first[0]).total_seconds())),
             budget,
             session_id,
+            throughput,
         )
 
     newest = max(candidate.stat().st_mtime for candidate in paths)
@@ -769,7 +779,9 @@ def _terminal_stream_data(
         .isoformat(timespec="seconds")
         .replace("+00:00", "Z")
     )
-    return StreamMeasures(completed, "stream_mtime", None, budget, session_id)
+    return StreamMeasures(
+        completed, "stream_mtime", None, budget, session_id, throughput
+    )
 
 
 def complete(
@@ -1262,6 +1274,8 @@ def _complete_locked(
         scope_changed=scope_changed,
         session_id=session_id,
         budget=measured_budget,
+        throughput=stream.throughput,
+        budget_fallback=record.get("budget_fallback"),
         lineage=record.get("lineage"),
         shadow_patch=shadow_patch,
         unreconciled_override=record.get("unreconciled_override"),

@@ -1697,3 +1697,227 @@ def test_the_mcp_surface_holds_at_five_tools() -> None:
     names = {item.name for item in mcp.mcp._tool_manager.list_tools()}
 
     assert names == {"_read_plan", "_edit_plan", "_roadmap", "_audit", "_crew"}
+
+
+# ── Two in-flight measurements survive the pointer they were held on ────────
+
+
+def _measured_config(default: str) -> dict:
+    """CONFIG plus a second CLI lane, so a hand-over has somewhere to go."""
+    return {
+        **CONFIG,
+        "default_backend": default,
+        "backends": {
+            **CONFIG["backends"],
+            "beta": {
+                "launch": "cli",
+                "command": "claude",
+                "sandbox": "worktree-full",
+                "time_budget": "25m",
+            },
+        },
+        "budget": {
+            "utilisation_ceiling_pct": 100,
+            "resume_reserve_pct": 5,
+            "exhausted_statuses": [],
+        },
+    }
+
+
+def _row_from_disk(repo: Path, run_id: str) -> dict:
+    """Read one promoted row back out of the ledger file itself.
+
+    Deliberately not from the promotion return value and not from the pointer:
+    the claim under test is that the figures reach durable storage, and a record
+    handed back in memory cannot demonstrate that.
+    """
+    stored = json.loads((repo / "docs" / "state" / PROJECT / "crew.json").read_text())
+    rows = [
+        item for item in stored["data"]["runs"] if str(item.get("run_id")) == run_id
+    ]
+    assert len(rows) == 1
+    return rows[0]
+
+
+def _terminal_result(fixture: str) -> dict:
+    """The fixture's own terminal event, so expectations are derived from it."""
+    events = [
+        json.loads(line)
+        for line in (FIXTURES / fixture).read_text().splitlines()
+        if line.strip()
+    ]
+    return events[-1]
+
+
+def _outside_state() -> list[tuple[str, int]]:
+    """Snapshot the durable state this test suite must never touch.
+
+    Two directories, because the two hazards are different. The live pointer
+    directory under this workstation's real config home is where a test that
+    forgets its isolation corrupts another session's view of what is running.
+    The checkout's own state tree is where it would corrupt the project's real
+    ledger. An isolated read does not prove an isolated write, so both are
+    compared before and after a promotion; absence is a legitimate state.
+    """
+    isolated = os.environ.pop("RECKON_HOME", None)
+    try:
+        roots = [_store._config_home() / "crew" / "live"]
+    finally:
+        if isolated is not None:
+            os.environ["RECKON_HOME"] = isolated
+    roots.append(Path(__file__).resolve().parents[1] / "docs" / "state")
+    return sorted(
+        (str(path), path.stat().st_mtime_ns)
+        for root in roots
+        if root.exists()
+        for path in root.rglob("*")
+        if path.is_file()
+    )
+
+
+def test_a_promoted_row_carries_the_throughput_its_observation_measured(
+    home, repo
+) -> None:
+    """The rate a run generated at must outlive the pointer that measured it.
+
+    Every figure here is read off the terminal event the worker's own stream
+    carries. Discarding them at promotion is what makes a past slice
+    unrecomputable: the only way to learn how fast a configuration produced is
+    to dispatch it again, which spends the resource the question is about.
+    """
+    outside = _outside_state()
+    config = _measured_config("beta")
+    record = crew.dispatch(
+        node=_node(),
+        project=PROJECT,
+        repo=repo,
+        config=config,
+        session="rate-session",
+        launcher=lambda plan, *, log_path, stderr_path, prompt_path: os.getpid(),
+    )
+    Path(record["log_path"]).write_text((FIXTURES / "claude-turn.jsonl").read_text())
+    result = _terminal_result("claude-turn.jsonl")
+    generation_seconds = result["duration_api_ms"] / 1000
+    window = min(entry["contextWindow"] for entry in result["modelUsage"].values())
+
+    crew.complete(record["run_id"], gate="passed")
+
+    row = _row_from_disk(repo, record["run_id"])
+    measured = row["throughput"]
+    assert measured["generation_seconds"] == generation_seconds
+    assert measured["machine_seconds"] == round(
+        result["duration_ms"] / 1000 - generation_seconds, 3
+    )
+    assert measured["tokens_per_second"] == round(
+        measured["generated_tokens"] / generation_seconds, 2
+    )
+    assert measured["input_utilisation_pct"] == round(
+        100.0 * measured["peak_input_tokens"] / window, 1
+    )
+    assert _outside_state() == outside
+
+
+def test_a_run_that_measured_no_rate_omits_the_keys_it_could_not_measure(
+    home, repo
+) -> None:
+    """A missing span must read as missing, never as a rate of nothing.
+
+    This backend reports what a turn consumed but not how long inference took,
+    so it can support a token count and no generation rate at all. The row must
+    carry the counts it has and omit the rest — a stored null or zero would tell
+    a later reader the rate was measured and found to be nil, which is a claim
+    about the model rather than about the stream.
+    """
+    record = _dispatch(repo, fixture="codex-turn.jsonl")
+
+    crew.complete(record["run_id"], gate="passed")
+
+    row = _row_from_disk(repo, record["run_id"])
+    measured = row["throughput"]
+    assert measured["generated_tokens"] > 0
+    for key in (
+        "generation_seconds",
+        "machine_seconds",
+        "tokens_per_second",
+        "input_utilisation_pct",
+    ):
+        assert key not in measured
+    assert None not in measured.values()
+
+
+def test_a_run_with_no_terminal_observation_carries_no_throughput_at_all(
+    home, repo
+) -> None:
+    """Nothing measured means no block, not an empty one.
+
+    An empty mapping is the failure this guards: it is truthy enough to survive
+    a careless ``if row.get("throughput")`` and reads to a human as a
+    measurement that came back blank.
+    """
+    record = _dispatch(repo)
+    Path(record["log_path"]).write_text("")
+
+    crew.complete(record["run_id"], gate="passed")
+
+    assert "throughput" not in _row_from_disk(repo, record["run_id"])
+
+
+def test_a_promoted_row_carries_the_budget_fallback_its_pointer_held(
+    home, repo
+) -> None:
+    """A hand-over recorded only on the pointer is lost at promotion.
+
+    The substitution is the one fact that stops a calibration slice crediting a
+    fallback run to the lane the caller named, and the pointer holding it is
+    deleted by the very act that writes the row.
+    """
+    outside = _outside_state()
+    config = _measured_config("alpha")
+    config["backends"] = {
+        **config["backends"],
+        "alpha": {**config["backends"]["alpha"], "fallback": "beta"},
+    }
+    ledger.append_run(
+        PROJECT,
+        ledger.build_record(
+            run_id="r-spent",
+            plan="plan-a",
+            gate="passed",
+            agent={"backend": "alpha"},
+            completed_at="2099-01-01T00:00:00Z",
+            budget={
+                "headroom": "known",
+                "utilisation_pct": 100.0,
+                "resets_at": "2099-01-01T01:00:00Z",
+            },
+        ),
+        root=repo,
+    )
+    record = crew.dispatch(
+        node=_node(),
+        project=PROJECT,
+        repo=repo,
+        config=config,
+        session="handover-session",
+        launcher=lambda plan, *, log_path, stderr_path, prompt_path: os.getpid(),
+    )
+    assert record["backend"] == "beta"
+    assert record["budget_fallback"]["requested_backend"] == "alpha"
+
+    crew.complete(record["run_id"], gate="passed")
+
+    fallback = _row_from_disk(repo, record["run_id"])["budget_fallback"]
+    assert fallback["requested_backend"] == "alpha"
+    assert fallback["used_backend"] == "beta"
+    assert fallback["hold"]["held"] is True
+    assert fallback["hold"]["backend"] == "alpha"
+    assert _outside_state() == outside
+
+
+def test_a_run_that_was_never_handed_over_omits_the_fallback_key(home, repo) -> None:
+    """Ran-on-the-lane-asked-for and was-substituted must not read alike."""
+    record = _dispatch(repo, fixture="codex-turn.jsonl")
+
+    crew.complete(record["run_id"], gate="passed")
+
+    assert "budget_fallback" not in _row_from_disk(repo, record["run_id"])
