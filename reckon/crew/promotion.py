@@ -784,6 +784,74 @@ def _terminal_stream_data(
     )
 
 
+def _recoverable_session(record: Mapping[str, Any]) -> dict[str, str] | None:
+    """The session a resume could still continue, and where it was found.
+
+    Two sources, and the second is the load-bearing one: a pointer carrying no
+    session id is not evidence of an unresumable run, because a resume that
+    finds none on the record re-reads the run's stream for it. Reading only the
+    pointer is what makes a recoverable run look dead.
+
+    An unreadable stream answers nothing rather than raising here: this runs
+    before the irreversible half of a promotion, and an instrument that fails
+    must not become a refusal of its own.
+    """
+    pointer_session = str(record.get("session_id") or "").strip()
+    if pointer_session:
+        return {"session_id": pointer_session, "source": "pointer"}
+    try:
+        stream_session = str(_terminal_stream_data(record).session_id or "").strip()
+    except (CrewError, OSError):
+        return None
+    if stream_session:
+        return {"session_id": stream_session, "source": "stream"}
+    return None
+
+
+def _require_resume_waiver(
+    run_id: str,
+    record: Mapping[str, Any],
+    *,
+    verdict: str,
+    waiver_reason: str,
+) -> dict[str, str] | None:
+    """Refuse a promotion that would delete a resume path, unless it is stated.
+
+    Promotion removes the pointer, and the pointer is where a resume finds the
+    session it continues. A run that stopped without finishing is exactly the
+    one whose session is worth keeping — a provider refusal classifies as
+    blocked and leaves a session holding every turn of the worker's
+    orientation, which promotion then discards while reporting success.
+
+    So the two facts are checked together, before anything irreversible runs: a
+    blocked classification and a session either source can still reach. A
+    passing gate is never touched, and neither is any other terminal state. A
+    caller who genuinely wants the discard states why, and the reason lands on
+    the ledger row so a deliberate one is afterwards distinguishable from an
+    accident.
+    """
+    if verdict == "passed":
+        return None
+    from reckon.crew.recovery import classify_pointer
+
+    if str(classify_pointer(record).get("classification") or "") != "blocked":
+        return None
+    found = _recoverable_session(record)
+    if found is None:
+        return None
+    reason = str(waiver_reason).strip()
+    if reason:
+        return {**found, "reason": reason}
+    raise CrewError(
+        f"run {run_id!r} is classified blocked and its session "
+        f"{found['session_id']} is still recoverable from the {found['source']}, "
+        "so promoting it would delete the only record a resume needs. Continue "
+        f"it with `reckon crew resume --run {run_id} --advice <answer>`, or "
+        "promote anyway with --waive-resume-path REASON stating why the "
+        "session is being discarded"
+    )
+
+
 def complete(
     run_id: str,
     *,
@@ -801,6 +869,7 @@ def complete(
     no_commit: str = "",
     suite_delta_waiver: str = "",
     boundary_waiver: str = "",
+    resume_waiver: str = "",
 ) -> dict[str, Any]:
     """Promote a run, or finish cleanup when its record already landed."""
     verdict = str(gate).strip().lower()
@@ -837,6 +906,12 @@ def complete(
             commits=commit_list,
             no_commit_reason=no_commit,
         )
+        resume_waived = _require_resume_waiver(
+            run_id,
+            record,
+            verdict=verdict,
+            waiver_reason=resume_waiver,
+        )
         suite_delta = _evaluate_suite_delta(
             run_id,
             record,
@@ -858,6 +933,7 @@ def complete(
             require_gate_check=require_gate_check,
             suite_delta=suite_delta,
             boundary_waiver=boundary_waiver,
+            resume_waived=resume_waived,
         )
 
 
@@ -1081,6 +1157,7 @@ def _complete_locked(
     require_gate_check: bool = False,
     suite_delta: Mapping[str, Any] | None = None,
     boundary_waiver: str = "",
+    resume_waived: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     """Promote a finished run into the owning repository's committed ledger.
 
@@ -1291,6 +1368,11 @@ def _complete_locked(
         run["no_commit"] = str(no_commit).strip()
     if boundary_waived is not None:
         run["boundary_waiver"] = boundary_waived
+    # A discarded resume path survives on the row with the session it discarded
+    # and the reason given, so an audit can tell a deliberate discard from the
+    # accidental one this refusal exists to prevent.
+    if resume_waived is not None:
+        run["resume_waiver"] = dict(resume_waived)
     watch_override = record.get("watch_override")
     if isinstance(watch_override, Mapping):
         run["watch_override"] = dict(watch_override)
