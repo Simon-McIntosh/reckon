@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T16:28:16",
+  "updated": "2026-09-03T17:02:56",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -44954,6 +44954,114 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260903T145356024303-the-transition-carries-the-lineage-it-is-dimmed-by",
+        "plan": "fleet-monitor-legibility",
+        "section": "\u00a76",
+        "node": "the-transition-carries-the-lineage-it-is-dimmed-by",
+        "node_definition": {
+          "done_when": "The ticker's is_shadow reads lineage.kind or a shadow flag off the event and its docstring states it reads the lineage the record carries; the producer supplies neither, so no real shadow row has ever dimmed. Dispatch already writes lineage onto the pointer and both promotion and routing read it from there, so this is a passthrough and not a new fact. Done when a transition emitted by the producer FROM A REAL SHADOW POINTER carries the lineage, asserted by constructing the pointer the way dispatch writes it and reading the emitted event - never by handing a synthetic event to the renderer, which is how this defect survived a green suite four times before. Thread it at BOTH sites: the snapshot builder and the transition builder that rebuilds the outgoing event field by field, because threading only the first leaves the row undimmed and makes the fix look applied - measured on the role field, which needed both. A pointer with no lineage keeps rendering undimmed rather than raising. AND CLOSE THE GAP THAT LET THIS THROUGH: the contract test asserting the snapshot carries a value for every field the ticker's column set reads did not catch this, because lineage drives whole-row dimming rather than a column, so extend it to cover every event field the renderer reads by any means, not only those that occupy a column. Measured over tests/test_crew_recovery.py plus tests/test_crew_ticker.py tests/test_crew_ticker_layout.py tests/test_crew_watch_stream.py tests/test_crew_session_delivery.py in ONE invocation: zero failures against a base of zero, so any failure is yours. At least one added assertion must fail against base 584420c. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 1.0,
+          "goal": "A shadow run's row dims on the live path, because the producer carries the lineage the renderer already reads.",
+          "id": "the-transition-carries-the-lineage-it-is-dimmed-by",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/shadow-lineage-manifest.md",
+          "plan": "fleet-monitor-legibility",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_crew_recovery.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "flash-b",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T14:54:01Z",
+        "completed_at": "2026-09-03T15:02:03.048Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 475,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 482,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "584420cba399670639a910acedc8ddd7648ac129",
+        "commits": [
+          "7d141d94986ffc6542eefbb73c0b290319007d8d"
+        ],
+        "changed_lines": {
+          "added": 104,
+          "removed": 4,
+          "files": 2
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_recovery.py tests/test_crew_ticker.py tests/test_crew_ticker_layout.py tests/test_crew_watch_stream.py tests/test_crew_session_delivery.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/sl.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/shadow-lineage-manifest.md",
+        "scope_changed": false,
+        "session_id": "1b5838dd-5ae6-4133-8e9b-6fc028c8ddde",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 4377868,
+            "input_tokens_cumulative": 4377868,
+            "output_tokens": 28403,
+            "output_tokens_cumulative": 28403,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 22.599415,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 22.599415
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -45028,6 +45136,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 731
+    "_version": 732
   }
 }
