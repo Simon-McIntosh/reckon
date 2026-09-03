@@ -408,3 +408,153 @@ def test_a_narrow_width_still_widens_to_fit_the_role_column():
     assert ticker_module.ROLE > 0
     line = plain(grid.render(_event()))
     assert len(line) == grid.width
+
+
+# ── The agent column: a configured alias and effort spelling, or no table ────
+
+
+def _stamped_agent(**overrides):
+    """A run pointer's agent record as dispatch stamps it today."""
+    return {
+        "backend": "claude",
+        "launch": "cli",
+        "model": "claude-sonnet-5",
+        "alias": "sonnet5",
+        "effort": "medium",
+        **overrides,
+    }
+
+
+def test_a_configured_alias_renders_in_place_of_the_model_id(grid):
+    """The alias is the whole point: it spares the reader the model line.
+
+    `claude-sonnet-5/medium` spends eighteen columns to say what `sonnet5·me`
+    says in ten, and the alias lives in configuration beside the model it
+    shortens instead of in a vendor table in the renderer.
+    """
+    line = plain(grid.render(_event(agent=_stamped_agent(alias="sonnet5"))))
+    assert "sonnet5·me" in line
+    assert "claude-sonnet-5" not in line
+    assert len(line) == 180
+
+
+def test_a_backend_with_no_alias_renders_a_mechanical_form_not_an_empty_cell(grid):
+    """An unaliased model must not read as missing data.
+
+    Without an alias the column shows the model itself — the mechanical
+    fallback — rather than the empty cell it used to render.
+    """
+    long = _stamped_agent(model="deepseek-v4-flash", effort="xhigh", alias=None)
+    line = plain(grid.render(_event(agent=long)))
+    assert "deepseek-v4-flash" in line
+    assert "…" in line
+    assert len(line) == 180
+
+
+def test_a_declared_effort_spelling_renders_in_place_of_the_derived_one(grid):
+    """A declared spelling wins over the first-two-letters derivation.
+
+    Both are stamped from configuration at dispatch; the declared one is the
+    operator's explicit choice, so it is what displays.
+    """
+    agent = _stamped_agent(effort="high", effort_spelling="hi")
+    line = plain(grid.render(_event(agent=agent)))
+    assert "sonnet5·hi" in line
+
+
+def test_an_undeclared_effort_renders_its_first_two_characters_lowercased(grid):
+    """No table, so an effort nobody has configured still renders.
+
+    The first two characters derive collision-free across the real ladder and
+    stay distinct for medium, max and minimal.
+    """
+    line = plain(grid.render(_event(agent=_stamped_agent(effort="xhigh"))))
+    assert "sonnet5·xh" in line
+
+
+def test_the_derivation_lowercases_the_effort_word(grid):
+    line = plain(grid.render(_event(agent=_stamped_agent(effort="MEDIUM"))))
+    assert "sonnet5·me" in line
+
+
+def test_max_renders_mx_from_a_declared_configuration_spelling(grid):
+    """`max` would derive `ma`; the operator's declared spelling is `mx`.
+
+    The override is configuration data — never a table in code — and it is the
+    mechanism that keeps a declared effort spelling rendering in place of the
+    derived one.
+    """
+    agent = _stamped_agent(effort="max", effort_spelling="mx")
+    line = plain(grid.render(_event(agent=agent)))
+    assert "sonnet5·mx" in line
+    assert "sonnet5·ma" not in line
+
+
+def test_no_suffix_exceeds_two_characters(grid):
+    """The suffix column is fixed at two, whatever the record carries.
+
+    A declared spelling longer than two is cut to the column rather than
+    allowed to shove the next field off its screen column.
+    """
+    agent = _stamped_agent(effort="high", effort_spelling="extra")
+    line = plain(grid.render(_event(agent=agent)))
+    assert "sonnet5·ex" in line
+    assert "extra" not in line
+    assert len(line) == 180
+
+
+def test_a_pointer_written_before_this_change_still_renders_a_label(grid):
+    """A precomposed `model/effort` string must keep working, not raise.
+
+    This is the backward-compatibility negative: a pointer authored before the
+    agent record became a mapping still carries a string, and it renders as
+    today's pane did.
+    """
+    line = plain(grid.render(_event(agent="gpt-5.6-sol/medium")))
+    assert "gpt-5.6-sol/medium" in line
+    assert len(line) == 180
+
+
+def test_an_effort_only_record_renders_its_suffix_without_a_stray_separator(grid):
+    line = plain(grid.render(_event(agent={"effort": "high"})))
+    assert "hi" in line
+    assert "·hi" not in line
+    assert len(line) == 180
+
+
+def test_dispatch_stamps_the_label_and_a_later_config_edit_cannot_restate_it(grid):
+    """The alias and spelling are read at dispatch, never from current config.
+
+    A configuration edit after the run starts must not silently rewrite what
+    ran: the rendered label comes from the stamped record, so it is unchanged
+    even though a fresh dispatch would now say something else.
+    """
+    from reckon.crew.dispatch import _stamp_agent_display
+
+    shipped = {
+        "launch": "cli",
+        "model": "claude-sonnet-5",
+        "effort": "medium",
+        "alias": "sonnet5",
+        "effort_spelling": {"medium": "me", "max": "mx"},
+    }
+    stamped = _stamp_agent_display(
+        {"model": "claude-sonnet-5", "effort": "medium"}, shipped
+    )
+    line = plain(grid.render(_event(agent=stamped)))
+    assert "sonnet5·me" in line
+
+    # The operator later edits the configuration — alias dropped, spelling gone.
+    edited = {"launch": "cli", "model": "claude-sonnet-5", "effort": "medium"}
+
+    # A dispatch under the edited configuration would now say the model.
+    restated = _stamp_agent_display(
+        {"model": "claude-sonnet-5", "effort": "medium"}, edited
+    )
+    after = plain(grid.render(_event(agent=restated)))
+    assert "claude-sonnet-5·me" in after
+    assert "sonnet5" not in after
+
+    # But the already-recorded pointer still renders what actually ran.
+    again = plain(grid.render(_event(agent=stamped)))
+    assert again == line

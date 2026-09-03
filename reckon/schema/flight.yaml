@@ -203,16 +203,37 @@ slots:
   value:
     description: Value associated with an environment-variable name.
 
+  spelling:
+    description: The display suffix rendered for an effort level's word.
+    range: string
+
   model:
     description: >-
       Model identifier passed to this backend. User data; free text so that no
       provider vocabulary is encoded here.
+
+  alias:
+    description: >-
+      Display label rendered in the fleet pane in place of this backend's model
+      identifier. The spelling belongs beside the model it shortens and is
+      decided by whoever writes the configuration; the schema supplies none.
+    range: string
 
   effort:
     description: >-
       Reasoning-effort level passed to this backend. Free text because each
       backend defines its own vocabulary, and because an effort ladder must not
       be fixed by reckon.
+
+  effort_spelling:
+    description: >-
+      Display suffixes for this backend's effort levels, keyed by the effort
+      word. A declared spelling replaces the derived two-character suffix; an
+      effort with no entry renders its first two characters lowercased. User
+      data; the schema enumerates no effort ladder.
+    range: EffortSpelling
+    multivalued: true
+    inlined: true
 
   sandbox:
     description: Filesystem blast radius granted to workers of this backend.
@@ -405,7 +426,9 @@ classes:
       - catalog
       - environment
       - model
+      - alias
       - effort
+      - effort_spelling
       - sandbox
       - session_reuse
       - budget_check
@@ -423,6 +446,12 @@ classes:
     slots:
       - name
       - value
+
+  EffortSpelling:
+    description: One effort level and its declared display suffix.
+    slots:
+      - name
+      - spelling
 
   RoleConfig:
     description: >-

@@ -220,6 +220,39 @@ def _display_role(role: Any) -> str:
     return ROLE_DISPLAY.get(spelled, spelled)
 
 
+def _derive_effort(effort: Any) -> str:
+    """The first two characters, lowercased — no table, so a fresh word works.
+
+    Collision-free across the real ladder (lo, me, hi, xh, ma, mi, ex), which
+    is why an effort nobody has configured yet still renders.
+    """
+    word = str(effort or "").strip()
+    return word[:2].lower()
+
+
+def _agent_label(agent: Any) -> str:
+    """The agent column label: alias plus an effort suffix, or the record as it stands.
+
+    A pointer written before this change carries a precomposed ``model/effort``
+    string and must still render; a stamped pointer carries a mapping whose
+    alias and effort spelling were decided at dispatch, so a later
+    configuration edit cannot restate what ran. An unaliased model renders
+    itself rather than an empty cell, and the effort suffix never exceeds two
+    characters. The spelling is configuration data, never a table in code.
+    """
+    if not isinstance(agent, Mapping):
+        return str(agent or "")
+    model = str(agent.get("model") or "").strip()
+    base = str(agent.get("alias") or "").strip() or model
+    effort = str(agent.get("effort") or "").strip()
+    suffix = str(agent.get("effort_spelling") or "").strip() or _derive_effort(effort)
+    if len(suffix) > 2:
+        suffix = suffix[:2]
+    if not suffix:
+        return base
+    return base + "·" + suffix if base else suffix
+
+
 class Ticker:
     """Renders transitions into one grid, remembering each worker's hue.
 
@@ -287,7 +320,7 @@ class Ticker:
             (" ", None),
             (f"{to_state:<{STATE}}", hues.get(to_state, "dim")),
             (" " * GAP, None),
-            (f"{elide(str(event.get('agent') or ''), AGENT):<{AGENT}}", "dim"),
+            (f"{elide(_agent_label(event.get('agent')), AGENT):<{AGENT}}", "dim"),
             (" " * GAP, None),
         ]
 

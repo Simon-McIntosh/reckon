@@ -4,6 +4,13 @@
             "additionalProperties": false,
             "description": "One worker backend and the routing knobs that apply to it.",
             "properties": {
+                "alias": {
+                    "description": "Display label rendered in the fleet pane in place of this backend's model identifier. The spelling belongs beside the model it shortens and is decided by whoever writes the configuration; the schema supplies none.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
                 "auth_check": {
                     "description": "Argument vector run to test whether this backend is authenticated, as an exit status. Optional, and user data: it is how a provider-specific credential check reaches reckon without reckon knowing any provider. Availability probing reports the result and never acts on it.",
                     "items": {
@@ -43,6 +50,27 @@
                     "description": "Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.",
                     "type": [
                         "string",
+                        "null"
+                    ]
+                },
+                "effort_spelling": {
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/EffortSpelling__identifier_optional"
+                            },
+                            {
+                                "description": "The display suffix rendered for an effort level's word.",
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "description": "Display suffixes for this backend's effort levels, keyed by the effort word. A declared spelling replaces the derived two-character suffix; an effort with no entry renders its first two characters lowercased. User data; the schema enumerates no effort ladder.",
+                    "type": [
+                        "object",
                         "null"
                     ]
                 },
@@ -119,6 +147,13 @@
             "additionalProperties": false,
             "description": "One worker backend and the routing knobs that apply to it.",
             "properties": {
+                "alias": {
+                    "description": "Display label rendered in the fleet pane in place of this backend's model identifier. The spelling belongs beside the model it shortens and is decided by whoever writes the configuration; the schema supplies none.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
                 "auth_check": {
                     "description": "Argument vector run to test whether this backend is authenticated, as an exit status. Optional, and user data: it is how a provider-specific credential check reaches reckon without reckon knowing any provider. Availability probing reports the result and never acts on it.",
                     "items": {
@@ -158,6 +193,27 @@
                     "description": "Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.",
                     "type": [
                         "string",
+                        "null"
+                    ]
+                },
+                "effort_spelling": {
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/EffortSpelling__identifier_optional"
+                            },
+                            {
+                                "description": "The display suffix rendered for an effort level's word.",
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "description": "Display suffixes for this backend's effort levels, keyed by the effort word. A declared spelling replaces the derived two-character suffix; an effort with no entry renders its first two characters lowercased. User data; the schema enumerates no effort ladder.",
+                    "type": [
+                        "object",
                         "null"
                     ]
                 },
@@ -287,6 +343,48 @@
                 }
             },
             "title": "CatalogConfig",
+            "type": "object"
+        },
+        "EffortSpelling": {
+            "additionalProperties": false,
+            "description": "One effort level and its declared display suffix.",
+            "properties": {
+                "name": {
+                    "description": "Map key for an inlined entry.",
+                    "type": "string"
+                },
+                "spelling": {
+                    "description": "The display suffix rendered for an effort level's word.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "title": "EffortSpelling",
+            "type": "object"
+        },
+        "EffortSpelling__identifier_optional": {
+            "additionalProperties": false,
+            "description": "One effort level and its declared display suffix.",
+            "properties": {
+                "name": {
+                    "description": "Map key for an inlined entry.",
+                    "type": "string"
+                },
+                "spelling": {
+                    "description": "The display suffix rendered for an effort level's word.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "required": [],
+            "title": "EffortSpelling",
             "type": "object"
         },
         "EnvironmentVariable": {

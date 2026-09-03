@@ -899,6 +899,31 @@ def _peer_command(argv: list[str] | None = None) -> int:
     return 0
 
 
+def _stamp_agent_display(
+    agent: Mapping[str, Any], backend: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Freeze the alias and effort spelling decided at dispatch onto the run.
+
+    Both are display decisions made when the run starts, and both belong in the
+    operator's flight configuration. Persisting them beside the model the alias
+    shortens means a later configuration edit cannot silently restate what ran:
+    the fleet pane renders from the record, never from current config. Only the
+    declared values are carried here — the ticker derives a fallback from the
+    model and effort it already holds when either is absent.
+    """
+    stamped = dict(agent)
+    alias = str(backend.get("alias") or "").strip()
+    if alias:
+        stamped["alias"] = alias
+    spellings = backend.get("effort_spelling")
+    if isinstance(spellings, Mapping):
+        effort = str(agent.get("effort") or "").strip()
+        spelling = str(spellings.get(effort) or "").strip()
+        if spelling:
+            stamped["effort_spelling"] = spelling
+    return stamped
+
+
 @dataclass
 class DispatchPlan:
     """Everything a dispatch resolved, before anything on disk has changed.
@@ -925,7 +950,10 @@ class DispatchPlan:
     sandbox_write_roots: tuple[Path, ...] | None = None
 
     def as_dict(self) -> dict[str, Any]:
-        agent = _agent_configuration(self.backend, self.launch, self.backend_settings)
+        agent = _stamp_agent_display(
+            _agent_configuration(self.backend, self.launch, self.backend_settings),
+            self.backend_settings,
+        )
         if self.local:
             agent["local"] = True
         payload = {
@@ -1720,7 +1748,9 @@ def dispatch(
             repo=repo_root,
             explicitly_named=explicitly_named_peers,
         )
-    agent = _agent_configuration(backend_name, launch_kind, backend)
+    agent = _stamp_agent_display(
+        _agent_configuration(backend_name, launch_kind, backend), backend
+    )
     if local:
         agent["local"] = True
     committed_runs = ledger.runs(project, root=ledger_root)
