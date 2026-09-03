@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T01:52:27",
+  "updated": "2026-09-04T01:55:52",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -47780,6 +47780,257 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260903T215329577802-visibility-mount-and-sheet",
+        "plan": "spa-shell-scope-and-visibility",
+        "section": "\u00a72",
+        "node": "visibility-mount-and-sheet",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_spa_project_visibility.py -q passes with every case \u00a72 names, including mountedProjectRows returning rows whose plans_count is 0, the picker equalling visibleProjectRows, and the last visible project returning changed false locked true",
+          "estimated_hours": 2.5,
+          "goal": "Project visibility toggles for every registered project with the picker showing only visible rows and the configurator rendered as the canvas sheet",
+          "id": "visibility-mount-and-sheet",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T215329577802-visibility-mount-and-sheet/manifest.md",
+          "plan": "spa-shell-scope-and-visibility",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "docs/ui/shell-topbar.jsx",
+            "docs/ui/_shared.jsx",
+            "docs/ui/topbar.css",
+            "tests/test_spa_project_visibility.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-topbar",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "alias": "sonnet 5",
+          "backend": "claude",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T21:53:36Z",
+        "completed_at": "2026-09-03T23:52:33.745Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 7128,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 7137,
+        "stalled": true,
+        "time_budget": "40m",
+        "base_sha": "5958f485d571735925883e55c2ee63ee1cc92917",
+        "commits": [
+          "346c730099fb34502c0d1b267955be3475e04b1e"
+        ],
+        "changed_lines": {
+          "added": 308,
+          "removed": 90,
+          "files": 4
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_project_visibility.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T215329577802-visibility-mount-and-sheet/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T215329577802-visibility-mount-and-sheet/manifest.md",
+        "scope_changed": false,
+        "session_id": "25a7517b-9a8e-4370-a295-694b35cab7ba",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 0.81,
+          "rate_limit_type": "seven_day",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-09-07T20:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 0.75,
+          "tokens": {
+            "cache_creation_input_tokens": 147641,
+            "cache_creation_input_tokens_cumulative": 147641,
+            "cache_read_input_tokens": 512039,
+            "cache_read_input_tokens_cumulative": 512039,
+            "inference_geo": "not_available",
+            "input_tokens": 8,
+            "input_tokens_cumulative": 8,
+            "output_tokens": 2976,
+            "output_tokens_cumulative": 2976,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 0.7227477999999999,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 0.7227477999999999
+        },
+        "lineage": {
+          "attempt": 2,
+          "kind": "redispatch",
+          "previous_run_id": "r-20260903T193459388792-visibility-mount-and-sheet",
+          "root_run_id": "r-20260903T193459388792-visibility-mount-and-sheet"
+        },
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 40.533,
+          "generated_tokens": 2976,
+          "generation_seconds": 39.546,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 16.7,
+          "machine_seconds": 0.987,
+          "peak_input_tokens": 166872,
+          "tokens_per_second": 75.25,
+          "wall_tokens_per_second": 73.42
+        },
+        "attempt": 3,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_spa_project_visibility.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260903T215312089962-figure-rows-and-edited-stamps",
+        "plan": "served-surface-data-contracts",
+        "section": "\u00a72",
+        "node": "figure-rows-and-edited-stamps",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_serve_figure_rows.py tests/test_spa_state_boundary.py tests/test_discovery_cache.py -q passes with every case \u00a72 names: one figure row per PNG and SVG with the stated slug, dims and for_plan; every row of every type carrying an ISO-8601 edited stamp not earlier than created; a file modified after its last commit reporting its mtime; the discovery cache signature changing when a figure is added",
+          "estimated_hours": 3.0,
+          "goal": "Discovery emits figure rows with dimensions and an edited timestamp on every inventory row",
+          "id": "figure-rows-and-edited-stamps",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T215312089962-figure-rows-and-edited-stamps/manifest.md",
+          "plan": "served-surface-data-contracts",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/figures.py",
+            "reckon/serve.py",
+            "tests/test_serve_figure_rows.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-serve",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "alias": "sonnet 5",
+          "backend": "claude",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T21:53:18Z",
+        "completed_at": "2026-09-03T23:55:03.564Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 7297,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 7305,
+        "stalled": true,
+        "time_budget": "40m",
+        "base_sha": "5958f485d571735925883e55c2ee63ee1cc92917",
+        "commits": [
+          "4611f383760fe970fe0b1bbb6245b2e55239e5a2"
+        ],
+        "changed_lines": {
+          "added": 559,
+          "removed": 6,
+          "files": 3
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_serve_figure_rows.py tests/test_spa_state_boundary.py tests/test_discovery_cache.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T215312089962-figure-rows-and-edited-stamps/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T215312089962-figure-rows-and-edited-stamps/manifest.md",
+        "scope_changed": false,
+        "session_id": "2e3d207a-9598-4cf9-8246-27918a0fdf06",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 0.82,
+          "rate_limit_type": "seven_day",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-09-07T20:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 0.75,
+          "tokens": {
+            "cache_creation_input_tokens": 358623,
+            "cache_creation_input_tokens_cumulative": 358623,
+            "cache_read_input_tokens": 6371119,
+            "cache_read_input_tokens_cumulative": 6371119,
+            "inference_geo": "not_available",
+            "input_tokens": 66,
+            "input_tokens_cumulative": 66,
+            "output_tokens": 15596,
+            "output_tokens_cumulative": 15596,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 2.8648077999999995,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 2.8648077999999995
+        },
+        "lineage": {
+          "attempt": 2,
+          "kind": "redispatch",
+          "previous_run_id": "r-20260903T193435669457-figure-rows-and-edited-stamps",
+          "root_run_id": "r-20260903T193435669457-figure-rows-and-edited-stamps"
+        },
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 202.843,
+          "generated_tokens": 15596,
+          "generation_seconds": 190.458,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 21.6,
+          "machine_seconds": 12.385,
+          "peak_input_tokens": 216120,
+          "tokens_per_second": 81.89,
+          "wall_tokens_per_second": 76.89
+        },
+        "attempt": 3,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_serve_figure_rows.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -47938,6 +48189,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 785
+    "_version": 787
   }
 }
