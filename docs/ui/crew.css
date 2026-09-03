@@ -1,6 +1,17 @@
 .r-crew-view {
+  display: block;
   flex: 1;
-  overflow: auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.r-crew-view > .r-content {
+  display: block;
+  min-height: 0;
+  overflow: visible;
+}
+
+.r-crew-surface {
   padding: 20px 26px 40px;
 }
 
@@ -9,6 +20,21 @@
   align-items: baseline;
   gap: 12px;
   margin-bottom: 14px;
+}
+
+.r-crew-scope-toggle {
+  padding: 3px 9px;
+  border: 1px solid var(--line-2);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--ink-2);
+  font: 11px var(--mono);
+  cursor: pointer;
+}
+
+.r-crew-scope-toggle[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .r-crew-heading h1 {

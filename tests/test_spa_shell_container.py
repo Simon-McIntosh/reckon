@@ -137,6 +137,15 @@ def test_manage_lists_and_counts_every_mounted_project() -> None:
     assert "{manageableProjects.map(project =>" in topbar
 
 
+def test_crew_view_receives_the_selected_project_for_default_scoping() -> None:
+    app = _function_source("App")
+
+    assert (
+        "window.CrewView visibleProjects={shownProjectNames} mountedProjectCount={projects.length} selectedProject={M?.project || null}"
+        in app
+    )
+
+
 def test_plan_rows_omit_missing_metadata_and_the_decisions_badge() -> None:
     listing = _function_source("ListCol")
 
