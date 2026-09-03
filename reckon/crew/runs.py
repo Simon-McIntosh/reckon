@@ -1128,6 +1128,53 @@ def producer_live(project: str) -> bool:
     return expected is None or _process_start_time(pid) == expected
 
 
+def _record_producer_running(record: Mapping[str, Any]) -> bool:
+    """Report whether a seat record names a process that is running now.
+
+    Drawn from the process table, not from the seat's held-state: a live
+    producer whose record no longer holds the seat lock still reads as live,
+    which is the direction a guard must not be fooled in. Deliberately not the
+    start-time gate :func:`producer_live` applies — a running process is live
+    whether or not its recorded start time still matches, because the
+    start-time check exists for who may *signal* that process, a different
+    question than whether it is running.
+    """
+    pid = record.get("pid")
+    return bool(pid) and process_alive(pid) is True
+
+
+def _record_producer_dead(record: Mapping[str, Any]) -> bool:
+    """Report whether a seat record names a process that is no longer running."""
+    pid = record.get("pid")
+    return bool(pid) and process_alive(pid) is not True
+
+
+def _reconcile_watch_record(project: str, record: Mapping[str, Any]) -> bool:
+    """Repair a stale seat record in place, without ever blocking the seat lock.
+
+    A record whose registered process is gone disagrees with the process table,
+    and reporting the disagreement without removing it leaves the next reader to
+    find the same lie. This clears the registration only when it is provably
+    free: the registered process is dead (a seat lock is auto-released when its
+    holder dies) and a non-blocking probe confirms nothing re-armed it in the
+    interim. It never takes a blocking exclusive lock, so observing still cannot
+    deny an arming. Returns True when the record was rewritten.
+    """
+    if not _record_producer_dead(record):
+        return False
+    path = watch_lock_path(project)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+b") as handle:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            # A live producer claimed the seat since this record was read.
+            return False
+        _write_watch_record(handle, {})
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        return True
+
+
 # A seat is held for the life of its watcher, so a lock that is unavailable for
 # only a moment is a passing read-only probe rather than an occupied seat.
 _CLAIM_CONTENTION_SECONDS = 0.5
@@ -1433,7 +1480,7 @@ def list_followers(project: str) -> list[dict[str, Any]]:
 
 
 def watch_state(project: str, *, session: str | None = None) -> dict[str, Any]:
-    """Return the paste-ready arming line and kernel-backed watcher liveness."""
+    """Return the paste-ready arming line and process-backed watcher liveness."""
     arming_line = _watch_arming_line(project)
     attach_line = _watch_attach_line(project, session=session)
     path = watch_lock_path(project)
@@ -1446,21 +1493,21 @@ def watch_state(project: str, *, session: str | None = None) -> dict[str, Any]:
         try:
             fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
-            return {
-                "arming_line": arming_line,
-                "attach_line": attach_line,
-                "watcher_live": True,
-                "watcher": _read_watch_record(handle),
-                "session": session,
-                "session_attached": attached,
-                "follower": {} if delivery is None else delivery["follower"],
-            }
-        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            registration = _read_watch_record(handle)
+        else:
+            registration = _read_watch_record(handle)
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+    # Liveness is reconciled against the process table rather than read from
+    # the seat's held-state: a probe that sees the lock free reads a running
+    # producer as absent, and one that sees it held reads a dead process as
+    # live — each the wrong way to decide a dispatch guard. The running answer
+    # is the one the guard may trust.
+    watcher_live = _record_producer_running(registration)
     return {
         "arming_line": arming_line,
         "attach_line": attach_line,
-        "watcher_live": False,
-        "watcher": {},
+        "watcher_live": watcher_live,
+        "watcher": dict(registration),
         "session": session,
         "session_attached": attached,
         "follower": {} if delivery is None else delivery["follower"],
@@ -1486,6 +1533,18 @@ def project_watch_visibility(
             registration = _read_watch_record(handle)
             fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
+    # Reconcile-on-read: a registration whose process is gone is a disagreement
+    # between the registry and the machine, and reading it without repairing it
+    # leaves the next reader to find the same lie. Repair in place — never on a
+    # blocking lock, so observing still cannot deny an arming — and report the
+    # repaired state (an empty registration) rather than the stale one.
+    if (
+        registration
+        and _record_producer_dead(registration)
+        and _reconcile_watch_record(project, registration)
+    ):
+        registration = {}
+
     pid = registration.get("pid")
     expected_start = registration.get("pid_start_time")
     actual_start = _process_start_time(pid)
@@ -1509,8 +1568,11 @@ def project_watch_visibility(
         )
 
     pointer_count = len(list_live(project=project))
+    # Liveness follows the process, not the seat: a running producer is live
+    # whether or not the seat lock reads as held, and a dead one is absent
+    # whether or not a stale record claims otherwise.
     watcher_live = bool(
-        seat_held and registering_process_alive is True and observer_alive is not False
+        registering_process_alive is True and observer_alive is not False
     )
     followers = list_followers(project)
     delivery = follower_state(project, session) if session is not None else None
