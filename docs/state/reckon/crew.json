@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T15:14:01",
+  "updated": "2026-09-03T15:25:45",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -658,7 +658,8 @@
         "session_model": "claude-opus-5",
         "sessions": {
           "{\"backend\":\"claude\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-opus-5\",\"sandbox\":\"worktree-full\"}": "a20f3716-05bb-4138-baea-a0c042b0b243",
-          "{\"backend\":\"claude\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"claude-opus-5\",\"sandbox\":\"worktree-full\"}": "5a8f5e84-636d-4302-848b-39b3fe139cc3"
+          "{\"backend\":\"claude\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"claude-opus-5\",\"sandbox\":\"worktree-full\"}": "5a8f5e84-636d-4302-848b-39b3fe139cc3",
+          "{\"alias\":\"opus 5\",\"backend\":\"claude-opus\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-opus-5\",\"sandbox\":\"worktree-full\"}": "b0b8755b-515c-4e05-bb92-65f853943ceb"
         },
         "created": "2026-09-03"
       },
@@ -44233,6 +44234,175 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260903T084923251420-attribute-the-merged-head-failures",
+        "plan": "clive-local-workers",
+        "section": "\u00a712",
+        "node": "attribute-the-merged-head-failures",
+        "node_definition": {
+          "done_when": "The report states base 6eff81b, the head revision, and every merge commit between them; it reports the full suite at both revisions with commands, exit statuses and failure id lists, each run to completion rather than interrupted; it separates failures new at head from those already failing at base; for each new one it names the candidate commit it is attributed to. Run the two suites sequentially, never concurrently, and write each suite's failure ids into the manifest as that suite lands rather than at the end, so a fence hit or a provider denial keeps what is already measured. A prior attempt was killed by an account spend limit and left partial evidence at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T080329021171-verify-the-merged-head: two interrupted suite logs showing roughly three failures at base against roughly thirty at head by the 30 percent mark, an attribution-map.md naming the three code-bearing candidates 95e5e2c, eab6ed7 and a5110cd, and per-test ledgers. Treat that as a lead to confirm or refute, never a result, because both runs were interrupted and ran while eight workers contended for the machine. The leading hypothesis to test first is a5110cd, which fills node.write_paths in plan_dispatch from a role default and could change what any test asserting an unscoped node is refused now observes; confirm or eliminate it explicitly. State whether the head is red against base and by how many",
+          "estimated_hours": null,
+          "goal": "An attribution of the current merged head: which suite failures are new against base 6eff81b, and which merged commit introduced each",
+          "id": "attribute-the-merged-head-failures",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T084923251420-attribute-the-merged-head-failures/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "test",
+          "section": "\u00a712",
+          "spec_level": "exact",
+          "time_budget": "58m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T084923251420-attribute-the-merged-head-failures"
+          ]
+        },
+        "role": "test",
+        "spec_level": "exact",
+        "member": "opus-a",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "backend": "claude",
+          "effort": "high",
+          "launch": "cli",
+          "model": "claude-opus-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T08:49:28Z",
+        "completed_at": "2026-09-03T09:22:10.035Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1954,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1962,
+        "stalled": false,
+        "time_budget": "58m",
+        "base_sha": "4f5c4040cbc1218c261610fe140f7ef8aa121b9b",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "infrastructure-failure",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T084923251420-attribute-the-merged-head-failures/manifest.md",
+        "scope_changed": false,
+        "session_id": "5a8f5e84-636d-4302-848b-39b3fe139cc3",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 100.0,
+          "rate_limit_type": "spend-limit",
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": "exhausted",
+          "surpassed_threshold": true,
+          "tokens": null,
+          "cost_usd": null,
+          "refusal": true,
+          "detail": "backend refused the turn: the account's spend-limit is reached"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "measurement node; its deliverable was the attribution, which the coordinator completed from its own recorded evidence",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "test",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260903T132450352684-a-stale-hold-is-probed-not-obeyed",
+        "plan": "crew-observability-truth",
+        "section": "\u00a77",
+        "node": "a-stale-hold-is-probed-not-obeyed",
+        "node_definition": {
+          "done_when": "A hold whose newest evidence is older than a declared staleness bound is NOT returned as held: the pre-flight probes and the probe's verdict decides, asserted in both directions \u2014 a fresh rejection still holds, and a rejection older than the bound against a serving lane does not. The probe's result persists to the budget record with its own timestamp and a provenance naming it a probe rather than a run observation, so a second reader in the same window reads the record instead of probing again, asserted by probing once and showing the second read served from the record. Every reading carries its observation age so held is never shown without as-of-when, and neither is CLEAR. Asserted against a synthesised record carrying readings of differing ages rather than a live account. MEASURED MOTIVATION, this session's own failure: the record read HELD at 100 per cent on evidence stamped 10:02:01Z while the pre-flight ran at 13:21:40Z, three hours nineteen minutes stale, and a live probe at that moment was served; seventeen consecutive dispatches were routed away from a working lane by a hold nothing re-derived. The sibling backend read CLEAR on evidence seven hours older still, which is the sharper half: both were stale and which one blocked was luck, so staleness must surface on a clear reading too. The self-sustaining deadlock is already recorded here \u2014 only a served run writes the record and the hold blocks every run \u2014 so a probe that writes back is the only exit",
+          "estimated_hours": null,
+          "goal": "A budget hold older than a declared staleness bound triggers a probe, and the probe's verdict decides",
+          "id": "a-stale-hold-is-probed-not-obeyed",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T132450352684-a-stale-hold-is-probed-not-obeyed/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/budget.py",
+            "tests/test_budget.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "opus-a",
+        "backend": "claude-opus",
+        "local": false,
+        "agent": {
+          "alias": "opus 5",
+          "backend": "claude-opus",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-opus-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T13:24:56Z",
+        "completed_at": "2026-09-03T13:25:34.588Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 33,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 38,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "61c25f82e6ef37f0a71f1a971eaa1a7b8e70a295",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "malformed-node",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T132450352684-a-stale-hold-is-probed-not-obeyed/manifest.md",
+        "scope_changed": false,
+        "session_id": "b0b8755b-515c-4e05-bb92-65f853943ceb",
+        "budget": {
+          "cost_usd": null,
+          "detail": "backend reports utilisation and reset time",
+          "headroom": "known",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": "overage",
+          "refusal": false,
+          "resets_at": "2026-10-01T00:00:00Z",
+          "surpassed_threshold": 1,
+          "threshold_status": "allowed_warning",
+          "tokens": null,
+          "utilisation_pct": 1.21
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -44265,6 +44435,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 720
+    "_version": 723
   }
 }
