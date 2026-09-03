@@ -111,7 +111,7 @@ PEER CHANNEL — knowledge only; write scopes never transfer. Run {run_id}; endp
   Reads block on filesystem events; expiry writes NEEDS-HELP to the manifest.
 
 FENCE — TIME
-  {time_budget}. Exceeding it means stop and report, never push on.
+  {time_budget}. Exceeding it means stop and report, never push on. Your process ends when this turn ends: never wait across a backgrounded command. Write your manifest with what you know now before starting one, and update it afterward if a later turn arrives — that is keyed to starting the wait, not to finishing the work. A run that ends mid-wait is resumable, so if you run out of turns, leave a record naming exactly what you were waiting for.
 
 FENCE — EVIDENCE (this measure is the done-when; state it quantitatively)
   {node.done_when}{evidence_role_note}
