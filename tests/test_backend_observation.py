@@ -15,6 +15,7 @@ a pre-flight report a clear backend for six days while it was exhausted.
 
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from pathlib import Path
 
@@ -49,19 +50,122 @@ def test_generation_rate_is_measured_over_the_span_the_stream_reports():
     assert throughput["tokens_per_second"] == expected
 
 
-def test_tool_wait_is_reported_apart_from_generation():
+def test_machine_seconds_is_reported_apart_from_generation():
     """The node's own suite must not be charged to the model's speed.
 
     Two thirds of this run was inference and the rest was the worker waiting on
     its tools, so the wall rate is materially lower than the generation rate.
     Collapsing the two would report this model as a third slower than it is.
+
+    This fixture's own events carry no timestamps (elided, see the fixtures'
+    README), so the machine span here falls back to elapsed minus the
+    backend's reported inference span — the same arithmetic a stream that does
+    carry timestamps replaces with a direct measurement; see
+    ``test_generation_and_machine_seconds_are_measured_from_event_timestamps``.
     """
     throughput = observe("claude-worked-turn.jsonl", CLAUDE).throughput
 
     assert throughput["elapsed_seconds"] == 886.713
-    assert throughput["tool_wait_seconds"] == round(886.713 - 664.405, 3)
+    assert throughput["machine_seconds"] == round(886.713 - 664.405, 3)
     assert throughput["wall_tokens_per_second"] == round(62888 / 886.713, 2)
     assert throughput["wall_tokens_per_second"] < throughput["tokens_per_second"]
+
+
+def _assistant_event(timestamp: str, *, tool_use: bool = False) -> dict:
+    """One assistant turn at a stated moment, optionally requesting a tool."""
+    block = {"type": "tool_use", "name": "probe"} if tool_use else {"type": "text", "text": "…"}
+    return {
+        "type": "assistant",
+        "session_id": "sess-synthetic",
+        "timestamp": timestamp,
+        "message": {"content": [block]},
+    }
+
+
+def _result_event(*, duration_ms: float, output_tokens: int) -> dict:
+    return {
+        "type": "result",
+        "subtype": "success",
+        "is_error": False,
+        "duration_ms": duration_ms,
+        "usage": {"output_tokens": output_tokens},
+    }
+
+
+def _observe_synthetic(events: list[dict]):
+    return _backends.observe_stream(
+        backend_name="probe",
+        backend=CLAUDE,
+        lines=[json.dumps(event) for event in events],
+    )
+
+
+def test_generation_and_machine_seconds_are_measured_from_event_timestamps():
+    """A long tool span is read straight from the stream's own timestamps.
+
+    No backend-reported inference span is supplied at all here — this is the
+    plan's point: nothing needs the harness's own totals when the stream
+    already carries a timestamp per event, so the split between waiting on
+    the machine and the model's own time comes from the stream alone.
+    """
+    events = [
+        _assistant_event("2026-01-01T00:00:00.000Z"),
+        _assistant_event("2026-01-01T00:00:02.000Z", tool_use=True),
+        {
+            "type": "user",
+            "timestamp": "2026-01-01T00:10:02.000Z",
+            "message": {"content": [{"type": "tool_result"}]},
+        },
+        _assistant_event("2026-01-01T00:10:05.500Z"),
+        _result_event(duration_ms=605_500, output_tokens=1000),
+    ]
+
+    throughput = _observe_synthetic(events).throughput
+
+    assert throughput["machine_seconds"] == 600.0
+    assert throughput["generation_seconds"] == 5.5
+    assert throughput["elapsed_seconds"] == 605.5
+    assert (
+        abs(
+            (throughput["generation_seconds"] + throughput["machine_seconds"])
+            - throughput["elapsed_seconds"]
+        )
+        < 0.01
+    )
+    assert throughput["tokens_per_second"] == round(1000 / 5.5, 2)
+
+
+def test_generation_and_machine_seconds_with_no_tool_span():
+    """A stream that never calls a tool has a real, measured machine span of zero.
+
+    Zero is a measurement here, not the absence of one — every gap in this
+    stream is generation, so machine seconds is exactly 0.0 rather than
+    unknown.
+    """
+    events = [
+        _assistant_event("2026-01-01T00:00:00.000Z"),
+        _assistant_event("2026-01-01T00:00:04.250Z"),
+        _result_event(duration_ms=4_250, output_tokens=50),
+    ]
+
+    throughput = _observe_synthetic(events).throughput
+
+    assert throughput["machine_seconds"] == 0.0
+    assert throughput["generation_seconds"] == 4.25
+    assert throughput["elapsed_seconds"] == 4.25
+
+
+def test_generation_and_machine_seconds_are_unknown_without_usable_timestamps():
+    """Absence of a timestamp signal is never read as a measurement of zero.
+
+    This recorded stream's events carry no timestamps at all (verified by the
+    fixture itself, not assumed), and no span is supplied by the caller
+    either, so neither figure has a basis and both stay unknown.
+    """
+    throughput = observe("codex-turn.jsonl", CODEX).throughput
+
+    assert throughput["generation_seconds"] is None
+    assert throughput["machine_seconds"] is None
 
 
 def test_peak_input_is_reported_against_the_declared_budget():

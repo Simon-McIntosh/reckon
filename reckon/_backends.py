@@ -240,7 +240,7 @@ def unknown_throughput(reason: str) -> dict[str, Any]:
     return {
         "generated_tokens": None,
         "generation_seconds": None,
-        "tool_wait_seconds": None,
+        "machine_seconds": None,
         "elapsed_seconds": None,
         "tokens_per_second": None,
         "wall_tokens_per_second": None,
@@ -292,18 +292,18 @@ def throughput_block(
     misattributes the workstation's load to the model or the reverse.
     """
     block = unknown_throughput(detail)
-    tool_wait = None
+    machine_seconds = None
     if (
         isinstance(elapsed_seconds, (int, float))
         and isinstance(generation_seconds, (int, float))
         and elapsed_seconds >= generation_seconds
     ):
-        tool_wait = round(float(elapsed_seconds) - float(generation_seconds), 3)
+        machine_seconds = round(float(elapsed_seconds) - float(generation_seconds), 3)
     block.update(
         {
             "generated_tokens": generated_tokens,
             "generation_seconds": generation_seconds,
-            "tool_wait_seconds": tool_wait,
+            "machine_seconds": machine_seconds,
             "elapsed_seconds": elapsed_seconds,
             "tokens_per_second": _rate(generated_tokens, generation_seconds),
             "wall_tokens_per_second": _rate(generated_tokens, elapsed_seconds),
@@ -1259,6 +1259,103 @@ def run_probe(probe: BudgetProbe) -> dict[str, Any] | None:
         process.wait(timeout=5)
 
 
+def _event_timestamp(event: Mapping[str, Any]) -> datetime | None:
+    """Parse one event's own timestamp, or None when it carries none usable."""
+    value = event.get("timestamp")
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+
+
+def _requests_tool(event: Mapping[str, Any]) -> bool:
+    """Return whether this event asked the machine to run a tool.
+
+    A stream that never names a tool call has no machine span to find, so the
+    check stays narrow: only an assistant turn carrying a ``tool_use`` content
+    block opens a gap this module reads as machine time. Everything else —
+    plain text, a system or result event — is generation or the round trip
+    around it.
+    """
+    if event.get("type") != "assistant":
+        return False
+    message = event.get("message")
+    blocks = message.get("content") if isinstance(message, Mapping) else None
+    if not isinstance(blocks, list):
+        return False
+    return any(
+        isinstance(block, Mapping) and block.get("type") == "tool_use"
+        for block in blocks
+    )
+
+
+def _machine_seconds_from_events(
+    events: Sequence[Mapping[str, Any]],
+) -> tuple[float | None, float | None]:
+    """Split the stream's own span into generation and machine seconds.
+
+    A gap that opens with a tool call is the machine's time — the span between
+    the request and its result — and every other gap is the model's own. This
+    reads only the timestamps the stream already carries; no counter inside
+    the harness is trusted, per this module's own measured case of one that
+    reported zero thinking tokens on a turn that generated forty thinking
+    blocks, because it counted the request rather than the response.
+
+    Two usable timestamps are the minimum that measures a gap at all. With
+    fewer than two, the split is unknown — never a false zero.
+    """
+    marks: list[tuple[datetime, bool]] = []
+    for event in events:
+        timestamp = _event_timestamp(event)
+        if timestamp is None:
+            continue
+        marks.append((timestamp, _requests_tool(event)))
+    if len(marks) < 2:
+        return None, None
+    machine = 0.0
+    for (start, waits_on_tool), (end, _next_waits) in zip(marks, marks[1:]):
+        gap = (end - start).total_seconds()
+        if gap <= 0:
+            continue
+        if waits_on_tool:
+            machine += gap
+    total = (marks[-1][0] - marks[0][0]).total_seconds()
+    generation = max(0.0, total - machine)
+    return round(generation, 3), round(machine, 3)
+
+
+def _refine_throughput_from_timestamps(
+    throughput: dict[str, Any], events: Sequence[Mapping[str, Any]]
+) -> dict[str, Any]:
+    """Prefer a timestamp-measured generation/machine split when the stream has one.
+
+    The dialect's own figure (a backend-reported total, or an elapsed-minus-
+    generation fallback) stands untouched when the stream carries fewer than
+    two usable timestamps — that is the honest unknown of a stream with no
+    timestamps, not a defect in this refinement. When timestamps are usable,
+    machine seconds comes from them directly and generation is derived as
+    elapsed minus machine, so the two always sum back to elapsed exactly.
+    """
+    _generation, machine = _machine_seconds_from_events(events)
+    if machine is None:
+        return throughput
+    elapsed = throughput.get("elapsed_seconds")
+    resolved_generation = (
+        round(float(elapsed) - machine, 3)
+        if isinstance(elapsed, (int, float)) and not isinstance(elapsed, bool)
+        else _generation
+    )
+    throughput["machine_seconds"] = machine
+    throughput["generation_seconds"] = resolved_generation
+    throughput["tokens_per_second"] = _rate(
+        throughput.get("generated_tokens"), resolved_generation
+    )
+    return throughput
+
+
 def parse_events(lines: Iterable[str]) -> tuple[list[dict[str, Any]], int]:
     """Parse a JSON-lines stream, returning the objects and a malformed count.
 
@@ -1302,6 +1399,7 @@ def observe_stream(
     obs = dialect.observe(events, elapsed_seconds=elapsed_seconds)
     obs.backend = backend_name
     obs.malformed_lines = malformed
+    obs.throughput = _refine_throughput_from_timestamps(obs.throughput, events)
     if obs.phase == "blocked":
         obs.detail = _blocked_detail(obs)
     return obs
