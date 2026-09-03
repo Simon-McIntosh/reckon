@@ -22,9 +22,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="5">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/guard-reuse-map.md">
-<meta name="plan-impl" content="0.25">
+<meta name="plan-impl" content="0.5">
+<meta name="plan-commits" content="ba754c9">
 </head>
 <body>
   <main class="plan-doc">
@@ -134,6 +135,12 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260903T0759g" data-who="reckon-ship" data-when="2026-09-03T07:59:30+00:00">
     <div class="r-comment-body">guard-reuse-map landed — no commit by design; gate passed; measure 15 mechanisms carrying verdicts over 17 file:symbol citations, tallying 10 direct fits, 4 needing extension and 1 explicit non-fit; 467 worker-seconds against a 12m budget on the local lane at deepseek-v4-flash. Map at ~/.config/reckon/crew/reports/guard-reuse-map.md. Almost nothing here is new. The repository-local scope test already exists as dispatch.py:shadow_source's repo-local branch, which scans docs/state/*/crew.json without consulting host state — and the map is explicit that the mounts-based resolvers must be excluded from the scope test for exactly that reason while staying authoritative for the refusal's routing guidance. The in-harness waiver needs no new stored state: an in-harness dispatch writes launch in-harness with a directive and a null task, so awaiting attachment is the predicate launch == in-harness and not record task, already on the raw pointer. The refusal-that-teaches pattern is in production as node.py:WatcherRequired, which composes its own arming and attach lines, and the arming line itself is runs.py:_watch_arming_line, to be reused verbatim rather than hand-rolled. §4's contract test is a straight copy of the established shape in tests/test_skill_contracts.py, and the synthetic crew-managed temp repo is the existing isolated_project fixture over the isolated_reckon_home conftest fixture. Three genuine gaps: no composer emits a full reckon crew dispatch invocation from a node, only crew verb --run lines; nothing in reckon writes a harness hook setting, so §3's sync step is a new artifact class rather than a new step beside CSS and mounts; and an explicit awaiting-attach classification face is optional because the predicate is already readable.</div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260903T080305016018-the-routing-rule-lands-where-the-temptation-is" data-who="flash-a" data-when="2026-09-03T08:06:17.739Z">
+    <div class="r-comment-body"><p>The fan-out rule is pinned verbatim in four skills plus the crew guidance, with a contract test asserting all four fragments in all five files; tests/test_skill_contracts.py 49 passed</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260903T1006" data-who="reckon-ship" data-when="2026-09-03T08:06:36+00:00">
+    <div class="r-comment-body">the-routing-rule-lands-where-the-temptation-is landed — commit ba754c9, merged; gate passed; measure tests/test_skill_contracts.py 49 passed exit 0 against base 0bfa110; 49 insertions over 6 files, 1 test added, 151 worker-seconds against a 30m budget on the local lane at deepseek-v4-flash, full-diff audited per the write-access lock. The same line now sits in reckon-status, reckon-roadmap, reckon-sprint and reckon-create plus the repository crew guidance, phrased against the mechanism — the run ledger, manifests and calibration — and naming no incident, and the contract test asserts four verbatim fragments in all five files so a later rewrite fails the suite rather than quietly decaying the rule. The ship skill was deliberately left unchanged, since §4 gives it a pointer at most and it already carries the full rule at a measured size ceiling. Worth recording as a fleet observation rather than a node outcome: this worker's manifest carried failure_attribution as a declared field, which means the manifest schema landed one wave earlier was already in use by the next worker within the hour, with no prompt telling it to.</div>
 </div>
 </section>
 </main>
