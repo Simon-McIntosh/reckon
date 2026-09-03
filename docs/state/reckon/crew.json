@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T20:02:52",
+  "updated": "2026-09-03T20:14:50",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -46305,6 +46305,125 @@
           "role": "documentation",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260903T180740674815-a-dead-seat-record-stops-answering",
+        "plan": "crew-observability-truth",
+        "section": "\u00a77",
+        "node": "a-dead-seat-record-stops-answering",
+        "node_definition": {
+          "done_when": "The liveness check in reckon/crew/runs.py reads a seat record, confirms its pid against the process table and its recorded start time, returns the verdict, and when the answer is dead LEAVES THE RECORD IN PLACE. So the record keeps answering a question the process table has already contradicted, and every later reader is told the same stale story. A superseded worktree from this session holds an unmerged, uncommitted implementation of the fix whose symbol _clear_stale_watch_registration appears nowhere in reckon or tests, at /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-0903/liveness-is-derived-not-remembered - read that diff first and treat it as a prior attempt to judge rather than as a specification to copy. Done when a liveness check that confirms the process is gone also erases the seat record, writing the same payload an explicit unwatch writes so the two cannot diverge, and a subsequent read finds no record rather than a stale one. It must be lock-free and best-effort in a specific sense that has to be asserted: if the file on disk no longer matches what was just read, a concurrent arming or teardown has already replaced it, and this leaves the newer state alone rather than clobbering it. Assert that case directly by replacing the file between the read and the erase and requiring the newer content to survive. A live process's record is untouched, and a record whose pid is alive but whose start time disagrees - the recycled-pid case the check already handles - is erased like any other confirmed-dead seat. ASSERT THROUGH THE ENTRY POINT the arming path and observe call, not the helper, over seat records written the way arming writes them under a temporary config home, and assert the real config home is untouched afterwards. At least one added assertion must fail against base 5f7f521. Measured over tests/test_watch_version_stamp.py in one invocation: zero failures against its count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 1.5,
+          "goal": "A watch-seat record is erased when its process is confirmed gone, so it stops answering liveness questions the process table has already contradicted.",
+          "id": "a-dead-seat-record-stops-answering",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/seat-record-manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/crew/runs.py",
+            "tests/test_watch_version_stamp.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "impl-obs-gc",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "alias": "sonnet 5",
+          "backend": "claude",
+          "effort": "high",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T18:07:46Z",
+        "completed_at": "2026-09-03T18:13:58.473Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 365,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 372,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "5f7f521f690bf304bccf7dab9e8bdb2eeda646a7",
+        "commits": [
+          "3fa273c0b342e742f4ff0b21faa13f711c6f415d"
+        ],
+        "changed_lines": {
+          "added": 114,
+          "removed": 5,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_watch_version_stamp.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vs.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/seat-record-manifest.md",
+        "scope_changed": false,
+        "session_id": "341ec5a5-790c-4070-9746-08a10e6a66e1",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 1.01,
+          "rate_limit_type": "overage",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-10-01T00:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 1,
+          "tokens": {
+            "cache_creation_input_tokens": 108616,
+            "cache_creation_input_tokens_cumulative": 108616,
+            "cache_read_input_tokens": 4570192,
+            "cache_read_input_tokens_cumulative": 4570192,
+            "inference_geo": "not_available",
+            "input_tokens": 88,
+            "input_tokens_cumulative": 88,
+            "output_tokens": 30736,
+            "output_tokens_cumulative": 30736,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 1.6560383999999995,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 1.6560383999999995
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 369.522,
+          "generated_tokens": 30736,
+          "generation_seconds": 332.471,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 12.8,
+          "machine_seconds": 37.051,
+          "peak_input_tokens": 127847,
+          "tokens_per_second": 92.45,
+          "wall_tokens_per_second": 83.18
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -46435,6 +46554,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 746
+    "_version": 747
   }
 }

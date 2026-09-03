@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="85">
+<meta name="plan-version" content="86">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md">
 <meta name="plan-impl" content="0.85">
 <meta name="plan-commits" content="8c1b637,45fc1b9,9f9b464,957c042,896ba48,71b50b0,17f8686">
@@ -604,6 +604,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-20260903T2010" data-who="reckon-ship" data-when="2026-09-03T18:10:00+00:00">
     <div class="r-comment-body">A SEAT RECORD OUTLIVES ITS PROCESS, FOUND IN A WORKTREE AUDIT RATHER THAN IN A RUN. Closing this session's worktrees turned up nineteen trees, thirteen clean and reachable and removed, five holding uncommitted duplicates of work already landed, and ONE holding a capability that reached no commit and exists nowhere in the tree. Its symbol is absent from every file in reckon and tests, so it was never merged and would have been lost with the worktree. THE CAPABILITY IS A LIVENESS FIX AND IT BELONGS TO THIS SECTION'S FAMILY. The liveness check reads a seat record, confirms the pid against the process table and the recorded start time, and returns the verdict - and when the answer is dead it leaves the record in place. The unlanded work erases that record at the moment the process is confirmed gone, writing the same payload an explicit unwatch writes, lock-free and best-effort so that a concurrent arming or teardown is never clobbered. Its own docstring states the reason better than a summary would: the record is what a reader trusts between arming and process death, and left alone it keeps answering a question the process table has already contradicted. THAT SENTENCE IS THE DAY'S RECURRING DEFECT IN ITS SHORTEST FORM, and it now has four measured faces on this workstation. A budget hold observed at 09:22 with no reset time held a lane for five hours and forty-nine minutes while the account served. Four of eight live pointers were held by processes that no longer existed, stranding thirteen write paths for over twenty-one hours. A watch seat's version stamp names the install rather than the code, so it cannot detect the staleness it exists to detect. And a seat record answers liveness questions after its process is gone. In every case a stored answer outlived the thing it described, and in every case the correction is the same: a record that cannot be re-derived must carry when it was written, and a consumer must consult that before treating it as current. WORTH RECORDING SEPARATELY THAT THE FINDING CAME FROM HOUSEKEEPING. The node that produced it was superseded, and by every ordinary signal the tree was disposable - superseded node, uncommitted, no manifest. What distinguished it from the five beside it was one measurement: grepping each tree's added symbols against the merged tree and finding this one at zero. Cleanup that removes a superseded worktree without that check is discarding work at a rate this audit puts at one in six.</div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260903T180740674815-a-dead-seat-record-stops-answering" data-who="impl-obs-gc" data-when="2026-09-03T18:13:58.473Z">
+    <div class="r-comment-body"><p>A confirmed-dead seat record is erased at the moment liveness is decided, lock-free with a content CAS so a record replaced mid-check survives; a live seat and a recycled pid are both handled, and a pre-existing flock-based erasure path on the visibility side is named as a follow-on rather than unified out of scope.</p></div>
 </div>
 </section>
 </main>
