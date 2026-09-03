@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="114">
+<meta name="plan-version" content="115">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,~/.config/reckon/crew/reports/local-effort-probe.md,~/.config/reckon/crew/reports/read-only-tier-delivery-discriminator.md,~/.config/reckon/crew/reports/test-attribution-reuse-map.md,~/.config/reckon/crew/reports/context-fit-reuse-map.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md,docs/evidence/archive/clive-local-workers-landed.html,docs/figures/clive-local-workers/local-lane-model-outcomes.svg">
 <meta name="plan-impl" content="0.96">
 <meta name="plan-commits" content="a91abe9,a56eae9,42a339f,a2e488b,ca6288d,0226835,e099fc5,5dc92ce,8b80bdc,8abc064,6f99ac2,7f41635,1908947,da054f7,1a77ce8,3ff87b2,5717d69,1badb66,1b7e72e,9b609d9,34e1d10,73ed06d,31d4e8d">
@@ -756,6 +756,54 @@
       </tbody>
     </table>
 
+    <h2 id="s15">§15 — The local lane is a family, not a single backend</h2>
+    <p>Directed by the lead on 2026-09-03: dispatching to more than one model in the local
+    family should be possible and encouraged, exactly as it already is for the Anthropic and
+    OpenAI families. The gap is real and it is one scalar.</p>
+
+    <p><strong>The other families need no mechanism at all.</strong> <code>claude</code> and
+    <code>claude-opus</code> are two backend keys sharing a command; <code>codex</code>,
+    <code>codex-spark</code>, <code>codex-luna</code> and <code>codex-terra</code> are four.
+    A coordinator reaches any of them through <code>default_backend</code>, a role default, or
+    <code>by_spec_level.&lt;level&gt;.backend</code> — the last of which this sprint verified
+    already works. There is no <code>claude_backend</code> key and none is wanted.</p>
+
+    <p><strong>The local lane alone has a funnel.</strong> <code>local_backend</code> is a
+    scalar naming one backend, and <code>dispatch --local</code> resolves it, so
+    <em>use local workers</em> can only ever mean <code>clive</code>. Reaching
+    <code>clive-glm</code> takes a per-call <code>--set</code>, which §3's own decision
+    rationale calls out as the shape it replaced: a rule with no bound check.</p>
+
+    <p><strong>What that cost, measured rather than argued.</strong> On 2026-09-03 this
+    session dispatched 21 local runs. Every one resolved to <code>deepseek-v4-flash</code>,
+    because that is what the key names. <code>glm-5.3</code> received none. Its lifetime
+    record is 4 runs and 4 failures, with 2 of the 10 shadow pairs §5 requires against
+    <code>deepseek</code>'s 8 — so the model the lane exists to qualify is the one the
+    configuration cannot route to. Nothing about that was a judgement; the funnel made it.</p>
+
+    <p><strong>The change is to select a member, not a backend.</strong> The family is
+    declared, so the set of local members is data rather than a single key;
+    <code>--local</code> bare keeps resolving today's default so no existing invocation
+    changes meaning; <code>--local &lt;member&gt;</code> selects any declared member; and an
+    undeclared name is refused naming the members that exist, rather than falling through to
+    the incumbent. Selection within the family then uses the machinery the other families
+    already use, including a spec level naming a backend.</p>
+
+    <p><strong>Encouraged means the roster, because the roster is the only concurrency
+    authority.</strong> Per-member serialisation is the sole ceiling, so two local models run
+    concurrently exactly when both have free members registered. A family with one model's
+    members registered is a family in name only.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>The family is declared, not implied</td><td>Local family membership is configuration, validated through the layered schema with leaf provenance and regenerated into both derived artifacts; a member naming an undeclared backend is refused at validation. Asserted by test.</td></tr>
+        <tr><td>Any member is reachable, and the default is unchanged</td><td><code>--local</code> with no argument resolves the same backend it resolves today, asserted as the backward-compatibility case; <code>--local &lt;member&gt;</code> dispatches to that member; an undeclared name is refused naming the declared members and never falls through to the default. Asserted through the dispatch path rather than the resolver, because a capability that never reaches the flag is the failure this sprint has now recorded four times.</td></tr>
+        <tr><td>Two local models run at once</td><td>Two nodes dispatched concurrently to different members of the local family both reach <code>working</code>, with each run record naming its own model, and neither blocks the other on member serialisation. Asserted against a live pair rather than a fixture.</td></tr>
+        <tr><td>The split is visible in the ledger</td><td>A calibration read reports runs per local model, so a family routing to one member is legible as such without counting run records by hand — which is how today's 21-to-0 split was found.</td></tr>
+      </tbody>
+    </table>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="default-effort-by-spec-level" data-choice="medium-guided-exact-high-open" data-by="Simon McIntosh" data-when="2026-09-02T12:43:41+00:00">
@@ -1079,7 +1127,7 @@
     <div class="r-comment-body"><p>Killed by the claude account's individual spend limit, reset 12pm Europe/Paris; the stream's terminal event was type result subtype success carrying the refusal text, so nothing classified it as a failure</p></div>
 </div>
 <div class="r-comment" data-section="s14" data-id="c-run-r-20260903T091019347612-generation-and-machine-time-are-separable" data-who="impl-attrib" data-when="2026-09-03T09:18:50.232Z">
-    <div class="r-comment-body"><p>Generation and machine seconds are measured from the stream&#x27;s own event timestamps and sum back to elapsed within 0.01s; unknown rather than zero when no timestamps exist; tests/test_backend_observation.py 17 passed</p></div>
+    <div class="r-comment-body"><p>Generation and machine seconds are measured from the stream's own event timestamps and sum back to elapsed within 0.01s; unknown rather than zero when no timestamps exist; tests/test_backend_observation.py 17 passed</p></div>
 </div>
 </section>
 </main>
