@@ -179,6 +179,34 @@ def live_worktree_claims() -> dict[Path, list[str]]:
     return claims
 
 
+ENV_LINKS = (".venv", ".env")
+
+
+def provision_env_links(repo: Path, path: Path) -> dict[str, str]:
+    """Point a worktree at the repository's shared environment.
+
+    The repository's root ``.venv`` (and ``.env`` when present) is the one
+    environment every worker shares; a detached worktree that resolves its own
+    produces a second, expensive copy. There is no call site that reliably
+    remembers this, so provisioning is bound to worktree creation — the moment
+    that always happens. Only symlinks are made, never a directory copy and
+    never in the reverse direction, and a link whose source is absent is
+    skipped with its reason rather than failing creation. The bare ``.venv`` /
+    ``.env`` entries are git-ignored, so a provisioned worktree still reports
+    clean.
+    """
+    provisions: dict[str, str] = {}
+    for name in ENV_LINKS:
+        target = repo / name
+        link = path / name
+        if not target.exists():
+            provisions[name] = f"skipped: no {name} at {target}"
+            continue
+        link.symlink_to(target)
+        provisions[name] = f"linked -> {target}"
+    return provisions
+
+
 def create(args: argparse.Namespace) -> dict[str, object]:
     repo = repository_root(args.repo)
     worker = safe_token("worker", args.worker)
@@ -198,6 +226,7 @@ def create(args: argparse.Namespace) -> dict[str, object]:
         "path": str(path),
         "base": args.base,
         "base_sha": base_sha,
+        "provisioned": provision_env_links(repo, path),
     }
 
 
