@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="work-survives-a-provider-outage">
+  <meta name="plan-title" content="Work Survives A Provider Outage">
+  <meta name="plan-summary" content="A refusal-killed run is resumed, not reconciled: promotion cannot silently destroy a recoverable session, and the worktree outlives it.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="7.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S15">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-blocks" content="crew-observability-truth">
+  <title>Work Survives A Provider Outage | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-03">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — A temporary outage became a permanent loss</h2>
+    <p>
+      On 2026-09-03 a five-node wave was dispatched on a metered lane at 19:34Z
+      and every node was refused per-request on a spend limit within seconds.
+      The refusal was <strong>temporary</strong>: the operator re-authenticated
+      and the same lane was proved to serve at 19:44Z by a direct one-token
+      probe. Ten minutes of provider unavailability cost
+      <strong>sixty-four turns of accumulated worker orientation</strong>, and
+      not one token of that loss was caused by the outage. It was caused by the
+      recovery.
+    </p>
+    <p>
+      The coordinator read <code>session_id: null</code> on each live pointer,
+      concluded the runs could not be resumed, and promoted all five. Both
+      halves of that conclusion were wrong, and nothing in the system said so.
+      <code>resume_plan</code> already recovers a missing session id by calling
+      <code>observe</code> and re-reading the stream, so a null in the pointer
+      means only that <code>observe</code> has not run yet — never that a run
+      is unresumable. And <code>crew complete</code> accepted each blocked run,
+      returned <code>ok=True</code>, removed the pointer <em>and released the
+      worktree</em>. The five session transcripts are still on disk, at 271 KB,
+      194 KB, 103 KB and two at 50 KB. They have nowhere to resume into.
+    </p>
+    <p>
+      This plan exists because that sequence is available to every coordinator
+      on this workstation, on every metered lane, and because the loss reported
+      success. The prior instance was the same day: a session promoted five
+      refusal-killed runs and destroyed five resumable sessions; on the next
+      denial a peer resumed instead and two came back working, one to
+      completion. Twice in one day, two different sessions, identical mechanism.
+    </p>
+
+    <figure>
+      <svg viewBox="0 0 620 168" width="100%" role="img"
+           aria-label="A refused run reaches a blocked state, from which resume recovers the session and promotion destroys it.">
+        <text x="0" y="14" font-family="system-ui, sans-serif" font-size="13" fill="#1a1a1a">provider refuses the turn</text>
+        <rect x="0" y="24" width="120" height="34" fill="none" stroke="#1a1a1a" stroke-width="1"/>
+        <text x="60" y="46" font-family="system-ui, sans-serif" font-size="13" fill="#1a1a1a" text-anchor="middle">blocked</text>
+        <text x="60" y="74" font-family="system-ui, sans-serif" font-size="11" fill="#5a5a5a" text-anchor="middle">session on disk</text>
+        <text x="60" y="88" font-family="system-ui, sans-serif" font-size="11" fill="#5a5a5a" text-anchor="middle">worktree present</text>
+
+        <line x1="120" y1="34" x2="255" y2="34" stroke="#1a6b2f" stroke-width="1.5"/>
+        <polygon points="255,34 248,31 248,37" fill="#1a6b2f"/>
+        <text x="188" y="28" font-family="system-ui, sans-serif" font-size="12" fill="#1a6b2f" text-anchor="middle">crew resume</text>
+        <rect x="258" y="17" width="150" height="34" fill="none" stroke="#1a6b2f" stroke-width="1.5"/>
+        <text x="333" y="39" font-family="system-ui, sans-serif" font-size="13" fill="#1a6b2f" text-anchor="middle">work continues</text>
+
+        <line x1="120" y1="48" x2="255" y2="112" stroke="#8a1c1c" stroke-width="1.5"/>
+        <polygon points="255,112 247,108 250,115" fill="#8a1c1c"/>
+        <text x="176" y="98" font-family="system-ui, sans-serif" font-size="12" fill="#8a1c1c">crew complete</text>
+        <rect x="258" y="95" width="150" height="34" fill="none" stroke="#8a1c1c" stroke-width="1.5"/>
+        <text x="333" y="117" font-family="system-ui, sans-serif" font-size="13" fill="#8a1c1c" text-anchor="middle">work destroyed</text>
+        <text x="418" y="110" font-family="system-ui, sans-serif" font-size="11" fill="#5a5a5a">pointer removed,</text>
+        <text x="418" y="124" font-family="system-ui, sans-serif" font-size="11" fill="#5a5a5a">worktree released,</text>
+        <text x="418" y="138" font-family="system-ui, sans-serif" font-size="11" fill="#5a5a5a">reported ok=True</text>
+
+        <text x="0" y="162" font-family="system-ui, sans-serif" font-size="11" fill="#5a5a5a">Both edges are one command. Only one of them is reversible.</text>
+      </svg>
+      <figcaption>
+        The fork a coordinator reaches after any per-request refusal. The system
+        currently offers both edges with equal confidence and reports success on
+        the one that cannot be undone.
+      </figcaption>
+    </figure>
+
+    <h2 id="s2">§2 — A promotion that would destroy a resume path is refused</h2>
+    <p>
+      Promotion is the only route by which a run enters the committed ledger,
+      and it is unconditional about evidence: a passing gate is refused unless
+      it carries the check that produced it. It is silent about recoverability.
+      A run classified <code>blocked</code> whose session is still recoverable
+      is accepted without comment, and the operation that follows is
+      irreversible.
+    </p>
+    <p>
+      The fix is the one this repository already applies to every other
+      dangerous operation: refuse, and offer a recorded waiver. Promoting a
+      blocked run whose session id is present in the pointer, or recoverable
+      from its stream, is refused with a message naming
+      <code>crew resume</code>. A coordinator who genuinely wants the
+      promotion passes an explicit waiver, and the waiver and its reason land
+      on the ledger row — so a deliberate discard is distinguishable afterwards
+      from an accidental one, which is precisely the distinction the incident
+      could not make.
+    </p>
+    <p>
+      Done when promoting a blocked run with a recoverable session is refused
+      and the refusal names the resume command; when the same promotion
+      succeeds with an explicit waiver and the ledger row carries the waiver
+      and its stated reason; when a blocked run with no recoverable session
+      promotes unchanged; and when a run with a passing gate is unaffected in
+      every case. Asserted through the same <code>crew complete</code> entry
+      point a coordinator invokes, over pointers and streams built the way
+      dispatch writes them under a temporary configuration home, with the real
+      configuration home asserted untouched afterwards.
+    </p>
+
+    <h2 id="s3">§3 — The worktree outlives the promotion while the session lives</h2>
+    <p>
+      Releasing the worktree is what converted a recoverable outage into a
+      loss. The session transcripts survived; the directory they had been
+      oriented against did not, and a resume has no cwd. This is the more
+      consequential half of the incident and it is separable from §2: even a
+      deliberate, waived promotion should not strand a live session.
+    </p>
+    <p>
+      A session and its worktree are one recoverable unit, so the release must
+      be conditioned on the session being unrecoverable rather than on the run
+      reaching a terminal state. Where a session survives, the worktree is
+      retained and the retention is recorded on the ledger row, so a later
+      audit can find the trees that are deliberately held open and distinguish
+      them from the stranded ones. The existing worktree audit already
+      distinguishes clean-and-reachable trees from those holding unintegrated
+      work; a retained-for-resume tree is a third category and must not read as
+      either.
+    </p>
+    <p>
+      Done when promoting a run whose session is recoverable retains its
+      worktree and records the retention; when promoting a run whose session is
+      unrecoverable releases it as it does today; when a waived promotion
+      retains the worktree unless the waiver explicitly discards it; and when
+      the recorded retention is visible to whatever enumerates worktrees, so a
+      retained tree is never reported as stranded. Asserted through the
+      promotion entry point, and through the audit that reads worktrees, rather
+      than through the release helper.
+    </p>
+
+    <h2 id="s4">§4 — A missing session id is not evidence of an unresumable run</h2>
+    <p>
+      The coordinator's reasoning was sound given what it was shown. The live
+      pointer said <code>session_id: null</code>; nothing said that value was
+      merely unpopulated rather than absent, and nothing said the stream held
+      it. <code>resume_plan</code> has recovered exactly this case for some
+      time — if the record lacks a session id it calls <code>observe</code> and
+      re-reads — so the capability existed and its existence was invisible at
+      the moment of the decision.
+    </p>
+    <p>
+      This is the same defect family as the display work in
+      <a href="/reckon/fleet-monitor-legibility">fleet-monitor-legibility</a>:
+      a fact is recorded and its consumer discards it, or in this case never
+      learns it can be derived. The remedy is that anything reporting on a
+      terminal run reports recoverability as a derived answer rather than
+      leaving a reader to infer it from a null. A coordinator asking
+      <code>observe</code> about a dead run should be told whether it can be
+      resumed, not handed a field it must know the internals to interpret.
+    </p>
+    <p>
+      Done when observing a dead run whose pointer carries no session id, but
+      whose stream does, reports the run as resumable and names the recovered
+      id; when a run with neither reports as not resumable and says which
+      evidence was absent; and when neither answer requires the caller to read
+      <code>session_id</code> directly. The negative must be asserted so the
+      not-resumable answer stays reachable. Asserted through
+      <code>observe</code> as a coordinator calls it.
+    </p>
+
+    <h2 id="s5">§5 — The recovery order is carried by the tool, not by memory</h2>
+    <p>
+      The correct order after a per-request refusal is: inspect the worktree for
+      committed and uncommitted work, resume the session, and reconcile only
+      once resume is impossible. That ordering has been recorded in this
+      workstation's guidance since the first instance and was not applied at the
+      second, four hours later, by a different session. Guidance that must be
+      recalled at the moment of an incident is a compensation, and this plan's
+      §2 through §4 exist because compensations fail.
+    </p>
+    <p>
+      What the tool can carry is the ordering itself. A refusal-killed run is
+      already classified <code>blocked</code>; that classification can name its
+      own remedy, so the operator reads the recovery rather than deducing it.
+      The same applies to the display: a blocked row whose session is
+      recoverable is a different operational state from one that is not, and the
+      pane currently renders them identically.
+    </p>
+    <p>
+      Done when a run blocked by a provider refusal carries its remedy in the
+      record — the resume command, with the recovered session id — so the
+      recovery is read rather than recalled; and when that remedy survives into
+      the promoted ledger row, so a post-hoc reader of a discarded run can see
+      what was available at the time. Asserted through the classifier entry
+      point and the promotion path, from a stream carrying a real per-request
+      refusal rather than a synthesised one.
+    </p>
+
+    <h2 id="s6">§6 — Recovering the five runs already lost</h2>
+    <p>
+      The sessions are not gone. Every promoted ledger row retained its
+      <code>session_id</code>, because <code>crew complete</code> ran
+      <code>observe</code> on its way through — so the ids the coordinator
+      believed were absent were written into the permanent record by the very
+      operation that destroyed the resume path. All five transcripts are on
+      disk, and every row retains <code>base_sha 580fff9d</code>, the commit
+      each run was oriented against.
+    </p>
+    <p>
+      So recovery is mechanical rather than speculative: recreate each worktree
+      at the recorded base sha, provision it as dispatch does — the environment
+      and credential symlinks matter, since a forgetful command otherwise builds
+      a second environment — and resume the session in that directory. The two
+      single-turn sessions are not worth the ceremony and are better redispatched;
+      the twenty-nine, twenty and thirteen turn sessions are where the value is.
+      This section is owned by the S16 coordinator, who holds the write scope for
+      those nodes and knows what each had established; it is recorded here so the
+      recovery is not lost if that session ends.
+    </p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="waiver-strictness" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">How strict is the refusal on promoting a recoverable blocked run?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="refuse-with-waiver">Refuse, with a recorded waiver flag</button>
+      <button class="r-opt" data-value="warn-and-proceed">Warn on stdout and proceed</button>
+      <button class="r-opt" data-value="refuse-absolutely">Refuse with no override</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="retained-tree-lifetime" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">What ends the life of a worktree retained for a resume that never comes?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="age-plus-audit">An age bound, surfaced by the existing worktree audit</button>
+      <button class="r-opt" data-value="explicit-only">Only an explicit release command</button>
+      <button class="r-opt" data-value="session-absence">The session transcript no longer being on disk</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-wspo-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-09-03" data-recommends-skill="/reckon-ship work-survives-a-provider-outage §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Refuse the promotion first, then keep the tree, then make recoverability legible</h4>
+    <div class="r-fu-body"><p>
+            §2 goes first and alone, because it is the only section that stops
+            the loss recurring while the rest is being built: a promotion that
+            would destroy a recoverable session is refused. It touches
+            <code>reckon/crew/promotion.py</code> and its tests, and nothing
+            else in this plan needs to land for it to be effective.
+          </p>
+<p>
+            §3 follows in the same module and must not be folded into §2 as one
+            node: refusing a promotion and conditioning the worktree release are
+            different behaviours with different negatives, and a single node
+            would let one pass on the other's evidence. §4 is independent of
+            both and touches the observe path instead. §5 depends on §4, since a
+            record cannot carry a remedy the classifier cannot derive.
+          </p>
+<p>
+            §6 is not this session's to execute. It is owned by the coordinator
+            holding the S16 write scope for those five nodes, and it is recorded
+            here so the recovery survives that session ending. Every node in
+            §2 to §5 must name the entry point a coordinator actually invokes
+            rather than the helper holding the mechanism — that measure was
+            wrong eight times in one day in this repository and produced eight
+            green suites over dead features.
+          </p></div>
+    <pre class="r-fu-prompt">/reckon-ship work-survives-a-provider-outage §2</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>

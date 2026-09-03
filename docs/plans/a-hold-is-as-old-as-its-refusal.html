@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-hold-is-as-old-as-its-refusal">
+  <meta name="plan-title" content="A Hold Is As Old As Its Refusal">
+  <meta name="plan-summary" content="A spend hold ages from the refusal that created it, not from the last time it was read, and carries a declared lever so a serving lane is never unclearable.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="5.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S15">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-blocks" content="crew-observability-truth">
+  <title>A Hold Is As Old As Its Refusal | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-03">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — The fix that landed can be undone by reading it</h2>
+    <p>
+      A spend hold used to be immortal. A refusal that named no reset time was
+      stored with no expiry, so it held its lane for as long as the process
+      lived — measured on 2026-09-03 at five hours and forty-nine minutes past
+      its own observation, against a direct probe of the same account that
+      returned a served turn with real token accounting. An ageing rule landed
+      the same afternoon: a judgement carrying no reset time stops being read as
+      current once its observation is older than a declared shelf life, and the
+      lane returns to unknown headroom rather than exhausted.
+    </p>
+    <p>
+      That rule has a defect, found by a peer session within the hour and
+      verified here. The age is measured from the <em>pointer's</em>
+      <code>observed_at</code>, and <code>observe</code> rewrites that stamp
+      whenever it re-reads a run's stream. The stream still carries the original
+      rejection, so re-observing a refused run re-stamps an old refusal as a
+      fresh one. <strong>A coordinator investigating why its lane is held
+      extends the hold by looking.</strong> Their sentence for it is better than
+      mine: a stale hold can be renewed by probing the wrong instrument.
+    </p>
+    <p>
+      Two further properties were measured alongside it and both belong here.
+      The hold is <strong>per backend, and so is its cure</strong>: one lane
+      went from held at 100.0% exhausted to clear at 1.21% the moment a single
+      resume was served and observed on it, while its sibling stayed pinned at
+      the stale figure because nothing had been served there. And the fence has
+      <strong>no lever at all</strong>: <code>budget.policy()</code> honours
+      <code>evidence_shelf_life_minutes</code>, the schema does not declare it,
+      so the key is refused as an unknown input — while the ceiling is capped at
+      100 and utilisation reads exactly 100.0, so no ceiling override lifts it
+      either. The only exit is waiting out a hardcoded hour.
+    </p>
+
+    <figure>
+      <svg viewBox="0 0 600 150" width="100%" role="img"
+           aria-label="Observing a refused run re-stamps its old refusal as fresh, renewing the hold it was meant to age out of.">
+        <rect x="0" y="20" width="132" height="34" fill="none" stroke="#1a1a1a" stroke-width="1"/>
+        <text x="66" y="42" font-family="system-ui, sans-serif" font-size="13" fill="#1a1a1a" text-anchor="middle">lane held</text>
+        <line x1="132" y1="37" x2="228" y2="37" stroke="#1a1a1a" stroke-width="1"/>
+        <polygon points="228,37 221,34 221,40" fill="#1a1a1a"/>
+        <text x="180" y="31" font-family="system-ui, sans-serif" font-size="12" fill="#5a5a5a" text-anchor="middle">observe</text>
+        <rect x="231" y="20" width="150" height="34" fill="none" stroke="#8a1c1c" stroke-width="1.5"/>
+        <text x="306" y="42" font-family="system-ui, sans-serif" font-size="13" fill="#8a1c1c" text-anchor="middle">stamp refreshed</text>
+        <path d="M 306 54 L 306 78 L 66 78 L 66 54" fill="none" stroke="#8a1c1c" stroke-width="1.5"/>
+        <polygon points="66,54 63,62 69,62" fill="#8a1c1c"/>
+        <text x="186" y="94" font-family="system-ui, sans-serif" font-size="12" fill="#8a1c1c" text-anchor="middle">shelf life restarts — the hold never expires</text>
+
+        <line x1="396" y1="37" x2="470" y2="37" stroke="#1a6b2f" stroke-width="1.5"/>
+        <polygon points="470,37 463,34 463,40" fill="#1a6b2f"/>
+        <text x="500" y="26" font-family="system-ui, sans-serif" font-size="12" fill="#1a6b2f">a served turn</text>
+        <text x="500" y="41" font-family="system-ui, sans-serif" font-size="12" fill="#1a6b2f">on that backend</text>
+        <text x="500" y="56" font-family="system-ui, sans-serif" font-size="12" fill="#1a6b2f">clears it</text>
+
+        <text x="0" y="126" font-family="system-ui, sans-serif" font-size="11" fill="#5a5a5a">The refusal's own time cannot change. The time it was last read can, and that is what is measured today.</text>
+        <text x="0" y="142" font-family="system-ui, sans-serif" font-size="11" fill="#5a5a5a">Only a served run on the same backend refreshes that backend's record; the hold and its cure are both per-lane.</text>
+      </svg>
+      <figcaption>
+        The renewal loop. Re-reading a refused run's stream is the instrument a
+        coordinator naturally reaches for and the one that extends the fence.
+      </figcaption>
+    </figure>
+
+    <h2 id="s2">§2 — The age is taken from the refusal, not from the last read</h2>
+    <p>
+      A refusal happened once, at a knowable moment, and that moment does not
+      change however many times the record is read. The ageing rule must
+      therefore measure from the event rather than from the pointer's
+      last-written stamp, so that reading a record cannot alter the verdict
+      derived from it. This is the same principle the display work settled from
+      the other direction: a rendered row without a transition is a rumour about
+      time, because it invites a reader to infer recency from position rather
+      than from evidence. Here the system itself is making that inference.
+    </p>
+    <p>
+      The refusal's own time is available. A per-request rejection arrives as a
+      <code>rate_limit_event</code> in the run's stream, at a fixed position with
+      the surrounding records' timestamps, and the run's <code>created_at</code>
+      bounds it from below. Any of those is immutable under re-reading, which is
+      the only property that matters.
+    </p>
+    <p>
+      Done when the age used by the ageing rule is derived from the refusal
+      event rather than from the pointer's <code>observed_at</code>; when
+      calling <code>observe</code> on a refused run one hundred times leaves the
+      derived age and the hold verdict unchanged; when a hold whose refusal is
+      older than the shelf life reads as expired immediately after such an
+      observe rather than being renewed by it; and when a genuinely fresh
+      refusal still holds. Asserted through the same <code>decide</code> call
+      preflight makes, over a state built by the ledger reader from a stream
+      carrying a real rejection, with the observe-then-decide sequence asserted
+      as one case rather than two.
+    </p>
+
+    <h2 id="s3">§3 — The shelf life is declared, so the fence has a lever</h2>
+    <p>
+      Every other fence in this system carries a waiver. Dispatch takes an
+      explicit flag to proceed past an unreconciled-run backlog, past an
+      execution-capability mismatch, and past a missing watcher, and each waiver
+      is recorded on the run so a deliberate override is auditable afterwards.
+      The budget hold carries none, and the absence is not a design choice — it
+      is an undeclared configuration key.
+    </p>
+    <p>
+      <code>budget.policy()</code> reads
+      <code>evidence_shelf_life_minutes</code> and falls back to a module
+      default. <code>BudgetConfig</code> does not declare the field, and the
+      configuration model rejects unknown inputs, so
+      <code>--set budget.evidence_shelf_life_minutes=1</code> fails as an extra
+      input. The mechanism is reachable from code and unreachable from the
+      command line, which is the worst of both: the value looks configurable to
+      a reader of the source and is not configurable by the operator holding the
+      incident.
+    </p>
+    <p>
+      Declaring it is most of the fix and it must be declared with its meaning,
+      not merely its type: the field bounds how long a refusal that named no
+      reset time keeps describing the present, zero or less disables ageing and
+      restores the indefinite hold, and it has no effect on a refusal that did
+      name a reset, because a stated reset is stronger evidence than an age.
+      Done when the key is declared in the flight schema with that description,
+      when an override through <code>--set</code> is accepted and changes the
+      verdict, when zero restores the un-aged behaviour, and when the shipped
+      default is unchanged so no existing host's behaviour moves.
+    </p>
+
+    <h2 id="s4">§4 — The refusal names the instrument that would inform it</h2>
+    <p>
+      A held dispatch currently states the utilisation, the ceiling and the
+      purpose. It does not state what would change the answer, so a coordinator
+      supplies its own theory, and the natural theory is wrong in a way that
+      makes things worse: observing the refused run seems like gathering
+      evidence and is in fact renewing the hold. §2 removes the harm from that
+      mistake; this section removes the mistake.
+    </p>
+    <p>
+      Three facts turn the refusal into something actionable, and all three are
+      already known at the moment it is emitted. The hold is per backend, so it
+      names which lane it governs and does not imply anything about a sibling
+      backend on a different account. The cure is a served turn on that same
+      backend, so it names that rather than leaving a reader to infer that any
+      probe will do. And where the ageing rule is what holds it, it states the
+      refusal's age against the bound and the wall-clock time at which the bound
+      will pass, so the operator can wait deliberately instead of retrying
+      blindly.
+    </p>
+    <p>
+      Done when a budget refusal names the backend it governs, states the age of
+      its evidence against the bound in force, gives the time at which ageing
+      will lift it when that is what applies, and names a served turn on that
+      backend as the observation that would refresh it; when a refusal held by a
+      stated reset time names that time instead of an age; and when no refusal
+      message suggests re-reading the refused run. Asserted on the message the
+      dispatch path emits, not on a formatting helper, for one aged hold and one
+      reset-bearing hold.
+    </p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="refusal-time-source" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Which immutable stamp dates a refusal?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="rate-limit-event">The rate-limit event&#x27;s own position in the stream</button>
+      <button class="r-opt" data-value="run-created-at">The run&#x27;s created_at, as a lower bound</button>
+      <button class="r-opt" data-value="first-write">The first write of the budget record, never rewritten</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-haor-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-09-03" data-recommends-skill="/reckon-ship a-hold-is-as-old-as-its-refusal §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Declare the key first, because it is the lever an operator needs tonight</h4>
+    <div class="r-fu-body"><p>
+            §3 goes first even though §2 is the deeper defect, and the ordering
+            is deliberate: declaring the configuration key is the only change
+            here that gives an operator holding a live incident a way out, and
+            it is a schema declaration plus its regeneration rather than a
+            behaviour change. Until it lands, a stale hold is escapable only by
+            waiting out a hardcoded hour.
+          </p>
+<p>
+            §2 follows and is the load-bearing correction, since without it the
+            ageing rule can be reset by the act of investigating why a lane is
+            held. Both touch <code>reckon/budget.py</code>, so they are one
+            write scope and must be sequenced rather than run together; §3 also
+            reaches the LinkML source and its generated schema, which are
+            regenerated by script and never edited by hand. §4 is independent of
+            both and touches the dispatch refusal message.
+          </p>
+<p>
+            Every node must assert through the call preflight and dispatch
+            actually make rather than through a helper, and §2's measure has to
+            include the observe-then-decide sequence as a single case — the
+            defect is invisible to a test that decides once, which is why the
+            ageing rule shipped with it.
+          </p></div>
+    <pre class="r-fu-prompt">/reckon-ship a-hold-is-as-old-as-its-refusal §3</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>
