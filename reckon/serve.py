@@ -35,6 +35,7 @@ POST versioned write contract — see reckon/serve.py for full details.
 
 from __future__ import annotations
 
+import contextlib
 import html.parser
 import hashlib
 import json
@@ -58,6 +59,7 @@ from urllib.request import urlopen
 
 from reckon import _backends, _plan_html, crew, ledger
 from reckon._store import _config_home, _mounts_path, _state_root
+from reckon.figures import figure_rows
 from reckon.lifecycle import (
     effective_status,
     unresolved_dependencies,
@@ -934,10 +936,215 @@ def _git_first_committed(repo_dir: Path, docs_dir: Path) -> dict[str, int]:
     return dict(times)
 
 
+_GIT_LAST_MODIFIED_CACHE: dict[tuple[str, str], _GitCreationEntry] = {}
+_GIT_LAST_MODIFIED_SCHEMA = "reckon.git-last-modified-map"
+_GIT_LAST_MODIFIED_SCHEMA_VERSION = 1
+
+
+def _git_last_modified_cache_path(cache_key: tuple[str, str]) -> Path:
+    identity = "\0".join(cache_key).encode("utf-8")
+    digest = hashlib.sha256(identity).hexdigest()
+    return _config_home() / "cache" / "git-last-modified" / f"{digest}.json"
+
+
+def _git_last_modified_payload(
+    cache_key: tuple[str, str], entry: _GitCreationEntry
+) -> dict:
+    repo, rel_docs = cache_key
+    core = {
+        "schema": _GIT_LAST_MODIFIED_SCHEMA,
+        "version": _GIT_LAST_MODIFIED_SCHEMA_VERSION,
+        "repository": repo,
+        "docs": rel_docs,
+        "head": entry.head,
+        "times": entry.times,
+    }
+    checksum = hashlib.sha256(
+        json.dumps(core, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    return {**core, "checksum": checksum}
+
+
+def _load_git_last_modified_cache(
+    cache_key: tuple[str, str],
+) -> _GitCreationEntry | None:
+    """Load a complete, current-schema persisted map or decline it entirely."""
+
+    if not (Path(cache_key[0]) / ".git").exists():
+        return None
+    path = _git_last_modified_cache_path(cache_key)
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return None
+    except (OSError, json.JSONDecodeError) as exc:
+        LOGGER.warning("Ignoring unreadable Git last-modified cache %s: %s", path, exc)
+        return None
+    if not isinstance(raw, dict):
+        LOGGER.warning("Ignoring invalid Git last-modified cache %s", path)
+        return None
+
+    times = raw.get("times")
+    valid_times = isinstance(times, dict) and all(
+        isinstance(name, str)
+        and isinstance(timestamp, int)
+        and not isinstance(timestamp, bool)
+        and timestamp >= 0
+        for name, timestamp in times.items()
+    )
+    valid_identity = (
+        raw.get("schema") == _GIT_LAST_MODIFIED_SCHEMA
+        and raw.get("version") == _GIT_LAST_MODIFIED_SCHEMA_VERSION
+        and raw.get("repository") == cache_key[0]
+        and raw.get("docs") == cache_key[1]
+        and isinstance(raw.get("head"), str)
+        and bool(raw["head"])
+    )
+    if not valid_times or not valid_identity:
+        LOGGER.warning("Ignoring incompatible Git last-modified cache %s", path)
+        return None
+
+    core = {key: raw[key] for key in raw if key != "checksum"}
+    checksum = hashlib.sha256(
+        json.dumps(core, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    if raw.get("checksum") != checksum:
+        LOGGER.warning("Ignoring corrupt Git last-modified cache %s", path)
+        return None
+    return _GitCreationEntry(head=raw["head"], times=dict(times))
+
+
+def _store_git_last_modified_cache(
+    cache_key: tuple[str, str], entry: _GitCreationEntry
+) -> None:
+    """Atomically persist one validated last-modified map without affecting service."""
+
+    if not (Path(cache_key[0]) / ".git").exists():
+        return
+    path = _git_last_modified_cache_path(cache_key)
+    temporary: Path | None = None
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=path.parent,
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            json.dump(
+                _git_last_modified_payload(cache_key, entry),
+                handle,
+                indent=2,
+                sort_keys=True,
+            )
+            handle.write("\n")
+            temporary = Path(handle.name)
+        temporary.replace(path)
+    except OSError as exc:
+        LOGGER.warning("Could not persist Git last-modified cache %s: %s", path, exc)
+    finally:
+        if temporary is not None and temporary.exists():
+            with contextlib.suppress(OSError):
+                temporary.unlink()
+
+
+def _parse_last_committed(output: str) -> dict[str, int]:
+    times: dict[str, int] = {}
+    timestamp: int | None = None
+    for raw in output.splitlines():
+        line = raw.strip()
+        if line.startswith("COMMIT "):
+            try:
+                timestamp = int(line[7:])
+            except ValueError:
+                timestamp = None
+        elif line and timestamp is not None:
+            # Git emits newest commits first, so the first time a path
+            # appears is its most recently touching commit.
+            times.setdefault(line, timestamp)
+    return times
+
+
+def _git_last_committed(repo_dir: Path, docs_dir: Path) -> dict[str, int]:
+    """Return {repo-relative-path: unix_ts} for the most recent commit touching each file."""
+    try:
+        rel_docs = str(docs_dir.relative_to(repo_dir))
+    except ValueError:
+        LOGGER.warning("Docs directory %s is outside repository %s", docs_dir, repo_dir)
+        return {}
+
+    cache_key = (str(repo_dir.resolve()), rel_docs)
+    cached = _GIT_LAST_MODIFIED_CACHE.get(cache_key)
+    if cached is None:
+        cached = _load_git_last_modified_cache(cache_key)
+        if cached is not None:
+            _GIT_LAST_MODIFIED_CACHE[cache_key] = cached
+    head = _git_head(repo_dir)
+    if head is None:
+        return dict(cached.times) if cached else {}
+    if cached and cached.head == head:
+        return dict(cached.times)
+
+    args = ["git", "log"]
+    if cached:
+        args.append(f"{cached.head}..{head}")
+    args.extend(["--format=COMMIT %at", "--name-only", "--", rel_docs])
+    result = _run_git(args, repo_dir, operation="last-modified lookup")
+    if result is None:
+        return dict(cached.times) if cached else {}
+
+    # Commits in the new range are the freshest touch for any path they name;
+    # only paths untouched since the cached head keep their cached time.
+    times = _parse_last_committed(result.stdout)
+    if cached:
+        for path, timestamp in cached.times.items():
+            times.setdefault(path, timestamp)
+    entry = _GitCreationEntry(head=head, times=times)
+    _GIT_LAST_MODIFIED_CACHE[cache_key] = entry
+    _store_git_last_modified_cache(cache_key, entry)
+    return dict(times)
+
+
+def _row_times(
+    path: Path,
+    repo_dir: Path,
+    git_times: dict[str, int],
+    git_last_times: dict[str, int],
+) -> tuple[int, str]:
+    """Return (created_unix_ts, edited_iso) for one file in a project's docs tree.
+
+    ``edited`` is the file's last git commit time, replaced by its working-tree
+    mtime when the path is modified since that commit or untracked, and never
+    earlier than ``created``.
+    """
+
+    stat = path.stat()
+    rel = str(path.relative_to(repo_dir))
+    created = git_times.get(rel) or int(
+        getattr(stat, "st_birthtime", None) or stat.st_ctime
+    )
+    last_commit = git_last_times.get(rel)
+    mtime = int(stat.st_mtime)
+    edited_ts = mtime if last_commit is None or mtime > last_commit else last_commit
+    edited_ts = max(edited_ts, created)
+    edited = datetime.fromtimestamp(edited_ts).isoformat(  # noqa: DTZ006
+        timespec="seconds"
+    )
+    return created, edited
+
+
 def _discovery_signature(
     docs_dir: Path, project: str, state_root: Path | None
 ) -> tuple[int, int]:
     html_files = list(docs_dir.rglob("*.html"))
+    figures_dir = docs_dir / "figures"
+    figure_files = (
+        [*figures_dir.rglob("*.png"), *figures_dir.rglob("*.svg")]
+        if figures_dir.is_dir()
+        else []
+    )
     state_files = [
         path
         for path in (
@@ -951,7 +1158,7 @@ def _discovery_signature(
         )
         if path.is_file()
     ]
-    signature_files = [*html_files, *state_files]
+    signature_files = [*html_files, *figure_files, *state_files]
     return (
         len(signature_files),
         max((path.stat().st_mtime_ns for path in signature_files), default=0),
@@ -1041,6 +1248,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
     # Falls back to inode ctime when a file is untracked or git is unavailable.
     repo_dir = docs_dir.parent
     git_times = _git_first_committed(repo_dir, docs_dir)
+    git_last_times = _git_last_committed(repo_dir, docs_dir)
 
     inventory: list[dict] = []
     resources = sorted(
@@ -1065,6 +1273,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
         gates, decisions, followups = _read_readiness_state(html_file)
         slug = resource.slug
         artifact_type = resource.type
+        created, edited = _row_times(html_file, repo_dir, git_times, git_last_times)
         item = {
             "slug": slug,
             "resource_id": resource.identity.key,
@@ -1082,11 +1291,8 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             "summary": rec.get("summary", ""),
             "owner": rec.get("owner", ""),
             "last": rec.get("modified", ""),
-            "created": git_times.get(str(html_file.relative_to(repo_dir)))
-            or int(
-                getattr(html_file.stat(), "st_birthtime", None)
-                or html_file.stat().st_ctime
-            ),
+            "created": created,
+            "edited": edited,
             "version": rec["version"],
             "archived": rec.get("archived") or ("1" if resource.archived else ""),
             "read": rec.get("read") or "",
@@ -1132,6 +1338,16 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             if rec.get("north_star"):
                 item["north_star"] = rec["north_star"]
         inventory.append(item)
+
+    # Figure rows are appended after the typed resources; figures are
+    # infrastructure to resource_map, so they never collide with a plan slug.
+    plan_slugs = {item["slug"] for item in inventory if item.get("type") == "plan"}
+    for figure in figure_rows(docs_dir, project, plan_slugs):
+        figure_path = figure.pop("path")
+        figure["created"], figure["edited"] = _row_times(
+            figure_path, repo_dir, git_times, git_last_times
+        )
+        inventory.append(figure)
 
     # ── Distributed project state ──────────────────────────────────────────
     from reckon.project_state import compose_project_state, project_state_mode
