@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T14:59:18",
+  "updated": "2026-09-03T15:01:35",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -43895,6 +43895,115 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260903T124627234987-the-pointer-classifier-sees-the-refusal",
+        "plan": "crew-observability-truth",
+        "section": "\u00a76",
+        "node": "the-pointer-classifier-sees-the-refusal",
+        "node_definition": {
+          "done_when": "classify_pointer returns blocked, not abandoned, for a pointer whose stream carries a provider spend or usage refusal, asserted against streams copied in as repository fixtures rather than read from outside the repository under test; the blocked reason names the backend and the limit kind, matching what observe's phase already reports for the same pointer, asserted by comparing the two paths on one pointer so they cannot disagree again; the detail distinguishes a run with NO manifest from one whose manifest never reached a verdict, naming what was delivered in the second case rather than implying nothing was; and a genuine crash with no refusal still classifies abandoned, asserted as the negative. tests/test_crew_recovery.py passes in full with its count recorded. Measured: one pointer holds a 2,783-byte manifest at in-progress, an artifacts line, two completed suite logs, an attribution map and per-test ledgers, with six refusal mentions in its stream, and the ticker showed abandoned with the process is gone without a complete manifest \u2014 the one state implying nothing can be done, for the one condition where a resume is available",
+          "estimated_hours": null,
+          "goal": "A refusal-killed run classifies blocked in the path the ticker reads, and its detail says what was delivered",
+          "id": "the-pointer-classifier-sees-the-refusal",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T124627234987-the-pointer-classifier-sees-the-refusal/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_crew_recovery.py",
+            "tests/fixtures/backends"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "flash-a",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T12:46:32Z",
+        "completed_at": "2026-09-03T13:00:57.243Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 857,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 865,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "700d6e43601d140d54c390c06ddcb9863aad07de",
+        "commits": [
+          "3251ec9bb9e8dcbc63d2d0f0da98f3cd3945886d"
+        ],
+        "changed_lines": {
+          "added": 210,
+          "removed": 1,
+          "files": 2
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_crew_recovery.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T124627234987-the-pointer-classifier-sees-the-refusal/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T124627234987-the-pointer-classifier-sees-the-refusal/manifest.md",
+        "scope_changed": false,
+        "session_id": "253652c3-089b-4a61-ae5d-cf012b0d8fdf",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 7411948,
+            "input_tokens_cumulative": 7411948,
+            "output_tokens": 42139,
+            "output_tokens_cumulative": 42139,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 38.11321500000001,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 38.11321500000001
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -43927,6 +44036,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 717
+    "_version": 718
   }
 }
