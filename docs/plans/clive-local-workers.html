@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="87">
+<meta name="plan-version" content="88">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,~/.config/reckon/crew/reports/local-effort-probe.md,~/.config/reckon/crew/reports/read-only-tier-delivery-discriminator.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
 <meta name="plan-impl" content="0.86">
 <meta name="plan-commits" content="a91abe9,a56eae9,42a339f,a2e488b,ca6288d,0226835,e099fc5,5dc92ce,8b80bdc,8abc064,6f99ac2,7f41635,1908947,da054f7,1a77ce8,3ff87b2,5717d69,1badb66,1b7e72e,9b609d9">
@@ -93,6 +93,50 @@
         <tr><td>Endpoint ignores the budget</td><td>The four-budget probe above, re-run against both releases and recorded with its raw block sizes.</td></tr>
         <tr><td>No effort axis in config</td><td>Both local backends carry one pinned effort whose comment states the measurement; no role or spec-level overlay varies effort for them, asserted through <code>reckon flight</code>.</td></tr>
         <tr><td>Shadows do not claim it</td><td>A local shadow records effort under <code>inherited</code> and never as a substituted variable, so no pair reads as an effort comparison.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s13">&#167;13 &mdash; Promotion releases what promotion made transient</h2>
+    <p><strong>Cleanup is currently remembered rather than deterministic, and the count says
+    so.</strong> <code>crew complete</code> appends the ledger row and deletes the live
+    pointer, in that order so an interruption stays recoverable, and releases nothing else.
+    The worktree survives until somebody runs <code>crew gc</code>, and the worker process
+    survives until it exits on its own. Measured on this workstation: <strong>274 worktrees
+    on disk against 458 promoted runs</strong> in one project's ledger, and a run observed
+    <code>alive: true</code> while its classification already read
+    <code>completed_unpromoted</code>.</p>
+    <p>This is the same defect as worktree provisioning was before &#167;7: a rule that
+    depends on a person remembering a second command. The remedy is the same and it is the
+    one this plan keeps arriving at &mdash; <strong>bind the work to the moment that always
+    happens.</strong> Creation provisions; promotion releases. A finished run has exactly one
+    moment where the transient becomes committed, and that is where the transient should be
+    given back.</p>
+    <p>The order is load-bearing and must not change: the ledger append comes first, so an
+    interruption anywhere after it leaves a promoted row and a recoverable pointer rather
+    than a lost run. Release follows.</p>
+    <table>
+      <thead><tr><th>What</th><th>Released when</th><th>Withheld when</th></tr></thead>
+      <tbody>
+        <tr><td>live pointer</td><td>always, after the ledger append</td><td>&mdash; (already the behaviour)</td></tr>
+        <tr><td>the run's own process group</td><td>it is still alive having delivered a terminal manifest, so it is lingering rather than working</td><td>never signalled if the manifest is absent, which is a recovery case rather than a cleanup one</td></tr>
+        <tr><td>the run's worktree</td><td>clean, and its commit reachable from the integration branch &mdash; the conservative rule <code>crew gc</code> already applies</td><td>dirty or unintegrated: left in place, named in the result with the reason, never force-removed</td></tr>
+      </tbody>
+    </table>
+    <p>Two properties keep this from becoming the next silent failure. <strong>A withheld
+    release is reported, not skipped</strong> &mdash; the completion result names each thing
+    it did not release and why, so a dirty worktree is visible at the moment it is created
+    rather than discovered by a later collision. And <strong>a shadow keeps its own
+    rule</strong>: its worktree is unintegrated by design, so it is released against the
+    committed shadow record and its retained patch, exactly as the lineage-based reclamation
+    already does. <code>crew gc</code> remains, for the backlog these 274 represent and for
+    anything promoted before this lands.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Promotion releases</td><td>A promoted run whose worktree is clean and integrated leaves no worktree on disk and no live process, asserted end to end rather than by unit-testing the helper.</td></tr>
+        <tr><td>Conservatism preserved</td><td>A promoted run whose worktree is dirty, and one whose commit is unreachable, each keep their worktree and are named in the result with the reason. Asserted separately, because these are the two cases that must never be force-removed.</td></tr>
+        <tr><td>Order preserved</td><td>An interruption between the ledger append and the release leaves a promoted row and a recoverable pointer; asserted by simulating a failure in the release step and checking the ledger row survives.</td></tr>
+        <tr><td>Shadows unaffected</td><td>A promoted shadow releases through the existing lineage rule and its retained patch still resolves.</td></tr>
       </tbody>
     </table>
 
