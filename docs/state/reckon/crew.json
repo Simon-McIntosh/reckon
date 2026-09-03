@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T10:28:02",
+  "updated": "2026-09-03T10:47:05",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -613,9 +613,11 @@
         "id": "opus-a",
         "harness": "claude",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "a20f3716-05bb-4138-baea-a0c042b0b243",
+        "session_model": "claude-opus-5",
+        "sessions": {
+          "{\"backend\":\"claude\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-opus-5\",\"sandbox\":\"worktree-full\"}": "a20f3716-05bb-4138-baea-a0c042b0b243"
+        },
         "created": "2026-09-03"
       },
       {
@@ -643,7 +645,8 @@
         "session_id": "cc09bef2-7435-4ee3-b041-4662c8ce5f02",
         "session_model": "deepseek-v4-flash",
         "sessions": {
-          "{\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"read-only\"}": "cc09bef2-7435-4ee3-b041-4662c8ce5f02"
+          "{\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"read-only\"}": "cc09bef2-7435-4ee3-b041-4662c8ce5f02",
+          "{\"backend\":\"clive\",\"effort\":\"medium\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\"}": "bdbe0472-d335-4fcb-9e6c-d31ba242db67"
         },
         "created": "2026-09-03"
       },
@@ -654,7 +657,8 @@
         "session_id": "286babeb-5dc5-4f73-861a-c417d470eb5a",
         "session_model": "deepseek-v4-flash",
         "sessions": {
-          "{\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"read-only\"}": "286babeb-5dc5-4f73-861a-c417d470eb5a"
+          "{\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"read-only\"}": "286babeb-5dc5-4f73-861a-c417d470eb5a",
+          "{\"backend\":\"clive\",\"effort\":\"medium\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\"}": "3c03edc0-2541-4530-b218-3ad2f9c0871d"
         },
         "created": "2026-09-03"
       },
@@ -40500,6 +40504,416 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260903T080329021171-verify-the-merged-head",
+        "plan": "clive-local-workers",
+        "section": "\u00a712",
+        "node": "verify-the-merged-head",
+        "node_definition": {
+          "done_when": "The report states the base revision 6eff81b, the head revision, and every merge commit between them; it reports the full suite result at both revisions with their commands and counts; it separates failures new at head from those already failing at base, and names for each new one the merged commit it is attributed to from the candidate set. A clean result states zero new failures against the base count rather than an absolute green",
+          "estimated_hours": null,
+          "goal": "An attribution of the current merged head: which suite failures are new against the pre-wave base, and which commit introduced each",
+          "id": "verify-the-merged-head",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T080329021171-verify-the-merged-head/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "test",
+          "section": "\u00a712",
+          "spec_level": "exact",
+          "time_budget": "55m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T080329021171-verify-the-merged-head"
+          ]
+        },
+        "role": "test",
+        "spec_level": "exact",
+        "member": "opus-a",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "backend": "claude",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-opus-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T08:03:35Z",
+        "completed_at": "2026-09-03T08:22:44.736Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1143,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1149,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "0bfa110db16bc2b07d42b1765e8a7e865a7452c8",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "infrastructure-failure",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T080329021171-verify-the-merged-head/manifest.md",
+        "scope_changed": false,
+        "session_id": "a20f3716-05bb-4138-baea-a0c042b0b243",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 0.93,
+          "rate_limit_type": "five_hour",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-09-03T08:40:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 0.9,
+          "tokens": {
+            "cache_creation_input_tokens": 8561,
+            "cache_creation_input_tokens_cumulative": 8561,
+            "cache_read_input_tokens": 1483246,
+            "cache_read_input_tokens_cumulative": 1483246,
+            "inference_geo": "not_available",
+            "input_tokens": 24,
+            "input_tokens_cumulative": 24,
+            "output_tokens": 2794,
+            "output_tokens_cumulative": 2794,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 5.256802,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 5.256802
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "test",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260903T082158964606-the-working-count-excludes-dead-runs",
+        "plan": "crew-observability-truth",
+        "section": "\u00a74",
+        "node": "the-working-count-excludes-dead-runs",
+        "node_definition": {
+          "done_when": "A run whose process is gone never appears in the working count, and neither does one whose manifest is terminal, asserted across every phase a pointer can hold including those it never advanced past; the three bucket counts still sum to the runs in flight, asserted by test. tests/test_crew_recovery.py passes in full with its count recorded. The reuse map at /home/ITER/mcintos/.config/reckon/crew/reports/display-reuse-map.md names _watch_snapshot and _fleet_counts as the surfaces, and states that the working bucket today keys on phase alone and ignores process liveness and manifest terminality. Measured 2026-09-03: five runs died at phase starting and were displayed as working for ten minutes, so the phase-only path is the one to change",
+          "estimated_hours": null,
+          "goal": "The fleet buckets partition honestly, so a run whose process is gone or whose manifest is terminal never counts as working",
+          "id": "the-working-count-excludes-dead-runs",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T082158964606-the-working-count-excludes-dead-runs/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_crew_recovery.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "scout-display",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T08:22:03Z",
+        "completed_at": "2026-09-03T08:37:05.513Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 896,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 902,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "9cfde984780779306f902fae27f2224f590f82f1",
+        "commits": [
+          "9f9b464cc05550d55a95d16efa317c547156e6bf"
+        ],
+        "changed_lines": {
+          "added": 103,
+          "removed": 5,
+          "files": 2
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q over the node's named test modules",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T082158964606-the-working-count-excludes-dead-runs/test_crew_recovery.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T082158964606-the-working-count-excludes-dead-runs/manifest.md",
+        "scope_changed": false,
+        "session_id": "bdbe0472-d335-4fcb-9e6c-d31ba242db67",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 2814839,
+            "input_tokens_cumulative": 2814839,
+            "output_tokens": 21766,
+            "output_tokens_cumulative": 21766,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 14.618345,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 14.618345
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260903T082148119595-promotion-surfaces-the-failure-attribution",
+        "plan": "clive-local-workers",
+        "section": "\u00a712",
+        "node": "promotion-surfaces-the-failure-attribution",
+        "node_definition": {
+          "done_when": "_evaluate_suite_delta calls ledger.added_failure_ids rather than recomputing the set difference inline, asserted by a test that fails if a second expression is reintroduced; a promoted run whose manifest carried a failure attribution stores each added failure id beside its attributed candidate commit on the suite_delta record, asserted by test; an added failure with no attribution entry still refuses exactly as today, and an attribution naming a pre-existing failure is dropped rather than stored, both asserted as negatives. tests/test_gate_evidence.py passes in full with its count recorded against its current 22",
+          "estimated_hours": null,
+          "goal": "The promotion gate reads the worker's failure attribution and surfaces it on the stored suite-delta record",
+          "id": "promotion-surfaces-the-failure-attribution",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T082148119595-promotion-surfaces-the-failure-attribution/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a712",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "tests/test_gate_evidence.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "scout-guard",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T08:21:52Z",
+        "completed_at": "2026-09-03T08:37:17.750Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 915,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 925,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "9cfde984780779306f902fae27f2224f590f82f1",
+        "commits": [
+          "a60fad181fb38e459b7d12dd1a5692d5ad3d1bfe"
+        ],
+        "changed_lines": {
+          "added": 139,
+          "removed": 2,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q over the node's named test modules",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T082148119595-promotion-surfaces-the-failure-attribution/baseline_gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T082148119595-promotion-surfaces-the-failure-attribution/manifest.md",
+        "scope_changed": false,
+        "session_id": "3c03edc0-2541-4530-b218-3ad2f9c0871d",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 3804769,
+            "input_tokens_cumulative": 3804769,
+            "output_tokens": 30339,
+            "output_tokens_cumulative": 30339,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 19.78232,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 19.78232
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260903T083356777926-spec-level-names-a-backend-with-provenance",
+        "plan": "crew-observability-truth",
+        "section": "\u00a75",
+        "node": "spec-level-names-a-backend-with-provenance",
+        "node_definition": {
+          "done_when": "A by_spec_level entry naming a backend resolves that backend for a dispatch at that level, with the resolved value's origin reported through ResolvedFlight.origin so the layer that supplied it is attributable, asserted by test; an entry naming an undeclared backend is refused at validation naming it; a level with an effort but no backend resolves the effort and leaves backend selection unchanged, asserted as a negative. tests/test_flight.py passes in full with its count recorded against its current 59. The reuse map at /home/ITER/mcintos/.config/reckon/crew/reports/display-reuse-map.md records that RoutingOverlay.backend, the by_spec_level resolver and its validation already carry this, so the plan's claim that nothing maps a level to a backend is stale and provenance is the only unverified link; confirm that reading against the tree first and state in the manifest what was already present versus what this node added",
+          "estimated_hours": null,
+          "goal": "Routing an open node to the frontier tier is configuration: a spec-level entry resolving a backend, verified through the layered schema with provenance",
+          "id": "spec-level-names-a-backend-with-provenance",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T083356777926-spec-level-names-a-backend-with-provenance/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/flight.py",
+            "tests/test_flight.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "impl-display",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "backend": "claude",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T08:34:00Z",
+        "completed_at": "2026-09-03T08:45:41.381Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 692,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 701,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "7ebb65d1a34e0e99177d6a829382c0015469cca4",
+        "commits": [
+          "957c04221d0b73b1742b282c45135c355e649f9b"
+        ],
+        "changed_lines": {
+          "added": 69,
+          "removed": 0,
+          "files": 1
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q over the node's named test modules",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T083356777926-spec-level-names-a-backend-with-provenance/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T083356777926-spec-level-names-a-backend-with-provenance/manifest.md",
+        "scope_changed": false,
+        "session_id": "e9235989-8d30-4584-8f42-9e881c67a4b7",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 1.01,
+          "rate_limit_type": "overage",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-10-01T00:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 1,
+          "tokens": {
+            "cache_creation_input_tokens": 40867,
+            "cache_creation_input_tokens_cumulative": 153256,
+            "cache_read_input_tokens": 176139,
+            "cache_read_input_tokens_cumulative": 3752874,
+            "inference_geo": "not_available",
+            "input_tokens": 0,
+            "input_tokens_cumulative": 48,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 10473,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 0.0,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 1.4684247999999998
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -40518,6 +40932,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 667
+    "_version": 674
   }
 }
