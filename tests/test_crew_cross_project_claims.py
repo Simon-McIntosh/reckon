@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from collections.abc import Iterator
 from pathlib import Path
@@ -99,6 +100,41 @@ def _node(project: str, path: str, *, node_id: str = "candidate") -> crew.TaskNo
     )
 
 
+def _git(repo: Path, *arguments: str) -> str:
+    return subprocess.run(
+        ["git", *arguments], cwd=repo, check=True, capture_output=True, text=True
+    ).stdout.strip()
+
+
+def _linked_worktree(repo: Path, path: Path) -> Path:
+    """Add a linked worktree, the checkout shape a dispatched worker writes in."""
+    _git(repo, "worktree", "add", "--detach", "-q", str(path), "HEAD")
+    return path
+
+
+def _reaped_pid() -> int:
+    """Return a process id that has certainly exited and been collected."""
+    worker = subprocess.Popen(["true"])
+    worker.wait()
+    return worker.pid
+
+
+def _commit_in(worktree: Path, path: str, body: str) -> None:
+    (worktree / path).write_text(body, encoding="utf-8")
+    _git(worktree, "add", path)
+    _git(
+        worktree,
+        "-c",
+        "user.email=worker@example.invalid",
+        "-c",
+        "user.name=Worker",
+        "commit",
+        "-q",
+        "-m",
+        "fix(package): change the value",
+    )
+
+
 def _claim(
     repo: Path,
     *,
@@ -107,6 +143,9 @@ def _claim(
     run_id: str = "r-owner",
     member: str = "",
     authority_repositories: tuple[Path, ...] = (),
+    worktree: Path | None = None,
+    pid: int | None = None,
+    base_sha: str = "",
 ) -> dict:
     record = {
         "run_id": run_id,
@@ -120,6 +159,12 @@ def _claim(
             "write_paths": [path],
         },
     }
+    if worktree is not None:
+        record["worktree"] = str(worktree)
+    if pid is not None:
+        record["pid"] = pid
+    if base_sha:
+        record["base_sha"] = base_sha
     if authority_repositories:
         record["authority"] = {
             "repositories": [str(root.resolve()) for root in authority_repositories],
@@ -275,3 +320,183 @@ def test_member_guard_remains_project_scoped(home: Path, tmp_path: Path) -> None
     assert record["member"] == "shared-member"
     assert crew.list_live(project="project-a") == [owner]
     assert crew.pointer_path(record["run_id"]).is_file()
+
+
+# ── One repository, two declared projects ───────────────────────────────────
+
+
+def test_one_repository_file_refuses_a_second_writer_across_projects(
+    home: Path, tmp_path: Path
+) -> None:
+    """The measured admission, asserted through the coordinator's own call.
+
+    The claiming run declares a project mounted on a different repository, so
+    its ``repo`` field holds none of its declared paths while the worktree it
+    writes in is a checkout of the candidate's repository. Both runs fence one
+    file and the declared projects differ, which is the shape that was admitted
+    twice three seconds apart.
+    """
+    work = _repository(tmp_path / "work", ("project-b",))
+    elsewhere = _repository(tmp_path / "elsewhere", ("project-a",))
+    _mounts(home, {"project-a": elsewhere, "project-b": work})
+    owner = _claim(
+        elsewhere,
+        project="project-a",
+        path="package/target.py",
+        run_id="r-first",
+        worktree=_linked_worktree(work, tmp_path / "first"),
+        pid=os.getpid(),
+        base_sha=_git(work, "rev-parse", "HEAD"),
+    )
+
+    with pytest.raises(crew.ScopeConflict) as excinfo:
+        crew.dispatch(
+            node=_node("project-b", "package/target.py"),
+            project="project-b",
+            repo=work,
+            config=CONFIG,
+            session="one-repository-two-projects",
+            check_budget=False,
+            launcher=lambda *args, **kwargs: pytest.fail("conflict must not launch"),
+        )
+
+    refusal = excinfo.value
+    assert refusal.run_id == owner["run_id"]
+    assert "r-first" in str(refusal)
+    assert "project-a" in str(refusal)
+    assert crew.list_live(project="project-b") == []
+
+
+# ── A claim held by a run whose process is gone ─────────────────────────────
+
+
+def test_a_stopped_claim_with_nothing_unintegrated_is_disregarded(
+    home: Path, tmp_path: Path
+) -> None:
+    repo = _repository(tmp_path / "shared", ("project-a", "project-b"))
+    _mounts(home, {"project-a": repo, "project-b": repo})
+    stopped = _claim(
+        repo,
+        project="project-a",
+        path="package/target.py",
+        run_id="r-stopped",
+        worktree=_linked_worktree(repo, tmp_path / "stopped"),
+        pid=_reaped_pid(),
+        base_sha=_git(repo, "rev-parse", "HEAD"),
+    )
+
+    record = crew.dispatch(
+        node=_node("project-b", "package/target.py"),
+        project="project-b",
+        repo=repo,
+        config=CONFIG,
+        session="stopped-claim-disregarded",
+        check_budget=False,
+        launcher=lambda *args, **kwargs: 0,
+    )
+
+    assert crew.pointer_path(record["run_id"]).is_file()
+    disregarded = [
+        warning for warning in record["warnings"] if stopped["run_id"] in warning
+    ]
+    assert disregarded, record["warnings"]
+    assert "disregarded" in disregarded[0]
+
+
+def test_a_stopped_claim_holding_a_commit_is_refused_and_named(
+    home: Path, tmp_path: Path
+) -> None:
+    repo = _repository(tmp_path / "shared", ("project-a", "project-b"))
+    _mounts(home, {"project-a": repo, "project-b": repo})
+    base_sha = _git(repo, "rev-parse", "HEAD")
+    worktree = _linked_worktree(repo, tmp_path / "loaded")
+    _commit_in(worktree, "package/target.py", "value = 2\n")
+    owner = _claim(
+        repo,
+        project="project-a",
+        path="package/target.py",
+        run_id="r-committed",
+        worktree=worktree,
+        pid=_reaped_pid(),
+        base_sha=base_sha,
+    )
+
+    with pytest.raises(crew.ScopeConflict) as excinfo:
+        crew.dispatch(
+            node=_node("project-b", "package/target.py"),
+            project="project-b",
+            repo=repo,
+            config=CONFIG,
+            session="stopped-claim-holds-a-commit",
+            check_budget=False,
+            launcher=lambda *args, **kwargs: pytest.fail("conflict must not launch"),
+        )
+
+    message = str(excinfo.value)
+    assert excinfo.value.run_id == owner["run_id"]
+    assert "r-committed" in message
+    assert "commit(s) beyond its base" in message
+    assert "promote or recover" in message
+
+
+def test_a_stopped_claim_holding_a_dirty_path_is_refused_and_named(
+    home: Path, tmp_path: Path
+) -> None:
+    repo = _repository(tmp_path / "shared", ("project-a", "project-b"))
+    _mounts(home, {"project-a": repo, "project-b": repo})
+    worktree = _linked_worktree(repo, tmp_path / "dirty")
+    (worktree / "package" / "target.py").write_text("value = 3\n", encoding="utf-8")
+    owner = _claim(
+        repo,
+        project="project-a",
+        path="package/target.py",
+        run_id="r-dirty",
+        worktree=worktree,
+        pid=_reaped_pid(),
+        base_sha=_git(repo, "rev-parse", "HEAD"),
+    )
+
+    with pytest.raises(crew.ScopeConflict) as excinfo:
+        crew.dispatch(
+            node=_node("project-b", "package/target.py"),
+            project="project-b",
+            repo=repo,
+            config=CONFIG,
+            session="stopped-claim-holds-a-dirty-path",
+            check_budget=False,
+            launcher=lambda *args, **kwargs: pytest.fail("conflict must not launch"),
+        )
+
+    message = str(excinfo.value)
+    assert excinfo.value.run_id == owner["run_id"]
+    assert "r-dirty" in message
+    assert "uncommitted change" in message
+
+
+def test_a_running_claim_is_still_refused(home: Path, tmp_path: Path) -> None:
+    """The negative that keeps the disregard from becoming the general case."""
+    repo = _repository(tmp_path / "shared", ("project-a", "project-b"))
+    _mounts(home, {"project-a": repo, "project-b": repo})
+    owner = _claim(
+        repo,
+        project="project-a",
+        path="package/target.py",
+        run_id="r-running",
+        worktree=_linked_worktree(repo, tmp_path / "running"),
+        pid=os.getpid(),
+        base_sha=_git(repo, "rev-parse", "HEAD"),
+    )
+
+    with pytest.raises(crew.ScopeConflict) as excinfo:
+        crew.dispatch(
+            node=_node("project-b", "package/target.py"),
+            project="project-b",
+            repo=repo,
+            config=CONFIG,
+            session="running-claim-still-refused",
+            check_budget=False,
+            launcher=lambda *args, **kwargs: pytest.fail("conflict must not launch"),
+        )
+
+    assert excinfo.value.run_id == owner["run_id"]
+    assert "is still running" in str(excinfo.value)

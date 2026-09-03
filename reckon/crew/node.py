@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Mapping
@@ -527,3 +528,221 @@ def validate_node(
         )
 
     return NodeValidation(ok=not findings, findings=findings)
+
+
+# ── A write claim is scoped to a repository, and to a living run ────────────
+
+# A live pointer names the repository twice and the two spellings disagree.
+# ``repo`` is resolved from the claiming run's PROJECT mount, while ``worktree``
+# is the checkout the worker actually writes in. A run dispatched with one
+# project's plan into another project's checkout therefore records a ``repo``
+# that contains none of its declared paths, and comparing claims on that field
+# lets two runs fence one file: the paths resolve into two different
+# repositories that never intersect. The worktree cannot disagree with itself,
+# so repository identity is taken from it.
+_WORKTREE_REPOSITORY_FIELDS = ("worktree", "repo")
+
+
+def _git_answer(cwd: Path, *args: str) -> str | None:
+    """Return stripped git stdout, or None when the command could not answer.
+
+    An empty answer and an unanswerable one are kept apart, because they mean
+    opposite things about a claim: no output from ``rev-list`` says the work is
+    integrated, while a failure says the comparison never happened.
+    """
+    try:
+        result = subprocess.run(
+            ["git", *args],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    return None if result.returncode else result.stdout.strip()
+
+
+def _git_output(cwd: Path, *args: str) -> str | None:
+    """Return git stdout when there is any, and None otherwise."""
+    return _git_answer(cwd, *args) or None
+
+
+def repository_identity(path: str | Path) -> Path | None:
+    """Return the one repository root that a checkout path belongs to.
+
+    Every linked worktree of a repository shares its object store, so a path
+    inside any of them names the same resource as the same path inside the main
+    checkout. ``--git-common-dir`` is what collapses them: it answers with the
+    main checkout's ``.git`` from a worktree as well as from the checkout
+    itself, which makes two spellings of one repository compare equal instead of
+    reading as two. A plain ``resolve()`` cannot do this — the worktree lives
+    outside the checkout it belongs to, under its own directory tree.
+    """
+    candidate = Path(str(path)).expanduser()
+    if not candidate.is_dir():
+        return None
+    common = _git_output(
+        candidate, "rev-parse", "--path-format=absolute", "--git-common-dir"
+    )
+    if not common:
+        return candidate.resolve()
+    common_dir = Path(common).resolve()
+    # A bare or unusual layout has no working tree above its git dir; the
+    # directory itself is then the most specific answer available.
+    return common_dir.parent if common_dir.name == ".git" else candidate.resolve()
+
+
+def claim_repository(pointer: Mapping[str, Any]) -> Path | None:
+    """Resolve the repository whose files one live claim fences."""
+    for field_name in _WORKTREE_REPOSITORY_FIELDS:
+        value = str(pointer.get(field_name) or "")
+        if not value:
+            continue
+        resolved = repository_identity(value)
+        if resolved is not None:
+            return resolved
+    return None
+
+
+def unintegrated_claim_work(
+    pointer: Mapping[str, Any],
+    *,
+    integration_ref: str = "main",
+) -> list[str]:
+    """Describe work a claim's worktree still holds that nothing else has.
+
+    Two independent ways a stopped worker leaves work behind, both reported so
+    a refusal can say which: uncommitted changes at the paths it declared, and
+    commits past its recorded base that the integration branch cannot reach.
+    """
+    worktree_value = str(pointer.get("worktree") or "")
+    if not worktree_value:
+        return []
+    worktree = Path(worktree_value).expanduser()
+    if not worktree.is_dir():
+        # A recorded worktree that is gone cannot be read, and an unreadable
+        # claim must not report the same emptiness as an inspected clean one:
+        # a removed worktree is how a commit stops being reachable at all.
+        return [f"a recorded worktree at {worktree} that is gone"]
+
+    findings: list[str] = []
+    node = pointer.get("node")
+    declared = (
+        list((node or {}).get("write_paths") or ()) if isinstance(node, Mapping) else []
+    )
+    relative = [
+        path
+        for path in (str(item) for item in declared)
+        if not Path(path).expanduser().is_absolute()
+    ]
+    if relative:
+        dirty = _git_output(worktree, "status", "--porcelain", "--", *relative)
+        if dirty:
+            findings.append(
+                f"{len(dirty.splitlines())} uncommitted change(s) at declared paths"
+            )
+
+    base_sha = str(pointer.get("base_sha") or "")
+    if base_sha:
+        unreachable = _git_answer(
+            worktree, "rev-list", "HEAD", f"^{integration_ref}", f"^{base_sha}"
+        )
+        if unreachable is None:
+            # The comparison could not run — most often because this repository
+            # integrates on a differently named branch. Reporting that as an
+            # empty worktree would release the claim on the strength of a
+            # question nobody answered, so it is reported as work instead.
+            findings.append(
+                f"work that could not be compared against {integration_ref!r}"
+            )
+        elif unreachable:
+            findings.append(
+                f"{len(unreachable.splitlines())} commit(s) beyond its base that "
+                f"{integration_ref} cannot reach"
+            )
+    return findings
+
+
+@dataclass(frozen=True)
+class ClaimDisposition:
+    """Whether one live write claim still fences its paths, and why.
+
+    ``binding`` is the only field a caller must act on; ``reason`` exists so a
+    refusal names the run to promote or recover and an admission names the claim
+    it walked past, because a silent admission is the one a reader cannot check.
+    """
+
+    binding: bool
+    reason: str
+    unintegrated: tuple[str, ...] = ()
+
+
+def claim_disposition(
+    pointer: Mapping[str, Any],
+    *,
+    integration_ref: str = "main",
+) -> ClaimDisposition:
+    """Judge whether a live claim still holds the paths it declared.
+
+    A claim binds while its worker runs, and keeps binding after the worker
+    stops for as long as its worktree holds work nobody else has. Only a claim
+    that is both stopped and empty is walked past.
+
+    A DEAD PROCESS GROUP ALONE IS DELIBERATELY NOT ENOUGH, and the weaker
+    predicate was measured before being rejected: of six claims whose process
+    group was gone, five held work — four carrying a commit past their base and
+    one holding three uncommitted files — and exactly one was safe to walk past.
+    A stopped worker means the work stopped, not that it landed, so admitting a
+    second writer onto those paths stacks a new change on an unrecovered commit,
+    after which the first commit survives only as long as its worktree does.
+    Refusing a stopped-but-loaded claim is also the more useful answer: it names
+    a run to promote or recover, which someone can act on, where admitting
+    quietly leaves nothing to act on at all.
+
+    The alternative of releasing the claim when the run turns terminal is not
+    taken. It needs an actor that notices the transition, while terminal runs
+    are already surfaced by the unreconciled-runs fence; judging the claim at
+    read time adds no actor and cannot lag the state it reports.
+    """
+    run_id = str(pointer.get("run_id") or "unknown")
+    pid = pointer.get("pid")
+    alive = _claim_process_alive(pid)
+    if alive is None:
+        # A pointer is written before its worker is spawned, so no recorded
+        # process means "not yet" rather than "gone". Reading the two alike
+        # would open the window between the two writes to a second dispatch,
+        # which is the collision the claim exists to prevent.
+        return ClaimDisposition(
+            binding=True,
+            reason=f"run {run_id!r} records no worker process yet",
+        )
+    if alive:
+        return ClaimDisposition(
+            binding=True, reason=f"run {run_id!r} is still running as pid {pid}"
+        )
+    unintegrated = unintegrated_claim_work(pointer, integration_ref=integration_ref)
+    if unintegrated:
+        return ClaimDisposition(
+            binding=True,
+            reason=(
+                f"run {run_id!r} has stopped but its worktree still holds "
+                f"{'; '.join(unintegrated)} — promote or recover it before "
+                "dispatching over its paths"
+            ),
+            unintegrated=tuple(unintegrated),
+        )
+    return ClaimDisposition(
+        binding=False,
+        reason=(
+            f"run {run_id!r} left no process and no unintegrated work at its "
+            "declared paths, so its claim is disregarded"
+        ),
+    )
+
+
+def _claim_process_alive(pid: Any) -> bool | None:
+    """Report worker liveness, or None when the pointer records no process."""
+    from reckon.crew.runs import process_alive
+
+    return process_alive(pid)

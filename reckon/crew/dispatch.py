@@ -25,6 +25,9 @@ from reckon.crew.node import (
     CrewError,
     DEFAULT_MEMBER_IDLE_WINDOW,
     MemberInFlight,
+    claim_disposition,
+    claim_repository,
+    repository_identity,
     NEEDS_HELP_MARKER,
     NodeValidation,
     ScopeConflict,
@@ -234,7 +237,12 @@ def _ensure_watch_producer(
 
 @dataclass(frozen=True)
 class _RepositoryScopeClaim:
-    """One live claim resolved to the repository that contains its path."""
+    """One live claim resolved to the repository that contains its path.
+
+    ``binding`` answers whether the claim still fences its paths. It is judged
+    once per pointer rather than once per path, because liveness and
+    unintegrated work are properties of the run, not of the file.
+    """
 
     project: str
     repository: Path | None
@@ -244,6 +252,8 @@ class _RepositoryScopeClaim:
     absolute_path: Path
     declared_path: str
     derived_from: str | None = None
+    binding: bool = True
+    disposition_reason: str = ""
 
 
 def _scope_derivation_project(
@@ -324,7 +334,15 @@ def _repository_scope_claims() -> list[_RepositoryScopeClaim]:
         pointer_repo_value = str(pointer.get("repo") or "")
         if not pointer_repo_value:
             continue
-        pointer_repo = Path(pointer_repo_value).expanduser().resolve()
+        # The claim's repository comes from the checkout the worker writes in.
+        # ``repo`` is resolved from the run's PROJECT mount, so a run carrying
+        # one project's plan into another project's checkout records a ``repo``
+        # holding none of its declared paths — and the paths then resolve into a
+        # repository that no other claim on the same file can intersect.
+        pointer_repo = (
+            claim_repository(pointer) or Path(pointer_repo_value).expanduser().resolve()
+        )
+        disposition = claim_disposition(pointer)
         project = str(pointer.get("project") or "")
         authority = pointer.get("authority")
         authority = authority if isinstance(authority, Mapping) else {}
@@ -365,6 +383,8 @@ def _repository_scope_claims() -> list[_RepositoryScopeClaim]:
                     absolute_path=absolute,
                     declared_path=declared,
                     derived_from=derived_from,
+                    binding=disposition.binding,
+                    disposition_reason=disposition.reason,
                 )
             )
     return sorted(
@@ -382,14 +402,14 @@ def _candidate_scope_entries(
 ) -> list[tuple[Path | None, str, Path, str, str | None]]:
     repository_projects = mounted_repository_projects()
     repositories = tuple(
-        Path(str(root)).expanduser().resolve()
+        repository_identity(root) or Path(str(root)).expanduser().resolve()
         for root in authority.get("repositories") or (repo,)
     )
     write = authority.get("write")
     write = write if isinstance(write, Mapping) else {}
     return _resolved_scope_entries(
         node.write_paths,
-        base_repository=repo,
+        base_repository=repository_identity(repo) or Path(repo).resolve(),
         repositories=repositories,
         project=project,
         repository_projects=repository_projects,
@@ -404,6 +424,7 @@ def _live_conflict_rows(
     repo: Path,
     authority: Mapping[str, Any],
     claims: Iterable[_RepositoryScopeClaim],
+    disregarded: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     candidates = _candidate_scope_entries(
         node, project=project, repo=repo, authority=authority
@@ -417,6 +438,10 @@ def _live_conflict_rows(
             and _scopes_overlap(absolute.as_posix(), claim.absolute_path.as_posix())
         ]
         if not paths:
+            continue
+        if not claim.binding:
+            if disregarded is not None and claim.disposition_reason not in disregarded:
+                disregarded.append(claim.disposition_reason)
             continue
         conflict: dict[str, Any] = {
             "candidate": node.id,
@@ -438,6 +463,7 @@ def _raise_repository_scope_conflict(
     repo: Path,
     authority: Mapping[str, Any],
     claims: Iterable[_RepositoryScopeClaim],
+    disregarded: list[str] | None = None,
 ) -> None:
     candidates = _candidate_scope_entries(
         node, project=project, repo=repo, authority=authority
@@ -448,6 +474,15 @@ def _raise_repository_scope_conflict(
                 absolute.as_posix(), claim.absolute_path.as_posix()
             ):
                 continue
+            if not claim.binding:
+                # Named on the record rather than passed over quietly: an
+                # admission a reader cannot see is one nobody can check.
+                if (
+                    disregarded is not None
+                    and claim.disposition_reason not in disregarded
+                ):
+                    disregarded.append(claim.disposition_reason)
+                continue
             refusal = ScopeConflict(
                 run_id=claim.run_id,
                 node_id=claim.node_id,
@@ -455,8 +490,12 @@ def _raise_repository_scope_conflict(
                 claimed_path=claim.path,
             )
             refusal.project = claim.project
+            message = str(refusal)
             if claim.project != project:
-                refusal.args = (f"{refusal} in project {claim.project!r}",)
+                message = f"{message} in project {claim.project!r}"
+            if claim.disposition_reason:
+                message = f"{message}; {claim.disposition_reason}"
+            refusal.args = (message,)
             raise refusal
 
 
@@ -1242,6 +1281,7 @@ def plan_dispatch(
                 repo=repo_root,
                 authority=resolved_authority,
                 claims=_repository_scope_claims(),
+                disregarded=resolution.warnings,
             )
     resolution.sandbox_write_roots = sandbox_write_roots
     return resolution
@@ -1732,6 +1772,7 @@ def dispatch(
                 raise MemberInFlight(
                     effective_member, str(pointer.get("run_id") or "unknown")
                 )
+    disregarded_claims: list[str] = []
     if shadow_lineage:
         adjacent_peers = []
     else:
@@ -1741,6 +1782,7 @@ def dispatch(
             repo=repo_root,
             authority=authority,
             claims=live_claims,
+            disregarded=disregarded_claims,
         )
         adjacent_peers = _adjacent_live_peers(
             node,
@@ -1922,7 +1964,11 @@ def dispatch(
             "dialect": None,
             "budget": _backends.unknown_budget("no events yet"),
             "budget_fallback": budget_fallback,
-            "warnings": [*resolution.warnings, *budget_warnings],
+            "warnings": [
+                *resolution.warnings,
+                *budget_warnings,
+                *disregarded_claims,
+            ],
             "lineage": lineage,
             "unreconciled_override": waiver,
             "watch_override": watcher_waiver,
