@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T05:47:55",
+  "updated": "2026-09-03T06:49:24",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -430,9 +430,11 @@
         "id": "glm-a",
         "harness": "claude",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "8d9ff563-527a-45b4-a308-17854278f55b",
+        "session_model": "glm-5.3",
+        "sessions": {
+          "glm-5.3": "8d9ff563-527a-45b4-a308-17854278f55b"
+        },
         "created": "2026-09-02"
       },
       {
@@ -37247,9 +37249,92 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260903T042915093953-shadow-path-admits-many-candidates",
+        "plan": "clive-local-workers",
+        "section": "\u00a77",
+        "node": "shadow-path-admits-many-candidates",
+        "node_definition": {
+          "done_when": "Today a second concurrent shadow of one primary is refused with the message worktree path already exists. The path is derived independently in two places that must agree: reckon/crew/dispatch.py builds it near line 1360 from a session string composed of the literal prefix shadow and the primary run id, and reckon/crew/routing.py reconstructs the same location near line 368, joining a workspace root with that same prefixed primary run id and then the node name, in order to classify a shadow worktree as reclaimable. Neither derivation carries anything naming the candidate backend, which is why a second candidate collides. Include the candidate backend name in that path at BOTH sites so several candidates run concurrently against one primary, taking the backend at the reclamation site from the committed run record rather than from current flight config, because the record is what says which candidate actually ran. Make the two derivations call one shared helper rather than two literals that agree by inspection, since they have already been shown to drift. Tests in tests/test_crew_shadow_paths.py assert: two shadows of one primary on different candidate backends both create worktrees and neither is refused; a third candidate also succeeds, so the fix is not a special case for two; each resulting worktree is classified against its own committed shadow record and stays reclaimable exactly as a single shadow is today; a re-shadow of the same primary on the SAME candidate still refuses rather than silently colliding; and the reclamation site resolves the same path the dispatcher created, asserted by calling both rather than by restating the format. Your gate is that new test file plus tests/test_crew_gc.py. Do NOT run the full suite and do NOT run any browser-driven test. Judge by delta against base 430643e4f1be58dd88fb167344cb6dfba666ba2e",
+          "estimated_hours": null,
+          "goal": "Let one committed node be shadowed by several candidate models at once, so a shadow wave is a benchmark rather than a queue",
+          "id": "shadow-path-admits-many-candidates",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T042915093953-shadow-path-admits-many-candidates/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "reckon/crew/routing.py",
+            "tests/test_crew_shadow_paths.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "glm-a",
+        "backend": "clive-glm",
+        "local": false,
+        "agent": {
+          "backend": "clive-glm",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "glm-5.3",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T04:29:22Z",
+        "completed_at": "2026-09-03T04:48:53.754Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1158,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1171,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "430643e4f1be58dd88fb167344cb6dfba666ba2e",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "malformed-node",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T042915093953-shadow-path-admits-many-candidates/manifest.md",
+        "scope_changed": false,
+        "session_id": "8d9ff563-527a-45b4-a308-17854278f55b",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no rate-limit event in the stream yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "stopped before any edit; the node was mis-sized for this model's window",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [],
-    "_version": 605
+    "_version": 607
   }
 }

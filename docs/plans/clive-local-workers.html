@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="67">
+<meta name="plan-version" content="69">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,~/.config/reckon/crew/reports/local-effort-probe.md,~/.config/reckon/crew/reports/read-only-tier-delivery-discriminator.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
 <meta name="plan-impl" content="0.72">
 <meta name="plan-commits" content="a91abe9,a56eae9,42a339f,a2e488b,ca6288d,0226835,e099fc5,5dc92ce,8b80bdc,8abc064,6f99ac2,7f41635,1908947">
@@ -472,6 +472,18 @@
       qualification programme for a model whose whole point is that it needs a different
       effort from the incumbent. An override that cannot be honoured must refuse; one that
       is honoured must move the resolved value and say so.</li>
+      <li><strong>Nothing reports how fast a worker is generating, so a slow model and a
+      hung one look identical.</strong> Liveness is decided from the age of the stream file
+      against a stall window, which answers only whether bytes arrived, and the run record
+      keeps cumulative token counts that are never turned into a rate. A coordinator asking
+      the obvious question &mdash; is this worker working, or stuck &mdash; has nothing to
+      read, and had to reconstruct it by hand from the raw stream: 15,414 generated tokens
+      over 1,124 seconds, about 13.7 per second of wall clock. Fold a throughput figure into
+      <code>observe</code> beside the token counts, separating generation from tool wait
+      since the session already showed wall clock is dominated by local suite execution
+      rather than inference. Report peak input against the model's usable budget in the same
+      place, because a run at 87% of its window is minutes from a ceiling failure and that
+      is knowable before it happens rather than after.</li>
       <li><strong>A read-only node on this dialect cannot reliably deliver a file, and does
       not know it.</strong> Settled by investigation rather than argued. All three local
       read-only runs report <code>permissionMode=plan</code> at their stream's init event,
@@ -639,6 +651,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-20260903-worktree-provisioned" data-who="reckon-ship" data-when="2026-09-03T03:50:00Z">
     <div class="r-comment-body">Worktree provisioning binds to creation — run r-20260903T034321152079, member flash-a on deepseek-v4-flash, first attempt, no scope change; commit 1908947 merged, 123 insertions across exactly the two authorised paths, 5 tests added, 15 passed. The measurement that justified it, taken across the whole fleet rather than from memory: of 263 crew worktrees, 148 carried a .venv symlink, 113 carried nothing, 2 carried a real .venv directory and only 3 carried a .env — and nothing in this repository created any of them, so every one of those 148 was made by hand by whoever remembered. 1,324 of 2,395 recorded run streams contain uv's does-not-match-the-project-environment warning, the signature of a worker whose environment resolution fell back. The two malformed directories were both from this session's own runs, which is the honest illustration: knowing the rule did not stop me producing the failure twice in one evening, and that is precisely what a rule with no bound check looks like. provision_env_links now runs inside create() immediately after git worktree add, symlinking .venv and .env to the repository root's when present, never copying and never linking in reverse, skipping an absent source with its reason rather than failing creation, and returning a provisioned mapping so a caller can see what each entry got. Verified live on a real worktree after the merge rather than from the suite: .venv resolved to the root environment, .env skipped naming the absent source, and git status reported clean because both names are ignored bare. Repo-agnostic throughout, and the precondition holds across all four mounted repositories, each of which already carries the bare ignore entry and a root environment.</div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260903T042915093953-shadow-path-admits-many-candidates" data-who="glm-a" data-when="2026-09-03T04:48:53.754Z">
+    <div class="r-comment-body"><p>Stopped at 1,124s of a 2,400s budget with zero edits and peak input at 64,764 of 73,728 (87%). Not a capability failure and not a context-management failure by the model: it was reading two modules totalling 35,215 tokens to understand a contract spanning both, and exploration alone consumed the window before any edit could start. It generated 51,070 characters of thinking across 19 blocks in the process, which is substantive deliberation, not idling. My node sizing was wrong for the second time on this model: a cross-module contract cannot be given to a 73,728-token window, because the worker must hold both sides at once. Re-cut to flash, which has 492,288. Classified malformed-node because the specification was the defect.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260902T133214247667-shadowable-node-census" data-who="clive-a" data-when="2026-09-02T13:54:38.645Z">
     <div class="r-comment-body"><p>126 of 423 committed reckon runs are shadowable today; exclusion partition sums exactly to 297 with the dominant limiter being 215 implement runs that carry no stored node_definition. Ten pairs are reachable at guided and in the medium and unlabelled size buckets; open, exact and high are short. First live local-lane run: deepseek-v4-flash/medium.</p></div>
