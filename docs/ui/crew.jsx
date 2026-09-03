@@ -169,11 +169,19 @@ function crewRunsForVisibleProjects(runs, visibleProjects) {
   return (runs || []).filter(run => visible.has(run.project));
 }
 
-function CrewView({ visibleProjects, mountedProjectCount }) {
+function crewScopedProjects(selectedProject, visibleProjects, allVisible) {
+  if (allVisible || !selectedProject) {
+    return Array.isArray(visibleProjects) ? visibleProjects : [];
+  }
+  return [selectedProject];
+}
+
+function CrewView({ visibleProjects, mountedProjectCount, selectedProject }) {
   const [runs, setRuns] = useState([]);
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [refreshedAt, setRefreshedAt] = useState(null);
+  const [allVisible, setAllVisible] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -204,15 +212,27 @@ function CrewView({ visibleProjects, mountedProjectCount }) {
     };
   }, []);
 
-  const visibleRuns = crewRunsForVisibleProjects(runs, visibleProjects);
+  const scopedProjects = crewScopedProjects(selectedProject, visibleProjects, allVisible);
+  const visibleRuns = crewRunsForVisibleProjects(runs, scopedProjects);
+  const scopeLabel = allVisible || !selectedProject
+    ? `All visible · ${visibleRuns.length} runs`
+    : `${selectedProject} · ${visibleRuns.length} runs`;
 
   return (
-    <div className="r-crew-view">
+    <div className="r-crew-surface">
       <style>{CREW_CARD_STYLES}</style>
       <div className="r-crew-heading">
-        <h1>Live runs</h1>
+        <h1>{scopeLabel}</h1>
+        <button
+          type="button"
+          className="r-crew-scope-toggle"
+          aria-pressed={allVisible}
+          onClick={() => setAllVisible(value => !value)}
+        >
+          All visible
+        </button>
         <span>
-          {visibleRuns.length} visible · {(visibleProjects || []).length} shown / {mountedProjectCount || 0} mounted · polls every {CREW_POLL_INTERVAL_MS / 1000}s
+          {mountedProjectCount || 0} mounted · polls every {CREW_POLL_INTERVAL_MS / 1000}s
           {refreshedAt ? ` · refreshed ${refreshedAt.toLocaleTimeString()}` : ""}
         </span>
       </div>

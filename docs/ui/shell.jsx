@@ -323,7 +323,7 @@ function App() {
                 {canvasView === "cockpit" && <window.ReckonShell.overview.CockpitBody onNav={nav} projects={shownProjects} fleetRuns={fleetRuns} mountedProjectCount={projects.length} />}
                 {canvasView === "sprint" && <><window.ReckonShell.prompt.FleetPrompt sprintId={route.sprint} /><window.Sprint sprintId={route.sprint} onNav={nav} /></>}
                 {canvasView === "graph" && <window.GraphView onNav={nav} items={items} focal={graphFocal} setFocal={setGraphFocal} />}
-                {canvasView === "crew" && <window.CrewView visibleProjects={shownProjectNames} mountedProjectCount={projects.length} />}
+                {canvasView === "crew" && <window.CrewView visibleProjects={shownProjectNames} mountedProjectCount={projects.length} selectedProject={M?.project || null} />}
               </div>
             </div>
           </div>

@@ -71,6 +71,7 @@ window.__crewTest = {
   CrewRunCard,
   CrewView,
   crewCardProjection,
+  crewScopedProjects,
   styles: CREW_CARD_STYLES,
 };
 """
@@ -267,6 +268,109 @@ return {
             candidate,
             r"navigator\.clipboard\?\.writeText\(card\.attachCommand\);",
             "",
+        ),
+        contract,
+    )
+
+
+def test_crew_scoped_projects_defaults_to_selected_and_widens_when_all_visible() -> (
+    None
+):
+    source = CREW.read_text(encoding="utf-8")
+
+    def contract(candidate: str) -> None:
+        result = _run_probe(
+            candidate,
+            {},
+            probe="""
+return {
+  defaultScope: window.__crewTest.crewScopedProjects("nova", ["nova", "reckon", "ambix"], false),
+  widenedScope: window.__crewTest.crewScopedProjects("nova", ["nova", "reckon", "ambix"], true),
+  fallbackScope: window.__crewTest.crewScopedProjects(null, ["nova", "reckon"], false),
+};
+""",
+        )
+        assert result["defaultScope"] == ["nova"]
+        assert result["widenedScope"] == ["nova", "reckon", "ambix"]
+        assert result["fallbackScope"] == ["nova", "reckon"]
+
+    _assert_mutation_is_rejected(
+        source,
+        lambda candidate: _mutate_once(
+            candidate,
+            r"return \[selectedProject\];",
+            "return Array.isArray(visibleProjects) ? visibleProjects : [];",
+        ),
+        contract,
+    )
+
+
+def test_crew_view_scopes_cards_to_selected_project_by_default() -> None:
+    source = CREW.read_text(encoding="utf-8")
+    runs = [
+        {"run_id": "a", "project": "nova"},
+        {"run_id": "b", "project": "reckon"},
+        {"run_id": "c", "project": "nova"},
+    ]
+
+    def contract(candidate: str) -> None:
+        result = _run_probe(
+            candidate,
+            {},
+            probe=f"""
+const runs = {json.dumps(runs)};
+const scoped = window.__crewTest.crewScopedProjects("nova", ["nova", "reckon"], false);
+const widened = window.__crewTest.crewScopedProjects("nova", ["nova", "reckon"], true);
+return {{
+  scopedProjects: runs.filter(run => scoped.includes(run.project)).map(run => run.project),
+  widenedProjects: runs.filter(run => widened.includes(run.project)).map(run => run.project),
+}};
+""",
+        )
+        assert result["scopedProjects"] == ["nova", "nova"]
+        assert sorted(result["widenedProjects"]) == ["nova", "nova", "reckon"]
+
+    _assert_mutation_is_rejected(
+        source,
+        lambda candidate: _mutate_once(
+            candidate,
+            r"return \[selectedProject\];",
+            "return Array.isArray(visibleProjects) ? visibleProjects : [];",
+        ),
+        contract,
+    )
+
+
+def test_crew_view_header_and_toggle_reflect_selected_project() -> None:
+    source = CREW.read_text(encoding="utf-8")
+
+    def contract(candidate: str) -> None:
+        result = _run_probe(
+            candidate,
+            {},
+            state={},
+            probe="""
+const rendered = window.__crewTest.CrewView({ visibleProjects: ["nova", "reckon"], mountedProjectCount: 2, selectedProject: "nova" });
+const heading = findAll(rendered, node => hasClass(node, "r-crew-heading"))[0];
+const title = findAll(heading, node => node.type === "h1")[0];
+const toggle = findAll(heading, node => hasClass(node, "r-crew-scope-toggle"))[0];
+return {
+  titleText: textContent(title),
+  toggleText: textContent(toggle),
+  togglePressed: toggle.props["aria-pressed"],
+};
+""",
+        )
+        assert result["titleText"] == "nova · 0 runs"
+        assert result["toggleText"] == "All visible"
+        assert result["togglePressed"] is False
+
+    _assert_mutation_is_rejected(
+        source,
+        lambda candidate: _mutate_once(
+            candidate,
+            r'className="r-crew-scope-toggle"',
+            'className="r-crew-scope-toggle-removed"',
         ),
         contract,
     )
