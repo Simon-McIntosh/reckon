@@ -304,24 +304,29 @@ def _display_role(role: Any) -> str:
 
 
 def _derive_effort(effort: Any) -> str:
-    """The first two characters, lowercased — no table, so a fresh word works.
+    """The effort word in full, lowercased — no table, so a fresh word works.
 
-    Collision-free across the real ladder (lo, me, hi, xh, ma, mi, ex), which
-    is why an effort nobody has configured yet still renders.
+    Full spelling is the legibility target the alias work existed to serve: a
+    two-character prefix made medium and max land one character apart in a dim
+    narrow column, and that is the one pair on the ladder a reader must not have
+    to decode. An effort word invented next month still renders with no code
+    change, because there is still no enumeration to stay in step with.
     """
     word = str(effort or "").strip()
-    return word[:2].lower()
+    return word.lower()
 
 
 def _agent_label(agent: Any) -> str:
-    """The agent column label: alias plus an effort suffix, or the record as it stands.
+    """The agent column label: alias plus the full effort word, or the record as it stands.
 
     A pointer written before this change carries a precomposed ``model/effort``
     string and must still render; a stamped pointer carries a mapping whose
     alias and effort spelling were decided at dispatch, so a later
     configuration edit cannot restate what ran. An unaliased model renders
-    itself rather than an empty cell, and the effort suffix never exceeds two
-    characters. The spelling is configuration data, never a table in code.
+    itself rather than an empty cell, and the effort is spelled in full — the
+    one pair the prefix abbreviated, medium and max, is the pair a reader must
+    not have to decode, so no character is saved there. A declared spelling is
+    configuration data, never a table in code, and still wins when present.
     """
     if not isinstance(agent, Mapping):
         return str(agent or "")
@@ -329,8 +334,6 @@ def _agent_label(agent: Any) -> str:
     base = str(agent.get("alias") or "").strip() or model
     effort = str(agent.get("effort") or "").strip()
     suffix = str(agent.get("effort_spelling") or "").strip() or _derive_effort(effort)
-    if len(suffix) > 2:
-        suffix = suffix[:2]
     if not suffix:
         return base
     return base + "·" + suffix if base else suffix

@@ -459,12 +459,12 @@ def _stamped_agent(**overrides):
 def test_a_configured_alias_renders_in_place_of_the_model_id(grid):
     """The alias is the whole point: it spares the reader the model line.
 
-    `claude-sonnet-5/medium` spends eighteen columns to say what `sonnet5·me`
-    says in ten, and the alias lives in configuration beside the model it
+    `claude-sonnet-5/medium` spends eighteen columns to say what `sonnet5·medium`
+    says in thirteen, and the alias lives in configuration beside the model it
     shortens instead of in a vendor table in the renderer.
     """
     line = plain(grid.render(_event(agent=_stamped_agent(alias="sonnet5"))))
-    assert "sonnet5·me" in line
+    assert "sonnet5·medium" in line
     assert "claude-sonnet-5" not in line
     assert len(line) == 180
 
@@ -483,7 +483,7 @@ def test_a_backend_with_no_alias_renders_a_mechanical_form_not_an_empty_cell(gri
 
 
 def test_a_declared_effort_spelling_renders_in_place_of_the_derived_one(grid):
-    """A declared spelling wins over the first-two-letters derivation.
+    """A declared spelling wins over the whole-word derivation.
 
     Both are stamped from configuration at dispatch; the declared one is the
     operator's explicit choice, so it is what displays.
@@ -493,44 +493,59 @@ def test_a_declared_effort_spelling_renders_in_place_of_the_derived_one(grid):
     assert "sonnet5·hi" in line
 
 
-def test_an_undeclared_effort_renders_its_first_two_characters_lowercased(grid):
+def test_an_undeclared_effort_renders_the_whole_word(grid):
     """No table, so an effort nobody has configured still renders.
 
-    The first two characters derive collision-free across the real ladder and
-    stay distinct for medium, max and minimal.
+    The whole word derives in full and lowercased, so medium and max — the
+    pair a two-character prefix put one character apart — are read as
+    themselves rather than decoded.
     """
     line = plain(grid.render(_event(agent=_stamped_agent(effort="xhigh"))))
-    assert "sonnet5·xh" in line
+    assert "sonnet5·xhigh" in line
 
 
 def test_the_derivation_lowercases_the_effort_word(grid):
     line = plain(grid.render(_event(agent=_stamped_agent(effort="MEDIUM"))))
-    assert "sonnet5·me" in line
+    assert "sonnet5·medium" in line
 
 
 def test_max_renders_mx_from_a_declared_configuration_spelling(grid):
-    """`max` would derive `ma`; the operator's declared spelling is `mx`.
+    """`max` would derive `max`; the operator's declared spelling is `mx`.
 
     The override is configuration data — never a table in code — and it is the
     mechanism that keeps a declared effort spelling rendering in place of the
-    derived one.
+    derived one. The schema key and its mechanism remain even though the host
+    layer no longer declares a spelling by default.
     """
     agent = _stamped_agent(effort="max", effort_spelling="mx")
     line = plain(grid.render(_event(agent=agent)))
     assert "sonnet5·mx" in line
-    assert "sonnet5·ma" not in line
+    assert "sonnet5·max" not in line
 
 
-def test_no_suffix_exceeds_two_characters(grid):
-    """The suffix column is fixed at two, whatever the record carries.
+def test_a_declared_spelling_is_honoured_in_full(grid):
+    """A declared spelling is not cut to some fixed width.
 
-    A declared spelling longer than two is cut to the column rather than
-    allowed to shove the next field off its screen column.
+    The derived fallback no longer caps at two characters, so a declared
+    spelling — however long — is what displays rather than a prefix of it.
     """
     agent = _stamped_agent(effort="high", effort_spelling="extra")
     line = plain(grid.render(_event(agent=agent)))
-    assert "sonnet5·ex" in line
-    assert "extra" not in line
+    assert "sonnet5·extra" in line
+    assert len(line) == 180
+
+
+def test_the_widest_real_label_fits_the_agent_column_without_elision(grid):
+    """`dsv4-flash·medium` is seventeen characters against an eighteen-wide field.
+
+    The alias plus the full effort word is the widest label the shipped
+    configuration produces, and it must land whole in the column rather than
+    take the elision mark that tells a reader part of the effort was cut.
+    """
+    agent = _stamped_agent(model="deepseek-v4-flash", alias="dsv4-flash", effort="medium")
+    line = plain(grid.render(_event(agent=agent)))
+    assert "dsv4-flash·medium" in line
+    assert "…" not in line
     assert len(line) == 180
 
 
@@ -548,8 +563,8 @@ def test_a_pointer_written_before_this_change_still_renders_a_label(grid):
 
 def test_an_effort_only_record_renders_its_suffix_without_a_stray_separator(grid):
     line = plain(grid.render(_event(agent={"effort": "high"})))
-    assert "hi" in line
-    assert "·hi" not in line
+    assert "high" in line
+    assert "·high" not in line
     assert len(line) == 180
 
 
@@ -578,13 +593,16 @@ def test_dispatch_stamps_the_label_and_a_later_config_edit_cannot_restate_it(gri
     # The operator later edits the configuration — alias dropped, spelling gone.
     edited = {"launch": "cli", "model": "claude-sonnet-5", "effort": "medium"}
 
-    # A dispatch under the edited configuration would now say the model.
+    # A dispatch under the edited configuration would now say the model. The
+    # full-word label `claude-sonnet-5·medium` overruns the eighteen-wide agent
+    # column and is elided, so this asserts the fallback to the model that the
+    # freeze semantics guarantee — not the exact suffix, which the pane trims.
     restated = _stamp_agent_display(
         {"model": "claude-sonnet-5", "effort": "medium"}, edited
     )
     after = plain(grid.render(_event(agent=restated)))
-    assert "claude-sonnet-5·me" in after
     assert "sonnet5" not in after
+    assert "claude-sonnet-5·" in after
 
     # But the already-recorded pointer still renders what actually ran.
     again = plain(grid.render(_event(agent=stamped)))
