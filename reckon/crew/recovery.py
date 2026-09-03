@@ -558,12 +558,12 @@ def unwatch(project: str) -> dict[str, Any]:
 
 
 def agent_label(pointer: Mapping[str, Any]) -> str:
-    """Compact `model/effort` — or `alias·spelling` — for the ticker.
+    """Compact `model/effort` — or `alias·effort` — for the ticker.
 
     Read from the configuration persisted at dispatch rather than from current
     flight config, because a later config change must not silently restate what
-    ran. The alias and its declared effort spelling are display decisions frozen
-    at dispatch, so an aliased run renders the alias in place of the model it
+    ran. The alias and its effort spelling are display decisions frozen at
+    dispatch, so an aliased run renders the alias in place of the model it
     shortens; the composition is the renderer's so the two cannot drift. A run
     dispatched before aliases existed carries no alias and keeps the
     precomposed `model/effort` form it rendered then. Absent fields are simply
