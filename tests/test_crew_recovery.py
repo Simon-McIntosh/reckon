@@ -6,7 +6,7 @@ import importlib
 import json
 import subprocess
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -536,3 +536,132 @@ def test_parse_manifest_stops_the_block_at_the_next_top_level_key() -> None:
         "the second line of the block",
     ]
     assert fields["commits"] == ["abc123"]
+
+
+# ── The snapshot threads the role it renders ────────────────────────────────
+
+
+def _role_snapshot(
+    home: Path,
+    run_id: str,
+    *,
+    role: str | None = None,
+    node_role: str | None = None,
+    manifest_status: str | None = None,
+) -> dict:
+    """Reduce a pointer built from scratch, so the role field is the only
+    difference between tests and cannot be smuggled in by a shared fixture."""
+    manifest = home / "manifests" / f"{run_id}.md"
+    node = {"id": run_id, "plan": "plan-a", "time_budget": "20m"}
+    if node_role:
+        node["role"] = node_role
+    record = {
+        "run_id": run_id,
+        "project": "proj",
+        "node": node,
+        "phase": "working",
+        "created_at": datetime.now(tz=UTC).isoformat(),
+        "manifest_path": str(manifest),
+        "log_path": str(home / "streams" / f"{run_id}.jsonl"),
+        "process_alive": True,
+    }
+    if role:
+        record["role"] = role
+    if manifest_status:
+        manifest.parent.mkdir(parents=True, exist_ok=True)
+        manifest.write_text(f"node: {run_id}\nstatus: {manifest_status}\n")
+    return recovery._watch_snapshot(record, moment=time.time(), stall_seconds=3600)
+
+
+def _role_transition(home: Path, run_id: str, **role_kwargs) -> dict:
+    snapshot = _role_snapshot(home, run_id, **role_kwargs)
+    return recovery._watch_transition(
+        "proj",
+        kind="baseline",
+        snapshot=snapshot,
+        previous=None,
+        current=str(snapshot["state"]),
+        counts=recovery._fleet_counts({run_id: snapshot}),
+    )
+
+
+def test_transition_carries_the_role_its_pointer_carried(home) -> None:
+    # Built from a pointer rather than a synthetic event, so this cannot pass
+    # while the role field is simply absent from the snapshot.
+    transition = _role_transition(home, "r-role", role="implement")
+
+    assert transition["role"] == "implement"
+    line = recovery.format_watch_transition(transition)
+    assert "implement" in line
+
+
+def test_the_role_stamped_on_the_node_reaches_the_transition_tool(home) -> None:
+    # Dispatch writes the role both on the record root and on the node; both
+    # spellings are the same fact, so both must thread.
+    transition = _role_transition(home, "r-node-role", node_role="test")
+
+    assert transition["role"] == "test"
+
+
+def test_documentation_is_narrowed_to_docs_by_the_renderer(home) -> None:
+    transition = _role_transition(home, "r-doc", role="documentation")
+
+    assert transition["role"] == "documentation"
+    line = recovery.format_watch_transition(transition)
+    assert "docs" in line
+
+
+def test_a_pointer_without_a_role_renders_the_marker_without_raising(home) -> None:
+    transition = _role_transition(home, "r-norole")
+
+    assert transition["role"] == ""
+    line = recovery.format_watch_transition(transition)
+    # An unknown role is marked, not truncated, so a reader is never invited to
+    # guess the rest of a word that says what kind of work this is.
+    assert "?" in line
+
+
+# The fixed-grid ticker reads one display key per laid-out column, plus the
+# reason clause and the three fleet counters, all off the transition event. A
+# column added later that reads a key the snapshot never threads would render
+# its marker forever while the suite stayed green — the treadmill this section
+# exists to close — so the contract is that every key the renderer consumes is
+# carried on every transition it is given.
+_TICKER_READ_FIELDS = (
+    "observed_at",
+    "role",
+    "node",
+    "run_id",
+    "session",
+    "to_state",
+    "from_state",
+    "agent",
+    "reason",
+    "working",
+    "blocked",
+    "unpromoted",
+)
+
+
+def test_snapshot_carries_every_field_the_ticker_column_set_reads(home) -> None:
+    # Constructed from a pointer whose manifest is blocked so the reason clause
+    # is populated; a snapshot whose state supplied nothing to explain would not
+    # exercise the reason slot the renderer reads.
+    snapshot = _role_snapshot(
+        home, "r-contract", role="implement", manifest_status="blocked"
+    )
+    transition = recovery._watch_transition(
+        "proj",
+        kind="baseline",
+        snapshot=snapshot,
+        previous=None,
+        current=str(snapshot["state"]),
+        counts=recovery._fleet_counts({"r-contract": snapshot}),
+    )
+
+    for field in _TICKER_READ_FIELDS:
+        assert field in transition, (
+            f"the renderer reads {field!r} but the transition does not carry it"
+        )
+    line = recovery.format_watch_transition(transition)
+    assert "implement" in line

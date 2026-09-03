@@ -575,6 +575,22 @@ def agent_label(pointer: Mapping[str, Any]) -> str:
     return model or effort
 
 
+def _pointer_role(pointer: Mapping[str, Any]) -> str:
+    """The dispatch role a run carried, from its own record.
+
+    Read from the persisted pointer rather than current config for the same
+    reason :func:`agent_label` reads its agent block from the record: a later
+    role change must not restate what actually ran. Dispatch writes the role on
+    the record root and on the node, so either spelling is accepted. The display
+    narrowing (``documentation`` to ``docs``, unknown to the marker) happens in
+    the renderer where the column lives; the snapshot threads the raw spelling.
+    """
+    role = str(pointer.get("role") or "").strip()
+    if not role:
+        role = str(((pointer.get("node") or {}) or {}).get("role") or "").strip()
+    return role
+
+
 # A state that needs action is exactly a state that may explain itself, so this
 # is the grid's set rather than a second copy of it.
 EXPLAINED_STATES = NEEDS_ACTION
@@ -646,6 +662,11 @@ def _watch_snapshot(
         # a stall is the model or the work, needs this and had to leave the
         # ticker to get it.
         "agent": agent_label(pointer),
+        # What kind of work it is, on the record the same way. Read beside the
+        # agent because the two describe the same run and are reduced the same
+        # way — the snapshot carries the raw spelling and the renderer narrows
+        # it to fit its column.
+        "role": _pointer_role(pointer),
         "state": state,
         "reason": _single_clause(detail),
         # Only a "blocked" state carries a marker; a run entering any other
@@ -759,6 +780,7 @@ def _watch_transition(
         "node": snapshot.get("node"),
         "session": snapshot.get("session") or "",
         "agent": snapshot.get("agent") or "",
+        "role": snapshot.get("role") or "",
         "from_state": previous,
         "to_state": current,
         "working": counts["working"],
