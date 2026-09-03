@@ -505,6 +505,53 @@ def test_an_exhausted_backend_holds_the_wave_without_creating_a_worktree(
     assert crew.validate_node(_node(), budget_ceiling="25m").ok
 
 
+def test_a_recorded_quota_refusal_holds_the_next_wave(home, repo) -> None:
+    """The refusal a backend wrote on its stream must reach the pre-flight.
+
+    This is the loop the signal exists to close. The block under test is what a
+    real recorded refusal parses to, and the failure it prevents is a pre-flight
+    reporting a clear backend while the account behind it is spent — which is not
+    hypothetical: it ran that way for six days.
+    """
+    refusal = _backends.refusal_budget(
+        "You've hit your usage limit. Visit https://example.invalid/usage to "
+        "purchase more credits or try again at Sep 8th, 2036 7:38 AM."
+    )
+    assert refusal is not None
+    _record("proj", repo, backend="alpha", budget_block=refusal, run_id="r-refused")
+
+    with pytest.raises(crew.BudgetHold) as excinfo:
+        crew.dispatch(
+            node=_node(),
+            project="proj",
+            repo=repo,
+            config=CONFIG,
+            session="sess",
+            launcher=lambda *a, **k: 1,
+        )
+
+    verdict = excinfo.value.verdict
+    assert verdict["held"] is True
+    assert verdict["state"]["resets_at"]
+    assert verdict["state"]["seconds_until_reset"] > 0
+
+
+def test_a_refused_window_that_has_reset_no_longer_holds(home, repo) -> None:
+    """A spent window describes nothing once it has rolled over."""
+    refusal = _backends.refusal_budget(
+        "You've hit your usage limit. Try again at Jan 2nd, 2020 7:38 AM."
+    )
+    assert refusal is not None
+    _record("proj", repo, backend="alpha", budget_block=refusal, run_id="r-stale")
+    recorded = budget.latest_recorded("proj", root=repo, config=CONFIG)
+
+    state = budget.state_for("alpha", recorded=recorded.get("alpha"))
+
+    assert state.expired is True
+    assert state.headroom == "unknown"
+    assert budget.decide(state, budget.policy(CONFIG))["held"] is False
+
+
 def test_a_declared_exhausted_status_holds_whatever_the_utilisation_reads(
     home, repo
 ) -> None:

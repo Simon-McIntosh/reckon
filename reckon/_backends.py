@@ -23,14 +23,19 @@ from live runs (``tests/fixtures/backends/``):
 
     argument construction   including sandbox tier, model, effort and worktree
     session capture         the resumable id, so a worker outlives its workspace
-    stream interpretation   terminal event, final message, budget signal
+    stream interpretation   terminal event, final message, budget signal,
+                            and how fast the worker is generating
 
 Budget is deliberately asymmetric and must stay that way. One harness reports
 utilisation and a reset time on its run stream; another reports only tokens
 spent there, with no headroom at all. So an observation carries
 ``headroom: "unknown"`` rather than a guess, and :func:`budget_exhausted`
 answers ``None`` where nothing is known. Absence of a signal is never read as
-exhaustion.
+exhaustion. The converse holds too: a harness that *refuses* a turn because the
+account is spent is stating headroom, in prose rather than in a field, and
+folding that refusal to unknown reported a clear backend for six days while it
+was exhausted. A recognised refusal is therefore a measurement; an
+unrecognised failure still is not.
 
 The asymmetry is in the *stream*, not necessarily in the harness: a dialect may
 also own a probe (:func:`probe_budget`) that asks the harness's own account
@@ -44,6 +49,7 @@ from __future__ import annotations
 
 import json
 import queue
+import re
 import subprocess
 import tempfile
 import threading
@@ -122,6 +128,15 @@ class Observation:
     work in progress. A stream that stops without a terminal event therefore
     reads ``working`` forever, which is correct — only the process table can
     distinguish a slow worker from a dead one, and that is the caller's job.
+
+    ``throughput`` is what makes a slow worker distinguishable from a stuck one.
+    Liveness read from the age of the log answers only whether bytes arrived, so
+    it reports a model producing two tokens a second and a model producing none
+    identically. The block folds the token counts the stream already carries into
+    a rate, keeps generation apart from tool wait because wall clock on a node
+    running its own test suite is mostly the suite, and states peak input against
+    the usable window so a run approaching a ceiling is visible before it hits
+    one rather than after.
     """
 
     backend: str
@@ -131,6 +146,7 @@ class Observation:
     exit_status: str | None = None
     final_message: str | None = None
     budget: dict[str, Any] = field(default_factory=dict)
+    throughput: dict[str, Any] = field(default_factory=dict)
     events: int = 0
     malformed_lines: int = 0
     detail: str = ""
@@ -148,6 +164,7 @@ class Observation:
             "phase": self.phase,
             "session_id": self.session_id,
             "terminal": self.terminal,
+            "throughput": dict(sorted(self.throughput.items())),
         }
 
 
@@ -217,6 +234,86 @@ def unknown_budget(reason: str) -> dict[str, Any]:
     }
 
 
+def unknown_throughput(reason: str) -> dict[str, Any]:
+    """Return a throughput block that admits it measured no rate."""
+    return {
+        "generated_tokens": None,
+        "generation_seconds": None,
+        "tool_wait_seconds": None,
+        "elapsed_seconds": None,
+        "tokens_per_second": None,
+        "wall_tokens_per_second": None,
+        "peak_input_tokens": None,
+        "input_budget_tokens": None,
+        "input_utilisation_pct": None,
+        "detail": reason,
+    }
+
+
+def _rate(tokens: Any, seconds: Any) -> float | None:
+    """Return tokens per second, or None when either side is not measured."""
+    if not isinstance(tokens, (int, float)) or isinstance(tokens, bool):
+        return None
+    if not isinstance(seconds, (int, float)) or isinstance(seconds, bool):
+        return None
+    if seconds <= 0:
+        return None
+    return round(float(tokens) / float(seconds), 2)
+
+
+def _percent(part: Any, whole: Any) -> float | None:
+    """Return part as a percentage of whole, or None when either is missing."""
+    if not isinstance(part, (int, float)) or isinstance(part, bool):
+        return None
+    if not isinstance(whole, (int, float)) or isinstance(whole, bool):
+        return None
+    if whole <= 0:
+        return None
+    return round(100.0 * float(part) / float(whole), 1)
+
+
+def throughput_block(
+    *,
+    generated_tokens: int | None,
+    generation_seconds: float | None,
+    elapsed_seconds: float | None,
+    peak_input_tokens: int | None,
+    input_budget_tokens: int | None,
+    detail: str,
+) -> dict[str, Any]:
+    """Fold measured tokens and spans into the shared throughput block.
+
+    Two rates rather than one, because they answer different questions. The
+    generation rate says how fast the model emits when it is emitting, which is
+    the model's speed; the wall-clock rate says how fast the node is progressing,
+    which is what a fence is spent against. A node that runs its own suite has a
+    wall rate far below its generation rate, and reading either as the other
+    misattributes the workstation's load to the model or the reverse.
+    """
+    block = unknown_throughput(detail)
+    tool_wait = None
+    if (
+        isinstance(elapsed_seconds, (int, float))
+        and isinstance(generation_seconds, (int, float))
+        and elapsed_seconds >= generation_seconds
+    ):
+        tool_wait = round(float(elapsed_seconds) - float(generation_seconds), 3)
+    block.update(
+        {
+            "generated_tokens": generated_tokens,
+            "generation_seconds": generation_seconds,
+            "tool_wait_seconds": tool_wait,
+            "elapsed_seconds": elapsed_seconds,
+            "tokens_per_second": _rate(generated_tokens, generation_seconds),
+            "wall_tokens_per_second": _rate(generated_tokens, elapsed_seconds),
+            "peak_input_tokens": peak_input_tokens,
+            "input_budget_tokens": input_budget_tokens,
+            "input_utilisation_pct": _percent(peak_input_tokens, input_budget_tokens),
+        }
+    )
+    return block
+
+
 def budget_exhausted(budget: Mapping[str, Any] | None) -> bool | None:
     """Answer whether the budget is spent: True, False, or None for unknown.
 
@@ -232,6 +329,77 @@ def budget_exhausted(budget: Mapping[str, Any] | None) -> bool | None:
     if utilisation is None:
         return None
     return float(utilisation) >= 100.0
+
+
+# A harness that refuses a turn for want of budget says so in prose on its error
+# event rather than in a field. Both recorded spellings state the limit and then
+# name the moment it lifts; the second also names the model, which this module
+# must not record, so only the two load-bearing parts are matched.
+_USAGE_LIMIT_PHRASE = re.compile(r"hit your usage limit", re.IGNORECASE)
+_RESET_PHRASE = re.compile(
+    r"try again at\s+"
+    r"(?P<month>[A-Za-z]{3,9})\s+(?P<day>\d{1,2})(?:st|nd|rd|th)?,?\s+"
+    r"(?P<year>\d{4}),?\s+(?P<hour>\d{1,2}):(?P<minute>\d{2})\s*(?P<meridiem>[AaPp][Mm])",
+    re.IGNORECASE,
+)
+
+
+def _reset_moment_to_iso(text: str) -> str | None:
+    """Read the reset moment out of a refusal message, or None.
+
+    The moment is written for a person — an abbreviated month, an ordinal day,
+    a twelve-hour clock, no zone — so it is read as local wall clock and stamped
+    with this machine's offset. Stamping it as UTC instead would move the hold's
+    expiry by the offset, which either releases a wave early or holds it late.
+    """
+    match = _RESET_PHRASE.search(text)
+    if match is None:
+        return None
+    for month_format in ("%b", "%B"):
+        try:
+            # Naive on purpose: the message carries no zone, so the moment is
+            # local wall clock and is made aware immediately below.
+            moment = datetime.strptime(  # noqa: DTZ007
+                f"{match['month'][:3] if month_format == '%b' else match['month']} "
+                f"{match['day']} {match['year']} "
+                f"{match['hour']}:{match['minute']} {match['meridiem'].upper()}",
+                f"{month_format} %d %Y %I:%M %p",
+            )
+        except ValueError:
+            continue
+        local = moment.astimezone()
+        return local.isoformat(timespec="seconds").replace("+00:00", "Z")
+    return None
+
+
+def refusal_budget(text: str) -> dict[str, Any] | None:
+    """Turn a quota refusal message into a budget block, or decline.
+
+    Declining is the important half. Only a message that states the limit *and*
+    names its reset is read as exhaustion; an ordinary failed turn — a bad model
+    id, a lost stream, a context overflow — carries neither and must leave the
+    budget exactly as unknown as it was, because a failure read as exhaustion
+    holds every later wave on evidence that was never a measurement.
+    """
+    if not _USAGE_LIMIT_PHRASE.search(text):
+        return None
+    budget = unknown_budget("")
+    budget.update(
+        {
+            "headroom": "known",
+            # The account refused work outright, so there is no partial figure to
+            # report: the window is spent until it resets. Recorded as a full
+            # utilisation because that is what every reader of this block already
+            # compares against a ceiling.
+            "utilisation_pct": 100.0,
+            "rate_limit_type": "usage-limit",
+            "resets_at": _reset_moment_to_iso(text),
+            "threshold_status": "exhausted",
+            "surpassed_threshold": True,
+            "detail": "backend refused the turn: the account's usage limit is reached",
+        }
+    )
+    return budget
 
 
 def _epoch_to_iso(value: Any) -> str | None:
@@ -292,7 +460,18 @@ class Dialect:
         """Return the process directory for this dialect and sandbox tier."""
         return worktree
 
-    def observe(self, events: Iterable[Mapping[str, Any]]) -> Observation:
+    def observe(
+        self,
+        events: Iterable[Mapping[str, Any]],
+        *,
+        elapsed_seconds: float | None = None,
+    ) -> Observation:
+        """Fold a stream into one observation.
+
+        ``elapsed_seconds`` is the caller's wall clock for the run, offered
+        because not every dialect reports a span of its own. A dialect that does
+        report one prefers its own figure and ignores this.
+        """
         raise NotImplementedError
 
     def _sandbox_flags(self, tier: str | None) -> list[str]:
@@ -401,9 +580,15 @@ class _CodexDialect(Dialect):
             return ["--sandbox", WORKSPACE_WRITE]
         return ["--sandbox", READ_ONLY]
 
-    def observe(self, events: Iterable[Mapping[str, Any]]) -> Observation:
+    def observe(
+        self,
+        events: Iterable[Mapping[str, Any]],
+        *,
+        elapsed_seconds: float | None = None,
+    ) -> Observation:
         obs = Observation(backend=self.name, budget=unknown_budget(""))
         message: str | None = None
+        usage: Mapping[str, Any] | None = None
         for event in events:
             obs.events += 1
             kind = event.get("type")
@@ -416,14 +601,60 @@ class _CodexDialect(Dialect):
             elif kind == "turn.completed":
                 obs.terminal = True
                 obs.exit_status = "ok"
+                usage = (
+                    event.get("usage")
+                    if isinstance(event.get("usage"), Mapping)
+                    else usage
+                )
                 obs.budget = self._budget(event.get("usage"))
             elif kind in ("turn.failed", "thread.error", "error", "stream.error"):
                 obs.terminal = True
                 obs.exit_status = "error"
                 obs.detail = _error_detail(event)
+                refused = refusal_budget(obs.detail)
+                if refused is not None:
+                    obs.budget = refused
         obs.final_message = message
+        obs.throughput = self._throughput(usage, elapsed_seconds)
         obs.phase = _phase(obs)
         return obs
+
+    def _throughput(
+        self, usage: Mapping[str, Any] | None, elapsed_seconds: float | None
+    ) -> dict[str, Any]:
+        """Rate this harness's turn against the caller's clock.
+
+        This stream reports what a turn consumed but not how long it took, so the
+        span has to come from the caller. Without one there is no rate — the
+        token counts alone cannot say whether they took a minute or an hour, and
+        that distinction is the whole question.
+        """
+        generated = peak_input = None
+        if isinstance(usage, Mapping):
+            generated = _sum_tokens(usage, ("output_tokens", "reasoning_output_tokens"))
+            peak_input = _sum_tokens(usage, ("input_tokens", "cached_input_tokens"))
+        elif elapsed_seconds is None:
+            return unknown_throughput("no completed turn to measure yet")
+        if elapsed_seconds is None:
+            detail = "turn tokens recorded, but no span was supplied to rate them"
+        elif generated is None:
+            detail = "the run has a span but no completed turn to rate against it"
+        else:
+            detail = (
+                "rated against the caller's wall clock; this stream reports "
+                "tokens without a span"
+            )
+        return throughput_block(
+            generated_tokens=generated,
+            # This harness separates neither inference from tool wait nor the
+            # turn from the run, so claiming a generation span would be inventing
+            # one. The wall rate is the honest figure it can support.
+            generation_seconds=None,
+            elapsed_seconds=elapsed_seconds,
+            peak_input_tokens=peak_input,
+            input_budget_tokens=None,
+            detail=detail,
+        )
 
     def classify_stream_failure(
         self,
@@ -585,10 +816,17 @@ class _ClaudeDialect(Dialect):
             return ["--dangerously-skip-permissions"]
         return ["--permission-mode", "plan"]
 
-    def observe(self, events: Iterable[Mapping[str, Any]]) -> Observation:
+    def observe(
+        self,
+        events: Iterable[Mapping[str, Any]],
+        *,
+        elapsed_seconds: float | None = None,
+    ) -> Observation:
         obs = Observation(backend=self.name, budget=unknown_budget(""))
         message: str | None = None
         budget = unknown_budget("no rate-limit event in the stream yet")
+        throughput = unknown_throughput("no completed result to measure yet")
+        peak_input = 0
         for event in events:
             obs.events += 1
             kind = event.get("type")
@@ -598,6 +836,7 @@ class _ClaudeDialect(Dialect):
                 budget = self._budget(event.get("rate_limit_info"))
             elif kind == "assistant":
                 message = _assistant_text(event) or message
+                peak_input = max(peak_input, _prompt_tokens(event))
             elif kind == "result":
                 obs.terminal = True
                 # Success is read from is_error, never from subtype: a failed
@@ -617,14 +856,71 @@ class _ClaudeDialect(Dialect):
                     }
                 if obs.exit_status == "error":
                     obs.detail = _error_detail(event)
+                    refused = refusal_budget(obs.detail)
+                    if refused is not None:
+                        budget = refused
+                throughput = self._throughput(event, peak_input, elapsed_seconds)
             if obs.session_id is None:
                 # Every event of this stream carries the session id, including
                 # the hook events a host configuration may emit before init.
                 obs.session_id = event.get("session_id") or obs.session_id
         obs.budget = budget
         obs.final_message = message
+        obs.throughput = throughput
         obs.phase = _phase(obs)
         return obs
+
+    def _throughput(
+        self,
+        result: Mapping[str, Any],
+        peak_input: int,
+        elapsed_seconds: float | None,
+    ) -> dict[str, Any]:
+        """Rate a finished run from the spans and totals its result carries.
+
+        The totals are read from the result and never summed from the assistant
+        events, which report a message's opening usage rather than its final one
+        and are emitted once per content block besides — summing them undercounts
+        by roughly two orders of magnitude and does so silently. Peak input is
+        the largest single prompt the run sent, which is the figure a context
+        window is actually spent against; the cumulative totals on the result are
+        the sum over every request and would read far past any window.
+        """
+        elapsed = _seconds(result.get("duration_ms"))
+        if elapsed is None:
+            elapsed = elapsed_seconds
+        generation = _seconds(result.get("duration_api_ms"))
+        model_usage = result.get("modelUsage")
+        generated: int | None = None
+        window: int | None = None
+        if isinstance(model_usage, Mapping):
+            per_model = [
+                entry for entry in model_usage.values() if isinstance(entry, Mapping)
+            ]
+            totals = [_number(entry.get("outputTokens")) for entry in per_model]
+            measured = [value for value in totals if value is not None]
+            generated = int(sum(measured)) if measured else None
+            windows = [_number(entry.get("contextWindow")) for entry in per_model]
+            usable = [value for value in windows if value]
+            # One usable window even when several models ran: the run is held by
+            # the smallest, since that is the one a shared prompt overflows first.
+            window = int(min(usable)) if usable else None
+        if generated is None:
+            usage = result.get("usage")
+            if isinstance(usage, Mapping):
+                generated = _sum_tokens(usage, ("output_tokens",))
+        return throughput_block(
+            generated_tokens=generated,
+            generation_seconds=generation,
+            elapsed_seconds=elapsed,
+            peak_input_tokens=peak_input or None,
+            input_budget_tokens=window,
+            detail=(
+                "generation and wall clock reported separately by the backend"
+                if generation is not None
+                else "wall clock only; the backend reported no inference span"
+            ),
+        )
 
     def _budget(self, info: Any) -> dict[str, Any]:
         """Parse reported utilisation and reset time into the shared block.
@@ -652,6 +948,42 @@ class _ClaudeDialect(Dialect):
             }
         )
         return budget
+
+
+def _number(value: Any) -> float | None:
+    """Return a real number, rejecting the bool that would read as 0 or 1."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return float(value)
+
+
+def _seconds(milliseconds: Any) -> float | None:
+    """Convert a reported millisecond span to seconds, or None."""
+    value = _number(milliseconds)
+    return None if value is None else round(value / 1000.0, 3)
+
+
+def _sum_tokens(usage: Mapping[str, Any], keys: Sequence[str]) -> int | None:
+    """Total the named token counts, or None when none of them was reported."""
+    measured = [value for key in keys if (value := _number(usage.get(key))) is not None]
+    return int(sum(measured)) if measured else None
+
+
+def _prompt_tokens(event: Mapping[str, Any]) -> int:
+    """Return one request's whole prompt size, cached segments included.
+
+    A cached segment still occupies the window: counting only the uncached input
+    reports a two-token prompt for a request carrying a quarter of a million.
+    """
+    message = event.get("message")
+    usage = message.get("usage") if isinstance(message, Mapping) else None
+    if not isinstance(usage, Mapping):
+        return 0
+    total = _sum_tokens(
+        usage,
+        ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens"),
+    )
+    return int(total or 0)
 
 
 def _assistant_text(event: Mapping[str, Any]) -> str | None:
@@ -929,11 +1261,17 @@ def observe_stream(
     backend_name: str,
     backend: Mapping[str, Any],
     lines: Iterable[str],
+    elapsed_seconds: float | None = None,
 ) -> Observation:
-    """Fold a backend's recorded event stream into one normalised observation."""
+    """Fold a backend's recorded event stream into one normalised observation.
+
+    ``elapsed_seconds`` lets a caller that knows when the run started supply the
+    span a dialect's own stream may not report, so a rate is available for every
+    harness rather than only the one that times itself.
+    """
     dialect = dialect_for(backend)
     events, malformed = parse_events(lines)
-    obs = dialect.observe(events)
+    obs = dialect.observe(events, elapsed_seconds=elapsed_seconds)
     obs.backend = backend_name
     obs.malformed_lines = malformed
     return obs
@@ -964,6 +1302,7 @@ def observe_log(
     backend_name: str,
     backend: Mapping[str, Any],
     log_path: str | Path,
+    elapsed_seconds: float | None = None,
 ) -> Observation:
     """Observe a worker from its on-disk event log, absent log included.
 
@@ -975,8 +1314,14 @@ def observe_log(
         obs = Observation(
             backend=backend_name,
             budget=unknown_budget("no event log yet"),
+            throughput=unknown_throughput("no event log yet"),
             detail=f"event log not written yet: {path}",
         )
         return obs
     with path.open(encoding="utf-8", errors="replace") as handle:
-        return observe_stream(backend_name=backend_name, backend=backend, lines=handle)
+        return observe_stream(
+            backend_name=backend_name,
+            backend=backend,
+            lines=handle,
+            elapsed_seconds=elapsed_seconds,
+        )
