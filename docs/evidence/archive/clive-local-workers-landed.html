@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="clive-local-workers-landed">
+  <meta name="plan-title" content="Local workers on the clive backend — cumulative execution-evidence record">
+  <meta name="plan-summary" content="Thirty-three run-outcomes recorded against reckon:clive-local-workers, one stable anchor each, each naming its commit sha and the quantitative measure the run reported. Covers the local-lane qualification (deepseek-v4-flash, GLM 5.3), five silent-failure repairs in the crew harness, the worktree-boundary refusal and its correction, and the session-reuse and test-role landings.">
+  <meta name="plan-evidence-for" content="clive-local-workers">
+  <meta name="plan-verifies" content="clive-local-workers#s2,clive-local-workers#s3,clive-local-workers#s4,clive-local-workers#s5,clive-local-workers#s6,clive-local-workers#s7,clive-local-workers#s9,clive-local-workers#s12,clive-local-workers#s13">
+  <meta name="plan-recorded-at" content="2026-09-03">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; git worktrees; local backend clive (deepseek-v4-flash, glm-5.3) alongside codex (gpt-5.6-sol) and Claude (claude-sonnet-5, claude-opus-5) lanes">
+  <title>Local workers on the clive backend — cumulative execution-evidence record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Local workers on the clive backend — cumulative execution-evidence record</h1>
+    <p class="plan-summary">Thirty-three run-outcomes recorded against
+    <code>clive-local-workers</code>, one stable anchor per anchor below. Each names the commit
+    that landed it (or states that the run was commitless or interrupted by design) and preserves
+    the quantitative measure the run itself reported, rather than restating it as a bare pass.
+    Coupled results from one wave — an interrupted attempt and its re-cut, or a defective landing
+    and its same-day correction — keep separate anchors because each is a distinct run id and a
+    distinct outcome, cross-referenced where one explains the other.</p>
+  </header>
+
+  <section id="model-outcomes">
+    <h2>Local-lane qualification across models</h2>
+    <p>Aggregated from <code>uv run reckon crew ledger --project reckon --view records</code>,
+    filtered to the 38 runs recorded against this plan. The sequence the anchors below narrate —
+    two capability-looking failures on the local lane that turned out to be a harness write
+    denial, GLM's context ceiling ending two nodes before any edit, and the local backend
+    eventually delivering the plan's first substantive local-model implementation — is clearer as
+    one picture than as five separate counts.</p>
+    <figure>
+      <img src="/reckon/figures/clive-local-workers/local-lane-model-outcomes.svg"
+           alt="Gate outcomes and mean worker time per model dispatched under this plan: gpt-5.6-sol 11 passed 2 failed over 13 runs mean 1,356s; deepseek-v4-flash 7 passed 3 failed 2 not-run over 12 runs mean 1,075s; glm-5.3 0 passed 4 failed over 4 runs mean 524s; claude-sonnet-5 7 passed 0 failed over 7 runs mean 285s; claude-opus-5 2 passed 0 failed over 2 runs mean 753s."
+           style="max-width:720px;width:100%">
+      <figcaption>Counts are gate outcomes, not capability verdicts on their own — three of
+      deepseek-v4-flash's failures were later reclassified as an infrastructure denial rather than
+      a model limit (<a href="#local-flag-review-medium-1">§ local-flag-review-medium-1</a>,
+      <a href="#discriminator-settled">§ discriminator-settled</a>), and both GLM failures shown
+      here as context-ceiling stops were compounded by a wrapper bug that mis-declared GLM's usable
+      input budget (recorded in the plan narrative, not a run of its own).</figcaption>
+    </figure>
+  </section>
+
+  <section id="anchors">
+    <h2>Thirty-three anchors</h2>
+    <table>
+      <thead><tr><th>Section</th><th>Anchor</th><th>Commit</th><th>Outcome</th></tr></thead>
+      <tbody>
+        <tr><td>§1</td><td><a href="#reuse-map">reuse-map</a></td><td>commitless</td><td>reconnaissance, gate passed</td></tr>
+        <tr><td>§7</td><td><a href="#silent-delivery">silent-delivery</a></td><td>a91abe9</td><td>landed</td></tr>
+        <tr><td>§7</td><td><a href="#infra-not-charged">infra-not-charged</a></td><td>a2e488b</td><td>landed</td></tr>
+        <tr><td>§7</td><td><a href="#orientation-checked">orientation-checked</a></td><td>e099fc5</td><td>landed</td></tr>
+        <tr><td>§7</td><td><a href="#shadow-named-effort">shadow-named-effort</a></td><td>8b80bdc</td><td>landed</td></tr>
+        <tr><td>§7</td><td><a href="#read-only-delivery-killed">read-only-delivery-killed</a></td><td>none — interrupted</td><td>re-cut</td></tr>
+        <tr><td>§7</td><td><a href="#session-reuse-first-kill">session-reuse-first-kill</a></td><td>5eda3ab (not merged from this run)</td><td>re-cut</td></tr>
+        <tr><td>§7</td><td><a href="#glm-context-ceiling">glm-context-ceiling</a></td><td>none — negative result</td><td>re-cut to flash</td></tr>
+        <tr><td>§7</td><td><a href="#readonly-writes-declared-paths">readonly-writes-declared-paths</a></td><td>8abc064</td><td>landed</td></tr>
+        <tr><td>§7</td><td><a href="#worktree-provisioned">worktree-provisioned</a></td><td>1908947</td><td>landed</td></tr>
+        <tr><td>§7</td><td><a href="#shadow-many-candidates-glm-fail">shadow-many-candidates-glm-fail</a></td><td>none — malformed-node</td><td>re-cut to flash</td></tr>
+        <tr><td>§7</td><td><a href="#shadow-many-candidates-landed">shadow-many-candidates-landed</a></td><td>1a77ce8</td><td>landed</td></tr>
+        <tr><td>§7</td><td><a href="#rate-and-refusal">rate-and-refusal</a></td><td>3ff87b2</td><td>landed</td></tr>
+        <tr><td>§7</td><td><a href="#manifest-never-discarded-terminal">manifest-never-discarded-terminal</a></td><td>1b7e72e</td><td>landed, later narrowed</td></tr>
+        <tr><td>§7</td><td><a href="#blocked-is-a-question">blocked-is-a-question</a></td><td>9b609d9</td><td>landed, corrects prior</td></tr>
+        <tr><td>§7</td><td><a href="#tests-never-arm-producer">tests-never-arm-producer</a></td><td>73ed06d</td><td>landed</td></tr>
+        <tr><td>§7</td><td><a href="#producer-declares-code">producer-declares-code</a></td><td>31d4e8d</td><td>landed</td></tr>
+        <tr><td>§7</td><td><a href="#session-reuse-landed">session-reuse-landed</a></td><td>95e5e2c</td><td>landed</td></tr>
+        <tr><td>§5</td><td><a href="#shadowable-census">shadowable-census</a></td><td>commitless</td><td>gate passed</td></tr>
+        <tr><td>§5</td><td><a href="#local-flag-review-medium-1">local-flag-review-medium-1</a></td><td>none — reclassified</td><td>infrastructure</td></tr>
+        <tr><td>§5</td><td><a href="#capability-eligibility-review">capability-eligibility-review</a></td><td>none — reclassified</td><td>infrastructure</td></tr>
+        <tr><td>§5</td><td><a href="#local-flag-review-xhigh">local-flag-review-xhigh</a></td><td>none — reclassified</td><td>infrastructure</td></tr>
+        <tr><td>§5</td><td><a href="#discriminator-settled">discriminator-settled</a></td><td>commitless</td><td>gate passed</td></tr>
+        <tr><td>§4</td><td><a href="#routing-priors">routing-priors</a></td><td>a56eae9</td><td>landed</td></tr>
+        <tr><td>§3</td><td><a href="#local-backend-flag">local-backend-flag</a></td><td>42a339f</td><td>landed</td></tr>
+        <tr><td>§2</td><td><a href="#availability-knows-model">availability-knows-model</a></td><td>ca6288d</td><td>landed</td></tr>
+        <tr><td>§6</td><td><a href="#boundary-refused-first">boundary-refused-first</a></td><td>0226835</td><td>landed, later corrected</td></tr>
+        <tr><td>§6</td><td><a href="#boundary-signature-fixed">boundary-signature-fixed</a></td><td>5dc92ce</td><td>landed, corrects prior</td></tr>
+        <tr><td>§6</td><td><a href="#boundary-waiver">boundary-waiver</a></td><td>da054f7</td><td>landed</td></tr>
+        <tr><td>§9</td><td><a href="#agents-md-subscoped">agents-md-subscoped</a></td><td>6f99ac2</td><td>landed</td></tr>
+        <tr><td>§12</td><td><a href="#test-role-contract">test-role-contract</a></td><td>5717d69</td><td>landed</td></tr>
+        <tr><td>§12</td><td><a href="#test-attribution-reuse-map">test-attribution-reuse-map</a></td><td>commitless</td><td>gate passed</td></tr>
+        <tr><td>§13</td><td><a href="#promotion-releases-transient">promotion-releases-transient</a></td><td>34e1d10</td><td>landed</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="reuse-map">
+    <h3>§1 — Reuse map scopes the wave</h3>
+    <p>Run <code>r-20260902T131713796175-local-lane-reuse-map</code>, member local-scout,
+    read-only, commitless by design (artifact <code>~/.config/reckon/crew/reports/local-lane-reuse-map.md</code>).</p>
+    <p><strong>Measure:</strong> 82/82 claimed symbols and test names resolved at base
+    <code>33a1315</code>; verdict across eight capability areas — 1 runtime-sufficient, 7
+    bounded-extension, 0 absent — with the denominator this set at 11 executable nodes across §1–§7.</p>
+  </section>
+
+  <section id="silent-delivery">
+    <h3>§7 — Silent delivery becomes a repairable row</h3>
+    <p>Run <code>r-20260902T133132431763-silent-delivery-becomes-a-repairable-row</code>, member
+    harness-manifest. Commit <code>a91abe9</code> merged as <code>403361e</code>, 246 insertions
+    and 3 deletions across exactly the two authorised paths, 3 tests added.</p>
+    <p><strong>Measure:</strong> focused <code>tests/test_crew_recovery.py</code> 8/8; full suite
+    2,656 passed 0 failed in 710s; ruff finding delta 0 against a baseline of 12.</p>
+  </section>
+
+  <section id="infra-not-charged">
+    <h3>§7 — Infrastructure failure is not charged to a configuration</h3>
+    <p>Run <code>r-20260902T133052982501-infrastructure-failure-not-charged-to-a-configuration</code>,
+    member harness-classify. Commit <code>a2e488b</code> merged, 194 insertions and 6 deletions
+    across four of the five authorised paths, 4 tests added.</p>
+    <p><strong>Measure:</strong> full suite 2,657 passed 0 failed in 922s against a zero-failure
+    baseline, delta +4 passed +0 failed; focused 58 passed; scoped ruff findings 15 before, 10
+    after.</p>
+  </section>
+
+  <section id="orientation-checked">
+    <h3>§7 — Orientation is checked at first observation</h3>
+    <p>Run <code>r-20260902T151528945034-orientation-checked-at-first-observation</code>, member
+    harness-orient. Commit <code>e099fc5</code> merged, 201 insertions and 3 deletions across
+    exactly the three authorised paths, 4 tests added in a new test file.</p>
+    <p><strong>Measure:</strong> full suite 2,682 passed 0 failed in 1,132s; focused orientation
+    contract 4 passed; scoped ruff findings unchanged at 8.</p>
+  </section>
+
+  <section id="shadow-named-effort">
+    <h3>§7 — A shadow honours a named effort</h3>
+    <p>Run <code>r-20260902T162038518034-shadow-honours-a-named-effort</code>, member local-alias.
+    Commit <code>8b80bdc</code> merged, 139 insertions across exactly the two authorised paths, 4
+    tests added.</p>
+    <p><strong>Measure:</strong> gate by delta — baseline and after both carried the same three
+    pre-existing <code>test_crew_ticker_layout.py</code> failures from a peer's in-flight work,
+    pass count moved 2,704 to 2,708 (exactly the four added tests), so added failures are 0.</p>
+  </section>
+
+  <section id="read-only-delivery-killed">
+    <h3>§7 — A read-only delivery node is killed by an account usage limit</h3>
+    <p>Run <code>r-20260902T181030151896-read-only-node-can-deliver-its-report</code>, member
+    harness-manifest. No commit — the node was killed before delivering anything.</p>
+    <p><strong>Measure:</strong> killed by the codex account usage limit (<code>turn.failed</code>,
+    reset 2026-09-08), not by a defect in the node or the worker; committed nothing; re-cut onto
+    the local lane, landing as
+    <a href="#readonly-writes-declared-paths">readonly-writes-declared-paths</a>.</p>
+  </section>
+
+  <section id="session-reuse-first-kill">
+    <h3>§7 — Session-reuse's first attempt is killed by the same usage limit</h3>
+    <p>Run <code>r-20260902T162114915926-session-reuse-keyed-on-configuration</code>, member
+    harness-classify. No commit merged from this run.</p>
+    <p><strong>Measure:</strong> had already committed <code>5eda3ab</code> with 6/6 real-dispatch
+    integration cases passing and needed only one stale assertion fix in
+    <code>tests/test_crew.py</code> when the codex account usage limit killed it (reset
+    2026-09-08); re-cut onto the local lane, eventually landing as
+    <a href="#session-reuse-landed">session-reuse-landed</a>.</p>
+  </section>
+
+  <section id="glm-context-ceiling">
+    <h3>§7 — GLM's context ceiling ends a review before any edit</h3>
+    <p>Run <code>r-20260902T202456915131-session-keying-test-expectation</code>, member glm-a on
+    glm-5.3. No commit — negative result, re-cut to a wider-window model.</p>
+    <p><strong>Measure:</strong> ended after 935s reporting "Autocompact is thrashing: the context
+    refilled to the limit within 3 turns of the previous compact, 3 times in a row"; GLM's usable
+    input budget of 73,728 tokens (96k context less a 24,576-token output reservation) was
+    consumed roughly 64k by the node's two scope files alone (<code>tests/test_crew.py</code>
+    ~40,000 tokens, <code>reckon/crew/dispatch.py</code> ~23,500) before any system prompt, plan
+    section, tool schema or tool output.</p>
+  </section>
+
+  <section id="readonly-writes-declared-paths">
+    <h3>§7 — The read-only tier can write its declared paths</h3>
+    <p>Run <code>r-20260902T202403036749-read-only-tier-can-write-its-declared-paths</code>, member
+    flash-a on deepseek-v4-flash. Commit <code>8abc064</code> merged, 194 insertions and 8
+    deletions across exactly the three authorised paths, 4 tests added.</p>
+    <p><strong>Measure:</strong> full suite 2,717 passed 0 failed against a 2,713 baseline, delta
+    +4 passed +0 failed. First substantive implementation node delivered by a local model on the
+    local lane, first attempt, in scope, correctly gated.</p>
+  </section>
+
+  <section id="worktree-provisioned">
+    <h3>§7 — A worktree is provisioned at creation</h3>
+    <p>Run <code>r-20260903T034321152079-worktree-is-provisioned-at-creation</code>, member flash-a
+    on deepseek-v4-flash. Commit <code>1908947</code> merged, 123 insertions across exactly the two
+    authorised paths, 5 tests added.</p>
+    <p><strong>Measure:</strong> 15 passed (5 new). Of 263 crew worktrees measured across the
+    fleet, 148 carried a <code>.venv</code> symlink, 113 carried nothing, 2 a real
+    <code>.venv</code> directory, and only 3 a <code>.env</code>; 1,324 of 2,395 recorded run
+    streams carried uv's project-environment mismatch warning. Verified live after merge on a real
+    worktree: <code>.venv</code> linked to the root, <code>.env</code> skipped naming the absent
+    source, <code>git status</code> clean.</p>
+  </section>
+
+  <section id="shadow-many-candidates-glm-fail">
+    <h3>§7 — GLM cannot hold a cross-module shadow-path contract in its window</h3>
+    <p>Run <code>r-20260903T042915093953-shadow-path-admits-many-candidates</code>, member glm-a on
+    glm-5.3. No commit — classified malformed-node (the specification was the defect), re-cut to
+    flash.</p>
+    <p><strong>Measure:</strong> stopped at 1,124s of a 2,400s budget with zero edits; peak input
+    64,764 of 73,728 tokens (87%); 51,070 characters of thinking across 19 blocks reading two
+    modules totalling 35,215 tokens before any edit could start.</p>
+  </section>
+
+  <section id="shadow-many-candidates-landed">
+    <h3>§7 — Shadow worktrees admit many candidates against one primary</h3>
+    <p>Run <code>r-20260903T044949600754-shadow-path-admits-many-candidates</code>, member flash-a
+    on deepseek-v4-flash, first attempt. Commit <code>1a77ce8</code> merged as
+    <code>2d69ac4</code>.</p>
+    <p><strong>Measure:</strong> 12 passed plus 69 focused and 4 override tests. Three candidates
+    shadow one primary concurrently, same-candidate re-shadow still refuses, each reclaimed against
+    its own record — the node GLM could not hold in a 73,728-token window
+    (<a href="#shadow-many-candidates-glm-fail">§ shadow-many-candidates-glm-fail</a>), flash
+    completed first attempt.</p>
+  </section>
+
+  <section id="rate-and-refusal">
+    <h3>§7 — A run record reports throughput rate and a parsed budget refusal</h3>
+    <p>Run <code>r-20260903T045051276316-run-record-reports-rate-and-refusal</code>, member opus-a
+    on claude-opus-5, first attempt. Commit <code>3ff87b2</code> merged, 792 insertions, 16 tests
+    added.</p>
+    <p><strong>Measure:</strong> 93 passed with 0 added failures; peer check on
+    <code>test_crew.py</code> 189 passed because <code>as_dict</code> gained a serialised key. On
+    the recorded fixture the two rates differ by 25%: 94.65 tokens/s generating against 70.92 wall.
+    Per-event usage summation undercounts generation 67-fold (941 against 62,888) on one real run.
+    Scope extended after the fact for three fixture files, granted and recorded with
+    <code>--scope-changed</code> so the run stays out of calibration.</p>
+  </section>
+
+  <section id="manifest-never-discarded-terminal">
+    <h3>§7 — A terminal manifest can no longer be discarded by the staleness path</h3>
+    <p>Run <code>r-20260903T053528937279-finished-work-is-never-displayed-as-working</code>, member
+    sonnet-a on claude-sonnet-5, first attempt. Commit <code>1b7e72e</code> merged, 128 insertions,
+    4 tests added.</p>
+    <p><strong>Measure:</strong> 28 passed. The discard guard (previously
+    <code>manifest_status == blocked</code>) now applies only to a non-terminal status, and the
+    stall check now covers the dispatched state as well as working. This fix could not explain the
+    peer's four COMPLETE manifests going unnoticed for 38 minutes, and that root cause is recorded
+    open rather than closed. It also introduced a regression, corrected the same evening by
+    <a href="#blocked-is-a-question">blocked-is-a-question</a>.</p>
+  </section>
+
+  <section id="blocked-is-a-question">
+    <h3>§7 — Blocked is a question, not a verdict</h3>
+    <p>Run <code>r-20260903T054823867999-blocked-is-a-question-not-a-verdict</code>, member
+    sonnet-a. Commit <code>9b609d9</code> merged.</p>
+    <p><strong>Measure:</strong> 30 passed. Corrects a regression merged twenty minutes earlier
+    (<a href="#manifest-never-discarded-terminal">§ manifest-never-discarded-terminal</a>, commit
+    <code>1b7e72e</code>) that had excluded complete, blocked AND failed from the staleness
+    discard, freezing a blocked manifest permanently; the exclusion is now complete and failed
+    only. Verified independently of the suite in both directions after merge: a resumed blocked
+    worker resolves to working, a dead one with an older log stays blocked.</p>
+  </section>
+
+  <section id="tests-never-arm-producer">
+    <h3>§7 — Tests can no longer arm a real producer</h3>
+    <p>Run <code>r-20260903T061007597842-tests-never-arm-a-real-producer</code>, member opus-a on
+    claude-opus-5. Commit <code>73ed06d</code> merged.</p>
+    <p><strong>Measure:</strong> 19 passed on the gate, 197 passed across four arming-adjacent
+    files run unprompted to bound collateral, 0 added failures. Proved by <code>/proc</code>
+    census after 216 arming-heavy tests: 8 producers, 0 under a pytest home, 0 on a deleted home,
+    against 25 fixture producers before.</p>
+  </section>
+
+  <section id="producer-declares-code">
+    <h3>§7 — A producer declares the code it runs</h3>
+    <p>Run <code>r-20260903T061339956387-a-producer-declares-the-code-it-runs</code>, member
+    sonnet-a on claude-sonnet-5. Commit <code>31d4e8d</code> merged.</p>
+    <p><strong>Measure:</strong> 13 passed plus 37 on four adjacent files run unprompted. A
+    producer now stamps its reckon version and start time into the attach line, and arming
+    replaces a seat whose stamped version differs from the installed one, treating an unstamped
+    seat as stale.</p>
+  </section>
+
+  <section id="session-reuse-landed">
+    <h3>§7 — Session reuse is keyed on the full agent configuration</h3>
+    <p>Run <code>r-20260903T073135296127-session-reuse-keyed-on-configuration</code>, member
+    sonnet-a on claude-sonnet-5. Commit <code>95e5e2c</code> merged as <code>2115018</code>, 359
+    insertions and 19 deletions over 3 files, 286 worker-seconds against a 25-minute budget.</p>
+    <p><strong>Measure:</strong> 6 session-keying integration cases plus 189
+    <code>test_crew.py</code> cases, combined exit 0, against base <code>6eff81b</code>. Reuse now
+    resolves through the full agent configuration — backend, launch, model, effort, sandbox — so an
+    effort or model change starts a fresh session. Supersedes the interrupted first attempt at
+    <a href="#session-reuse-first-kill">§ session-reuse-first-kill</a>.</p>
+  </section>
+
+  <section id="shadowable-census">
+    <h3>§5 — Shadowable node census</h3>
+    <p>Run <code>r-20260902T133214247667-shadowable-node-census</code>, member clive-a on the local
+    backend at deepseek-v4-flash/medium, read-only, commitless (artifact
+    <code>~/.config/reckon/crew/reports/shadowable-node-census.md</code>), 1,324 worker-seconds
+    against a 20-minute fence.</p>
+    <p><strong>Measure:</strong> 126 of 423 committed reckon runs are shadowable today; the
+    exclusion partition sums to exactly 297 (role not implement 70, no stored node definition 215,
+    no resolved agent config 6, is itself a shadow 5, base unreachable 1, section unresolvable 0,
+    no recorded budget 0). Median worker time 491s across the 122 runs with a value. All 126 ids
+    verified present by <code>grep -F</code>, 0 missing.</p>
+  </section>
+
+  <section id="local-flag-review-medium-1">
+    <h3>§5 — A local-flag-merge review, first of two, delivers nothing</h3>
+    <p>Run <code>r-20260902T140952258990-local-flag-merge-review</code>, member clive-b on
+    deepseek-v4-flash/medium. No commit.</p>
+    <p><strong>Measure:</strong> ran 4,195s against a 25-minute fence (2.8x overrun), ended
+    end_turn normally after 41 Bash calls, delivered neither the report at its write path nor a
+    manifest; <code>thinking_tokens</code> 0 for the whole run. Initially charged work-rejected,
+    later reclassified infrastructure once the tool-sequence-after-denial discriminator was found
+    (<a href="#discriminator-settled">§ discriminator-settled</a>) — the run's own Write to its
+    declared report path was denied by the harness under <code>--permission-mode plan</code>, not
+    refused by the model.</p>
+  </section>
+
+  <section id="capability-eligibility-review">
+    <h3>§5 — A local-flag-merge review, second of two, delivers nothing</h3>
+    <p>Run <code>r-20260902T141029447702-capability-eligibility-review</code>, member clive-c on
+    deepseek-v4-flash/medium. No commit.</p>
+    <p><strong>Measure:</strong> ran 4,160s against the same 25-minute fence, ended end_turn
+    normally, wrote a 0-byte report and an empty manifest; <code>thinking_tokens</code> 0 for the
+    whole run. Same configuration, same shape of failure as
+    <a href="#local-flag-review-medium-1">§ local-flag-review-medium-1</a>, on a different node;
+    same later reclassification to infrastructure.</p>
+  </section>
+
+  <section id="local-flag-review-xhigh">
+    <h3>§5 — Re-run at xhigh reproduces the same non-delivery</h3>
+    <p>Run <code>r-20260902T152952677794-local-flag-merge-review</code>, member clive-d on
+    deepseek-v4-flash/xhigh. No commit.</p>
+    <p><strong>Measure:</strong> Write issued to exactly the declared report path,
+    <code>/home/ITER/mcintos/.config/reckon/crew/reports/local-flag-merge-review.md</code>, and
+    that file does not exist; a Claude-dialect plan-mode artifact was produced instead;
+    <code>thinking_tokens</code> reads 0 at xhigh as at medium. Charged infrastructure rather than
+    a capability verdict, since between two disputed classifications the one that does not assert
+    a capability verdict is the safe direction pending
+    <a href="#discriminator-settled">§ discriminator-settled</a>.</p>
+  </section>
+
+  <section id="discriminator-settled">
+    <h3>§5 — The read-only tier's delivery discriminator is found</h3>
+    <p>Run <code>r-20260902T162151053861-read-only-tier-delivery-discriminator</code>, member
+    local-scout at gpt-5.6-sol/high, read-only, commitless.</p>
+    <p><strong>Measure:</strong> gate passed on a 13,203-byte report whose every claimed symbol
+    resolved by <code>rg</code> and whose three streams were parsed by <code>jq</code>. All three
+    local read-only runs report <code>permissionMode=plan</code> at their init event, and every
+    ordinary-path Write in all three was denied — including the shadowable census's own manifest
+    Write at stream lines 9987–9989. The census delivered only because it retried the same content
+    through Bash; both reviews stopped inside the plan workflow. 40, 30 and 38 thinking blocks were
+    emitted across the three streams while terminal <code>thinking_tokens</code> reads 0 in every
+    one, so that counter is internally inconsistent and unreliable as a capability signal.</p>
+  </section>
+
+  <section id="routing-priors">
+    <h3>§4 — Routing priors come from the ledger</h3>
+    <p>Run <code>r-20260902T133031497200-routing-priors-from-the-ledger</code>, member
+    routing-priors at gpt-5.6-sol/medium, 1,530 worker-seconds over two attempts (blocked once on
+    fleet suite contention, resumed under an amended acceptance). Commit <code>a56eae9</code>
+    merged, 18 insertions and 46 deletions across exactly the two authorised paths.</p>
+    <p><strong>Measure:</strong> 99/99 focused tests across <code>test_flight</code>,
+    <code>test_skill_contracts</code> and <code>test_crew_routing_visibility</code>, plus 4/4
+    resolved-config assertions. <code>grep -rnE</code> over <code>tests/</code> and
+    <code>reckon/</code> for either changed path returned empty, bounding the blast radius before
+    the full-suite receipt moved to one integration verification at the merged head.</p>
+  </section>
+
+  <section id="local-backend-flag">
+    <h3>§3 — A local backend key and dispatch flag</h3>
+    <p>Run <code>r-20260902T133012246969-local-backend-key-and-flag</code>, member local-alias at
+    gpt-5.6-sol/medium, 1,970 worker-seconds, first attempt. Commit <code>42a339f</code> merged,
+    287 insertions and 14 deletions across exactly the twelve authorised paths, 8 tests added.</p>
+    <p><strong>Measure:</strong> full suite 2,660 passed 0 failed in 855s (baseline at
+    <code>302022e</code> carried one unrelated timing flake,
+    <code>test_crew_session_delivery.py::test_the_attention_filter_is_inside_the_follower</code>,
+    which passed in the after suite — recorded as negative baseline evidence rather than claimed
+    as a fix); focused 352 passed across the four owned test files; scoped ruff findings 68 before,
+    60 after, none added; SKILL.md 15,500 tokens under a 16,000 budget.</p>
+  </section>
+
+  <section id="availability-knows-model">
+    <h3>§2 — Availability knows the model</h3>
+    <p>Run <code>r-20260902T140912669453-availability-knows-the-model</code>, member local-avail at
+    gpt-5.6-sol/medium, first attempt. Commit <code>ca6288d</code> merged, 407 insertions and 13
+    deletions across the seven paths it used of the seven authorised, 6 tests added.</p>
+    <p><strong>Measure:</strong> full suite 2,673 passed 0 failed in 686s; focused 58 passed;
+    scoped ruff findings 10 before and 10 after; both derived schema artifacts regenerated
+    byte-identically. Test isolation held: every catalog and dispatch assertion uses an executable
+    synthetic wrapper under a pytest temp directory, so nothing reads the live cluster.</p>
+  </section>
+
+  <section id="boundary-refused-first">
+    <h3>§6 — Worktree boundary refused at promotion, first cut</h3>
+    <p>Run <code>r-20260902T140832755711-worktree-boundary-refused-at-promotion</code>, member
+    boundary-check at gpt-5.6-sol/medium, first attempt. Commit <code>0226835</code> merged, 313
+    insertions and 0 deletions across exactly the four authorised paths, 5 tests added.</p>
+    <p><strong>Measure:</strong> full suite 2,672 passed 0 failed in 677s; focused
+    <code>test_crew_promotion_scope</code> plus <code>test_crew</code> 202 passed; scoped ruff
+    findings unchanged at 29; five boundary test cases including two clean controls. This version
+    compared HEAD movement and the symmetric difference of status entries without intersecting
+    against the run's declared scope — a defect that blocked six unrelated runs across three
+    sessions within the hour, corrected by
+    <a href="#boundary-signature-fixed">§ boundary-signature-fixed</a>.</p>
+  </section>
+
+  <section id="boundary-signature-fixed">
+    <h3>§6 — Boundary refusal attributes the change to this run</h3>
+    <p>Run <code>r-20260902T154754077965-boundary-attributes-the-change-to-this-run</code>, member
+    boundary-check. Commit <code>5dc92ce</code> merged as <code>caf57d0</code>.</p>
+    <p><strong>Measure:</strong> 16 focused tests including 3 required success cases the first
+    pass lacked; full suite 2,686 passed 0 failed, +3 against base. Verified non-mutatingly against
+    the real run the prior rule had blocked: verdict allow. Corrects all three defects a peer
+    session's independent reproduction identified in
+    <a href="#boundary-refused-first">§ boundary-refused-first</a> — HEAD comparison, symmetric
+    status difference, and no intersection against declared scope — after which the fleet-wide
+    completed-unpromoted count fell to zero and six previously blocked runs across three sessions
+    drained.</p>
+  </section>
+
+  <section id="boundary-waiver">
+    <h3>§6 — The boundary refusal can be waived on the record</h3>
+    <p>Run <code>r-20260903T045118699895-boundary-refusal-carries-a-waiver</code>, member sonnet-a
+    on claude-sonnet-5, first attempt. Commit <code>da054f7</code> merged, 218 insertions across
+    exactly the three authorised paths.</p>
+    <p><strong>Measure:</strong> 23 passed across the new file plus both promotion suites, focused
+    only; scoped ruff findings decreased on both source files, 5 to 4 in <code>cli.py</code> and 13
+    to 12 in <code>promotion.py</code>. <code>crew complete --waive-boundary-refusal REASON</code>
+    records the reason and the exact waived paths on the ledger row; a violation with no reason
+    still raises unchanged, and the flag against a clean run is refused naming that nothing was
+    waived.</p>
+  </section>
+
+  <section id="agents-md-subscoped">
+    <h3>§9 — reckon's AGENTS.md is sub-scoped</h3>
+    <p>Run <code>r-20260902T205922510859-reckon-agents-md-sub-scoped</code>, member flash-a on
+    deepseek-v4-flash. Commit <code>6f99ac2</code> merged.</p>
+    <p><strong>Measure:</strong> root AGENTS.md 15,030 to 4,313 estimated tokens, with the crew
+    command surface moved to <code>reckon/crew/AGENTS.md</code> and the plan data model,
+    vocabulary, layout tables and server operations to <code>docs/AGENTS.md</code>. All 29 headings
+    present in exactly one file, 0 missing, 0 duplicated — verified independently of the worker's
+    own census. Gate: 5 passed, focused only, no full suite and no browser test under the
+    focused-gate policy. Standing load per worker fell from 29,499 to 16,173 tokens with the
+    trimmed user-global file.</p>
+  </section>
+
+  <section id="test-role-contract">
+    <h3>§12 — The test role gains a contract</h3>
+    <p>Run <code>r-20260903T051130267963-test-role-has-a-contract</code>, member sonnet-a on
+    claude-sonnet-5, first attempt. Commit <code>5717d69</code> merged, 108 insertions, 5 tests
+    added.</p>
+    <p><strong>Measure:</strong> 253 passed across the new file plus flight, orientation and crew
+    tests. The test role gains a 30-minute default budget and the EVIDENCE fence becomes
+    role-aware. The worker touched 3 of its 6 permitted paths, having found
+    <code>RoleConfig</code> already modelled <code>time_budget</code>, so no schema regeneration
+    was needed and both derived artifacts stayed byte-identical.</p>
+  </section>
+
+  <section id="test-attribution-reuse-map">
+    <h3>§12 — A reuse map for test-attribution</h3>
+    <p>Run <code>r-20260903T073127297154-test-attribution-reuse-map</code>, member flash-c on the
+    local lane at deepseek-v4-flash, 224 worker-seconds against a 12-minute budget. No commit by
+    design — the deliverable is the report at
+    <code>~/.config/reckon/crew/reports/test-attribution-reuse-map.md</code>.</p>
+    <p><strong>Measure:</strong> gate passed; 5 surfaces each carrying a fitness verdict over 16
+    file:symbol citations, verified against worktree HEAD <code>6eff81b</code>. Identified
+    <code>_evaluate_suite_delta</code> — which already computes
+    <code>added = after.failure_ids - baseline.failure_ids</code> at promotion — as the arithmetic
+    to reuse rather than reimplement for §12's suite-delta comparison.</p>
+  </section>
+
+  <section id="promotion-releases-transient">
+    <h3>§13 — Promotion releases the transient</h3>
+    <p>Run <code>r-20260903T060422443082-promotion-releases-the-transient</code>, member sonnet-a,
+    first attempt. Commit <code>34e1d10</code> merged, 456 insertions, 5 tests added.</p>
+    <p><strong>Measure:</strong> 34 passed. Promotion now releases the worktree and any lingering
+    process group after the ledger append and pointer delete, reusing <code>crew gc</code>'s own
+    conditions rather than a second policy. First promotion to exercise it: release reported
+    <code>worktree_released</code> true, <code>process_signalled</code> false with the reason
+    "process is not alive".</p>
+  </section>
+</main>
+</body>
+</html>
