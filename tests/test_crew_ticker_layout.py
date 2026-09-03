@@ -333,32 +333,41 @@ def test_the_action_set_is_one_set_with_three_readers():
 # ── The role column: the dispatch vocabulary, verbatim, left of the node ────
 
 
-def test_every_dispatch_role_renders_whole_in_its_own_column(grid):
-    """Each configured role appears intact, in a column all rows share."""
+def test_every_dispatch_role_renders_its_four_characters_in_its_own_column(grid):
+    """Each configured role derives to its first four characters, lowercased.
+
+    The derivation is mechanical — no display table to stay in step with — and
+    the six forms are all distinct: impl, inve, revi, test, clea, docu.
+    """
     rows = {}
     for role in sorted(ticker_module.DISPATCH_ROLES):
-        rows[role] = plain(grid.render(_event(role=role)))
+        rows[role] = plain(grid.render(_event(role=role, node="n-target")))
 
     expected = {
-        "implement": "implement",
-        "cleanup": "cleanup",
-        "review": "review",
-        "investigate": "investigate",
+        "implement": "impl",
+        "cleanup": "clea",
+        "review": "revi",
+        "investigate": "inve",
         "test": "test",
-        "documentation": "docs",
+        "documentation": "docu",
     }
     for role, shown in expected.items():
         assert shown in rows[role], role
+    assert len(set(expected.values())) == 6
 
     # Every row's role text starts at the same screen column.
     positions = {rows[role].index(shown) for role, shown in expected.items()}
     assert len(positions) == 1
 
 
-def test_documentation_is_narrowed_to_docs_and_sets_no_wider_column():
-    """`documentation` is thirteen characters; `docs` is what actually ships."""
-    line = plain(ticker_module.Ticker(width=180).render(_event(role="documentation")))
-    assert "docs" in line
+def test_documentation_derives_to_docu_and_sets_no_wider_column():
+    """`documentation` is thirteen characters; `docu` is what actually ships."""
+    line = plain(
+        ticker_module.Ticker(width=180).render(
+            _event(role="documentation", node="n-target")
+        )
+    )
+    assert "docu" in line
     assert "documentation" not in line
     assert len(line) == 180
 
@@ -378,8 +387,8 @@ def test_a_missing_role_also_renders_the_marker(grid):
 
 
 def test_the_role_column_sits_left_of_the_node_column(grid):
-    line = plain(grid.render(_event(role="review", node="n-review-target")))
-    assert line.index("review") < line.index("n-review-target")
+    line = plain(grid.render(_event(role="review", node="n-west")))
+    assert line.index("revi") < line.index("n-west")
 
 
 def test_the_role_column_is_stable_across_every_configured_role(grid):
@@ -389,22 +398,22 @@ def test_the_role_column_is_stable_across_every_configured_role(grid):
         plain(grid.render(_event(role="test", node="n" * 40))),
         plain(grid.render(_event(role="investigate", node="n-c"))),
     ]
-    tokens = ("implement", "test", "investigate")
+    tokens = ("impl", "test", "inve")
     assert len({row.index(token) for row, token in zip(rows, tokens, strict=True)}) == 1
 
 
 def test_the_role_is_dim_rather_than_hued():
     """Colour answers which worker and does-this-need-me; role gets neither."""
     painter = ticker_module.Ticker(theme="light", color=True)
-    line = painter.render(_event(role="review", node="n-review-target"))
+    line = painter.render(_event(role="review", node="n-west"))
 
     padded_role = (
-        re.escape(ticker_module._DIM) + r"review\s+" + re.escape(ticker_module._RESET)
+        re.escape(ticker_module._DIM) + r"revi" + re.escape(ticker_module._RESET)
     )
     assert re.search(padded_role, line) is not None
     # The role text is never wrapped in a hue selector, unlike the node
     # beside it (which does carry one, on the same coloured line).
-    assert re.search(r"\x1b\[38;5;\d+mreview\s*\x1b\[0m", line) is None
+    assert re.search(r"\x1b\[38;5;\d+mrevi\x1b\[0m", line) is None
     assert re.search(r"\x1b\[38;5;\d+m", line) is not None
 
 
