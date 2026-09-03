@@ -27,7 +27,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 CLOCK = 8
-ROLE = 11
+ROLE = 4
 NODE = 36
 SESSION = 18
 STATE = 10
@@ -107,17 +107,12 @@ NEEDS_ACTION = frozenset(
 DISPLAY = {"completed_unpromoted": "unpromoted"}
 
 # The dispatch vocabulary, verbatim. Kept here rather than derived from a
-# config so that a role appears whole the moment it is dispatched — the same
-# reason the display map above is a literal set of words rather than a rule.
+# config so that a role is known the moment it is dispatched; the display form
+# is derived from it mechanically (first four characters) so no table or
+# glossary has to stay in step with a new role.
 DISPATCH_ROLES = frozenset(
     {"implement", "cleanup", "review", "investigate", "test", "documentation"}
 )
-
-# `documentation` alone is thirteen characters, which would set the column
-# width for the other five; substituted the same way `completed_unpromoted`
-# is above. The substitution is display-only — `DISPATCH_ROLES` still keys on
-# the dispatch spelling.
-ROLE_DISPLAY = {"documentation": "docs"}
 
 # What an undispatched or unconfigured role renders as. A marker rather than a
 # truncated word, because a cut-off word invites a reader to guess the rest
@@ -291,16 +286,19 @@ def _display_state(state: Any) -> str:
 
 
 def _display_role(role: Any) -> str:
-    """The role verbatim, `documentation` narrowed to `docs`, or the marker.
+    """The role's first four characters lowercased, or the marker.
 
-    A role not in the dispatch vocabulary is never truncated to fit — that
-    would show a plausible-looking but wrong word — so anything unrecognised
-    renders the marker instead.
+    Every role in the dispatch vocabulary derives its four-character form
+    mechanically — no display table to stay in step with, so a role word
+    configured for the first time still renders. The first four of the living
+    set are all distinct: impl, inve, revi, test, clea, docu. A role not in the
+    vocabulary is never truncated to fit — that would show a plausible-looking
+    but wrong word — so anything unrecognised renders the marker instead.
     """
     spelled = str(role or "")
     if spelled not in DISPATCH_ROLES:
         return ROLE_UNKNOWN
-    return ROLE_DISPLAY.get(spelled, spelled)
+    return spelled[:4].lower()
 
 
 def _derive_effort(effort: Any) -> str:
