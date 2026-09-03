@@ -363,3 +363,65 @@ def test_two_projects_one_repository_share_a_claim_repository(
     }
 
     assert repositories == {"r-first": work.resolve(), "r-second": work.resolve()}
+
+
+def test_an_unresolvable_integration_ref_binds_rather_than_releases(
+    tmp_path: Path,
+) -> None:
+    """A comparison that never ran must not read as an empty worktree.
+
+    Repositories that integrate on a differently named branch are the ordinary
+    case for this: the ref lookup fails, and treating that as "nothing
+    unintegrated" would release the claim on an unanswered question.
+    """
+    repo = _repository(tmp_path / "shared", ("project-a",))
+    linked = _worktree(repo, tmp_path / "linked")
+    pointer = _pointer(
+        repo=repo,
+        worktree=linked,
+        project="project-a",
+        paths=("package/target.py",),
+        pid=_reaped_pid(),
+        base_sha=_git(repo, "rev-parse", "HEAD"),
+    )
+
+    disposition = node_module.claim_disposition(pointer, integration_ref="develop")
+
+    assert disposition.binding is True
+    assert any("could not be compared" in item for item in disposition.unintegrated)
+
+
+def test_a_pointer_with_no_recorded_process_still_binds(tmp_path: Path) -> None:
+    """A pointer is written before its worker is spawned."""
+    repo = _repository(tmp_path / "shared", ("project-a",))
+    pointer = _pointer(
+        repo=repo,
+        worktree=_worktree(repo, tmp_path / "linked"),
+        project="project-a",
+        paths=("package/target.py",),
+        pid=None,
+    )
+
+    disposition = node_module.claim_disposition(pointer)
+
+    assert disposition.binding is True
+    assert "no worker process yet" in disposition.reason
+
+
+def test_a_recorded_worktree_that_is_gone_binds_rather_than_releases(
+    tmp_path: Path,
+) -> None:
+    repo = _repository(tmp_path / "shared", ("project-a",))
+    pointer = _pointer(
+        repo=repo,
+        worktree=tmp_path / "removed",
+        project="project-a",
+        paths=("package/target.py",),
+        pid=_reaped_pid(),
+        base_sha=_git(repo, "rev-parse", "HEAD"),
+    )
+
+    disposition = node_module.claim_disposition(pointer)
+
+    assert disposition.binding is True
+    assert any("is gone" in item for item in disposition.unintegrated)

@@ -543,8 +543,13 @@ def validate_node(
 _WORKTREE_REPOSITORY_FIELDS = ("worktree", "repo")
 
 
-def _git_output(cwd: Path, *args: str) -> str | None:
-    """Return stripped git stdout, or None when the command cannot answer."""
+def _git_answer(cwd: Path, *args: str) -> str | None:
+    """Return stripped git stdout, or None when the command could not answer.
+
+    An empty answer and an unanswerable one are kept apart, because they mean
+    opposite things about a claim: no output from ``rev-list`` says the work is
+    integrated, while a failure says the comparison never happened.
+    """
     try:
         result = subprocess.run(
             ["git", *args],
@@ -555,9 +560,12 @@ def _git_output(cwd: Path, *args: str) -> str | None:
         )
     except OSError:
         return None
-    if result.returncode:
-        return None
-    return result.stdout.strip() or None
+    return None if result.returncode else result.stdout.strip()
+
+
+def _git_output(cwd: Path, *args: str) -> str | None:
+    """Return git stdout when there is any, and None otherwise."""
+    return _git_answer(cwd, *args) or None
 
 
 def repository_identity(path: str | Path) -> Path | None:
@@ -637,10 +645,18 @@ def unintegrated_claim_work(
 
     base_sha = str(pointer.get("base_sha") or "")
     if base_sha:
-        unreachable = _git_output(
+        unreachable = _git_answer(
             worktree, "rev-list", "HEAD", f"^{integration_ref}", f"^{base_sha}"
         )
-        if unreachable:
+        if unreachable is None:
+            # The comparison could not run — most often because this repository
+            # integrates on a differently named branch. Reporting that as an
+            # empty worktree would release the claim on the strength of a
+            # question nobody answered, so it is reported as work instead.
+            findings.append(
+                f"work that could not be compared against {integration_ref!r}"
+            )
+        elif unreachable:
             findings.append(
                 f"{len(unreachable.splitlines())} commit(s) beyond its base that "
                 f"{integration_ref} cannot reach"
