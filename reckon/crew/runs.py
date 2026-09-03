@@ -16,6 +16,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from reckon import __version__
 from reckon._store import _config_home
 from reckon.crew.node import (
     _TERMINAL_RUN_PHASES,
@@ -1011,7 +1012,90 @@ def watch_stream_cursor(
         offset = path.stat().st_size
     except FileNotFoundError:
         offset = 0
-    return {"stream_path": str(path), "offset": offset, "baseline": baseline}
+    return {
+        "stream_path": str(path),
+        "offset": offset,
+        "baseline": baseline,
+        "producer": watch_producer_identity(project),
+    }
+
+
+def watch_producer_identity(project: str) -> dict[str, Any]:
+    """Describe which code an armed seat is running, for the first line a
+    follower reads on attach.
+
+    A watcher imports its detection module once at startup and runs for
+    hours, so a later fix is inert on a seat armed before it landed and
+    nothing distinguishes that seat from a current one. This is the fact
+    that answers it: the version the seat started with, plus when it
+    started, sourced from the same record :func:`_project_watch_claim`
+    writes rather than a separate probe that could disagree with it.
+    """
+    path = watch_lock_path(project)
+    if not path.is_file():
+        return {}
+    with path.open("rb") as handle:
+        record = _read_watch_record(handle)
+    if not record:
+        return {}
+    version = record.get("reckon_version")
+    started_at = record.get("started_at")
+    return {
+        "reckon_version": version,
+        "started_at": started_at,
+        "line": f"reckon {version or 'unknown'} started {started_at or 'unknown'}",
+    }
+
+
+def watch_seat_version_current(project: str) -> bool:
+    """Report whether an armed seat's recorded version matches the installed one.
+
+    Absence stays absence: a seat with no recorded version predates the stamp
+    and is treated as stale rather than as current, exactly like a seat whose
+    recorded version differs from what is installed now.
+    """
+    path = watch_lock_path(project)
+    if not path.is_file():
+        return False
+    with path.open("rb") as handle:
+        record = _read_watch_record(handle)
+    recorded = record.get("reckon_version")
+    return recorded is not None and recorded == __version__
+
+
+def watch_seat_needs_replacement(project: str) -> bool:
+    """Report whether a held seat should be replaced rather than reused.
+
+    Two independent conditions make a seat untrustworthy: its supervisor died
+    (``observer_alive`` is False), or it is running code other than what is
+    installed now. Either is sufficient on its own, so this folds them into
+    one answer for the arming path without collapsing the death-of-supervisor
+    signal into the version one — a caller that wants to know why can still
+    read :func:`project_watch_visibility` and :func:`watch_seat_version_current`
+    separately.
+    """
+    visibility = project_watch_visibility(project)
+    if not visibility["seat_held"]:
+        return False
+    if visibility["observer_alive"] is False:
+        return True
+    return not watch_seat_version_current(project)
+
+
+def replace_stale_watch_seat(project: str) -> dict[str, Any] | None:
+    """Clear a seat judged stale, through the one existing teardown path.
+
+    Returns the :func:`~reckon.crew.recovery.unwatch` result when a
+    replacement happened, else ``None`` when the seat is current and nothing
+    was touched. This is the mechanism the arming path already uses for a
+    dead-supervisor seat; a version-stale seat is replaced the same way
+    rather than through a second one.
+    """
+    if not watch_seat_needs_replacement(project):
+        return None
+    from reckon.crew.recovery import unwatch
+
+    return unwatch(project)
 
 
 def producer_live(project: str) -> bool:
@@ -1073,6 +1157,7 @@ def _project_watch_claim(project: str, stall_window: str):
             "stall_window": stall_window,
             "started_at": _utc_now(),
             "stream_path": str(watch_stream_path(project)),
+            "reckon_version": __version__,
         }
         _write_watch_record(handle, record)
         producer = _WatchStreamProducer(
