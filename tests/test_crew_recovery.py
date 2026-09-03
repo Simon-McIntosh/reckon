@@ -14,9 +14,14 @@ from typing import Any
 import pytest
 from click.testing import CliRunner
 
+from reckon import _backends, crew
 from reckon import cli as cli_module
-from reckon import crew
 from reckon.crew import recovery, reports
+
+# Recorded worker event streams, read as repository fixtures so a refusal is
+# asserted against what a real harness wrote rather than against text a test
+# constructs. See the README beside them for provenance and elisions.
+BACKEND_FIXTURES = Path(__file__).parent / "fixtures" / "backends"
 
 
 @pytest.fixture()
@@ -374,6 +379,124 @@ def test_fleet_counts_still_partition_the_runs_in_flight(home) -> None:
     counts = recovery._fleet_counts(snapshots)
     assert counts == {"working": 1, "blocked": 1, "unpromoted": 1}
     assert sum(counts.values()) == len(snapshots)
+
+
+def _cli_pointer(
+    home: Path, run_id: str, stream: str, *, manifest: str | None = None, **kw
+) -> dict:
+    """A live cli pointer whose stream is one of the recorded backend fixtures.
+
+    No budget is folded in by default, so the refusal gate has to read the
+    stream itself — the raw path the ticker takes — and the crash fixtures
+    exercise the decline half of the gate.
+    """
+    record = {
+        "run_id": run_id,
+        "project": "proj",
+        "node": {"id": run_id, "plan": "plan-a", "time_budget": "20m"},
+        "backend": "codex",
+        "launch": "cli",
+        "argv": ["codex"],
+        "log_path": str(BACKEND_FIXTURES / stream),
+        "stderr_path": str(home / "stderr.log"),
+        "phase": "starting",
+        "process_alive": False,
+        "session": "s",
+        "manifest_path": str(home / "manifests" / f"{run_id}.md"),
+    }
+    if manifest is not None:
+        manifest_path = home / "manifests" / f"{run_id}.md"
+        manifest_path.parent.mkdir(parents=True, exist_ok=True)
+        manifest_path.write_text(manifest)
+    record.update(kw)
+    return record
+
+
+def test_refusal_stream_classifies_blocked_not_abandoned(home) -> None:
+    # A pointer whose stream records a provider refusal must block, never read
+    # as abandoned (a state implying nothing can be done) and never complete.
+    pointer = _cli_pointer(home, "r-refused", "codex-usage-limit.jsonl")
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+    assert row["classification"] == "blocked"
+    assert row["classification"] not in {"completed_unpromoted", "abandoned"}
+    assert "codex" in row["detail"]
+    assert "refused the turn on a usage-limit" in row["detail"]
+    assert "resume" in row["next_action"]
+
+
+def test_refusal_block_matches_the_phase_observe_reports(home) -> None:
+    # The two surfaces that can disagree answer from the same stream translation.
+    pointer = _cli_pointer(home, "r-refused", "codex-usage-limit.jsonl")
+    raw_row = recovery.classify_pointer(pointer, now_seconds=time.time())
+    observation = _backends.observe_log(
+        backend_name="codex",
+        backend={"command": "codex"},
+        log_path=str(BACKEND_FIXTURES / "codex-usage-limit.jsonl"),
+    )
+    assert observation.phase == "blocked"
+    folded = _cli_pointer(
+        home,
+        "r-refused-fold",
+        "codex-usage-limit.jsonl",
+        budget=observation.as_dict()["budget"],
+    )
+    folded_row = recovery.classify_pointer(folded, now_seconds=time.time())
+    assert raw_row["classification"] == "blocked"
+    assert folded_row["classification"] == "blocked"
+    assert raw_row["classification"] == folded_row["classification"] == "blocked"
+    assert observation.budget["rate_limit_type"] == "usage-limit"
+    assert "usage-limit" in raw_row["detail"]
+
+
+def test_refusal_block_detail_states_nothing_delivered_without_a_manifest(home) -> None:
+    pointer = _cli_pointer(home, "r-nomanifest", "codex-usage-limit.jsonl")
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+    assert row["classification"] == "blocked"
+    assert "no manifest was delivered" in row["detail"]
+    assert "records what was already delivered" not in row["detail"]
+
+
+def test_refusal_block_names_delivery_from_an_unverdict_manifest(home) -> None:
+    # A manifest that never reached a verdict still records what landed, so the
+    # block must name that delivery rather than imply nothing was produced.
+    pointer = _cli_pointer(
+        home,
+        "r-inprogress",
+        "codex-usage-limit.jsonl",
+        manifest="node: r-inprogress\nstatus: in-progress\n"
+        "artifacts: two suite logs, per-test ledgers\n",
+    )
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+    assert row["classification"] == "blocked"
+    assert "records what was already delivered" in row["detail"]
+    assert "no manifest was delivered" not in row["detail"]
+
+
+def test_a_crash_without_a_refusal_still_abandons(home) -> None:
+    # The negative: a genuine crash carries no recognised limit phrase, so it
+    # must stay abandoned and never be promoted to a block by a terminal stream.
+    pointer = _cli_pointer(home, "r-crash", "codex-failed-turn.jsonl")
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+    assert row["classification"] == "abandoned"
+    observation = _backends.observe_log(
+        backend_name="codex",
+        backend={"command": "codex"},
+        log_path=str(BACKEND_FIXTURES / "codex-failed-turn.jsonl"),
+    )
+    assert observation.budget.get("refusal") is not True
+
+
+def test_refusal_blocked_pointer_snapshots_as_blocked_in_the_ticker_path(home) -> None:
+    pointer = _cli_pointer(home, "r-refused", "codex-usage-limit.jsonl")
+    snapshot = recovery._watch_snapshot(pointer, moment=time.time(), stall_seconds=3600)
+    assert snapshot["state"] == "blocked"
+    assert snapshot["state"] in recovery.FLEET_BLOCKED_STATES
+    assert "usage-limit" in snapshot["reason"]
+    crash = _cli_pointer(home, "r-crash", "codex-failed-turn.jsonl")
+    crash_snapshot = recovery._watch_snapshot(
+        crash, moment=time.time(), stall_seconds=3600
+    )
+    assert crash_snapshot["state"] == "abandoned"
 
 
 def test_single_event_watch_still_returns_the_first_terminal_run(home) -> None:

@@ -144,6 +144,62 @@ def _apply_budget_watchdog(
     )
 
 
+def _refusal_block(
+    record: Mapping[str, Any], budget: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Normalise a refusal budget block into the fields a blocked reason needs."""
+    return {
+        "backend": str(record.get("backend") or "unknown"),
+        "limit_kind": str(budget.get("rate_limit_type") or "quota"),
+        "resets_at": str(budget.get("resets_at") or "unknown"),
+    }
+
+
+def _stream_refusal_block(record: Mapping[str, Any]) -> dict[str, Any] | None:
+    """The provider refusal a cli run's stream records, folded in or read fresh.
+
+    A spend or usage refusal is a block, not an abandonment: the account is not
+    broken, only spent until a moment the refusal names. observe() folds the
+    stream's refusal into the pointer's budget, while the ticker reads raw
+    pointers that have not been through observe. Both paths resolve through the
+    same backend translation, so they reach the same verdict and a ticker
+    reading a raw pointer cannot disagree with observe's phase.
+
+    Declining is the load-bearing half. A stream that reports an ordinary
+    failed turn — a bad model id, a lost stream, a context overflow — carries
+    none of the recognised limit phrases and returns None, so a crash is never
+    mistaken for a block.
+    """
+    budget = record.get("budget")
+    if isinstance(budget, Mapping) and budget.get("refusal"):
+        return _refusal_block(record, budget)
+    if record.get("launch") != "cli":
+        return None
+    log = Path(str(record.get("log_path") or ""))
+    if not log.is_file():
+        return None
+    argv = record.get("argv")
+    command = argv[0] if isinstance(argv, list) and argv else record.get("dialect")
+    if not command:
+        return None
+    from reckon import _backends
+
+    try:
+        observation = _backends.observe_log(
+            backend_name=str(record.get("backend") or ""),
+            backend={"command": command},
+            log_path=log,
+        )
+    except (_backends.BackendError, CrewError, OSError, ValueError):
+        # An unreadable or untranslatable stream is a reading problem, not a
+        # block; the manifest and liveness paths still classify the run.
+        return None
+    observed = observation.as_dict().get("budget") or {}
+    if observed.get("refusal"):
+        return _refusal_block(record, observed)
+    return None
+
+
 def classify_pointer(
     record: Mapping[str, Any],
     *,
@@ -210,6 +266,11 @@ def classify_pointer(
         manifest_commits = []
         manifest_blockers = []
         needs_help = None
+    # A provider refusal makes an otherwise-abandoned run a block: the process
+    # is gone but the stop is triageable (a named backend, limit and reset) and
+    # resumable once the limit lifts. Detected from the same stream observe
+    # reads, so the two paths agree.
+    refusal_block = _stream_refusal_block(record)
     terminal = phase in ("complete", "failed")
     terminal_at = None
     terminal_age_seconds = None
@@ -269,6 +330,26 @@ def classify_pointer(
         action = (
             f"inspect the worktree at {record.get('worktree')} and discard when safe"
         )
+    elif refusal_block:
+        classification = "blocked"
+        block = (
+            f"backend {refusal_block['backend']!r} refused the turn on a "
+            f"{refusal_block['limit_kind']}; reset {refusal_block['resets_at']}"
+        )
+        # The block states what was delivered so a reader does not conclude
+        # nothing happened. A run killed with no manifest has nothing to show;
+        # one whose manifest never reached a verdict still names its delivery
+        # in the file, and pointing at it is the difference between a blocked
+        # run and a vanished one.
+        if not manifest_file_present:
+            delivery = "no manifest was delivered and nothing has landed yet"
+        else:
+            delivery = (
+                "the in-progress manifest at "
+                f"{manifest} records what was already delivered"
+            )
+        detail = f"blocked: {block}; {delivery}"
+        action = f"reckon crew resume --run {run_id} once the limit lifts"
     elif terminal:
         classification = "abandoned"
         if manifest_derived:
@@ -623,6 +704,11 @@ def _watch_snapshot(
     # terminal readings are arbitrated before any working state is chosen.
     if manifest_status in {"complete", "blocked", "failed"}:
         state = manifest_status
+    elif classification == "blocked":
+        # A provider refusal blocks even though no manifest reached a verdict:
+        # the process is gone, but the stop is triageable and resumable once
+        # the limit lifts, so it reads as a block rather than an abandonment.
+        state = "blocked"
     elif phase == "stopped":
         state = "stopped"
     elif alive is False:
