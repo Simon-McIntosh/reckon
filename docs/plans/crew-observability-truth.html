@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Make the fleet display report what is true: liveness bound to real processes, gc scoped to the repository it names, and no confident wrong answers.">
   <meta name="plan-status" content="draft">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-effort-hours" content="9.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="3">
 </head>
 <body>
   <main class="plan-doc">
@@ -133,6 +133,58 @@
       </tbody>
     </table>
 
+    <h2 id="s5">&#167;5 &mdash; A spent lane should be known before dispatch, and should hand over rather than refuse</h2>
+    <p><strong>The exhaustion was visible all along and nothing asked.</strong> On 2026-09-03
+    the codex account hit its usage limit with a reset eight days out. Every unnamed dispatch
+    kept resolving to it, because <code>default_backend</code> named it, and
+    <code>crew preflight</code> reported it <em>clear</em>. The cause is one missing flag:
+    <code>budget_check</code> was set on <code>codex-spark</code>, <code>codex-luna</code>
+    and <code>codex-terra</code> and <strong>not on <code>codex</code></strong> &mdash; the
+    highest-volume lane in the fleet at 372 promoted runs, and the one backend a pre-flight
+    could not probe. Without it a pre-flight can only believe what earlier runs recorded, and
+    no run had yet recorded the refusal because the parser that reads a usage-limit event
+    into a budget signal landed afterwards. Enabling the flag changed the answer immediately:
+    the same pre-flight now returns <code>held: true</code> naming <code>codex</code>.</p>
+    <p>That fixes visibility and leaves the second half open. Today a held backend
+    <strong>refuses</strong>: <code>crew preflight</code> exits 3 and <code>crew dispatch</code>
+    returns <code>budget-hold</code>. Refusing is correct when a human is watching and wrong
+    when the point is unattended execution &mdash; the fleet stops on a condition the
+    configuration could have routed around, and a person has to notice and edit
+    <code>default_backend</code> by hand, which is what happened here and cost most of a
+    session's dispatches.</p>
+    <p><strong>Let a lane declare where its work goes when it is spent.</strong> An ordered
+    fallback, resolved at dispatch when the primary is held, with three properties that keep
+    it from becoming the next silent wrong answer:</p>
+    <ul>
+      <li><strong>The substitution is recorded on the run</strong>, naming the lane asked for,
+      the lane used, and the hold that caused it &mdash; so a calibration slice never
+      attributes a fallback run to the backend the caller named. This is the same reasoning
+      that made a shadow record its substituted configuration.</li>
+      <li><strong>A fallback is declared, never inferred.</strong> A backend with no declared
+      fallback still refuses, because guessing a substitute is how a metered account gets
+      spent by a caller who never chose it.</li>
+      <li><strong>Unknown never triggers it.</strong> A backend reporting no headroom is not
+      held and therefore never falls back, preserving the rule that absence of a signal is
+      not evidence of exhaustion.</li>
+    </ul>
+    <p>Two related gaps belong with it. <code>roles.&lt;role&gt;.by_spec_level</code> can set
+    <em>effort</em> but nothing maps a spec level to a <em>backend</em> for the Claude lanes,
+    so "route an open node to the frontier tier" is expressible only as a per-call
+    <code>--set</code> &mdash; a rule with no bound check, which is this sprint's own thesis.
+    And the host layer briefly carried <strong>two <code>claude-opus</code> definitions</strong>,
+    added independently by two sessions; YAML takes the last key silently, which dropped
+    <code>budget_check</code> and left the frontier tier with no headroom visibility at all.
+    Nothing validated the collision.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>A spent lane is known before dispatch</td><td>Every metered CLI backend declares <code>budget_check</code>, and a pre-flight against a spent account returns held naming it, its utilisation and its reset. Asserted against a recorded account surface rather than a live one.</td></tr>
+        <tr><td>A held lane hands over</td><td>A dispatch whose resolved backend is held and which declares a fallback runs on the fallback and records the lane asked for, the lane used and the hold; one with no declared fallback still refuses at exit 3; and a backend reporting unknown headroom neither holds nor falls back. Asserted by test in all three cases.</td></tr>
+        <tr><td>Spec level can name a backend</td><td>A <code>by_spec_level</code> entry resolves a backend as well as an effort, validated through the layered schema with provenance, so routing an open node to the frontier tier is configuration rather than a per-call override.</td></tr>
+        <tr><td>A duplicate backend key is refused</td><td>A layer defining the same backend twice is refused at validation naming the key, rather than silently taking the last and dropping whatever the earlier definition carried.</td></tr>
+      </tbody>
+    </table>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="liveness-source" data-choice="" data-by="" data-when="">
@@ -160,10 +212,15 @@
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-cot-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-03" data-recommends-skill="/reckon-ship crew-observability-truth" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Settle the two decisions, then land the liveness derivation and the gc pairing check</h4>
-    <div class="r-fu-body"><p>Both sections carry a measured defect and a decision that changes what ships, so the decisions come first. &#167;2's is whether a liveness answer is derived from the process table on every read, reconciled against it, or left to the record that produced the defect; &#167;3's is whether a project and repository mismatch is refused or resolved from mounts. Neither needs new investigation &mdash; the evidence is in the producer-orphans RCA and in the measured gc counts, 124 reclaimable worktrees reported as zero.</p><p>&#167;4 is a standing obligation rather than a work item and lands as tests against the other sections. Take it last, and treat a failure there as a defect in the section that allowed it.</p></div>
+    <div class="r-fu-body"><p>Both sections carry a measured defect and a decision that changes what ships, so the decisions come first. §2's is whether a liveness answer is derived from the process table on every read, reconciled against it, or left to the record that produced the defect; §3's is whether a project and repository mismatch is refused or resolved from mounts. Neither needs new investigation — the evidence is in the producer-orphans RCA and in the measured gc counts, 124 reclaimable worktrees reported as zero.</p><p>§4 is a standing obligation rather than a work item and lands as tests against the other sections. Take it last, and treat a failure there as a defect in the section that allowed it.</p></div>
     <pre class="r-fu-prompt">/reckon-ship crew-observability-truth</pre>
     </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s5" data-id="c-20260903-budget-visibility" data-who="reckon-ship" data-when="2026-09-03T07:00:00Z">
+    <div class="r-comment-body">§5 added from the lead's question — whether a codex default could delegate to claude on startup, since token exhaustion should be visible before dispatch. It should be, and the reason it was not is one missing flag. budget_check was set on codex-spark, codex-luna and codex-terra and not on codex itself, which is the highest-volume lane at 372 promoted runs and the one backend a pre-flight could not probe. Verified by enabling it: the same pre-flight that reported clear now returns held naming codex. So the visibility half is a configuration omission rather than a design gap, and it is already fixed in the host layer with the reason recorded beside it. Two further defects fixed in the same pass. default_backend still named codex while that account was spent, so every unnamed dispatch resolved to a lane refusing every turn; it now names claude. And the host layer carried TWO claude-opus definitions, added independently by two sessions — YAML takes the last key silently, which dropped budget_check and left the frontier tier with no headroom visibility while also quietly changing its time budget from 40 to 35 minutes. Nothing validated the collision, which is why the section now owes a refusal for a duplicated backend key. The delegation half stays open as design, because it is a real trade: refusing is correct when a human is watching and wrong when the point is unattended execution. The section specifies a declared ordered fallback with the three properties that keep it honest — the substitution recorded on the run so calibration never attributes a fallback to the lane the caller named, declared rather than inferred so a metered account is never spent by a caller who did not choose it, and never triggered by unknown headroom so absence of a signal stays absence. Effort raised from 6 to 9 hours.</div>
+</div>
+</section>
+</main>
 </body>
 </html>
