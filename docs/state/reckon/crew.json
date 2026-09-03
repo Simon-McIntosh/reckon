@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T10:52:59",
+  "updated": "2026-09-03T10:58:25",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -532,7 +532,8 @@
         "session_id": "4a867318-1d2e-4814-a73f-57b9088ce487",
         "session_model": "claude-sonnet-5",
         "sessions": {
-          "{\"backend\":\"claude\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "4a867318-1d2e-4814-a73f-57b9088ce487"
+          "{\"backend\":\"claude\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "4a867318-1d2e-4814-a73f-57b9088ce487",
+          "{\"backend\":\"clive\",\"effort\":\"medium\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\"}": "ff0984b4-d787-48cc-a3c7-14635f7b3fdd"
         },
         "created": "2026-09-03"
       },
@@ -41022,6 +41023,219 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260903T083408025119-retire-the-model-only-session-lookup",
+        "plan": "clive-local-workers",
+        "section": "\u00a77",
+        "node": "retire-the-model-only-session-lookup",
+        "node_definition": {
+          "done_when": "ledger.session_for_model and ledger.capture_session are removed or repurposed so no model-only session keying remains, with every call site and every test that exercised them updated to the configuration-keyed contract; a grep over the tree for those two names returns only their absence, stated in the manifest; tests/test_ledger.py passes in full with its count recorded, and the manifest records the count for tests/test_crew_session_keying.py as well since it pins the surviving contract. Section 7's landing comment records that dispatch.py stopped using them when configuration-keyed reuse landed at 95e5e2c, leaving them live only in tests",
+          "estimated_hours": null,
+          "goal": "The superseded model-only session lookup is removed, leaving one keying implementation",
+          "id": "retire-the-model-only-session-lookup",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T083408025119-retire-the-model-only-session-lookup/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "exact",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/ledger.py",
+            "tests/test_ledger.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "impl-fit",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T08:34:12Z",
+        "completed_at": "2026-09-03T08:58:00.960Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1415,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1428,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "7ebb65d1a34e0e99177d6a829382c0015469cca4",
+        "commits": [
+          "cdec546d9a1c0edb1843f55f7bc899b2b0e26261"
+        ],
+        "changed_lines": {
+          "added": 19,
+          "removed": 97,
+          "files": 2
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_ledger.py tests/test_crew_session_keying.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T083408025119-retire-the-model-only-session-lookup/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T083408025119-retire-the-model-only-session-lookup/manifest.md",
+        "scope_changed": false,
+        "session_id": "ff0984b4-d787-48cc-a3c7-14635f7b3fdd",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 9419307,
+            "input_tokens_cumulative": 9419307,
+            "output_tokens": 46140,
+            "output_tokens_cumulative": 46140,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 48.250035,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 48.250035
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260903T083237507413-a-provider-refusal-blocks",
+        "plan": "crew-observability-truth",
+        "section": "\u00a76",
+        "node": "a-provider-refusal-blocks",
+        "node_definition": {
+          "done_when": "A stream whose terminal event carries a provider spend, usage or quota refusal classifies as blocked rather than complete or abandoned, asserted against the five streams recorded under ~/.config/reckon/crew/runs whose node ids include gc-scans-the-repository-it-names and verify-the-merged-head; the blocked reason names the backend, the limit kind and the reset timestamp parsed from the refusal, and states the reset is unknown rather than omitting the field when the refusal carries none; a genuine completion and a genuine crash are each asserted as negatives and must not become blocked; the refusal is recognised however the harness labelled the terminal event, which in every recorded case was type result with subtype success. tests/test_failure_classification.py passes in full with its count recorded. Section 6 of the plan states why blocked is the required state and which affordances it is chosen for. If the phase mapping cannot be reached without writing reckon/crew/recovery.py, stop with a NEEDS-HELP rather than widening: that file is claimed by a concurrent node",
+          "estimated_hours": null,
+          "goal": "A worker stream carrying a provider spend, usage or quota refusal is classified blocked, with the account, limit kind and reset in its reason",
+          "id": "a-provider-refusal-blocks",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T083237507413-a-provider-refusal-blocks/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/_backends.py",
+            "tests/test_failure_classification.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "sonnet-a",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "backend": "claude",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T08:32:42Z",
+        "completed_at": "2026-09-03T08:57:01.963Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1454,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1459,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "7ebb65d1a34e0e99177d6a829382c0015469cca4",
+        "commits": [
+          "71b50b0ae03cd28d429401b7939174a9be399504"
+        ],
+        "changed_lines": {
+          "added": 308,
+          "removed": 13,
+          "files": 2
+        },
+        "tests_added": 10,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_failure_classification.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T083237507413-a-provider-refusal-blocks/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T083237507413-a-provider-refusal-blocks/manifest.md",
+        "scope_changed": false,
+        "session_id": "c148c9f8-1c96-4534-bf08-7c443135bcc9",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 1.01,
+          "rate_limit_type": "overage",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-10-01T00:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 1,
+          "tokens": {
+            "cache_creation_input_tokens": 158819,
+            "cache_creation_input_tokens_cumulative": 253236,
+            "cache_read_input_tokens": 11227008,
+            "cache_read_input_tokens_cumulative": 15932300,
+            "inference_geo": "not_available",
+            "input_tokens": 38,
+            "input_tokens_cumulative": 142,
+            "output_tokens": 43751,
+            "output_tokens_cumulative": 61426,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 3.3182636,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 4.813948
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -41040,6 +41254,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 676
+    "_version": 679
   }
 }
