@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="10">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/guard-reuse-map.md,reckon/hooks/native_agent_guard.py,tests/test_native_agent_guard.py">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-commits" content="ba754c9,736dbfd">
@@ -50,31 +50,22 @@
       worker execution.
     </p>
 
-    <h2 id="s2">§2 — The hook</h2>
-    <p>
-      A self-contained hook script, shipped in this repository and wired as a pre-tool-use
-      hook on the harness's agent-spawning tool. Behavior, in order:
-    </p>
-    <ul>
-      <li><strong>Scope test:</strong> resolve the working repository; if it carries no
-        crew management state (no <code>docs/state/&lt;project&gt;/flight.yaml</code> and no
-        crew ledger), exit permissive — non-crew repos are untouched.</li>
-      <li><strong>Waiver — crew-prepared in-harness run:</strong> if a live run pointer for
-        this project has an in-harness launch awaiting attachment, allow the spawn and
-        remind the caller to bind it with <code>reckon crew attach</code>. This keeps the
-        legitimate native backend path alive.</li>
-      <li><strong>Waiver — explicit override:</strong> an environment toggle set for the
-        session allows the spawn; the refusal message names the toggle so the escape is
-        always one visible, deliberate step, never a default.</li>
-      <li><strong>Otherwise refuse</strong>, with a message that does the re-route for the
-        caller: the matching <code>reckon crew dispatch</code> invocation shape for
-        investigate/review work, and the watcher arming line. A refusal that teaches the
-        correct call costs one retry; a bare "no" costs a diagnosis.</li>
-    </ul>
-    <p><em>Done when:</em> hook unit tests cover the four branches — non-crew repo
-      passthrough, in-harness-awaiting-attach waiver, environment override, and the
-      refusal message naming both the dispatch shape and the override; and a synthetic
-      crew-managed temp repo proves the scope test reads only repository-local state.</p>
+    <section id="s2" class="section-landed">
+      <header><span class="badge badge-shipped">&#10003; landed 2026-09-03</span>
+        <h2>§2 — The hook</h2></header>
+      <p class="landed-summary">Built <code>reckon/hooks/native_agent_guard.py</code>,
+        stdlib-only, with a pure <code>decide(payload)</code> and a <code>main()</code>
+        matching the harness pre-tool-use contract. 13 hook tests, 15 including the only
+        other module importing <code>crew.node</code>; 472 insertions, ruff delta zero.
+        All four branches covered plus two negatives the fence did not ask for: an
+        already-attached pointer does not waive, nor does a pointer for another repository.
+        The isolation case proves detection reads only the repository's own
+        <code>docs/state</code> tree while a mounts file naming an unrelated project sits in
+        the same config home. Full record:
+        <a href="/reckon/evidence/archive/native-agent-dispatch-guard-landed#s2-spawn-guard-lands">§2 landed</a>
+        (commit <code>736dbfd</code>); reuse map at
+        <a href="/reckon/evidence/archive/native-agent-dispatch-guard-landed#s2-guard-reuse-map">§2 reuse map</a>.</p>
+    </section>
 
     <h2 id="s3">§3 — Distribution: reckon-sync owns the wiring</h2>
     <p>
@@ -88,19 +79,19 @@
       exactly once (a second run is a no-op, asserted byte-for-byte), and the removal path
       leaves settings as found.</p>
 
-    <h2 id="s4">§4 — Fix rule locality: the routing rule lands where the temptation occurs</h2>
-    <p>
-      One binding line in each skill a session can be holding when the spawn temptation
-      arises — status, roadmap, sprint, and create — plus the repository agent guidance:
-      in a crew-managed repository, investigation and review fan-out is
-      <code>reckon crew dispatch</code> work (investigate/review roles); harness-native
-      background agents bypass the run ledger, manifests, and calibration and are refused
-      by the guard. The ship skill already carries the full rule and sits at a measured
-      size ceiling; it gets a pointer at most, not a restatement.
-    </p>
-    <p><em>Done when:</em> each named skill file carries the line, phrased against the
-      mechanism rather than any incident, and a contract test asserts its presence so the
-      next skill rewrite cannot silently drop it.</p>
+    <section id="s4" class="section-landed">
+      <header><span class="badge badge-shipped">&#10003; landed 2026-09-03</span>
+        <h2>§4 — Fix rule locality: the routing rule lands where the temptation occurs</h2></header>
+      <p class="landed-summary">The same line now sits in the status, roadmap, sprint and
+        create skills plus <code>reckon/crew/AGENTS.md</code>, phrased against the mechanism
+        — run ledger, manifests, calibration — and naming no incident. 49 insertions over
+        6 files; <code>tests/test_skill_contracts.py</code> 49 passed, its new case asserting
+        four fragments verbatim in all five files so a later rewrite fails the suite rather
+        than quietly dropping the rule. The ship skill was deliberately left unchanged: it
+        already carries the full rule at a measured size ceiling. Full record:
+        <a href="/reckon/evidence/archive/native-agent-dispatch-guard-landed#s4-routing-rule-lands">§4 landed</a>
+        (commit <code>ba754c9</code>).</p>
+    </section>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -147,6 +138,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20260903T1006" data-who="reckon-ship" data-when="2026-09-03T08:06:36+00:00">
     <div class="r-comment-body">the-routing-rule-lands-where-the-temptation-is landed — commit ba754c9, merged; gate passed; measure tests/test_skill_contracts.py 49 passed exit 0 against base 0bfa110; 49 insertions over 6 files, 1 test added, 151 worker-seconds against a 30m budget on the local lane at deepseek-v4-flash, full-diff audited per the write-access lock. The same line now sits in reckon-status, reckon-roadmap, reckon-sprint and reckon-create plus the repository crew guidance, phrased against the mechanism — the run ledger, manifests and calibration — and naming no incident, and the contract test asserts four verbatim fragments in all five files so a later rewrite fails the suite rather than quietly decaying the rule. The ship skill was deliberately left unchanged, since §4 gives it a pointer at most and it already carries the full rule at a measured size ceiling. Worth recording as a fleet observation rather than a node outcome: this worker's manifest carried failure_attribution as a declared field, which means the manifest schema landed one wave earlier was already in use by the next worker within the hour, with no prompt telling it to.</div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260903T091132543202-guard-cumulative-evidence-record" data-who="impl-guard" data-when="2026-09-03T09:14:41.353Z">
+    <div class="r-comment-body"><p>Cumulative evidence record created: 3 anchors against 3 distinct landed outcomes, plus an anchor stating which section remains open; audit-doc clean</p></div>
 </div>
 </section>
 </main>
