@@ -61,25 +61,48 @@ def test_every_line_is_exactly_the_requested_width(grid):
 
 
 def test_columns_start_on_the_same_screen_column(grid):
-    """Node, arrow, agent and every stat label share a column across rows."""
+    """Node, arrow, agent and every stat letter share a column across rows."""
     rows = [
         plain(grid.render(_event(from_state=None, to_state="dispatched"))),
         plain(grid.render(_event(from_state="complete", to_state="promoted"))),
         plain(grid.render(_event(working=12, blocked=0, unpromoted=3))),
     ]
     assert len({row.index("→") for row in rows}) == 1
-    # Searched from the right: a state named `working` or `blocked` appears
-    # earlier on the same line, and matching that instead would compare the
-    # arrow column against itself.
-    for token in ("working", "blocked", "unpromoted"):
-        assert len({row.rindex(token) for row in rows}) == 1, token
+    # Searched from the right: the states' letters of the fleet counters sit at
+    # the end of every line, so the last `w`, `b` and `u` are the counter
+    # suffixes even when the same letter appears earlier in a state or role.
+    for letter in ("w", "b", "u"):
+        assert len({row.rindex(letter) for row in rows}) == 1, letter
 
 
 def test_stat_digits_align_across_one_and_two_digit_counts(grid):
-    """`12 working` stacks under `1 working` rather than shunting the label."""
+    """`12w` stacks under `1w` rather than shunting the suffix."""
     one = plain(grid.render(_event(working=1)))
     twelve = plain(grid.render(_event(working=12)))
-    assert one.index(" 1 working") == twelve.index("12 working")
+    assert one.index(" 1w") == twelve.index("12w")
+
+
+def test_the_fleet_counters_render_as_digits_followed_by_one_letter(grid):
+    """Each counter is its number followed by the state's single letter.
+
+    `2 working · 4 blocked · 1 unpromoted` becomes `2w · 4b · 1u`: the word is
+    gone from the count column, and a zero still shows rather than vanishing.
+    """
+    line = plain(grid.render(_event(working=2, blocked=4, unpromoted=1)))
+    assert " 2w ·  4b ·  1u" in line
+
+
+def test_stat_letters_align_at_a_fixed_column_across_one_and_two_digits(grid):
+    """The three suffix letters hold their column at every count width.
+
+    A two-digit working count sits beside one-digit blocked and unpromoted
+    counts, and every letter still lands on the same screen column it would
+    occupy when all three are one digit.
+    """
+    one = plain(grid.render(_event(working=1, blocked=3, unpromoted=2)))
+    twelve = plain(grid.render(_event(working=12, blocked=3, unpromoted=2)))
+    for letter in ("w", "b", "u"):
+        assert one.rindex(letter) == twelve.rindex(letter), letter
 
 
 def test_arrow_column_holds_when_there_is_no_previous_state(grid):
@@ -397,8 +420,11 @@ def test_a_role_column_still_leaves_every_other_column_on_its_own_position():
         plain(grid.render(_event(role="test", working=12, blocked=0, unpromoted=3))),
     ]
     assert len({row.index("→") for row in rows}) == 1
-    for token in ("working", "blocked", "unpromoted"):
-        assert len({row.rindex(token) for row in rows}) == 1, token
+    # The fleet counter letters, searched from the right: each sits at the end
+    # of its row, so the last `w`, `b` and `u` are the counter suffixes even
+    # when the same letter appears earlier in a state or role.
+    for letter in ("w", "b", "u"):
+        assert len({row.rindex(letter) for row in rows}) == 1, letter
     assert {len(row) for row in rows} == {180}
 
 
