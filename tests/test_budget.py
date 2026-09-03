@@ -1356,3 +1356,134 @@ def test_an_unset_shelf_life_still_ages_an_undated_hold(home, repo) -> None:
     state = _aged_state(repo, _spent_with_no_stated_reset(), observed=observed, now=now)
 
     assert budget.decide(state, budget.policy(config), now=now)["held"] is False
+
+
+# ── Observing a run cannot renew a hold observing did not create ───────────
+#
+# Measured defect: the ageing rule took its age from the live pointer's
+# observed_at, and `observe()` rewrites that stamp on every call while the
+# stream it reads still carries the original rejection — so a coordinator
+# investigating why its lane was held extended the hold by looking, one
+# re-read at a time, forever.
+
+
+def _live_pointer(
+    project: str,
+    run_id: str,
+    *,
+    backend: str,
+    budget_block: dict,
+    created_at: str,
+) -> dict:
+    """A minimal live pointer ``observe()`` can fold without a backend log.
+
+    ``launch`` is deliberately not ``"cli"``: that is the one field
+    ``observe()`` checks before reaching for a log file, and any other value
+    takes the branch that touches nothing but the pointer's own bookkeeping —
+    exactly what re-reading an already-refused run does against the real
+    dialects too, since the refusal already lives in ``budget`` rather than
+    needing to be re-parsed.
+    """
+    record = {
+        "run_id": run_id,
+        "project": project,
+        "backend": backend,
+        "launch": "in-harness",
+        "phase": "working",
+        "budget": budget_block,
+        "created_at": created_at,
+        "observed_at": created_at,
+    }
+    crew._write_json(crew.pointer_path(run_id), record)
+    return record
+
+
+def test_observing_a_refused_run_does_not_renew_its_hold(home, repo) -> None:
+    """Re-reading a refused run's stream must not restamp an old refusal as new.
+
+    Asserted through the same ``decide`` call preflight itself makes, over a
+    state the ledger reader built from a live pointer carrying a real
+    rejection — as one case, observe-then-decide, rather than deciding once
+    and reasoning separately about what a later observe would do.
+    """
+    bound = budget.policy(CONFIG)["evidence_shelf_life_minutes"]
+    refused_at = datetime.now(tz=UTC) - timedelta(minutes=bound * 3)
+    stamp = refused_at.isoformat(timespec="seconds").replace("+00:00", "Z")
+    record = _live_pointer(
+        "proj",
+        "r-observed-refusal",
+        backend="alpha",
+        budget_block=_spent_with_no_stated_reset(),
+        created_at=stamp,
+    )
+
+    before = budget.preflight("proj", CONFIG, backends=["alpha"], root=repo)
+    verdict_before = before["backends"][0]
+    assert verdict_before["held"] is False
+    assert verdict_before["state"]["headroom"] == "unknown"
+
+    for _ in range(10):
+        crew.observe(record["run_id"], config=CONFIG)
+
+    refreshed = crew.read_pointer(record["run_id"])
+    # observe() really did rewrite the mutable stamp, so this assertion would
+    # fail to distinguish the fix from the defect if it had not.
+    assert refreshed["observed_at"] != stamp
+    assert refreshed["created_at"] == stamp
+
+    after = budget.preflight("proj", CONFIG, backends=["alpha"], root=repo)
+    verdict_after = after["backends"][0]
+
+    assert verdict_after["held"] == verdict_before["held"] is False
+    assert verdict_after["state"]["headroom"] == verdict_before["state"]["headroom"]
+    assert verdict_after["reason"] == verdict_before["reason"]
+
+
+def test_observing_a_fresh_refusal_still_holds(home, repo) -> None:
+    """A genuinely fresh refusal keeps holding across a re-read, not just an old one."""
+    refused_at = datetime.now(tz=UTC) - timedelta(seconds=5)
+    stamp = refused_at.isoformat(timespec="seconds").replace("+00:00", "Z")
+    record = _live_pointer(
+        "proj",
+        "r-fresh-refusal",
+        backend="alpha",
+        budget_block=_spent_with_no_stated_reset(),
+        created_at=stamp,
+    )
+
+    before = budget.preflight("proj", CONFIG, backends=["alpha"], root=repo)
+    assert before["backends"][0]["held"] is True
+
+    crew.observe(record["run_id"], config=CONFIG)
+
+    after = budget.preflight("proj", CONFIG, backends=["alpha"], root=repo)
+    assert after["backends"][0]["held"] is True
+    assert "shelf life" not in after["backends"][0]["reason"]
+
+
+def test_observing_a_stated_reset_is_not_aged_by_the_observe(home, repo) -> None:
+    """A hold whose refusal names its own reset time is governed by that time,
+    not by the shelf life the observe-then-decide path exists to protect
+    against — asserted over the same live-pointer-plus-observe path as the
+    undated case above, so both paths stay reachable.
+    """
+    bound = budget.policy(CONFIG)["evidence_shelf_life_minutes"]
+    refused_at = datetime.now(tz=UTC) - timedelta(minutes=bound * 4)
+    stamp = refused_at.isoformat(timespec="seconds").replace("+00:00", "Z")
+    block = _known(100.0, resets_in=int(timedelta(minutes=bound * 5).total_seconds()))
+    record = _live_pointer(
+        "proj",
+        "r-dated-refusal",
+        backend="alpha",
+        budget_block=block,
+        created_at=stamp,
+    )
+
+    before = budget.preflight("proj", CONFIG, backends=["alpha"], root=repo)
+    assert before["backends"][0]["held"] is True
+
+    crew.observe(record["run_id"], config=CONFIG)
+
+    after = budget.preflight("proj", CONFIG, backends=["alpha"], root=repo)
+    assert after["backends"][0]["held"] is True
+    assert "shelf life" not in after["backends"][0]["reason"]
