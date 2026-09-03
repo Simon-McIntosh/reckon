@@ -544,6 +544,70 @@ def test_unparseable_yaml_names_the_file(layers):
     assert str(layers["host"]) == excinfo.value.source
 
 
+def test_a_layer_defining_a_backend_key_twice_is_refused_naming_the_key(layers):
+    """Two identical backend keys would silently drop the earlier definition.
+
+    The measured incident: two sessions each added the frontier tier, YAML kept
+    only the last key, and one definition's budget_check vanished while its time
+    budget silently changed. The collision is refused at the layer read, naming
+    the repeated backend key with the same error shape every other violation
+    uses.
+    """
+    write(
+        layers["host"],
+        "backends:\n"
+        "  alpha:\n"
+        "    launch: cli\n"
+        "    command: alpha-cli\n"
+        "    budget_check: true\n"
+        "  alpha:\n"
+        "    launch: cli\n"
+        "    command: alpha-cli\n",
+    )
+    with pytest.raises(FlightConfigError) as excinfo:
+        resolve_files(layers)
+    error = excinfo.value
+    assert str(layers["host"]) == error.source
+    assert error.key_path == "backends.alpha"
+    assert "alpha" in error.constraint
+    assert "more than once" in error.constraint
+
+
+def test_a_layer_without_duplicate_keys_validates_unchanged(layers):
+    """The refusal changes nothing for a layer that declares each key once."""
+    write(
+        layers["host"],
+        "default_backend: alpha\n"
+        "backends:\n"
+        "  alpha:\n"
+        "    launch: cli\n"
+        "    command: alpha-cli\n",
+    )
+    backend = resolve_files(layers).config["backends"]["alpha"]
+    assert backend["launch"] == "cli"
+    assert backend["command"] == "alpha-cli"
+
+
+def test_two_distinct_backends_remain_unaffected(layers):
+    """Distinct backend names are not duplicates, so both survive unmerged."""
+    write(
+        layers["host"],
+        "default_backend: alpha\n"
+        "backends:\n"
+        "  alpha:\n"
+        "    launch: cli\n"
+        "    command: alpha-cli\n"
+        "  beta:\n"
+        "    launch: cli\n"
+        "    command: beta-cli\n"
+        "    budget_check: true\n",
+    )
+    backends = resolve_files(layers).config["backends"]
+    assert set(backends) >= {"alpha", "beta"}
+    assert backends["alpha"]["command"] == "alpha-cli"
+    assert backends["beta"]["budget_check"] is True
+
+
 def test_default_backend_without_a_backend_is_an_error(layers):
     """Cross-layer rule: the named backend must exist once everything merges."""
     write(layers["host"], "default_backend: absent\n")

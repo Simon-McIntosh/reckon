@@ -223,12 +223,8 @@ def read_layer_file(path: str | Path) -> dict[str, Any]:
     path = Path(path)
     if not path.exists():
         return {}
-    try:
-        raw = yaml.safe_load(path.read_text())
-    except yaml.YAMLError as exc:
-        raise FlightConfigError(path, "", f"not valid YAML — {exc}") from exc
-    except OSError as exc:
-        raise FlightConfigError(path, "", f"cannot be read — {exc}") from exc
+    text = _read_text(path)
+    raw = _load_yaml_unique_keys(text, path, yaml)
     if raw is None:
         return {}
     if not isinstance(raw, Mapping):
@@ -238,6 +234,61 @@ def read_layer_file(path: str | Path) -> dict[str, Any]:
             f"must hold a mapping at the top level, found {type(raw).__name__}",
         )
     return dict(raw)
+
+
+def _read_text(path: Path) -> str:
+    try:
+        return path.read_text()
+    except OSError as exc:
+        raise FlightConfigError(path, "", f"cannot be read — {exc}") from exc
+
+
+def _load_yaml_unique_keys(raw: str, source: str | Path, yaml) -> Any:
+    """Parse a layer, refusing any mapping that repeats a key within one scope.
+
+    ``yaml.safe_load`` silently keeps the last of two identical mapping keys,
+    which dropped an entire backend definition (its ``budget_check`` and a quiet
+    time-budget change) in the measured incident. That collision cannot be seen
+    after the fact — the parser has already discarded the earlier definition —
+    so it is caught here, while the raw mapping is being constructed, and named
+    with the key's dotted path through the file.
+    """
+    from yaml.nodes import MappingNode
+    from yaml.resolver import BaseResolver
+
+    node_paths: dict[int, str] = {}
+
+    class _UniqueKeyLoader(yaml.SafeLoader):
+        pass
+
+    def _construct_mapping(loader: _UniqueKeyLoader, node, deep: bool = False):
+        parent_path = node_paths.get(id(node), "")
+        seen: set = set()
+        result = {}
+        for key_node, value_node in node.value:
+            key = loader.construct_object(key_node, deep=deep)
+            key_str = str(key)
+            key_path = f"{parent_path}.{key_str}" if parent_path else key_str
+            if key in seen:
+                raise FlightConfigError(
+                    source,
+                    key_path,
+                    f"defines key '{key_str}' more than once; YAML keeps only "
+                    "the last, silently dropping the earlier definition",
+                )
+            seen.add(key)
+            if isinstance(value_node, MappingNode):
+                node_paths[id(value_node)] = key_path
+            result[key] = loader.construct_object(value_node, deep=deep)
+        return result
+
+    _UniqueKeyLoader.add_constructor(
+        BaseResolver.DEFAULT_MAPPING_TAG, _construct_mapping
+    )
+    try:
+        return yaml.load(raw, Loader=_UniqueKeyLoader)
+    except yaml.YAMLError as exc:
+        raise FlightConfigError(source, "", f"not valid YAML — {exc}") from exc
 
 
 def _inject_map_keys(data: Mapping[str, Any]) -> dict[str, Any]:
