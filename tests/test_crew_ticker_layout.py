@@ -8,7 +8,12 @@ and halves a pane that only shows about eight lines at a time.
 
 from __future__ import annotations
 
+import fcntl
+import os
+import pty
 import re
+import struct
+import termios
 
 import pytest
 
@@ -584,3 +589,99 @@ def test_dispatch_stamps_the_label_and_a_later_config_edit_cannot_restate_it(gri
     # But the already-recorded pointer still renders what actually ran.
     again = plain(grid.render(_event(agent=stamped)))
     assert again == line
+
+
+# ── The width: measured from the ancestor terminal, not stated ──────────────
+
+
+def _no_ancestor_terminals() -> list:
+    """The ancestry stub for a detached follower: no terminal anywhere above."""
+    return []
+
+
+def _open_terminal(columns: int) -> tuple[str, int, int]:
+    """A real pty set to ``columns`` wide, returned as path, master, slave.
+
+    A real terminal is used rather than a fabricated value so the width the
+    grid adopts is read from the kernel by the same ioctl the renderer runs,
+    against an actual device. The caller holds the fds open and closes them.
+    """
+    master, slave = pty.openpty()
+    try:
+        fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 30, columns, 0, 0))
+        return os.ttyname(slave), master, slave
+    except BaseException:
+        os.close(master)
+        os.close(slave)
+        raise
+
+
+def test_the_width_is_read_from_the_ancestor_terminal(monkeypatch):
+    """A follower's own stdout is a pipe; the terminal an ancestor owns is the
+    pane, and its current column count is what the grid must fit."""
+    path, master, slave = _open_terminal(208)
+    try:
+        monkeypatch.setattr(ticker_module, "_ancestor_terminal_paths", lambda: [path])
+        resolved = ticker_module.resolve_terminal_width()
+    finally:
+        os.close(master)
+        os.close(slave)
+    assert resolved == 208 - ticker_module.INSET
+
+
+def test_a_detached_follower_falls_back_to_the_stated_width(monkeypatch):
+    """No ancestor owns a terminal — collector or nohup'd — so the stated
+    default is the width, exactly as it was before the ancestry walk existed."""
+    monkeypatch.setattr(
+        ticker_module, "_ancestor_terminal_paths", _no_ancestor_terminals
+    )
+    assert ticker_module.resolve_terminal_width() == ticker_module.DEFAULT_WIDTH
+
+
+def test_a_non_terminal_device_offers_no_width(monkeypatch):
+    """A stdio descriptor under /dev that is not a tty must not yield zero.
+
+    The ancestry can surface /dev/null ahead of the real terminal; reading it
+    as a width of zero would crowd the grid into the left edge. It reports no
+    width and the fallback holds.
+    """
+    monkeypatch.setattr(
+        ticker_module, "_ancestor_terminal_paths", lambda: ["/dev/null"]
+    )
+    assert ticker_module.resolve_terminal_width() == ticker_module.DEFAULT_WIDTH
+
+
+def test_every_line_ends_at_the_resolved_width_when_crowded(monkeypatch):
+    """A long node, a long reason and wide counts together never overflow.
+
+    A wrapped row costs a quarter of the visible history, which is worse than a
+    line that only falls short, so the grid composes to exactly the resolved
+    width either way and the counters sit flush on its final column.
+    """
+    path, master, slave = _open_terminal(150)
+    try:
+        monkeypatch.setattr(ticker_module, "_ancestor_terminal_paths", lambda: [path])
+        resolved = ticker_module.resolve_terminal_width()
+    finally:
+        os.close(master)
+        os.close(slave)
+
+    grid = ticker_module.Ticker(width=resolved, color=False)
+    line = plain(
+        grid.render(
+            _event(
+                node="clive-global-operator-contract-repair-independent-review",
+                reason="the canonical installed writer the plan names still does not satisfy the gate",
+                working=12,
+                blocked=9,
+                unpromoted=7,
+            )
+        )
+    )
+    # Measured on the rendered row, not on the format string: the row is exactly
+    # the resolved width and no more.
+    assert len(line) == resolved
+    assert len(line) <= resolved
+    # The fleet counters are flush at the final column, so the row ends with
+    # the last counter's suffix rather than trailing padding.
+    assert line.endswith("12w ·  9b ·  7u")

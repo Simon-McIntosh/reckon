@@ -17,8 +17,11 @@ worker's colour is never mistaken for a verdict about that worker.
 
 from __future__ import annotations
 
+import fcntl
 import os
 import re
+import struct
+import termios
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any
@@ -157,6 +160,79 @@ MIN_WIDTH = (
 )
 DEFAULT_WIDTH = 180
 DEFAULT_THEME = "light"
+
+# One column of inset between the hosting terminal's width and the text grid, so
+# the counters never press on the very edge the pane still owns. PROVISIONAL and
+# awaiting calibration against a real pane — over-filling loses the counters off
+# the right edge, while under-filling only leaves a harmless gap.
+INSET = 1
+
+
+def _ancestor_terminal_paths():
+    """Yield tty device paths up the process tree, nearest ancestor first.
+
+    The follower's own stdout is a pipe, so its window is undetectable where it
+    writes; the pane it fills is owned by a harness process higher up. Walk the
+    ancestry (each /proc/<pid>/stat names its parent), collecting any stdio
+    descriptor that points at a real terminal so the nearest owner is read first.
+    """
+    pid = os.getpid()
+    seen: set[int] = set()
+    while pid and pid not in seen:
+        seen.add(pid)
+        for fd in (0, 1, 2):
+            try:
+                target = os.readlink(f"/proc/{pid}/fd/{fd}")
+            except OSError:
+                continue
+            if target.startswith("/dev/"):
+                yield target
+        try:
+            with open(f"/proc/{pid}/stat", encoding="utf-8") as handle:
+                rest = handle.read().split(")")[-1].split()
+            nxt = int(rest[1])  # field four, read as the parent pid
+        except (OSError, IndexError, ValueError):
+            break
+        if nxt == pid:
+            break
+        pid = nxt
+
+
+def _columns_of(path: str) -> int | None:
+    """The current column count of the terminal at ``path``, or None.
+
+    ``path`` may be any open descriptor target, so a non-tty char device simply
+    fails the ioctl and reports no width rather than raising.
+    """
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK)
+    except OSError:
+        return None
+    try:
+        packed = fcntl.ioctl(fd, termios.TIOCGWINSZ, b"\0" * 8)
+    except OSError:
+        return None
+    finally:
+        os.close(fd)
+    return struct.unpack("HHHH", packed)[1]
+
+
+def resolve_terminal_width() -> int:
+    """The pane's current width for this renderer, or the stated fallback.
+
+    The width a line must fit is not on the stream it is written to; it lives on
+    the terminal an ancestor owns and tracks a resize. Walk the ancestry to the
+    first readable terminal, subtract the inset, and floor the result at the
+    grid's minimum so a narrower pane still never wraps. A detached follower has
+    no such ancestor — collector or nohup'd — and falls back to the stated
+    default. ``--width`` overrides this at the call site.
+    """
+    for path in _ancestor_terminal_paths():
+        columns = _columns_of(path)
+        if columns:
+            return max(int(columns) - INSET, MIN_WIDTH)
+    return DEFAULT_WIDTH
+
 
 # Below this there is no room for a clause worth reading, and a two-word stub is
 # worse than the whitespace it replaces.
