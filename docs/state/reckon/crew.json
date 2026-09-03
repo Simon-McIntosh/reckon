@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T10:06:36",
+  "updated": "2026-09-03T10:13:07",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -20,7 +20,8 @@
         "session_id": "f8e24777-00b7-4e26-853a-45e35ad401b8",
         "session_model": "claude-sonnet-5",
         "sessions": {
-          "claude-sonnet-5": "f8e24777-00b7-4e26-853a-45e35ad401b8"
+          "claude-sonnet-5": "f8e24777-00b7-4e26-853a-45e35ad401b8",
+          "{\"backend\":\"claude\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "f8e24777-00b7-4e26-853a-45e35ad401b8"
         },
         "created": "2026-08-26"
       },
@@ -440,7 +441,8 @@
         "session_id": "47656431-a278-41dd-abe4-7e8d01cd91aa",
         "session_model": "deepseek-v4-flash",
         "sessions": {
-          "{\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"read-only\"}": "47656431-a278-41dd-abe4-7e8d01cd91aa"
+          "{\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"read-only\"}": "47656431-a278-41dd-abe4-7e8d01cd91aa",
+          "{\"backend\":\"clive\",\"effort\":\"medium\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\"}": "f123a5eb-ed78-4ab1-8b10-e3694733c479"
         },
         "created": "2026-09-02"
       },
@@ -39710,6 +39712,218 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260903T080317198353-a-duplicate-backend-key-is-refused",
+        "plan": "crew-observability-truth",
+        "section": "\u00a75",
+        "node": "a-duplicate-backend-key-is-refused",
+        "node_definition": {
+          "done_when": "A layer file declaring one backend key twice is refused naming the key, reusing the existing validation error shape rather than a new channel, asserted by test; a layer with no duplicate validates unchanged, and two different backends remain unaffected, both asserted as negatives. tests/test_flight.py passes in full with its count recorded. The reuse map at /home/ITER/mcintos/.config/reckon/crew/reports/display-reuse-map.md states that YAML silently drops the duplicate at the layer read, so the refusal must be added at parse or validate time, and names the error shape to reuse",
+          "estimated_hours": null,
+          "goal": "A configuration layer defining the same backend twice is refused at validation instead of silently taking the last",
+          "id": "a-duplicate-backend-key-is-refused",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T080317198353-a-duplicate-backend-key-is-refused/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/flight.py",
+            "tests/test_flight.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "flash-c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T08:03:22Z",
+        "completed_at": "2026-09-03T08:08:49.903Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 321,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 327,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "0bfa110db16bc2b07d42b1765e8a7e865a7452c8",
+        "commits": [
+          "8c1b6372b471c42ae3fb0b992e474b87b5adff5f"
+        ],
+        "changed_lines": {
+          "added": 121,
+          "removed": 6,
+          "files": 2
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=\"$PWD\" .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_flight.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T080317198353-a-duplicate-backend-key-is-refused/dup_test.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T080317198353-a-duplicate-backend-key-is-refused/manifest.md",
+        "scope_changed": false,
+        "session_id": "f123a5eb-ed78-4ab1-8b10-e3694733c479",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 1894899,
+            "input_tokens_cumulative": 1894899,
+            "output_tokens": 21669,
+            "output_tokens_cumulative": 21669,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 10.016219999999999,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 10.016219999999999
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260903T080254191235-the-spawn-guard-refuses-and-teaches",
+        "plan": "native-agent-dispatch-guard",
+        "section": "\u00a72",
+        "node": "the-spawn-guard-refuses-and-teaches",
+        "node_definition": {
+          "done_when": "Hook unit tests cover four branches: a non-crew repository passes through, a crew-prepared in-harness run awaiting attachment is allowed with the attach command named, an environment override allows the spawn, and otherwise the spawn is refused with a message carrying both the matching reckon crew dispatch invocation shape for investigate and review work and the watcher arming line; a synthetic crew-managed temporary repository proves the scope test reads only repository-local state and consults no mounts file. tests/test_native_agent_guard.py passes in full with its count recorded. The decision is locked as hard-refuse with waivers. The reuse map at /home/ITER/mcintos/.config/reckon/crew/reports/guard-reuse-map.md gives the repository-local detection branch, the awaiting-attachment predicate already on the raw pointer, the arming-line composer to reuse verbatim, the refusal-that-teaches pattern to mirror, and the existing temp-repository fixtures; its first gap, a composer emitting a full dispatch invocation from a node, is the only new machinery and belongs beside that pattern",
+          "estimated_hours": null,
+          "goal": "A pre-tool-use hook refuses a harness-native background-agent spawn in a crew-managed repository, with the two declared waivers",
+          "id": "the-spawn-guard-refuses-and-teaches",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T080254191235-the-spawn-guard-refuses-and-teaches/manifest.md",
+          "plan": "native-agent-dispatch-guard",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/hooks",
+            "reckon/crew/node.py",
+            "tests/test_native_agent_guard.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "claude-a",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "backend": "claude",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T08:03:00Z",
+        "completed_at": "2026-09-03T08:09:22.238Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 375,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 382,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "0bfa110db16bc2b07d42b1765e8a7e865a7452c8",
+        "commits": [
+          "736dbfdeedfacf5819110534c8905e448866d19b"
+        ],
+        "changed_lines": {
+          "added": 472,
+          "removed": 0,
+          "files": 4
+        },
+        "tests_added": 13,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=\"$PWD\" .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_native_agent_guard.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T080254191235-the-spawn-guard-refuses-and-teaches/guard_test.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T080254191235-the-spawn-guard-refuses-and-teaches/manifest.md",
+        "scope_changed": false,
+        "session_id": "f8e24777-00b7-4e26-853a-45e35ad401b8",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 53646,
+            "cache_creation_input_tokens_cumulative": 278907,
+            "cache_read_input_tokens": 13130026,
+            "cache_read_input_tokens_cumulative": 15139178,
+            "inference_geo": "not_available",
+            "input_tokens": 96,
+            "input_tokens_cumulative": 114,
+            "output_tokens": 30093,
+            "output_tokens_cumulative": 32852,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 3.1417112000000005,
+          "detail": "rate-limit event carried no numeric utilisation",
+          "cost_usd_cumulative": 4.4722116000000005
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -39728,6 +39942,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 651
+    "_version": 655
   }
 }

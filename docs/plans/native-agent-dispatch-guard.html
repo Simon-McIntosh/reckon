@@ -22,10 +22,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="5">
-<meta name="plan-artifacts" content="~/.config/reckon/crew/reports/guard-reuse-map.md">
-<meta name="plan-impl" content="0.5">
-<meta name="plan-commits" content="ba754c9">
+<meta name="plan-version" content="7">
+<meta name="plan-artifacts" content="~/.config/reckon/crew/reports/guard-reuse-map.md,reckon/hooks/native_agent_guard.py,tests/test_native_agent_guard.py">
+<meta name="plan-impl" content="0.75">
+<meta name="plan-commits" content="ba754c9,736dbfd">
 </head>
 <body>
   <main class="plan-doc">
@@ -135,6 +135,12 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260903T0759g" data-who="reckon-ship" data-when="2026-09-03T07:59:30+00:00">
     <div class="r-comment-body">guard-reuse-map landed — no commit by design; gate passed; measure 15 mechanisms carrying verdicts over 17 file:symbol citations, tallying 10 direct fits, 4 needing extension and 1 explicit non-fit; 467 worker-seconds against a 12m budget on the local lane at deepseek-v4-flash. Map at ~/.config/reckon/crew/reports/guard-reuse-map.md. Almost nothing here is new. The repository-local scope test already exists as dispatch.py:shadow_source's repo-local branch, which scans docs/state/*/crew.json without consulting host state — and the map is explicit that the mounts-based resolvers must be excluded from the scope test for exactly that reason while staying authoritative for the refusal's routing guidance. The in-harness waiver needs no new stored state: an in-harness dispatch writes launch in-harness with a directive and a null task, so awaiting attachment is the predicate launch == in-harness and not record task, already on the raw pointer. The refusal-that-teaches pattern is in production as node.py:WatcherRequired, which composes its own arming and attach lines, and the arming line itself is runs.py:_watch_arming_line, to be reused verbatim rather than hand-rolled. §4's contract test is a straight copy of the established shape in tests/test_skill_contracts.py, and the synthetic crew-managed temp repo is the existing isolated_project fixture over the isolated_reckon_home conftest fixture. Three genuine gaps: no composer emits a full reckon crew dispatch invocation from a node, only crew verb --run lines; nothing in reckon writes a harness hook setting, so §3's sync step is a new artifact class rather than a new step beside CSS and mounts; and an explicit awaiting-attach classification face is optional because the predicate is already readable.</div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260903T080254191235-the-spawn-guard-refuses-and-teaches" data-who="claude-a" data-when="2026-09-03T08:09:22.238Z">
+    <div class="r-comment-body"><p>The spawn guard refuses in a crew-managed repository with both declared waivers and a refusal naming the dispatch shape and arming line; 13 hook tests pass, 15 with the node.py regression check</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260903T1013" data-who="reckon-ship" data-when="2026-09-03T08:13:08+00:00">
+    <div class="r-comment-body">the-spawn-guard-refuses-and-teaches landed — commit 736dbfd, merged; gate passed; measure 13 hook tests pass and 15 including the only other module importing crew.node, ruff delta zero new findings over all four changed files; 472 insertions over 4 files, 388 worker-seconds against a 40m budget on claude-sonnet-5 at medium. The hook is stdlib-only and self-contained with a pure decide(payload) and a main() matching the harness pre-tool-use contract, denying with exit 2 and passing with exit 0. All four branches are covered plus two negatives the fence did not ask for and should have: an already-attached pointer does not waive, and a pointer for a different repository does not waive. The scope-test isolation test is the strongest thing here — it proves detection works from the repository's own docs/state tree while a mounts file naming an unrelated project sits in the same config home, and the module contains no reference to that file at all, so the read-only-repository-local property is asserted rather than asserted-about. One deliberate duplication worth keeping visible: the hook carries a literal copy of the dispatch invocation shape rather than importing the new crew.node composer, because it must run in target repositories that have no reckon package installed — and a test asserts the two stay textually identical, so an edit to one that forgets the other fails visibly instead of drifting. That is the right trade and the check is what makes it safe.</div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260903T080305016018-the-routing-rule-lands-where-the-temptation-is" data-who="flash-a" data-when="2026-09-03T08:06:17.739Z">
     <div class="r-comment-body"><p>The fan-out rule is pinned verbatim in four skills plus the crew guidance, with a contract test asserting all four fragments in all five files; tests/test_skill_contracts.py 49 passed</p></div>
