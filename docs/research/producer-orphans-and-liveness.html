@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="producer-orphans-and-liveness">
+  <meta name="plan-title" content="Orphaned watch producers, and a liveness field that contradicts the machine">
+  <meta name="plan-summary" content="RCA: the test suite spawns real detached watch producers that outlive it — 25 accumulated over 8.5 days — while the registry reports no watcher for a project whose producer is demonstrably running, and a running producer holds the detection code it started with.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-informs" content="clive-local-workers">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-modified" content="2026-09-03">
+  <title>Orphaned watch producers, and a liveness field that contradicts the machine | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="summary">What happened</h2>
+    <p>The lead noticed twice, by looking at GPU utilisation, that a background worker had
+      died while the fleet monitor still reported it running. Investigating that produced
+      three defects, of which the monitor's silence was the least severe.</p>
+    <table>
+      <thead><tr><th>#</th><th>Defect</th><th>Measured</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>The test suite spawns real, detached watch producers that outlive it</td>
+          <td><strong>25 processes</strong> for the fixture project <code>proj</code>, oldest
+            <strong>204 hours</strong>; 14 of them point at pytest temp directories that no
+            longer exist</td></tr>
+        <tr><td>2</td><td>The registry reports no watcher while a producer is running</td>
+          <td><code>crew list</code> returns <code>watcher pid: None, seat_held: None,
+            watcher_live: None</code> for reckon while
+            <code>reckon crew watch --project reckon</code> (pid 85432, started 07:33:13) is
+            alive</td></tr>
+        <tr><td>3</td><td>A running producer holds the detection code it started with</td>
+          <td>Two <code>recovery.py</code> fixes merged at 07:38 and 07:49 cannot reach pid
+            85432, started 07:33 — so tonight's detector fixes are not in effect on the live
+            seat, and nothing says so</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="orphans">Defect 1 — the suite arms producers and never disarms them</h2>
+    <p><code>reckon crew dispatch</code> arms a project's producer detached, deliberately, so
+      that ending the dispatching process does not orphan it. That is correct for a
+      coordinator. It is wrong under a test: a test that dispatches arms a producer against
+      its own fixture project, the test ends, and the producer survives — detached, by
+      design, with nothing left that knows it exists.</p>
+    <p>The fixture points <code>RECKON_HOME</code> at a pytest temp tree, so these producers
+      write to a config home that is deleted when the test tree is cleaned. They then poll a
+      directory that no longer exists, forever. Named by the test that spawned them:</p>
+    <table>
+      <thead><tr><th>Test</th><th>Producers still alive</th></tr></thead>
+      <tbody>
+        <tr><td><code>test_execution_measure_require…</code></td><td>8</td></tr>
+        <tr><td><code>test_dispatch_into_an_occupied…</code></td><td>8</td></tr>
+        <tr><td><code>test_cli_dispatch_arms_a_missi…</code></td><td>2</td></tr>
+        <tr><td><code>test_cli_competence_refusal_ha…</code></td><td>2</td></tr>
+        <tr><td>two others under bare temp homes</td><td>4</td></tr>
+      </tbody>
+    </table>
+    <p><strong>The accumulation rate is the part that matters.</strong> The oldest is 8.5 days
+      old and four were spawned within the last eight minutes, by a worker running the suite
+      as its gate. Every full-suite run adds more. This session's own done-whens demanded a
+      full suite per node for several hours, so the orchestrator was the largest recent
+      contributor to a leak it then discovered.</p>
+    <p>Two further traces of the same root cause, both in the <em>real</em> config home rather
+      than a temp one: <code>watch/does-not-exist-xyz-….lock</code> and
+      <code>watch/empty-probe-xyz-….lock</code>. Those names are test inputs, so at least one
+      path arms against the real config home rather than the fixture's.</p>
+    <p><strong>Remedy.</strong> A test must never arm a real producer. Dispatch already has
+      the seam — <code>--no-watch</code> and the <code>watch_override</code> it records — so
+      the fixture should take it by default, and arming should refuse outright when the
+      resolved config home is a pytest temp tree. Belt and braces, because the first is a
+      convention and the second is a bound check.</p>
+
+    <h2 id="liveness">Defect 2 — the field the dispatch guard trusts disagrees with the machine</h2>
+    <p><code>crew list</code> reported <code>watcher pid: None</code> for reckon while its
+      producer was running and had emitted four transitions in the preceding twenty minutes.
+      This is not cosmetic: <code>watcher_live</code> and <code>session_attached</code> are
+      what the dispatch guard reads to decide whether to refuse with
+      <code>watcher-required</code>, so a guard meant to protect against an unheard fleet is
+      deciding on a value that does not match reality — in whichever direction it is wrong.</p>
+    <p>The likely mechanism, offered as the next thing to check rather than as a conclusion:
+      the registry is a written record keyed by a seat lock, and a producer whose supervisor
+      died keeps running while its record is cleared or reclaimed. The code already carries a
+      comment describing exactly that case for the opposite failure — a stale seat that
+      outlives its session. The two together suggest the record and the process have no
+      reliable binding in either direction.</p>
+
+    <h2 id="stale-code">Defect 3 — a long-lived producer cannot receive a fix</h2>
+    <p>The producer imports <code>reckon.crew.recovery</code> at startup and runs for hours.
+      Both detector fixes merged tonight — the terminal-manifest protection and the widened
+      stall gate — are therefore inert on any seat armed before them. The reckon CLI is
+      otherwise live for peers, because each invocation is a fresh process; the producer is
+      the one component where that is untrue, and nothing in its output distinguishes a seat
+      running current code from one running last week's.</p>
+    <p>This inverts the usual reasoning about a fix landing: merging a detection change does
+      not deploy it. It also means the observations that motivated tonight's two fixes cannot
+      be used to validate them, since the seat that failed to report was running the code the
+      fixes replaced.</p>
+    <p><strong>Remedy.</strong> A producer should record the version it is running, and a seat
+      whose version differs from the installed one should be replaced at the next arming
+      rather than reused — the arming path already replaces a stale seat under a lock, so the
+      staleness test simply gains a second criterion.</p>
+
+    <h2 id="general">The shape all three share</h2>
+    <p>Each defect is an instance of the pattern this fleet keeps producing: <strong>the
+      component that knows stays silent, and something downstream asserts the opposite.</strong>
+      A detached producer knows it is running and no registry records it. A registry asserts
+      no watcher while one runs. A seat runs superseded code and reports the same as one that
+      does not. In each case the display is not merely incomplete — it is confidently wrong,
+      which is why a person watching GPU utilisation outperformed the tooling twice in one
+      evening.</p>
+
+  </main>
+</body>
+</html>
