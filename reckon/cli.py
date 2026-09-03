@@ -1332,9 +1332,17 @@ def _follow_watch_lines(
 
 
 def _echo_follow_line(line: str, *, stream=None) -> None:
-    """Write and flush one ticker line so pipe readers receive it immediately."""
+    """Write and flush one ticker line so pipe readers receive it immediately.
+
+    The stream this writes to is almost never a terminal — it is a pipe into
+    a pane or a log file — so Click's default auto-detection would strip any
+    escape codes the ticker painted before a single reader ever saw them.
+    Whether the line carries colour at all was already decided when it was
+    painted (``Ticker.color``, honouring ``--no-color``/``NO_COLOR``); once
+    painted, those bytes must reach the reader unstripped.
+    """
     output = stream or click.get_text_stream("stdout")
-    click.echo(line, file=output)
+    click.echo(line, file=output, color=True)
     output.flush()
 
 
@@ -1563,7 +1571,7 @@ def crew_watch(
                 if json_output or result.get("event") not in {"baseline", "transition"}:
                     _emit({"ok": True, **result}, pretty)
                 else:
-                    click.echo(format_watch_transition(result, ticker=grid))
+                    click.echo(format_watch_transition(result, ticker=grid), color=True)
             return
         result = crew_module.watch(
             project,

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import json
 from datetime import UTC, datetime
 from pathlib import Path
@@ -193,7 +194,7 @@ def test_cli_follow_prints_compact_transition_lines_by_default(
 
     result = CliRunner().invoke(
         cli_module.main,
-        ["crew", "watch", "--project", "proj", "--follow"],
+        ["crew", "watch", "--project", "proj", "--follow", "--no-color"],
     )
 
     assert result.exit_code == 0
@@ -224,6 +225,65 @@ def test_cli_follow_keeps_machine_objects_behind_json_flag(home, monkeypatch) ->
     assert (payload["working"], payload["blocked"], payload["unpromoted"]) == (3, 1, 0)
 
 
+def test_follow_emit_path_preserves_painted_escape_codes() -> None:
+    """The stream `_echo_follow_line` writes to is a pipe into a pane, not a
+    terminal — exactly where Click's default auto-detection strips ANSI
+    before a single reader ever sees it. A line the ticker painted must
+    reach that stream with its escapes intact.
+    """
+    line = ticker_module.Ticker(color=True).render(_event())
+    assert "\x1b[38;5;" in line  # sanity: the rendered line really is painted
+
+    stream = io.StringIO()
+    assert not stream.isatty()
+    cli_module._echo_follow_line(line, stream=stream)
+
+    assert "\x1b[38;5;" in stream.getvalue()
+
+
+def test_cli_watch_follow_emit_site_preserves_painted_escape_codes(
+    home, monkeypatch
+) -> None:
+    """`crew watch --follow` writes through its own emit site, not
+    `_echo_follow_line` — it must not let Click strip colour there either."""
+    monkeypatch.setattr(
+        recovery,
+        "watch_follow",
+        lambda *_args, **_kwargs: iter([_event()]),
+    )
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        ["crew", "watch", "--project", "proj", "--follow"],
+    )
+
+    assert result.exit_code == 0
+    assert "\x1b[38;5;" in result.output
+
+
+@pytest.mark.parametrize("suppress", ["flag", "env"])
+def test_cli_watch_follow_emits_no_escapes_when_colour_is_off(
+    home, monkeypatch, suppress
+) -> None:
+    """--no-color and NO_COLOR both leave the emitted line free of escapes."""
+    monkeypatch.setattr(
+        recovery,
+        "watch_follow",
+        lambda *_args, **_kwargs: iter([_event()]),
+    )
+    args = ["crew", "watch", "--project", "proj", "--follow"]
+    if suppress == "flag":
+        args.append("--no-color")
+    else:
+        monkeypatch.setenv("NO_COLOR", "1")
+
+    result = CliRunner().invoke(cli_module.main, args)
+
+    assert result.exit_code == 0
+    assert "\x1b[" not in result.output
+    assert "ticker-node" in result.output
+
+
 def test_cli_watch_follows_without_being_asked(home, monkeypatch) -> None:
     """Following is the default, because the seat is what dispatch requires.
 
@@ -238,7 +298,7 @@ def test_cli_watch_follows_without_being_asked(home, monkeypatch) -> None:
 
     result = CliRunner().invoke(
         cli_module.main,
-        ["crew", "watch", "--project", "proj"],
+        ["crew", "watch", "--project", "proj", "--no-color"],
     )
 
     assert result.exit_code == 0
