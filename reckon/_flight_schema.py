@@ -197,7 +197,9 @@ class BackendConfig(ConfiguredBaseModel):
     catalog: Optional[CatalogConfig] = Field(default=None, description="""Optional declaration for asking a backend command which models it serves. Availability probing runs the declared argument vector and matches the configured model against its output; the declaration remains provider-neutral.""")
     environment: Optional[dict[str, Union[str, EnvironmentVariable]]] = Field(default=None, description="""Environment variables added when this backend's worker is spawned, keyed by variable name. Values are strings and may reference a variable from the dispatcher's environment using `${NAME}`.""")
     model: Optional[str] = Field(default=None, description="""Model identifier passed to this backend. User data; free text so that no provider vocabulary is encoded here.""")
+    alias: Optional[str] = Field(default=None, description="""Display label rendered in the fleet pane in place of this backend's model identifier. The spelling belongs beside the model it shortens and is decided by whoever writes the configuration; the schema supplies none.""")
     effort: Optional[str] = Field(default=None, description="""Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.""")
+    effort_spelling: Optional[dict[str, Union[str, EffortSpelling]]] = Field(default=None, description="""Display suffixes for this backend's effort levels, keyed by the effort word. A declared spelling replaces the derived two-character suffix; an effort with no entry renders its first two characters lowercased. User data; the schema enumerates no effort ladder.""")
     sandbox: Optional[SandboxMode] = Field(default=None, description="""Filesystem blast radius granted to workers of this backend.""")
     session_reuse: Optional[bool] = Field(default=None, description="""Whether a finished worker session can be resumed rather than respawned.""")
     budget_check: Optional[bool] = Field(default=None, description="""Whether a pre-flight may read this backend's own account-limit surface instead of relying on what earlier runs recorded. Off by default, because a read that has to be asked for cannot happen by accident, and because a backend exposing no such surface reports unknown rather than a guess. It is never a model call and consumes no worker budget.""")
@@ -232,6 +234,14 @@ class EnvironmentVariable(ConfiguredBaseModel):
     """
     name: str = Field(default=..., description="""Map key for an inlined entry.""")
     value: Optional[str] = Field(default=None, description="""Value associated with an environment-variable name.""")
+
+
+class EffortSpelling(ConfiguredBaseModel):
+    """
+    One effort level and its declared display suffix.
+    """
+    name: str = Field(default=..., description="""Map key for an inlined entry.""")
+    spelling: Optional[str] = Field(default=None, description="""The display suffix rendered for an effort level's word.""")
 
 
 class RoleConfig(ConfiguredBaseModel):
@@ -373,6 +383,7 @@ FlightConfig.model_rebuild()
 BackendConfig.model_rebuild()
 CatalogConfig.model_rebuild()
 EnvironmentVariable.model_rebuild()
+EffortSpelling.model_rebuild()
 RoleConfig.model_rebuild()
 SpecificationRouting.model_rebuild()
 RoutingOverlay.model_rebuild()
