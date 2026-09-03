@@ -4,7 +4,7 @@ const { useCallback, useEffect, useMemo, useRef, useState } = React;
 const PROJECT_VISIBILITY_STORAGE = "reckon:hidden-projects";
 
 function mountedProjectRows(projects) {
-  return (projects || []).filter(project => Number(project.plans_count) > 0);
+  return projects || [];
 }
 
 function manageableProjectRows(projects) {
@@ -29,16 +29,17 @@ function projectVisibilityChange(projects, hiddenProjects, focusedProject, targe
   const hidden = new Set(effectiveHiddenProjects(projects, hiddenProjects));
   if (hidden.has(targetProject)) {
     hidden.delete(targetProject);
-    return { changed: true, hidden: [...hidden], focus: focusedProject };
+    return { changed: true, locked: false, hidden: [...hidden], focus: focusedProject };
   }
   const survivors = visibleProjectRows(projects, hiddenProjects)
     .filter(project => project.project !== targetProject);
   if (!survivors.length) {
-    return { changed: false, hidden: [...hidden], focus: focusedProject };
+    return { changed: false, locked: true, hidden: [...hidden], focus: focusedProject };
   }
   hidden.add(targetProject);
   return {
     changed: true,
+    locked: false,
     hidden: [...hidden],
     focus: focusedProject === targetProject ? survivors[0].project : focusedProject,
   };
@@ -66,16 +67,20 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
     || (typeof document !== "undefined" && document.querySelector('meta[name="docs-project"]')?.content)
     || null;
 
-  const [requestedSettingsPanel, setRequestedSettingsPanel] = useState(null);
+  const [visibilitySheetOpen, setVisibilitySheetOpen] = useState(false);
   const mountedProjects = mountedProjectRows(projects);
   const manageableProjects = manageableProjectRows(projects);
   const visibleProjects = visibleProjectRows(projects, hiddenProjects);
-  const visibleProjectNames = new Set(visibleProjects.map(project => project.project));
   const current = manageableProjects.find(project => project.project === currentProject);
   const snapshot = snapshotReceipt(M);
 
-  // Assign the window global to a local var so JSX can use it as a component.
+  // Assign the window globals to local vars so JSX can use them as components.
   const SM = window.SettingsMenu;
+  const VS = window.ProjectVisibilitySheet;
+  const openVisibilitySheet = () => {
+    document.querySelector(".r-project-manage")?.removeAttribute("open");
+    setVisibilitySheetOpen(true);
+  };
 
   const goPlans = () => {
     const target = M?.inventory?.find(p => p.status === "active") || M?.inventory?.[0];
@@ -87,6 +92,7 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
   };
 
   return (
+    <>
     <div className="r-topbar">
       <button className="r-topbar-brand" onClick={() => navProject(null)} title="All projects">
         <span className="r-topbar-mark">r</span>
@@ -100,11 +106,11 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
         </summary>
         <div className="r-project-menu">
           <div className="r-project-menu-count">{visibleProjects.length} shown · {manageableProjects.length} mounted</div>
-          {manageableProjects.map(project => (
+          {visibleProjects.map(project => (
             <button
               type="button"
               key={project.project}
-              className={`${project.project === currentProject ? "active " : ""}${visibleProjectNames.has(project.project) ? "" : "is-hidden"}`.trim()}
+              className={project.project === currentProject ? "active" : ""}
               onClick={() => navProject(project.project)}
               aria-current={project.project === currentProject ? "page" : undefined}
             >
@@ -112,16 +118,12 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
               <strong>{project.project}</strong>
               <span>{project.plans_count} plans</span>
               <span>{project.live_count || 0} live</span>
-              {!visibleProjectNames.has(project.project) && <span className="r-project-visibility-state">hidden</span>}
             </button>
           ))}
           <button
             type="button"
             className="r-project-configure"
-            onClick={() => {
-              document.querySelector(".r-project-manage")?.removeAttribute("open");
-              setRequestedSettingsPanel("visibility");
-            }}
+            onClick={openVisibilitySheet}
           >Configure visibility…</button>
         </div>
       </details>
@@ -171,9 +173,7 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
             setDensity={setDensity}
             projects={manageableProjects.map(project => project)}
             visibleProjects={visibleProjects}
-            onToggleProject={onToggleProject}
-            requestedPanel={requestedSettingsPanel}
-            onPanelOpened={() => setRequestedSettingsPanel(null)}
+            onOpenVisibility={openVisibilitySheet}
             snapshot={snapshot}
             onRefresh={onRefresh}
           />
@@ -193,6 +193,16 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
         )}
       </div>
     </div>
+    {VS ? (
+      <VS
+        open={visibilitySheetOpen}
+        projects={manageableProjects}
+        visibleProjects={visibleProjects}
+        onToggleProject={onToggleProject}
+        onClose={() => setVisibilitySheetOpen(false)}
+      />
+    ) : null}
+    </>
   );
 }
 
