@@ -508,6 +508,36 @@
       all the same move — the component that can tell says so, instead of letting a silence
       travel.</p>
 
+    <h2 id="glm-context">Why GLM ran out of window, and why it is not the wrapper's arithmetic</h2>
+    <p>The wrapper proportions correctly. It reads each release's served context from the
+      catalog and sets the harness limits from it:</p>
+    <table>
+      <thead><tr><th>Model</th><th>served context</th><th>output reservation</th><th>usable input</th></tr></thead>
+      <tbody>
+        <tr><td><code>deepseek-v4-flash</code></td><td>524,288</td><td>32,000 (capped)</td><td>492,288</td></tr>
+        <tr><td><code>glm-5.3</code></td><td>98,304</td><td>24,576 (a quarter)</td><td>73,728</td></tr>
+      </tbody>
+    </table>
+    <p><strong>The failure is in compaction, not in the ceiling.</strong> The stream records
+      it exactly: <code>"compact_result": "failed", "compact_error": "too_few_groups"</code>,
+      followed on the next turn by <code>Prompt is too long</code>. Autocompact could not
+      compact because there were too few message groups to compact — the window had been
+      filled by <em>one</em> oversized item rather than by an accumulation of turns. A single
+      40,256-token file read cannot be summarised away, so the harness compacts, fails,
+      and overflows.</p>
+    <p>That reframes the constraint usefully. It is not that a small window makes a model
+      unfit for background work — the lead's instinct that a single-task job should fit is
+      right. It is that <strong>one tool result must never exceed what compaction can
+      recover from</strong>, which makes node sizing, not model choice, the thing to get
+      right. The two failures were mis-sized nodes: standing instruction of 29,499 tokens
+      plus a 40,256-token test file consumed 70k of a 73,728 budget before the module under
+      change was opened.</p>
+    <p>Both terms have since moved. The §9 trims cut standing load to 16,173, and every
+      candidate file for the remaining work now fits with room to spare:
+      <code>routing.py</code> at 11,709, <code>promotion.py</code> at 12,550,
+      <code>_backends.py</code> at 10,720, <code>dispatch.py</code> at 23,506. The re-run of
+      the multi-candidate shadow node loads 35,215 tokens of source against 57,555 of room.</p>
+
   </main>
 </body>
 </html>

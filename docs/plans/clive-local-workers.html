@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="64">
+<meta name="plan-version" content="65">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,~/.config/reckon/crew/reports/local-effort-probe.md,~/.config/reckon/crew/reports/read-only-tier-delivery-discriminator.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
 <meta name="plan-impl" content="0.76">
 <meta name="plan-commits" content="a91abe9,a56eae9,42a339f,a2e488b,ca6288d,0226835,e099fc5,5dc92ce,8b80bdc,8abc064,6f99ac2,7f41635,1908947">
@@ -520,9 +520,15 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-clw-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-09-02" data-recommends-skill="/reckon-ship clive-local-workers" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-clw-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-09-02" data-recommends-skill="/reckon-ship clive-local-workers" data-resolved-at="2026-09-03T04:30:07+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Lock the four routing decisions, then land the alias, the GLM entry and the boundary check</h4>
     <div class="r-fu-body"><p>Four decisions are open and each changes what ships; the §4 table is the input and does not need re-deriving. The live read-only lane and the shadow sampling of §5 can start as soon as the §3 flag exists, because they need no write access. The GLM entry waits on the catalog publishing the release.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship clive-local-workers</pre>
+    <p class="r-fu-outcome">All four conditions met. The four decisions are locked, and local-write-access-order was subsequently reopened and re-locked to now-with-audit once §6 landed and the local lane became the only implementation lane available. The alias landed as §3: local_backend is a validated flight key and dispatch --local resolves it, refusing loudly when unset. The GLM entry landed as §2 once the catalog published glm-5.3, together with the catalog-aware availability probe that makes such an entry safe rather than optimistic. The boundary check landed as §6, refusing a stray write at promotion for every backend, and was repaired the same day after it proved to refuse ordinary fleet concurrency. Beyond the followup's own scope, execution added §8 on effort not being a dial for these models and §9 on the context a worker spends before it opens a file, and grew the executable set from 11 nodes to 17. Thirteen have landed.</p>
+    </article>
+<article class="r-fu" data-id="f-clw-002" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-03" data-recommends-skill="/reckon-ship clive-local-workers" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Finish the qualification: multi-candidate shadows, then the four open harness items</h4>
+    <div class="r-fu-body"><p>Thirteen of seventeen nodes have landed and every decision is locked, so what remains is execution rather than design. Take them in this order, because the first unblocks the measurement the plan exists for.</p><p><strong>§7 shadow paths admitting many candidates</strong> is the keystone: one primary cannot currently be shadowed by two models at once, which is the qualification ladder's central act. In flight as of 2026-09-03 on glm-5.3.</p><p><strong>§7 session reuse keyed on configuration</strong> is the cheapest thing on the board — commit 5eda3ab already carries the implementation with six of six real-dispatch integration cases passing, and only one stale assertion in tests/test_crew.py remains.</p><p><strong>§7 contention-aware durations</strong> and <strong>§6's refusal waiver</strong> follow. Then <strong>§5 proper</strong>: the ten live read-only runs and the shadow pairs, now that the read-only tier can actually deliver a file.</p><p>Standing evidence to carry forward: deepseek-v4-flash is four for four on substantive nodes, all first-attempt and in-scope; glm-5.3 has no capability reading yet, only two context-ceiling failures against a window that has since gained thirty per cent of working room. The open gap is a delivery-contract one — a local worker has twice produced real work with an incomplete manifest.</p></div>
     <pre class="r-fu-prompt">/reckon-ship clive-local-workers</pre>
     </article>
 </section>
