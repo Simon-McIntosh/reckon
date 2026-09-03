@@ -1126,14 +1126,25 @@ def test_a_second_node_reaches_the_members_captured_session(home, repo) -> None:
 
 def test_a_later_session_is_not_written_over_the_captured_one(home, repo) -> None:
     """Overwriting would silently retire the long-lived session."""
-    ledger.register_member(
-        PROJECT, "worker-a", harness="alpha", session_id="first-session", root=repo
-    )
-    capture = ledger.capture_session(PROJECT, "worker-a", "second-session", repo)
+    ledger.register_member(PROJECT, "worker-a", harness="alpha", root=repo)
+    first = _dispatch(repo, fixture="codex-turn.jsonl", member="worker-a")
+    crew.observe(first["run_id"])
 
-    assert capture["captured"] is False
-    assert "not written over the top" in capture["detail"]
-    assert ledger.member(PROJECT, "worker-a", repo)["session_id"] == "first-session"
+    later = _dispatch(
+        repo,
+        fixture="codex-turn.jsonl",
+        member="worker-a",
+        node_kwargs={"id": "node-b", "write_paths": ["reckon/session.py"]},
+    )
+    later_stream = Path(later["log_path"])
+    later_stream.write_text(
+        later_stream.read_text().replace(SESSION_ID, "other-session")
+    )
+    observed = crew.observe(later["run_id"])
+
+    assert observed["session_capture"]["captured"] is False
+    assert "not written over the top" in observed["session_capture"]["detail"]
+    assert ledger.member(PROJECT, "worker-a", repo)["session_id"] == SESSION_ID
 
 
 def test_dispatching_to_an_unregistered_member_is_refused(home, repo) -> None:
