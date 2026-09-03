@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="19">
+<meta name="plan-version" content="20">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md">
 <meta name="plan-impl" content="0.33">
 <meta name="plan-commits" content="8c1b637,45fc1b9">
@@ -221,6 +221,56 @@
         <tr><td>A held lane hands over</td><td>A dispatch whose resolved backend is held and which declares a fallback runs on the fallback and records the lane asked for, the lane used and the hold; one with no declared fallback still refuses at exit 3; and a backend reporting unknown headroom neither holds nor falls back. Asserted by test in all three cases.</td></tr>
         <tr><td>Spec level can name a backend</td><td>A <code>by_spec_level</code> entry resolves a backend as well as an effort, validated through the layered schema with provenance, so routing an open node to the frontier tier is configuration rather than a per-call override.</td></tr>
         <tr><td>A duplicate backend key is refused</td><td>A layer defining the same backend twice is refused at validation naming the key, rather than silently taking the last and dropping whatever the earlier definition carried.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s6">§6 — A spend limit is a block, because a block is the only state that can be triaged</h2>
+    <p>Directed by the lead on 2026-09-03, immediately after the outage recorded in §4 and §5.
+    A provider refusal must surface as <strong>blocked</strong>. Not as a completion, which is
+    what the harness reports and what let five deaths pass unnoticed for ten minutes. And not
+    as a failure, which is what the coordinator had to reconcile them as, because it was the
+    only reconciliation available.</p>
+
+    <p><strong>Blocked is not a nicer word for failed; it is the state with the affordances the
+    situation needs.</strong> Three of them, and no other state has all three. It reaches the
+    coordinator, because <code>blocked</code> is a bucket the follower prints while a failure at
+    <code>starting</code> is not. It is <em>resumable in the same session</em>, so the worker
+    keeps the context it had when it stopped. And it holds a reason, which for this condition is
+    an unusually good one: the account, the limit kind, and a reset timestamp. A spend limit is
+    the most triageable stop a fleet can suffer — it says exactly what is wrong and exactly
+    when it stops being wrong — and the fleet currently converts it into the least
+    triageable thing there is.</p>
+
+    <p><strong>Phase and failure classification are different axes, and this needs both.</strong>
+    Classifying the refusal as an infrastructure failure is correct for the ledger: it keeps the
+    model's pass rate clean, which is the rule the harness section already states. But
+    classification is what the record charges at reconciliation, not what the coordinator sees
+    while the condition holds. Recording infrastructure-failure and showing
+    <code>blocked</code> are complementary, and today only the first exists.</p>
+
+    <p><strong>What it cost, measured on one run of the five.</strong> The merged-head
+    verification node had already launched both suite runs and was waiting on them; its manifest
+    read <code>in-progress</code> and its run directory held two suite logs, an attribution map
+    naming the three code-bearing candidate commits, and per-test ledgers at both revisions. It
+    hit the limit three times, said it would wait for the settle notification rather than poll
+    further, and stopped. Killed rather than blocked, none of that could be resumed: the
+    artifacts survived only because they had been written incrementally, and a fresh node had to
+    be handed them as a lead to re-confirm rather than a result to use. Four other runs were
+    redispatched from scratch for the same reason.</p>
+
+    <p><strong>The coupling with clive-local-workers §14 is not incidental.</strong> That run was
+    waiting on test suites, generating almost nothing, and hit a spend ceiling anyway. A budget
+    denominated in generation would not have charged it for the wait, and a refusal that blocks
+    rather than kills would have let it collect the result it was minutes away from. The two
+    changes address the same waste from opposite ends.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>A refusal blocks, and does not fail or complete</td><td>A run whose stream carries a provider spend, usage or quota refusal is classified <code>blocked</code>, appears in the follower's blocked count, and is classified neither complete nor abandoned. Asserted against the five streams recorded 2026-09-03, and as a negative against a genuine completion and a genuine crash, neither of which may become blocked.</td></tr>
+        <tr><td>The block states what to do and when</td><td>The blocked reason names the backend, the limit kind and the reset timestamp read from the refusal, so the triage decision needs nothing beyond the transition line. Asserted against a recorded refusal carrying a reset, and against one carrying none, where the reason states the reset is unknown rather than omitting the field.</td></tr>
+        <tr><td>The block is resumable once the limit lifts</td><td>A run blocked on a refusal is resumable in its own session after the reset, keeping its captured session id, and the resumed attempt is recorded as a resume rather than a fresh attempt. Asserted by test through the resume path.</td></tr>
+        <tr><td>The ledger still charges it to infrastructure</td><td>Whether promoted from blocked or after a resume, a refusal-caused stop is recorded as an infrastructure failure and excluded from the configuration's pass rate. Asserted against the capabilities slice for the affected configuration.</td></tr>
       </tbody>
     </table>
 
