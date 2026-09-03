@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T15:01:35",
+  "updated": "2026-09-03T15:04:56",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -44004,6 +44004,114 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260903T121409471983-the-manifest-reader-refuses-a-half-parse",
+        "plan": "crew-observability-truth",
+        "section": "\u00a74",
+        "node": "the-manifest-reader-refuses-a-half-parse",
+        "node_definition": {
+          "done_when": "tests/test_gate_evidence.py tests/test_crew_recovery.py tests/test_crew.py run UNMODIFIED with no failures added against the base sha; report base and after failure ids, never an absolute count",
+          "estimated_hours": null,
+          "goal": "Make parse_manifest in reckon/crew/reports.py (330 lines, function at line 48) read a JSON manifest, and raise instead of returning a partial mapping when it can read neither format",
+          "id": "the-manifest-reader-refuses-a-half-parse",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T121409471983-the-manifest-reader-refuses-a-half-parse/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/reports.py",
+            "tests/test_manifest_parse_format.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "session-5847658970b3694c317c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T12:14:14Z",
+        "completed_at": "2026-09-03T12:42:58.779Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1715,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1724,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "d5698d73954316f369ad8bfca08a817b3085d711",
+        "commits": [
+          "6201ad5b0e43b4dd4fa98a68124cd487093c11b1"
+        ],
+        "changed_lines": {
+          "added": 324,
+          "removed": 9,
+          "files": 2
+        },
+        "tests_added": 14,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_gate_evidence.py tests/test_crew_recovery.py tests/test_crew.py",
+          "exit_status": 0,
+          "log_path": "/tmp/mpr_after_committed.log",
+          "log_digest": "sha256:98690e811eaf9bf429e3"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T121409471983-the-manifest-reader-refuses-a-half-parse/manifest.md",
+        "scope_changed": false,
+        "session_id": "559482e7-89d3-4653-bcac-0880a9ffcd4c",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6836103,
+            "input_tokens_cumulative": 6836103,
+            "output_tokens": 60776,
+            "output_tokens_cumulative": 60776,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 35.699915,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 35.699915
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -44036,6 +44144,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 718
+    "_version": 719
   }
 }
