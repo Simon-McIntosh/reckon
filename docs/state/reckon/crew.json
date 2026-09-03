@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T00:03:28",
+  "updated": "2026-09-04T01:52:27",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -47416,6 +47416,370 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260903T215213955714-the-shelf-life-is-declared-configuration",
+        "plan": "a-hold-is-as-old-as-its-refusal",
+        "section": "\u00a73",
+        "node": "the-shelf-life-is-declared-configuration",
+        "node_definition": {
+          "done_when": "budget.policy() at reckon/budget.py:135 reads budget.evidence_shelf_life_minutes and falls back to a module default of sixty, and BudgetConfig in reckon/_flight_schema.py does not declare the field. The configuration model rejects unknown inputs, so uv run reckon flight --set budget.evidence_shelf_life_minutes=1 fails with 'Extra inputs are not permitted' - verified. So the value is reachable from code and unreachable from the command line, and because utilisation_ceiling_pct is capped at 100 while a spend refusal records exactly 100.0, no ceiling override lifts the hold either. Every other fence in this system takes a recorded waiver; this one has none, and the absence is an undeclared key rather than a decision. A peer session waited out the full hardcoded hour tonight with no lever. Done when the key is declared in the LinkML source reckon/schema/flight.yaml and the generated artifacts are produced by running scripts/regen_flight_schema.py rather than hand-edited; when --set budget.evidence_shelf_life_minutes accepts a value and the resolved policy reports it; when a value of zero or less disables ageing and restores the indefinite hold; when the shipped default is unchanged so no host's behaviour moves without an explicit override; and when the declaration's description states what the field bounds - how long a refusal naming no reset time keeps describing the present - and that it has no effect on a refusal that did name a reset, since a stated reset is stronger evidence than an age. Prove the regeneration is faithful rather than partial: run the script a second time and require git status over the four staged paths to report no further modification, so the generated files are exactly what the source produces. At least one added assertion must fail against base 5958f48. Measured over tests/test_flight.py in one invocation: zero failures against its count at base, noting that two failures there are known host drift from a local_backend key rather than regressions. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 1.5,
+          "goal": "The evidence shelf life is declared configuration, so an operator holding a live incident has a lever on the budget fence.",
+          "id": "the-shelf-life-is-declared-configuration",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/shelf-life-key-manifest.md",
+          "plan": "a-hold-is-as-old-as-its-refusal",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/schema/flight.yaml",
+            "reckon/_flight_schema.py",
+            "docs/_shared/flight.schema.json",
+            "tests/test_flight.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "impl-fit",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "alias": "sonnet 5",
+          "backend": "claude",
+          "effort": "high",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T21:52:28Z",
+        "completed_at": "2026-09-03T22:00:31.145Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 475,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 483,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "5958f485d571735925883e55c2ee63ee1cc92917",
+        "commits": [
+          "30a446031eac002ec23b5379d68a18a8095898af"
+        ],
+        "changed_lines": {
+          "added": 56,
+          "removed": 0,
+          "files": 4
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_flight.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vf.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/shelf-life-key-manifest.md",
+        "scope_changed": false,
+        "session_id": "6b6ecd1f-94b5-48c0-a81f-ebc3b6bac9de",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 0.94,
+          "rate_limit_type": "five_hour",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-09-04T01:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 0.9,
+          "tokens": {
+            "cache_creation_input_tokens": 106544,
+            "cache_creation_input_tokens_cumulative": 106544,
+            "cache_read_input_tokens": 6602852,
+            "cache_read_input_tokens_cumulative": 6602852,
+            "inference_geo": "not_available",
+            "input_tokens": 134,
+            "input_tokens_cumulative": 134,
+            "output_tokens": 22595,
+            "output_tokens_cumulative": 22595,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 1.9729643999999993,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 1.9729643999999993
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 480.09,
+          "generated_tokens": 22595,
+          "generation_seconds": 315.502,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 13.1,
+          "machine_seconds": 164.588,
+          "peak_input_tokens": 130965,
+          "tokens_per_second": 71.62,
+          "wall_tokens_per_second": 47.06
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260903T215106400228-a-hold-ages-from-its-refusal",
+        "plan": "a-hold-is-as-old-as-its-refusal",
+        "section": "\u00a72",
+        "node": "a-hold-ages-from-its-refusal",
+        "node_definition": {
+          "done_when": "A shelf-life ageing rule landed today so that a refusal naming no reset time stops holding a lane once it is too old to describe the present. It is defeatable by the act of investigating. reckon/budget.py line 291 takes the age from the pointer's observed_at, and observe rewrites that stamp whenever it re-reads a run's stream; the stream still carries the original rejection, so re-observing a refused run re-stamps an old refusal as a fresh one and the hold never expires. A coordinator asking why its lane is held extends the hold by asking. Measured and reported by a peer session which had to arm a timed retry rather than investigate, because looking would have cost it another hour. Done when the age is derived from the refusal itself rather than from the pointer's last-written stamp, using a value that does not change under re-reading - the rate-limit event's own position in the stream, or the run's created_at as a lower bound. Asserted as ONE case rather than two: observe the refused run, then decide, and require the derived age and the held verdict to be identical to deciding without the intervening observe; repeat the observe ten times and require no drift. A hold whose refusal is older than the bound reads expired immediately after such an observe rather than renewed. A genuinely fresh refusal still holds, and a hold carrying a stated reset time is governed by that time and is not aged, both asserted so those paths stay reachable. ASSERT THROUGH THE DECIDE CALL preflight makes over a state the ledger reader built from a stream carrying a real rejection, not over a synthesised state. No assertion may contain a date literal or a fixed elapsed figure: supply the refusal time, the read time and the current time from the test. At least one added assertion must fail against base 5958f48. Measured over tests/test_budget.py in one invocation: zero failures against its count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 2.0,
+          "goal": "The ageing rule measures a hold from the refusal that created it, so reading the record cannot renew it.",
+          "id": "a-hold-ages-from-its-refusal",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/hold-ages-manifest.md",
+          "plan": "a-hold-is-as-old-as-its-refusal",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/budget.py",
+            "tests/test_budget.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "sonnet-a",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "alias": "sonnet 5",
+          "backend": "claude",
+          "effort": "high",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T21:51:19Z",
+        "completed_at": "2026-09-03T22:01:03.945Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 578,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 584,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "5958f485d571735925883e55c2ee63ee1cc92917",
+        "commits": [
+          "9863717849542c5b72c8ebff0fe3698384792126"
+        ],
+        "changed_lines": {
+          "added": 145,
+          "removed": 3,
+          "files": 2
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_budget.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vh.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/hold-ages-manifest.md",
+        "scope_changed": false,
+        "session_id": "71943233-ab12-4fb6-9727-ce6da132c592",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 0.95,
+          "rate_limit_type": "five_hour",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-09-04T01:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 0.9,
+          "tokens": {
+            "cache_creation_input_tokens": 161407,
+            "cache_creation_input_tokens_cumulative": 161407,
+            "cache_read_input_tokens": 9643096,
+            "cache_read_input_tokens_cumulative": 9643096,
+            "inference_geo": "not_available",
+            "input_tokens": 146,
+            "input_tokens_cumulative": 146,
+            "output_tokens": 44406,
+            "output_tokens_cumulative": 44406,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 3.0185991999999984,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 3.0185991999999984
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 581.535,
+          "generated_tokens": 44406,
+          "generation_seconds": 500.639,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 18.1,
+          "machine_seconds": 80.896,
+          "peak_input_tokens": 180638,
+          "tokens_per_second": 88.7,
+          "wall_tokens_per_second": 76.36
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260903T215505146144-dag-layout-helper",
+        "plan": "graph-derived-schedule",
+        "section": "\u00a72",
+        "node": "dag-layout-helper",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_spa_dag_layout.py tests/test_spa_graph_authority.py -q passes with every case \u00a72 names, including a two-depth edge whose straight segment lies at or below the crossed column bottom plus 24, co-terminating endpoints 8px apart, height at least the deepest detour plus 30, and a two-node cycle terminating with finite depths",
+          "estimated_hours": 4.0,
+          "goal": "One exported layout function implementing the canvas routing and fan-in rules",
+          "id": "dag-layout-helper",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T215505146144-dag-layout-helper/manifest.md",
+          "plan": "graph-derived-schedule",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "write_paths": [
+            "docs/ui/graph.jsx",
+            "tests/test_spa_dag_layout.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-graph",
+        "backend": "claude-opus",
+        "local": false,
+        "agent": {
+          "alias": "opus 5",
+          "backend": "claude-opus",
+          "effort": "high",
+          "launch": "cli",
+          "model": "claude-opus-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T21:55:22Z",
+        "completed_at": "2026-09-03T22:03:23.845Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 474,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 481,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "2bf4ee43837de31bb84bbbda3607bf23eaaa98d3",
+        "commits": [
+          "567212887749d2a8a4182d793ca20be894a76ccf"
+        ],
+        "changed_lines": {
+          "added": 524,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 16,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest tests/test_spa_dag_layout.py tests/test_spa_graph_authority.py -p no:cacheprovider -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T215505146144-dag-layout-helper/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T215505146144-dag-layout-helper/manifest.md",
+        "scope_changed": false,
+        "session_id": "9f16b547-e517-4ba7-bf5f-481baee2a469",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 0.99,
+          "rate_limit_type": "five_hour",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-09-04T01:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 0.9,
+          "tokens": {
+            "cache_creation_input_tokens": 97804,
+            "cache_creation_input_tokens_cumulative": 97804,
+            "cache_read_input_tokens": 3450020,
+            "cache_read_input_tokens_cumulative": 3450020,
+            "inference_geo": "not_available",
+            "input_tokens": 82,
+            "input_tokens_cumulative": 82,
+            "output_tokens": 31034,
+            "output_tokens_cumulative": 31034,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 3.4793100000000003,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 3.4793100000000003
+        },
+        "lineage": {
+          "attempt": 2,
+          "kind": "redispatch",
+          "previous_run_id": "r-20260903T193737353213-dag-layout-helper",
+          "root_run_id": "r-20260903T193737353213-dag-layout-helper"
+        },
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 477.672,
+          "generated_tokens": 31034,
+          "generation_seconds": 388.867,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 11.1,
+          "machine_seconds": 88.805,
+          "peak_input_tokens": 111016,
+          "tokens_per_second": 79.81,
+          "wall_tokens_per_second": 64.97
+        },
+        "attempt": 2,
+        "attempt_kind": "redispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_spa_dag_layout.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -47574,6 +47938,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 782
+    "_version": 785
   }
 }
