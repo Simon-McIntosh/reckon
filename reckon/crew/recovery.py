@@ -18,7 +18,7 @@ from reckon.crew.node import (
     _TERMINAL_RUN_PHASES,
     parse_duration,
 )
-from reckon.crew.reports import parse_manifest
+from reckon.crew.reports import ManifestParseError, parse_manifest
 from reckon.crew.routing import _signal_process_group
 from reckon.crew.ticker import NEEDS_ACTION, Ticker, _agent_label, single_clause
 from reckon.crew.runs import (
@@ -52,13 +52,16 @@ def _single_clause(value: Any, *, limit: int = 96) -> str:
 
 # What a live pointer can be once nobody is watching it. Worker-reported
 # blocked and failed outcomes remain distinct so neither can be mistaken for a
-# completed delivery that is eligible for promotion.
+# completed delivery that is eligible for promotion. An unreadable manifest is
+# its own outcome: a file exists but no reader can judge it, which is neither a
+# delivered record (completed_unpromoted) nor an absence (abandoned).
 RECOVERY_CLASSES = (
     "running",
     "stopped",
     "completed_unpromoted",
     "blocked",
     "failed",
+    "unreadable",
     "abandoned",
 )
 
@@ -222,7 +225,14 @@ def classify_pointer(
     if manifest_present:
         try:
             manifest_data = parse_manifest(manifest.read_text())
-        except OSError as exc:
+        except (OSError, ManifestParseError) as exc:
+            # The file exists but no reader can judge it: an unreadable file is
+            # a condition of the delivery, not an exception in the classifier.
+            # Collecting it here keeps the refusal text (the parse error) in a
+            # channel the classification branches read, so a manifest that
+            # declares a format and is not readable degrades to its own outcome
+            # rather than escaping this function and failing every ticker
+            # refresh for every session.
             manifest_error = str(exc)
     manifest_status = str(manifest_data.get("status") or "").strip().lower()
     manifest_derived = str(manifest_data.get("derived") or "").strip().lower() in {
@@ -350,15 +360,34 @@ def classify_pointer(
             )
         detail = f"blocked: {block}; {delivery}"
         action = f"reckon crew resume --run {run_id} once the limit lifts"
+    elif manifest_error and manifest_present:
+        # The third manifest outcome next to absent and readable-and-terminal:
+        # a file that is present but that no supported reader can parse is
+        # neither a delivered record nor an absence. The name states what the
+        # reader is to do, and the refusal text (the parse error, naming the
+        # format the file declared and why it was rejected) travels in the same
+        # manifest_error channel the abandoned arm used so the operator's next
+        # question is answerable one turn before the run can be judged.
+        classification = "unreadable"
+        detail = (
+            f"the manifest at {manifest} is present but could not be read: "
+            f"{manifest_error}"
+        )
+        action = (
+            f"read launch log {record.get('stderr_path')}; the manifest at "
+            f"{manifest} cannot be read — repair or replace it before judging "
+            "the run"
+        )
     elif terminal:
         classification = "abandoned"
         if manifest_derived:
             delivery = "only a recovery-derived manifest exists"
         elif not manifest_present:
             delivery = "no manifest was delivered"
-        elif manifest_error:
-            delivery = f"the manifest could not be read: {manifest_error}"
         else:
+            # A present-but-unreadable manifest never reaches this arm: it is
+            # intercepted above as its own outcome before the terminal reading
+            # can fold it into abandoned.
             delivery = f"the manifest status {manifest_status!r} is not usable"
         detail = (
             f"the stored phase is terminal but {delivery}; nothing is eligible "
@@ -417,6 +446,9 @@ def classify_pointer(
         "manifest_status": manifest_status or None,
         "manifest_derived": manifest_derived,
         "manifest_commits": manifest_commits,
+        # The refusal text when a present manifest could not be read, carried on
+        # the row so a surface that discards nothing has it one field away.
+        "manifest_error": manifest_error or None,
         "terminal_at": terminal_at,
         "terminal_age_seconds": terminal_age_seconds,
         "log_age_seconds": age,
@@ -681,7 +713,10 @@ def _pointer_role(pointer: Mapping[str, Any]) -> str:
 
 # A state that needs action is exactly a state that may explain itself, so this
 # is the grid's set rather than a second copy of it.
-EXPLAINED_STATES = NEEDS_ACTION
+# The actionable states may keep the classifier's reason; an unreadable
+# manifest is one of them, because the refusal text naming the rejected format
+# is the one sentence a reader needs before repairing the file.
+EXPLAINED_STATES = frozenset(NEEDS_ACTION | {"unreadable"})
 
 
 def _watch_snapshot(
@@ -709,6 +744,11 @@ def _watch_snapshot(
         # the process is gone, but the stop is triageable and resumable once
         # the limit lifts, so it reads as a block rather than an abandonment.
         state = "blocked"
+    elif classification == "unreadable":
+        # A manifest that is present but unreadable is neither a delivery nor
+        # an absence, so the run reads as unreadable rather than falling into
+        # the abandoned bucket the liveness checks below would assign it.
+        state = "unreadable"
     elif phase == "stopped":
         state = "stopped"
     elif alive is False:
@@ -1109,7 +1149,7 @@ def recover(
         name: sum(1 for item in reports if item["classification"] == name)
         for name in ("running", "completed_unpromoted", "abandoned")
     }
-    for name in ("stopped", "blocked", "failed"):
+    for name in ("stopped", "blocked", "failed", "unreadable"):
         count = sum(1 for item in reports if item["classification"] == name)
         if count:
             counts[name] = count
