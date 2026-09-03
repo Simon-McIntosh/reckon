@@ -22,7 +22,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="3">
+<meta name="plan-artifacts" content="~/.config/reckon/crew/reports/guard-reuse-map.md">
+<meta name="plan-impl" content="0.25">
 </head>
 <body>
   <main class="plan-doc">
@@ -126,6 +128,14 @@
     <pre class="r-fu-prompt">/reckon-ship native-agent-dispatch-guard</pre>
     </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260903T073956567292-guard-reuse-map" data-who="scout-guard" data-when="2026-09-03T07:58:16.864Z">
+    <div class="r-comment-body"><p>Reuse map for the guard: 15 mechanisms with verdicts, 10 direct fits; only three gaps — a full dispatch-invocation composer, harness-settings as a new artifact class for sync, and an optional awaiting-attach classification</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260903T0759g" data-who="reckon-ship" data-when="2026-09-03T07:59:30+00:00">
+    <div class="r-comment-body">guard-reuse-map landed — no commit by design; gate passed; measure 15 mechanisms carrying verdicts over 17 file:symbol citations, tallying 10 direct fits, 4 needing extension and 1 explicit non-fit; 467 worker-seconds against a 12m budget on the local lane at deepseek-v4-flash. Map at ~/.config/reckon/crew/reports/guard-reuse-map.md. Almost nothing here is new. The repository-local scope test already exists as dispatch.py:shadow_source's repo-local branch, which scans docs/state/*/crew.json without consulting host state — and the map is explicit that the mounts-based resolvers must be excluded from the scope test for exactly that reason while staying authoritative for the refusal's routing guidance. The in-harness waiver needs no new stored state: an in-harness dispatch writes launch in-harness with a directive and a null task, so awaiting attachment is the predicate launch == in-harness and not record task, already on the raw pointer. The refusal-that-teaches pattern is in production as node.py:WatcherRequired, which composes its own arming and attach lines, and the arming line itself is runs.py:_watch_arming_line, to be reused verbatim rather than hand-rolled. §4's contract test is a straight copy of the established shape in tests/test_skill_contracts.py, and the synthetic crew-managed temp repo is the existing isolated_project fixture over the isolated_reckon_home conftest fixture. Three genuine gaps: no composer emits a full reckon crew dispatch invocation from a node, only crew verb --run lines; nothing in reckon writes a harness hook setting, so §3's sync step is a new artifact class rather than a new step beside CSS and mounts; and an explicit awaiting-attach classification face is optional because the predicate is already readable.</div>
+</div>
+</section>
+</main>
 </body>
 </html>
