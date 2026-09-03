@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T11:05:38",
+  "updated": "2026-09-03T11:09:01",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -41343,6 +41343,112 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260903T090435650426-colour-survives-the-emit-path",
+        "plan": "fleet-monitor-legibility",
+        "section": "\u00a72",
+        "node": "colour-survives-the-emit-path",
+        "node_definition": {
+          "done_when": "A line rendered by a painting grid retains its 38;5 sequences after the follow emit path writes it to a non-terminal stream, asserted by a test that fails against the current code; the same holds for the watch command's emit site; and with --no-color or NO_COLOR in force the emitted line carries no escapes at all, asserted as the negative. The ticker test module passes in full with its count recorded",
+          "estimated_hours": null,
+          "goal": "A painted ticker line still carries its escape sequences after passing through the emit path into a non-terminal stream",
+          "id": "colour-survives-the-emit-path",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T090435650426-colour-survives-the-emit-path/manifest.md",
+          "plan": "fleet-monitor-legibility",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "exact",
+          "time_budget": "25m",
+          "write_paths": [
+            "reckon/cli.py",
+            "tests/test_crew_ticker.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "impl-display",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "backend": "claude",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T09:04:41Z",
+        "completed_at": "2026-09-03T09:08:44.176Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 235,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 243,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "ef83f69dbd8ccbead0c015812a63219a337bb6e7",
+        "commits": [
+          "0c4d36f6488d1c43b32c3964f33fdace41fe30cc"
+        ],
+        "changed_lines": {
+          "added": 73,
+          "removed": 5,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_crew_ticker.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T090435650426-colour-survives-the-emit-path/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T090435650426-colour-survives-the-emit-path/manifest.md",
+        "scope_changed": false,
+        "session_id": "e9235989-8d30-4584-8f42-9e881c67a4b7",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 1.01,
+          "rate_limit_type": "overage",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-10-01T00:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 1,
+          "tokens": {
+            "cache_creation_input_tokens": 45514,
+            "cache_creation_input_tokens_cumulative": 198770,
+            "cache_read_input_tokens": 4624130,
+            "cache_read_input_tokens_cumulative": 8377004,
+            "inference_geo": "not_available",
+            "input_tokens": 38,
+            "input_tokens_cumulative": 86,
+            "output_tokens": 9470,
+            "output_tokens_cumulative": 19943,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 1.2016580000000006,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 2.6700828000000003
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -41361,6 +41467,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 680
+    "_version": 681
   }
 }

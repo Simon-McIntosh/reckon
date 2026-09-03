@@ -4,26 +4,30 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="fleet-monitor-legibility">
-  <meta name="plan-title"     content="The Monitor Reads At The Width It Is Read At">
-  <meta name="plan-summary"   content="Make the fleet pane legible: colour that survives the emit path, a reason that says what the worker asked, role, aliases, measured width.">
-  <meta name="plan-status"    content="active">
-  <meta name="plan-roi"       content="high">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="fleet-monitor-legibility">
+  <meta name="plan-title" content="The Monitor Reads At The Width It Is Read At">
+  <meta name="plan-summary" content="Make the fleet pane legible: colour that survives the emit path, a reason that says what the worker asked, role, aliases, measured width.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-reasoning" content="standard">
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-capability-risk" content="low">
-  <meta name="plan-sprint"    content="S15">
-  <meta name="plan-owner"     content="Simon McIntosh">
-  <meta name="plan-tags"      content="crew,reckon-tooling">
+  <meta name="plan-sprint" content="S15">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
-  <meta name="plan-blocks"    content="crew-observability-truth">
+  <meta name="plan-blocks" content="crew-observability-truth">
   <title>The Monitor Reads At The Width It Is Read At | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-03">
+<meta name="plan-version" content="2">
+<meta name="plan-commits" content="0c4d36f">
+<meta name="plan-impl" content="0.17">
 </head>
 <body>
   <main class="plan-doc">
@@ -359,102 +363,74 @@
     </p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-
-      <div class="r-dec" data-key="role-badge-placement" data-choice="left-full-words"
-           data-by="Simon McIntosh" data-when="2026-09-03">
-        <p class="r-dec-q">Where does the role sit, and how is it spelled?</p>
-        <p class="r-dec-ctx">
-          A four-character tag was tried first and failed on its own reading:
-          <code>invs</code> did not communicate <code>investigate</code>.
-        </p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="left-full-words">Left of the node, dispatch words</button>
-          <button class="r-opt" data-value="left-four-char">Left of the node, four characters</button>
-          <button class="r-opt" data-value="right-of-node">Right of the node</button>
-        </p>
-        <p class="r-dec-rat">
-          Spend the columns on words a reader does not have to decode. The badge
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="role-badge-placement" data-choice="left-full-words" data-by="Simon McIntosh" data-when="2026-09-03">
+    <p class="r-dec-q">Where does the role sit, and how is it spelled?</p>
+    <p class="r-dec-ctx">A four-character tag was tried first and failed on its own reading: invs did not communicate investigate .</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="left-full-words">Left of the node, dispatch words</button>
+      <button class="r-opt" data-value="left-four-char">Left of the node, four characters</button>
+      <button class="r-opt" data-value="right-of-node">Right of the node</button>
+      </p>
+    <p class="r-dec-rat">Spend the columns on words a reader does not have to decode. The badge
           goes left because the eye should land on the node as the primary
           identifier and because it keeps the node adjacent to the transition
-          arrow it belongs to.
-        </p>
-      </div>
-
-      <div class="r-dec" data-key="effort-spelling" data-choice="derived-two-letters"
-           data-by="Simon McIntosh" data-when="2026-09-03">
-        <p class="r-dec-q">How is the effort rendered beside the model alias?</p>
-        <p class="r-dec-ctx">
-          A single letter collapses <code>medium</code>, <code>max</code> and
-          <code>minimal</code> into one glyph. A lookup table would enumerate a
-          ladder the schema deliberately leaves open.
-        </p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="derived-two-letters">First two characters, derived</button>
-          <button class="r-opt" data-value="single-letter">Single letter</button>
-          <button class="r-opt" data-value="full-word">The whole effort word</button>
-        </p>
-        <p class="r-dec-rat">
-          Derivation is collision-free across the real ladder and needs no
-          table, so a configured effort nobody has used yet still renders.
-        </p>
-      </div>
-
-      <div class="r-dec" data-key="width-resolution" data-choice="ancestry-with-override"
-           data-by="Simon McIntosh" data-when="2026-09-03">
-        <p class="r-dec-q">How is the render width resolved?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="ancestry-with-override">Ancestor terminal, <code>--width</code> overrides</button>
-          <button class="r-opt" data-value="stated-in-config">Stated once in flight configuration</button>
-          <button class="r-opt" data-value="conservative-only">Detect, but always under-fill</button>
-        </p>
-        <p class="r-dec-rat">
-          The measurement exists and follows a resize; a stated width does not.
+          arrow it belongs to.</p>
+    </div>
+<div class="r-dec" data-key="effort-spelling" data-choice="derived-two-letters" data-by="Simon McIntosh" data-when="2026-09-03">
+    <p class="r-dec-q">How is the effort rendered beside the model alias?</p>
+    <p class="r-dec-ctx">A single letter collapses medium , max and minimal into one glyph. A lookup table would enumerate a
+          ladder the schema deliberately leaves open.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="derived-two-letters">First two characters, derived</button>
+      <button class="r-opt" data-value="single-letter">Single letter</button>
+      <button class="r-opt" data-value="full-word">The whole effort word</button>
+      </p>
+    <p class="r-dec-rat">Derivation is collision-free across the real ladder and needs no
+          table, so a configured effort nobody has used yet still renders.</p>
+    </div>
+<div class="r-dec" data-key="width-resolution" data-choice="ancestry-with-override" data-by="Simon McIntosh" data-when="2026-09-03">
+    <p class="r-dec-q">How is the render width resolved?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="ancestry-with-override">Ancestor terminal, --width overrides</button>
+      <button class="r-opt" data-value="stated-in-config">Stated once in flight configuration</button>
+      <button class="r-opt" data-value="conservative-only">Detect, but always under-fill</button>
+      </p>
+    <p class="r-dec-rat">The measurement exists and follows a resize; a stated width does not.
           The override stays because a detached follower has no ancestor
-          terminal to read, and because a stale read must have a manual remedy.
-        </p>
-      </div>
-
-      <div class="r-dec" data-key="rendering-library" data-choice="hand-rolled-plus-later-dashboard"
-           data-by="Simon McIntosh" data-when="2026-09-03">
-        <p class="r-dec-q">Should the ticker be rebuilt on a rendering library?</p>
-        <p class="r-dec-ctx">
-          Rich was the candidate. Its width detection returns 80 in a pipe and
+          terminal to read, and because a stale read must have a manual remedy.</p>
+    </div>
+<div class="r-dec" data-key="rendering-library" data-choice="hand-rolled-plus-later-dashboard" data-by="Simon McIntosh" data-when="2026-09-03">
+    <p class="r-dec-q">Should the ticker be rebuilt on a rendering library?</p>
+    <p class="r-dec-ctx">Rich was the candidate. Its width detection returns 80 in a pipe and
           its colour detection switches off in a pipe, so it needs the same
           forced width and forced colour this plan establishes — it consumes the
           solution rather than providing one — and it is not currently a
-          dependency.
-        </p>
-        <p class="r-dec-opts">
-          <button class="r-opt chosen" data-value="hand-rolled-plus-later-dashboard">Keep the ticker; a library dashboard is a separate surface</button>
-          <button class="r-opt" data-value="rewrite-on-library">Rewrite the ticker on a library</button>
-          <button class="r-opt" data-value="never">No library anywhere</button>
-        </p>
-        <p class="r-dec-rat">
-          The streaming pane keeps its measured palette and its zero-dependency
+          dependency.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="hand-rolled-plus-later-dashboard">Keep the ticker; a library dashboard is a separate surface</button>
+      <button class="r-opt" data-value="rewrite-on-library">Rewrite the ticker on a library</button>
+      <button class="r-opt" data-value="never">No library anywhere</button>
+      </p>
+    <p class="r-dec-rat">The streaming pane keeps its measured palette and its zero-dependency
           renderer. The library earns its place on a surface that can repaint,
           which this pane cannot, so that becomes its own plan rather than a
-          rewrite of this one.
-        </p>
-      </div>
-    </section>
+          rewrite of this one.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-fml-001" data-status="open"
-               data-capability-version="1.0" data-capability-class="general"
-               data-written-by="reckon-create" data-written-at="2026-09-03"
-               data-recommends-skill="/reckon-ship fleet-monitor-legibility §2">
-        <h4 class="r-fu-title">Land the emit-path fix while the file is free, then the format sections</h4>
-        <div class="r-fu-body">
-          <p>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-fml-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-03" data-recommends-skill="/reckon-ship fleet-monitor-legibility §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land the emit-path fix while the file is free, then the format sections</h4>
+    <div class="r-fu-body"><p>
             §2 goes first and alone: it is two lines of production change, and a
             concurrent session is holding <code>reckon/cli.py</code> for it
             before starting a large change of its own in the same file. Landing
             a two-line edit ahead of that change is strictly cheaper than
             rebasing behind it.
           </p>
-          <p>
+<p>
             §4, §5 and §6 are independent of that session and can run together;
             they share one module, so they are one write scope, not three. §3
             waits for the concurrent wave on the shared classifier module to
@@ -462,12 +438,19 @@
             measurement obligation no worker can discharge alone: the inset
             calibration and the resize confirmation both need a reading taken
             from the pane by the operator.
-          </p>
-        </div>
-        <pre class="r-fu-prompt">/reckon-ship fleet-monitor-legibility §2</pre>
-      </article>
-    </section>
+          </p></div>
+    <pre class="r-fu-prompt">/reckon-ship fleet-monitor-legibility §2</pre>
+    </article>
+</section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260903T090435650426-colour-survives-the-emit-path" data-who="impl-display" data-when="2026-09-03T09:08:44.176Z">
+    <div class="r-comment-body"><p>Painted ticker lines keep their escapes through both emit sites into a non-terminal stream, and an unpainted line stays plain; tests/test_crew_ticker.py 15 passed against 11</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260903T1109" data-who="reckon-ship" data-when="2026-09-03T09:09:02+00:00">
+    <div class="r-comment-body">colour-survives-the-emit-path landed — commit 0c4d36f, merged; gate passed; measure tests/test_crew_ticker.py 15 passed against an 11 baseline, exit 0; 73 insertions and 5 deletions over 2 files, 4 tests added, 144 worker-seconds against a 25m budget on claude-sonnet-5 at medium. Both emit sites now pass color=True: the follow path's _echo_follow_line and the watch command's transition echo. The section's own framing is what made this two lines rather than a rewrite — the grid decides whether to paint and the emit path must not second-guess it, so the flag is safe precisely because it does not force colour on. The negative is asserted alongside the positive: a line the ticker chose not to paint, under --no-color or NO_COLOR, still arrives carrying no escapes. Worth recording that the docstring the node left behind states the mechanism rather than the incident — that the destination is almost never a terminal, that Click's auto-detection would therefore strip what was already painted, and that the paint decision was made upstream. This defect was invisible for the same reason the others in this plan were: nothing errored, so the pane simply looked like a renderer nobody had written.</div>
+</div>
+</section>
+</main>
 </body>
 </html>
