@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T11:15:17",
+  "updated": "2026-09-03T11:17:58",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -41661,6 +41661,219 @@
           "role": "documentation",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260903T091121108445-display-cumulative-evidence-record",
+        "plan": "crew-observability-truth",
+        "section": "\u00a71",
+        "node": "display-cumulative-evidence-record",
+        "node_definition": {
+          "done_when": "uv run reckon audit-doc on the new file reports no ERROR; it carries meta reckon-type=evidence and plan-evidence-for=crew-observability-truth; it holds one stable anchor per distinct run-outcome comment in docs/plans/crew-observability-truth.html, and the manifest reports both the anchor count written and the count of data-id=c-run- comments read, which must be equal; every anchor names its commit sha and the quantitative measure from the comment it summarises, preserving the recorded numbers rather than restating them as passed. Coupled results from one wave are combined into one anchor. The plan's comment set also contains three corrections and one refuted peer finding; each must appear as its own anchor stating what was claimed, what was measured, and which superseded which, because a record that keeps only the final verdict loses the reason it changed. A figure belongs only where a sequential or plotted relationship is clearer than prose, never as an image of what is naturally an HTML table; if one earns its place, the outage timeline is the candidate, written as SVG under docs/figures/crew-observability-truth/ and embedded with a project-absolute src of the form /reckon/figures/crew-observability-truth/NAME",
+          "estimated_hours": null,
+          "goal": "The cumulative execution-evidence record for this plan, one stable anchor per material landed result",
+          "id": "display-cumulative-evidence-record",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T091121108445-display-cumulative-evidence-record/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "documentation",
+          "section": "\u00a71",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "docs/evidence/archive/crew-observability-truth-landed.html",
+            "docs/figures/crew-observability-truth"
+          ]
+        },
+        "role": "documentation",
+        "spec_level": "guided",
+        "member": "doc-evidence",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "backend": "claude",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T09:11:26Z",
+        "completed_at": "2026-09-03T09:16:07.351Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 272,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 281,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "864dbde1c128bd51228bc237d4b288ff7d45e253",
+        "commits": [
+          "cc6fbed3283d4836ed869b53e5a24949b9092740"
+        ],
+        "changed_lines": {
+          "added": 373,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "reckon audit-doc docs/evidence/archive/crew-observability-truth-landed.html",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T091121108445-display-cumulative-evidence-record/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T091121108445-display-cumulative-evidence-record/manifest.md",
+        "scope_changed": false,
+        "session_id": "7c43a41a-e41a-46f5-b0c4-bd5baf1d1fda",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 1.01,
+          "rate_limit_type": "overage",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-10-01T00:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 1,
+          "tokens": {
+            "cache_creation_input_tokens": 60346,
+            "cache_creation_input_tokens_cumulative": 193571,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 3234229,
+            "inference_geo": "not_available",
+            "input_tokens": 0,
+            "input_tokens_cumulative": 36,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 25945,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 0.0,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 1.6806517999999997
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "documentation",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260903T090449100092-the-reason-says-what-the-worker-asked",
+        "plan": "fleet-monitor-legibility",
+        "section": "\u00a73",
+        "node": "the-reason-says-what-the-worker-asked",
+        "node_definition": {
+          "done_when": "A manifest carrying a block-scalar blockers key together with a complete NEEDS-HELP report produces a transition whose reason is the headline's first clause and whose marker is the question mark; a manifest with blockers and no needs-help report produces the exclamation marker and the blocker text; a key whose value is a block-scalar indicator or a bare opening quote parses to the indented body below it rather than to the indicator; and no reason anywhere can be a bare punctuation character, asserted by test. tests/test_crew_recovery.py and the manifest parser's own module both pass in full with their counts recorded. Measured instance the section is written from: a stored event carries reason as a single pipe character while the worker's NEEDS-HELP headline sat parsed and unused",
+          "estimated_hours": null,
+          "goal": "A blocked transition's reason is the worker's own question, with a marker saying whether it can be answered by resuming",
+          "id": "the-reason-says-what-the-worker-asked",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T090449100092-the-reason-says-what-the-worker-asked/manifest.md",
+          "plan": "fleet-monitor-legibility",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "reckon/crew/reports.py",
+            "tests/test_crew_recovery.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "impl-fit",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "backend": "claude",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T09:04:55Z",
+        "completed_at": "2026-09-03T09:16:13.522Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 668,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 678,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "ef83f69dbd8ccbead0c015812a63219a337bb6e7",
+        "commits": [
+          "81d35f98efd268e3bb97b2bf1f17e2cf15c66fcb"
+        ],
+        "changed_lines": {
+          "added": 238,
+          "removed": 13,
+          "files": 3
+        },
+        "tests_added": 8,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_crew_recovery.py and six adjacent modules",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T090449100092-the-reason-says-what-the-worker-asked/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T090449100092-the-reason-says-what-the-worker-asked/manifest.md",
+        "scope_changed": false,
+        "session_id": "4a867318-1d2e-4814-a73f-57b9088ce487",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 1.01,
+          "rate_limit_type": "overage",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-10-01T00:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 1,
+          "tokens": {
+            "cache_creation_input_tokens": 120488,
+            "cache_creation_input_tokens_cumulative": 219547,
+            "cache_read_input_tokens": 12791452,
+            "cache_read_input_tokens_cumulative": 14560420,
+            "inference_geo": "not_available",
+            "input_tokens": 114,
+            "input_tokens_cumulative": 152,
+            "output_tokens": 17260,
+            "output_tokens_cumulative": 44228,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 3.2130704000000025,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 4.232856000000003
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -41679,6 +41892,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 683
+    "_version": 685
   }
 }
