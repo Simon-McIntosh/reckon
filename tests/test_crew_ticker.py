@@ -204,6 +204,61 @@ def test_cli_follow_prints_compact_transition_lines_by_default(
     assert not result.output.startswith("{")
 
 
+def test_follow_renders_at_the_resolved_terminal_width(home, monkeypatch) -> None:
+    """An unspecified --width builds the grid at the terminal a reader owns,
+    not at the stated fallback, so the counters land flush on the resolved
+    width. The measurement is asserted through the command's own grid — the
+    call site the module-level resolver had been bypassed from — rather than
+    by instantiating a Ticker directly.
+    """
+    monkeypatch.setattr(ticker_module, "resolve_terminal_width", lambda: 207)
+    monkeypatch.setattr(
+        recovery,
+        "watch_follow",
+        lambda *_args, **_kwargs: iter([_event()]),
+    )
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        ["crew", "watch", "--project", "proj", "--follow", "--no-color"],
+    )
+
+    assert result.exit_code == 0
+    line = result.output.strip().splitlines()[0]
+    assert len(line) == 207
+    # The counters are the final characters of the resolved-width grid.
+    assert line.endswith(" 3w ·  1b ·  0u")
+
+
+def test_follow_explicit_width_beats_the_measurement(home, monkeypatch) -> None:
+    """A stated --width still wins over the resolved terminal, so a caller who
+    asks for a specific pane gets it even when the measurement differs."""
+    monkeypatch.setattr(ticker_module, "resolve_terminal_width", lambda: 207)
+    monkeypatch.setattr(
+        recovery,
+        "watch_follow",
+        lambda *_args, **_kwargs: iter([_event()]),
+    )
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "watch",
+            "--project",
+            "proj",
+            "--follow",
+            "--no-color",
+            "--width",
+            "180",
+        ],
+    )
+
+    assert result.exit_code == 0
+    line = result.output.strip().splitlines()[0]
+    assert len(line) == 180
+
+
 def test_cli_follow_keeps_machine_objects_behind_json_flag(home, monkeypatch) -> None:
     monkeypatch.setattr(
         recovery,
