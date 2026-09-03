@@ -21,10 +21,28 @@ from reckon.crew import ticker as ticker_module
 
 ESCAPES = re.compile(r"\x1b\[[0-9;]*m")
 
+# The fleet counter block, wherever it sits on the row. Located by its own
+# shape rather than by searching from the right edge: the reason is the last
+# column now, so a letter at the end of a line belongs to free text.
+COUNTERS = re.compile(r"(\s?\d{1,2})w( ·\s+\d{1,2})b( ·\s+\d{1,2})u")
+
 
 def plain(line: str) -> str:
     """The line as the grid measures it, with any colour removed."""
     return ESCAPES.sub("", line)
+
+
+def counters(line: str) -> re.Match[str]:
+    """The counter block's match on a rendered row, or fail the test."""
+    found = COUNTERS.search(plain(line))
+    assert found, plain(line)
+    return found
+
+
+def letter_columns(line: str) -> dict[str, int]:
+    """Each counter suffix's screen column on this row."""
+    found = counters(line)
+    return {letter: found.end(index) for index, letter in enumerate(("w", "b", "u"), 1)}
 
 
 def _event(**overrides):
@@ -73,11 +91,10 @@ def test_columns_start_on_the_same_screen_column(grid):
         plain(grid.render(_event(working=12, blocked=0, unpromoted=3))),
     ]
     assert len({row.index("→") for row in rows}) == 1
-    # Searched from the right: the states' letters of the fleet counters sit at
-    # the end of every line, so the last `w`, `b` and `u` are the counter
-    # suffixes even when the same letter appears earlier in a state or role.
+    # Located by the counter block's own shape: the reason is the trailing
+    # column, so a `w` at the end of a row is free text rather than a suffix.
     for letter in ("w", "b", "u"):
-        assert len({row.rindex(letter) for row in rows}) == 1, letter
+        assert len({letter_columns(row)[letter] for row in rows}) == 1, letter
 
 
 def test_stat_digits_align_across_one_and_two_digit_counts(grid):
@@ -107,7 +124,19 @@ def test_stat_letters_align_at_a_fixed_column_across_one_and_two_digits(grid):
     one = plain(grid.render(_event(working=1, blocked=3, unpromoted=2)))
     twelve = plain(grid.render(_event(working=12, blocked=3, unpromoted=2)))
     for letter in ("w", "b", "u"):
-        assert one.rindex(letter) == twelve.rindex(letter), letter
+        assert letter_columns(one)[letter] == letter_columns(twelve)[letter], letter
+
+
+def test_the_baseline_glyph_is_not_a_glyph_the_row_already_uses(grid):
+    """The arrow column must say something no other column repeats.
+
+    The counters separate their three numbers with middle dots, so a baseline
+    marked with one would put four indistinguishable dots on a row and say
+    nothing a reader could locate.
+    """
+    assert ticker_module.BASELINE_ARROW != ticker_module.TRANSITION_ARROW
+    row = plain(grid.render(_event(event="baseline", to_state="working")))
+    assert row.count(ticker_module.BASELINE_ARROW) == 1
 
 
 def test_arrow_column_holds_when_there_is_no_previous_state(grid):
@@ -261,13 +290,19 @@ def test_every_state_the_snapshot_can_emit_has_a_colour():
         assert not missing, (theme, sorted(missing))
 
 
-def test_the_session_column_does_not_eat_the_node_column():
-    """An unscoped reader needs the owning session and still needs the node."""
+def test_the_owner_column_marks_a_foreign_row_without_naming_it():
+    """An unscoped reader needs to know whose row this is, not its identifier.
+
+    The only decision the session answers is whether the row is the reader's to
+    act on, so it costs one glyph rather than eighteen columns of run id — and
+    the node it sits beside keeps its own column.
+    """
     grid = ticker_module.Ticker(width=180, color=False)
     node = "n-catalog-yaml-review-format"
     line = plain(grid.render(_event(node=node), with_session=True))
     assert node in line
-    assert "ship-s10-20260901" in line
+    assert "ship-s10-20260901" not in line
+    assert ticker_module.FOREIGN_OWNER in line
     assert len(line) == 180
 
 
@@ -434,11 +469,8 @@ def test_a_role_column_still_leaves_every_other_column_on_its_own_position():
         plain(grid.render(_event(role="test", working=12, blocked=0, unpromoted=3))),
     ]
     assert len({row.index("→") for row in rows}) == 1
-    # The fleet counter letters, searched from the right: each sits at the end
-    # of its row, so the last `w`, `b` and `u` are the counter suffixes even
-    # when the same letter appears earlier in a state or role.
     for letter in ("w", "b", "u"):
-        assert len({row.rindex(letter) for row in rows}) == 1, letter
+        assert len({letter_columns(row)[letter] for row in rows}) == 1, letter
     assert {len(row) for row in rows} == {180}
 
 
@@ -678,7 +710,8 @@ def test_every_line_ends_at_the_resolved_width_when_crowded(monkeypatch):
 
     A wrapped row costs a quarter of the visible history, which is worse than a
     line that only falls short, so the grid composes to exactly the resolved
-    width either way and the counters sit flush on its final column.
+    width either way, and the counters hold their fixed column while the reason
+    takes whatever remains.
     """
     path, master, slave = _open_terminal(150)
     try:
@@ -704,6 +737,10 @@ def test_every_line_ends_at_the_resolved_width_when_crowded(monkeypatch):
     # the resolved width and no more.
     assert len(line) == resolved
     assert len(line) <= resolved
-    # The fleet counters are flush at the final column, so the row ends with
-    # the last counter's suffix rather than trailing padding.
-    assert line.endswith("12w ·  9b ·  7u")
+    # The counters sit ahead of the reason, at the same column a one-digit row
+    # puts them, so a pane clipping its own right edge takes free text and
+    # never a count.
+    assert "12w ·  9b ·  7u" in line
+    narrow = plain(grid.render(_event(working=1, blocked=2, unpromoted=3)))
+    assert letter_columns(line) == letter_columns(narrow)
+    assert counters(line).end() < len(line)

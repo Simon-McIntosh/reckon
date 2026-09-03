@@ -29,7 +29,12 @@ from typing import Any
 CLOCK = 8
 ROLE = 4
 NODE = 36
-SESSION = 18
+# One glyph, not a name. The only decision-relevant thing about the owning
+# session is whether the row is the reader's to act on, and a run id spelled in
+# full — a shadow's least of all, since it is synthesised from its primary's —
+# spends eighteen columns saying it. An unscoped reader gets the glyph; a scoped
+# reader gets nothing, because every row it receives is its own by construction.
+OWNER = 1
 STATE = 10
 # Model identity and effort each earn their own column: a reader scans effort
 # down a column instead of parsing it out of a fused label. MODEL is wide enough
@@ -125,6 +130,32 @@ DISPATCH_ROLES = frozenset(
 # admitted unknown.
 ROLE_UNKNOWN = "?"
 
+# What marks a row another session dispatched, on an unscoped stream. Another
+# session's runs are not this reader's to act on, so the row is marked rather
+# than named.
+FOREIGN_OWNER = "~"
+
+# The arrow column, which says what kind of record this is. A transition is
+# something that happened; a baseline is inventory the follower emitted because
+# it attached, and a restart emits one per live run inside a second or two. Read
+# from the kind the log records, never from an absent from-state: a genuine
+# transition into a first sighting also has no source, and conflating the two
+# makes a restart read as a burst of news.
+TRANSITION_ARROW = "\N{RIGHTWARDS ARROW}"
+# A bullet rather than a middle dot: the counters already separate themselves
+# with middle dots, and a glyph that appears three more times on the same row
+# cannot be read — or searched for — as a statement about the record.
+BASELINE_ARROW = "\N{BULLET}"
+
+# States a run does not leave. A baseline row for one of these is inventory
+# about work that is already over — the alarming-looking rows a reattaching
+# follower emits first — so it is suppressed rather than shown as news. A block
+# or a stall is not here: it has stopped without finishing, and it is exactly
+# what a reader attaching wants told.
+SETTLED_STATES = frozenset(
+    {"complete", "completed_unpromoted", "promoted", "failed", "stopped", "abandoned"}
+)
+
 _CELLS = ("working", "blocked", "unpromoted")
 
 # The single-letter suffix each fleet counter renders as. The pane teaches the
@@ -141,22 +172,20 @@ STATS = sum(2 + 1 for _ in _CELLS) + 3 * (len(_CELLS) - 1)
 # The widest the fixed columns can be, plus the stats block and one gap. A width
 # below this cannot be honoured without wrapping, so it is raised to this.
 MIN_WIDTH = (
-    (
-        CLOCK
-        + GAP
-        + ROLE
-        + GAP
-        + NODE
-        + GAP
-        + SESSION
-        + GAP
-        + (STATE * 2 + 3)
-        + GAP
-        + MODEL
-        + GAP
-        + EFFORT
-        + GAP
-    )
+    CLOCK
+    + GAP
+    + ROLE
+    + GAP
+    + NODE
+    + GAP
+    + OWNER
+    + GAP
+    + (STATE * 2 + 3)
+    + GAP
+    + MODEL
+    + GAP
+    + EFFORT
+    + GAP
     + STATS
     + GAP
 )
@@ -369,6 +398,38 @@ def _display_marker(event: Mapping[str, Any]) -> str:
     return str(event.get("marker") or "")
 
 
+def is_shadow(event: Mapping[str, Any]) -> bool:
+    """Whether this row is a shadow run: evidence that will never merge.
+
+    Read from the lineage the record carries rather than from the run id, which
+    only encodes the relationship by convention. Either spelling counts, so a
+    producer that flattens the lineage to a flag still reads the same.
+    """
+    lineage = event.get("lineage")
+    if isinstance(lineage, Mapping) and str(lineage.get("kind") or "") == "shadow":
+        return True
+    return bool(event.get("shadow"))
+
+
+def is_baseline(event: Mapping[str, Any]) -> bool:
+    """Whether the record is inventory taken at attach rather than an event."""
+    return str(event.get("event") or "") == "baseline"
+
+
+def settled_at_attach(event: Mapping[str, Any]) -> bool:
+    """Whether this row is a baseline for work that had already finished.
+
+    A follower emits one baseline per live run the moment it attaches, and a
+    run that is already complete or promoted produces a row that reads exactly
+    like a landing that just happened. Nothing further will happen to it, so the
+    row is inventory and the reader is better served by its absence. Keyed on
+    the recorded kind, so a genuine transition into the same state still shows.
+    """
+    if not is_baseline(event):
+        return False
+    return str(event.get("to_state") or "") in SETTLED_STATES
+
+
 def _agent_label(agent: Any) -> str:
     """The agent column label: alias plus the full effort word, or the record as it stands.
 
@@ -425,14 +486,24 @@ class Ticker:
     def render(self, event: Mapping[str, Any], *, with_session: bool = False) -> str:
         """One transition as one line, exactly ``width`` visible characters.
 
-        ``with_session`` names the owning session, which an unscoped reader
+        ``with_session`` marks the owning session, which an unscoped reader
         needs and a session-scoped one does not: every line a scoped follower
         receives is its own by construction, so the column would only take room
         from the node beside it.
+
+        The counters precede the reason because the pane clips its own right
+        edge. Everything before the reason is fixed-width, so a row rendered
+        wider than the pane can spare loses trailing free text and nothing else;
+        with the counters last, a width read one column too wide silently ate
+        the fleet's numbers instead.
         """
         node = str(event.get("node") or event.get("run_id") or "unknown")
         to_state = _display_state(event.get("to_state") or "unknown")
-        from_state = _display_state(event.get("from_state"))
+        baseline = is_baseline(event)
+        # A baseline has no source state to show even when the record carries
+        # one, because nothing moved: showing a from-state would claim a
+        # transition the fleet never made.
+        from_state = "" if baseline else _display_state(event.get("from_state"))
         role = _display_role(event.get("role"))
 
         cells: list[tuple[str, Any]] = [
@@ -443,8 +514,8 @@ class Ticker:
             (f"{elide(node, NODE):<{NODE}}", self.hue(node)),
         ]
         if with_session:
-            owner = str(event.get("session") or "")
-            cells += [(" " * GAP, None), (f"{elide(owner, SESSION):<{SESSION}}", "dim")]
+            owner = FOREIGN_OWNER if str(event.get("session") or "") else " "
+            cells += [(" " * GAP, None), (f"{owner:<{OWNER}}", "dim")]
         # Both sides of the arrow are painted by the same map. A transition is
         # read as a pair — where it came from and where it went — and colouring
         # only the destination makes `blocked → promoted` and `complete →
@@ -455,7 +526,7 @@ class Ticker:
             (" " * GAP, None),
             (f"{from_state:>{STATE}}", hues.get(from_state, "dim")),
             (" ", None),
-            ("→", "dim"),
+            (BASELINE_ARROW if baseline else TRANSITION_ARROW, "dim"),
             (" ", None),
             (f"{to_state:<{STATE}}", hues.get(to_state, "dim")),
             (" " * GAP, None),
@@ -464,14 +535,20 @@ class Ticker:
             (f"{elide(_effort_label(event), EFFORT):<{EFFORT}}", "dim"),
             (" " * GAP, None),
         ]
+        cells.extend(self._stats(event))
+        cells.append((" " * GAP, None))
 
         head = sum(len(text) for text, _ in cells)
-        room = self.width - head - STATS - GAP
+        room = max(self.width - head, 0)
         reason = self._reason(event, to_state, room)
-        cells.append((f"{reason:<{room}}", "dim") if room > 0 else ("", None))
-        cells.append((" " * GAP, None))
-        cells.extend(self._stats(event))
-        return "".join(self._paint(text, style) for text, style in cells)
+        cells.append((f"{reason:<{room}}", "dim") if room else ("", None))
+        # A shadow will never merge, so the row says so about itself end to end
+        # rather than spending a column on an identifier a reader cannot use.
+        shadow = is_shadow(event)
+        return "".join(
+            self._paint(text, "dim" if shadow and style is not None else style)
+            for text, style in cells
+        )
 
     def _reason(self, event: Mapping[str, Any], to_state: str, room: int) -> str:
         """The clause explaining an actionable state, bounded by the margin.
