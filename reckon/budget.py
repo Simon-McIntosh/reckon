@@ -288,16 +288,27 @@ def _readings(
     for pointer in crew.list_live():
         if str(pointer.get("project") or "") != project:
             continue
-        stamp = pointer.get("observed_at") or pointer.get("created_at")
-        when = _parse_stamp(stamp)
+        fresh_stamp = pointer.get("observed_at") or pointer.get("created_at")
+        when = _parse_stamp(fresh_stamp)
         budget = pointer.get("budget")
         if when is None or not isinstance(budget, Mapping):
             continue
+        # `when` picks the freshest reading and may legitimately track the
+        # mutable observed_at — re-reading a live run is exactly what makes
+        # its data the best available. The age an ageing rule measures is a
+        # different question: the pointer's observed_at is rewritten by
+        # every `observe()`, so anchoring age to it lets a coordinator
+        # investigating a hold renew that hold by looking. created_at is
+        # written once at dispatch and never touched again, and it precedes
+        # every event the run's stream can carry — including whichever one
+        # produced this budget block — so it is a lower bound on the
+        # refusal's own time that survives any number of re-reads.
+        refusal_stamp = pointer.get("created_at") or fresh_stamp
         found.append(
             _Reading(
                 backend=str(pointer.get("backend") or ""),
                 budget=dict(budget),
-                observed_at=str(stamp),
+                observed_at=str(refusal_stamp),
                 when=when,
                 source="live-run",
                 record_id=str(pointer.get("run_id") or ""),
