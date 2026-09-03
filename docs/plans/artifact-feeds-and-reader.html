@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="artifact-feeds-and-reader">
+  <meta name="plan-title" content="Four Artifact Tabs, One Reader">
+  <meta name="plan-summary" content="Plans, research, evidence and figures as sibling feeds with created and edited stamps, one reader with a source trail, and arrivals held until shown.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="16.0">
+  <meta name="plan-wall-clock-hours" content="9.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S16">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,spa">
+  <meta name="plan-north-star" content="legible-to-human-and-agent">
+  <meta name="plan-depends-on" content="spa-shell-scope-and-visibility,served-surface-data-contracts">
+  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,design/reckon-spa-handoff.md">
+  <title>Four Artifact Tabs, One Reader | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<header>
+  <p class="eyebrow">Artifact feeds and the reader &middot; the longest chain in the sprint</p>
+  <h1>Four Artifact Tabs, One Reader</h1>
+  <p class="lead">Research and evidence exist in the landed SPA only as a rail inside a plan's reader, so a document a worker just wrote can be found only by knowing which plan it hangs off, and figures cannot be found at all. The canvas makes the four artifact types sibling tabs that share one index layout and one reader, sorts each as a feed by created or edited, and lets new documents arrive while you are looking at the page without moving what you are reading.</p>
+</header>
+
+<h2 id="s1">&#167;1 &mdash; Why this exists</h2>
+<p>From the handoff triage (<code>design/reckon-spa-handoff.md</code>, items A6, B3, B3a, B3b and B7) and the canvas (<code>design/reckon-spa-handoff.dc.html</code>), checked against <code>main</code> on 2026-09-03:</p>
+<ul>
+  <li>The plan list is a persistent rail with a reader beside it; research and evidence are attachments in that reader's head bars. There is no index of either, and no route reaches one directly.</li>
+  <li>Figures under <code>docs/figures/</code> are served as static files and appear nowhere in the surface.</li>
+  <li>The reader's dependency strip is always on and mixes research and evidence edges with prerequisites, which is what made a plan with four evidence documents look more entangled than one with four real prerequisites.</li>
+  <li>Reading mode fixes the reader pane, not the shell; prev and next step through a queue the shell derives, and the position readout is derived a second time.</li>
+  <li>A live change stream already exists: <code>docs/ui/state-loader.js</code> opens <code>/_changes/&lt;project&gt;</code> and reloads state on a change event. The triage's claim that new content requires a refresh is out of date; what is missing is the arrival discipline, because a reload re-sorts and re-scrolls the list under the reader.</li>
+  <li>The palette searches plans only.</li>
+</ul>
+<p>This plan depends on two others. <code>served-surface-data-contracts</code> supplies figure rows and the <code>edited</code> stamp every feed sorts by. <code>spa-shell-scope-and-visibility</code> supplies the topbar whose artifact tab group reads its labels from the route module, so &#167;2 adds tabs by extending a list rather than editing the bar.</p>
+
+<h2 id="s2">&#167;2 &mdash; Routes and tabs</h2>
+<p>Four artifact views, each with an index and a reader route: <code>#plans</code>, <code>#research</code>, <code>#evidence</code>, <code>#figures</code> for the index and <code>#plan/&lt;slug&gt;</code>, <code>#research/&lt;slug&gt;</code>, <code>#evidence/&lt;slug&gt;</code>, <code>#figure/&lt;slug&gt;</code> for the reader, where a figure slug is its path under <code>docs/figures/</code>. The artifact tab group published by the route module becomes <code>Plans &middot; Research &middot; Evidence &middot; Figures</code>; a tab click returns its section to the index and drops full-screen reading, so clicking the tab you are on is never a dead click. The shell's view switch mounts one artifact surface component for all four kinds, parameterised by kind; the plan-specific rail and reader columns are retired in favour of the full-width index that drills into a full-width reader, which is how the sprint and graph surfaces already behave. Hide-done is one control with one setting that every index header and the sprint and graph headers share.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec · lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>artifact-routes-and-tabs</code></td>
+      <td>Four artifact index routes and four reader routes, mounted by one view switch, with the tab group extended.</td>
+      <td><code>uv run pytest tests/test_spa_artifact_routes.py tests/test_spa_composition.py -q</code> passes. The new test evaluates the route module in node and asserts: each of the eight hashes parses to the view and slug above; the published artifact tab list reads the four labels in order; an unknown hash falls back to the home view. A rendered check asserts that switching from an open research document to the Evidence tab lands on the evidence index with nothing selected.</td>
+      <td><code>docs/ui/shell-route.jsx</code>, <code>docs/ui/shell.jsx</code>, <code>tests/test_spa_artifact_routes.py</code>, <code>tests/test_spa_composition.py</code></td>
+      <td>guided &middot; sonnet, after the shell plan's topbar node and the fleet-home plan's home-view node (both write the shell and route modules)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s3">&#167;3 &mdash; Index lists as feeds</h2>
+<p>One index component for four kinds. Header: the kind's title, <code>N in &lt;project&gt;</code>, inline mono figures (<code>left</code> and <code>held</code> for plans; <code>today</code> for the other three), an Edited/Created segmented toggle that changes the sort key, and hide-done. Status chips (<code>All &middot; active &middot; blocked &middot; pending &middot; shipped</code> with counts) render for plans only. Rows: a dot coloured by status (plans), verdict (research: supports, refutes), gate (evidence: passed, failed, running) or neutral (figures); title and slug; for plans a completion bar and <code>Nh &middot; &lt;sprint&gt;</code>; for figures a 50 by 34 thumbnail and dimensions; for every kind the stamps <code>created &lt;when&gt; &middot; edited &lt;when&gt;</code>; a status chip. Newest first by edited is the default. Hide-done hides plans at 100% unless the shipped chip is active, and hides evidence whose gate passed. The empty state names the kind and project, or says everything is done when hide-done emptied it. The palette searches all four kinds and its placeholder names them.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec · lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>artifact-index-feeds</code></td>
+      <td>One index component renders all four kinds as feeds with stamps, sort toggle, chips and hide-done, and the palette searches all four.</td>
+      <td><code>uv run pytest tests/test_spa_artifact_index.py tests/test_spa_plans_surface.py tests/test_spa_plans_geometry.py -q</code> passes with these cases: for each kind the rendered rows carry a <code>created</code> and an <code>edited</code> stamp; against a fixture where created order and edited order differ, the first row changes when the toggle is switched; status chips render for plans and for no other kind; hide-done removes a 100% plan and keeps it when the shipped chip is active; a figure row carries a thumbnail element and its dimensions text; the empty-state text names the kind and the project; palette results for a query matching one document of each kind return four rows and the input placeholder contains all four kind names.</td>
+      <td><code>docs/ui/shell-plans.jsx</code>, <code>docs/ui/plans.css</code>, <code>docs/ui/shell-palette.jsx</code>, <code>tests/test_spa_artifact_index.py</code>, <code>tests/test_spa_plans_surface.py</code>, <code>tests/test_spa_plans_geometry.py</code></td>
+      <td>guided &middot; sonnet, after <code>artifact-routes-and-tabs</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s4">&#167;4 &mdash; Reader chrome: source trail, full screen, prev and next</h2>
+<p>All four kinds share one reader. <strong>Source trail.</strong> The path chip and title become one breadcrumb: a figure or evidence document shows its sprint, its plan and itself; research shows the sprint and plan of the first entry in <code>informs</code>; a plan shows its sprint and itself. Every segment but the last navigates. <strong>Full screen.</strong> The <code>f</code> key and a chip drape the reader over the entire shell, a fixed inset-0 pane above the topbar, because every topbar control navigates away from the document; <code>esc</code> or the chip exits; it is a style swap on the existing reader, not a second copy of the markup, and it cannot be armed from an index. The measure grows from 760 to 820px in full screen. <strong>Prev and next.</strong> Buttons reading <code>&lsaquo; n / N &rsaquo;</code>, the arrow keys, and the readout all read <strong>the one ordered list the index rendered</strong>, including its status filter and sort, published by the index at render time; deriving the list a second time inside the step handler is how it silently breaks. Keys are suppressed while an input has focus. The metadata row under the trail carries the kind's fields (status, impl, effort, wall, sprint, repo for plans; verdict or gate, created, edited, repo otherwise; dimensions for figures). A figure reader shows the image with its <code>docs/figures/&hellip;</code> path beneath. A copy control copies <code>/reckon-ship &lt;slug&gt;</code> for a plan and the slug for anything else. The provenance list at the foot of a plan lists the research that informs it, the evidence for it and its figures; the foot of a research or evidence document lists the plans it attaches to.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec · lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>reader-chrome</code></td>
+      <td>One reader for four kinds with a navigating source trail, whole-shell full screen, and prev and next bound to the rendered list.</td>
+      <td><code>uv run pytest tests/test_spa_reader_provenance.py tests/test_spa_reading_mode.py tests/test_spa_reader_geometry.py -q</code> passes with these cases: the breadcrumb for a figure whose plan is in a sprint renders three segments of which the first two navigate; for research it renders the sprint and plan of its first informs target; for a plan it renders two; rendered at 1374&times;900 pressing <code>f</code> on an open document yields a reader pane whose bounding rect is the viewport and an element at the topbar's position that belongs to the reader; <code>esc</code> restores the pane; with the status filter <code>active</code> and created sort applied, stepping next from the second row lands on the third row of that filtered, sorted order and the readout reads <code>3 / N</code>; arrow keys do nothing while the palette input has focus; a figure reader contains an <code>img</code> whose src is the served figure and a text node with its <code>docs/figures/</code> path.</td>
+      <td><code>docs/ui/shell-titlebar.jsx</code>, <code>docs/ui/plan.jsx</code>, <code>docs/ui/reader.css</code>, <code>tests/test_spa_reader_provenance.py</code>, <code>tests/test_spa_reading_mode.py</code>, <code>tests/test_spa_reader_geometry.py</code></td>
+      <td>guided &middot; sonnet, after <code>artifact-routes-and-tabs</code>; concurrent with <code>artifact-index-feeds</code>, which publishes the rendered list this node reads</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s5">&#167;5 &mdash; The dependency cone is opt-in, and plan edges only</h2>
+<p>The always-on dependency strip above a plan's body becomes a toggle in the reader header labelled with its counts, <code>2 &uarr; 1 &darr;</code>, or <code>standalone</code> and dimmed when the plan is isolated. It opens a three-column cone inline above the body: prerequisites, this plan, dependents, each card with status, hours and completion. Only <code>depends_on</code> and its reverse appear; research and evidence are provenance and stay in the list at the foot of the reader. The Graph tab's closure uses the same edge rule, so the two cannot disagree.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec · lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>dependency-cone-toggle</code></td>
+      <td>The reader's dependency cone is a labelled toggle showing plan edges only.</td>
+      <td><code>uv run pytest tests/test_spa_dependency_cone.py -q</code> passes: the cone is closed on open; the toggle reads <code>2 &uarr; 1 &darr;</code> for a plan with two prerequisites and one dependent and <code>standalone</code> with reduced opacity for an isolated one; for a plan with three evidence documents and no prerequisites the open cone lists zero cards and the foot lists three; the up column lists exactly the <code>depends_on</code> slugs and the down column exactly the plans naming it.</td>
+      <td><code>docs/ui/shell-plans.jsx</code>, <code>docs/ui/plans.css</code>, <code>tests/test_spa_dependency_cone.py</code></td>
+      <td>guided &middot; sonnet, after <code>artifact-index-feeds</code> (same file)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s6">&#167;6 &mdash; Arrival is non-destructive</h2>
+<p>On a change event from the existing stream the loader fetches discovery and diffs the new inventory against the rendered snapshot by resource id and version. Rows that are new are held as pending, not inserted: the topbar receipt reads <code>N new</code> instead of <code>live</code>, the affected tab carries a count badge, and the affected index shows a banner at its top, <code>N new &lt;kind&gt; since you opened this list &middot; show</code>. Clicking the banner or the receipt inserts the held rows in sort position with a one-shot three-second tint and clears the count. The list is never re-sorted or re-scrolled under the reader, and a document that changed in place updates its row without moving it. A change with nothing new leaves the receipt at <code>live</code>.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec · lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>non-destructive-arrival</code></td>
+      <td>New documents arrive as a counted receipt and a banner, inserted only on request.</td>
+      <td><code>uv run pytest tests/test_spa_live_arrival.py tests/test_spa_state_boundary.py -q</code> passes: given a rendered inventory and a second discovery payload with two new evidence rows and one changed plan, the arrival diff yields two pending rows and one update; the receipt text is <code>2 new</code>, the Evidence tab badge is <code>2</code>, the evidence index banner reads <code>2 new evidence since you opened this list &middot; show</code>; the rendered row order before the click equals the order before the event; after the click the two rows are present in sort position carrying the arrive class and the receipt reads <code>live</code>; a payload with no new rows leaves the receipt at <code>live</code> and shows no banner.</td>
+      <td><code>docs/ui/state-loader.js</code>, <code>docs/ui/shell-topbar.jsx</code>, <code>docs/ui/shell-plans.jsx</code>, <code>docs/ui/topbar.css</code>, <code>docs/ui/plans.css</code>, <code>tests/test_spa_live_arrival.py</code>, <code>tests/test_spa_state_boundary.py</code></td>
+      <td>guided &middot; sonnet, after <code>dependency-cone-toggle</code> (same files)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s7">&#167;7 &mdash; Rendered evidence</h2>
+<p>Captures at 1374 and 1920 into <code>docs/figures/artifact-feeds-and-reader/after/</code> with a <code>capture-index.json</code>: the evidence index with its banner showing, the figures index, a figure open in the reader with its trail, and a plan in full screen with the cone open.</p>
+<p><strong>Gate for this plan, recorded when the measure runs: against this repository each of the four indexes renders rows with created and edited stamps, a figure opens with a navigating trail, and a discovery change with new rows leaves the rendered order untouched until shown. Its evidence is the named tests of &#167;2 to &#167;6 passing and the captures above with row counts recorded beside each.</strong></p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec · lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>feed-captures</code></td>
+      <td>Eight captures of the landed feeds and reader with an index.</td>
+      <td><code>docs/figures/artifact-feeds-and-reader/after/capture-index.json</code> lists eight captures (evidence index with banner, figures index, figure reader, full-screen plan with cone &times; 1374, 1920), each file exists with its recorded width and a row count above zero, and <code>uv run pytest tests/test_spa_owed_captures.py -q</code> stays green.</td>
+      <td><code>docs/figures/artifact-feeds-and-reader/</code></td>
+      <td>guided &middot; sonnet, after &#167;3&ndash;&#167;6</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s8">&#167;8 &mdash; Out of scope</h2>
+<p>Whether the filtered list ghosts in on hover during full-screen reading is an open design question in the handoff; the canvas keeps it hidden until <code>esc</code> and so does this plan. No server change: figure rows and edited stamps come from <code>served-surface-data-contracts</code>, and the change stream is used as it exists. Comment authoring in the reader is unchanged.</p>
+
+
+<section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="artifact-layout" data-choice="full-width-index-drilling-to-reader" data-by="reckon-ship (deduced from the canvas)" data-when="2026-09-03">
+    <p class="r-dec-q">Do the artifact tabs keep the rail-plus-reader layout or follow Sprints and Graph?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="full-width-index-drilling-to-reader">A full-width index that drills into a full-width reader</button>
+      <button class="r-opt" data-value="persistent-rail">A persistent rail beside the reader</button>
+    </p>
+    <p class="r-dec-rat">The canvas states it: the artifact tabs now follow Sprints and Graph, so one layout serves seven surfaces and the reader gets the width its measure needs.</p>
+</div>
+<div class="r-dec" data-key="full-screen-drape" data-choice="whole-shell" data-by="reckon-ship (deduced from the canvas)" data-when="2026-09-03">
+    <p class="r-dec-q">What does full-screen reading cover?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="whole-shell">The entire shell, topbar included</button>
+      <button class="r-opt" data-value="reader-pane-only">The reader pane</button>
+    </p>
+    <p class="r-dec-rat">Every topbar control navigates away from the document and the list is what you are already stepping through; nothing in the bar helps a reader.</p>
+</div>
+<div class="r-dec" data-key="cone-edges" data-choice="depends-on-only" data-by="reckon-ship (deduced from the canvas)" data-when="2026-09-03">
+    <p class="r-dec-q">Which edges does the reader's dependency cone draw?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="depends-on-only">depends_on and its reverse</button>
+      <button class="r-opt" data-value="all-relations">Prerequisites, informs, evidence-for and verifies</button>
+    </p>
+    <p class="r-dec-rat">Research and evidence say why a plan exists and whether it worked, not what must land first; mixing them in made the old cone unreadable, and the Graph tab uses the same rule so the two agree.</p>
+</div>
+<div class="r-dec" data-key="arrival-discipline" data-choice="held-until-shown" data-by="reckon-ship (deduced from the canvas)" data-when="2026-09-03">
+    <p class="r-dec-q">What happens to the list when a new document arrives?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="held-until-shown">Held as a counted receipt and banner, inserted on request</button>
+      <button class="r-opt" data-value="insert-immediately">Inserted immediately in sort position</button>
+      <button class="r-opt" data-value="reload-state">Reload and re-render</button>
+    </p>
+    <p class="r-dec-rat">A list that re-sorts under the reader loses the reader's place; the canvas holds arrivals and shows the count, and the existing stream makes the reload path the measured defect.</p>
+</div>
+</section>
+
+<section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-afr-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-03" data-recommends-skill="/reckon-ship artifact-feeds-and-reader" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land routes, then feeds and reader together, then cone and arrival</h4>
+    <div class="r-fu-body"><p>&#167;2 opens the chain once the shell plan's topbar and the fleet home's view have merged, because all three write the shell and route modules. &#167;3 and &#167;4 then run concurrently on disjoint files. &#167;5 and &#167;6 follow in sequence on the index module. &#167;7 captures last.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship artifact-feeds-and-reader</pre>
+</article>
+</section>
+
+<section data-reckon="research" id="research" class="r-research-list">
+<h2><span class="sec">§</span> Research</h2>
+<div class="r-research" data-id="r1" data-type="design" data-url="design/reckon-spa-handoff.dc.html">
+  <span class="r-research-title">The handoff canvas: the artifact index, the reader with its trail, cone and full-screen mode, and the arrival receipt.</span>
+</div>
+<div class="r-research" data-id="r2" data-type="design" data-url="design/reckon-spa-handoff.md">
+  <span class="r-research-title">The designer's triage, items A6, B3, B3a, B3b and B7.</span>
+</div>
+</section>
+</main>
+</body>
+</html>

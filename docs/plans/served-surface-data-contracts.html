@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="served-surface-data-contracts">
+  <meta name="plan-title" content="What the Server Must Serve Before the Canvas Can Land">
+  <meta name="plan-summary" content="Serve figures as inventory rows, stamp every artifact with an edited time, and compute the fleet index live so the handoff canvas has the data it binds.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-wall-clock-hours" content="4.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S16">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,spa">
+  <meta name="plan-north-star" content="state-that-tells-the-truth">
+  <meta name="plan-blocks" content="artifact-feeds-and-reader,fleet-home">
+  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,design/reckon-spa-handoff.md">
+  <title>What the Server Must Serve Before the Canvas Can Land | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<header>
+  <p class="eyebrow">Server data contracts &middot; prerequisite for the artifact tabs and the fleet home</p>
+  <h1>What the Server Must Serve Before the Canvas Can Land</h1>
+  <p class="lead">The handoff canvas binds three things the server does not yet emit: figures as first-class artifact rows, an edited timestamp on every artifact, and a fleet index whose counts and activity are computed from the repositories rather than read from a superseded index file. This plan lands those three contracts and nothing visible, so the two surface plans that consume them can be built against real payloads.</p>
+</header>
+
+<h2 id="s1">&#167;1 &mdash; Why this exists</h2>
+<p>The design canvas imported at <code>design/reckon-spa-handoff.dc.html</code> was checked against the served state on 2026-09-03 and its triage (<code>design/reckon-spa-handoff.md</code>, part E) lists six data contracts it could not verify. Reading the code settles them:</p>
+<table>
+  <thead><tr><th>Contract the canvas needs</th><th>What the server does today</th><th>Verdict</th></tr></thead>
+  <tbody>
+    <tr><td>Plan rows carry <code>effort_hours</code>, <code>wall_clock_hours</code>, <code>depends_on</code></td><td>Discovery emits all three on plan items (<code>reckon/serve.py</code>, the plan branch of the inventory loop)</td><td>Present. Nothing to do.</td></tr>
+    <tr><td>Research and evidence are top-level inventory rows with <code>created</code></td><td>The inventory loop admits <code>plan</code>, <code>research</code> and <code>evidence</code> resources; <code>created</code> is the git first-commit time</td><td>Present. Nothing to do.</td></tr>
+    <tr><td>Figures are inventory rows with dimensions</td><td><code>figures</code> is an infrastructure directory in <code>reckon/resources.py</code>; nothing enumerates the 40 PNG and SVG files under <code>docs/figures/</code></td><td>Missing. &#167;2.</td></tr>
+    <tr><td>Every row carries <code>edited</code> at time resolution</td><td>Rows carry <code>last</code> from the <code>plan-modified</code> meta, a date with no time, and research or evidence without that meta carry nothing</td><td>Missing. &#167;2.</td></tr>
+    <tr><td>Fleet index counts are right</td><td><code>collect_projects</code> reads each mount's <code>state/&lt;project&gt;/index.json</code> <code>data</code> block, which the distributed migration marked <code>superseded</code>; a project the Plans tab lists 80 for reports 12</td><td>Wrong at the source. &#167;3.</td></tr>
+    <tr><td>A thirty-day per-project plan-edit series</td><td><code>activity30</code> is consumed by <code>docs/ui/_shared.jsx</code> and <code>docs/ui/home.jsx</code> and produced by nothing, so every streakline is flat</td><td>Missing. &#167;3.</td></tr>
+  </tbody>
+</table>
+<p>Two plans consume these contracts and are declared as blocked by this one: <code>artifact-feeds-and-reader</code> needs the figure rows and the edited stamps for its four feeds, and <code>fleet-home</code> needs the live fleet index for its stat band, project table and streaklines. Both nodes below write <code>reckon/serve.py</code>, so they run in sequence on one roster member; the second may start only after the first is merged.</p>
+
+<h2 id="s2">&#167;2 &mdash; Figures become inventory rows, and every row carries an edited stamp</h2>
+<p><strong>Figure rows.</strong> A new module, named for what it does (<code>reckon/figures.py</code>), enumerates <code>docs/figures/**/*.png</code> and <code>docs/figures/**/*.svg</code> and returns one row per file with <code>type: "figure"</code>, <code>slug</code> equal to the path relative to <code>docs/figures/</code> (so <code>rendered-evidence/ready-lanes.png</code>, matching the canvas fixture), <code>title</code> from the filename with separators turned into spaces unless a sibling <code>capture-index.json</code> or <code>&lt;name&gt;.geometry.json</code> names the capture, <code>dims</code> as <code>"W &times; H"</code>, and <code>for_plan</code> equal to the first path segment when a plan of that slug exists in the same project. Dimensions come from the file, not from a library: a PNG's width and height are the two big-endian 32-bit integers following the 8-byte signature and the IHDR chunk header; an SVG's come from its <code>viewBox</code> or <code>width</code>/<code>height</code> attributes. Reckon has no imaging dependency and gains none. The discovery loop in <code>reckon/serve.py</code> appends these rows after the typed resources; <code>reckon/resources.py</code> keeps treating <code>figures</code> as infrastructure so nothing else changes type semantics.</p>
+<p><strong>Edited stamps.</strong> Every inventory row of every type gains <code>edited</code>, an ISO-8601 timestamp: the file's last git commit time, replaced by its working-tree mtime when the path is modified or untracked. The existing batch helper that finds first-commit times is the model; a sibling batch for last-commit times keeps discovery to two git invocations per project rather than one per file. <code>created</code> is unchanged and <code>edited</code> is never earlier than it.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec · lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>figure-rows-and-edited-stamps</code></td>
+      <td>Discovery emits figure rows with dimensions and an edited timestamp on every row.</td>
+      <td><code>uv run pytest tests/test_serve_figure_rows.py tests/test_spa_state_boundary.py tests/test_discovery_cache.py -q</code> passes. The new test builds a temporary project with one PNG (a 1&times;1 image written from bytes, width and height read back as <code>1 &times; 1</code>), one SVG with a <code>viewBox</code>, and one plan, research and evidence document, then asserts: one figure row per file with the slug, dims and <code>for_plan</code> above; every row of every type carries <code>edited</code> parseable as ISO-8601 and not earlier than <code>created</code>; a file modified after its last commit reports its mtime; the discovery cache signature changes when a figure is added.</td>
+      <td><code>reckon/figures.py</code>, <code>reckon/serve.py</code>, <code>tests/test_serve_figure_rows.py</code></td>
+      <td>guided &middot; sonnet</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s3">&#167;3 &mdash; The fleet index is computed live</h2>
+<p><code>GET /_projects/index.json</code> is the one cross-project payload, and the fleet home reads everything from it. Today each project row is whatever its superseded index file said. A new module (<code>reckon/fleet_index.py</code>) computes each mounted project's row from the repository: <code>plans_count</code>, <code>active</code>, <code>blocked</code>, <code>pending</code> and <code>shipped</code> from discovery over actionable plans, with the same effective-status rule the project SPA already applies; <code>live</code> as the count of that project's live run pointers; <code>last_edited</code> as the latest <code>edited</code> stamp across its artifacts; <code>active_sprint</code> as <code>{id, theme}</code> from the distributed sprint resources or null; and <code>activity30</code>, thirty integers, one per calendar day ending today, counting commits that touched <code>docs/plans</code>, <code>docs/research</code> or <code>docs/evidence</code> in that repository on that day, read from one <code>git log</code> per project. A project with no commits in the window reports an empty list, not thirty zeros, so the surface can distinguish silence from a flat line, which the canvas requires. <code>collect_projects</code> delegates to the module and keeps its response envelope, so <code>docs/ui/home.jsx</code> and <code>docs/ui/_shared.jsx</code> keep reading the fields they already name.</p>
+<p>The reference instant is a parameter of the function, defaulted to now, so the test can fix it. A test that computes a day bucket from the wall clock and then asserts a literal count is the fuse the repository's test rules describe; the fixture commits are dated relative to the injected instant.</p>
+<p><strong>Gate for this plan, recorded when the measure runs: against this repository, discovery returns at least one figure row per PNG under docs/figures, every row of every type carries an edited stamp, and the fleet index reports a non-empty activity series for this project. Its evidence is the two named test files passing plus one recorded run of discovery and of the fleet index against the real checkout with the figure-row count, an example edited stamp and the activity series length written into the execution record.</strong></p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec · lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>fleet-index-live-counts</code></td>
+      <td>The fleet index row for every mounted project is computed from that repository, including a thirty-day plan-edit series.</td>
+      <td><code>uv run pytest tests/test_fleet_index.py -q</code> passes. The test initialises a temporary git repository as a mounted project, commits three plan files on three distinct days relative to an injected reference instant, and asserts: <code>plans_count</code> equals the discovered plan count even when a stale <code>index.json</code> in the same tree says otherwise; <code>activity30</code> has exactly thirty entries whose sum is three and whose non-zero positions match the commit days; a second mounted project with no commits in the window reports <code>activity30 == []</code>; <code>active_sprint</code> is read from a distributed sprint resource with status active; <code>live</code> counts live pointers under an injected config home and is zero when there are none. <code>uv run pytest tests/test_project_state.py -q</code> stays green.</td>
+      <td><code>reckon/fleet_index.py</code>, <code>reckon/serve.py</code>, <code>tests/test_fleet_index.py</code></td>
+      <td>guided &middot; sonnet</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s4">&#167;4 &mdash; Out of scope</h2>
+<p>No surface changes: this plan alters payloads only, and both consuming surfaces are specified on their own plans. No new plan-schema field and no MCP tool: figures are served rows, not typed resources with a lifecycle, and the fleet index stays a read-only rollup. The live change stream (<code>/_changes/&lt;project&gt;</code>) already exists and is consumed by <code>artifact-feeds-and-reader</code>; it is not extended here.</p>
+
+
+<section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="figure-dimension-source" data-choice="file-header-no-imaging-dependency" data-by="reckon-ship (deduced from the canvas and the dependency policy)" data-when="2026-09-03">
+    <p class="r-dec-q">Where do figure dimensions come from?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="file-header-no-imaging-dependency">Read the PNG header and SVG viewBox directly; no imaging dependency</button>
+      <button class="r-opt" data-value="pillow">Add an imaging library</button>
+      <button class="r-opt" data-value="sidecar-only">Only figures with a geometry sidecar get dimensions</button>
+    </p>
+    <p class="r-dec-rat">The canvas shows dimensions on every figure row. Twelve of the forty figures have a geometry sidecar, so sidecars alone would leave most rows blank, and an imaging dependency for two integers per file is a cost every install pays. The PNG IHDR chunk and the SVG viewBox are eleven lines of standard library.</p>
+</div>
+<div class="r-dec" data-key="edited-stamp-source" data-choice="git-last-commit-or-mtime-when-dirty" data-by="reckon-ship (deduced from the canvas)" data-when="2026-09-03">
+    <p class="r-dec-q">What is an artifact's edited time?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="git-last-commit-or-mtime-when-dirty">Last git commit time, replaced by mtime when the working tree differs</button>
+      <button class="r-opt" data-value="plan-modified-meta">The plan-modified meta date</button>
+      <button class="r-opt" data-value="mtime-only">File mtime</button>
+    </p>
+    <p class="r-dec-rat">The canvas sorts feeds by edited at minute resolution and the meta is a date. mtime alone resets on every clone and worktree, which would make a fresh checkout report every document as edited today. Git time is stable and mtime covers the served working tree's uncommitted edits, which the server deliberately serves.</p>
+</div>
+<div class="r-dec" data-key="empty-activity-series" data-choice="empty-list-not-zeros" data-by="reckon-ship (deduced from the canvas)" data-when="2026-09-03">
+    <p class="r-dec-q">How is a project with no plan edits in the window represented?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="empty-list-not-zeros">An empty list</button>
+      <button class="r-opt" data-value="thirty-zeros">Thirty zeros</button>
+    </p>
+    <p class="r-dec-rat">The canvas prints "no recorded activity" for a silent project and never draws a zero-height polyline; the surface can only make that distinction if the payload does.</p>
+</div>
+</section>
+
+<section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-ssdc-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-03" data-recommends-skill="/reckon-ship served-surface-data-contracts" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land the two server contracts, figure rows first</h4>
+    <div class="r-fu-body"><p>Both nodes write <code>reckon/serve.py</code>, so they are one serial lane on one roster member: &#167;2 first because the artifact feeds are the longer downstream chain, then &#167;3. Each lands with its named test and a recorded run against this checkout for the gate.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship served-surface-data-contracts</pre>
+</article>
+</section>
+
+<section data-reckon="research" id="research" class="r-research-list">
+<h2><span class="sec">§</span> Research</h2>
+<div class="r-research" data-id="r1" data-type="design" data-url="design/reckon-spa-handoff.md">
+  <span class="r-research-title">The designer's triage of the landed SPA, part E: the served-data contracts the landing depends on, four verified and six checked here.</span>
+</div>
+</section>
+</main>
+</body>
+</html>

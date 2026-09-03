@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="graph-derived-schedule">
+  <meta name="plan-title" content="Schedule From the Graph, Not From Dates">
+  <meta name="plan-summary" content="One DAG layout helper, a Graph tab that renders every endpoint, a sprint detail that draws its prerequisites, and a flow derived from dependencies and hours.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="15.0">
+  <meta name="plan-wall-clock-hours" content="8.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S16">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,spa">
+  <meta name="plan-north-star" content="legible-to-human-and-agent">
+  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,design/reckon-spa-handoff.md">
+  <title>Schedule From the Graph, Not From Dates | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<header>
+  <p class="eyebrow">Graph, sprints and flow &middot; the surfaces that derive from dependencies</p>
+  <h1>Schedule From the Graph, Not From Dates</h1>
+  <p class="lead">Three surfaces in the landed SPA draw a dependency graph and each does it differently or not at all: the Graph tab blanks when the selected endpoint has no handle, the sprint surface re-renders the same overview when a sprint is clicked, and the horizon strip places work by run timestamp inside a fixed 48-hour window, so a sprint with no dispatched runs is empty. The canvas replaces all three with one layout helper and one schedule: positions derive from dependency depth and wall-clock hours, anchored at now, and a sprint's graph includes the prerequisites it hangs off.</p>
+</header>
+
+<h2 id="s1">&#167;1 &mdash; Why this exists</h2>
+<p>The handoff triage (<code>design/reckon-spa-handoff.md</code>, items A1, A7, B1, B2 and B3c) names the defects and the model that replaces them; the canvas (<code>design/reckon-spa-handoff.dc.html</code>) carries two algorithms this plan transcribes rather than redesigns, <code>schedule()</code> and <code>layout()</code> in its logic script. The facts checked against <code>main</code> on 2026-09-03:</p>
+<ul>
+  <li><code>docs/ui/graph.jsx</code>'s <code>_graphHandleView()</code> returns null unless the selected endpoint carries a handle, and <code>_allDependencyChains()</code> lists unnamed live endpoints after the named ones, so selecting one renders the empty state as the whole tab. Three live handles exist across the mounted projects; the empty state is wrong for every other endpoint.</li>
+  <li><code>docs/ui/sprint.jsx</code> declares <code>HORIZON_HOURS = 48</code> and <code>horizonStrip()</code> places only runs with a parseable timestamp inside that window; sprint rows navigate to a route that renders the same overview.</li>
+  <li>Plan inventory rows already carry <code>effort_hours</code>, <code>wall_clock_hours</code>, <code>depends_on</code> and <code>blocks</code>, and live run rows carry <code>elapsed_seconds</code> and <code>dispatched_at</code>; the derived schedule needs nothing the server does not serve.</li>
+</ul>
+<p>This plan carries no plan-level prerequisite. Its one file-level ordering constraint is that &#167;5 writes <code>docs/ui/crew.jsx</code>, which <code>spa-shell-scope-and-visibility</code> also writes for the scroll and scope fix; dispatch refuses the overlap, so &#167;5 waits for that node to merge. &#167;3 and &#167;4 both consume the helper from &#167;2 and wait for it.</p>
+
+<h2 id="s2">&#167;2 &mdash; One DAG layout helper</h2>
+<p>A single function, exported from <code>docs/ui/graph.jsx</code> as <code>window.ReckonGraph.layout(plans, prefix)</code> and consumed by the sprint detail and the Graph tab, takes plans with <code>slug</code>, <code>title</code>, <code>status</code>, <code>impl</code>, <code>effort_hours</code>, <code>depends_on</code> and an optional <code>ghost</code> flag, and returns nodes, edges, column labels, width and height. Its rules are the canvas's, transcribed: depth is <code>1 + max(depth of known prerequisites)</code> and zero for a plan with none, with cycles terminated by a seen set; cards are 216 by 82 with 92 horizontal and 22 vertical gaps; an edge spanning one depth is a cubic; <strong>an edge spanning more than one depth is an explicit routed path</strong>, a quarter-turn down, a straight run at a clearance depth 24px below the bottom of every column it crosses, and a quarter-turn up, because a cubic with both control points at the clearance depth reaches only three quarters of it and passes beneath the intervening cards; <strong>co-terminating edges fan on arrival</strong>, each endpoint offset 8px around the card's vertical centre so two arrows into one plan stay distinguishable; stroke is red where a blocked plan hangs off an unshipped prerequisite, dashed where the prerequisite has not shipped, solid where it has; a ghost node is dashed, transparent and dimmed, and its status text names the sprint it belongs to; the stage height is the larger of the row extent and the deepest detour actually emitted plus 30.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec · lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>dag-layout-helper</code></td>
+      <td>One exported layout function implementing the canvas's routing and fan-in rules.</td>
+      <td><code>uv run pytest tests/test_spa_dag_layout.py tests/test_spa_graph_authority.py -q</code> passes. The new test evaluates the helper in node against a fixture of six plans over four depths and asserts: an edge spanning two depths has a path whose straight segment lies at a y not less than the bottom of the crossed column plus 24; two edges arriving at one node have endpoint y values 8 apart; the returned height is at least the deepest detour plus 30; depth of a plan with two prerequisites at depths 0 and 2 is 3; a dependency on an unknown slug is ignored; a two-node cycle terminates with both depths finite; a ghost node's style is dashed and its status text carries its sprint.</td>
+      <td><code>docs/ui/graph.jsx</code>, <code>tests/test_spa_dag_layout.py</code></td>
+      <td>guided &middot; opus</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s3">&#167;3 &mdash; A Graph tab that renders every endpoint</h2>
+<p><strong>Index.</strong> One row per endpoint in the selected project, named handles first in the order the roadmap gives them, then unnamed live endpoints (a plan with prerequisites that nothing depends on). A row shows the handle chip (<code>unnamed</code> on a grey chip when absent), title, endpoint slug, closure shipped percentage with a bar, <code>N members &middot; D deep</code>, the repositories the closure spans, and a flag reading <code>N open</code>, <code>N held</code> or <code>ready</code>. Header figures are inline mono, named, unnamed and largest, and the whole panel is absent when no plan depends on another, with the empty state saying so. The index ship control appears only when the project has a named handle and copies <code>/reckon-ship graph:&lt;handle&gt;</code>; it is disabled with the open-decision count while the lead handle's closure has open decisions. <strong>Detail.</strong> Prev and next through the endpoint list with a position readout, the handle chip, title, <code>endpoint /&lt;slug&gt; &middot; closure N derived</code>, a derived-authority row of repository chips with member counts, a state chip (<code>ready</code> or <code>held &middot; N open</code>), a 280px closure list, and the DAG from &#167;2. <strong>An unnamed endpoint renders exactly as a named one</strong> except for its ship control: there is no invented command, only a dashed amber chip reading <code>needs plan-graph-handle</code> whose tooltip names the authoring act. Closure membership is the transitive prerequisite closure and reads <code>depends_on</code> only, so the Graph tab and the reader's dependency cone cannot disagree. Hide-done filters endpoints whose closure is fully shipped.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec · lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>graph-index-and-detail</code></td>
+      <td>The Graph tab renders an index of every endpoint and a populated detail for named and unnamed endpoints alike.</td>
+      <td><code>uv run pytest tests/test_spa_graph_authority.py tests/test_spa_graph_geometry.py -q</code> passes with these cases: for an unnamed live endpoint the view is non-null, its handle reads <code>unnamed</code>, and its closure membership and metrics equal those computed for the same plan given a handle; the ship control is absent and the <code>needs plan-graph-handle</code> chip present for the unnamed case, and present with <code>/reckon-ship graph:&lt;handle&gt;</code> for the named case; index rows list named endpoints before unnamed; the empty state renders only when no plan in the project has a prerequisite; rendered at 1374 and 1920 against this repository's <code>sprint-federation</code> handle the detail shows one card per closure member with the same count the roadmap reports.</td>
+      <td><code>docs/ui/graph.jsx</code>, <code>docs/ui/graph.css</code>, <code>tests/test_spa_graph_authority.py</code>, <code>tests/test_spa_graph_geometry.py</code></td>
+      <td>guided &middot; opus, after <code>dag-layout-helper</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s4">&#167;4 &mdash; A sprint table, and a sprint detail whose body is the graph</h2>
+<p><strong>Table.</strong> One row per sprint of the selected project: id, theme, a state chip, completion percentage with a bar, <code>Nh &middot; Mh left</code>, and a flag. Sprint state is derived from members, never read from the file: shipped when every member is at 100%, active when any has started, planned otherwise, empty with no members; where the file's status disagrees the flag reads <code>was &lt;status&gt;</code>, because resolving the disagreement silently would hide a real inconsistency. Otherwise the flag reads <code>N held</code> or nothing. The header carries three inline figures for the project (<code>left</code> in worker-hours, <code>chain</code> as the derived schedule's far end in hours, <code>held</code>), the ship control for the active sprint (absent when there is none, because a project name is not a ship target), and the hide-done toggle. The 48-hour strip, its hour ticks and the recorded-work list are retired: the schedule of &#167;5 replaces the first and the sprint detail replaces the second. <strong>Detail.</strong> Opened by clicking a row. Header: back, id, theme, the ship control (disabled with <code>N open decisions</code> while any member has one). A stat row: plans, worker-hours, depth, held, prerequisites, open decisions. A legend decoding solid and dashed cards. The body is the &#167;2 layout over <strong>the sprint's members plus every prerequisite outside the sprint, pulled transitively and drawn as ghost nodes</strong>, so a sprint whose four members each hang off an earlier plan reads as a chain rather than four unconnected cards.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec · lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>sprint-table-and-detail-dag</code></td>
+      <td>Sprint rows derive their state from members and open a detail whose body is the DAG including out-of-sprint prerequisites.</td>
+      <td><code>uv run pytest tests/test_spa_sprint_surface.py tests/test_spa_sprints_geometry.py -q</code> passes with these cases: a sprint whose file says planned but whose members are all at 100% renders state shipped and flag <code>was planned</code>; a sprint with two members whose prerequisites lie outside it renders a detail with four nodes, two of them ghosts, and edges from each ghost to its dependent; edges are dashed where the prerequisite is unshipped and red where a blocked member hangs off one; the ship control is disabled and reads <code>2 open decisions</code> for a fixture with two open decisions; <code>grep -c HORIZON_HOURS docs/ui/sprint.jsx</code> prints 0; the six header stats render the fixture's counts.</td>
+      <td><code>docs/ui/sprint.jsx</code>, <code>docs/ui/sprints.css</code>, <code>tests/test_spa_sprint_surface.py</code>, <code>tests/test_spa_sprints_geometry.py</code></td>
+      <td>guided &middot; sonnet, after <code>dag-layout-helper</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s5">&#167;5 &mdash; The derived flow, on the Crew surface</h2>
+<p>The canvas hosts the flow above the crew cards, because a lane is one crew session and the flow can only be computed inside one repository's dependency graph. <strong>Schedule.</strong> For every plan of the selected project, in hours relative to now: a shipped plan ends when it landed (its edited stamp) and starts <code>wall_clock_hours</code> before that; an active plan starts at the earliest live run's dispatch for it (else now) and runs for its wall-clock hours; a pending or draft plan starts at <code>max(end of its prerequisites, 0)</code> and runs for its wall-clock hours. Nothing else determines position; move a dependency or re-estimate an hour figure and the tail re-hangs. Bars older than 60 hours are dropped. <strong>Lanes</strong> are best-fit packed, each new bar going to the lane whose last end is latest among those that fit, so the lane count reports realisable width rather than arrival order; a lane is labelled <code>session N</code> with <code>live &middot; &lt;role&gt;</code> when one of its plans has a live run, else <code>N items &middot; Mh</code>. The axis runs from <code>max(-48, min(-24, earliest start))</code> to <code>max(24, latest end)</code> with ticks every 12 hours (24 when the span exceeds 96), the zero tick reading <code>now</code> and a now-line through every lane. Bars carry the plan title, wall-clock hours and a sprint chip; a sprint chip row above dims bars of other sprints to 28% opacity; recorded, in-flight, predicted and held are decoded by a colour key. The crew header reads <code>&lt;project&gt; &middot; N runs &middot; M sessions &middot; polling every 3s</code>. The sprint surface's header figure <code>chain</code> reads the same schedule's far end.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec · lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>derived-flow-lanes</code></td>
+      <td>A dependency-derived schedule with best-fit lanes renders above the crew cards.</td>
+      <td><code>uv run pytest tests/test_spa_derived_flow.py tests/test_spa_crew_cards.py -q</code> passes. The new test evaluates the schedule in node against a fixture of five plans (two shipped with edited stamps 10 and 30 hours ago, one active with a live run dispatched 4 hours ago, two pending chained behind the active one) and asserts: the pending plans start at the active plan's end and at the first pending plan's end respectively; the lane count is 2; the axis low bound is -48 or the earliest start and the high bound is the latest end; ticks include <code>now</code>. Rendered at 1374 the crew surface shows the lanes above the cards, the now-line in every lane, and after selecting a sprint chip the bars of other sprints have opacity 0.28.</td>
+      <td><code>docs/ui/crew.jsx</code>, <code>docs/ui/crew.css</code>, <code>docs/ui/sprint.jsx</code>, <code>tests/test_spa_derived_flow.py</code>, <code>tests/test_spa_crew_cards.py</code></td>
+      <td>guided &middot; sonnet, after <code>sprint-table-and-detail-dag</code> and after the shell plan's <code>crew-scope-and-scroll</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s6">&#167;6 &mdash; Rendered evidence</h2>
+<p>Captures at 1374 and 1920 through the shared file-URL harness into <code>docs/figures/graph-derived-schedule/after/</code> with a <code>capture-index.json</code>: the Graph detail for this repository's <code>sprint-federation</code> handle and for one unnamed endpoint, the sprint detail for a sprint whose members have out-of-sprint prerequisites, and the Crew surface with the flow lanes. Each capture shows a populated state or is not evidence.</p>
+<p><strong>Gate for this plan, recorded when the measure runs: against this repository the Graph detail renders a populated closure for a named and for an unnamed endpoint, a sprint detail renders ghost prerequisites, and the derived flow packs the project's plans into at least two lanes. Its evidence is the named tests of &#167;2 to &#167;5 passing and the captures above with member, node and lane counts recorded beside each.</strong></p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec · lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>schedule-captures</code></td>
+      <td>Eight captures of the landed graph, sprint and flow surfaces with an index.</td>
+      <td><code>docs/figures/graph-derived-schedule/after/capture-index.json</code> lists eight captures (graph named, graph unnamed, sprint detail, crew flow &times; 1374, 1920), each file exists with its recorded width and a card or lane count above zero, and <code>uv run pytest tests/test_spa_owed_captures.py -q</code> stays green.</td>
+      <td><code>docs/figures/graph-derived-schedule/</code></td>
+      <td>guided &middot; sonnet, after &#167;3&ndash;&#167;5</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s7">&#167;7 &mdash; Out of scope</h2>
+<p>The two open design questions on graph closures, whether a plan in two closures unions the authority and whether scope escalation is silent, are recorded in the handoff as separate work and are not decided here: the closure rule stays the existing transitive prerequisite walk. The fleet prompt module and the sprint route's prompt strip are left in place; the fleet home plan retires them with the cockpit. Authoring graph handles on plans is a plan-design act for the lead, which is why the surface names the missing precondition instead of inventing a target.</p>
+
+
+<section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="schedule-anchor" data-choice="hours-relative-to-now-derived-extent" data-by="reckon-ship (deduced from the canvas)" data-when="2026-09-03">
+    <p class="r-dec-q">What is the time axis of the sprint and crew flow?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="hours-relative-to-now-derived-extent">Hours relative to now, extent derived from the data</button>
+      <button class="r-opt" data-value="fixed-48h-clock-window">A fixed 48-hour wall-clock window</button>
+      <button class="r-opt" data-value="authored-sprint-dates">Authored sprint start and end dates</button>
+    </p>
+    <p class="r-dec-rat">The canvas derives every position from dependency depth and wall-clock hours; a fixed window is empty for a sprint with no dispatched runs, which is the measured defect, and authored dates are a plan of record the graph then contradicts.</p>
+</div>
+<div class="r-dec" data-key="sprint-dag-context" data-choice="out-of-sprint-prerequisites-as-ghosts" data-by="reckon-ship (deduced from the canvas)" data-when="2026-09-03">
+    <p class="r-dec-q">Does a sprint's graph include plans outside the sprint?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="out-of-sprint-prerequisites-as-ghosts">Yes, transitive prerequisites as dashed context nodes</button>
+      <button class="r-opt" data-value="members-only">Members only</button>
+    </p>
+    <p class="r-dec-rat">A sprint DAG drawn from membership alone is four unconnected cards; with its prerequisites it reads as a chain. The handoff calls this the single most important detail.</p>
+</div>
+<div class="r-dec" data-key="unnamed-endpoint-ship-control" data-choice="precondition-chip-not-command" data-by="reckon-ship (deduced from the ship skill's target grammar)" data-when="2026-09-03">
+    <p class="r-dec-q">What does an unnamed endpoint offer as a ship control?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="precondition-chip-not-command">A chip naming the missing plan-graph-handle</button>
+      <button class="r-opt" data-value="invented-slug-target">A copy button with the endpoint slug</button>
+    </p>
+    <p class="r-dec-rat">The ship skill defines exactly three targets and a closure ships by handle. An unresolvable string in a copy control is worse than none, because its whole value is being paste-ready.</p>
+</div>
+<div class="r-dec" data-key="flow-surface-placement" data-choice="crew-hosts-lanes-sprints-hosts-table" data-by="reckon-ship (deduced from the canvas template)" data-when="2026-09-03">
+    <p class="r-dec-q">Which surface hosts the derived-flow lanes?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="crew-hosts-lanes-sprints-hosts-table">Crew hosts the lanes; Sprints hosts the table and the chain figure</button>
+      <button class="r-opt" data-value="sprints-hosts-lanes">Sprints hosts the lanes</button>
+    </p>
+    <p class="r-dec-rat">The canvas template places the lanes on the Crew surface and states why: a lane is one crew session, and the flow is computed inside one repository's graph, which is the scope Crew now has.</p>
+</div>
+<div class="r-dec" data-key="sprint-state-source" data-choice="derived-from-members-with-drift-flag" data-by="reckon-ship (deduced from the canvas)" data-when="2026-09-03">
+    <p class="r-dec-q">Where does a sprint row's state come from?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="derived-from-members-with-drift-flag">Derived from member completion, with a flag when the file disagrees</button>
+      <button class="r-opt" data-value="file-status">The sprint resource's status field</button>
+    </p>
+    <p class="r-dec-rat">The canvas derives it and shows the disagreement rather than resolving it, because resolving it silently hides a real inconsistency the sprint skill should repair.</p>
+</div>
+</section>
+
+<section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-gds-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-03" data-recommends-skill="/reckon-ship graph-derived-schedule" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land the layout helper, then the three surfaces that read it</h4>
+    <div class="r-fu-body"><p>&#167;2 runs first and alone. &#167;3 and &#167;4 are file-disjoint and run together once it merges. &#167;5 waits for &#167;4 and for the shell plan's Crew node because it writes both their files. &#167;6 captures last.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship graph-derived-schedule</pre>
+</article>
+</section>
+
+<section data-reckon="research" id="research" class="r-research-list">
+<h2><span class="sec">§</span> Research</h2>
+<div class="r-research" data-id="r1" data-type="design" data-url="design/reckon-spa-handoff.dc.html">
+  <span class="r-research-title">The handoff canvas, whose schedule() and layout() functions are the algorithms &#167;2 and &#167;5 transcribe.</span>
+</div>
+<div class="r-research" data-id="r2" data-type="design" data-url="design/reckon-spa-handoff.md">
+  <span class="r-research-title">The designer's triage, items A1, A7, B1, B2 and B3c.</span>
+</div>
+</section>
+</main>
+</body>
+</html>

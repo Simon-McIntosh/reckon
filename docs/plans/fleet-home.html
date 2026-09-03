@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="fleet-home">
+  <meta name="plan-title" content="A Fleet Home That Hides at Zero">
+  <meta name="plan-summary" content="Replace the standalone home page and the per-project cockpit with one read-only fleet dashboard inside the shell that obeys global visibility.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="9.0">
+  <meta name="plan-wall-clock-hours" content="5.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S16">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,spa">
+  <meta name="plan-north-star" content="legible-to-human-and-agent">
+  <meta name="plan-depends-on" content="spa-shell-scope-and-visibility,served-surface-data-contracts">
+  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,design/reckon-spa-handoff.md">
+  <title>A Fleet Home That Hides at Zero | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<header>
+  <p class="eyebrow">Fleet home &middot; the one cross-project surface</p>
+  <h1>A Fleet Home That Hides at Zero</h1>
+  <p class="lead">The landed home is a separate page listing every registered project, most of them at zero plans and zero updates, with sparklines that draw a flat line whether the series is empty or genuinely flat. The canvas replaces it with a read-only oversight dashboard inside the shell: a stat band, one row per project that is actually moving, a thirty-day edit streakline that says "no recorded activity" when there is none, and the fleet's in-flight and just-landed work side by side. It obeys the one visible set everywhere, and it carries no action queue.</p>
+</header>
+
+<h2 id="s1">&#167;1 &mdash; Why this exists</h2>
+<p>From the handoff triage (<code>design/reckon-spa-handoff.md</code>, item B4 and part E) and the canvas (<code>design/reckon-spa-handoff.dc.html</code>), checked against <code>main</code> on 2026-09-03:</p>
+<ul>
+  <li><code>docs/home.html</code> mounts its own React root and <code>docs/ui/home.jsx</code> reads <code>/_projects/index.json</code>, whose rows come from each project's superseded index file; the four real projects sit below nine dead rows.</li>
+  <li><code>docs/ui/_shared.jsx</code>'s sparkline draws <code>activity30</code>, which nothing serves, so every line is flat.</li>
+  <li>The project shell's default route is the cockpit, a per-project overview of active sprints and unresolved blockers with a next action, owned by <code>docs/ui/shell-overview.jsx</code>. The canvas has no Overview tab and no per-project overview: its tab groups are the four artifact tabs and Sprints, Graph, Crew, and the brand mark is the home button. Its home carries held counts and open decisions as figures on rows and in the sprint header, and states that a "waiting on you" list implies resolution happens on a planning surface, which it does not.</li>
+</ul>
+<p>Two prerequisites are declared. <code>served-surface-data-contracts</code> computes the fleet index live, including the activity series and each project's active sprint. <code>spa-shell-scope-and-visibility</code> makes the visible set real and points the brand at the home route. Retiring the cockpit is a visible deletion of a surface the lead has used, so it is its own node here, reversible in one revert, rather than folded into the home view.</p>
+
+<h2 id="s2">&#167;2 &mdash; The home view</h2>
+<p>A shell view at <code>#home</code>, the default when the hash is empty and the target of the brand mark, rendered by <code>docs/ui/home.jsx</code> (rewritten in place; the module is loaded by the shell entry point) with its own view stylesheet. In order: <strong>an eyebrow</strong>, <code>Fleet &middot; &lt;date&gt;</code>, then <code>N of M shown</code> and a <code>configure</code> link that opens the visibility sheet; <strong>a stat band</strong> of six figures at 26px mono, projects moving, plans, active, in flight, held, shipped, computed over the visible set only; <strong>the project table</strong>, one row per visible project with at least one plan, ordered by last edit, each with a live dot and <code>edited &lt;ago&gt;</code>, the thirty-day streakline as a filled polyline with <code>N edits &middot; M last 3d</code> or, for an empty series, the text <code>no recorded activity</code> and no polyline, a status composition bar (shipped, active, held, pending) with tooltips, the plan count and <code>N held</code> when non-zero, and the active sprint id with its theme or <code>no active sprint</code>; <strong>a dormant strip</strong> under the table, <code>N visible projects with no recorded work &mdash; show</code>, expanding to a row of chips and <strong>absent entirely at zero</strong>; <strong>In flight</strong> (every live run across the visible set with title, section, repository, current line, budget bar and phase, headed <code>N runs &middot; polling every 3s</code>) beside <strong>Just landed</strong> (the visible set's evidence and shipped plans from the last 72 hours, newest first, at most seven). Clicking a project row opens its Plans index; clicking a landed row opens the document. There is no headline sentence and no action queue.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec · lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>home-view</code></td>
+      <td>The fleet home renders inside the shell at the default route, computed over the visible set.</td>
+      <td><code>uv run pytest tests/test_spa_home_surface.py tests/test_spa_home_geometry.py -q</code> passes. Cases: an empty hash routes to home and the brand button navigates to <code>#home</code>; the eyebrow reads <code>N of M shown</code> from a fixture with two hidden projects; hiding a project changes the <code>plans</code> stat by that project's count; rows render only for projects with plans and in last-edited order; a project with <code>activity30 == []</code> renders the text <code>no recorded activity</code> and no <code>polyline</code>; a project with a series renders a polyline and <code>N edits &middot; M last 3d</code> with the fixture's sums; the dormant strip is absent when every visible project has plans and reads the count otherwise; In flight lists only runs of visible projects; rendered at 1374 and 1920 the page has no horizontal scroll and the two lower panels sit side by side.</td>
+      <td><code>docs/ui/home.jsx</code>, <code>docs/ui/home.css</code>, <code>docs/index.html</code>, <code>docs/ui/shell-route.jsx</code>, <code>docs/ui/shell.jsx</code>, <code>tests/test_spa_home_surface.py</code>, <code>tests/test_spa_home_geometry.py</code></td>
+      <td>guided &middot; sonnet, after the shell plan's <code>crew-scope-and-scroll</code> and <code>white-ground-and-type</code> nodes (they write the shell module and the entry point)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s3">&#167;3 &mdash; Retire the standalone home and the cockpit</h2>
+<p>Once &#167;2 renders, the shell has two homes and two overviews, which the canvas's rule against redundant ink forbids. <code>GET /</code> answers a redirect to <code>/&lt;project&gt;/#home</code> for the first mounted project whose docs directory exists, so the fleet home has one URL; <code>docs/home.html</code> is deleted and the server stops looking for it. The cockpit module, its stylesheet and its tests are deleted; the <code>#cockpit</code> hash maps to <code>#home</code> so old links land. The fleet prompt module rendered above the sprint surface is deleted with it, because the sprint surface now carries its own copy control. The build test's assertion that exactly one module defines the cockpit body becomes the assertion that none does and exactly one defines the home body.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec · lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>retire-cockpit-and-standalone-home</code></td>
+      <td>One home, one URL, no cockpit: the standalone page, the overview module and the fleet prompt are gone.</td>
+      <td><code>uv run pytest tests/test_build.py tests/test_spa_shell_container.py tests/test_spa_module_scope.py tests/test_spa_composition.py -q</code> passes; <code>GET /</code> against a test server with two mounts returns 302 with <code>Location: /&lt;first project&gt;/#home</code>; <code>grep -rc CockpitBody docs/ui reckon</code> prints 0 for every file; <code>test -e docs/home.html || echo gone</code> prints gone; <code>#cockpit</code> parses to the home view; the sprint surface renders without the fleet prompt element.</td>
+      <td><code>docs/home.html</code>, <code>docs/ui/shell-overview.jsx</code>, <code>docs/ui/overview.css</code>, <code>docs/ui/shell-prompt.jsx</code>, <code>docs/index.html</code>, <code>docs/ui/shell.jsx</code>, <code>docs/ui/shell-route.jsx</code>, <code>reckon/serve.py</code>, <code>reckon/pages.py</code>, <code>tests/test_spa_overview_geometry.py</code>, <code>tests/test_spa_overview_surface.py</code>, <code>tests/test_build.py</code>, <code>tests/test_spa_composition.py</code></td>
+      <td>guided &middot; sonnet, after <code>home-view</code> and after the data plan's nodes (they write the server module)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s4">&#167;4 &mdash; Rendered evidence</h2>
+<p>Captures at 1374 and 1920 into <code>docs/figures/fleet-home/after/</code> with a <code>capture-index.json</code>: the home with at least three moving projects and a dormant strip, and the home with one project hidden showing the changed stat band.</p>
+<p><strong>Gate for this plan, recorded when the measure runs: against this workstation's mounts the home renders one row per moving project with a streakline or the no-activity text, hiding a project changes the stat band, and no dormant strip renders when every visible project has plans. Its evidence is the named tests of &#167;2 and &#167;3 passing and the captures above with the row and stat figures recorded beside them.</strong></p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec · lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>home-captures</code></td>
+      <td>Four captures of the landed home with an index.</td>
+      <td><code>docs/figures/fleet-home/after/capture-index.json</code> lists four captures (home, home with one project hidden &times; 1374, 1920), each file exists with its recorded width and a row count above zero, and <code>uv run pytest tests/test_spa_owed_captures.py -q</code> stays green.</td>
+      <td><code>docs/figures/fleet-home/</code></td>
+      <td>guided &middot; sonnet, after &#167;2 and &#167;3</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s5">&#167;5 &mdash; Out of scope</h2>
+<p>Settings beyond visibility are undesigned in the handoff; the theme and density controls stay behind the gear. Cross-repository sprint scope stays as focus plus a repository badge, which is what the canvas draws on run cards and closure members, and the open question of forcing multi-project sprints is not decided here. The fleet index itself is computed by <code>served-surface-data-contracts</code>.</p>
+
+
+<section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="home-placement" data-choice="shell-view-replacing-cockpit" data-by="reckon-ship (deduced from the canvas tab set)" data-when="2026-09-03">
+    <p class="r-dec-q">Where does the fleet home live, and what happens to the per-project cockpit?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="shell-view-replacing-cockpit">A shell view at the default route; the cockpit is retired</button>
+      <button class="r-opt" data-value="standalone-page-keep-cockpit">Keep the standalone page and the cockpit</button>
+      <button class="r-opt" data-value="shell-view-keep-cockpit">A shell view beside a kept cockpit tab</button>
+    </p>
+    <p class="r-dec-rat">The canvas has no Overview tab and its brand mark is the home button; keeping the cockpit would keep a second overview and an action queue the canvas explicitly rejects. The retirement is its own node so a revert is one commit.</p>
+</div>
+<div class="r-dec" data-key="dormant-projects" data-choice="collapsed-strip-absent-at-zero" data-by="reckon-ship (deduced from the canvas)" data-when="2026-09-03">
+    <p class="r-dec-q">How are visible projects with no recorded work shown?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="collapsed-strip-absent-at-zero">One collapsed line under the table, absent when there are none</button>
+      <button class="r-opt" data-value="rows-like-any-other">As table rows</button>
+    </p>
+    <p class="r-dec-rat">Nine dead rows above four real ones is the measured defect; a control whose count is zero is hidden rather than rendered dead.</p>
+</div>
+<div class="r-dec" data-key="empty-series-rendering" data-choice="text-not-flat-line" data-by="reckon-ship (deduced from the canvas)" data-when="2026-09-03">
+    <p class="r-dec-q">How is an empty activity series drawn?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="text-not-flat-line">The text "no recorded activity", no polyline</button>
+      <button class="r-opt" data-value="flat-polyline">A zero-height polyline</button>
+    </p>
+    <p class="r-dec-rat">A flat line reads as broken and is indistinguishable from a genuinely flat series; the payload distinguishes them and so must the surface.</p>
+</div>
+<div class="r-dec" data-key="root-url-target" data-choice="redirect-to-first-mounted-project-home" data-by="reckon-ship (deduced from the shell's project-scoped state)" data-when="2026-09-03">
+    <p class="r-dec-q">What does the server's root URL serve once the standalone home is gone?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="redirect-to-first-mounted-project-home">A redirect to the first mounted project's #home</button>
+      <button class="r-opt" data-value="project-less-shell">A shell with no project in scope</button>
+    </p>
+    <p class="r-dec-rat">The shell's state is loaded per project and the canvas itself keeps a project in scope while showing the fleet; a project-less shell is a second loader for one route.</p>
+</div>
+</section>
+
+<section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-fh-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-03" data-recommends-skill="/reckon-ship fleet-home" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land the home view, then retire what it replaces</h4>
+    <div class="r-fu-body"><p>&#167;2 runs once the shell plan's Crew and token nodes have merged and the data plan has landed the live fleet index. &#167;3 follows on the same member because it writes the same shell files and the server module. &#167;4 captures last.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship fleet-home</pre>
+</article>
+</section>
+
+<section data-reckon="research" id="research" class="r-research-list">
+<h2><span class="sec">§</span> Research</h2>
+<div class="r-research" data-id="r1" data-type="design" data-url="design/reckon-spa-handoff.dc.html">
+  <span class="r-research-title">The handoff canvas: the fleet home with its stat band, project table, dormant strip, in-flight and just-landed panels.</span>
+</div>
+<div class="r-research" data-id="r2" data-type="design" data-url="design/reckon-spa-handoff.md">
+  <span class="r-research-title">The designer's triage, item B4 and part E item 4, the one place the design assumes data the backend did not have.</span>
+</div>
+</section>
+</main>
+</body>
+</html>

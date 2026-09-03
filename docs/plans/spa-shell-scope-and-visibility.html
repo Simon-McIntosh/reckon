@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="spa-shell-scope-and-visibility">
+  <meta name="plan-title" content="The Project Selector Scopes the Page">
+  <meta name="plan-summary" content="Make project visibility real, reorder the topbar around search and scope, scope and scroll the Crew surface, and adopt the canvas ground and type.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="9.0">
+  <meta name="plan-wall-clock-hours" content="5.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S16">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,spa">
+  <meta name="plan-north-star" content="legible-to-human-and-agent">
+  <meta name="plan-blocks" content="artifact-feeds-and-reader,fleet-home">
+  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,design/reckon-spa-handoff.md">
+  <title>The Project Selector Scopes the Page | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<header>
+  <p class="eyebrow">Shell defects and chrome &middot; the self-contained half of the handoff</p>
+  <h1>The Project Selector Scopes the Page</h1>
+  <p class="lead">Four of the seven defects the designer found in the landed SPA live in the shell: hidden projects that stay in the picker, a visibility toggle that silently does nothing, a Crew list that neither scrolls nor respects the selected project, and a cream ground the canvas never asked for. This plan fixes them against the data the server already serves, then lands the topbar the canvas draws: search beside the brand, the project selector beside the gear, two tab groups, and a compass mark with no wordmark.</p>
+</header>
+
+<h2 id="s1">&#167;1 &mdash; Why this exists</h2>
+<p>The handoff canvas at <code>design/reckon-spa-handoff.dc.html</code> and its triage at <code>design/reckon-spa-handoff.md</code> name root causes in source, each confirmed against <code>main</code> on 2026-09-03:</p>
+<ul>
+  <li><strong>Hidden projects appear in the picker.</strong> <code>docs/ui/shell-topbar.jsx</code> renders <code>manageableProjects</code>, which is every project, while visibility is computed over <code>mountedProjectRows()</code>. Hidden rows are rendered with a suffix instead of removed.</li>
+  <li><strong>Visibility cannot be toggled.</strong> <code>mountedProjectRows()</code> keeps only rows with <code>plans_count &gt; 0</code>, and the served count is stale for most projects, so the survivor set the last-one guard computes is nearly empty and the guard fires on almost every click, silently.</li>
+  <li><strong>Crew floods and cannot scroll.</strong> <code>.r-crew-view</code> is <code>flex:1; overflow:auto</code> but no ancestor between the app root and it carries <code>min-height:0</code>, so it grows past the viewport. At 1374 the list is clipped.</li>
+  <li><strong>Crew is not repo-scoped.</strong> <code>docs/ui/shell.jsx</code> passes every visible project to the Crew view, so an <code>imas-ambix</code> run renders under a <code>nova</code> selection.</li>
+  <li><strong>The ground is cream.</strong> <code>docs/index.html</code> carries an inline style block that overrides the token layer with <code>#fbfaf7</code>; the canvas declares a white ground and the Geist type ramp.</li>
+</ul>
+<p>The canvas also changes the topbar itself: search on the left beside the brand, the two tab groups (artifact tabs, then work tabs) in the middle, a live receipt, the project selector on the right beside the gear, and the brand reduced to a compass mark that is the home button. Nothing here needs a payload the server does not emit, which is why this plan carries no dependency and is the first to run; the two plans that hang off it need its topbar tab groups and its visibility predicate.</p>
+<p>Two rules from the handoff apply to every node: no explanatory prose blocks on a surface (the design carries the meaning; colour keys and column legends stay because they decode an encoding), and no redundant ink (a control whose count is permanently zero is hidden, not rendered dead).</p>
+
+<h2 id="s2">&#167;2 &mdash; Visibility that can be toggled, and a sheet that says what it does</h2>
+<p><strong>Mount means registered.</strong> <code>mountedProjectRows()</code> returns every registered project row; <code>plans_count</code> is a label, never a predicate. <strong>The picker shows the visible set.</strong> The dropdown renders <code>visibleProjectRows()</code> and nothing else; the full list belongs only in the configurator. <strong>The last visible project is locked, visibly.</strong> The guard stays, but its refusal is a state the row shows (<code>locked</code>, switch disabled, cursor not-allowed) rather than an ignored click, and the change helper reports <code>{changed:false, locked:true}</code> so callers can tell the two apart. <strong>The configurator is a sheet.</strong> A fixed overlay at the canvas geometry (560px wide, 74vh tall, opened from the picker footer and from the gear), one row per registered project with a real switch, its plan and live counts, and a state word in <code>visible</code>, <code>hidden</code> or <code>locked</code>; <code>esc</code> and a click outside close it. It replaces the visibility section of the settings menu. Its one line of copy states the consequence: hidden projects leave the picker, the crew feed and the fleet roll-up; registration is unaffected. Persistence stays where the earlier plan locked it: browser storage, default all visible.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec · lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>visibility-mount-and-sheet</code></td>
+      <td>Project visibility toggles for every registered project, the picker shows only visible rows, and the configurator is the canvas sheet.</td>
+      <td><code>uv run pytest tests/test_spa_project_visibility.py -q</code> passes with these cases added: <code>mountedProjectRows</code> returns every row of a fixture where two projects report <code>plans_count: 0</code>; the picker's rendered rows equal <code>visibleProjectRows</code> for a fixture with two hidden projects, and no rendered row carries a hidden suffix; toggling the last visible project returns <code>{changed:false, locked:true}</code> and the sheet row for it renders the word <code>locked</code> with a disabled switch; the sheet renders one row per registered project and the consequence sentence; toggling a hidden project back on returns <code>changed:true</code>.</td>
+      <td><code>docs/ui/shell-topbar.jsx</code>, <code>docs/ui/_shared.jsx</code>, <code>docs/ui/topbar.css</code>, <code>tests/test_spa_project_visibility.py</code></td>
+      <td>guided &middot; sonnet</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s3">&#167;3 &mdash; Topbar order, two tab groups, and a compass mark</h2>
+<p>Left to right, as the canvas draws it: the brand tile (27px, ink ground, the compass SVG copied from the canvas: a ring at 34% white, a needle rotated 38&deg; with north solid and south at 38% opacity, and a punched hub) which navigates home; the search control (230px, placeholder "Search everything", <code>&#8984;K</code> chip); the artifact tab group; the work tab group (<code>Sprints &middot; Graph &middot; Crew</code>); a spacer; the live receipt (a pill reading <code>live</code>, which <code>artifact-feeds-and-reader</code> later teaches to count arrivals); the project selector (mono, 168px minimum, dot for live runs, a footer row "Configure visibility&hellip;"); the gear, which opens the sheet from &#167;2. No wordmark, no Overview tab, no theme and density controls in the bar (the settings menu keeps them behind the gear until the undesigned settings surface exists). The tab groups render from one list owned by the route module so that a later plan can add tabs without touching the bar: today the artifact group reads <code>[Plans]</code> and the work group <code>[Sprints, Graph, Crew]</code>; a tab click always returns that section to its index. The home target is the cockpit route until <code>fleet-home</code> replaces it.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec · lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>topbar-order-tabs-and-brand</code></td>
+      <td>The topbar renders in the canvas order with two route-owned tab groups and the compass brand mark.</td>
+      <td><code>uv run pytest tests/test_spa_topbar_snapshot.py tests/test_spa_shell_geometry.py -q</code> passes with these cases: the rendered topbar's children are ordered brand, search, artifact group, work group, live receipt, project selector, gear (asserted by DOM order of their test ids); the brand button contains one <code>svg</code> with a <code>circle</code>, a rotated <code>g</code> holding two polygons, and a hub circle, and contains no text node; the artifact group renders exactly the labels the route module publishes and the work group renders <code>Sprints</code>, <code>Graph</code>, <code>Crew</code>; no element in the bar reads <code>Overview</code> or <code>reckon</code>; the search control precedes the project selector in document order.</td>
+      <td><code>docs/ui/shell-topbar.jsx</code>, <code>docs/ui/shell-route.jsx</code>, <code>docs/ui/glyphs.jsx</code>, <code>docs/ui/topbar.css</code>, <code>tests/test_spa_topbar_snapshot.py</code>, <code>tests/test_spa_shell_geometry.py</code></td>
+      <td>guided &middot; sonnet, after <code>visibility-mount-and-sheet</code> (same file)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s4">&#167;4 &mdash; Crew scrolls, and shows the selected project</h2>
+<p>Every surface in the canvas is <code>flex:1; min-height:0; overflow-y:auto</code> by construction. The layout layer gives every flex ancestor between the app root and a canvas view <code>min-height:0</code>, so the Crew list scrolls inside the viewport at every width and the page never grows. Crew is scoped to the selected project by default, with the label <code>&lt;project&gt; &middot; N runs</code> in its header and an explicit <code>All visible</code> toggle that widens it to the visible set; the rule is this plan's title, and only the fleet home is cross-project. The derived-flow lanes the canvas places above the crew cards belong to <code>graph-derived-schedule</code>, which writes these same files after this node lands.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec · lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>crew-scope-and-scroll</code></td>
+      <td>The Crew surface scrolls within the viewport and lists the selected project's runs by default.</td>
+      <td><code>uv run pytest tests/test_spa_crew_geometry.py tests/test_spa_crew_cards.py tests/test_spa_shell_container.py -q</code> passes with these cases: rendered at 1374&times;900 against a fixture of twelve runs across three projects, <code>.r-crew-view</code> has <code>scrollHeight &gt; clientHeight</code> and <code>document.documentElement.scrollHeight == 900</code>; with <code>nova</code> selected every rendered run card belongs to <code>nova</code>; after the <code>All visible</code> toggle the cards cover exactly the visible projects; every flex ancestor of <code>.r-crew-view</code> reports computed <code>min-height: 0px</code>.</td>
+      <td><code>docs/ui/crew.jsx</code>, <code>docs/ui/crew.css</code>, <code>docs/ui/shell.jsx</code>, <code>docs/ui/styles.css</code>, <code>tests/test_spa_crew_geometry.py</code>, <code>tests/test_spa_crew_cards.py</code>, <code>tests/test_spa_shell_container.py</code></td>
+      <td>guided &middot; sonnet</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s5">&#167;5 &mdash; White ground and the canvas type ramp</h2>
+<p>An exact change. The token layer, <code>docs/_shared/foundation.css</code>, takes the canvas light tokens for <code>--bg</code>, <code>--bg-2</code>, <code>--bg-3</code>, <code>--ink</code>, <code>--ink-2</code>, <code>--line</code>, <code>--line-2</code>, <code>--accent</code>, <code>--accent-2</code>, <code>--accent-3</code>, <code>--ok</code>, <code>--ok-3</code>, <code>--warn</code>, <code>--warn-3</code>, <code>--bad</code>, <code>--bad-3</code>, and the two font stacks, with one exception: the canvas values for <code>--muted</code> and <code>--faint</code> are checked against the repository's contrast test, which requires 4.5:1 against <code>--bg</code> for both, and where a canvas value fails the lightest grey that passes is used and recorded in the evidence. The Geist stack is declared as a font-family list with system fallbacks and no remote stylesheet, because the served pages request only their own origin and a test holds that. The inline style block in <code>docs/index.html</code> that overrides tokens is removed; custom properties have one authority and the stylesheet-ownership test names it. The dark theme block is unchanged.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec · lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>white-ground-and-type</code></td>
+      <td>The light theme uses the canvas ground and type tokens with contrast preserved, and the entry point stops overriding the token layer.</td>
+      <td><code>uv run pytest tests/test_shared_token_contrast.py tests/test_css_layering.py "tests/test_build.py::test_spa_entry_points_load_the_same_surface_stylesheets" "tests/test_build.py::test_served_and_static_pages_request_only_their_own_origin" -q</code> passes; <code>grep -c fbfaf7 docs/index.html docs/_shared/foundation.css</code> prints 0 for both; <code>grep -c '<style' docs/index.html</code> prints 0; <code>grep -c '"Geist"' docs/_shared/foundation.css</code> prints at least 1; <code>grep -c 'fonts.googleapis' docs/_shared/foundation.css docs/index.html</code> prints 0 for both.</td>
+      <td><code>docs/_shared/foundation.css</code>, <code>docs/index.html</code></td>
+      <td>exact &middot; local (clive)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s6">&#167;6 &mdash; Rendered evidence</h2>
+<p>The prior redesign plan learned that seven green gates missed what one screenshot found. Once &#167;2 to &#167;5 have landed, the topbar, the open visibility sheet and the Crew surface are captured at 1374 and 1920 through the shared file-URL harness into <code>docs/figures/spa-shell-scope-and-visibility/after/</code> with a <code>capture-index.json</code>, and the captures are linked from the evidence record. A capture is evidence only when it shows the populated state: the sheet with at least one hidden and one locked row, Crew with more rows than fit.</p>
+<p><strong>Gate for this plan, recorded when the measure runs: on a rendered page a hidden project is absent from the picker, the last visible project's switch is locked and labelled, the Crew list scrolls inside a 900px viewport at 1374, only the selected project's runs render by default, and the light ground is #ffffff. Its evidence is the named tests of &#167;2, &#167;4 and &#167;5 passing and the captures above showing each state.</strong></p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec · lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>shell-captures</code></td>
+      <td>Six captures of the landed shell surfaces with an index.</td>
+      <td><code>docs/figures/spa-shell-scope-and-visibility/after/capture-index.json</code> lists six captures (topbar, sheet, crew &times; 1374, 1920), each file exists with the recorded width, and <code>uv run pytest tests/test_spa_owed_captures.py -q</code> stays green.</td>
+      <td><code>docs/figures/spa-shell-scope-and-visibility/</code></td>
+      <td>guided &middot; sonnet, after &#167;2&ndash;&#167;5</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s7">&#167;7 &mdash; Out of scope</h2>
+<p>The artifact tabs and their routes (<code>artifact-feeds-and-reader</code>), the fleet home and the retirement of the cockpit (<code>fleet-home</code>), and the derived-flow lanes on Crew (<code>graph-derived-schedule</code>). Settings beyond visibility (theme, density, snapshot receipt) are undesigned in the handoff and keep their current place behind the gear. Server payloads are unchanged by this plan; the stale <code>plans_count</code> the picker labels rows with is corrected by <code>served-surface-data-contracts</code>, and this plan stops depending on it rather than waiting for it.</p>
+
+
+<section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="mount-predicate" data-choice="registered" data-by="reckon-ship (deduced from the handoff)" data-when="2026-09-03">
+    <p class="r-dec-q">What makes a project row mounted for visibility purposes?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="registered">Registration in mounts</button>
+      <button class="r-opt" data-value="plans-count-positive">A positive plans_count</button>
+    </p>
+    <p class="r-dec-rat">The count is a label the fleet index gets wrong today, and using it as a predicate is the root cause of the toggle that does nothing. Registration is the fact visibility governs.</p>
+</div>
+<div class="r-dec" data-key="last-visible-refusal" data-choice="locked-row-visible" data-by="reckon-ship (deduced from the canvas)" data-when="2026-09-03">
+    <p class="r-dec-q">How does the guard against hiding the last visible project surface?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="locked-row-visible">The row reads locked with a disabled switch</button>
+      <button class="r-opt" data-value="silent-noop">The click is ignored</button>
+      <button class="r-opt" data-value="allow-empty">Allow an empty visible set</button>
+    </p>
+    <p class="r-dec-rat">The canvas draws the locked row; a silent no-op is the defect being fixed; an empty visible set makes every surface blank.</p>
+</div>
+<div class="r-dec" data-key="topbar-order" data-choice="search-left-scope-right" data-by="reckon-ship (deduced from the canvas)" data-when="2026-09-03">
+    <p class="r-dec-q">Where do search and the project selector sit?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="search-left-scope-right">Search beside the brand, selector beside the gear</button>
+      <button class="r-opt" data-value="keep-landed-order">Keep the landed order</button>
+    </p>
+    <p class="r-dec-rat">Search is a global verb and belongs with the identity; the selector is a scope control and belongs with the other scope and appearance controls it governs.</p>
+</div>
+<div class="r-dec" data-key="brand-mark" data-choice="compass-no-wordmark" data-by="reckon-ship (deduced from the canvas)" data-when="2026-09-03">
+    <p class="r-dec-q">What is the brand mark?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="compass-no-wordmark">A compass rose on the ink tile, no wordmark</button>
+      <button class="r-opt" data-value="r-tile-and-wordmark">The r tile and the reckon wordmark</button>
+    </p>
+    <p class="r-dec-rat">The canvas draws the mark and states the wordmark is redundant ink; the mark is the home button.</p>
+</div>
+<div class="r-dec" data-key="type-ramp-delivery" data-choice="local-stack-no-remote-fonts" data-by="reckon-ship (deduced from the origin test)" data-when="2026-09-03">
+    <p class="r-dec-q">How is the Geist type ramp delivered?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="local-stack-no-remote-fonts">A font-family stack with system fallbacks, no remote stylesheet</button>
+      <button class="r-opt" data-value="google-fonts-link">The canvas's fonts.googleapis link</button>
+    </p>
+    <p class="r-dec-rat">A repository test holds that served and static pages request only their own origin. The stack renders Geist where it is installed and falls back to the system face elsewhere, which is what the canvas's own stack does after the link.</p>
+</div>
+</section>
+
+<section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-sssv-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-03" data-recommends-skill="/reckon-ship spa-shell-scope-and-visibility" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land the shell defects and chrome, wide first</h4>
+    <div class="r-fu-body"><p>&#167;2, &#167;4 and &#167;5 are file-disjoint and run together in the first wave; &#167;5 is the one exact node and goes to the local lane. &#167;3 follows &#167;2 on the same member because both write the topbar module. &#167;6 captures the landed state last.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship spa-shell-scope-and-visibility</pre>
+</article>
+</section>
+
+<section data-reckon="research" id="research" class="r-research-list">
+<h2><span class="sec">§</span> Research</h2>
+<div class="r-research" data-id="r1" data-type="design" data-url="design/reckon-spa-handoff.dc.html">
+  <span class="r-research-title">The handoff canvas: topbar, visibility sheet and Crew as they should read, with the compass mark and the tokens declared in its head.</span>
+</div>
+<div class="r-research" data-id="r2" data-type="design" data-url="design/reckon-spa-handoff.md">
+  <span class="r-research-title">The designer's triage, parts A2 to A5, B5 to B9 and C: root causes in source for the shell defects, and the chrome changes.</span>
+</div>
+</section>
+</main>
+</body>
+</html>

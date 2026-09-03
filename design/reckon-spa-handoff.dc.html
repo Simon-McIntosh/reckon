@@ -1,0 +1,1962 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg:#ffffff; --bg-2:#f7f8fa; --bg-3:#eef0f4;
+    --ink:#0c0d10; --ink-2:#2a2c33; --muted:#6e7282; --faint:#a1a4b0;
+    --line:#e6e8ec; --line-2:#d6d9df;
+    --accent:oklch(0.52 0.18 264); --accent-2:oklch(0.68 0.12 264); --accent-3:oklch(0.96 0.025 264);
+    --ok:oklch(0.62 0.13 155); --ok-3:oklch(0.96 0.03 155);
+    --warn:oklch(0.72 0.15 75); --warn-3:oklch(0.97 0.03 75);
+    --bad:oklch(0.58 0.20 25); --bad-3:oklch(0.965 0.025 25);
+    --sans:"Geist","Hanken Grotesk",-apple-system,system-ui,sans-serif;
+    --mono:"Geist Mono","JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:14px; line-height:1.55; -webkit-font-smoothing:antialiased; font-feature-settings:"ss01","cv11"; }
+  a { color:oklch(0.52 0.18 264); text-decoration:none; }
+  a:hover { color:oklch(0.42 0.16 264); }
+  button { font-family:inherit; }
+  @keyframes livepulse { 0%,100% { opacity:1; } 50% { opacity:.25; } }
+  @keyframes arrive { from { background:oklch(0.96 0.025 264); } to { background:transparent; } }
+  ::-webkit-scrollbar { width:9px; height:9px; }
+  ::-webkit-scrollbar-thumb { background:#d6d9df; border-radius:5px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+</style>
+</helmet>
+
+<div style="display:flex;flex-direction:column;height:100vh;overflow:hidden;min-width:1180px;background:var(--bg)">
+
+  <!-- ════ topbar: search left, project right ════ -->
+  <div style="display:flex;align-items:center;gap:14px;padding:8px 16px;border-bottom:1px solid var(--line);flex:none;background:var(--bg)">
+    <button type="button" onClick="{{ goHome }}" title="reckon · fleet" aria-label="reckon · fleet" style="display:grid;place-items:center;width:27px;height:27px;border:0;border-radius:7px;background:var(--ink);padding:0;cursor:pointer;flex:none">
+      <svg width="17" height="17" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="8" r="6.6" stroke="#ffffff" stroke-opacity=".34" stroke-width="1"></circle>
+        <g transform="rotate(38 8 8)">
+          <polygon points="8,1.7 10.3,8 5.7,8" fill="#ffffff"></polygon>
+          <polygon points="8,14.3 10.3,8 5.7,8" fill="#ffffff" fill-opacity=".38"></polygon>
+        </g>
+        <circle cx="8" cy="8" r="1.05" fill="var(--ink)"></circle>
+      </svg>
+    </button>
+
+    <button type="button" onClick="{{ openPalette }}" style="display:flex;align-items:center;gap:7px;width:230px;padding:4px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg-2);color:var(--muted);cursor:pointer;font-size:12.5px;flex:none">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"></circle><path d="M13 13l-2.5-2.5"></path></svg>
+      <span style="flex:1;text-align:left">Search everything</span>
+      <span style="font-family:var(--mono);font-size:10px;padding:1px 4px;border:1px solid var(--line-2);border-radius:3px">⌘K</span>
+    </button>
+
+    <div style="display:flex;align-items:center;gap:2px;padding:2px;border:1px solid var(--line);border-radius:7px;background:var(--bg-2)">
+      <sc-for list="{{ artifactTabs }}" as="t" hint-placeholder-count="4">
+        <button type="button" onClick="{{ t.go }}" title="{{ t.tip }}" style="{{ t.style }}">{{ t.label }}<span style="{{ t.badgeStyle }}">{{ t.badge }}</span></button>
+      </sc-for>
+    </div>
+    <div style="display:flex;align-items:center;gap:2px;padding:2px;border:1px solid var(--line);border-radius:7px;background:var(--bg-2)">
+      <sc-for list="{{ workTabs }}" as="t" hint-placeholder-count="3">
+        <button type="button" onClick="{{ t.go }}" style="{{ t.style }}">{{ t.label }}</button>
+      </sc-for>
+    </div>
+
+    <div style="flex:1"></div>
+
+    <!-- live receipt: content arrives without a reload -->
+    <button type="button" onClick="{{ flushArrivals }}" style="{{ liveStyle }}" title="Live stream from the served state">
+      <span style="{{ liveDotStyle }}"></span>
+      <span>{{ liveLabel }}</span>
+    </button>
+
+    <div style="position:relative;flex:none">
+      <button type="button" onClick="{{ toggleProj }}" style="display:flex;align-items:center;gap:7px;min-width:168px;padding:4px 9px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--ink);cursor:pointer;font-family:var(--mono);font-size:11.5px">
+        <span style="{{ projDotStyle }}"></span>
+        <span style="flex:1;text-align:left">{{ project }}</span>
+        <span style="color:var(--faint)">▾</span>
+      </button>
+      <sc-if value="{{ projOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:calc(100% + 6px);right:0;width:320px;padding:6px;border:1px solid var(--line-2);border-radius:9px;background:var(--bg);box-shadow:0 14px 40px rgba(12,13,16,.14);z-index:40">
+          <div style="padding:5px 8px 7px;color:var(--faint);font-family:var(--mono);font-size:10.5px">{{ projCountLabel }}</div>
+          <sc-for list="{{ projRows }}" as="p" hint-placeholder-count="5">
+            <button type="button" onClick="{{ p.go }}" style="{{ p.style }}">
+              <span style="{{ p.dotStyle }}"></span>
+              <strong style="font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left">{{ p.id }}</strong>
+              <span style="color:var(--muted)">{{ p.plansLabel }}</span>
+              <span style="{{ p.liveStyle }}">{{ p.liveLabel }}</span>
+            </button>
+          </sc-for>
+          <button type="button" onClick="{{ openVis }}" style="display:block;width:100%;margin-top:5px;padding:8px;border:0;border-top:1px solid var(--line);background:transparent;color:var(--ink-2);text-align:left;cursor:pointer;font-family:var(--mono);font-size:11.5px">Configure visibility…</button>
+        </div>
+      </sc-if>
+    </div>
+
+    <button type="button" onClick="{{ openVis }}" style="display:grid;place-items:center;width:28px;height:28px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;flex:none">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="2.2"></circle><path d="M8 1.6v1.8M8 12.6v1.8M14.4 8h-1.8M3.4 8H1.6M12.5 3.5l-1.3 1.3M4.8 11.2l-1.3 1.3M12.5 12.5l-1.3-1.3M4.8 4.8L3.5 3.5"></path></svg>
+    </button>
+  </div>
+
+  <!-- ════════════════════ HOME ════════════════════ -->
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:1;min-height:0;overflow-y:auto;background:var(--bg-2)">
+      <div style="max-width:1180px;margin:0 auto;padding:26px 30px 60px;display:flex;flex-direction:column;gap:20px">
+
+        <div style="display:flex;align-items:baseline;gap:10px">
+          <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint)">Fleet · {{ today }}</span>
+          <div style="flex:1"></div>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">{{ scopeLabel }}</span>
+          <button type="button" onClick="{{ openVis }}" style="border:0;background:transparent;padding:0;cursor:pointer;font-family:var(--mono);font-size:11px;color:var(--accent)">configure</button>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:-8px">
+          <sc-for list="{{ homeStats }}" as="s" hint-placeholder-count="5">
+            <div style="flex:1;display:flex;flex-direction:column;gap:2px;padding:13px 16px;border:1px solid var(--line);border-radius:10px;background:var(--bg)">
+              <span style="font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);white-space:nowrap">{{ s.k }}</span>
+              <span style="{{ s.vStyle }}">{{ s.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- project-wide overview, scoped by global visibility -->
+        <div style="border:1px solid var(--line);border-radius:11px;background:var(--bg);overflow:hidden">
+          <sc-for list="{{ overviewRows }}" as="p" hint-placeholder-count="4">
+            <button type="button" onClick="{{ p.go }}" style="display:flex;align-items:center;gap:14px;width:100%;padding:12px 16px;border:0;border-bottom:1px solid var(--line);background:transparent;cursor:pointer;text-align:left">
+              <span style="width:186px;flex:none;display:flex;flex-direction:column;gap:1px;min-width:0">
+                <span style="display:flex;align-items:center;gap:7px">
+                  <span style="{{ p.dotStyle }}"></span>
+                  <span style="font-size:14px;font-weight:600;letter-spacing:-.01em;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.id }}</span>
+                </span>
+                <span style="font-family:var(--mono);font-size:10.5px;color:var(--faint)">{{ p.last }}</span>
+              </span>
+
+              <span style="width:184px;flex:none;display:flex;flex-direction:column;gap:2px">
+                <span style="{{ p.streakStyle }}">
+                  <svg viewBox="0 0 180 30" preserveAspectRatio="none" style="width:100%;height:26px;display:block;overflow:visible">
+                    <polygon points="{{ p.area }}" fill="oklch(0.52 0.18 264)" fill-opacity=".10"></polygon>
+                    <polyline points="{{ p.line }}" fill="none" stroke="oklch(0.52 0.18 264)" stroke-width="1.4" stroke-linejoin="round" vector-effect="non-scaling-stroke"></polyline>
+                    <circle cx="180" cy="{{ p.lastY }}" r="2.1" fill="oklch(0.52 0.18 264)"></circle>
+                  </svg>
+                  <span style="font-family:var(--mono);font-size:10px;color:var(--muted);white-space:nowrap">{{ p.streakLabel }}</span>
+                </span>
+                <span style="{{ p.noStreakStyle }}">no recorded activity</span>
+              </span>
+
+              <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+                <span style="display:flex;height:7px;border-radius:4px;overflow:hidden;background:var(--bg-3)">
+                  <sc-for list="{{ p.dist }}" as="d" hint-placeholder-count="4">
+                    <i style="{{ d.style }}" title="{{ d.tip }}"></i>
+                  </sc-for>
+                </span>
+                <span style="display:flex;justify-content:space-between;gap:11px;font-family:var(--mono);font-size:10.5px;color:var(--muted)">
+                  <span style="white-space:nowrap">{{ p.plans }}</span>
+                  <span style="{{ p.heldStyle }}">{{ p.held }}</span>
+                </span>
+              </span>
+
+              <span style="width:118px;flex:none;display:flex;flex-direction:column;gap:1px">
+                <span style="font-family:var(--mono);font-size:11.5px;color:var(--ink-2)">{{ p.sprint }}</span>
+                <span style="font-family:var(--mono);font-size:10px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.sprintNote }}</span>
+              </span>
+            </button>
+          </sc-for>
+          <div style="{{ dormantStripStyle }}">
+            <button type="button" onClick="{{ toggleDormant }}" style="border:0;background:transparent;padding:0;cursor:pointer;font-family:var(--mono);font-size:11px;color:var(--muted)">{{ dormantLabel }}</button>
+            <sc-if value="{{ dormantOpen }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-wrap:wrap;gap:6px">
+                <sc-for list="{{ dormantRows }}" as="d" hint-placeholder-count="6">
+                  <button type="button" onClick="{{ d.go }}" style="display:flex;align-items:baseline;gap:7px;padding:3px 9px;border:1px solid var(--line);border-radius:5px;background:var(--bg);cursor:pointer;font-family:var(--mono);font-size:11px;color:var(--ink-2)">{{ d.id }}<span style="color:var(--faint)">{{ d.note }}</span></button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1.15fr 1fr;gap:20px;align-items:start">
+          <!-- 2 · in flight -->
+          <div style="border:1px solid var(--line);border-radius:11px;background:var(--bg);overflow:hidden">
+            <div style="display:flex;align-items:baseline;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)">
+              <h2 style="margin:0;font-size:14.5px;font-weight:600;letter-spacing:-.01em">In flight</h2>
+              <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">{{ inFlightLabel }}</span>
+            </div>
+            <sc-for list="{{ inFlight }}" as="f" hint-placeholder-count="2">
+              <div style="padding:11px 16px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:6px">
+                <div style="display:flex;align-items:baseline;gap:8px">
+                  <span style="width:6px;height:6px;border-radius:50%;background:var(--accent);animation:livepulse 1.7s ease-in-out infinite;flex:none"></span>
+                  <span style="font-size:13.5px;font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ f.title }}</span>
+                  <span style="font-family:var(--mono);font-size:11px;color:var(--muted);flex:none">{{ f.section }}</span>
+                  <div style="flex:1"></div>
+                  <span style="font-family:var(--mono);font-size:11px;color:var(--faint);flex:none">{{ f.repo }}</span>
+                </div>
+                <div style="font-size:12.5px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ f.line }}</div>
+                <div style="display:flex;align-items:center;gap:9px">
+                  <div style="flex:1;height:3px;border-radius:3px;background:var(--bg-3);overflow:hidden"><i style="{{ f.barStyle }}"></i></div>
+                  <span style="font-family:var(--mono);font-size:11px;color:var(--ink-2);flex:none">{{ f.budget }}</span>
+                  <span style="font-family:var(--mono);font-size:11px;color:var(--muted);flex:none">{{ f.phase }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <!-- 3 · just landed -->
+          <div style="border:1px solid var(--line);border-radius:11px;background:var(--bg);overflow:hidden">
+            <div style="display:flex;align-items:baseline;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)">
+              <h2 style="margin:0;font-size:14.5px;font-weight:600;letter-spacing:-.01em">Just landed</h2>
+              <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">last 72 hours</span>
+            </div>
+            <sc-for list="{{ justLanded }}" as="l" hint-placeholder-count="4">
+              <button type="button" onClick="{{ l.go }}" style="{{ l.style }}">
+                <span style="{{ l.kindStyle }}">{{ l.kind }}</span>
+                <span style="min-width:0;flex:1;text-align:left;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ l.title }}</span>
+                <span style="font-family:var(--mono);font-size:10.5px;color:var(--faint);flex:none">{{ l.when }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ════════════════════ ARTIFACT INDEX: plans / research / evidence / figures ════════════════════ -->
+  <sc-if value="{{ isArtifactIndex }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:1;min-height:0;overflow-y:auto;background:var(--bg-2)">
+      <div style="max-width:1360px;margin:0 auto;padding:22px 26px 60px;display:flex;flex-direction:column;gap:14px">
+
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span style="font-size:14px;font-weight:600;letter-spacing:-.01em">{{ listTitle }}</span>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">{{ listCount }}</span>
+          <sc-for list="{{ listStats }}" as="s" hint-placeholder-count="3">
+            <span style="{{ s.style }}"><span style="color:var(--faint)">{{ s.k }}</span> {{ s.v }}</span>
+          </sc-for>
+          <div style="flex:1"></div>
+          <div style="display:flex;padding:2px;border:1px solid var(--line);border-radius:6px;background:var(--bg-2)">
+            <button type="button" onClick="{{ sortByEdited }}" style="{{ sortEditedStyle }}">Edited</button>
+            <button type="button" onClick="{{ sortByCreated }}" style="{{ sortCreatedStyle }}">Created</button>
+          </div>
+          <button type="button" onClick="{{ toggleHideDone }}" style="{{ hideDoneStyle }}" title="Hide anything at 100%"><span style="{{ hideDoneMarkStyle }}"></span>{{ hideDoneLabel }}</button>
+        </div>
+
+        <div style="{{ statusChipsStyle }}">
+          <sc-for list="{{ statusChips }}" as="c" hint-placeholder-count="4">
+            <button type="button" onClick="{{ c.go }}" style="{{ c.style }}">{{ c.label }}<span style="opacity:.55;margin-left:5px">{{ c.n }}</span></button>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ hasArrivals }}" hint-placeholder-val="{{ false }}">
+          <button type="button" onClick="{{ flushArrivals }}" style="display:flex;align-items:center;gap:8px;padding:10px 15px;border:1px solid var(--accent-2);border-radius:9px;background:var(--accent-3);cursor:pointer;text-align:left;width:100%">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--accent);animation:livepulse 1.4s ease-in-out infinite;flex:none"></span>
+            <span style="font-size:12.5px;color:var(--ink)">{{ arrivalLabel }}</span>
+            <div style="flex:1"></div>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--accent)">show</span>
+          </button>
+        </sc-if>
+
+        <div style="{{ listPanelStyle }}">
+          <sc-for list="{{ indexRows }}" as="r" hint-placeholder-count="8">
+            <button type="button" onClick="{{ r.go }}" style="{{ r.style }}">
+              <span style="{{ r.thumbStyle }}">{{ r.thumbLabel }}</span>
+              <span style="{{ r.dotStyle }}"></span>
+              <span style="min-width:0;flex:1;display:flex;flex-direction:column;gap:1px">
+                <span style="font-size:13.5px;font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.title }}</span>
+                <span style="font-family:var(--mono);font-size:10.5px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.sub }}</span>
+              </span>
+              <span style="width:150px;flex:none;display:flex;align-items:center;gap:8px">
+                <span style="{{ r.barTrackStyle }}"><i style="{{ r.barStyle }}"></i></span>
+                <span style="font-family:var(--mono);font-size:11px;color:var(--muted);width:34px;text-align:right">{{ r.pct }}</span>
+              </span>
+              <span style="width:112px;flex:none;font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right">{{ r.figures }}</span>
+              <span style="width:154px;flex:none;font-family:var(--mono);font-size:10.5px;color:var(--faint);text-align:right">{{ r.stamps }}</span>
+              <span style="{{ r.tagStyle }}">{{ r.tag }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="{{ listEmptyStyle }}">{{ listEmptyLabel }}</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ════════════════════ ARTIFACT READER ════════════════════ -->
+  <sc-if value="{{ isArtifactReader }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;min-height:0;display:flex">
+      <!-- reader -->
+      <div style="{{ readerPaneStyle }}">
+        <div style="display:flex;align-items:center;gap:7px;padding:12px 22px;border-bottom:1px solid var(--line);flex:none">
+          <button type="button" onClick="{{ backToIndex }}" style="padding:4px 10px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;font-family:var(--mono);font-size:11.5px;flex:none">{{ backLabel }}</button>
+          <div style="display:flex;align-items:center;gap:3px;flex:none">
+            <button type="button" onClick="{{ readPrev }}" style="{{ readPrevStyle }}" title="Previous · ←">‹</button>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--muted);min-width:50px;text-align:center">{{ readPos }}</span>
+            <button type="button" onClick="{{ readNext }}" style="{{ readNextStyle }}" title="Next · →">›</button>
+          </div>
+          <sc-for list="{{ readCrumbs }}" as="c" hint-placeholder-count="3">
+            <span style="{{ c.sepStyle }}">/</span>
+            <button type="button" onClick="{{ c.go }}" style="{{ c.style }}">{{ c.label }}</button>
+          </sc-for>
+          <div style="flex:1"></div>
+          <button type="button" onClick="{{ toggleReading }}" style="{{ readFsStyle }}" title="{{ readFsTip }}">{{ readFsLabel }}</button>
+          <button type="button" onClick="{{ toggleReadGraph }}" style="{{ readGraphBtnStyle }}" title="{{ readGraphBtnTip }}">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="3.5" cy="4" r="1.5"></circle><circle cx="3.5" cy="12" r="1.5"></circle><circle cx="12.5" cy="8" r="1.5"></circle><path d="M5 4l6 3.5M5 12l6-3.5"></path></svg>
+            {{ readGraphBtnLabel }}
+          </button>
+          <button type="button" onClick="{{ copyRead }}" style="{{ copyReadStyle }}" title="{{ copyReadTip }}"><svg style="{{ readCopiedHide }}" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><rect x="5.6" y="5.6" width="8" height="8" rx="1.6"></rect><path d="M10.4 3.3V2.9A1.4 1.4 0 0 0 9 1.5H3.9A1.4 1.4 0 0 0 2.5 2.9V8a1.4 1.4 0 0 0 1.4 1.4h.4"></path></svg><span style="{{ readCopiedShow }}">✓</span></button>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;padding:9px 22px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11.5px;color:var(--muted);flex:none;flex-wrap:wrap">
+          <sc-for list="{{ readMeta }}" as="m" hint-placeholder-count="5">
+            <span><span style="color:var(--faint)">{{ m.k }}</span> <span style="color:var(--ink-2)">{{ m.v }}</span></span>
+          </sc-for>
+        </div>
+        <div style="flex:1;min-height:0;overflow-y:auto;padding:26px 26px 72px;display:flex;flex-direction:column;align-items:center">
+          <sc-if value="{{ readGraphOpen }}" hint-placeholder-val="{{ false }}">
+            <div style="width:100%;max-width:1040px;margin:0 auto 22px;padding:14px 16px 16px;border:1px solid var(--line);border-radius:10px;background:var(--bg-2)">
+              <div style="display:grid;grid-template-columns:1fr 26px minmax(0,1.15fr) 26px 1fr;align-items:center;gap:0">
+                <div style="display:flex;flex-direction:column;gap:7px;min-width:0">
+                  <span style="font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)">{{ readUpLabel }}</span>
+                  <sc-for list="{{ readUp }}" as="u" hint-placeholder-count="2">
+                    <button type="button" onClick="{{ u.go }}" style="{{ u.style }}">
+                      <span style="display:flex;align-items:center;gap:6px;min-width:0"><span style="{{ u.dotStyle }}"></span><span style="font-size:12.5px;font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ u.title }}</span></span>
+                      <span style="display:flex;align-items:baseline;gap:7px;font-family:var(--mono);font-size:10.5px"><span style="{{ u.statusStyle }}">{{ u.status }}</span><div style="flex:1"></div><span style="color:var(--faint)">{{ u.hours }}</span></span>
+                    </button>
+                  </sc-for>
+                  <span style="{{ readUpEmptyStyle }}">no prerequisites</span>
+                </div>
+                <span style="{{ readArrowUpStyle }}">→</span>
+                <div style="display:flex;flex-direction:column;gap:7px;min-width:0">
+                  <span style="font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);text-align:center">This plan</span>
+                  <div style="{{ readFocalStyle }}">
+                    <span style="display:flex;align-items:center;gap:6px;min-width:0"><span style="{{ readFocalDotStyle }}"></span><span style="font-size:13px;font-weight:600;letter-spacing:-.008em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ readTitle }}</span></span>
+                    <span style="height:3px;border-radius:3px;background:var(--bg-3);overflow:hidden;display:block"><i style="{{ readFocalBarStyle }}"></i></span>
+                    <span style="display:flex;align-items:baseline;gap:7px;font-family:var(--mono);font-size:10.5px"><span style="{{ readFocalStatusStyle }}">{{ readFocalStatus }}</span><div style="flex:1"></div><span style="color:var(--faint)">{{ readFocalHours }}</span></span>
+                  </div>
+                </div>
+                <span style="{{ readArrowDownStyle }}">→</span>
+                <div style="display:flex;flex-direction:column;gap:7px;min-width:0">
+                  <span style="font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)">{{ readDownLabel }}</span>
+                  <sc-for list="{{ readDown }}" as="w" hint-placeholder-count="1">
+                    <button type="button" onClick="{{ w.go }}" style="{{ w.style }}">
+                      <span style="display:flex;align-items:center;gap:6px;min-width:0"><span style="{{ w.dotStyle }}"></span><span style="font-size:12.5px;font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ w.title }}</span></span>
+                      <span style="display:flex;align-items:baseline;gap:7px;font-family:var(--mono);font-size:10.5px"><span style="{{ w.statusStyle }}">{{ w.status }}</span><div style="flex:1"></div><span style="color:var(--faint)">{{ w.hours }}</span></span>
+                    </button>
+                  </sc-for>
+                  <span style="{{ readDownEmptyStyle }}">nothing downstream</span>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+          <div style="width:100%;max-width:{{ readMeasure }};margin:0 auto;display:flex;flex-direction:column;gap:18px">
+            <sc-if value="{{ readIsFigure }}" hint-placeholder-val="{{ false }}">
+              <div style="border:1px solid var(--line);border-radius:10px;overflow:hidden">
+                <div style="height:330px;display:grid;place-items:center;background:repeating-conic-gradient(var(--bg-2) 0% 25%, var(--bg) 0% 50%) 50%/22px 22px;color:var(--faint);font-family:var(--mono);font-size:11.5px">{{ readFigureNote }}</div>
+                <div style="padding:9px 13px;border-top:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--muted)">{{ readFigurePath }}</div>
+              </div>
+            </sc-if>
+            <p style="margin:0;font-size:15px;line-height:1.65;color:var(--ink-2);text-wrap:pretty">{{ readLede }}</p>
+            <sc-for list="{{ readBody }}" as="b" hint-placeholder-count="2">
+              <div style="display:flex;flex-direction:column;gap:5px">
+                <div style="display:flex;align-items:baseline;gap:9px">
+                  <span style="font-family:var(--mono);font-size:11px;color:var(--accent)">{{ b.sec }}</span>
+                  <h3 style="margin:0;font-size:15px;font-weight:600;letter-spacing:-.01em">{{ b.head }}</h3>
+                </div>
+                <p style="margin:0;font-size:14px;line-height:1.62;color:var(--ink-2);text-wrap:pretty">{{ b.text }}</p>
+              </div>
+            </sc-for>
+            <sc-if value="{{ readHasLinks }}" hint-placeholder-val="{{ false }}">
+              <div style="border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:7px">
+                <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)">{{ readLinksLabel }}</div>
+                <sc-for list="{{ readLinks }}" as="k" hint-placeholder-count="2">
+                  <button type="button" onClick="{{ k.go }}" style="display:flex;align-items:baseline;gap:9px;padding:8px 11px;border:1px solid var(--line);border-radius:7px;background:var(--bg);cursor:pointer;text-align:left">
+                    <span style="{{ k.kindStyle }}">{{ k.kind }}</span>
+                    <span style="font-size:13px;color:var(--ink)">{{ k.title }}</span>
+                    <div style="flex:1"></div>
+                    <span style="font-family:var(--mono);font-size:11px;color:var(--faint)">{{ k.repo }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+
+  <!-- ════════════════════ SPRINTS: derived flow ════════════════════ -->
+  <sc-if value="{{ isSprints }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;min-height:0;overflow-y:auto;background:var(--bg-2)">
+      <div style="max-width:1360px;margin:0 auto;padding:22px 26px 60px;display:flex;flex-direction:column;gap:18px">
+
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span style="font-size:14px;font-weight:600;letter-spacing:-.01em">Sprints</span>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">{{ sprintTableLabel }}</span>
+          <sc-for list="{{ flowStats }}" as="s" hint-placeholder-count="4">
+            <span style="{{ s.style }}"><span style="color:var(--faint)">{{ s.k }}</span> {{ s.v }}</span>
+          </sc-for>
+          <div style="flex:1"></div>
+          <button type="button" onClick="{{ copyFlow }}" style="{{ copyFlowStyle }}" title="{{ copyFlowTip }}"><svg style="{{ flowCopiedHide }}" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><rect x="5.6" y="5.6" width="8" height="8" rx="1.6"></rect><path d="M10.4 3.3V2.9A1.4 1.4 0 0 0 9 1.5H3.9A1.4 1.4 0 0 0 2.5 2.9V8a1.4 1.4 0 0 0 1.4 1.4h.4"></path></svg><span style="{{ flowCopiedShow }}">✓</span></button>
+          <button type="button" onClick="{{ toggleHideDone }}" style="{{ hideDoneStyle }}" title="Hide anything at 100%"><span style="{{ hideDoneMarkStyle }}"></span>{{ hideDoneLabel }}</button>
+        </div>
+        <div style="{{ sprintEmptyStyle }}">{{ sprintEmptyLabel }}</div>
+
+        <!-- sprint table -->
+        <div style="{{ sprintPanelStyle }}">
+          <div style="display:flex;align-items:baseline;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)">
+            <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)">Sprints</span>
+            <span style="font-size:13.5px;font-weight:600">{{ sprintTableLabel }}</span>
+          </div>
+          <sc-for list="{{ sprintRows }}" as="s" hint-placeholder-count="5">
+            <button type="button" onClick="{{ s.go }}" style="{{ s.style }}">
+              <span style="font-family:var(--mono);font-size:12px;font-weight:500;color:var(--ink);width:38px;flex:none;text-align:left">{{ s.id }}</span>
+              <span style="min-width:0;flex:1;text-align:left;font-size:13.5px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ s.theme }}</span>
+              <span style="{{ s.statusStyle }}">{{ s.status }}</span>
+              <span style="width:150px;flex:none;display:flex;align-items:center;gap:8px">
+                <span style="flex:1;height:4px;border-radius:3px;background:var(--bg-3);overflow:hidden"><i style="{{ s.barStyle }}"></i></span>
+                <span style="font-family:var(--mono);font-size:11px;color:var(--muted);width:34px;text-align:right">{{ s.pct }}</span>
+              </span>
+              <span style="width:118px;flex:none;font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right">{{ s.hours }}</span>
+              <span style="{{ s.flagStyle }}">{{ s.flag }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ════════════════════ SPRINT DETAIL: plan DAG ════════════════════ -->
+  <sc-if value="{{ isSprintDetail }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;min-height:0;display:flex;flex-direction:column;background:var(--bg-2)">
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 22px;border-bottom:1px solid var(--line);background:var(--bg);flex:none">
+        <button type="button" onClick="{{ backToSprints }}" style="padding:4px 10px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;font-family:var(--mono);font-size:11.5px">← sprints</button>
+        <span style="font-family:var(--mono);font-size:12px;color:var(--ink-2)">{{ sdId }}</span>
+        <span style="font-size:15px;font-weight:600;letter-spacing:-.012em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ sdTheme }}</span>
+        <div style="flex:1"></div>
+        <button type="button" onClick="{{ copySprint }}" style="{{ copySprintStyle }}" title="{{ copySprintTip }}"><svg style="{{ sprintCopiedHide }}" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><rect x="5.6" y="5.6" width="8" height="8" rx="1.6"></rect><path d="M10.4 3.3V2.9A1.4 1.4 0 0 0 9 1.5H3.9A1.4 1.4 0 0 0 2.5 2.9V8a1.4 1.4 0 0 0 1.4 1.4h.4"></path></svg><span style="{{ sprintCopiedShow }}">✓</span></button>
+      </div>
+      <div style="display:flex;gap:26px;padding:11px 22px;border-bottom:1px solid var(--line);background:var(--bg);flex:none">
+        <sc-for list="{{ sdStats }}" as="s" hint-placeholder-count="5">
+          <div style="display:flex;flex-direction:column;gap:0">
+            <span style="font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);white-space:nowrap">{{ s.k }}</span>
+            <span style="{{ s.vStyle }}">{{ s.v }}</span>
+          </div>
+        </sc-for>
+        <div style="flex:1"></div>
+        <div style="display:flex;align-items:center;gap:14px;font-family:var(--mono);font-size:10.5px;color:var(--muted)">
+          <span><i style="display:inline-block;width:12px;height:8px;border:1px solid var(--line-2);border-radius:2px;margin-right:5px;vertical-align:middle"></i>in this sprint</span>
+          <span><i style="display:inline-block;width:12px;height:8px;border:1px dashed var(--line-2);border-radius:2px;margin-right:5px;vertical-align:middle"></i>prerequisite outside it</span>
+        </div>
+      </div>
+      <div style="flex:1;min-height:0;overflow:auto;padding:26px 30px 60px">
+        <div style="position:relative;{{ dagSizeStyle }}">
+          <svg width="{{ dagW }}" height="{{ dagH }}" style="position:absolute;inset:0;overflow:visible">
+            <sc-for list="{{ dagEdges }}" as="e" hint-placeholder-count="4">
+              <g>
+                <path d="{{ e.d }}" fill="none" stroke="{{ e.stroke }}" stroke-width="{{ e.w }}" stroke-dasharray="{{ e.dash }}"></path>
+                <polygon points="{{ e.head }}" fill="{{ e.stroke }}"></polygon>
+              </g>
+            </sc-for>
+          </svg>
+          <sc-for list="{{ dagNodes }}" as="n" hint-placeholder-count="6">
+            <button type="button" onClick="{{ n.go }}" style="{{ n.style }}">
+              <span style="display:flex;align-items:center;gap:7px">
+                <span style="{{ n.dotStyle }}"></span>
+                <span style="font-size:12.5px;font-weight:600;letter-spacing:-.008em;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ n.title }}</span>
+              </span>
+              <span style="font-family:var(--mono);font-size:10.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ n.slug }}</span>
+              <span style="height:3px;border-radius:3px;background:var(--bg-3);overflow:hidden;display:block"><i style="{{ n.barStyle }}"></i></span>
+              <span style="display:flex;align-items:baseline;gap:7px;font-family:var(--mono);font-size:10.5px">
+                <span style="{{ n.statusStyle }}">{{ n.status }}</span>
+                <div style="flex:1"></div>
+                <span style="color:var(--faint)">{{ n.hours }}</span>
+              </span>
+            </button>
+          </sc-for>
+          <sc-for list="{{ dagColumns }}" as="c" hint-placeholder-count="3">
+            <span style="{{ c.style }}">{{ c.label }}</span>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ════════════════════ GRAPH INDEX ════════════════════ -->
+  <sc-if value="{{ isGraphIndex }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;min-height:0;overflow-y:auto;background:var(--bg-2)">
+      <div style="max-width:1360px;margin:0 auto;padding:22px 26px 60px;display:flex;flex-direction:column;gap:18px">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span style="font-size:14px;font-weight:600;letter-spacing:-.01em">Graphs</span>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">{{ gIndexLabel }}</span>
+          <sc-for list="{{ gIndexStats }}" as="s" hint-placeholder-count="3">
+            <span style="{{ s.style }}"><span style="color:var(--faint)">{{ s.k }}</span> {{ s.v }}</span>
+          </sc-for>
+          <div style="flex:1"></div>
+          <button type="button" onClick="{{ copyGIndex }}" style="{{ copyGIndexStyle }}" title="{{ copyGIndexTip }}"><svg style="{{ gindexCopiedHide }}" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><rect x="5.6" y="5.6" width="8" height="8" rx="1.6"></rect><path d="M10.4 3.3V2.9A1.4 1.4 0 0 0 9 1.5H3.9A1.4 1.4 0 0 0 2.5 2.9V8a1.4 1.4 0 0 0 1.4 1.4h.4"></path></svg><span style="{{ gindexCopiedShow }}">✓</span></button>
+          <button type="button" onClick="{{ toggleHideDone }}" style="{{ hideDoneStyle }}" title="Hide anything at 100%"><span style="{{ hideDoneMarkStyle }}"></span>{{ hideDoneLabel }}</button>
+        </div>
+        <div style="{{ gIndexEmptyStyle }}">{{ gIndexEmptyLabel }}</div>
+        <div style="{{ gIndexPanelStyle }}">
+          <div style="display:flex;align-items:baseline;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)">
+            <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)">Trajectories</span>
+            <span style="font-size:13.5px;font-weight:600">{{ gIndexLabel }}</span>
+          </div>
+          <sc-for list="{{ gIndexRows }}" as="g" hint-placeholder-count="5">
+            <button type="button" onClick="{{ g.go }}" style="display:flex;align-items:center;gap:12px;width:100%;padding:11px 16px;border:0;border-bottom:1px solid var(--line);background:transparent;cursor:pointer;text-align:left">
+              <span style="{{ g.handleStyle }}">{{ g.handle }}</span>
+              <span style="min-width:0;flex:1;display:flex;flex-direction:column;gap:1px">
+                <span style="font-size:13.5px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ g.title }}</span>
+                <span style="font-family:var(--mono);font-size:10.5px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ g.endpoint }}</span>
+              </span>
+              <span style="width:150px;flex:none;display:flex;align-items:center;gap:8px">
+                <span style="flex:1;height:4px;border-radius:3px;background:var(--bg-3);overflow:hidden"><i style="{{ g.barStyle }}"></i></span>
+                <span style="font-family:var(--mono);font-size:11px;color:var(--muted);width:34px;text-align:right">{{ g.pct }}</span>
+              </span>
+              <span style="width:126px;flex:none;font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right">{{ g.shape }}</span>
+              <span style="width:96px;flex:none;font-family:var(--mono);font-size:11px;color:var(--ink-2);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ g.scope }}</span>
+              <span style="{{ g.flagStyle }}">{{ g.flag }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ════════════════════ GRAPH DETAIL ════════════════════ -->
+  <sc-if value="{{ isGraphDetail }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;min-height:0;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 22px;border-bottom:1px solid var(--line);flex:none">
+        <button type="button" onClick="{{ backToGraphs }}" style="padding:4px 10px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;font-family:var(--mono);font-size:11.5px;flex:none">← graphs</button>
+        <div style="display:flex;align-items:center;gap:4px;flex:none">
+          <button type="button" onClick="{{ gPrev }}" style="{{ gPrevStyle }}">‹</button>
+          <span style="font-family:var(--mono);font-size:11.5px;color:var(--muted);min-width:44px;text-align:center">{{ gPos }}</span>
+          <button type="button" onClick="{{ gNext }}" style="{{ gNextStyle }}">›</button>
+        </div>
+        <span style="{{ gHandleStyle }}">{{ gHandle }}</span>
+        <span style="font-size:15px;font-weight:600;letter-spacing:-.012em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ gTitle }}</span>
+        <span style="font-family:var(--mono);font-size:11.5px;color:var(--muted);flex:none">{{ gSub }}</span>
+        <div style="flex:1"></div>
+        <button type="button" onClick="{{ gCopy }}" style="{{ gCopyStyle }}" title="{{ gCopyTip }}"><svg style="{{ graphCopiedHide }}" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><rect x="5.6" y="5.6" width="8" height="8" rx="1.6"></rect><path d="M10.4 3.3V2.9A1.4 1.4 0 0 0 9 1.5H3.9A1.4 1.4 0 0 0 2.5 2.9V8a1.4 1.4 0 0 0 1.4 1.4h.4"></path></svg><span style="{{ graphCopiedShow }}">✓</span></button>
+        <span style="{{ gNoHandleStyle }}" title="{{ gNoHandleTip }}">needs plan-graph-handle</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 22px;border-bottom:1px solid var(--line);flex:none;flex-wrap:wrap">
+        <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)">Derived authority</span>
+        <sc-for list="{{ gScopes }}" as="s" hint-placeholder-count="2">
+          <span style="display:inline-flex;align-items:baseline;gap:6px;padding:2px 8px;border:1px solid var(--line);border-radius:5px;font-family:var(--mono);font-size:11px;color:var(--ink-2)">{{ s.repo }}<b style="color:var(--muted);font-weight:500">{{ s.n }}</b></span>
+        </sc-for>
+        <div style="flex:1"></div>
+        <span style="{{ gStateStyle }}">{{ gState }}</span>
+      </div>
+      <div style="flex:1;min-height:0;display:flex">
+        <div style="width:280px;flex:none;border-right:1px solid var(--line);overflow-y:auto;padding:12px 0">
+          <div style="padding:0 14px 8px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)">Closure · {{ gCount }}</div>
+          <sc-for list="{{ gMembers }}" as="m" hint-placeholder-count="6">
+            <button type="button" onClick="{{ m.go }}" style="{{ m.style }}">
+              <span style="font-family:var(--mono);font-size:10px;color:var(--faint)">{{ m.repo }}</span>
+              <span style="font-size:12.5px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ m.title }}</span>
+              <span style="{{ m.statusStyle }}">{{ m.status }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="flex:1;min-width:0;overflow:auto;padding:26px 30px 50px;background:var(--bg-2)">
+          <div style="position:relative;{{ gDagSizeStyle }}">
+            <svg width="{{ gDagW }}" height="{{ gDagH }}" style="position:absolute;inset:0;overflow:visible">
+              <sc-for list="{{ gEdges }}" as="e" hint-placeholder-count="5">
+                <g>
+                  <path d="{{ e.d }}" fill="none" stroke="{{ e.stroke }}" stroke-width="{{ e.w }}" stroke-dasharray="{{ e.dash }}"></path>
+                  <polygon points="{{ e.head }}" fill="{{ e.stroke }}"></polygon>
+                </g>
+              </sc-for>
+            </svg>
+            <sc-for list="{{ gNodes }}" as="n" hint-placeholder-count="6">
+              <button type="button" onClick="{{ n.go }}" style="{{ n.style }}">
+                <span style="display:flex;align-items:center;gap:7px">
+                  <span style="{{ n.dotStyle }}"></span>
+                  <span style="font-size:12.5px;font-weight:600;letter-spacing:-.008em;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ n.title }}</span>
+                </span>
+                <span style="font-family:var(--mono);font-size:10.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ n.slug }}</span>
+                <span style="height:3px;border-radius:3px;background:var(--bg-3);overflow:hidden;display:block"><i style="{{ n.barStyle }}"></i></span>
+                <span style="display:flex;align-items:baseline;gap:7px;font-family:var(--mono);font-size:10.5px">
+                  <span style="{{ n.statusStyle }}">{{ n.status }}</span>
+                  <div style="flex:1"></div>
+                  <span style="color:var(--faint)">{{ n.hours }}</span>
+                </span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ════════════════════ CREW ════════════════════ -->
+  <sc-if value="{{ isCrew }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;min-height:0;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 22px;border-bottom:1px solid var(--line);flex:none">
+        <span style="font-size:15px;font-weight:600;letter-spacing:-.012em">Crew</span>
+        <span style="font-family:var(--mono);font-size:11.5px;color:var(--muted)">{{ crewLabel }}</span>
+        <div style="flex:1"></div>
+      </div>
+      <div style="flex:1;min-height:0;overflow-y:auto;padding:18px 22px 50px">
+        <div style="display:flex;flex-direction:column;gap:16px;max-width:1160px">
+        <!-- derived flow: sessions × dependency-derived schedule -->
+        <div style="border:1px solid var(--line);border-radius:11px;background:var(--bg);overflow:hidden">
+          <div style="display:flex;align-items:baseline;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)">
+            <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)">Derived flow</span>
+            <span style="font-size:13.5px;font-weight:600">{{ flowLaneLabel }}</span>
+            <div style="flex:1"></div>
+            <div style="display:flex;gap:14px;font-family:var(--mono);font-size:10.5px;color:var(--muted)">
+              <span><i style="display:inline-block;width:9px;height:5px;border-radius:2px;background:var(--ok);margin-right:5px"></i>recorded</span>
+              <span><i style="display:inline-block;width:9px;height:5px;border-radius:2px;background:var(--accent);margin-right:5px"></i>in flight</span>
+              <span><i style="display:inline-block;width:9px;height:5px;border-radius:2px;background:var(--line-2);margin-right:5px"></i>predicted</span>
+              <span><i style="display:inline-block;width:9px;height:5px;border-radius:2px;background:var(--bad);margin-right:5px"></i>held</span>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:6px;padding:9px 16px;border-bottom:1px solid var(--line);background:var(--bg-2);flex-wrap:wrap">
+            <span style="font-family:var(--mono);font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);margin-right:3px">Sprint</span>
+            <sc-for list="{{ flowSprintChips }}" as="c" hint-placeholder-count="4">
+              <button type="button" onClick="{{ c.go }}" style="{{ c.style }}">{{ c.label }}<span style="opacity:.6;margin-left:5px">{{ c.n }}</span></button>
+            </sc-for>
+          </div>
+
+          <div style="padding:14px 16px 16px;overflow-x:auto">
+            <div style="{{ flowWidthStyle }}">
+              <!-- axis -->
+              <div style="position:relative;height:22px;margin-left:210px;border-bottom:1px solid var(--line)">
+                <sc-for list="{{ flowTicks }}" as="t" hint-placeholder-count="8">
+                  <span style="{{ t.style }}">{{ t.label }}</span>
+                </sc-for>
+                <i style="{{ nowLineStyle }}"></i>
+              </div>
+              <!-- lanes -->
+              <sc-for list="{{ flowLanes }}" as="lane" hint-placeholder-count="4">
+                <div style="display:flex;align-items:stretch;border-bottom:1px solid var(--line)">
+                  <div style="width:210px;flex:none;padding:9px 12px 9px 0;display:flex;flex-direction:column;gap:1px">
+                    <span style="font-family:var(--mono);font-size:11px;color:var(--ink-2)">{{ lane.name }}</span>
+                    <span style="font-family:var(--mono);font-size:10px;color:var(--faint)">{{ lane.note }}</span>
+                  </div>
+                  <div style="flex:1;position:relative;min-height:44px">
+                    <i style="{{ nowLineStyle }}"></i>
+                    <sc-for list="{{ lane.bars }}" as="b" hint-placeholder-count="2">
+                      <button type="button" onClick="{{ b.go }}" style="{{ b.style }}" title="{{ b.tip }}">
+                        <span style="{{ b.fillStyle }}"></span>
+                        <span style="{{ b.sprintStyle }}">{{ b.sprint }}</span>
+                        <span style="position:relative;z-index:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ b.label }}</span>
+                        <span style="position:relative;z-index:1;margin-left:auto;flex:none;opacity:.7">{{ b.hours }}</span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+          <sc-for list="{{ crewCards }}" as="c" hint-placeholder-count="4">
+            <div style="{{ c.style }}">
+              <div style="min-width:0;display:flex;flex-direction:column;gap:5px">
+                <div style="display:flex;align-items:baseline;gap:8px;font-family:var(--mono);font-size:11.5px;min-width:0">
+                  <span style="{{ c.dotStyle }}"></span>
+                  <span style="color:var(--ink-2)">{{ c.dispatch }}</span>
+                  <span style="color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.role }}</span>
+                  <div style="flex:1"></div>
+                  <span style="{{ c.phaseStyle }}">{{ c.phase }}</span>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:8px;min-width:0">
+                  <span style="font-family:var(--mono);font-size:10.5px;padding:1px 6px;border:1px solid var(--line-2);border-radius:4px;color:var(--ink-2);flex:none">{{ c.repo }}</span>
+                  <span style="font-size:13.5px;font-weight:600;letter-spacing:-.008em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.plan }}</span>
+                  <span style="font-family:var(--mono);font-size:11.5px;color:var(--accent);flex:none">{{ c.section }}</span>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:8px;min-width:0">
+                  <span style="font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--faint);flex:none">DONE-WHEN</span>
+                  <span style="font-size:12.5px;color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.doneWhen }}</span>
+                </div>
+              </div>
+              <div style="width:170px;flex:none;display:flex;flex-direction:column;gap:4px">
+                <span style="font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)">Budget</span>
+                <div style="display:flex;align-items:baseline;gap:6px;font-family:var(--mono);font-size:12px"><strong style="font-weight:500">{{ c.spent }}</strong><span style="color:var(--faint)">/ {{ c.budget }}</span></div>
+                <div style="height:3px;border-radius:3px;background:var(--bg-3);overflow:hidden"><i style="{{ c.budgetBarStyle }}"></i></div>
+                <span style="font-family:var(--mono);font-size:10.5px;color:var(--muted)">{{ c.since }}</span>
+              </div>
+              <div style="width:210px;flex:none;display:flex;flex-direction:column;gap:5px">
+                <span style="font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)">Gates {{ c.gates }}</span>
+                <div style="display:flex;gap:3px">
+                  <sc-for list="{{ c.gateMarks }}" as="g" hint-placeholder-count="3">
+                    <i style="{{ g.style }}"></i>
+                  </sc-for>
+                </div>
+                <span style="font-size:12px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.now }}</span>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ crewEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:34px;border:1px dashed var(--line-2);border-radius:10px;text-align:center;color:var(--muted);font-size:13px">{{ crewEmptyLabel }}</div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ════════════════════ VISIBILITY SHEET ════════════════════ -->
+  <sc-if value="{{ visOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;background:rgba(12,13,16,.34);z-index:80;display:grid;place-items:start center;padding-top:74px" onClick="{{ closeVis }}">
+      <div style="width:min(560px,92vw);max-height:74vh;display:flex;flex-direction:column;border:1px solid var(--line-2);border-radius:12px;background:var(--bg);box-shadow:0 24px 64px rgba(12,13,16,.24);overflow:hidden" onClick="{{ stop }}">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:10px">
+          <h3 style="margin:0;font-size:15px;font-weight:600;letter-spacing:-.012em">Project visibility</h3>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">{{ visCountLabel }}</span>
+          <div style="flex:1"></div>
+          <button type="button" onClick="{{ closeVis }}" style="padding:3px 9px;border:1px solid var(--line);border-radius:5px;background:transparent;color:var(--muted);cursor:pointer;font-family:var(--mono);font-size:11px">esc</button>
+        </div>
+        <div style="flex:1;min-height:0;overflow-y:auto;padding:8px">
+          <sc-for list="{{ visRows }}" as="v" hint-placeholder-count="8">
+            <button type="button" onClick="{{ v.toggle }}" style="{{ v.style }}">
+              <span style="{{ v.switchStyle }}"><i style="{{ v.knobStyle }}"></i></span>
+              <span style="font-family:var(--mono);font-size:12px;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ v.id }}</span>
+              <span style="font-family:var(--mono);font-size:11px;color:var(--faint)">{{ v.counts }}</span>
+              <div style="flex:1"></div>
+              <span style="{{ v.stateStyle }}">{{ v.state }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ════════════════════ PALETTE ════════════════════ -->
+  <sc-if value="{{ paletteOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;background:rgba(12,13,16,.34);z-index:90;display:grid;place-items:start center;padding-top:88px" onClick="{{ closePalette }}">
+      <div style="width:min(620px,92vw);border:1px solid var(--line-2);border-radius:12px;background:var(--bg);box-shadow:0 24px 64px rgba(12,13,16,.24);overflow:hidden" onClick="{{ stop }}">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 15px;border-bottom:1px solid var(--line)">
+          <span style="font-family:var(--mono);font-size:12px;color:var(--faint)">›</span>
+          <input value="{{ q }}" onChange="{{ onQ }}" placeholder="Plans, research, evidence, figures, sprints…" style="flex:1;border:0;outline:0;background:transparent;font:inherit;font-size:15px;color:var(--ink)">
+        </div>
+        <div style="max-height:52vh;overflow-y:auto">
+          <sc-for list="{{ paletteRows }}" as="r" hint-placeholder-count="6">
+            <button type="button" onClick="{{ r.go }}" style="{{ r.style }}">
+              <span style="{{ r.kindStyle }}">{{ r.kind }}</span>
+              <span style="min-width:0;flex:1;text-align:left;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.label }}</span>
+              <span style="font-family:var(--mono);font-size:10.5px;color:var(--faint);flex:none">{{ r.repo }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  state = {
+    view: "home", project: "reckon", sort: "edited", status: "all",
+    projOpen: false, visOpen: false, palette: false, q: "", flowSprint: null, readGraph: false, reading: false,
+    hidden: ["helix", "norma", "tessera", "vv", "L2G", "hanney", "imas-standard-names", "imas-standard-names-catalog"],
+    sel: { plan: null, research: null, evidence: null, figure: null },
+    sprint: null, gSel: null, dormantOpen: false, hideDone: false,
+    pending: 0, copied: "", today: "2026-09-03",
+  };
+
+  // ── fixture: shapes and slugs read from Simon-McIntosh/{reckon,nova,imas-codex}@main ──
+  D = {
+    projects: [
+      { id: "reckon", live: 2, last: "8 min", activity: [2, 0, 1, 3, 1, 0, 4, 2, 5, 3, 1, 0, 2, 6, 4, 3, 7, 5, 2, 4, 8, 6, 3, 9, 7, 5, 11, 8, 6, 12] },
+      { id: "nova", live: 3, last: "31 min", activity: [5, 3, 6, 4, 7, 2, 5, 8, 3, 6, 4, 7, 5, 3, 8, 6, 4, 7, 9, 5, 3, 6, 8, 4, 7, 5, 9, 6, 4, 8] },
+      { id: "imas-codex", live: 0, last: "Aug 23", activity: [0, 0, 1, 0, 0, 0, 2, 0, 0, 1, 0, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1, 0] },
+      { id: "imas-ambix", live: 1, last: "3 h", activity: [4, 6, 3, 5, 7, 2, 4, 3, 5, 2, 3, 1, 2, 4, 1, 2, 0, 1, 2, 0, 1, 0, 2, 1, 0, 1, 0, 2, 1, 3] },
+      { id: "imas-efit", live: 0, last: "Jul 2", activity: [] },
+      { id: "imas-standard-names", live: 0, last: "May 14" },
+      { id: "imas-standard-names-catalog", live: 0, last: "May 14" },
+      { id: "norma", live: 0, last: "Apr 2" },
+      { id: "helix", live: 0, last: "Jun 30" },
+      { id: "hanney", live: 0, last: "Jul 20" },
+      { id: "tessera", live: 0, last: "Mar 8" },
+      { id: "vv", live: 0, last: "Feb 19" },
+      { id: "L2G", live: 0, last: "—" },
+    ],
+    plans: [
+      { repo: "reckon", slug: "spa-surface-redesign", title: "Redraw the Degraded Surfaces", status: "active", pct: 62, effort: 26, wall: 18, created: "08-28", edited: "09-03 08:12", sprint: "S14", deps: ["rendered-evidence-on-this-host"], elapsed: 11,
+        lede: "Seven canvas surfaces are implemented against the existing components with no parallel component family, and each audit rank carries a rendering assertion proving its signal survived the redraw.",
+        body: [{ sec: "§2", head: "One component family, not two", text: "A second family would let the audited surface and the served surface drift apart silently. Every surface is redrawn in place; the assertion is that the signal named by the audit rank still renders." },
+               { sec: "§4", head: "Assertions are per audit rank", text: "Ranks 3, 6, 9, 10, 13 and 14 each get a rendering assertion. A redraw that loses one of those signals fails the gate rather than passing quietly." }] },
+      { repo: "reckon", slug: "sprint-horizon-surface", title: "A Horizon No Longer Than Two Days", status: "active", pct: 40, effort: 14, wall: 10, created: "08-28", edited: "09-03 07:44", sprint: "S14", deps: ["rendered-evidence-on-this-host"], elapsed: 4,
+        lede: "No horizon longer than 48 hours and a now-line derived from the current instant that advances without a reload.",
+        body: [{ sec: "§1", head: "The now-line advances without a reload", text: "A timeline whose now-line only moves on refresh reports a lie between refreshes. The instant is read on a timer and the line is positioned from it." },
+               { sec: "§3", head: "Every sprint is a row", text: "Status, implementation, derived order position and blocked/delayed/active flags. The active-pointer conflict is badged, not resolved — resolving it silently hides a real inconsistency." }] },
+      { repo: "reckon", slug: "rendered-evidence-on-this-host", title: "Rendered Evidence On This Host", status: "shipped", pct: 100, effort: 6, wall: 6, created: "08-20", edited: "08-31 16:03", sprint: "S13", deps: [], landed: 62,
+        lede: "A rendered probe on this host loads a page from the local server and returns a DOM, or the cause is named with the trace demonstrating it.",
+        body: [{ sec: "§1", head: "Six captures, taken or retired", text: "Each of the six enumerated captures is either taken, or retired with the reason its behaviour is adequately covered without one." }] },
+      { repo: "reckon", slug: "concurrency-and-schedule-visibility", title: "What May Run Together, and What Should Run Next", status: "active", pct: 55, effort: 12, wall: 9, created: "08-22", edited: "09-02 19:20", sprint: "S14", deps: ["dependency-edge-semantics"], elapsed: 5,
+        lede: "Ready nodes, scope collisions and the frontier the fleet can actually absorb.",
+        body: [{ sec: "§3", head: "Width is bounded by claims, not by the graph", text: "Three dependency-independent nodes all claimed scripts/solver/, so the partition collapsed them to one lane. Graph width without the claim partition invites a wave that gets refused." }] },
+      { repo: "reckon", slug: "dependency-edge-semantics", title: "Dependency Edge Semantics", status: "active", pct: 30, effort: 9, wall: 7, created: "08-26", edited: "09-02 11:05", sprint: "S15", deps: [], elapsed: 2,
+        lede: "depends-on and informs are different claims about the graph and must not collapse into one edge type.",
+        body: [{ sec: "§1", head: "Provenance runs research → plan → evidence", text: "An informs edge carries provenance, not order. Treating it as a prerequisite serialises work that could run in parallel." }] },
+      { repo: "reckon", slug: "clive-local-workers", title: "Local Models As A First-Class Lane", status: "active", pct: 20, effort: 30, wall: 22, created: "08-30", edited: "09-03 06:58", sprint: "S15", deps: ["self-hosted-worker-backends", "crew-effort-routing"], elapsed: 3,
+        lede: "GLM 5.3 and DSv4 flash are declared backends with pinned effort; crew dispatch --local resolves a local_backend flight key and refuses when unset.",
+        body: [{ sec: "§2", head: "Ten promoted runs before the lane counts", text: "Investigate and review nodes run on the local lane with at least ten promoted runs, and at least ten usable shadow pairs per local model on implementation nodes." },
+               { sec: "§5", head: "Defaults are locked from the ledger, not from priors", text: "The default effort per specification level is locked from the ledger query with its counts recorded — 2,201 runs, not the 58-run prior." }] },
+      { repo: "reckon", slug: "self-hosted-worker-backends", title: "Self-Hosted Worker Backends", status: "shipped", pct: 100, effort: 18, wall: 14, created: "07-30", edited: "08-24 09:31", sprint: "S8", deps: [], landed: 240,
+        lede: "A backend declaring an environment map resolves through reckon flight with per-key provenance and reaches the spawned worker merged over the inherited environment.", body: [] },
+      { repo: "reckon", slug: "crew-effort-routing", title: "Crew Effort Routing", status: "active", pct: 92, effort: 8, wall: 6, created: "08-11", edited: "09-02 21:47", sprint: "S15", deps: ["effort-calibration"], elapsed: 5,
+        lede: "Route a node to the backend and effort tier its declared capability actually needs.",
+        body: [{ sec: "§6", head: "One checkpoint remains", text: "The remaining checkpoint section lands against the same ledger query the local-worker plan locks its defaults from. Leaving it unscheduled would make two plans lock the same defaults from different reads." }] },
+      { repo: "reckon", slug: "effort-calibration", title: "Effort Calibration", status: "shipped", pct: 100, effort: 12, wall: 9, created: "07-18", edited: "08-19 14:12", sprint: "S9", deps: ["crew-run-ledger"], landed: 320,
+        lede: "Legacy letters migrate losslessly to worker-hours; the two calibration loops are proven separable and scope-changed runs excluded.", body: [] },
+      { repo: "reckon", slug: "promotion-consequence-gate", title: "Promotion Has A Consequence", status: "active", pct: 45, effort: 10, wall: 8, created: "08-27", edited: "09-02 15:33", sprint: "S15", deps: ["crew-run-ledger"], elapsed: 3,
+        lede: "A promoted run changes state somewhere a human can see, or the promotion did not happen.",
+        body: [{ sec: "§2", head: "Silent promotion is indistinguishable from no promotion", text: "The gate asserts a state delta at promotion time and refuses the promotion when none is produced." }],
+        decisions: [{ q: "Does a promotion with no state delta refuse, or record a no-op with a reason?", age: "2d" }] },
+      { repo: "reckon", slug: "native-agent-dispatch-guard", title: "Native Agent Dispatch Guard", status: "blocked", pct: 15, effort: 7, wall: 6, created: "08-29", edited: "09-01 10:02", sprint: "S15", deps: ["promotion-consequence-gate"],
+        lede: "Dispatch makes the coordinator supply facts it could derive — which member is free, and whether a role can execute anything — and neither omission is refused at the point it is made.",
+        body: [{ sec: "§1", head: "Refuse at the point of the omission", text: "A dispatch missing a derivable fact is refused where it is made, not discovered three hours later in a ledger." }],
+        decisions: [{ q: "Should a role with no executable capability refuse dispatch or warn and continue?", age: "5d" }] },
+      { repo: "reckon", slug: "binding-rules-need-bound-checks", title: "Binding Rules Need Bound Checks", status: "pending", pct: 0, effort: 5, wall: 4, created: "09-01", edited: "09-01 09:14", sprint: null, deps: ["dependency-edge-semantics"],
+        lede: "A rule that claims to bind must be checked against the thing it binds.", body: [] },
+      { repo: "reckon", slug: "sprint-review-persistence", title: "Sprint Review Persistence", status: "active", pct: 70, effort: 6, wall: 5, created: "08-25", edited: "09-02 18:00", sprint: "S14", deps: [], elapsed: 3,
+        lede: "Review findings and derived sprint order survive a restart and stay attributable to the review that produced them.", body: [] },
+      { repo: "reckon", slug: "derived-gate-state", title: "Derived Gate State", status: "active", pct: 95, effort: 5, wall: 4, created: "08-05", edited: "09-01 08:47", sprint: "S13", deps: [], elapsed: 3.5,
+        lede: "Gate verdicts derived from evidence rather than asserted on the plan.",
+        body: [{ sec: "§1", head: "A gate whose evidence cannot be produced is a recorded negative", text: "not-run is a real answer. Collapsing it into failed loses the distinction between a gate that failed and a gate nobody could run." }] },
+      { repo: "reckon", slug: "blank-project-surface", title: "Blank Project Surface", status: "shipped", pct: 100, effort: 4, wall: 3, created: "08-14", edited: "08-30 12:22", sprint: "S13", deps: [], landed: 84,
+        lede: "A registered project with no plans renders an onboarding surface, not an empty shell.", body: [] },
+      { repo: "reckon", slug: "completion-is-not-silent", title: "Finished Work Should Not Wait To Be Noticed", status: "shipped", pct: 100, effort: 9, wall: 7, created: "07-02", edited: "08-18 11:40", sprint: "S10", deps: [], landed: 380,
+        lede: "Dispatch is fire-and-forget, so a finished node stays unnoticed until someone looks.", body: [] },
+      { repo: "reckon", slug: "inflight-visibility", title: "In-Flight Visibility", status: "shipped", pct: 100, effort: 10, wall: 8, created: "07-10", edited: "08-21 16:55", sprint: "S9", deps: ["crew-run-ledger"], landed: 300,
+        lede: "GET /crew reports working within 3s of a real dispatch and done after the terminal event.", body: [] },
+      { repo: "reckon", slug: "north-star-orientation", title: "North-Star Orientation", status: "shipped", pct: 100, effort: 7, wall: 6, created: "07-14", edited: "08-20 10:10", sprint: "S9", deps: [], landed: 330 },
+      { repo: "reckon", slug: "resource-tagging-system", title: "Resource Tagging System", status: "shipped", pct: 100, effort: 11, wall: 8, created: "06-28", edited: "08-16 13:20", sprint: "S7", deps: [], landed: 420 },
+      { repo: "reckon", slug: "surface-latency-and-legibility", title: "Surface Latency And Legibility", status: "shipped", pct: 100, effort: 9, wall: 7, created: "07-22", edited: "08-27 09:05", sprint: "S12", deps: [], landed: 160 },
+      { repo: "reckon", slug: "flight-control-config", title: "Flight Control Config", status: "active", pct: 35, effort: 6, wall: 5, created: "08-19", edited: "09-01 17:31", sprint: null, deps: [], elapsed: 1.8 },
+      { repo: "reckon", slug: "budget-aware-dispatch", title: "Budget-Aware Dispatch", status: "pending", pct: 0, effort: 8, wall: 6, created: "08-31", edited: "08-31 08:00", sprint: null, deps: ["crew-run-ledger"] },
+      { repo: "nova", slug: "batched-operator-boundary", title: "Batched Operator Boundary", status: "draft", pct: 0, effort: 10, wall: 8, created: "09-01", edited: "09-02 14:02", sprint: "S19", deps: ["forward-solve-api"],
+        lede: "Host geometry and member data as separate arguments, so a batched operator stops re-deriving the boundary per member.", body: [] },
+      { repo: "nova", slug: "forward-solve-api", title: "Forward Solve API", status: "active", pct: 15, effort: 14, wall: 11, created: "08-18", edited: "09-02 09:40", sprint: "S19", deps: [], elapsed: 2 },
+      { repo: "nova", slug: "gs-absolute-accuracy-gates", title: "GS Absolute Accuracy Gates", status: "active", pct: 80, effort: 12, wall: 9, created: "08-04", edited: "09-02 08:15", sprint: "S18", deps: [], elapsed: 7 },
+      { repo: "nova", slug: "millisecond-converged-solve", title: "Millisecond Converged Solve", status: "active", pct: 30, effort: 20, wall: 15, created: "08-09", edited: "09-02 07:50", sprint: "S18", deps: ["gs-absolute-accuracy-gates"], elapsed: 4 },
+      { repo: "nova", slug: "solver-convergence-regression", title: "Solver Convergence Regression", status: "active", pct: 95, effort: 6, wall: 5, created: "08-25", edited: "09-02 06:30", sprint: "S18", deps: [], elapsed: 4.5 },
+      { repo: "nova", slug: "ensemble-forward-seam", title: "Ensemble Forward Seam", status: "active", pct: 90, effort: 16, wall: 12, created: "07-28", edited: "09-01 20:00", sprint: "S12", deps: [], elapsed: 10 },
+      // ── real edges read from docs/plans/*.html plan-depends-on meta ──
+      { repo: "reckon", slug: "pypi-release", title: "PyPI Release", status: "shipped", pct: 100, effort: 5, wall: 4, created: "06-02", edited: "07-14 10:00", sprint: "S7", deps: [], landed: 620 },
+      { repo: "reckon", slug: "project-state-fleet-migration", title: "Project State Fleet Migration", status: "shipped", pct: 100, effort: 13, wall: 10, created: "06-10", edited: "07-20 12:30", sprint: "S7", deps: [], landed: 560 },
+      { repo: "reckon", slug: "project-onboarding", title: "Project Onboarding", status: "shipped", pct: 100, effort: 8, wall: 6, created: "06-18", edited: "08-02 09:15", sprint: "S8", deps: ["pypi-release", "project-state-fleet-migration"], landed: 480 },
+      { repo: "reckon", slug: "sprint-scope-and-surface", title: "Sprint Scope And Surface", status: "active", pct: 70, effort: 16, wall: 12, created: "07-05", edited: "09-02 16:40", sprint: "S12", deps: ["pypi-release", "project-onboarding", "resource-tagging-system"], elapsed: 8, handle: "sprint-federation",
+        lede: "A sprint is scoped by the repositories its members occupy, and the surface must show that scope rather than assume one project.", body: [] },
+      { repo: "reckon", slug: "codex-agent-context-compatibility", title: "Codex Agent Context Compatibility", status: "shipped", pct: 100, effort: 14, wall: 11, created: "07-01", edited: "07-29 11:00", sprint: "S5", deps: [], landed: 440 },
+      { repo: "reckon", slug: "research-evidence-provenance", title: "Research And Evidence Provenance", status: "shipped", pct: 100, effort: 18, wall: 13, created: "07-02", edited: "07-29 13:20", sprint: "S5", deps: [], landed: 436 },
+      { repo: "reckon", slug: "model-capability-schema", title: "Model Capability Schema", status: "shipped", pct: 100, effort: 12, wall: 9, created: "07-08", edited: "07-29 15:05", sprint: "S5", deps: ["codex-agent-context-compatibility"], landed: 430 },
+      { repo: "reckon", slug: "typed-artifact-layout", title: "Typed Artifact Layout", status: "shipped", pct: 100, effort: 20, wall: 15, created: "07-09", edited: "07-29 16:44", sprint: "S5", deps: ["research-evidence-provenance"], landed: 424 },
+      { repo: "reckon", slug: "distributed-sprint-state", title: "Distributed Sprint State", status: "active", pct: 55, effort: 22, wall: 16, created: "07-12", edited: "09-02 10:20", sprint: "S13", deps: ["typed-artifact-layout"], elapsed: 9,
+        lede: "The required project index is a version-contention and payload monolith; split it only after typed roots exist.",
+        body: [{ sec: "§1", head: "Parity before replacement", text: "Separate sprint and project-state resources replace the index only once parity, rollback and concurrency evidence exist." }] },
+      { repo: "reckon", slug: "mcp-readable-responses", title: "MCP Readable Responses", status: "pending", pct: 0, effort: 10, wall: 8, created: "07-14", edited: "08-28 09:00", sprint: "S13", deps: ["model-capability-schema", "typed-artifact-layout", "distributed-sprint-state"],
+        lede: "Layered summary/detail/raw resource responses, targeting the typed and distributed model rather than reformatting the monolith twice.", body: [] },
+      { repo: "reckon", slug: "reckon-ci-build", title: "Reckon CI Build", status: "blocked", pct: 30, effort: 9, wall: 7, created: "07-11", edited: "08-30 14:10", sprint: "S13", deps: ["distributed-sprint-state"],
+        lede: "Validation-only CI is retained and automatic publishing removed; closure waits on the distributed state contract.", body: [],
+        decisions: [{ q: "Is the project index deprecated outright, or frozen and retained as a migration record?", age: "12d" }] },
+      { repo: "reckon", slug: "registered-repo-state-migration", title: "Registered Repo State Migration", status: "pending", pct: 0, effort: 26, wall: 19, created: "07-16", edited: "08-27 11:30", sprint: null, deps: ["model-capability-schema", "typed-artifact-layout", "distributed-sprint-state", "mcp-readable-responses"],
+        lede: "Every host-registered repository reaches a terminal migration-ledger state with a recoverable snapshot and typed evidence.", body: [] },
+      { repo: "reckon", slug: "execution-orchestration-hardening", title: "Execution Orchestration Hardening", status: "active", pct: 65, effort: 24, wall: 18, created: "07-20", edited: "09-01 15:00", sprint: "S12", deps: ["codex-agent-context-compatibility", "research-evidence-provenance", "model-capability-schema"], elapsed: 12,
+        lede: "Bounded, resumable, capability-aware execution rather than a Claude-specific fleet assumption.", body: [] },
+      { repo: "reckon", slug: "uniform-worker-dispatch", title: "Uniform Worker Dispatch", status: "shipped", pct: 100, effort: 11, wall: 8, created: "06-25", edited: "08-08 10:40", sprint: "S8", deps: ["flight-control-config"], landed: 400 },
+      { repo: "reckon", slug: "crew-run-ledger", title: "Crew Run Ledger", status: "shipped", pct: 100, effort: 16, wall: 12, created: "06-28", edited: "08-12 09:50", sprint: "S8", deps: ["uniform-worker-dispatch"], landed: 380 },
+      { repo: "imas-ambix", slug: "physics-carried-playable-plasma", title: "Physics-Carried Playable Plasma", status: "active", pct: 55, effort: 12, wall: 9, created: "08-06", edited: "09-02 18:59", sprint: null, deps: [], elapsed: 6,
+        lede: "A regression test covers a level-2 equilibrium group with no x_point_r/x_point_z and asserts the targets loader returns masked values.", body: [] },
+      { repo: "imas-ambix", slug: "pcp-targets-mask-repair", title: "Targets Mask Repair", status: "shipped", pct: 100, effort: 4, wall: 3, created: "07-30", edited: "09-01 11:20", sprint: null, deps: [], landed: 20 },
+      { repo: "imas-efit", slug: "efit-boundary-parity", title: "EFIT Boundary Parity", status: "active", pct: 25, effort: 9, wall: 7, created: "07-02", edited: "07-02 09:00", sprint: null, deps: [], elapsed: 1 },
+      { repo: "imas-codex", slug: "catalog-export-once", title: "One Release Candidate, Exported Once", status: "shipped", pct: 100, effort: 6, wall: 5, created: "06-20", edited: "08-23 15:40", sprint: null, deps: [], landed: 300 },
+      { repo: "imas-codex", slug: "mast-semantic-source-repair", title: "MAST Semantic Source Repair", status: "active", pct: 60, effort: 9, wall: 7, created: "08-12", edited: "09-01 12:00", sprint: null, deps: [], elapsed: 4,
+        decisions: [{ q: "Repair at the source catalog, or map at read time and leave the catalog wrong?", age: "9d" }] },
+    ],
+    research: [
+      { repo: "reckon", slug: "fleet-delivery-silence", title: "Why Finished Work Goes Unnoticed", created: "08-31", edited: "09-03 07:02", informs: ["completion-is-not-silent", "promotion-consequence-gate"], verdict: "supports",
+        lede: "Three orchestrators were compared on the same question: what happens between a worker finishing and a human learning about it.",
+        body: [{ sec: "§1", head: "Two poll, one pushes", text: "Two poll a heartbeat and kill on a missed window; the third writes a terminal record the coordinator reads. Only the third survives a coordinator restart without losing the completion." }] },
+      { repo: "reckon", slug: "spa-project-render-fault", title: "The Project Surface Renders Nothing", created: "08-30", edited: "09-02 22:10", informs: ["spa-surface-redesign", "blank-project-surface"], verdict: "refutes",
+        lede: "A registered project with zero mounted plans renders an empty shell rather than an onboarding surface, and the fault is in the mount filter, not the data.",
+        body: [{ sec: "§2", head: "plans_count gates the mount", text: "Rows with plans_count of zero are dropped before visibility is applied, so a hidden-project rule computed over the survivors can never reach them." }] },
+      { repo: "reckon", slug: "producer-orphans-and-liveness", title: "Producer Orphans And Liveness", created: "08-26", edited: "09-01 15:40", informs: ["native-agent-dispatch-guard"], verdict: "supports",
+        lede: "An orphaned producer is indistinguishable from a slow one unless the ledger records intent separately from progress.", body: [] },
+      { repo: "reckon", slug: "native-agent-dispatch-bypass", title: "Native Agent Dispatch Bypass", created: "08-28", edited: "08-31 09:22", informs: ["native-agent-dispatch-guard"], verdict: "supports",
+        lede: "The native path skips the guard entirely because the guard is attached to the CLI surface rather than to dispatch.", body: [] },
+      { repo: "reckon", slug: "portfolio-fit-assessment", title: "Portfolio Fit Assessment", created: "08-15", edited: "08-29 11:11", informs: ["north-star-orientation"], verdict: "mixed",
+        lede: "Ranking plans by declared ROI reproduces the author's priors more faithfully than it reproduces delivered value.", body: [] },
+      { repo: "nova", slug: "convergence-stall-handoff", title: "Convergence Stall Handoff", created: "08-20", edited: "09-02 13:15", informs: ["batched-operator-boundary", "millisecond-converged-solve"], verdict: "supports",
+        lede: "Hypothesis, state and next steps for the stall that appears only on batched coupled forwards.", body: [] },
+      { repo: "nova", slug: "what-a-wave-can-absorb", title: "What A Wave Can Absorb", created: "08-08", edited: "08-30 10:00", informs: ["concurrency-and-schedule-visibility"], verdict: "supports",
+        lede: "Total work over critical path gives average width, which bounds how many workers a graph can usefully hold.", body: [] },
+      { repo: "nova", slug: "curved-clip-from-global-surface", title: "Curved Clip From The Global Surface", created: "07-25", edited: "08-28 16:44", informs: ["gs-absolute-accuracy-gates"], verdict: "refutes",
+        lede: "The prior refutation named exactly one condition under which the clip survives: a curved intersection taken from the global surface.", body: [] },
+    ],
+    evidence: [
+      { repo: "reckon", slug: "clive-local-workers-landed", title: "Local lane — shadow qualification", created: "09-02", edited: "09-03 06:40", forPlan: "clive-local-workers", gate: "running",
+        lede: "Six shadow pairs recorded on capability nodes; four more required before the lane's defaults may be locked.", body: [] },
+      { repo: "reckon", slug: "concurrency-and-schedule-visibility-landed", title: "Claim-partition lane measurement", created: "09-01", edited: "09-02 20:05", forPlan: "concurrency-and-schedule-visibility", gate: "passed",
+        lede: "Three dependency-independent nodes were dispatched against the registry: all three claimed scripts/solver/, so the partition collapsed them to a single lane.",
+        body: [{ sec: "§1", head: "Graph width overstates realisable width", text: "Average width from the graph was 2.8. Realisable width after the claim partition was 1.0 for this wave." }] },
+      { repo: "reckon", slug: "promotion-consequence-gate-landed", title: "Promotion delta assertion", created: "09-01", edited: "09-02 15:30", forPlan: "promotion-consequence-gate", gate: "running", lede: "Two of four promotion paths assert a state delta; the native path does not.", body: [] },
+      { repo: "reckon", slug: "derived-gate-state-landed", title: "Three verdicts survive the round trip", created: "08-30", edited: "09-01 08:45", forPlan: "derived-gate-state", gate: "passed", lede: "passed, failed and not-run all survive serialisation; not-run is excluded from measurement rather than counted as a failure.", body: [] },
+      { repo: "reckon", slug: "spa-surface-redesign-landed", title: "Redraw capture suite", created: "08-31", edited: "09-03 08:05", forPlan: "spa-surface-redesign", gate: "running",
+        lede: "Ten captures at 1374 and 1920 across five surfaces; the graph surface returns an empty state at both widths.",
+        body: [{ sec: "§1", head: "Graph renders empty at both widths", text: "The capture at graph-1920.png shows the empty-state paragraph, not a closure. The endpoint selection requires a named graph handle that no plan in this project carries." }] },
+      { repo: "reckon", slug: "sprint-horizon-surface-landed", title: "Now-line advance", created: "08-31", edited: "09-02 11:20", forPlan: "sprint-horizon-surface", gate: "passed", lede: "The now-line advances on a 30-second timer without a reload; the 48-hour bound holds at every captured width.", body: [] },
+      { repo: "reckon", slug: "rendered-evidence-on-this-host-landed", title: "Rendered probe returns a DOM", created: "08-30", edited: "08-31 16:00", forPlan: "rendered-evidence-on-this-host", gate: "passed", lede: "The probe loads a page from the local server and returns a DOM. Five of six enumerated captures were taken; one was retired with its reason.", body: [] },
+      { repo: "reckon", slug: "inflight-visibility-landed", title: "Crew reports within 3s", created: "08-21", edited: "08-21 16:50", forPlan: "inflight-visibility", gate: "passed", lede: "GET /crew reported working 2.1s after a real dispatch and done 0.8s after the terminal event.", body: [] },
+      { repo: "reckon", slug: "crew-effort-routing-landed", title: "Ledger re-read, 2201 runs", created: "08-29", edited: "09-02 21:40", forPlan: "crew-effort-routing", gate: "running", lede: "The routing defaults are re-derived from 2,201 recorded runs, replacing a 58-run prior.", body: [] },
+      { repo: "nova", slug: "diii-d-diverted-forward-solve", title: "DIII-D diverted forward solve", created: "08-27", edited: "09-01 19:30", forPlan: "gs-absolute-accuracy-gates", gate: "passed", lede: "A diverted forward solve on the DIII-D description, taken through the registry route with vertical-conditioning receipts.", body: [] },
+    ],
+    figures: [
+      { repo: "reckon", slug: "rendered-evidence/now-line-advance.png", title: "Now-line advance", created: "08-31", edited: "09-02 11:18", forPlan: "sprint-horizon-surface", dims: "1440 × 480", note: "Timeline capture · now-line at three successive instants" },
+      { repo: "reckon", slug: "rendered-evidence/ready-lanes.png", title: "Ready lanes", created: "08-31", edited: "09-02 11:18", forPlan: "concurrency-and-schedule-visibility", dims: "1440 × 720", note: "Ready-set capture · four concurrent lanes" },
+      { repo: "reckon", slug: "rendered-evidence/sprint-table-state.png", title: "Sprint table state", created: "08-31", edited: "09-02 11:19", forPlan: "sprint-horizon-surface", dims: "1440 × 900", note: "Every-sprint table with derived order and flags" },
+      { repo: "reckon", slug: "rendered-evidence/constrained-reachability.png", title: "Constrained reachability", created: "08-31", edited: "09-01 09:40", forPlan: "concurrency-and-schedule-visibility", dims: "1200 × 800", note: "Reachable set under the claim partition" },
+      { repo: "reckon", slug: "spa-surface-redesign/after/graph-1920.png", title: "Graph surface at 1920 — after", created: "09-01", edited: "09-03 08:04", forPlan: "spa-surface-redesign", dims: "1920 × 1080", note: "Empty state · no named graph handle in this project" },
+      { repo: "reckon", slug: "spa-surface-redesign/after/plans-1920.png", title: "Plans surface at 1920 — after", created: "09-01", edited: "09-03 08:04", forPlan: "spa-surface-redesign", dims: "1920 × 1080", note: "Plan list, filters and reader" },
+      { repo: "reckon", slug: "spa-surface-redesign/after/sprints-1920.png", title: "Sprints surface at 1920 — after", created: "09-01", edited: "09-03 08:04", forPlan: "spa-surface-redesign", dims: "1920 × 1080", note: "Horizon strip with zero timestamped events" },
+      { repo: "reckon", slug: "spa-surface-redesign/before/overview.png", title: "Overview — before", created: "08-29", edited: "08-29 14:00", forPlan: "spa-surface-redesign", dims: "1440 × 900", note: "Pre-redraw reference capture" },
+      { repo: "reckon", slug: "spa-surface-redesign/window-composition/fluid-1440.png", title: "Window composition — fluid 1440", created: "08-30", edited: "09-01 10:30", forPlan: "spa-surface-redesign", dims: "1440 × 900", note: "Column composition at the fluid breakpoint" },
+      { repo: "reckon", slug: "crew-effort-routing/spec-level-slices.png", title: "Spec-level effort slices", created: "08-29", edited: "09-02 21:35", forPlan: "crew-effort-routing", dims: "1000 × 620", note: "Effort distribution by specification level, 2,201 runs" },
+    ],
+    sprints: [
+      { repo: "reckon", id: "S15", theme: "Local lanes and routing from evidence", status: "active" },
+      { repo: "reckon", id: "S14", theme: "Redraw the degraded surfaces", status: "active" },
+      { repo: "reckon", id: "S13", theme: "Tooling that does not lie", status: "active" },
+      { repo: "reckon", id: "S12", theme: "Sprints across repositories", status: "shipped" },
+      { repo: "reckon", id: "S10", theme: "Crew correctness", status: "shipped" },
+      { repo: "reckon", id: "S9", theme: "In-flight visibility", status: "shipped" },
+      { repo: "reckon", id: "S8", theme: "Execution substrate", status: "shipped" },
+      { repo: "reckon", id: "S7", theme: "Worker team", status: "shipped" },
+      { repo: "nova", id: "S19", theme: "Forward solve contract", status: "active" },
+      { repo: "nova", id: "S18", theme: "Absolute accuracy", status: "active" },
+      { repo: "nova", id: "S12", theme: "Ensemble seam", status: "shipped" },
+    ],
+    runs: [
+      { repo: "reckon", plan: "clive-local-workers", title: "Local Models As A First-Class Lane", section: "§2", dispatch: "crew dispatch --local", role: "implement · deep", phase: "working", spent: "3h 12m", budget: "8h", pctBudget: 40, gates: "1 / 4", marks: [1, 0, 0, 0], now: "Shadow pair 7 running on GLM 5.3", since: "started 06:58",
+        doneWhen: "Ten promoted runs on the local lane and ten usable shadow pairs per local model." },
+      { repo: "reckon", plan: "spa-surface-redesign", title: "Redraw the Degraded Surfaces", section: "§4", dispatch: "crew dispatch", role: "implement · high", phase: "working", spent: "1h 44m", budget: "6h", pctBudget: 29, gates: "2 / 6", marks: [1, 1, 0, 0, 0, 0], now: "Rendering assertion for audit rank 9", since: "started 08:12",
+        doneWhen: "Each of audit ranks 3, 6, 9, 10, 13 and 14 has a rendering assertion proving its signal survived." },
+      { repo: "nova", plan: "forward-solve-api", title: "Forward Solve API", section: "§1", dispatch: "crew dispatch", role: "implement · high", phase: "working", spent: "2h 05m", budget: "7h", pctBudget: 30, gates: "0 / 3", marks: [0, 0, 0], now: "Request and receipt contract draft", since: "started 07:31",
+        doneWhen: "Every route consumes the same request and receipt contract." },
+      { repo: "nova", plan: "millisecond-converged-solve", title: "Millisecond Converged Solve", section: "§3", dispatch: "crew dispatch", role: "investigate · deep", phase: "awaiting gate", spent: "4h 30m", budget: "5h", pctBudget: 90, gates: "2 / 3", marks: [1, 1, 0], now: "Awaiting measured gate", since: "started 04:02" },
+      { repo: "nova", plan: "solver-convergence-regression", title: "Solver Convergence Regression", section: "§2", dispatch: "crew dispatch", role: "review · standard", phase: "working", spent: "0h 38m", budget: "3h", pctBudget: 21, gates: "1 / 2", marks: [1, 0], now: "Bisecting against HEAD~14", since: "started 08:14" },
+      { repo: "imas-ambix", plan: "physics-carried-playable-plasma", title: "Physics-Carried Playable Plasma", section: "§4b", dispatch: "crew dispatch", role: "implement · standard", phase: "done", spent: "13h 58m", budget: "—", pctBudget: 100, gates: "0 / —", marks: [0], now: "Awaiting measured gate", since: "active 09/02 18:59",
+        doneWhen: "A regression test covers a level-2 equilibrium group with no x_point_r/x_point_z and asserts the targets loader returns masked values." },
+    ],
+    // artifacts that arrive while the page is open — the stream, not a reload
+    incoming: [
+      { kind: "evidence", repo: "reckon", slug: "spa-surface-redesign-graph-empty", title: "Graph empty state reproduced at 1374", created: "09-03", edited: "09-03 08:36", forPlan: "spa-surface-redesign", gate: "failed", lede: "The empty-state paragraph renders at 1374 as well as 1920. The endpoint filter requires a graph handle; no reckon plan declares one." },
+      { kind: "research", repo: "reckon", slug: "visibility-filter-order", title: "Visibility Is Applied After The Mount Filter", created: "09-03", edited: "09-03 08:37", informs: ["spa-surface-redesign"], verdict: "refutes", lede: "Hidden projects survive in the picker because the picker renders the manageable list while visibility is computed over the mounted list." },
+      { kind: "figure", repo: "reckon", slug: "spa-surface-redesign/after/crew-1374.png", title: "Crew at 1374 — clipped", created: "09-03", edited: "09-03 08:38", forPlan: "spa-surface-redesign", dims: "1374 × 900", note: "Crew list clipped below the fold with no scroll container" },
+    ],
+  };
+
+  componentDidMount() {
+    this._t = setTimeout(() => this.setState({ pending: 3 }), 5200);
+    this._k = e => {
+      const tag = (e.target && e.target.tagName) || "";
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      const S = this.state;
+      const onDoc = ["plans", "research", "evidence", "figures"].includes(S.view);
+      if (e.key === "Escape") {
+        if (S.reading) { e.preventDefault(); this.setState({ reading: false }); }
+        else if (S.palette || S.visOpen) this.setState({ palette: false, visOpen: false });
+        return;
+      }
+      // Full screen is a reader mode: it cannot be armed from an index, or the
+      // flag outlives the surface that owns it and re-applies to the next document.
+      const docOpen = !!(this._nav && this._nav.current != null);
+      if ((e.key === "f" || e.key === "F") && onDoc && docOpen) { e.preventDefault(); this.setState({ reading: !S.reading }); return; }
+      if (e.key === "ArrowLeft" && onDoc) { e.preventDefault(); this._step(-1); return; }
+      if (e.key === "ArrowRight" && onDoc) { e.preventDefault(); this._step(1); }
+    };
+    window.addEventListener("keydown", this._k);
+  }
+  componentWillUnmount() {
+    clearTimeout(this._t);
+    clearTimeout(this._c);
+    window.removeEventListener("keydown", this._k);
+  }
+
+  // renderVals publishes the resolved list, key and index it actually rendered;
+  // _step reads only that, so keyboard, buttons and the position readout cannot
+  // disagree about which document is current.
+  _step(delta) {
+    const nav = this._nav;
+    // Stepping is a reader action: with no document open there is no cursor to
+    // move, so the arrows stay available to the list itself.
+    if (!nav || !nav.list.length || nav.current == null || nav.at < 0) return;
+    const target = nav.list[Math.min(nav.list.length - 1, Math.max(0, nav.at + delta))];
+    if (!target || target.slug === nav.current) return;
+    this.setState({ sel: { ...this.state.sel, [nav.key]: target.slug } });
+  }
+
+  // ── helpers ──
+  visible() { return this.D.projects.filter(p => !this.state.hidden.includes(p.id)); }
+  planCount(id) {
+    return this.D.plans.filter(p => p.repo === id).length;
+  }
+  // Single source of the plural rule — every surface that prints a plan count
+  // calls this, so the "1 plans" defect cannot reappear at a new call site.
+  planLabel(id) {
+    const n = this.planCount(id);
+    return `${n} plan${n === 1 ? "" : "s"}`;
+  }
+  allOf(kind) {
+    const extra = this.state.pending === 0
+      ? this.D.incoming.filter(i => i.kind === kind)
+      : [];
+    if (kind === "plan") return this.D.plans;
+    if (kind === "research") return [...extra, ...this.D.research];
+    if (kind === "evidence") return [...extra, ...this.D.evidence];
+    return [...extra, ...this.D.figures];
+  }
+  scoped(kind) { return this.allOf(kind).filter(a => a.repo === this.state.project); }
+
+  chip(bg, ink, extra) {
+    return `font-family:var(--mono);font-size:10px;letter-spacing:.05em;padding:2px 6px;border-radius:4px;flex:none;background:${bg};color:${ink};${extra || ""}`;
+  }
+  statusInk(s) {
+    return s === "active" ? "var(--accent)" : s === "blocked" ? "var(--bad)" : s === "shipped" ? "var(--ok)" : s === "pending" ? "var(--warn)" : "var(--muted)";
+  }
+  statusBg(s) {
+    return s === "active" ? "var(--accent-3)" : s === "blocked" ? "var(--bad-3)" : s === "shipped" ? "var(--ok-3)" : s === "pending" ? "var(--warn-3)" : "var(--bg-3)";
+  }
+  dot(s) {
+    const pulse = s === "active" ? "animation:livepulse 1.9s ease-in-out infinite;" : "";
+    return `width:6px;height:6px;border-radius:50%;flex:none;background:${this.statusInk(s)};${pulse}`;
+  }
+  tabStyle(on) {
+    return `display:flex;align-items:center;gap:6px;padding:4px 11px;border:0;border-radius:5px;cursor:pointer;font-size:12.5px;font-weight:500;${on ? "background:var(--bg);color:var(--ink);box-shadow:0 1px 2px rgba(12,13,16,.08)" : "background:transparent;color:var(--muted)"}`;
+  }
+  segStyle(on) {
+    return `padding:3px 10px;border:0;border-radius:4px;cursor:pointer;font-family:var(--mono);font-size:11px;${on ? "background:var(--bg);color:var(--ink);box-shadow:0 1px 2px rgba(12,13,16,.08)" : "background:transparent;color:var(--muted)"}`;
+  }
+  go(patch) { this.setState(patch); }
+  // Sprint state is derived from member completion, never read from the file.
+  // A sprint is shipped when every member is; active once any has started.
+  sprintState(items) {
+    if (!items.length) return "empty";
+    if (items.every(p => p.pct >= 100)) return "shipped";
+    if (items.some(p => p.pct > 0 || p.status === "active" || p.status === "blocked")) return "active";
+    return "planned";
+  }
+  // Transitive prerequisite closure of an endpoint — the graph index rows and
+  // the detail canvas both read this, so membership cannot disagree.
+  closureOf(slug) {
+    const by = {}; this.D.plans.forEach(p => { by[p.slug] = p; });
+    const out = [], seen = new Set();
+    const walk = s => { if (seen.has(s) || !by[s]) return; seen.add(s); out.push(by[s]); (by[s].deps || []).forEach(walk); };
+    walk(slug);
+    return out;
+  }
+  isDone(a) {
+    if (a.kind === "sprint") return a.state === "shipped";
+    return a.pct >= 100 || a.status === "shipped";
+  }
+  // One ship-line control, used identically by the plan reader, the sprint
+  // header, the sprints overview and the graph header. The command stays
+  // legible when shipping is held — only the copy is refused.
+  // Fixed-width icon control: the command lives in the tooltip, so nothing to
+  // its right shifts when the target changes.
+  shipStyle(held) {
+    return `display:grid;place-items:center;width:28px;height:28px;padding:0;border:1px solid ${held ? "var(--warn)" : "var(--line-2)"};border-radius:6px;background:${held ? "var(--warn-3)" : "var(--bg)"};color:${held ? "oklch(0.48 0.12 75)" : "var(--ink-2)"};cursor:${held ? "not-allowed" : "pointer"};flex:none`;
+  }
+  // Glyph swaps to a tick for 1.6s after a copy.
+  tick(key) {
+    const on = this.state.copied === key;
+    return {
+      hide: on ? "display:none" : "display:block",
+      show: on ? "font-family:var(--mono);font-size:12px;color:var(--ok)" : "display:none",
+    };
+  }
+  shipTip(cmd, held, openCount) {
+    return held
+      ? `${openCount} open decision${openCount === 1 ? "" : "s"} — resolve before dispatch · ${cmd}`
+      : `Copy ${cmd}`;
+  }
+  flash(key) {
+    this.setState({ copied: key });
+    clearTimeout(this._c);
+    this._c = setTimeout(() => this.setState({ copied: "" }), 1600);
+  }
+
+  // ── derived schedule: dependency depth × predicted wall-clock, anchored at now ──
+  schedule(repo) {
+    const plans = this.D.plans.filter(p => p.repo === repo);
+    const by = {}; plans.forEach(p => { by[p.slug] = p; });
+    const end = {}, start = {};
+    const resolve = (slug, seen) => {
+      if (end[slug] != null) return end[slug];
+      const p = by[slug];
+      if (!p || seen.has(slug)) return 0;
+      seen.add(slug);
+      if (p.status === "shipped") {
+        end[slug] = -(p.landed || 24) / 8;
+        start[slug] = end[slug] - p.wall;
+      } else if (p.status === "active") {
+        start[slug] = -(p.elapsed || 0);
+        end[slug] = start[slug] + p.wall;
+      } else {
+        const deps = (p.deps || []).map(d => resolve(d, new Set(seen)));
+        start[slug] = Math.max(0, ...deps, 0);
+        end[slug] = start[slug] + p.wall;
+      }
+      return end[slug];
+    };
+    plans.forEach(p => resolve(p.slug, new Set()));
+    const items = plans
+      .filter(p => start[p.slug] > -60)
+      .map(p => ({ p, s: start[p.slug], e: end[p.slug] }))
+      .sort((a, b) => a.s - b.s);
+    // best-fit lane packing: prefer the lane that fits most tightly, so the
+    // number of lanes reports realisable width rather than arrival order.
+    const lanes = [];
+    for (const it of items) {
+      const fits = lanes.filter(L => L.last <= it.s + 0.01);
+      let lane = fits.sort((a, b) => b.last - a.last)[0];
+      if (!lane) { lane = { last: -999, items: [] }; lanes.push(lane); }
+      lane.items.push(it);
+      lane.last = it.e;
+    }
+    const lo = Math.max(-48, Math.min(-24, ...items.map(i => i.s)));
+    const hi = Math.max(24, ...items.map(i => i.e));
+    return { lanes, lo, hi, items };
+  }
+
+  // ── DAG layout shared by sprint detail and graph ──
+  layout(plans, prefix) {
+    const by = {}; plans.forEach(p => { by[p.slug] = p; });
+    const depth = {};
+    const d = (slug, seen) => {
+      if (depth[slug] != null) return depth[slug];
+      const p = by[slug];
+      if (!p || seen.has(slug)) return 0;
+      seen.add(slug);
+      const deps = (p.deps || []).filter(x => by[x]);
+      depth[slug] = deps.length ? 1 + Math.max(...deps.map(x => d(x, new Set(seen)))) : 0;
+      return depth[slug];
+    };
+    plans.forEach(p => d(p.slug, new Set()));
+    const cols = {};
+    plans.forEach(p => { (cols[depth[p.slug]] = cols[depth[p.slug]] || []).push(p); });
+    const CW = 216, CH = 82, GX = 92, GY = 22;
+    const pos = {};
+    Object.keys(cols).forEach(k => {
+      cols[k].forEach((p, i) => { pos[p.slug] = { x: Number(k) * (CW + GX), y: 34 + i * (CH + GY) }; });
+    });
+    const nodes = plans.map(p => {
+      const q = pos[p.slug];
+      const crit = (p.deps || []).length > 0 || Object.values(by).some(o => (o.deps || []).includes(p.slug));
+      return {
+        title: p.title, slug: "/" + p.slug,
+        // A context node names the sprint it actually belongs to, so a dimmed
+        // card explains itself against the sprint in the header.
+        status: p.ghost ? `${p.status} · ${p.sprint || "unscheduled"}` : p.status,
+        hours: `${p.effort}h`,
+        dotStyle: this.dot(p.status),
+        statusStyle: `color:${this.statusInk(p.status)}`,
+        barStyle: `display:block;height:100%;width:${p.pct}%;background:${this.statusInk(p.status)}`,
+        style: `position:absolute;left:${q.x}px;top:${q.y}px;width:${CW}px;height:${CH}px;display:flex;flex-direction:column;gap:5px;justify-content:center;padding:10px 12px;border:1px ${p.ghost ? "dashed" : "solid"} ${p.status === "blocked" ? "var(--bad)" : crit ? "var(--line-2)" : "var(--line)"};border-radius:9px;background:${p.ghost ? "transparent" : "var(--bg)"};cursor:pointer;text-align:left;${p.ghost ? "opacity:.62" : "box-shadow:0 1px 2px rgba(12,13,16,.05)"}`,
+        go: () => this.setState({ reading: false, view: "plans", project: p.repo, sel: { ...this.state.sel, plan: p.slug } }),
+      };
+    });
+    // Bottom edge of each column, used to route skip-level edges clear of the
+    // opaque cards they would otherwise pass beneath.
+    const colBottom = k => 34 + Math.max(0, (cols[k] || []).length - 1) * (CH + GY) + CH;
+    const incoming = {};
+    plans.forEach(p => (p.deps || []).forEach(dep => {
+      if (by[dep]) (incoming[p.slug] = incoming[p.slug] || []).push(dep);
+    }));
+    const edges = [];
+    let deepest = 0;
+    plans.forEach(p => {
+      const arrivals = incoming[p.slug] || [];
+      arrivals.forEach((dep, i) => {
+        const a = pos[dep], b = pos[p.slug];
+        const x1 = a.x + CW, y1 = a.y + CH / 2, x2 = b.x - 9;
+        // Fan co-terminating edges so arrowheads stay distinguishable.
+        const y2 = b.y + CH / 2 + (i - (arrivals.length - 1) / 2) * 8;
+        const span = depth[p.slug] - depth[dep];
+        let d;
+        if (span > 1) {
+          // Explicit routed path: quarter-turn down, flat run AT the clearance
+          // depth, quarter-turn up. No Bézier peak arithmetic to get wrong.
+          let clear = Math.max(y1, y2);
+          for (let k = depth[dep] + 1; k < depth[p.slug]; k += 1) clear = Math.max(clear, colBottom(k));
+          const yD = clear + 24;
+          deepest = Math.max(deepest, yD);
+          d = `M ${x1} ${y1} C ${x1 + 34} ${y1}, ${x1 + 34} ${yD}, ${x1 + 68} ${yD}`
+            + ` L ${x2 - 68} ${yD}`
+            + ` C ${x2 - 34} ${yD}, ${x2 - 34} ${y2}, ${x2} ${y2}`;
+        } else {
+          d = `M ${x1} ${y1} C ${x1 + 38} ${y1}, ${x2 - 38} ${y2}, ${x2} ${y2}`;
+        }
+        const held = by[dep].status !== "shipped" && p.status === "blocked";
+        edges.push({
+          key: `${prefix}-${dep}-${p.slug}`,
+          d, skip: span > 1,
+          head: `${x2},${y2 - 4.5} ${x2 + 9},${y2} ${x2},${y2 + 4.5}`,
+          stroke: held ? "oklch(0.58 0.20 25)" : "#c9ccd4",
+          w: held ? 1.8 : 1.4,
+          dash: by[dep].status === "shipped" ? "0" : "4 3",
+        });
+      });
+    });
+    const nCols = Math.max(1, ...Object.keys(cols).map(k => Number(k) + 1));
+    const nRows = Math.max(1, ...Object.values(cols).map(c => c.length));
+    const columns = Object.keys(cols).map(k => ({
+      label: Number(k) === 0 ? "no prerequisites" : `depth ${k}`,
+      style: `position:absolute;left:${Number(k) * (CW + GX)}px;top:0;width:${CW}px;font-family:var(--mono);font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)`,
+    }));
+    return {
+      nodes, edges, columns,
+      w: nCols * (CW + GX) - GX + 20,
+      // Stage height derived from the deepest detour actually emitted.
+      h: Math.max(34 + nRows * (CH + GY) + 20, deepest + 30),
+    };
+  }
+
+  renderVals() {
+    const S = this.state, D = this.D;
+    const V = this.visible();
+    const kind = S.view === "plans" ? "plan" : S.view === "research" ? "research" : S.view === "evidence" ? "evidence" : "figure";
+    const isList = ["plans", "research", "evidence", "figures"].includes(S.view);
+
+    // ── tabs ──
+    // A tab click always returns that section to its index and drops reading
+    // mode, so clicking the tab you are on is never a dead click.
+    const kindKeyFor = { plans: "plan", research: "research", evidence: "evidence", figures: "figure" };
+    const mk = (id, label, view, badge) => ({
+      label, badge: badge || "", go: () => {
+        const key = kindKeyFor[view];
+        this.setState({
+          view, reading: false,
+          sel: key ? { ...this.state.sel, [key]: null } : this.state.sel,
+        });
+      },
+      style: this.tabStyle(S.view === view),
+      badgeStyle: badge ? "font-family:var(--mono);font-size:9.5px;padding:0 4px;border-radius:3px;background:var(--accent);color:#fff" : "display:none",
+      tip: badge
+        ? `${badge} arrived since you opened the page — not yet inserted into the list`
+        : label,
+    });
+    const newByKind = {};
+    if (S.pending > 0) D.incoming.forEach(i => { newByKind[i.kind] = (newByKind[i.kind] || 0) + 1; });
+
+    // ── list rows ──
+    const rows = this.scoped(kind).filter(a => {
+      // An explicit "shipped" chip overrides hide-done; otherwise it applies.
+      if (S.hideDone && S.status !== "shipped" && kind === "plan" && this.isDone(a)) return false;
+      if (S.status === "all") return true;
+      if (kind === "plan") return a.status === S.status;
+      return true;
+    });
+    const sorted = [...rows].sort((a, b) => (S.sort === "created" ? b.created.localeCompare(a.created) : b.edited.localeCompare(a.edited)));
+    const selKey = kind === "plan" ? "plan" : kind === "research" ? "research" : kind === "evidence" ? "evidence" : "figure";
+    // No fallback to the first row: a document is open only when this kind
+    // actually has one selected, so a tab switch lands on its own index.
+    const selected = S.sel[selKey] ? sorted.find(a => a.slug === S.sel[selKey]) || null : null;
+    const selAt = selected ? sorted.findIndex(a => a.slug === selected.slug) : -1;
+    // at stays -1 when nothing is open; never coerced to 0, or stepping from
+    // the index would target row 1 forwards and row 0 backwards.
+    this._nav = { list: sorted, key: selKey, at: selAt, current: selected ? selected.slug : null };
+
+    const listRows = sorted.map(a => {
+      const on = selected && a.slug === selected.slug;
+      const fresh = D.incoming.some(i => i.slug === a.slug);
+      const st = kind === "plan" ? a.status : kind === "research" ? a.verdict : kind === "evidence" ? a.gate : "figure";
+      return {
+        title: a.title,
+        sub: kind === "figure" ? a.slug : "/" + a.slug,
+        created: a.created, edited: a.edited,
+        tag: kind === "plan" ? `${a.pct}% · ${a.effort}h` : kind === "figure" ? a.dims : st,
+        tagStyle: `color:${kind === "plan" ? "var(--muted)" : this.statusInk(st === "passed" ? "shipped" : st === "failed" || st === "refutes" ? "blocked" : st === "running" ? "active" : "")}`,
+        dotStyle: this.dot(kind === "plan" ? a.status : st === "passed" || st === "supports" ? "shipped" : st === "failed" || st === "refutes" ? "blocked" : st === "running" ? "active" : "other"),
+        thumbStyle: kind === "figure"
+          ? "width:56px;height:40px;flex:none;border-radius:5px;background:repeating-conic-gradient(var(--bg-2) 0% 25%, var(--bg-3) 0% 50%) 50%/10px 10px;border:1px solid var(--line);display:grid;place-items:center;font-family:var(--mono);font-size:8px;color:var(--faint)"
+          : "display:none",
+        thumbLabel: kind === "figure" ? "PNG" : "",
+        style: `display:flex;gap:10px;width:100%;padding:11px 14px;border:0;border-bottom:1px solid var(--line);border-left:2px solid ${on ? "var(--accent)" : "transparent"};background:${on ? "var(--accent-3)" : fresh ? "var(--bg-2)" : "transparent"};cursor:pointer;text-align:left;${fresh ? "animation:arrive 3s ease-out" : ""}`,
+        go: () => this.setState({ sel: { ...S.sel, [selKey]: a.slug } }),
+      };
+    });
+
+    const statusSets = kind === "plan"
+      ? ["all", "active", "blocked", "pending", "shipped"]
+      : ["all"];
+    const statusChips = statusSets.map(s => ({
+      label: s === "all" ? "All" : s,
+      n: String(s === "all" ? rows.length : this.scoped(kind).filter(a => a.status === s).length),
+      go: () => this.setState({ status: s }),
+      style: `padding:3px 9px;border:1px solid ${S.status === s ? "var(--accent)" : "var(--line)"};border-radius:5px;background:${S.status === s ? "var(--accent-3)" : "transparent"};color:${S.status === s ? "var(--accent)" : "var(--muted)"};cursor:pointer;font-family:var(--mono);font-size:11px`,
+    }));
+
+    // reader links
+    let readLinks = [], readLinksLabel = "";
+    if (selected) {
+      if (kind === "plan") {
+        readLinksLabel = "Provenance";
+        readLinks = [
+          ...D.research.filter(r => (r.informs || []).includes(selected.slug)).map(r => ({ kind: "RESEARCH", title: r.title, repo: r.repo, kindStyle: this.chip("transparent", "var(--accent)", "border:1px solid var(--accent-2)"), go: () => this.setState({ reading: false, view: "research", sel: { ...S.sel, research: r.slug } }) })),
+          ...D.evidence.filter(e => e.forPlan === selected.slug).map(e => ({ kind: "EVIDENCE", title: e.title, repo: e.repo, kindStyle: this.chip("var(--accent)", "#fff"), go: () => this.setState({ reading: false, view: "evidence", sel: { ...S.sel, evidence: e.slug } }) })),
+          ...D.figures.filter(f => f.forPlan === selected.slug).map(f => ({ kind: "FIGURE", title: f.title, repo: f.repo, kindStyle: this.chip("var(--bg-3)", "var(--ink-2)"), go: () => this.setState({ reading: false, view: "figures", sel: { ...S.sel, figure: f.slug } }) })),
+        ];
+      } else {
+        readLinksLabel = "Attached to";
+        const targets = kind === "research" ? (selected.informs || []) : [selected.forPlan];
+        readLinks = targets.filter(Boolean).map(t => {
+          const p = D.plans.find(x => x.slug === t);
+          return { kind: "PLAN", title: p ? p.title : t, repo: p ? p.repo : selected.repo, kindStyle: this.chip("var(--bg-3)", "var(--ink-2)"), go: () => this.setState({ reading: false, view: "plans", sel: { ...S.sel, plan: t } }) };
+        });
+      }
+    }
+
+    // Plan-to-plan edges only. Research and evidence are provenance, not
+    // prerequisites — they stay in the Provenance list at the foot of the reader.
+    const coneUp = selected && kind === "plan" ? D.plans.filter(p => (selected.deps || []).includes(p.slug)) : [];
+    const coneDown = selected && kind === "plan" ? D.plans.filter(p => (p.deps || []).includes(selected.slug)) : [];
+    const coneCard = p => ({
+      title: p.title, status: p.status, hours: `${p.effort}h`,
+      dotStyle: this.dot(p.status),
+      statusStyle: `color:${this.statusInk(p.status)}`,
+      style: `display:flex;flex-direction:column;gap:5px;padding:9px 11px;border:1px solid ${p.status === "blocked" ? "var(--bad)" : "var(--line)"};border-radius:8px;background:var(--bg);cursor:pointer;text-align:left;min-width:0`,
+      go: () => this.setState({ sel: { ...S.sel, plan: p.slug } }),
+    });
+
+    const readMeta = selected ? (kind === "plan"
+      ? [{ k: "status", v: selected.status }, { k: "impl", v: `${selected.pct}%` }, { k: "effort", v: `${selected.effort} worker-h` }, { k: "wall", v: `${selected.wall}h` }, { k: "sprint", v: selected.sprint || "unscheduled" }, { k: "repo", v: selected.repo }]
+      : kind === "research" ? [{ k: "verdict", v: selected.verdict }, { k: "created", v: selected.created }, { k: "edited", v: selected.edited }, { k: "repo", v: selected.repo }]
+      : kind === "evidence" ? [{ k: "gate", v: selected.gate }, { k: "created", v: selected.created }, { k: "edited", v: selected.edited }, { k: "repo", v: selected.repo }]
+      : [{ k: "dimensions", v: selected.dims }, { k: "created", v: selected.created }, { k: "edited", v: selected.edited }, { k: "repo", v: selected.repo }]) : [];
+
+    // ── sprints: derived flow ──
+    const sch = this.schedule(S.project);
+    const span = sch.hi - sch.lo;
+    const pos = h => ((h - sch.lo) / span) * 100;
+    const flowTicks = [];
+    const step = span > 96 ? 24 : 12;
+    for (let h = Math.ceil(sch.lo / step) * step; h <= sch.hi; h += step) {
+      flowTicks.push({
+        label: h === 0 ? "now" : h < 0 ? `${h}h` : `+${h}h`,
+        style: `position:absolute;left:${pos(h)}%;bottom:2px;transform:translateX(-50%);font-family:var(--mono);font-size:10px;color:${h === 0 ? "var(--accent)" : "var(--faint)"};white-space:nowrap`,
+      });
+    }
+    const nowLineStyle = `position:absolute;left:${pos(0)}%;top:0;bottom:0;width:1.5px;background:var(--accent);opacity:.55;pointer-events:none`;
+    const projSprintsForFlow = [...new Set(sch.items.map(i => i.p.sprint).filter(Boolean))].sort();
+    // A lane is one crew session — a single stream of execution. Sprint is an
+    // attribute of the bar, so one sprint visibly spreads across sessions.
+    const liveByPlan = {};
+    D.runs.filter(r => r.repo === S.project && r.phase !== "done").forEach(r => { liveByPlan[r.plan] = r; });
+    const flowLanes = sch.lanes.map((L, li) => {
+      const live = L.items.map(i => liveByPlan[i.p.slug]).find(Boolean);
+      return {
+      name: `session ${li + 1}`,
+      note: live ? `live · ${live.role}` : `${L.items.length} item${L.items.length === 1 ? "" : "s"} · ${L.items.reduce((n, i) => n + i.p.effort, 0)}h`,
+      bars: L.items.map(it => {
+        const p = it.p;
+        const ink = p.status === "shipped" ? "var(--ok)" : p.status === "active" ? "var(--accent)" : p.status === "blocked" ? "var(--bad)" : "var(--line-2)";
+        const solid = p.status === "shipped" || p.status === "active";
+        const dim = S.flowSprint && p.sprint !== S.flowSprint;
+        return {
+          label: p.title, hours: `${p.wall}h`,
+          sprint: p.sprint || "—",
+          sprintStyle: `position:relative;z-index:1;flex:none;font-family:var(--mono);font-size:9.5px;padding:1px 4px;border-radius:3px;background:${p.sprint ? "var(--bg-3)" : "transparent"};color:${p.sprint ? "var(--ink-2)" : "var(--faint)"}`,
+          tip: `${p.title} · ${p.sprint || "unscheduled"} · ${p.status} · ${p.effort} worker-hours · ${p.wall}h wall-clock${(p.deps || []).length ? ` · after ${p.deps.join(", ")}` : " · no prerequisites"}`,
+          style: `position:absolute;left:${pos(it.s)}%;width:${((it.e - it.s) / span) * 100}%;top:8px;height:28px;display:flex;align-items:center;gap:7px;padding:0 8px;border:1px solid ${ink};border-radius:6px;background:${solid ? "var(--bg)" : "var(--bg-2)"};cursor:pointer;font-size:11.5px;color:var(--ink);overflow:hidden;text-align:left;opacity:${dim ? .28 : 1};${p.status === "pending" ? "border-style:dashed;" : ""}`,
+          fillStyle: `position:absolute;inset:0;width:${p.pct}%;background:${ink};opacity:.13`,
+          go: () => this.setState({ reading: false, view: "plans", sel: { ...S.sel, plan: p.slug } }),
+        };
+      }),
+      };
+    });
+    const flowSprintChips = [{ id: null, label: "All" }, ...projSprintsForFlow.map(id => ({ id, label: id }))].map(c => {
+      const on = S.flowSprint === c.id;
+      return {
+        label: c.label,
+        n: String(c.id ? sch.items.filter(i => i.p.sprint === c.id).length : sch.items.length),
+        go: () => this.setState({ flowSprint: c.id }),
+        style: `padding:2px 8px;border:1px solid ${on ? "var(--accent)" : "var(--line)"};border-radius:5px;background:${on ? "var(--accent-3)" : "var(--bg)"};color:${on ? "var(--accent)" : "var(--muted)"};cursor:pointer;font-family:var(--mono);font-size:10.5px`,
+      };
+    });
+
+    const allProjSprints = D.sprints.filter(s => s.repo === S.project).map(sp => {
+      const items = D.plans.filter(p => p.repo === S.project && p.sprint === sp.id);
+      const state = this.sprintState(items);
+      return { ...sp, items, state, drift: sp.status !== state && items.length > 0 };
+    });
+    const projSprints = S.hideDone ? allProjSprints.filter(sp => sp.state !== "shipped") : allProjSprints;
+    const activeSprint = allProjSprints.find(s => s.state === "active");
+    const activeSprintId = activeSprint ? activeSprint.id : null;
+    const flowOpen = activeSprintId
+      ? D.plans.filter(p => p.repo === S.project && p.sprint === activeSprintId)
+          .reduce((n, p) => n + (p.decisions || []).length, 0)
+      : 0;
+    const sprintRows = projSprints.map(sp => {
+      const items = sp.items;
+      const pct = items.length ? Math.round(items.reduce((n, p) => n + p.pct, 0) / items.length) : 0;
+      const hrs = items.reduce((n, p) => n + p.effort, 0);
+      const left = items.filter(p => p.status !== "shipped").reduce((n, p) => n + p.effort * (1 - p.pct / 100), 0);
+      const blocked = items.filter(p => p.status === "blocked").length;
+      const ink = sp.state === "active" ? "active" : sp.state === "shipped" ? "shipped" : sp.state === "planned" ? "pending" : "other";
+      return {
+        id: sp.id, theme: sp.theme, status: sp.state, pct: `${pct}%`,
+        hours: items.length ? `${hrs}h · ${Math.round(left)}h left` : "no items",
+        statusStyle: this.chip(this.statusBg(ink), this.statusInk(ink)) + ";width:64px;text-align:center",
+        barStyle: `display:block;height:100%;width:${pct}%;background:${this.statusInk(ink)}`,
+        flag: sp.drift ? `was ${sp.status}` : blocked ? `${blocked} held` : items.length ? "" : "empty",
+        flagStyle: sp.drift
+          ? this.chip("var(--warn-3)", "oklch(0.48 0.12 75)") + ";width:74px;text-align:center"
+          : blocked ? this.chip("var(--bad-3)", "var(--bad)") + ";width:74px;text-align:center" : "width:74px;flex:none",
+        style: `display:flex;align-items:center;gap:12px;width:100%;padding:11px 16px;border:0;border-bottom:1px solid var(--line);background:transparent;cursor:pointer`,
+        go: () => this.setState({ reading: false, view: "sprintDetail", sprint: sp.id }),
+      };
+    });
+
+    // ── sprint detail DAG ──
+    const sd = allProjSprints.find(s => s.id === S.sprint) || allProjSprints[0];
+    // The sprint's own plans plus the prerequisites they hang off, so the graph
+    // shows what the sprint is waiting on instead of a single flat column.
+    const sdMembers = sd ? D.plans.filter(p => p.repo === S.project && p.sprint === sd.id) : [];
+    const sdSet = new Set(sdMembers.map(p => p.slug));
+    const bySlugAll = {}; D.plans.forEach(p => { bySlugAll[p.slug] = p; });
+    const sdContext = [];
+    const seenCtx = new Set(sdSet);
+    const pullUp = slug => {
+      (bySlugAll[slug] ? bySlugAll[slug].deps || [] : []).forEach(dep => {
+        if (seenCtx.has(dep) || !bySlugAll[dep]) return;
+        seenCtx.add(dep);
+        sdContext.push({ ...bySlugAll[dep], ghost: true });
+        pullUp(dep);
+      });
+    };
+    sdMembers.forEach(p => pullUp(p.slug));
+    const sdPlans = [...sdContext, ...sdMembers];
+    const sdOpen = sdMembers.flatMap(p => p.decisions || []);
+    const sdLay = this.layout(sdPlans, "sd");
+    const sdHours = sdMembers.reduce((n, p) => n + p.effort, 0);
+    const sdDepth = sdPlans.length ? (sdLay.w + 92 - 20) / (216 + 92) : 1;
+
+    // ── graph closure ──
+    // Named graph handles lead, exactly as roadmap.py orders them; remaining
+    // live endpoints follow so the tab is never empty.
+    const handled = D.plans.filter(p => p.repo === S.project && p.handle);
+    const unnamed = D.plans.filter(p => p.repo === S.project && !p.handle
+      && (p.deps || []).length > 0
+      && !D.plans.some(o => o.repo === S.project && (o.deps || []).includes(p.slug)));
+    const allEndpoints = [...handled, ...unnamed];
+    const endpoints = S.hideDone
+      ? allEndpoints.filter(p => this.closureOf(p.slug).some(m => m.pct < 100))
+      : allEndpoints;
+    const gAt = S.gSel ? endpoints.findIndex(p => p.slug === S.gSel) : -1;
+    const gEnd = gAt >= 0 ? endpoints[gAt] : null;
+    const closure = gEnd ? this.closureOf(gEnd.slug) : [];
+    const gLay = this.layout(closure, "g");
+    const gScopeMap = {};
+    closure.forEach(p => { gScopeMap[p.repo] = (gScopeMap[p.repo] || 0) + 1; });
+    const gOpen = closure.reduce((n, p) => n + (p.decisions || []).length, 0);
+    const gNamed = gEnd && gEnd.handle ? gEnd.handle : null;
+    const gLead = endpoints.find(p => p.handle) || null;
+    const gLeadOpen = gLead ? this.closureOf(gLead.slug).reduce((n, m) => n + (m.decisions || []).length, 0) : 0;
+
+    // ── crew ──
+    // Crew is project-scoped, like the derived flow it now hosts: the flow can
+    // only be computed inside one repository's dependency graph.
+    const crewRuns = D.runs.filter(r => r.repo === S.project);
+
+    // ── home: everything below obeys the global visibility set ──
+    const vis = new Set(V.map(p => p.id));
+    const fleetPlans = D.plans.filter(p => vis.has(p.repo));
+    const fleetRuns = D.runs.filter(r => vis.has(r.repo));
+
+    const streak = arr => {
+      if (!arr || !arr.length || arr.every(v => !v)) return null;
+      const max = Math.max(...arr);
+      const y = v => 28 - (v / max) * 25;
+      const pts = arr.map((v, i) => `${(i / (arr.length - 1)) * 180},${y(v).toFixed(1)}`);
+      return {
+        line: pts.join(" "),
+        area: `0,30 ${pts.join(" ")} 180,30`,
+        lastY: y(arr[arr.length - 1]).toFixed(1),
+        total: arr.reduce((a, b) => a + b, 0),
+        last3: arr.slice(-3).reduce((a, b) => a + b, 0),
+        peak: max,
+      };
+    };
+
+    const landedRows = [
+      ...D.evidence.filter(e => !S.hidden.includes(e.repo)).slice(0, 4).map(e => ({ kind: "EVIDENCE", title: e.title, when: e.edited, repo: e.repo, view: "evidence", slug: e.slug })),
+      ...D.plans.filter(p => p.status === "shipped" && (p.landed || 999) < 200).map(p => ({ kind: "SHIPPED", title: p.title, when: p.edited, repo: p.repo, view: "plans", slug: p.slug })),
+    ].slice(0, 7).map(l => ({
+      ...l,
+      kindStyle: this.chip(l.kind === "SHIPPED" ? "var(--ok-3)" : "var(--accent-3)", l.kind === "SHIPPED" ? "var(--ok)" : "var(--accent)") + ";width:70px;text-align:center",
+      style: "display:flex;align-items:center;gap:10px;width:100%;padding:9px 16px;border:0;border-bottom:1px solid var(--line);background:transparent;cursor:pointer;text-align:left",
+      go: () => this.setState({ view: l.view, project: l.repo, sel: { ...S.sel, [l.view === "plans" ? "plan" : "evidence"]: l.slug } }),
+    }));
+
+    const moving = V.filter(p => this.planCount(p.id) > 0);
+    const dormant = V.filter(p => this.planCount(p.id) === 0);
+
+    return {
+      today: "Wed 3 Sep",
+      project: S.project,
+      goHome: () => this.setState({ reading: false, view: "home" }),
+      stop: e => e.stopPropagation(),
+
+      artifactTabs: [mk("plans", "Plans", "plans"), mk("research", "Research", "research", newByKind.research ? String(newByKind.research) : ""), mk("evidence", "Evidence", "evidence", newByKind.evidence ? String(newByKind.evidence) : ""), mk("figures", "Figures", "figures", newByKind.figure ? String(newByKind.figure) : "")],
+      workTabs: [mk("sprints", "Sprints", "sprints"), mk("graph", "Graph", "graph"), mk("crew", "Crew", "crew")],
+
+      // live stream receipt
+      liveStyle: `display:flex;align-items:center;gap:7px;padding:4px 10px;border:1px solid ${S.pending ? "var(--accent)" : "var(--line)"};border-radius:6px;background:${S.pending ? "var(--accent-3)" : "transparent"};color:${S.pending ? "var(--accent)" : "var(--muted)"};cursor:pointer;font-family:var(--mono);font-size:11px;flex:none`,
+      liveDotStyle: `width:6px;height:6px;border-radius:50%;background:${S.pending ? "var(--accent)" : "var(--ok)"};animation:livepulse 1.8s ease-in-out infinite`,
+      liveLabel: S.pending ? `${S.pending} new` : "live",
+      flushArrivals: () => this.setState({ pending: 0 }),
+      hasArrivals: S.pending > 0 && isList && (newByKind[kind] || 0) > 0,
+      arrivalLabel: `${newByKind[kind] || 0} new`,
+
+      projOpen: S.projOpen,
+      toggleProj: () => this.setState({ projOpen: !S.projOpen }),
+      projDotStyle: this.dot(V.find(p => p.id === S.project) && V.find(p => p.id === S.project).live ? "active" : "other"),
+      projCountLabel: `${V.length} shown · ${D.projects.length} registered`,
+      projRows: V.map(p => ({
+        id: p.id,
+        plansLabel: this.planLabel(p.id),
+        liveLabel: p.live ? `${p.live} live` : p.last,
+        liveStyle: `font-family:var(--mono);font-size:10.5px;color:${p.live ? "var(--accent)" : "var(--faint)"};width:56px;text-align:right`,
+        dotStyle: this.dot(p.live ? "active" : "other"),
+        style: `display:flex;align-items:center;gap:9px;width:100%;padding:6px 8px;border:0;border-radius:5px;background:${p.id === S.project ? "var(--bg-2)" : "transparent"};cursor:pointer;font-family:var(--mono);font-size:11.5px`,
+        go: () => this.setState({ project: p.id, projOpen: false, sel: { plan: null, research: null, evidence: null, figure: null }, sprint: null, gSel: null }),
+      })),
+
+      visOpen: S.visOpen,
+      openVis: () => this.setState({ visOpen: true, projOpen: false }),
+      closeVis: () => this.setState({ visOpen: false }),
+      visCountLabel: `${V.length} of ${D.projects.length} shown`,
+      visRows: D.projects.map(p => {
+        const on = !S.hidden.includes(p.id);
+        const lastOne = on && V.length === 1;
+        return {
+          id: p.id,
+          counts: `${this.planLabel(p.id)} · ${p.live} live`,
+          state: lastOne ? "locked" : on ? "visible" : "hidden",
+          stateStyle: `font-family:var(--mono);font-size:11px;color:${lastOne ? "var(--faint)" : on ? "var(--accent)" : "var(--faint)"}`,
+          switchStyle: `position:relative;width:30px;height:17px;border-radius:9px;flex:none;background:${on ? "var(--accent)" : "var(--line-2)"};transition:background .12s`,
+          knobStyle: `position:absolute;top:2px;left:${on ? 15 : 2}px;width:13px;height:13px;border-radius:50%;background:#fff;transition:left .12s;display:block`,
+          style: `display:flex;align-items:center;gap:11px;width:100%;padding:8px 10px;border:0;border-radius:7px;background:transparent;cursor:${lastOne ? "not-allowed" : "pointer"};opacity:${lastOne ? .6 : 1};text-align:left`,
+          toggle: () => {
+            if (lastOne) return;
+            const next = on ? [...S.hidden, p.id] : S.hidden.filter(h => h !== p.id);
+            const stillVisible = D.projects.filter(x => !next.includes(x.id));
+            this.setState({
+              hidden: next,
+              project: next.includes(S.project) ? stillVisible[0].id : S.project,
+            });
+          },
+        };
+      }),
+
+      paletteOpen: S.palette, q: S.q,
+      openPalette: () => this.setState({ palette: true, q: "" }),
+      closePalette: () => this.setState({ palette: false }),
+      onQ: e => this.setState({ q: e.target.value }),
+      paletteRows: (() => {
+        const t = S.q.toLowerCase();
+        const all = [
+          ...D.plans.map(p => ({ kind: "plan", label: p.title, repo: p.repo, view: "plans", slug: p.slug })),
+          ...D.research.map(p => ({ kind: "research", label: p.title, repo: p.repo, view: "research", slug: p.slug })),
+          ...D.evidence.map(p => ({ kind: "evidence", label: p.title, repo: p.repo, view: "evidence", slug: p.slug })),
+          ...D.figures.map(p => ({ kind: "figure", label: p.title, repo: p.repo, view: "figures", slug: p.slug })),
+        ].filter(r => !S.hidden.includes(r.repo) && (!t || r.label.toLowerCase().includes(t)));
+        return all.slice(0, 9).map(r => ({
+          ...r,
+          kindStyle: this.chip(r.kind === "evidence" ? "var(--accent)" : "var(--bg-3)", r.kind === "evidence" ? "#fff" : "var(--muted)") + ";width:66px;text-align:center",
+          style: "display:flex;align-items:center;gap:10px;width:100%;padding:9px 14px;border:0;border-bottom:1px solid var(--line);background:transparent;cursor:pointer;text-align:left",
+          go: () => this.setState({ palette: false, reading: false, view: r.view, project: r.repo, sel: { ...S.sel, [r.view === "plans" ? "plan" : r.view === "figures" ? "figure" : r.view]: r.slug } }),
+        }));
+      })(),
+
+      // views — the artifact tabs now follow Sprints/Graph: a full-width index
+      // that drills into a full-width reader, not a persistent rail.
+      isHome: S.view === "home",
+      isArtifactIndex: isList && !selected,
+      isArtifactReader: isList && !!selected,
+      backToIndex: () => this.setState({ sel: { ...S.sel, [selKey]: null }, reading: false }),
+      backLabel: `← ${kind === "figure" ? "figures" : kind === "plan" ? "plans" : kind}`,
+      listStats: (() => {
+        const fm = ink => `font-family:var(--mono);font-size:11px;white-space:nowrap;color:${ink}`;
+        if (!sorted.length) return [];
+        if (kind === "plan") {
+          const left = sorted.filter(a => a.pct < 100).reduce((n, a) => n + a.effort * (1 - a.pct / 100), 0);
+          const held = sorted.filter(a => a.status === "blocked").length;
+          return [
+            { k: "left", v: `${Math.round(left)}h`, style: fm("var(--accent)") },
+            { k: "held", v: String(held), style: fm(held ? "var(--bad)" : "var(--muted)") },
+          ];
+        }
+        const fresh = sorted.filter(a => String(a.edited).startsWith("09-03")).length;
+        return [{ k: "today", v: String(fresh), style: fm(fresh ? "var(--accent)" : "var(--muted)") }];
+      })(),
+      statusChipsStyle: kind === "plan" ? "display:flex;gap:5px;flex-wrap:wrap" : "display:none",
+      listPanelStyle: sorted.length
+        ? "border:1px solid var(--line);border-radius:11px;background:var(--bg);overflow:hidden"
+        : "display:none",
+      listEmptyStyle: sorted.length
+        ? "display:none"
+        : "padding:26px 18px;border:1px dashed var(--line-2);border-radius:10px;background:var(--bg);color:var(--muted);font-size:13px",
+      listEmptyLabel: S.hideDone
+        ? `Everything in ${S.project} is done — turn off “done hidden” to see it.`
+        : `No ${kind === "figure" ? "figures" : kind} in ${S.project}.`,
+      indexRows: sorted.map(a => {
+        const done = this.isDone(a);
+        const st = kind === "plan" ? a.status : kind === "research" ? a.verdict : kind === "evidence" ? a.gate : "figure";
+        const ink = kind === "plan" ? this.statusInk(a.status)
+          : st === "passed" || st === "supports" ? "var(--ok)"
+          : st === "failed" || st === "refutes" ? "var(--bad)"
+          : st === "running" ? "var(--accent)" : "var(--muted)";
+        const fresh = D.incoming.some(i => i.slug === a.slug);
+        return {
+          title: a.title,
+          sub: kind === "figure" ? a.slug : `/${a.slug}`,
+          dotStyle: this.dot(kind === "plan" ? a.status : st === "passed" || st === "supports" ? "shipped" : st === "failed" || st === "refutes" ? "blocked" : st === "running" ? "active" : "other"),
+          pct: kind === "plan" ? `${a.pct}%` : "",
+          barTrackStyle: kind === "plan"
+            ? "flex:1;height:4px;border-radius:3px;background:var(--bg-3);overflow:hidden;display:block"
+            : "display:none",
+          barStyle: `display:block;height:100%;width:${a.pct || 0}%;background:${ink}`,
+          figures: kind === "plan" ? `${a.effort}h · ${a.sprint || "unscheduled"}` : kind === "figure" ? a.dims : st,
+          stamps: `created ${a.created} · edited ${a.edited}`,
+          tag: kind === "plan" ? a.status : done ? "done" : st,
+          tagStyle: this.chip(this.statusBg(kind === "plan" ? a.status : done ? "shipped" : "other"), ink) + ";width:66px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap",
+          thumbStyle: kind === "figure"
+            ? "width:50px;height:34px;flex:none;border-radius:5px;background:repeating-conic-gradient(var(--bg-2) 0% 25%, var(--bg-3) 0% 50%) 50%/9px 9px;border:1px solid var(--line);display:grid;place-items:center;font-family:var(--mono);font-size:8px;color:var(--faint)"
+            : "display:none",
+          thumbLabel: kind === "figure" ? "PNG" : "",
+          style: `display:flex;align-items:center;gap:12px;width:100%;padding:11px 16px;border:0;border-bottom:1px solid var(--line);background:${fresh ? "var(--bg-2)" : "transparent"};cursor:pointer;text-align:left;${fresh ? "animation:arrive 3s ease-out;" : ""}`,
+          // Opening from the index always starts un-zoomed, whatever route left
+          // a stale reading flag behind (e.g. hide-done closing a full-screen doc).
+          go: () => this.setState({ sel: { ...S.sel, [selKey]: a.slug }, reading: false }),
+        };
+      }),
+      isList,
+      isSprints: S.view === "sprints",
+      isSprintDetail: S.view === "sprintDetail",
+      isGraphIndex: S.view === "graph" && !gEnd,
+      isGraphDetail: S.view === "graph" && !!gEnd,
+      backToGraphs: () => this.setState({ gSel: null }),
+      gIndexLabel: `${endpoints.length} in ${S.project}`,
+      gIndexPanelStyle: endpoints.length
+        ? "border:1px solid var(--line);border-radius:11px;background:var(--bg);overflow:hidden"
+        : "display:none",
+      // Overview-level ship line: the trajectory the project is pointed at —
+      // the named handle if there is one, otherwise the deepest endpoint.
+      // Only a named handle is shippable, so the index control appears only when
+      // this project has one.
+      copyGIndexTip: this.shipTip(`/reckon-ship graph:${gLead ? gLead.handle : ""}`, gLeadOpen > 0, gLeadOpen),
+      copyGIndexStyle: gLead ? this.shipStyle(gLeadOpen > 0) : "display:none",
+      copyGIndex: () => {
+        if (!gLead || gLeadOpen) return;
+        navigator.clipboard && navigator.clipboard.writeText(`/reckon-ship graph:${gLead.handle}`);
+        this.flash("gindex");
+      },
+      // Inline mono figures, matching the Plans header — no stat boxes, and
+      // nothing at all when the project has no trajectories.
+      gIndexStats: endpoints.length ? (() => {
+        const f = ink => `font-family:var(--mono);font-size:11px;white-space:nowrap;color:${ink}`;
+        const named = endpoints.filter(p => p.handle).length;
+        return [
+          { k: "named", v: String(named), style: f(named ? "var(--accent)" : "var(--muted)") },
+          { k: "unnamed", v: String(endpoints.length - named), style: f("var(--muted)") },
+          { k: "largest", v: String(Math.max(0, ...endpoints.map(p => this.closureOf(p.slug).length))), style: f("var(--ink-2)") },
+        ];
+      })() : [],
+      gIndexEmptyStyle: endpoints.length
+        ? "display:none"
+        : "padding:26px 18px;border:1px dashed var(--line-2);border-radius:10px;background:var(--bg);color:var(--muted);font-size:13px",
+      gIndexEmptyLabel: `No plan in ${S.project} depends on another — there is no trajectory to close over.`,
+      gIndexRows: endpoints.map(p => {
+        const mem = this.closureOf(p.slug);
+        const shipped = mem.filter(m => m.status === "shipped").length;
+        const pct = mem.length ? Math.round((shipped / mem.length) * 100) : 0;
+        const open = mem.reduce((n, m) => n + (m.decisions || []).length, 0);
+        const held = mem.filter(m => m.status === "blocked").length;
+        const scopes = [...new Set(mem.map(m => m.repo))];
+        const dep = this.layout(mem, "ix");
+        const depth = Math.max(1, Math.round((dep.w + 92 - 20) / (216 + 92)));
+        return {
+          handle: p.handle || "unnamed",
+          handleStyle: this.chip(p.handle ? "var(--ink)" : "var(--bg-3)", p.handle ? "#fff" : "var(--muted)") + ";width:126px;text-align:center;font-size:10.5px;padding:3px 7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap",
+          title: p.title,
+          endpoint: `/${p.slug}`,
+          pct: `${pct}%`,
+          barStyle: `display:block;height:100%;width:${pct}%;background:var(--ok)`,
+          shape: `${mem.length} members · ${depth} deep`,
+          scope: scopes.join(" · "),
+          flag: open ? `${open} open` : held ? `${held} held` : "ready",
+          flagStyle: this.chip(open ? "var(--warn-3)" : held ? "var(--bad-3)" : "var(--ok-3)", open ? "oklch(0.48 0.12 75)" : held ? "var(--bad)" : "var(--ok)") + ";width:62px;text-align:center",
+          go: () => this.setState({ gSel: p.slug }),
+        };
+      }),
+      isCrew: S.view === "crew",
+
+      // ── home ──
+      homeStats: (() => {
+        const big = "font-family:var(--mono);font-size:26px;font-weight:500;letter-spacing:-.02em;line-height:1.1";
+        return [
+          { k: "projects moving", v: String(moving.length), vStyle: big },
+          { k: "plans", v: String(fleetPlans.length), vStyle: big },
+          { k: "active", v: String(fleetPlans.filter(p => p.status === "active").length), vStyle: `${big};color:var(--accent)` },
+          { k: "in flight", v: String(fleetRuns.filter(r => r.phase !== "done").length), vStyle: `${big};color:var(--accent)` },
+          { k: "held", v: String(fleetPlans.filter(p => p.status === "blocked").length), vStyle: `${big};color:${fleetPlans.some(p => p.status === "blocked") ? "var(--bad)" : "var(--faint)"}` },
+          { k: "shipped", v: String(fleetPlans.filter(p => p.status === "shipped").length), vStyle: `${big};color:var(--ok)` },
+        ];
+      })(),
+      scopeLabel: `${V.length} of ${D.projects.length} shown`,
+      overviewRows: moving.map(p => {
+        const items = D.plans.filter(x => x.repo === p.id);
+        const sp = D.sprints.find(s => s.repo === p.id && s.status === "active");
+        const st = k => items.filter(x => x.status === k).length;
+        const parts = [
+          { k: "shipped", n: st("shipped"), ink: "var(--ok)" },
+          { k: "active", n: st("active"), ink: "var(--accent)" },
+          { k: "held", n: st("blocked"), ink: "var(--bad)" },
+          { k: "pending", n: st("pending") + st("draft"), ink: "var(--line-2)" },
+        ];
+        const sk = streak(p.activity);
+        return {
+          id: p.id,
+          last: `edited ${p.last} ago`.replace("edited Jul 2 ago", "edited Jul 2").replace("edited Aug 23 ago", "edited Aug 23"),
+          dotStyle: this.dot(p.live ? "active" : "other"),
+          plans: this.planLabel(p.id),
+          held: st("blocked") ? `${st("blocked")} held` : "",
+          heldStyle: st("blocked") ? "color:var(--bad);white-space:nowrap" : "display:none",
+          sprint: sp ? sp.id : "—",
+          sprintNote: sp ? sp.theme : "no active sprint",
+          streakStyle: sk ? "display:flex;flex-direction:column;gap:2px" : "display:none",
+          noStreakStyle: sk ? "display:none" : "font-family:var(--mono);font-size:10.5px;color:var(--faint)",
+          line: sk ? sk.line : "", area: sk ? sk.area : "", lastY: sk ? sk.lastY : "30",
+          streakLabel: sk ? `${sk.total} edits · ${sk.last3} last 3d` : "",
+          dist: parts.map(part => ({
+            style: `display:block;width:${items.length ? (part.n / items.length) * 100 : 0}%;background:${part.ink}`,
+            tip: `${part.n} ${part.k}`,
+          })),
+          go: () => this.setState({ reading: false, view: "plans", project: p.id, sel: { plan: null, research: null, evidence: null, figure: null } }),
+        };
+      }),
+      inFlight: fleetRuns.filter(r => r.phase !== "done").map(r => ({
+        title: r.title, section: r.section, repo: r.repo, line: r.now, budget: `${r.spent} / ${r.budget}`, phase: r.phase,
+        barStyle: `display:block;height:100%;width:${r.pctBudget}%;background:${r.pctBudget > 80 ? "var(--warn)" : "var(--accent)"}`,
+      })),
+      inFlightLabel: `${D.runs.filter(r => r.phase !== "done" && !S.hidden.includes(r.repo)).length} runs · polling every 3s`,
+      justLanded: landedRows,
+      dormantOpen: S.dormantOpen,
+      toggleDormant: () => this.setState({ dormantOpen: !S.dormantOpen }),
+      dormantStripStyle: dormant.length
+        ? "padding:9px 16px;background:var(--bg-2);display:flex;align-items:center;gap:10px;flex-wrap:wrap"
+        : "display:none",
+      dormantLabel: `${dormant.length} visible ${dormant.length === 1 ? "project" : "projects"} with no recorded work${S.dormantOpen ? " — hide" : " — show"}`,
+      dormantRows: dormant.map(p => ({ id: p.id, note: p.last, go: () => this.setState({ reading: false, view: "plans", project: p.id }) })),
+
+      // ── list surface ──
+      listTitle: kind === "plan" ? "Plans" : kind === "research" ? "Research" : kind === "evidence" ? "Evidence" : "Figures",
+      listCount: `${sorted.length} in ${S.project}`,
+      sortByEdited: () => this.setState({ sort: "edited" }),
+      sortByCreated: () => this.setState({ sort: "created" }),
+      // One control, one setting, same place in all three headers.
+      toggleHideDone: () => this.setState({ hideDone: !S.hideDone }),
+      hideDoneLabel: S.hideDone ? "done hidden" : "hide done",
+      hideDoneStyle: `display:flex;align-items:center;gap:5px;padding:3px 9px;border:1px solid ${S.hideDone ? "var(--accent)" : "var(--line)"};border-radius:5px;background:${S.hideDone ? "var(--accent-3)" : "transparent"};color:${S.hideDone ? "var(--accent)" : "var(--muted)"};cursor:pointer;font-family:var(--mono);font-size:11px;flex:none;white-space:nowrap`,
+      hideDoneMarkStyle: `width:5px;height:5px;border-radius:50%;background:${S.hideDone ? "var(--accent)" : "var(--line-2)"}`,
+      sortEditedStyle: this.segStyle(S.sort === "edited"),
+      sortCreatedStyle: this.segStyle(S.sort === "created"),
+      statusChips, listRows,
+
+      readerPaneStyle: S.reading
+        ? "position:fixed;inset:0;z-index:70;display:flex;flex-direction:column;min-height:0;background:var(--bg)"
+        : "flex:1;min-width:0;display:flex;flex-direction:column;min-height:0",
+      // Trail back to the source: figure/evidence → its plan → its sprint.
+      readCrumbs: (() => {
+        if (!selected) return [{ label: "Nothing selected", sepStyle: "display:none", style: "border:0;background:transparent;padding:0;color:var(--muted);font-size:15px;cursor:default" }];
+        const trail = [];
+        const parentSlug = kind === "plan" ? selected.slug
+          : kind === "research" ? (selected.informs || [])[0]
+          : selected.forPlan;
+        const parent = D.plans.find(p => p.slug === parentSlug);
+        if (parent && parent.sprint) {
+          trail.push({ label: parent.sprint, go: () => this.setState({ reading: false, view: "sprintDetail", project: parent.repo, sprint: parent.sprint }) });
+        }
+        if (parent && kind !== "plan") {
+          trail.push({ label: parent.title, go: () => this.setState({ reading: false, view: "plans", project: parent.repo, sel: { ...S.sel, plan: parent.slug } }) });
+        }
+        trail.push({ label: selected.title, go: () => {} });
+        return trail.map((c, i) => {
+          const last = i === trail.length - 1;
+          return {
+            label: c.label,
+            go: c.go,
+            sepStyle: i === 0 ? "display:none" : "color:var(--faint);font-family:var(--mono);font-size:12px;flex:none",
+            style: last
+              ? "border:0;background:transparent;padding:0;color:var(--ink);font-size:15px;font-weight:600;letter-spacing:-.012em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:default;text-align:left"
+              : "border:0;background:transparent;padding:0;color:var(--muted);font-family:var(--mono);font-size:12px;cursor:pointer;flex:none;white-space:nowrap",
+          };
+        });
+      })(),
+      readPos: sorted.length ? `${(selAt < 0 ? 0 : selAt) + 1} / ${sorted.length}` : "0 / 0",
+      readPrev: () => this._step(-1),
+      readNext: () => this._step(1),
+      readPrevStyle: `width:24px;height:24px;border:1px solid var(--line);border-radius:5px;background:transparent;color:var(--muted);cursor:pointer;flex:none;opacity:${selAt <= 0 ? .35 : 1}`,
+      readNextStyle: `width:24px;height:24px;border:1px solid var(--line);border-radius:5px;background:transparent;color:var(--muted);cursor:pointer;flex:none;opacity:${selAt < 0 || selAt >= sorted.length - 1 ? .35 : 1}`,
+      toggleReading: () => this.setState({ reading: !S.reading }),
+      readFsLabel: S.reading ? "esc" : "f",
+      readFsTip: S.reading ? "Leave full screen · esc" : "Read full screen · f",
+      readFsStyle: `display:grid;place-items:center;min-width:26px;height:26px;padding:0 7px;border:1px solid ${S.reading ? "var(--accent)" : "var(--line-2)"};border-radius:6px;background:${S.reading ? "var(--accent-3)" : "var(--bg)"};color:${S.reading ? "var(--accent)" : "var(--ink-2)"};cursor:pointer;font-family:var(--mono);font-size:11px;flex:none`,
+      // Full screen buys width, so the measure grows a little — but not to the
+      // full viewport, which would make long lines unreadable.
+      readCopiedHide: this.tick("read").hide,
+      readCopiedShow: this.tick("read").show,
+      sprintCopiedHide: this.tick("sprint").hide,
+      sprintCopiedShow: this.tick("sprint").show,
+      flowCopiedHide: this.tick("flow").hide,
+      flowCopiedShow: this.tick("flow").show,
+      graphCopiedHide: this.tick("graph").hide,
+      graphCopiedShow: this.tick("graph").show,
+      gindexCopiedHide: this.tick("gindex").hide,
+      gindexCopiedShow: this.tick("gindex").show,
+      readMeasure: S.reading ? "820px" : "760px",
+      readTitle: selected ? selected.title : "Nothing selected",
+      readMeta,
+      readLede: selected ? (selected.lede || selected.note || "No summary recorded.") : "",
+      readBody: selected ? (selected.body || []) : [],
+      readIsFigure: kind === "figure" && !!selected,
+      readFigureNote: selected && kind === "figure" ? `${selected.dims} · ${selected.note}` : "",
+      readFigurePath: selected && kind === "figure" ? `docs/figures/${selected.slug}` : "",
+      readHasLinks: readLinks.length > 0,
+      readLinks, readLinksLabel,
+      readGraphOpen: S.readGraph && kind === "plan" && !!selected,
+      toggleReadGraph: () => this.setState({ readGraph: !S.readGraph }),
+      readGraphBtnLabel: coneUp.length || coneDown.length ? `${coneUp.length} ↑ ${coneDown.length} ↓` : "standalone",
+      readGraphBtnTip: coneUp.length || coneDown.length
+        ? `${coneUp.length} upstream · ${coneDown.length} downstream`
+        : "No plan depends on this and it depends on nothing",
+      readGraphBtnStyle: kind !== "plan" || !selected
+        ? "display:none"
+        : `display:flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid ${S.readGraph ? "var(--accent)" : "var(--line-2)"};border-radius:6px;background:${S.readGraph ? "var(--accent-3)" : "var(--bg)"};color:${S.readGraph ? "var(--accent)" : "var(--ink-2)"};cursor:pointer;font-family:var(--mono);font-size:11.5px;flex:none;white-space:nowrap;${coneUp.length || coneDown.length ? "" : "opacity:.55;"}`,
+      readUp: coneUp.map(coneCard),
+      readDown: coneDown.map(coneCard),
+      readUpLabel: `Depends on ${coneUp.length}`,
+      readDownLabel: `Blocks ${coneDown.length}`,
+      readUpEmptyStyle: coneUp.length ? "display:none" : "padding:9px 11px;border:1px dashed var(--line-2);border-radius:8px;font-family:var(--mono);font-size:11px;color:var(--faint)",
+      readDownEmptyStyle: coneDown.length ? "display:none" : "padding:9px 11px;border:1px dashed var(--line-2);border-radius:8px;font-family:var(--mono);font-size:11px;color:var(--faint)",
+      readArrowUpStyle: `text-align:center;color:${coneUp.length ? "var(--line-2)" : "transparent"};font-size:14px`,
+      readArrowDownStyle: `text-align:center;color:${coneDown.length ? "var(--line-2)" : "transparent"};font-size:14px`,
+      readFocalStyle: "display:flex;flex-direction:column;gap:6px;padding:11px 13px;border:1.5px solid var(--accent);border-radius:9px;background:var(--bg);min-width:0;box-shadow:0 1px 3px rgba(12,13,16,.07)",
+      readFocalDotStyle: selected && kind === "plan" ? this.dot(selected.status) : "display:none",
+      readFocalStatus: selected && kind === "plan" ? selected.status : "",
+      readFocalStatusStyle: selected && kind === "plan" ? `color:${this.statusInk(selected.status)}` : "",
+      readFocalHours: selected && kind === "plan" ? `${selected.effort}h · ${selected.pct}%` : "",
+      readFocalBarStyle: selected && kind === "plan" ? `display:block;height:100%;width:${selected.pct}%;background:${this.statusInk(selected.status)}` : "display:none",
+      copyReadStyle: this.shipStyle(false),
+      copyReadTip: selected ? (kind === "plan" ? `Copy /reckon-ship ${selected.slug}` : `Copy ${selected.slug}`) : "",
+      copyRead: () => { navigator.clipboard && navigator.clipboard.writeText(selected ? (kind === "plan" ? `/reckon-ship ${selected.slug}` : selected.slug) : ""); this.flash("read"); },
+
+      // ── sprints ──
+      flowStats: projSprints.length ? (() => {
+        const f = ink => `font-family:var(--mono);font-size:11px;white-space:nowrap;color:${ink}`;
+        const mine = D.plans.filter(p => p.repo === S.project);
+        const held = mine.filter(p => p.status === "blocked").length;
+        return [
+          { k: "left", v: `${Math.round(mine.filter(p => p.status !== "shipped").reduce((n, p) => n + p.effort * (1 - p.pct / 100), 0))}h`, style: f("var(--accent)") },
+          { k: "chain", v: `${Math.round(sch.hi)}h`, style: f("var(--ink-2)") },
+          { k: "held", v: String(held), style: f(held ? "var(--bad)" : "var(--muted)") },
+        ];
+      })() : [],
+      sprintEmptyStyle: projSprints.length
+        ? "display:none"
+        : "padding:26px 18px;border:1px dashed var(--line-2);border-radius:10px;background:var(--bg);color:var(--muted);font-size:13px",
+      sprintEmptyLabel: `No sprints in ${S.project} — its plans are unscheduled.`,
+      // A project name is not a ship target. With no active sprint there is no
+      // valid command, so the control is absent rather than fabricated.
+      copyFlowTip: this.shipTip(`/reckon-ship ${activeSprintId}`, flowOpen > 0, flowOpen),
+      copyFlowStyle: activeSprintId ? this.shipStyle(flowOpen > 0) : "display:none",
+      copyFlow: () => {
+        if (!activeSprintId || flowOpen) return;
+        navigator.clipboard && navigator.clipboard.writeText(`/reckon-ship ${activeSprintId}`);
+        this.flash("flow");
+      },
+      flowLaneLabel: `${sch.items.length} items · ${sch.lanes.length} concurrent session${sch.lanes.length === 1 ? "" : "s"}`,
+      flowWidthStyle: "min-width:940px",
+      flowTicks, flowLanes, nowLineStyle, flowSprintChips,
+      sprintTableLabel: `${projSprints.length} in ${S.project}`,
+      sprintPanelStyle: projSprints.length
+        ? "border:1px solid var(--line);border-radius:11px;background:var(--bg);overflow:hidden"
+        : "display:none",
+      sprintRows,
+
+      // ── sprint detail ──
+      backToSprints: () => this.setState({ reading: false, view: "sprints" }),
+      sdId: sd ? sd.id : "—",
+      sdTheme: sd ? sd.theme : "",
+      sdStats: [
+        { k: "plans", v: String(sdMembers.length), vStyle: "font-family:var(--mono);font-size:15px;font-weight:500" },
+        { k: "worker-hours", v: `${sdHours}h`, vStyle: "font-family:var(--mono);font-size:15px;font-weight:500" },
+        { k: "depth", v: String(Math.round(sdDepth)), vStyle: "font-family:var(--mono);font-size:15px;font-weight:500" },
+        { k: "held", v: String(sdMembers.filter(p => p.status === "blocked").length), vStyle: `font-family:var(--mono);font-size:15px;font-weight:500;color:${sdMembers.some(p => p.status === "blocked") ? "var(--bad)" : "var(--muted)"}` },
+        { k: "prerequisites", v: String(sdContext.length), vStyle: `font-family:var(--mono);font-size:15px;font-weight:500;color:${sdContext.some(p => p.status !== "shipped") ? "var(--warn)" : "var(--muted)"}` },
+        { k: "open decisions", v: String(sdOpen.length), vStyle: `font-family:var(--mono);font-size:15px;font-weight:500;color:${sdOpen.length ? "var(--warn)" : "var(--muted)"}` },
+      ],
+      dagNodes: sdLay.nodes, dagEdges: sdLay.edges, dagColumns: sdLay.columns,
+      dagW: sdLay.w, dagH: sdLay.h,
+      dagSizeStyle: `width:${sdLay.w}px;height:${sdLay.h}px`,
+      copySprintTip: this.shipTip(`/reckon-ship ${sd ? sd.id : ""}`, sdOpen.length > 0, sdOpen.length),
+      copySprintStyle: this.shipStyle(sdOpen.length > 0),
+      copySprint: () => { if (sdOpen.length) return; navigator.clipboard && navigator.clipboard.writeText(`/reckon-ship ${sd.id}`); this.flash("sprint"); },
+
+      // ── graph ──
+      gHandle: gNamed || "unnamed",
+      gHandleStyle: this.chip(gNamed ? "var(--ink)" : "var(--bg-3)", gNamed ? "#fff" : "var(--muted)") + ";font-size:11px;padding:3px 9px",
+      gTitle: gEnd ? gEnd.title : "No trajectory in this repository",
+      gSub: gEnd ? `endpoint /${gEnd.slug} · closure ${closure.length} derived` : "every plan here stands alone",
+      gPos: endpoints.length ? `${gAt + 1}/${endpoints.length}` : "0/0",
+      gPrev: () => { const n = endpoints[Math.max(0, gAt - 1)]; if (n) this.setState({ gSel: n.slug }); },
+      gNext: () => { const n = endpoints[Math.min(endpoints.length - 1, gAt + 1)]; if (n) this.setState({ gSel: n.slug }); },
+      gPrevStyle: `width:24px;height:24px;border:1px solid var(--line);border-radius:5px;background:transparent;color:var(--muted);cursor:pointer;opacity:${gAt <= 0 ? .4 : 1}`,
+      gNextStyle: `width:24px;height:24px;border:1px solid var(--line);border-radius:5px;background:transparent;color:var(--muted);cursor:pointer;opacity:${gAt >= endpoints.length - 1 ? .4 : 1}`,
+      // A closure ship target requires a handle (skills/reckon-ship: graph:<handle>).
+      // Unnamed trajectories get no invented command — they get the missing
+      // precondition, named.
+      gCopyTip: this.shipTip(`/reckon-ship graph:${gNamed}`, gOpen > 0, gOpen),
+      gCopyStyle: gNamed ? this.shipStyle(gOpen > 0) : "display:none",
+      gNoHandleStyle: gNamed ? "display:none" : this.chip("var(--warn-3)", "oklch(0.48 0.12 75)") + ";font-size:11px;padding:5px 11px;border:1px dashed var(--warn)",
+      gNoHandleTip: "A closure ships by handle. Add plan-graph-handle to this endpoint plan to make it shippable as a graph.",
+      gCopy: () => { if (!gNamed || gOpen) return; navigator.clipboard && navigator.clipboard.writeText(`/reckon-ship graph:${gNamed}`); this.flash("graph"); },
+      gScopes: Object.keys(gScopeMap).map(r => ({ repo: r, n: String(gScopeMap[r]) })),
+      gState: gOpen ? `held · ${gOpen} open` : "ready",
+      gStateStyle: this.chip(gOpen ? "var(--warn-3)" : "var(--ok-3)", gOpen ? "oklch(0.48 0.12 75)" : "var(--ok)"),
+      gCount: String(closure.length),
+      gMembers: closure.map(m => ({
+        repo: m.repo, title: m.title, status: m.status,
+        statusStyle: `font-family:var(--mono);font-size:10px;color:${this.statusInk(m.status)}`,
+        style: "display:flex;flex-direction:column;gap:1px;width:100%;padding:8px 14px;border:0;border-bottom:1px solid var(--line);background:transparent;cursor:pointer;text-align:left",
+        go: () => this.setState({ reading: false, view: "plans", sel: { ...S.sel, plan: m.slug } }),
+      })),
+      gNodes: gLay.nodes, gEdges: gLay.edges, gDagW: gLay.w, gDagH: gLay.h,
+      gDagSizeStyle: `width:${gLay.w}px;height:${gLay.h}px`,
+
+      // ── crew ──
+      crewLabel: `${S.project} · ${crewRuns.length} run${crewRuns.length === 1 ? "" : "s"} · ${sch.lanes.length} session${sch.lanes.length === 1 ? "" : "s"} · polling every 3s`,
+      crewEmpty: crewRuns.length === 0,
+      crewEmptyLabel: `No runs in ${S.project}`,
+      crewCards: crewRuns.map(r => ({
+        repo: r.repo, plan: r.title, section: r.section, dispatch: r.dispatch, role: r.role,
+        phase: r.phase, doneWhen: r.doneWhen || "No contract recorded for this section.",
+        spent: r.spent, budget: r.budget, since: r.since, gates: r.gates, now: r.now,
+        dotStyle: this.dot(r.phase === "done" ? "shipped" : r.phase === "awaiting gate" ? "pending" : "active"),
+        phaseStyle: `font-family:var(--mono);font-size:11px;color:${r.phase === "done" ? "var(--ok)" : r.phase === "awaiting gate" ? "var(--warn)" : "var(--accent)"}`,
+        budgetBarStyle: `display:block;height:100%;width:${r.pctBudget}%;background:${r.pctBudget > 80 ? "var(--warn)" : "var(--accent)"}`,
+        gateMarks: r.marks.map(m => ({ style: `height:5px;flex:1;border-radius:2px;background:${m ? "var(--accent-2)" : "var(--bg-3)"}` })),
+        style: `display:flex;gap:18px;padding:12px 15px;border:1px solid ${r.phase === "awaiting gate" ? "var(--warn)" : "var(--line)"};border-radius:9px;background:var(--bg)`,
+      })),
+    };
+  }
+}
+</script>
+</body>
+</html>
