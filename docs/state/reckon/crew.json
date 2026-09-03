@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T17:31:51",
+  "updated": "2026-09-03T17:40:37",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -45469,6 +45469,125 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260903T153038491318-a-fleet-state-cannot-fall-out-of-the-counters",
+        "plan": "crew-observability-truth",
+        "section": "\u00a74",
+        "node": "a-fleet-state-cannot-fall-out-of-the-counters",
+        "node_definition": {
+          "done_when": "tests/test_fleet_counter_coverage.py tests/test_crew_recovery.py tests/test_crew_ticker.py run with no failures added against the base sha; report base and after failure ids, never an absolute count",
+          "estimated_hours": null,
+          "goal": "Assert that every state the classifier can emit is visible to the fleet counters, so a new one cannot fall out silently",
+          "id": "a-fleet-state-cannot-fall-out-of-the-counters",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T153038491318-a-fleet-state-cannot-fall-out-of-the-counters/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "tests/test_fleet_counter_coverage.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "clive-b",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T15:30:44Z",
+        "completed_at": "2026-09-03T15:38:06.834Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 435,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 442,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "d20cc7021d2b978a7cdec92bf96aa1c35a38e49d",
+        "commits": [
+          "c08a1ef5386808db0e0ac35fffdd3ab19c262529"
+        ],
+        "changed_lines": {
+          "added": 173,
+          "removed": 0,
+          "files": 1
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_counter_coverage.py tests/test_crew_recovery.py tests/test_crew_ticker.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T153038491318-a-fleet-state-cannot-fall-out-of-the-counters/after-suite.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T153038491318-a-fleet-state-cannot-fall-out-of-the-counters/manifest.md",
+        "scope_changed": false,
+        "session_id": "520195c3-9510-469f-8ec2-924e76cf3ffd",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 2754254,
+            "input_tokens_cumulative": 2754254,
+            "output_tokens": 35922,
+            "output_tokens_cumulative": 35922,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 14.66932,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 14.66932
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 440.286,
+          "generated_tokens": 35922,
+          "generation_seconds": 422.209,
+          "input_budget_tokens": 492288,
+          "input_utilisation_pct": 21.8,
+          "machine_seconds": 18.077,
+          "peak_input_tokens": 107373,
+          "tokens_per_second": 85.08,
+          "wall_tokens_per_second": 81.59
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -45599,6 +45718,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 739
+    "_version": 740
   }
 }
