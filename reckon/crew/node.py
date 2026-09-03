@@ -613,7 +613,10 @@ def unintegrated_claim_work(
         return []
     worktree = Path(worktree_value).expanduser()
     if not worktree.is_dir():
-        return []
+        # A recorded worktree that is gone cannot be read, and an unreadable
+        # claim must not report the same emptiness as an inspected clean one:
+        # a removed worktree is how a commit stops being reachable at all.
+        return [f"a recorded worktree at {worktree} that is gone"]
 
     findings: list[str] = []
     node = pointer.get("node")
@@ -688,7 +691,17 @@ def claim_disposition(
     """
     run_id = str(pointer.get("run_id") or "unknown")
     pid = pointer.get("pid")
-    if _claim_process_alive(pid):
+    alive = _claim_process_alive(pid)
+    if alive is None:
+        # A pointer is written before its worker is spawned, so no recorded
+        # process means "not yet" rather than "gone". Reading the two alike
+        # would open the window between the two writes to a second dispatch,
+        # which is the collision the claim exists to prevent.
+        return ClaimDisposition(
+            binding=True,
+            reason=f"run {run_id!r} records no worker process yet",
+        )
+    if alive:
         return ClaimDisposition(
             binding=True, reason=f"run {run_id!r} is still running as pid {pid}"
         )
@@ -712,8 +725,8 @@ def claim_disposition(
     )
 
 
-def _claim_process_alive(pid: Any) -> bool:
-    """Report whether a claim's recorded worker process is still running."""
+def _claim_process_alive(pid: Any) -> bool | None:
+    """Report worker liveness, or None when the pointer records no process."""
     from reckon.crew.runs import process_alive
 
-    return process_alive(pid) is True
+    return process_alive(pid)
