@@ -4,6 +4,7 @@ import json
 import re
 from typing import Any, TypedDict
 
+from reckon import ledger
 from reckon.crew.node import NEEDS_HELP_FIELDS, NEEDS_HELP_MARKER, TaskNode
 from reckon.crew.runs import _utc_now
 
@@ -56,6 +57,9 @@ def parse_manifest(text: str) -> dict[str, Any]:
         fields[name] = _as_list(fields.get(name))
     for name in ("baseline_suite", "after_suite"):
         fields[name] = _parse_suite_observation(fields.get(name))
+    fields["failure_attribution"] = _parse_failure_attribution(
+        fields.get("failure_attribution")
+    )
     fields["needs_help"] = parse_needs_help(text) if NEEDS_HELP_MARKER in text else None
     return fields
 
@@ -104,6 +108,31 @@ def _parse_suite_observation(value: Any) -> SuiteObservation | str | None:
         "failure_count": failure_count,
         "failure_ids": failure_ids,
     }
+
+
+def _parse_failure_attribution(value: Any) -> dict[str, str] | str | None:
+    """Decode an inline JSON failure-id -> candidate-commit map.
+
+    Tolerant like :func:`_parse_suite_observation`: malformed evidence is kept
+    as a string rather than silently dropped, and an entry with a non-string
+    key or value is skipped rather than rejecting the whole manifest.
+    """
+    if value is None or str(value).strip().lower() in _NONE_VALUES:
+        return None
+    try:
+        raw = json.loads(str(value))
+    except (TypeError, json.JSONDecodeError):
+        return str(value)
+    if not isinstance(raw, dict):
+        return str(value)
+    attribution: dict[str, str] = {}
+    for failure_id, commit in raw.items():
+        if not isinstance(failure_id, str) or not failure_id.strip():
+            continue
+        if not isinstance(commit, str) or not commit.strip():
+            continue
+        attribution[failure_id.strip()] = commit.strip()
+    return attribution
 
 
 def _as_list(value: Any) -> list[str]:
@@ -199,6 +228,20 @@ def audit_manifest(
                 findings.append(f"{name}.failure_count does not match failure_ids")
             if not observation["log_path"] and not observation["log_digest"]:
                 findings.append(f"{name} needs log_path or log_digest")
+        attribution = manifest.get("failure_attribution")
+        if attribution is not None:
+            if not isinstance(attribution, dict):
+                findings.append("failure_attribution must be an inline JSON object")
+            else:
+                after_observation = manifest.get("after_suite")
+                findings.extend(
+                    ledger.failure_attribution_missing_fields(
+                        attribution,
+                        after_observation
+                        if isinstance(after_observation, dict)
+                        else None,
+                    )
+                )
     if node is not None and manifest["changed_paths"]:
         allowed = set(node.write_paths)
         stray = sorted(

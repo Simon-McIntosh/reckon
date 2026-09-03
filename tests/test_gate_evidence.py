@@ -26,6 +26,7 @@ from click.testing import CliRunner
 
 from reckon import capabilities, ledger
 from reckon.cli import main as cli_main
+from reckon.crew.reports import audit_manifest, parse_manifest
 from reckon.crew.runs import _write_json, pointer_path
 
 PROJECT = "proj"
@@ -196,12 +197,15 @@ def _write_suite_manifest(
     *,
     baseline: dict[str, object] | None,
     after: dict[str, object] | None,
+    failure_attribution: dict[str, str] | None = None,
 ) -> None:
     lines = ["node: node-a", "status: complete", "commits: abc123", "tests: done"]
     if baseline is not None:
         lines.append("baseline_suite: " + json.dumps(baseline))
     if after is not None:
         lines.append("after_suite: " + json.dumps(after))
+    if failure_attribution is not None:
+        lines.append("failure_attribution: " + json.dumps(failure_attribution))
     path.write_text("\n".join(lines) + "\n")
 
 
@@ -843,3 +847,166 @@ def test_qualification_depth_counts_distinct_primaries_not_shadow_rows(
     assert slice_["runs"] == 3
     assert slice_["controlled_runs"] == 3
     assert slice_["qualification_depth"] == 2
+
+
+# ── Per-failure attribution ─────────────────────────────────────────────────
+#
+# A test-role worker's deliverable is an attribution, not a verdict (see
+# prompts.compose_prompt's role split): each newly added failure mapped to the
+# candidate merged commit that introduced it. These regressions cover the
+# manifest round trip, the two rejection paths for an untrustworthy
+# attribution, and that "newly added" is computed with the exact same
+# set-difference arithmetic the suite-delta promotion gate already uses.
+
+
+def test_failure_attribution_round_trips_through_parse_manifest(
+    tmp_path: Path,
+) -> None:
+    baseline = _suite_observation("base-abc", ["tests/test_old.py::test_old"])
+    after = _suite_observation(
+        "after-abc",
+        ["tests/test_old.py::test_old", "tests/test_new.py::test_regression"],
+    )
+    attribution = {"tests/test_new.py::test_regression": "deadbeef1234"}
+    manifest = tmp_path / "attributed.md"
+    _write_suite_manifest(
+        manifest, baseline=baseline, after=after, failure_attribution=attribution
+    )
+
+    fields = parse_manifest(manifest.read_text())
+
+    assert fields["failure_attribution"] == attribution
+    assert ledger.new_failure_attribution(
+        fields["baseline_suite"], fields["after_suite"], fields["failure_attribution"]
+    ) == attribution
+
+
+def test_new_failure_attribution_drops_a_pre_existing_failure_id() -> None:
+    baseline = _suite_observation("base-abc", ["tests/test_old.py::test_old"])
+    after = _suite_observation(
+        "after-abc",
+        ["tests/test_old.py::test_old", "tests/test_new.py::test_regression"],
+    )
+    attribution = {
+        "tests/test_old.py::test_old": "should-not-count",
+        "tests/test_new.py::test_regression": "deadbeef1234",
+    }
+
+    resolved = ledger.new_failure_attribution(baseline, after, attribution)
+
+    assert resolved == {"tests/test_new.py::test_regression": "deadbeef1234"}
+
+
+def test_ledger_rejects_attribution_naming_a_failure_absent_from_after() -> None:
+    after = _suite_observation("after-abc", ["tests/test_new.py::test_regression"])
+    attribution = {"tests/test_missing.py::test_ghost": "deadbeef1234"}
+
+    missing = ledger.failure_attribution_missing_fields(attribution, after)
+
+    assert missing == [
+        "failure_attribution[tests/test_missing.py::test_ghost] "
+        "not in after_suite.failure_ids"
+    ]
+
+
+def test_ledger_rejects_attribution_entry_with_no_candidate_commit() -> None:
+    after = _suite_observation("after-abc", ["tests/test_new.py::test_regression"])
+    attribution = {"tests/test_new.py::test_regression": ""}
+
+    missing = ledger.failure_attribution_missing_fields(attribution, after)
+
+    assert missing == [
+        "failure_attribution[tests/test_new.py::test_regression] "
+        "has no candidate commit"
+    ]
+
+
+def test_audit_manifest_rejects_attribution_naming_failure_absent_from_after(
+    tmp_path: Path,
+) -> None:
+    baseline = _suite_observation("base-abc", ["tests/test_old.py::test_old"])
+    after = _suite_observation(
+        "after-abc",
+        ["tests/test_old.py::test_old", "tests/test_new.py::test_regression"],
+    )
+    attribution = {"tests/test_missing.py::test_ghost": "deadbeef1234"}
+    manifest = tmp_path / "bad-attribution.md"
+    _write_suite_manifest(
+        manifest, baseline=baseline, after=after, failure_attribution=attribution
+    )
+
+    audit = audit_manifest(manifest.read_text(), suite_armed=True)
+
+    assert not audit["ok"]
+    assert any(
+        "tests/test_missing.py::test_ghost" in finding and "not in after_suite"
+        in finding
+        for finding in audit["findings"]
+    )
+
+
+def test_audit_manifest_accepts_attribution_naming_a_real_new_failure(
+    tmp_path: Path,
+) -> None:
+    baseline = _suite_observation("base-abc", ["tests/test_old.py::test_old"])
+    after = _suite_observation(
+        "after-abc",
+        ["tests/test_old.py::test_old", "tests/test_new.py::test_regression"],
+    )
+    attribution = {"tests/test_new.py::test_regression": "deadbeef1234"}
+    manifest = tmp_path / "good-attribution.md"
+    _write_suite_manifest(
+        manifest, baseline=baseline, after=after, failure_attribution=attribution
+    )
+
+    audit = audit_manifest(manifest.read_text(), suite_armed=True)
+
+    assert audit["ok"], audit["findings"]
+    assert audit["manifest"]["failure_attribution"] == attribution
+
+
+def test_added_failure_ids_matches_promotions_suite_delta_arithmetic(
+    repository: Path, tmp_path: Path
+) -> None:
+    run_id = "r-20260826T090900000000-node-a"
+    baseline = _suite_observation("base-abc", ["tests/test_old.py::test_old"])
+    after = _suite_observation(
+        "after-abc",
+        ["tests/test_old.py::test_old", "tests/test_new.py::test_regression"],
+    )
+    attribution = {"tests/test_new.py::test_regression": "deadbeef1234"}
+    manifest = tmp_path / "attributed-waived.md"
+    _write_suite_manifest(
+        manifest, baseline=baseline, after=after, failure_attribution=attribution
+    )
+    _write_pointer(
+        run_id,
+        repository,
+        suite_command="pytest -q",
+        manifest_path=str(manifest),
+    )
+
+    result = CliRunner().invoke(
+        cli_main,
+        [
+            *_complete_arguments(run_id, repository),
+            "--waive-suite-delta",
+            "measured incident replay",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    suite_delta = json.loads(result.output)["record"]["suite_delta"]
+
+    fields = parse_manifest(manifest.read_text())
+    reused = ledger.added_failure_ids(fields["baseline_suite"], fields["after_suite"])
+
+    assert reused == suite_delta["added_failure_ids"]
+    assert (
+        ledger.new_failure_attribution(
+            fields["baseline_suite"],
+            fields["after_suite"],
+            fields["failure_attribution"],
+        )
+        == attribution
+    )

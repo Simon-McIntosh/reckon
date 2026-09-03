@@ -125,12 +125,12 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
   orientation_write_paths: {orientation_scope}
   node: {node.id}
   status: complete | blocked | failed
-  commits: <sha list>
-  changed_paths: <explicit list>
+  commits: <sha list>; changed_paths: <explicit list>
   tests: <command and result>
   test_logs: <paths on disk>
   baseline_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed=false is absent evidence>
   after_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed=false is absent evidence>
+  failure_attribution: <armed-only, test role JSON {{failure_id: candidate_commit}} for each newly added failure>
   artifacts: <paths plus headline metrics>
   evidence_inputs: <facts the orchestrator needs for writeback>
   follow_ons: <work you found but were fenced out of, or none>
