@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="26">
 <meta name="plan-commits" content="0c4d36f,e535dd4,81d35f9,0e9cdb2,51230b3,0580cbc,d805e6d,7e99433">
 <meta name="plan-impl" content="0.75">
 </head>
@@ -369,6 +369,50 @@
       them.
     </p>
 
+    <h2 id="s7">§7 — The log stores facts, the monitor derives the display</h2>
+    <p>Directed by the lead on 2026-09-03, and it supersedes the narrower requirement that the
+    transition carry model and effort separately. One rule: <strong>nothing in the events log is
+    a rendered value.</strong> The producer records what is true; the renderer decides how it
+    looks.</p>
+
+    <p><strong>Three fields violate it today, and one already obeys.</strong> Measured against a
+    live transition line:</p>
+    <table>
+      <thead><tr><th>Field</th><th>Persisted now</th><th>Facts it should persist</th></tr></thead>
+      <tbody>
+        <tr><td><code>agent</code></td><td><code>"dsv4-flash·xh"</code> — alias and abbreviated effort already composed by <code>agent_label</code></td><td>model, effort, alias, backend, each on its own key</td></tr>
+        <tr><td><code>reason</code></td><td><code>_single_clause(detail)</code> — the detail already truncated to one clause</td><td>the full detail, plus the structured facts behind it: the needs-help headline, the blocker text, whether the report is complete</td></tr>
+        <tr><td><code>marker</code></td><td><code>?</code> or <code>!</code> — a display glyph</td><td>nothing; the glyph is derived from the facts above at render time</td></tr>
+        <tr><td><code>role</code></td><td><code>"implement"</code> — raw</td><td>unchanged. This is the field that already does it right, and the pattern the others should copy.</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Why it matters beyond tidiness, in three consequences this session
+    measured.</strong> A format change should re-render <em>history</em>: today's 970-line log
+    cannot be redrawn into a model column and an effort column, because the two were fused
+    before they were written, so every past line is permanently stuck in the old shape. A
+    machine consumer of the JSON stream should receive facts rather than a human's column, and
+    it currently receives an abbreviation it would have to parse back. And composing in exactly
+    one place is what makes drift between the record and the display impossible — the alias
+    defect earlier today was precisely a second composition site disagreeing with the first, and
+    the role column's defect was a field the display read that the record never carried.</p>
+
+    <p><strong>The renderer must read old lines without raising.</strong> A line written before
+    this change has a composed <code>agent</code>, a truncated <code>reason</code> and a glyph
+    <code>marker</code>, with no raw fields underneath. So the display prefers the facts when
+    they are present and falls back to the persisted rendered value when they are not, which
+    keeps the existing log readable while new lines become re-renderable.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>No rendered value is persisted</td><td>A transition written by the producer carries model, effort, alias and backend as separate keys, the full untruncated detail, and the structured facts a marker is derived from; it carries no composed agent label, no single-clause reason and no glyph. Asserted by inspecting a written log line rather than a function's return value, since the log is what a later reader gets.</td></tr>
+        <tr><td>The display is derived, in one place</td><td>The composed agent label, the single clause and the marker are produced by the renderer from those facts, with no second composition site anywhere in the producer. Asserted by a test that fails if the producer regains any display-shaped field.</td></tr>
+        <tr><td>History still renders</td><td>A log line in the pre-change shape renders without raising, using its persisted composed values, and a line in the new shape renders into separate columns. Asserted against a real line taken from the existing events file and a newly written one, in the same test.</td></tr>
+        <tr><td>A format change re-renders the past</td><td>Changing a display rule and re-reading the log changes how new-shape historical lines appear, without the producer running again. Asserted by rendering one stored line at two different display settings, which is the property this section exists to buy.</td></tr>
+      </tbody>
+    </table>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="role-badge-placement" data-choice="left-full-words" data-by="Simon McIntosh" data-when="2026-09-03">
@@ -485,6 +529,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260903T125102717814-the-role-abbreviates-to-four-characters" data-who="flash-b" data-when="2026-09-03T12:59:03.646Z">
     <div class="r-comment-body"><p>Roles render as their first four characters, derived from the vocabulary with no table; the documentation-to-docs exception is retired</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260903T130204071550-model-and-effort-are-separate-columns" data-who="flash-c" data-when="2026-09-03T13:13:52.810Z">
+    <div class="r-comment-body"><p>Stopped and superseded: its scope, carrying model and effort separately, is a subset of the rule the lead then set — the log stores facts and the monitor derives the whole display, which also covers the truncated reason and the glyph marker. Reshaped as one coherent node rather than a subset followed by a sweep</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260903T090449100092-the-reason-says-what-the-worker-asked" data-who="impl-fit" data-when="2026-09-03T09:16:13.522Z">
     <div class="r-comment-body"><p>A blocked reason is the worker's own headline with a marker saying whether a resume can answer it; 285 passed across seven modules against 1 pre-existing failure present at base</p></div>
