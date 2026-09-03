@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T06:57:00",
+  "updated": "2026-09-03T07:03:41",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -37456,9 +37456,232 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260903T044949600754-shadow-path-admits-many-candidates",
+        "plan": "clive-local-workers",
+        "section": "\u00a77",
+        "node": "shadow-path-admits-many-candidates",
+        "node_definition": {
+          "done_when": "Today a second concurrent shadow of one primary is refused with the message worktree path already exists. The path is derived independently in two places that must agree: reckon/crew/dispatch.py builds it near line 1360 from a session string composed of the literal prefix shadow and the primary run id, and reckon/crew/routing.py reconstructs the same location near line 368, joining a workspace root with that same prefixed primary run id and then the node name, to classify a shadow worktree as reclaimable. Neither derivation carries anything naming the candidate backend, which is why a second candidate collides. Include the candidate backend name in that path at BOTH sites so several candidates run concurrently against one primary, taking the backend at the reclamation site from the committed run record rather than from current flight config, because the record is what says which candidate actually ran. Make the two derivations call one shared helper rather than two literals that agree by inspection, since they have already been shown to drift. Tests in tests/test_crew_shadow_paths.py assert: two shadows of one primary on different candidate backends both create worktrees and neither is refused; a third candidate also succeeds, so the fix is not a special case for two; each resulting worktree is classified against its own committed shadow record and stays reclaimable exactly as a single shadow is today; a re-shadow of the same primary on the SAME candidate still refuses rather than silently colliding; and the reclamation site resolves the same path the dispatcher created, asserted by calling both rather than by restating the format. Your gate is that new test file plus tests/test_crew_gc.py. Do NOT run the full suite and do NOT run any browser-driven test. Judge by delta against base 10cc90dc97187f3ae4fa4b8aa8c4c96aad4e9e8a",
+          "estimated_hours": null,
+          "goal": "Let one committed node be shadowed by several candidate models at once, so a shadow wave is a benchmark rather than a queue",
+          "id": "shadow-path-admits-many-candidates",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T044949600754-shadow-path-admits-many-candidates/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "reckon/crew/routing.py",
+            "tests/test_crew_shadow_paths.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "flash-a",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T04:49:55Z",
+        "completed_at": "2026-09-03T05:01:19.048Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 677,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 684,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "10cc90dc97187f3ae4fa4b8aa8c4c96aad4e9e8a",
+        "commits": [
+          "1a77ce86195e681e58aeb47292f16711ffc02349"
+        ],
+        "changed_lines": {
+          "added": 269,
+          "removed": 2,
+          "files": 3
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_crew_shadow_paths.py tests/test_crew_gc.py",
+          "exit_status": 0,
+          "log_path": "/tmp/gate2.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T044949600754-shadow-path-admits-many-candidates/manifest.md",
+        "scope_changed": false,
+        "session_id": "619eab43-d0d2-42a0-a0cb-c81f846864d9",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6966308,
+            "input_tokens_cumulative": 6966308,
+            "output_tokens": 36700,
+            "output_tokens_cumulative": 36700,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 35.749039999999994,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 35.749039999999994
+        },
+        "lineage": {
+          "attempt": 2,
+          "kind": "redispatch",
+          "previous_run_id": "r-20260903T042915093953-shadow-path-admits-many-candidates",
+          "root_run_id": "r-20260903T042915093953-shadow-path-admits-many-candidates"
+        },
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 2,
+        "attempt_kind": "redispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260903T045051276316-run-record-reports-rate-and-refusal",
+        "plan": "clive-local-workers",
+        "section": "\u00a77",
+        "node": "run-record-reports-rate-and-refusal",
+        "node_definition": {
+          "done_when": "Two signals a coordinator needs are absent from the run record and both are already in the stream. FIRST, throughput: liveness is currently decided from the age of the stream file against a stall window, which answers only whether bytes arrived, so a slow model and a hung one are indistinguishable; the observation must fold a generation rate, computed from tokens produced over elapsed time, and must report generation time separately from tool-wait time because wall clock here is dominated by local test execution rather than inference. It must also report peak input tokens against the model's usable budget, since a run at 87 percent of its window is minutes from a ceiling failure and that is knowable in advance rather than after. SECOND, quota refusal: a codex stream carrying an event of type turn.failed whose error message states a usage limit and names a reset time is currently folded to headroom unknown, so preflight reported a backend clear while its account was exhausted for six days; parse that shape into a real budget signal carrying exhausted headroom and the reset timestamp, leaving a genuinely absent signal as unknown because absence of evidence must never read as exhaustion. Tests in tests/test_backend_observation.py assert against recorded fixture streams, never a live model: a stream with token usage over a known span yields the expected rate and separates tool wait from generation; peak input is reported against the declared budget; a recorded turn.failed usage-limit stream yields exhausted with its reset time; a stream with no rate-limit event still yields unknown; and an ordinary failed turn that is not a usage limit does not yield exhausted. Add the fixture streams under tests/fixtures. Your gate is that new test file plus tests/test_backends.py and tests/test_budget.py. Do NOT run the full suite and do NOT run any browser-driven test. Judge by delta against base 10cc90dc97187f3ae4fa4b8aa8c4c96aad4e9e8a",
+          "estimated_hours": null,
+          "goal": "Make a run record say how fast its worker is generating and whether its backend refused on quota",
+          "id": "run-record-reports-rate-and-refusal",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T045051276316-run-record-reports-rate-and-refusal/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/_backends.py",
+            "reckon/budget.py",
+            "tests/test_backend_observation.py",
+            "tests/test_backends.py",
+            "tests/test_budget.py",
+            "tests/fixtures/backends/README.md",
+            "tests/fixtures/backends/claude-worked-turn.jsonl",
+            "tests/fixtures/backends/codex-usage-limit.jsonl"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "opus-a",
+        "backend": "claude-opus",
+        "local": false,
+        "agent": {
+          "backend": "claude-opus",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-opus-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T04:50:56Z",
+        "completed_at": "2026-09-03T05:02:28.068Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 686,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 692,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "10cc90dc97187f3ae4fa4b8aa8c4c96aad4e9e8a",
+        "commits": [
+          "3ff87b2f720520d88cb63c5662514113af4d75d2"
+        ],
+        "changed_lines": {
+          "added": 792,
+          "removed": 8,
+          "files": 6
+        },
+        "tests_added": 16,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_backend_observation.py tests/test_backends.py tests/test_budget.py",
+          "exit_status": 0,
+          "log_path": "/tmp/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T045051276316-run-record-reports-rate-and-refusal/manifest.md",
+        "scope_changed": true,
+        "session_id": "7526fd5d-e19e-4bad-bf6a-8967770dd585",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 1.01,
+          "rate_limit_type": "overage",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-10-01T00:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 1,
+          "tokens": {
+            "cache_creation_input_tokens": 132683,
+            "cache_creation_input_tokens_cumulative": 132683,
+            "cache_read_input_tokens": 6624307,
+            "cache_read_input_tokens_cumulative": 6624307,
+            "inference_geo": "not_available",
+            "input_tokens": 130,
+            "input_tokens_cumulative": 130,
+            "output_tokens": 43059,
+            "output_tokens_cumulative": 43059,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 5.716108499999998,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 5.716108499999998
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [],
-    "_version": 610
+    "_version": 612
   }
 }
