@@ -475,19 +475,6 @@ def member(
     return None
 
 
-def session_for_model(entry: Mapping[str, Any], model: str) -> str | None:
-    """Return the member session recorded for exactly one resolved model."""
-    model_key = str(model).strip()
-    if not model_key:
-        return None
-    sessions = entry.get("sessions")
-    if isinstance(sessions, Mapping) and sessions.get(model_key):
-        return str(sessions[model_key])
-    if str(entry.get("session_model") or "") == model_key and entry.get("session_id"):
-        return str(entry["session_id"])
-    return None
-
-
 def register_member(
     project: str,
     member_id: str,
@@ -501,8 +488,8 @@ def register_member(
     """Add or update a roster member, returning the stored entry.
 
     A member registered with a null session is the normal case: the id it will
-    reuse does not exist until its first run reports one, and
-    :func:`capture_session` persists it then.
+    reuse does not exist until its first run reports one, and observation
+    persists it under the run's resolved agent configuration then.
     """
     if not _SAFE_ID.fullmatch(str(member_id)):
         raise LedgerError(f"member id {member_id!r} must match {_SAFE_ID.pattern}")
@@ -544,82 +531,6 @@ def register_member(
     ] + [entry]
     write(project, data, version, root)
     return entry
-
-
-def capture_session(
-    project: str,
-    member_id: str,
-    session_id: str,
-    root: str | Path | None = None,
-    *,
-    model: str = "",
-) -> dict[str, Any]:
-    """Persist a session id without replacing another model's session.
-
-    The first id wins independently for every recorded model. Calls without a
-    model retain the scalar compatibility contract used by older ledgers.
-    """
-    if not str(session_id).strip():
-        raise LedgerError("cannot capture an empty session id")
-    data, version = load(project, root)
-    for entry in data["members"]:
-        if str(entry.get("id")) != str(member_id):
-            continue
-        model_key = str(model).strip()
-        if model_key:
-            sessions = dict(entry.get("sessions") or {})
-            current = sessions.get(model_key)
-            if current and str(current) != str(session_id):
-                return {
-                    "captured": False,
-                    "member": dict(entry),
-                    "detail": (
-                        f"member {member_id!r} already reuses session {current!r} "
-                        f"for model {model_key!r}; run reported {session_id!r} and "
-                        "it was not written over the top"
-                    ),
-                }
-            if current:
-                return {
-                    "captured": False,
-                    "member": dict(entry),
-                    "detail": "unchanged",
-                }
-            sessions[model_key] = str(session_id)
-            entry["sessions"] = sessions
-            if not entry.get("session_id"):
-                entry["session_id"] = str(session_id)
-                entry["session_model"] = model_key
-            elif str(entry.get("session_id")) == str(session_id) and not entry.get(
-                "session_model"
-            ):
-                entry["session_model"] = model_key
-            write(project, data, version, root)
-            return {
-                "captured": True,
-                "member": dict(entry),
-                "detail": f"first run for model {model_key!r}",
-            }
-        current = entry.get("session_id")
-        if current and str(current) != str(session_id):
-            return {
-                "captured": False,
-                "member": dict(entry),
-                "detail": (
-                    f"member {member_id!r} already reuses session {current!r}; "
-                    f"run reported {session_id!r} and it was not written over the top"
-                ),
-            }
-        if current:
-            return {"captured": False, "member": dict(entry), "detail": "unchanged"}
-        entry["session_id"] = str(session_id)
-        write(project, data, version, root)
-        return {"captured": True, "member": dict(entry), "detail": "first run"}
-    return {
-        "captured": False,
-        "member": None,
-        "detail": f"project {project!r} has no member {member_id!r}",
-    }
 
 
 # ── Completed runs ──────────────────────────────────────────────────────────
