@@ -29,6 +29,7 @@ def _event(**overrides):
         "node": "n-west-review-pr8-cut",
         "session": "ship-s10-20260901",
         "agent": "gpt-5.6-sol/medium",
+        "role": "implement",
         "from_state": "working",
         "to_state": "blocked",
         "working": 3,
@@ -299,3 +300,111 @@ def test_the_action_set_is_one_set_with_three_readers():
     for theme in ("light", "dark"):
         for state in ticker_module.NEEDS_ACTION:
             assert state in ticker_module.STATE_HUE[theme], (theme, state)
+
+
+# ── The role column: the dispatch vocabulary, verbatim, left of the node ────
+
+
+def test_every_dispatch_role_renders_whole_in_its_own_column(grid):
+    """Each configured role appears intact, in a column all rows share."""
+    rows = {}
+    for role in sorted(ticker_module.DISPATCH_ROLES):
+        rows[role] = plain(grid.render(_event(role=role)))
+
+    expected = {
+        "implement": "implement",
+        "cleanup": "cleanup",
+        "review": "review",
+        "investigate": "investigate",
+        "test": "test",
+        "documentation": "docs",
+    }
+    for role, shown in expected.items():
+        assert shown in rows[role], role
+
+    # Every row's role text starts at the same screen column.
+    positions = {rows[role].index(shown) for role, shown in expected.items()}
+    assert len(positions) == 1
+
+
+def test_documentation_is_narrowed_to_docs_and_sets_no_wider_column():
+    """`documentation` is thirteen characters; `docs` is what actually ships."""
+    line = plain(ticker_module.Ticker(width=180).render(_event(role="documentation")))
+    assert "docs" in line
+    assert "documentation" not in line
+    assert len(line) == 180
+
+
+def test_an_unconfigured_role_renders_a_marker_not_a_truncated_word(grid):
+    """A role outside the dispatch vocabulary must not show a plausible-looking
+    but wrong word — it renders the marker instead."""
+    line = plain(grid.render(_event(role="spike")))
+    assert "spike" not in line
+    assert "spi" not in line
+    assert ticker_module.ROLE_UNKNOWN in line
+
+
+def test_a_missing_role_also_renders_the_marker(grid):
+    line = plain(grid.render(_event(role="")))
+    assert ticker_module.ROLE_UNKNOWN in line
+
+
+def test_the_role_column_sits_left_of_the_node_column(grid):
+    line = plain(grid.render(_event(role="review", node="n-review-target")))
+    assert line.index("review") < line.index("n-review-target")
+
+
+def test_the_role_column_is_stable_across_every_configured_role(grid):
+    """Every role's column start lines up, whatever the node name is doing."""
+    rows = [
+        plain(grid.render(_event(role="implement", node="n-a"))),
+        plain(grid.render(_event(role="test", node="n" * 40))),
+        plain(grid.render(_event(role="investigate", node="n-c"))),
+    ]
+    tokens = ("implement", "test", "investigate")
+    assert len({row.index(token) for row, token in zip(rows, tokens, strict=True)}) == 1
+
+
+def test_the_role_is_dim_rather_than_hued():
+    """Colour answers which worker and does-this-need-me; role gets neither."""
+    painter = ticker_module.Ticker(theme="light", color=True)
+    line = painter.render(_event(role="review", node="n-review-target"))
+
+    padded_role = (
+        re.escape(ticker_module._DIM) + r"review\s+" + re.escape(ticker_module._RESET)
+    )
+    assert re.search(padded_role, line) is not None
+    # The role text is never wrapped in a hue selector, unlike the node
+    # beside it (which does carry one, on the same coloured line).
+    assert re.search(r"\x1b\[38;5;\d+mreview\s*\x1b\[0m", line) is None
+    assert re.search(r"\x1b\[38;5;\d+m", line) is not None
+
+
+def test_a_role_column_still_leaves_every_other_column_on_its_own_position():
+    """Adding the role column must not upset the column budget for the rest."""
+    grid = ticker_module.Ticker(width=180, color=False)
+    rows = [
+        plain(
+            grid.render(
+                _event(role="implement", from_state=None, to_state="dispatched")
+            )
+        ),
+        plain(
+            grid.render(
+                _event(role="review", from_state="complete", to_state="promoted")
+            )
+        ),
+        plain(grid.render(_event(role="test", working=12, blocked=0, unpromoted=3))),
+    ]
+    assert len({row.index("→") for row in rows}) == 1
+    for token in ("working", "blocked", "unpromoted"):
+        assert len({row.rindex(token) for row in rows}) == 1, token
+    assert {len(row) for row in rows} == {180}
+
+
+def test_a_narrow_width_still_widens_to_fit_the_role_column():
+    grid = ticker_module.Ticker(width=40, color=False)
+    assert grid.width >= ticker_module.MIN_WIDTH
+    assert ticker_module.ROLE > 0
+    line = plain(grid.render(_event()))
+    assert len(line) == grid.width

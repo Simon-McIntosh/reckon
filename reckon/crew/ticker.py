@@ -24,6 +24,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 CLOCK = 8
+ROLE = 11
 NODE = 36
 SESSION = 18
 STATE = 10
@@ -102,6 +103,25 @@ NEEDS_ACTION = frozenset(
 # one thing across the whole line.
 DISPLAY = {"completed_unpromoted": "unpromoted"}
 
+# The dispatch vocabulary, verbatim. Kept here rather than derived from a
+# config so that a role appears whole the moment it is dispatched — the same
+# reason the display map above is a literal set of words rather than a rule.
+DISPATCH_ROLES = frozenset(
+    {"implement", "cleanup", "review", "investigate", "test", "documentation"}
+)
+
+# `documentation` alone is thirteen characters, which would set the column
+# width for the other five; substituted the same way `completed_unpromoted`
+# is above. The substitution is display-only — `DISPATCH_ROLES` still keys on
+# the dispatch spelling.
+ROLE_DISPLAY = {"documentation": "docs"}
+
+# What an undispatched or unconfigured role renders as. A marker rather than a
+# truncated word, because a cut-off word invites a reader to guess the rest
+# and a wrong guess about *what kind of work this is* is worse than an
+# admitted unknown.
+ROLE_UNKNOWN = "?"
+
 _CELLS = ("working", "blocked", "unpromoted")
 # Two digits and a space per label, joined by " · ". Two digits cover any fleet
 # the dispatcher opens; a wider count pushes its own label rather than silently
@@ -111,7 +131,20 @@ STATS = sum(2 + 1 + len(label) for label in _CELLS) + 3 * (len(_CELLS) - 1)
 # The widest the fixed columns can be, plus the stats block and one gap. A width
 # below this cannot be honoured without wrapping, so it is raised to this.
 MIN_WIDTH = (
-    (CLOCK + GAP + NODE + GAP + SESSION + GAP + (STATE * 2 + 3) + GAP + AGENT + GAP)
+    (
+        CLOCK
+        + GAP
+        + ROLE
+        + GAP
+        + NODE
+        + GAP
+        + SESSION
+        + GAP
+        + (STATE * 2 + 3)
+        + GAP
+        + AGENT
+        + GAP
+    )
     + STATS
     + GAP
 )
@@ -174,6 +207,19 @@ def _display_state(state: Any) -> str:
     return elide(DISPLAY.get(str(state or ""), str(state or "")), STATE)
 
 
+def _display_role(role: Any) -> str:
+    """The role verbatim, `documentation` narrowed to `docs`, or the marker.
+
+    A role not in the dispatch vocabulary is never truncated to fit — that
+    would show a plausible-looking but wrong word — so anything unrecognised
+    renders the marker instead.
+    """
+    spelled = str(role or "")
+    if spelled not in DISPATCH_ROLES:
+        return ROLE_UNKNOWN
+    return ROLE_DISPLAY.get(spelled, spelled)
+
+
 class Ticker:
     """Renders transitions into one grid, remembering each worker's hue.
 
@@ -215,9 +261,12 @@ class Ticker:
         node = str(event.get("node") or event.get("run_id") or "unknown")
         to_state = _display_state(event.get("to_state") or "unknown")
         from_state = _display_state(event.get("from_state"))
+        role = _display_role(event.get("role"))
 
         cells: list[tuple[str, Any]] = [
             (f"{local_clock(event.get('observed_at')):<{CLOCK}}", "dim"),
+            (" " * GAP, None),
+            (f"{role:<{ROLE}}", "dim"),
             (" " * GAP, None),
             (f"{elide(node, NODE):<{NODE}}", self.hue(node)),
         ]
