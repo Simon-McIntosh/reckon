@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T10:58:25",
+  "updated": "2026-09-03T11:05:38",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -41236,6 +41236,113 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260903T085945598383-the-release-path-never-signals-its-own-runner",
+        "plan": "crew-observability-truth",
+        "section": "\u00a74",
+        "node": "the-release-path-never-signals-its-own-runner",
+        "node_definition": {
+          "done_when": "A promotion whose run record carries the releasing process's own pid, or any pid in its own process group, completes the release without signalling that group, asserted by a test that would itself be killed if the guard regressed; a promotion whose record carries a genuine foreign worker pid still signals and releases it exactly as today, asserted as the positive; the full tests/test_ledger.py passes raw with no runtime neutralisation, at 63 or more, and the manifest records that count together with the exit status, which must be 0 and not 143. Measured: the file self-terminates at exit 143 today because a promotion test substitutes os.getpid() into a run record and the release path signals that recorded pid's own process group through os.killpg, killing the pytest runner executing it. The first test to die exercises only the dispatch-to-complete path. The release path landed at 34e1d10 and predates base 6eff81b, so this is pre-existing at both revisions and is not one of the commits under attribution elsewhere",
+          "estimated_hours": null,
+          "goal": "Releasing a promoted run never signals the process group of the process doing the releasing",
+          "id": "the-release-path-never-signals-its-own-runner",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T085945598383-the-release-path-never-signals-its-own-runner/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "reckon/crew/routing.py",
+            "tests/test_ledger.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "impl-obs-gc",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "backend": "claude",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T08:59:52Z",
+        "completed_at": "2026-09-03T09:04:23.975Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 264,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 271,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "dc15c19dcb01a10ea40be3d8a9678d7ebe5f1b13",
+        "commits": [
+          "17f8686e873ef966bf68fcf04fc59aa30e94367e"
+        ],
+        "changed_lines": {
+          "added": 92,
+          "removed": 1,
+          "files": 2
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=<worktree> .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_ledger.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T085945598383-the-release-path-never-signals-its-own-runner/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T085945598383-the-release-path-never-signals-its-own-runner/manifest.md",
+        "scope_changed": false,
+        "session_id": "e9466187-8dc1-4748-b10f-044fcb1bbdf1",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 1.01,
+          "rate_limit_type": "overage",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-10-01T00:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 1,
+          "tokens": {
+            "cache_creation_input_tokens": 65960,
+            "cache_creation_input_tokens_cumulative": 177256,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 6374268,
+            "inference_geo": "not_available",
+            "input_tokens": 0,
+            "input_tokens_cumulative": 76,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 20244,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 0.13290440000000103,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 2.1864696000000006
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest runner",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -41254,6 +41361,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 679
+    "_version": 680
   }
 }
