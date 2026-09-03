@@ -559,15 +559,24 @@ def _watch_snapshot(
     manifest_status = str(row.get("manifest_status") or "")
     phase = str(pointer.get("phase") or "")
     classification = str(row.get("classification") or "")
+    alive = row.get("process_alive")
 
+    # The working bucket is keyed on a process that is genuinely still alive,
+    # never on the record phase alone: a run whose process died at any phase it
+    # held — the starting phase included — has stopped working regardless of the
+    # label the last writer left behind. classify_pointer has already checked
+    # the process table, so a dead process falls through to the abandoned state
+    # a coordinator must act on instead of the stale working label. A manifest
+    # that has reached a verdict likewise cannot keep a run in working, so the
+    # terminal readings are arbitrated before any working state is chosen.
     if manifest_status in {"complete", "blocked", "failed"}:
         state = manifest_status
-    elif phase == "starting":
-        state = "dispatched"
-    elif phase in {"working", "running"} or classification == "running":
-        state = "working"
     elif phase == "stopped":
         state = "stopped"
+    elif alive is False:
+        state = "abandoned"
+    elif classification == "running" or phase in {"working", "running"}:
+        state = "dispatched" if phase == "starting" else "working"
     else:
         state = classification or phase or "unknown"
 
