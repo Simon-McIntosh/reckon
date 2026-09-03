@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T07:14:48",
+  "updated": "2026-09-03T07:32:02",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -37788,9 +37788,252 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260903T050157416057-silent-delivery-becomes-a-repairable-row",
+        "plan": "clive-local-workers",
+        "section": "\u00a77",
+        "node": "silent-delivery-becomes-a-repairable-row",
+        "node_definition": {
+          "done_when": "reckon crew recover, on a pointer whose stream reached a terminal event with no manifest, writes a provisional manifest next to the run from the final message and the worktree diff, marks it derived so it is never advised for promotion and never reads as delivered, records the delivery gap on the run record, and names the repair command in its next_action; the pre-existing abandoned classification and its refusal to advise promotion are preserved rather than replaced, so a run with no diff and no final message still classifies abandoned with nothing derived; recovery takes no lock it does not already take and the derivation is read-only with respect to reckon/crew/promotion.py; tests in tests/test_crew_recovery.py assert the derived manifest is produced with its marker, that promotion advice is still withheld, that a genuinely empty run derives nothing, and that a worker-written manifest is never overwritten; and the full suite adds no failure against base 302022e8f0290cc49ac804fe53e5244ff6b5da7e",
+          "estimated_hours": null,
+          "goal": "Turn a run that did correct work and never wrote its manifest into a repairable row instead of a lost node",
+          "id": "silent-delivery-becomes-a-repairable-row",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T050157416057-silent-delivery-becomes-a-repairable-row/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_crew_recovery.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "glm-b",
+        "backend": "clive-glm",
+        "local": false,
+        "agent": {
+          "backend": "clive-glm",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "glm-5.3",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T05:01:58Z",
+        "completed_at": "2026-09-03T05:07:08.578Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 310,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "809906ba6164273f6c126179e1b9119bc30aa1ce",
+        "commits": [],
+        "changed_lines": {
+          "added": 0,
+          "removed": 0,
+          "files": 0
+        },
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "infrastructure-failure",
+        "outcome": "Killed by a clive wrapper arithmetic bug, not by the model or the node. The wrapper exports CLAUDE_CODE_MAX_CONTEXT_TOKENS as the FULL served context (98,304) while separately exporting a 24,576-token output reservation, and computes USABLE_INPUT_BUDGET (73,728) only for its display label. So the harness believes it may fill to 98,304 and every request asks for prompt plus 24,576 on top; past a 73,728-token prompt the endpoint refuses with 'API Error: 400 This model's maximum context length is 98304 tokens. However, you requested 24576 output tokens'. The effective ceiling was 73,728 while both the harness and I planned against 98,304, which retires my earlier reading that two GLM nodes failed on my sizing alone. Two aggravating findings: the run reported result subtype success despite the fatal 400, so its phase still read working and nothing flagged it; and it sat silent 790s against a 15-minute stall window, 110 seconds from detection having been dead throughout. Before dying it emitted 75,845 characters of thinking in 4 turns, roughly 21,700 tokens.",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T050157416057-silent-delivery-becomes-a-repairable-row/manifest.md",
+        "scope_changed": false,
+        "session_id": "a20d85ad-156a-4dbe-beb8-39bb3758b52e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 54938,
+            "input_tokens_cumulative": 54938,
+            "output_tokens": 19600,
+            "output_tokens_cumulative": 19600,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 0.76469,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 0.76469
+        },
+        "lineage": {
+          "configuration": {
+            "inherited": {
+              "effort": "medium",
+              "launch": "cli",
+              "sandbox": "worktree-full",
+              "time_budget": "40m"
+            },
+            "substituted": {
+              "backend": {
+                "primary": "codex",
+                "shadow": "clive-glm",
+                "via": "backend"
+              },
+              "model": {
+                "primary": "gpt-5.6-sol",
+                "shadow": "glm-5.3",
+                "via": "backend"
+              }
+            }
+          },
+          "kind": "shadow",
+          "primary_run_id": "r-20260902T133132431763-silent-delivery-becomes-a-repairable-row"
+        },
+        "shadow_controlled": true,
+        "shadow_patch": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T050157416057-silent-delivery-becomes-a-repairable-row/shadow.patch",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "shadow",
+        "no_commit": "shadow run; it died on an API 400 before producing a diff",
+        "boundary_waiver": {
+          "reason": "false positive by construction: the peer worktree named is the sibling shadow of the same primary on the other candidate backend, which necessarily declares the same paths because it is the same node. Concurrent shadows are the feature landed in 1a77ce8; the boundary check has no exclusion for them.",
+          "waived_paths": [
+            "reckon/crew/recovery.py in peer worktree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/shadow-r-20260902T133132431763-silent-delivery-becomes-a-repairable-row-clive/silent-delivery-becomes-a-repairable-row",
+            "tests/test_crew_recovery.py in peer worktree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/shadow-r-20260902T133132431763-silent-delivery-becomes-a-repairable-row-clive/silent-delivery-becomes-a-repairable-row"
+          ]
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260903T050150006143-silent-delivery-becomes-a-repairable-row",
+        "plan": "clive-local-workers",
+        "section": "\u00a77",
+        "node": "silent-delivery-becomes-a-repairable-row",
+        "node_definition": {
+          "done_when": "reckon crew recover, on a pointer whose stream reached a terminal event with no manifest, writes a provisional manifest next to the run from the final message and the worktree diff, marks it derived so it is never advised for promotion and never reads as delivered, records the delivery gap on the run record, and names the repair command in its next_action; the pre-existing abandoned classification and its refusal to advise promotion are preserved rather than replaced, so a run with no diff and no final message still classifies abandoned with nothing derived; recovery takes no lock it does not already take and the derivation is read-only with respect to reckon/crew/promotion.py; tests in tests/test_crew_recovery.py assert the derived manifest is produced with its marker, that promotion advice is still withheld, that a genuinely empty run derives nothing, and that a worker-written manifest is never overwritten; and the full suite adds no failure against base 302022e8f0290cc49ac804fe53e5244ff6b5da7e",
+          "estimated_hours": null,
+          "goal": "Turn a run that did correct work and never wrote its manifest into a repairable row instead of a lost node",
+          "id": "silent-delivery-becomes-a-repairable-row",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T050150006143-silent-delivery-becomes-a-repairable-row/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_crew_recovery.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "flash-b",
+        "backend": "clive",
+        "local": false,
+        "agent": {
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T05:01:51Z",
+        "completed_at": "2026-09-03T05:30:43.716Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1725,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1732,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "809906ba6164273f6c126179e1b9119bc30aa1ce",
+        "commits": [],
+        "changed_lines": {
+          "added": 531,
+          "removed": 1,
+          "files": 2
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_crew_recovery.py",
+          "exit_status": 0,
+          "log_path": "/tmp/shadow_r_full_after.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "First shadow of this primary WITH a gate, on deepseek-v4-flash against a gpt-5.6-sol/medium primary: same node, same base 809906b, same two declared paths, 531 insertions against the primary's 246, focused suite 11 passed. Its sibling GLM arm died on the clive context-ceiling bug, so this is a single arm rather than the paired comparison it was launched as. Contrast with this model's earlier shadow of the same node, which produced 313 insertions and no manifest at all: the delivery contract held this time, which is the difference between evidence and effort.",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T050150006143-silent-delivery-becomes-a-repairable-row/manifest.md",
+        "scope_changed": false,
+        "session_id": "a2a9757f-5c5a-4722-923e-ad0e5536cc1c",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no events yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": {
+          "configuration": {
+            "inherited": {
+              "effort": "medium",
+              "launch": "cli",
+              "sandbox": "worktree-full",
+              "time_budget": "40m"
+            },
+            "substituted": {
+              "backend": {
+                "primary": "codex",
+                "shadow": "clive",
+                "via": "backend"
+              },
+              "model": {
+                "primary": "gpt-5.6-sol",
+                "shadow": "deepseek-v4-flash",
+                "via": "backend"
+              }
+            }
+          },
+          "kind": "shadow",
+          "primary_run_id": "r-20260902T133132431763-silent-delivery-becomes-a-repairable-row"
+        },
+        "shadow_controlled": true,
+        "shadow_patch": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T050150006143-silent-delivery-becomes-a-repairable-row/shadow.patch",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "shadow",
+        "no_commit": "shadow run by design; its evidence is the retained worktree patch, never a merged commit",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [],
-    "_version": 613
+    "_version": 615
   }
 }

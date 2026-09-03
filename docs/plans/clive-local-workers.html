@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="80">
+<meta name="plan-version" content="82">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,~/.config/reckon/crew/reports/local-effort-probe.md,~/.config/reckon/crew/reports/read-only-tier-delivery-discriminator.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
-<meta name="plan-impl" content="0.81">
+<meta name="plan-impl" content="0.77">
 <meta name="plan-commits" content="a91abe9,a56eae9,42a339f,a2e488b,ca6288d,0226835,e099fc5,5dc92ce,8b80bdc,8abc064,6f99ac2,7f41635,1908947,da054f7,1a77ce8,3ff87b2,5717d69">
 </head>
 <body>
@@ -557,6 +557,30 @@
       qualification programme for a model whose whole point is that it needs a different
       effort from the incumbent. An override that cannot be honoured must refuse; one that
       is honoured must move the resolved value and say so.</li>
+      <li><strong>A run that dies before its phase advances is never flagged, and the ticker
+      counts it as working.</strong> Reported independently by session
+      <code>imas-codex-75</code> and reproduced here within the hour, which is what makes it
+      a finding rather than an anecdote. Their case: six nodes dispatched, all six worker
+      processes exited and every manifest reached a terminal status on disk, and then
+      <strong>38 minutes passed with zero events</strong> while the ticker still read
+      <code>6 working</code>. Both detectors demonstrably worked in the same session for
+      other runs the same day &mdash; a <code>working &rarr; stalled</code> at 901 seconds
+      quiet, and a <code>dispatched &rarr; abandoned</code> on a terminal manifest &mdash; so
+      the follower was alive throughout. Mine: a shadow whose classifier read
+      <code>completed_unpromoted</code> with a complete manifest on disk while its phase
+      still read <code>starting</code> and its sibling sat silent for 790 seconds. Their
+      hypothesis fits both: the stall evaluation keys on the literal <code>working</code>
+      phase, while the counter buckets <code>dispatched</code> as working, so a run that dies
+      before advancing is permanently ineligible for the check and is displayed as alive
+      forever. Evaluate stall and terminal-manifest checks over <em>any</em> non-terminal
+      phase rather than <code>working</code> alone; and since the classifier already gets
+      this right when computed on read, prefer stat-ing the manifest paths the record
+      already knows over a stream-quiet heuristic. The cost is not cosmetic: 38 minutes of
+      an orchestrator waiting on a metered backend for four completed and two blocked nodes
+      sitting unread, and the person noticed before the tooling did. <strong>A ticker
+      reading four working is not evidence that four workers are alive</strong>, which is
+      the same defect as every other item in this section &mdash; the component that knows
+      stays silent, and the display asserts the opposite.</li>
       <li><strong>Nothing reports how fast a worker is generating, so a slow model and a
       hung one look identical.</strong> Liveness is decided from the age of the stream file
       against a stall window, which answers only whether bytes arrived, and the run record
@@ -796,6 +820,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260902-glm-live" data-who="reckon-ship" data-when="2026-09-02T18:55:00Z">
     <div class="r-comment-body">GLM 5.3 is live and its backend is authored, closing the half of §2 that was waiting on the catalog. clive --list now serves two releases: deepseek-v4-flash on 2xH200 at fp4+fp8 with a 512k window, and glm-5.3 on 4xH200 at w4a8 with 96k. Both are no-auth, both resolve through the routing origin at 98dci4-gpu-0003:18802, and reckon flight reports both backends available. The clive-glm entry follows the two properties §2 called non-negotiable: effort is pinned rather than inherited, and it is a distinct backend with a distinct roster member so a session can never cross models. One consequence to size nodes by: GLM's window is a sixth of flash's, so a node that fits one may not fit the other, and a paired comparison has to respect the smaller. The catalog-aware availability probe landed earlier today is what makes this entry safe rather than optimistic — had GLM not been serving, the backend would now report unavailable and a dispatch naming it would exit 5 rather than failing inside the worker.</div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260903-clive-ceiling-bug" data-who="reckon-ship" data-when="2026-09-03T05:35:00Z">
+    <div class="r-comment-body">The clive wrapper mis-declares the input ceiling, and it explains every GLM failure this session including the two I attributed to my own node sizing. imas_ambix/agent/clive.py exports CLAUDE_CODE_MAX_CONTEXT_TOKENS as MAX_CONTEXT, the engine's FULL served window, while separately exporting an output reservation of a quarter of that window capped at 32,000, and computing USABLE_INPUT_BUDGET as the difference purely for its display label. The engine bounds prompt plus requested output by the window, so a harness told the full window fills toward it and every request then asks for prompt plus the reservation on top. For glm-5.3 that makes the true input ceiling 73,728 while the harness plans against 98,304, and past that point the endpoint refuses outright: API Error 400, this model's maximum context length is 98304 tokens, however you requested 24576 output tokens. Compaction never gets a chance because the refusal arrives at the API rather than as pressure the harness can see, which is also why the earlier failure mode was autocompact failing with too_few_groups rather than compacting successfully. Two aggravating properties found with it. The run reported result subtype success despite the fatal 400, so its phase still read working and nothing flagged it. And it sat silent for 790 seconds against a 15-minute stall window, 110 seconds from detection, having been dead throughout. My sizing was genuinely too generous, but it was never the binding constraint, and the record is corrected accordingly. The fix is one line in the generator — export the usable budget rather than the raw window, leaving reservation and label untouched — and three tests in tests/test_agent_clive_picker.py currently pin the defect by asserting the exported context equals the full window. Dispatched to the opus lane against the imas-ambix repository; deployment of the regenerated wrapper stays with the orchestrator.</div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260902T140832755711-worktree-boundary-refused-at-promotion" data-who="boundary-check" data-when="2026-09-02T14:47:23Z">
     <div class="r-comment-body"><p>Dispatch snapshots every registered tree for the repository; promotion re-inspects exactly those roots under its existing lock and refuses a run that changed the main checkout or a peer worktree, naming path and owning tree, before ledger append and with the pointer recoverable. A worktree registered after dispatch is not charged. Full suite 2672 passed 0 failed; five boundary cases including both clean controls.</p></div>
