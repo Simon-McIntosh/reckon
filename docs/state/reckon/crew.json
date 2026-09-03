@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T10:47:05",
+  "updated": "2026-09-03T10:52:59",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -463,9 +463,11 @@
         "id": "glm-b",
         "harness": "claude",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "063752f4-89d9-4f6c-ba81-ae9acf81c64f",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "{\"backend\":\"clive\",\"effort\":\"medium\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\"}": "063752f4-89d9-4f6c-ba81-ae9acf81c64f"
+        },
         "created": "2026-09-02"
       },
       {
@@ -40914,6 +40916,112 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260903T082137638704-liveness-reconciled-against-the-process-table",
+        "plan": "crew-observability-truth",
+        "section": "\u00a72",
+        "node": "liveness-reconciled-against-the-process-table",
+        "node_definition": {
+          "done_when": "A producer whose process is gone reports absent and one that is running reports live, regardless of what the seat record says, asserted against a registry deliberately desynchronised in each direction; a dispatch into a project whose producer is alive is admitted and one whose producer is gone is refused with watcher-required when the record claims the opposite, asserted through the dispatch path rather than the helper; reading liveness repairs the stale record in place without ever taking the seat lock, asserted by test. tests/test_crew_watch_visibility.py passes in full with its count recorded. The decision is locked reconcile-on-read; the reuse map at /home/ITER/mcintos/.config/reckon/crew/reports/display-reuse-map.md confines the change to project_watch_visibility's read path and names producer_live as the existing lock-free primitive",
+          "estimated_hours": null,
+          "goal": "A liveness answer is reconciled against the process table on read, so the dispatch guard cannot be fooled in either direction",
+          "id": "liveness-reconciled-against-the-process-table",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T082137638704-liveness-reconciled-against-the-process-table/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/runs.py",
+            "tests/test_crew_watch_visibility.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "glm-b",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T08:21:41Z",
+        "completed_at": "2026-09-03T08:52:35.866Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1846,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1854,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "9cfde984780779306f902fae27f2224f590f82f1",
+        "commits": [
+          "896ba48c6757a3776ca857e3793e3923492bd71f"
+        ],
+        "changed_lines": {
+          "added": 314,
+          "removed": 23,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_watch_visibility.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T082137638704-liveness-reconciled-against-the-process-table/test-cwv.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T082137638704-liveness-reconciled-against-the-process-table/manifest.md",
+        "scope_changed": false,
+        "session_id": "063752f4-89d9-4f6c-ba81-ae9acf81c64f",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 7854380,
+            "input_tokens_cumulative": 7854380,
+            "output_tokens": 66147,
+            "output_tokens_cumulative": 66147,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 40.92557499999999,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 40.92557499999999
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -40932,6 +41040,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 674
+    "_version": 676
   }
 }
