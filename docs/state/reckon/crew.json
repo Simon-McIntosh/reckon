@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03T15:54:05",
+  "updated": "2026-09-03T16:13:03",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -660,7 +660,8 @@
         "sessions": {
           "{\"backend\":\"claude\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-opus-5\",\"sandbox\":\"worktree-full\"}": "a20f3716-05bb-4138-baea-a0c042b0b243",
           "{\"backend\":\"claude\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"claude-opus-5\",\"sandbox\":\"worktree-full\"}": "5a8f5e84-636d-4302-848b-39b3fe139cc3",
-          "{\"alias\":\"opus 5\",\"backend\":\"claude-opus\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-opus-5\",\"sandbox\":\"worktree-full\"}": "b0b8755b-515c-4e05-bb92-65f853943ceb"
+          "{\"alias\":\"opus 5\",\"backend\":\"claude-opus\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-opus-5\",\"sandbox\":\"worktree-full\"}": "b0b8755b-515c-4e05-bb92-65f853943ceb",
+          "{\"alias\":\"opus 5\",\"backend\":\"claude-opus\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"claude-opus-5\",\"sandbox\":\"worktree-full\"}": "3e81786c-e969-4c9e-9fed-220afdde1bf7"
         },
         "created": "2026-09-03"
       },
@@ -44623,6 +44624,224 @@
           "role": "review",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260903T135442231209-the-follow-command-renders-what-the-log-carries",
+        "plan": "fleet-monitor-legibility",
+        "section": "\u00a77",
+        "node": "the-follow-command-renders-what-the-log-carries",
+        "node_definition": {
+          "done_when": "Measured with PYTHONPATH=$PWD and the root interpreter over tests/test_crew_ticker.py tests/test_crew_ticker_layout.py tests/test_crew_watch_stream.py tests/test_crew_recovery.py in ONE pytest invocation: zero failures, against a base of 8a7b56d which has 8. Every assertion still written against the pre-facts data model is updated to read the fields the log now carries, and none is deleted, skipped, or weakened to reach green. Four further properties, each asserted through the follow command's own rendering path rather than through a helper, and at least one of them must FAIL if run against base 8a7b56d: a baseline event and a transition event carrying identical states render visibly differently, with a run already terminal at attach suppressed, the distinction taken from the event kind the log records and never inferred from a null from-state; effort renders in its own column spelled in full beside the model column, a legacy line lacking the separate field rendering an empty effort column rather than raising; a line rendered at a width larger than the pane loses only trailing reason characters, the counter block surviving whole in the leading characters at every count width, which requires the counters to precede the reason; and the column-budget assertion finds every field on one screen column across baseline, transition, shadow and foreign-session rows. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 3.0,
+          "goal": "The follow command renders every field the watch log carries, and the four render-path test modules are green together.",
+          "id": "the-follow-command-renders-what-the-log-carries",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/RUN/manifest.md",
+          "plan": "fleet-monitor-legibility",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/ticker.py",
+            "reckon/cli.py",
+            "tests/test_crew_ticker_layout.py",
+            "tests/test_crew_ticker.py",
+            "tests/test_crew_watch_stream.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "opus-a",
+        "backend": "claude-opus",
+        "local": false,
+        "agent": {
+          "alias": "opus 5",
+          "backend": "claude-opus",
+          "effort": "high",
+          "launch": "cli",
+          "model": "claude-opus-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T13:54:47Z",
+        "completed_at": "2026-09-03T14:10:08.747Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 913,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 921,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "8a7b56dbb7374a9345890a464926a103bdd8c701",
+        "commits": [
+          "23a133dab1b845388ac8b3de9d29505629fca59f"
+        ],
+        "changed_lines": {
+          "added": 481,
+          "removed": 78,
+          "files": 5
+        },
+        "tests_added": 12,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_ticker.py tests/test_crew_ticker_layout.py tests/test_crew_watch_stream.py tests/test_crew_recovery.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T135442231209-the-follow-command-renders-what-the-log-carries/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/RUN/manifest.md",
+        "scope_changed": false,
+        "session_id": "3e81786c-e969-4c9e-9fed-220afdde1bf7",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 0.94,
+          "rate_limit_type": "five_hour",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-09-03T15:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 0.9,
+          "tokens": {
+            "cache_creation_input_tokens": 157029,
+            "cache_creation_input_tokens_cumulative": 157029,
+            "cache_read_input_tokens": 6565146,
+            "cache_read_input_tokens_cumulative": 6565146,
+            "inference_geo": "not_available",
+            "input_tokens": 108,
+            "input_tokens_cumulative": 108,
+            "output_tokens": 49677,
+            "output_tokens_cumulative": 49677,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 6.0953279999999985,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 6.0953279999999985
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest invocation:",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260903T135430677402-the-classifier-survives-an-unreadable-manifest",
+        "plan": "crew-observability-truth",
+        "section": "\u00a74",
+        "node": "the-classifier-survives-an-unreadable-manifest",
+        "node_definition": {
+          "done_when": "tests/test_crew_recovery.py tests/test_crew.py tests/test_crew_ticker.py tests/test_gate_evidence.py tests/test_manifest_parse_format.py run with no failures added against the base sha; report base and after failure ids, never an absolute count",
+          "estimated_hours": null,
+          "goal": "Make an unreadable manifest a fourth classified outcome in recovery.py instead of an exception that escapes classify_pointer",
+          "id": "the-classifier-survives-an-unreadable-manifest",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T135430677402-the-classifier-survives-an-unreadable-manifest/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_crew_recovery.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "session-5847658970b3694c317c",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T13:54:36Z",
+        "completed_at": "2026-09-03T14:12:18.311Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1053,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1062,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "ac5e1dfa586c426f3c1bbf6f94f9b8fe99922576",
+        "commits": [
+          "0627304e532328bf9981c0c1426cf1176a146f71"
+        ],
+        "changed_lines": {
+          "added": 132,
+          "removed": 7,
+          "files": 2
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD ~/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_recovery.py tests/test_crew.py tests/test_crew_ticker.py tests/test_gate_evidence.py tests/test_manifest_parse_format.py",
+          "exit_status": 1,
+          "log_path": "/tmp/after_suite_final.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T135430677402-the-classifier-survives-an-unreadable-manifest/manifest.md",
+        "scope_changed": false,
+        "session_id": "fcb843a5-575e-4cfd-8ad6-c85f9c91d8b8",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 8091603,
+            "input_tokens_cumulative": 8091603,
+            "output_tokens": 59560,
+            "output_tokens_cumulative": 59560,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 41.947015,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 41.947015
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -44697,6 +44916,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 727
+    "_version": 730
   }
 }
