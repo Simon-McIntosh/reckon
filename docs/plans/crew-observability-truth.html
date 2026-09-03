@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-03">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 </head>
 <body>
   <main class="plan-doc">
@@ -203,6 +203,16 @@
     <p class="r-dec-opts">
       <button class="r-opt" data-value="refuse-unless-stated">Refuse unless the cross-pairing is stated</button>
       <button class="r-opt" data-value="resolve-from-mounts">Resolve the project&#x27;s registered checkout by default</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="anthropic-tier-routing" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Which Anthropic tier is the default, and how is the other reached?</p>
+    <p class="r-dec-ctx">Asked by the lead on 2026-09-03 while the codex account was spent. Measured over this session&#x27;s ledger: claude-sonnet-5 passed 8 of 8 at a 228-second median, claude-opus-5 passed 2 of 2 at 753 seconds. Sonnet is 3.3 times faster with four times the sample and both are clean, so speed decides the common case. The case for reserving opus is specific rather than general: on two nodes it caught traps its specification did not name — that writing a literal exhausted headroom would be silently downgraded by budget.py&#x27;s own _is_known and hold nothing, reproducing the defect it was fixing, and that summing per-event usage undercounts generation 67-fold in a way that looks entirely plausible. Sonnet&#x27;s contribution was different in kind: it declined to add an exception type and explained why, and it corrected a wrong diagnosis of mine mid-implementation. The coordinator has already set default_backend to the sonnet lane, so this ratifies or reverses a change already made rather than proposing an untried one. Note the coupling: reaching opus by specification level is not expressible until by_spec_level can name a backend, which is a measure of this same section.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="sonnet-default-opus-explicit">Sonnet default; opus reached explicitly per dispatch</button>
+      <button class="r-opt" data-value="sonnet-default-opus-by-level">Sonnet default; open-level nodes map to opus once by_spec_level can name a backend</button>
+      <button class="r-opt" data-value="opus-default">Opus default; sonnet for mechanical work</button>
       </p>
     <p class="r-dec-rat"></p>
     </div>
