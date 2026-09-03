@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-02T23:15:11",
+  "updated": "2026-09-03T05:47:55",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -37141,9 +37141,115 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260903T034321152079-worktree-is-provisioned-at-creation",
+        "plan": "clive-local-workers",
+        "section": "\u00a77",
+        "node": "worktree-is-provisioned-at-creation",
+        "node_definition": {
+          "done_when": "Measured across 263 existing crew worktrees today: 148 carry a .venv symlink, 113 carry nothing, 2 carry a real .venv directory, and only 3 carry a .env. Nothing in this repository creates any of them, so the 148 were made by hand by whoever remembered, which is a rule that does not enforce itself. 1,324 of 2,395 recorded run streams contain uv's 'does not match the project environment' warning, the signature of a worker whose environment resolution fell back. In skills/reckon-ship/scripts/worktree_fleet.py the create function runs git worktree add and returns without provisioning; add provisioning immediately after that call, in the same function, because worktree creation is the moment that always happens. Link .venv in the new worktree to the parent repository's root .venv, and link .env likewise when the root has one; create a symlink only, never a directory, and never link in the reverse direction. Skip a link whose source does not exist and record why rather than failing creation. Stay repo-agnostic: name no project, and read the parent repository root from the existing repository_root helper. The create result gains a provisioned mapping naming each link made or skipped with its reason, so a caller can see what a worktree got. Tests in tests/test_worktree_provisioning.py assert, against synthesised temporary repositories: a worktree of a repo with a root .venv gets a symlink resolving to it and never a directory; a worktree of a repo without one gets no .venv entry and a recorded skip reason; .env behaves the same way independently; the created symlink is ignored by git so the worktree reports clean, asserted with git status rather than by reading .gitignore; and creation still succeeds when neither source exists. Your gate is that new test file plus tests/test_worktree_fleet.py. Do NOT run the full suite and do NOT run any browser-driven test. Judge by delta against base ab8df42e423355e4a80cb91ddc097d582cbd91e8",
+          "estimated_hours": null,
+          "goal": "Provision a worktree at the moment it is created, so a worker never has to remember to point at the shared environment",
+          "id": "worktree-is-provisioned-at-creation",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T034321152079-worktree-is-provisioned-at-creation/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "skills/reckon-ship/scripts/worktree_fleet.py",
+            "tests/test_worktree_provisioning.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "flash-a",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T03:43:28Z",
+        "completed_at": "2026-09-03T03:46:47.531Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 192,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 199,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "ab8df42e423355e4a80cb91ddc097d582cbd91e8",
+        "commits": [
+          "1908947f58214523feb04d855566e621cf53c058"
+        ],
+        "changed_lines": {
+          "added": 123,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_worktree_provisioning.py tests/test_worktree_fleet.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T034321152079-worktree-is-provisioned-at-creation/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260903T034321152079-worktree-is-provisioned-at-creation/manifest.md",
+        "scope_changed": false,
+        "session_id": "51dcb0a1-7e2d-4dbe-841a-866cd704cd4a",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 1731274,
+            "input_tokens_cumulative": 1731274,
+            "output_tokens": 13650,
+            "output_tokens_cumulative": 13650,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 8.99762,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": 8.99762
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [],
-    "_version": 604
+    "_version": 605
   }
 }
