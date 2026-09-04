@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T07:49:48",
+  "updated": "2026-09-04T08:01:34",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -699,6 +699,17 @@
         "session_model": null,
         "sessions": {},
         "created": "2026-09-03"
+      },
+      {
+        "id": "s16-contain",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": "01a06af9-1da9-72d3-94ea-c7f7f993a428",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06af9-1da9-72d3-94ea-c7f7f993a428"
+        },
+        "created": "2026-09-04"
       },
       {
         "id": "s16-crew",
@@ -50512,6 +50523,171 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T053214447443-the-new-module-does-not-shadow-a-sibling",
+        "plan": "every-state-has-a-verb",
+        "section": "\u00a76",
+        "node": "the-new-module-does-not-shadow-a-sibling",
+        "node_definition": {
+          "done_when": "MAIN IS RED RIGHT NOW and the cause is a name collision introduced last night: a new module reckon/crew/recover.py was created beside a long-standing function named recover in reckon/crew/recovery.py. The package attribute reckon.crew.recover therefore resolves to the FUNCTION until the submodule is explicitly imported, and to the MODULE afterwards - proven by importing reckon.crew and reading type(reckon.crew.recover) as function, then importing reckon.crew.recover and reading module. So from reckon.crew import recover binds different objects depending on import order, and six tests in tests/test_crew_recover.py fail at the merged head with AttributeError, function object has no attribute _now and no attribute process_alive, while every one of them passed inside the worktree that produced them. Done when the new module is renamed so no package attribute is ambiguous - reckon/crew/resumption.py is the intended name, since the module holds the session resolver, the hold state, the lane probe and the sweep, and resumption describes all four where recover collided. Every importer moves with it: reckon/cli.py, reckon/mcp.py, reckon/budget.py, reckon/crew/promotion.py and the two test modules, plus the mention in reckon/crew/AGENTS.md. THE OLD NAME MUST NOT SURVIVE AS AN ALIAS: leaving a recover shim beside the function reintroduces the ambiguity this node exists to remove, so the rename is complete rather than additive and a grep for crew.recover across reckon and tests returns nothing afterwards. The recovery.recover function keeps its name, being the older of the two and the one behind the crew recover command. Done also when the ordering hazard cannot recur silently: assert that importing reckon.crew alone and reading every attribute that names a submodule yields a module rather than a function, so the next module named after a sibling function fails a test instead of turning main red. ASSERT AT THE MERGED HEAD, not in isolation: run the four modules tests/test_crew_recover.py, tests/test_external_wait.py, tests/test_crew_recovery.py and tests/test_follower_freshness.py in ONE invocation and require zero failures against a base of six. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 1.5,
+          "goal": "The recovery module has a name that does not collide with a sibling function, so main is green and imports do not depend on order.",
+          "id": "the-new-module-does-not-shadow-a-sibling",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/module-shadow-manifest.md",
+          "plan": "every-state-has-a-verb",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "exact",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/crew/recover.py",
+            "reckon/crew/resumption.py",
+            "reckon/cli.py",
+            "reckon/mcp.py",
+            "reckon/budget.py",
+            "reckon/crew/promotion.py",
+            "tests/test_crew_recover.py",
+            "tests/test_external_wait.py",
+            "tests/test_mcp_recovery.py",
+            "reckon/crew/AGENTS.md"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "codex-f",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T05:32:22Z",
+        "completed_at": "2026-09-04T05:46:52Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 870,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 870,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "87bf10662847028a01004506b4c85a2af6aa5fe2",
+        "commits": [
+          "33f0b2b7bcc5385c1bae437494bef03a0f5c8e64"
+        ],
+        "changed_lines": {
+          "added": 938,
+          "removed": 912,
+          "files": 9
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_recover.py tests/test_external_wait.py tests/test_crew_recovery.py tests/test_follower_freshness.py tests/test_mcp_recovery.py tests/test_ledger.py tests/test_crew.py",
+          "exit_status": 1,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vrn.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/module-shadow-manifest.md",
+        "scope_changed": true,
+        "session_id": "01a06ae7-5f1d-7d22-8bc3-9fdcd5211955",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 5277568,
+            "cached_input_tokens_cumulative": 5277568,
+            "input_tokens": 5432948,
+            "input_tokens_cumulative": 5432948,
+            "output_tokens": 28820,
+            "output_tokens_cumulative": 28820,
+            "reasoning_output_tokens": 8652,
+            "reasoning_output_tokens_cumulative": 8652
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 930,
+              "budget_seconds": 3000,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 3930,
+              "external_wait": null,
+              "log_age_seconds": 2926,
+              "log_fresh": false,
+              "manifest_commits": [
+                "[64810268d32e89978d366ce37893677a7d165275]; changed_paths: [\"docs/ui/home.jsx\"",
+                "\"docs/ui/home.css\"",
+                "\"docs/index.html\"",
+                "\"docs/ui/shell-route.jsx\"",
+                "\"docs/ui/shell.jsx\"",
+                "\"tests/test_spa_home_surface.py\"",
+                "\"tests/test_spa_home_geometry.py\"]"
+              ],
+              "manifest_derived": false,
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T042633367705-home-view/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260904T042633367705-home-view --gate <verdict> --commit [64810268d32e89978d366ce37893677a7d165275]; changed_paths: [\"docs/ui/home.jsx\" --commit \"docs/ui/home.css\" --commit \"docs/index.html\" --commit \"docs/ui/shell-route.jsx\" --commit \"docs/ui/shell.jsx\" --commit \"tests/test_spa_home_surface.py\" --commit \"tests/test_spa_home_geometry.py\"]",
+              "node": "home-view",
+              "phase": "complete",
+              "plan": "fleet-home",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260904T042633367705-home-view",
+              "session": "ship-s16",
+              "terminal_age_seconds": 2947,
+              "terminal_at": "2026-09-04T04:43:12Z",
+              "wait_age_seconds": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16/home-view"
+            }
+          ]
+        },
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 37472,
+          "peak_input_tokens": 10710516
+        },
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -50684,6 +50860,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 825
+    "_version": 828
   }
 }
