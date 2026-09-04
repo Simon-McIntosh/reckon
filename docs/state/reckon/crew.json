@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T06:22:13",
+  "updated": "2026-09-04T06:31:31",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -709,6 +709,28 @@
         "created": "2026-09-03"
       },
       {
+        "id": "s16-fleet",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": "01a06aab-5fa9-7fb1-8d07-91f7661518aa",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06aab-5fa9-7fb1-8d07-91f7661518aa"
+        },
+        "created": "2026-09-04"
+      },
+      {
+        "id": "s16-flow",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": "01a06aaa-e4a6-7231-92c8-615fdfd16862",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06aaa-e4a6-7231-92c8-615fdfd16862"
+        },
+        "created": "2026-09-04"
+      },
+      {
         "id": "s16-graph",
         "harness": "claude",
         "role": "implement",
@@ -776,6 +798,17 @@
           "{\"alias\":\"sonnet 5\",\"backend\":\"claude\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "2e3d207a-9598-4cf9-8246-27918a0fdf06"
         },
         "created": "2026-09-03"
+      },
+      {
+        "id": "s16-shots",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": "01a06aab-e8be-7c31-8a7d-ea6600a86ec0",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06aab-e8be-7c31-8a7d-ea6600a86ec0"
+        },
+        "created": "2026-09-04"
       },
       {
         "id": "s16-sprint",
@@ -49108,6 +49141,126 @@
           "role": "documentation",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260904T035213861366-the-recovery-has-an-mcp-surface",
+        "plan": "work-survives-a-provider-outage",
+        "section": "\u00a77",
+        "node": "the-recovery-has-an-mcp-surface",
+        "node_definition": {
+          "done_when": "The crew MCP surface can dispatch, observe and read plan state, and cannot resume. So an agent coordinating through MCP that meets a provider refusal has no way to recover a run from the surface it is using - it must shell out to the CLI, which is the step the coordinator in this incident did not take before promoting five recoverable runs. Done when the MCP crew surface exposes a resume that takes a run id and an advice and performs the same resume the CLI performs, returning the session it reattached to and the source that supplied it; when it exposes a session query answering for a run with the id and its source, or a stated absence naming the sources consulted, never a bare null; and when it exposes the recovery sweep for a project with a dry-run mode reporting what would be resumed. All three must call the same functions the CLI calls rather than reimplementing the logic, so the two surfaces cannot answer differently about the same run - a divergence between them would be the same defect as a pointer and a stream disagreeing. A resume through MCP of a run whose process is still alive is refused with the same message the CLI gives, since resuming a live run is the error that needs a stop first. Errors surface as readable refusals carrying the reason rather than as exceptions, because a coordinator reading a stack trace during an outage is the state this whole plan exists to prevent. ASSERT THROUGH THE MCP TOOL ENTRY POINTS as a client invokes them, not through the underlying crew functions: one run whose pointer carries no session id and whose stream does, required to resume and to report the stream as its source; one run with no id anywhere, required to return the stated absence; one live run, required to refuse. Build every fixture the way dispatch writes it under a temporary config home and assert the real config home is untouched. Note that reckon/mcp.py is 125KB, so read the crew tool definitions and their registration before adding to them, and follow the shape already there rather than introducing a second one. At least one added assertion must fail against base 6b1670c. Measured over tests/test_mcp_recovery.py plus any existing module asserting on MCP tools, in ONE invocation: zero failures against their combined count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 2.5,
+          "goal": "A coordinator working through MCP can resume a held run and ask for a session id, without shelling out.",
+          "id": "the-recovery-has-an-mcp-surface",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/mcp-recovery-manifest.md",
+          "plan": "work-survives-a-provider-outage",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/mcp.py",
+            "reckon/_mcp_tools.py",
+            "tests/test_mcp_recovery.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "sonnet-a",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "alias": "sonnet 5",
+          "backend": "claude",
+          "effort": "high",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T03:52:22Z",
+        "completed_at": "2026-09-04T04:30:25.381Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2273,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2283,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "6b1670c64e0f23e3a3b403bf428f5cb44b0e67c3",
+        "commits": [
+          "98eb5f337e4184b5cb844031dd49112545a61ab8"
+        ],
+        "changed_lines": {
+          "added": 530,
+          "removed": 7,
+          "files": 3
+        },
+        "tests_added": 13,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_mcp_recovery.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vmcp.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/mcp-recovery-manifest.md",
+        "scope_changed": false,
+        "session_id": "3c178c48-4524-4440-b3c4-21ce032dcce8",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 1.21,
+          "rate_limit_type": "overage",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-10-01T00:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 1,
+          "tokens": {
+            "cache_creation_input_tokens": 215244,
+            "cache_creation_input_tokens_cumulative": 215244,
+            "cache_read_input_tokens": 12275782,
+            "cache_read_input_tokens_cumulative": 12275782,
+            "inference_geo": "not_available",
+            "input_tokens": 126,
+            "input_tokens_cumulative": 126,
+            "output_tokens": 50083,
+            "output_tokens_cumulative": 50083,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 3.8172143999999997,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 3.8172143999999997
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 773.211,
+          "generated_tokens": 50083,
+          "generation_seconds": 567.16,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 24.0,
+          "machine_seconds": 206.051,
+          "peak_input_tokens": 239665,
+          "tokens_per_second": 88.3,
+          "wall_tokens_per_second": 64.77
+        },
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -49280,6 +49433,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 802
+    "_version": 809
   }
 }
