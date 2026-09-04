@@ -72,12 +72,17 @@ records already on disk. `reckon crew follow` runs this sweep itself on a
 two-minute cadence, so a coordinator attached to its own fleet needs to notice
 nothing.
 
-**Stale-follower caveat.** A `reckon crew follow` process holds the module
-code it started with for its entire life; a follower already running when this
-sweep's code lands keeps executing the pre-recovery version and will never
-call it, no matter how long it runs. Cycle any long-lived follower whenever
-recovery-path code changes, the same way a stale watcher or a stale renderer
-must be cycled after their own code changes.
+**A follower no longer needs cycling, and this is a change from earlier
+guidance.** A `crew follow` process used to hold the module code it started
+with for its entire life, so a follower already running when the sweep landed
+would never call it — measured once at five hours and forty-two minutes of a
+run left blocked after its refusal had lifted, on two separate sessions'
+followers simultaneously. The follower now detects that the installed package
+has advanced and re-execs itself in place, keeping its session registration and
+its stream unbroken. **Do not restart a follower after a merge.** If one cannot
+re-exec it says so explicitly in the pane rather than continuing quietly, and
+that message is the signal to intervene — not the passage of time since you
+started it.
 
 ## The commands
 
@@ -99,6 +104,13 @@ above on its own. Do not confuse it with the resume-first order this file
 describes.
 
 `reckon crew complete` refuses to promote a run classified `blocked` whose
-session is still recoverable, naming the resume command instead. As currently
-wired, that refusal has no matching CLI waiver flag — the only way past it is
-resuming or reconciling first, never a flag that discards the session outright.
+session is still recoverable, naming the resume command instead.
+
+**That refusal names a waiver the command does not yet accept.** The refusal
+text offers `--waive-resume-path REASON`, and the parameter exists in the
+promotion path, but it is not wired to the CLI — so a coordinator who follows
+the refusal's own advice reaches a dead end. Until it is wired, the only ways
+past the guard are resuming the session or reconciling it another way; do not
+spend time hunting for the flag. This is being fixed, and when it lands the
+waiver's reason will be recorded on the promoted row, so a deliberately
+discarded session is afterwards distinguishable from an accidental one.
