@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="16">
-<meta name="plan-impl" content="0.9">
+<meta name="plan-version" content="17">
+<meta name="plan-impl" content="0.2">
 </head>
 <body>
   <main class="plan-doc">
@@ -96,37 +96,21 @@
       </figcaption>
     </figure>
 
-    <h2 id="s2">§2 — A promotion that would destroy a resume path is refused</h2>
-    <p>
-      Promotion is the only route by which a run enters the committed ledger,
-      and it is unconditional about evidence: a passing gate is refused unless
-      it carries the check that produced it. It is silent about recoverability.
-      A run classified <code>blocked</code> whose session is still recoverable
-      is accepted without comment, and the operation that follows is
-      irreversible.
-    </p>
-    <p>
-      The fix is the one this repository already applies to every other
-      dangerous operation: refuse, and offer a recorded waiver. Promoting a
-      blocked run whose session id is present in the pointer, or recoverable
-      from its stream, is refused with a message naming
-      <code>crew resume</code>. A coordinator who genuinely wants the
-      promotion passes an explicit waiver, and the waiver and its reason land
-      on the ledger row — so a deliberate discard is distinguishable afterwards
-      from an accidental one, which is precisely the distinction the incident
-      could not make.
-    </p>
-    <p>
-      Done when promoting a blocked run with a recoverable session is refused
-      and the refusal names the resume command; when the same promotion
-      succeeds with an explicit waiver and the ledger row carries the waiver
-      and its stated reason; when a blocked run with no recoverable session
-      promotes unchanged; and when a run with a passing gate is unaffected in
-      every case. Asserted through the same <code>crew complete</code> entry
-      point a coordinator invokes, over pointers and streams built the way
-      dispatch writes them under a temporary configuration home, with the real
-      configuration home asserted untouched afterwards.
-    </p>
+    <section id="s2" class="section-landed">
+      <header><span class="badge badge-shipped">&#10003; landed 2026-09-04</span>
+        <h2>&#167;2 &mdash; A promotion that would destroy a resume path is refused</h2></header>
+      <p class="landed-summary"><code>_require_resume_waiver</code> in
+        <code>reckon/crew/promotion.py</code> refuses a promotion that would delete a resume
+        path, naming <code>reckon crew resume --run &lt;id&gt; --advice &lt;answer&gt;</code>
+        and the explicit <code>--waive-resume-path REASON</code> override; the discarded
+        resume path survives on the ledger row as <code>resume_waiver</code> beside the
+        session it discarded, and a waiver with no stated reason is itself refused
+        (<code>tests/test_crew_promotion.py</code>). <strong>Observed working in the field the
+        same day</strong>: it stopped the S16 coordinator promoting exactly this state on its
+        own run and required it to state in writing why the session was safe to discard
+        &mdash; the behaviour asked for, on the operator who asked for it, three hours after
+        the incident that motivated it destroyed five resumable sessions.</p>
+    </section>
 
     <h2 id="s3">§3 — The worktree outlives the promotion while the session lives</h2>
     <p>
@@ -365,6 +349,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260904T062930756769-the-resume-waiver-reaches-the-command" data-who="codex-i" data-when="2026-09-04T06:36:25Z">
     <div class="r-comment-body"><p>The waiver the guard names in its own refusal is now accepted by the command, its reason recorded on the promoted row, so a deliberately discarded session is distinguishable from an accidental one.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-wspo-promotion-refusal-landed" data-who="reckon-ship" data-when="2026-09-04T13:40:00Z">
+    <div class="r-comment-body">Currency audit plus a field observation, not a dispatched node. _require_resume_waiver in reckon/crew/promotion.py refuses a promotion that would delete a resume path, names both the resume command and --waive-resume-path REASON, records the discarded path on the ledger row as resume_waiver beside the session it discarded, and refuses a waiver carrying no reason; tests/test_crew_promotion.py covers the accepted and unreasoned cases. The stronger evidence arrived unsolicited: the peer coordinator shipping S16 was refused by this guard on its own run at about 13:20 on 2026-09-04 and reported that having to state in writing why the session was safe to discard was the behaviour it had asked for, three hours after promoting five runs in this state cost it five resumable sessions. A guard measured by the operator it inconveniences is the only measurement of a refusal that means anything. Sections 3, 4 and 5 remain; section 6 is owned by the S16 coordinator and is not this session's to execute.</div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260903T235356722307-a-refused-wave-resumes-itself" data-who="opus-a" data-when="2026-09-04T00:01:04.231Z">
     <div class="r-comment-body"><p>An idempotent per-project sweep resumes every run held by a lapsed provider refusal with a continue advice, bounded at one resume per hold, skipping a claimed scope, a missing worktree and a lane still held; the follow loop invokes it on a cadence so no attention is required.</p></div>
