@@ -24,7 +24,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="3">
+<meta name="plan-commits" content="e89fcce">
+<meta name="plan-artifacts" content="pyproject.toml,tests/test_build.py">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
 <main class="plan-doc">
@@ -87,6 +90,11 @@
     <div class="r-fu-body"><p>One node. The five wheel-build ids the merged-head verification named are the before-and-after list, and the malformed tag stays in the repository throughout so the passing build measures the fix rather than its absence.</p></div>
     <pre class="r-fu-prompt">/reckon-ship version-derives-from-version-tags</pre>
     </article>
+</section>
+<section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260904T073150363927-version-tag-matching" data-who="s16-vtag" data-when="2026-09-04T07:48:07Z">
+    <div class="r-comment-body"><p>only release-shaped tags now name a version: the selector is 'git describe --match v[0-9]*' with parser regex ^v(?P&lt;version&gt;\d+\.\d+\.\d+(?:rc\d+)?)$. Before, derivation failed because the default *[0-9]* selector chose the rescue tag; after, it derives 0.2.1.dev1275 from v0.2.0 with that tag still present. Class covered: a synthesised rescue/build-recovery-deadbeef9 in a temporary clone yields the same version, and with every v* tag removed the raised message names v[0-9]* and not the rescue tag. All five named wheel-build ids pass</p></div>
+</div>
 </section>
 </main>
 </body>

@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T09:31:51",
+  "updated": "2026-09-04T09:50:18",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -928,9 +928,11 @@
         "id": "s16-vtag",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a06b55-2ea2-72b2-a1cb-2e833c7e961a",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06b55-2ea2-72b2-a1cb-2e833c7e961a"
+        },
         "created": "2026-09-04"
       },
       {
@@ -52493,6 +52495,267 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T073150363927-version-tag-matching",
+        "plan": "version-derives-from-version-tags",
+        "section": "\u00a72",
+        "node": "version-tag-matching",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_build.py -q passes with rescue/spec-level-names-a-backend-957c042 still present in the repository, and the five wheel-build ids named in the merged-head verification each report passing. The derived version is recorded before and after and resolves from the newest release tag. With a second tag of the same malformed shape created in a temporary clone the build still derives a version, and with every release tag absent the raised message names the release-tag pattern and does not contain the rescue tag's name",
+          "estimated_hours": 1.5,
+          "goal": "Only release-shaped tags are considered when deriving the version, so a rescue tag cannot break the build",
+          "id": "version-tag-matching",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T073150363927-version-tag-matching/manifest.md",
+          "plan": "version-derives-from-version-tags",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "pyproject.toml",
+            "tests/test_build.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-vtag",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T07:32:13Z",
+        "completed_at": "2026-09-04T07:48:07Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 954,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 954,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "d10b4461d48ba112e6bbed67ae84df970358b548",
+        "commits": [
+          "e89fcce77f003ed48c1413d292414282c3edfb60"
+        ],
+        "changed_lines": {
+          "added": 101,
+          "removed": 2,
+          "files": 2
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -q over the five wheel-build ids, with rescue/spec-level-names-a-backend-957c042 still present",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T073150363927-version-tag-matching/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T073150363927-version-tag-matching/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06b55-2ea2-72b2-a1cb-2e833c7e961a",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 5231616,
+            "cached_input_tokens_cumulative": 5231616,
+            "input_tokens": 5360147,
+            "input_tokens_cumulative": 5360147,
+            "output_tokens": 21634,
+            "output_tokens_cumulative": 21634,
+            "reasoning_output_tokens": 8233,
+            "reasoning_output_tokens_cumulative": 8233
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 29867,
+          "peak_input_tokens": 10591763
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_build.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260904T074150475151-the-directory-consults-liveness",
+        "plan": "every-state-has-a-verb",
+        "section": "\u00a77",
+        "node": "the-directory-consults-liveness",
+        "node_definition": {
+          "done_when": "THE DIRECTORY CALLS RUNNING WORKERS ABANDONED, MEASURED AGAINST THE LIVE FLEET RIGHT NOW. Two runs in this project have alive pids - 1926426 and 1909508, both confirmed with a signal-zero probe - and the directory reports them as classification blocked with process_alive null, and classification abandoned with process_alive false. Abandoned is the label that invites a coordinator to discard a live worker, which is the most expensive mistake this surface can cause. A peer measured the same thing across five running codex nodes in another project, all reported blocked with process_alive null, while the crew live view on the identical pointers reported every one running with process_alive true. So the two views disagree about the same pointers and the live view is right. THE CAUSE IS A STALE BASE RATHER THAN A FENCE: this node's predecessor was dispatched at 06:57 against base c930f36, and the manifest-is-not-a-verdict fix landed at b06b68b afterwards - so the directory was built against a classifier that still let a placeholder manifest stand as a verdict over a live process, and merging it reintroduced a defect that had been fixed eleven minutes earlier. Both were green; neither could see the other. AND THE ANSWER ALREADY EXISTS IN THE SAME PACKAGE: the live view has the correct rule and the directory must reuse it rather than deriving liveness a second time, because two derivations of one fact are what produced this disagreement. Done when the directory reports a run whose pid is alive as running, never as blocked or abandoned, taking liveness from the same code path the live view uses; when a run whose process is genuinely gone keeps its current classification, asserted as a negative; when process_alive is never null for a pointer that carries a pid, since null there reads as unknown when the answer is knowable; and when a coordinator's state field cannot contradict its own live node count - all-terminal alongside a live_node_count of two is reported today and is self-contradictory, so assert that the two agree. ASSERT THROUGH THE DIRECTORY READ a coordinator calls, over pointers built the way dispatch writes them with one live pid and one dead, under a temporary config home with the real config home asserted untouched, and assert the directory and the live view return the same liveness for the same pointer. At least one added assertion must fail against base 50a2437. Measured over tests/test_crew_directory.py plus tests/test_crew_recovery.py in ONE invocation: zero failures against their combined count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 1.5,
+          "goal": "The directory reports a running worker as running, so no coordinator is invited to discard a live run.",
+          "id": "the-directory-consults-liveness",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/directory-liveness-manifest.md",
+          "plan": "every-state-has-a-verb",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "exact",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/crew/directory.py",
+            "tests/test_crew_directory.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "codex-n",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T07:42:04Z",
+        "completed_at": "2026-09-04T07:49:47Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 463,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 463,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "50a2437de1f0add70b2570ebd1890972775f0a1b",
+        "commits": [
+          "00ca13bcd3fdee32d845644f403d49c9b05136c0"
+        ],
+        "changed_lines": {
+          "added": 84,
+          "removed": 4,
+          "files": 2
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_directory.py tests/test_crew_recovery.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vdl.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/directory-liveness-manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06b5e-3276-7d70-8aee-86d6dfeb9fb5",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 4699904,
+            "cached_input_tokens_cumulative": 4699904,
+            "input_tokens": 4844755,
+            "input_tokens_cumulative": 4844755,
+            "output_tokens": 16214,
+            "output_tokens_cumulative": 16214,
+            "reasoning_output_tokens": 4936,
+            "reasoning_output_tokens_cumulative": 4936
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2700,
+              "classification": "blocked",
+              "detail": "the worker manifest reports blocked: implementation and evidence pending",
+              "elapsed_seconds": 421,
+              "external_wait": null,
+              "log_age_seconds": 27,
+              "log_fresh": true,
+              "manifest_commits": [
+                "none; changed_paths: none"
+              ],
+              "manifest_derived": false,
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/lane-change-manifest.md",
+              "manifest_present": true,
+              "manifest_status": "blocked",
+              "marker": "!",
+              "needs_help_complete": false,
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/reports/lane-change-manifest.md; resolve the blocker before resuming the run",
+              "node": "a-run-changes-lane-and-keeps-its-identity",
+              "phase": "starting",
+              "plan": "every-state-has-a-verb",
+              "process_alive": null,
+              "project": "reckon",
+              "run_id": "r-20260904T073440247788-a-run-changes-lane-and-keeps-its-identity",
+              "session": "ship-s15-0903",
+              "terminal_age_seconds": 335,
+              "terminal_at": "2026-09-04T07:36:21Z",
+              "wait_age_seconds": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-0903/a-run-changes-lane-and-keeps-its-identity"
+            }
+          ]
+        },
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 21150,
+          "peak_input_tokens": 9544659
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -52665,6 +52928,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 850
+    "_version": 853
   }
 }
