@@ -9,16 +9,17 @@ cover the answer, not the sentence.
 
 from __future__ import annotations
 
+import importlib
 import json
 import subprocess
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
 
+from reckon import _backends, crew, ledger
 from reckon import cli as cli_module
-from reckon import crew
-
 
 CONFIG = {
     "default_backend": "worker",
@@ -31,6 +32,12 @@ CONFIG = {
         }
     },
     "roles": {"implement": {}},
+    "budget": {
+        "utilisation_ceiling_pct": 100,
+        "resume_reserve_pct": 5,
+        "exhausted_statuses": [],
+        "evidence_shelf_life_minutes": 60,
+    },
     "fences": {"time_budget": "20m", "needs_help_after_failures": 2},
 }
 
@@ -81,6 +88,8 @@ def _arguments(repo: Path, *extra: str, dry_run: bool = False) -> list[str]:
         "dispatch-safety",
         "--section",
         "dispatch",
+        "--spec-level",
+        "exact",
         "--node",
         "candidate",
         "--goal",
@@ -211,3 +220,81 @@ def test_a_member_already_in_flight_is_named_with_its_owning_run(
     assert payload["member"] == "impl-one"
     assert payload["run_id"] == "r-live-owner"
     assert [pointer["run_id"] for pointer in crew.list_live()] == ["r-live-owner"]
+
+
+def _record_hold(repo: Path, *, observed: datetime, resets_at: str | None) -> None:
+    block = _backends.unknown_budget("recorded by the backend's own report")
+    block.update(
+        {
+            "headroom": "known",
+            "utilisation_pct": 100.0,
+            "resets_at": resets_at,
+        }
+    )
+    record = ledger.build_record(
+        run_id="r-budget-refusal",
+        plan="dispatch-safety",
+        gate="passed",
+        agent={"backend": "worker"},
+        completed_at=observed.isoformat(),
+        budget=block,
+    )
+    ledger.append_run("proj", record, root=repo)
+
+
+def _budget_refusal(
+    repo: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    now: datetime,
+) -> tuple[dict, str]:
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    now_stamp = now.isoformat(timespec="seconds").replace("+00:00", "Z")
+    monkeypatch.setattr(dispatch_module, "_utc_now", lambda: now_stamp)
+    result = CliRunner().invoke(
+        cli_module.main,
+        _arguments(repo, "--no-watch"),
+    )
+    payload = json.loads(result.stdout.splitlines()[0])
+    assert result.exit_code == 3
+    assert payload["error"] == "budget-hold"
+    return payload, payload["detail"]
+
+
+def test_an_aged_hold_names_its_lane_age_release_and_refresh_observation(
+    repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    now = datetime.now(tz=UTC).replace(microsecond=0)
+    observed = now - timedelta(minutes=20)
+    _record_hold(repo, observed=observed, resets_at=None)
+
+    payload, message = _budget_refusal(repo, monkeypatch, now=now)
+
+    lift_stamp = (observed + timedelta(minutes=60)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    assert payload["hold"]["backend"] == "worker"
+    assert "backend 'worker'" in message
+    assert "20.0 minutes old against the 60 minute shelf-life bound" in message
+    assert f"ageing lifts this hold at {lift_stamp}" in message
+    assert "a served turn on backend 'worker' refreshes this evidence" in message
+    assert "re-read" not in message
+    assert "refused run" not in message
+
+
+def test_a_reset_bearing_hold_names_the_reset_instead_of_an_age(
+    repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    now = datetime.now(tz=UTC).replace(microsecond=0)
+    observed = now - timedelta(minutes=20)
+    reset_stamp = (now + timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    _record_hold(repo, observed=observed, resets_at=reset_stamp)
+
+    payload, message = _budget_refusal(repo, monkeypatch, now=now)
+
+    assert payload["hold"]["backend"] == "worker"
+    assert "backend 'worker'" in message
+    assert f"the stated reset at {reset_stamp} lifts this hold" in message
+    assert "a served turn on backend 'worker' refreshes this evidence" in message
+    assert "minutes old" not in message
+    assert "shelf-life bound" not in message
+    assert "re-read" not in message
+    assert "refused run" not in message

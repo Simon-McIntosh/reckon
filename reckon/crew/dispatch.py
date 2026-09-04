@@ -14,6 +14,7 @@ import sys
 import time
 import uuid
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
@@ -113,6 +114,61 @@ WATCHER_LOAD_BOUND_SECONDS = 30.0
 # what it starts, says so through this variable.
 WATCH_ARMING_ENV = "RECKON_WATCH_ARMING"
 _PYTEST_TEMPORARY_ROOT = re.compile(r"^(pytest-of-.+|pytest-\d+)$")
+
+
+def _actionable_budget_hold(
+    verdict: Mapping[str, Any],
+    *,
+    config: Mapping[str, Any] | None,
+) -> BudgetHold:
+    """Name when one backend's hold lifts and what refreshes its evidence."""
+    from reckon import budget as budget_module
+
+    hold = dict(verdict)
+    backend = str(hold.get("backend") or "unknown")
+    state = hold.get("state")
+    state = state if isinstance(state, Mapping) else {}
+    resets_at = state.get("resets_at")
+    if resets_at:
+        timing = f"the stated reset at {resets_at} lifts this hold"
+    else:
+        bound = float(
+            budget_module.policy(config).get(
+                "evidence_shelf_life_minutes",
+                budget_module.DEFAULT_SHELF_LIFE_MINUTES,
+            )
+        )
+        stamp = state.get("observed_at")
+        try:
+            observed = datetime.fromisoformat(str(stamp))
+        except (TypeError, ValueError):
+            observed = None
+        if observed is None:
+            timing = (
+                f"the evidence age is unknown against the {bound:g} minute "
+                "shelf-life bound because its refusal carries no readable time"
+            )
+        elif bound <= 0:
+            timing = (
+                f"the evidence is dated {stamp}, but the {bound:g} minute "
+                "shelf-life bound disables ageing"
+            )
+        else:
+            if observed.tzinfo is None:
+                observed = observed.replace(tzinfo=UTC)
+            moment = datetime.fromisoformat(_utc_now())
+            age_minutes = max(0.0, (moment - observed).total_seconds() / 60.0)
+            lifts_at = (observed + timedelta(minutes=bound)).astimezone(UTC)
+            lift_stamp = lifts_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+            timing = (
+                f"the evidence is {age_minutes:.1f} minutes old against the "
+                f"{bound:g} minute shelf-life bound, and ageing lifts this hold "
+                f"at {lift_stamp}"
+            )
+    refresh = f"a served turn on backend {backend!r} refreshes this evidence"
+    reason = str(hold.get("reason") or "budget evidence holds the lane")
+    hold["reason"] = f"{reason}; {timing}; {refresh}"
+    return BudgetHold(hold)
 
 
 def _jsonl_events(path: Path) -> Iterable[Mapping[str, Any]]:
@@ -1875,7 +1931,7 @@ def dispatch(
                 resolution.backend_settings,
             )
             if substitute is None:
-                raise BudgetHold(verdict)
+                raise _actionable_budget_hold(verdict, config=config)
             fallback_name, _fallback_settings = substitute
             # Re-resolve fully rather than patch the existing DispatchPlan, so
             # the fallback gets its own execution-fit, sandbox and write-path
@@ -1920,7 +1976,7 @@ def dispatch(
                 # No fallback-of-fallback chain: a declared fallback is a single
                 # named substitute, not a search, so a held fallback refuses on
                 # its own verdict rather than guessing a third lane.
-                raise BudgetHold(fallback_verdict)
+                raise _actionable_budget_hold(fallback_verdict, config=config)
             budget_fallback = {
                 "requested_backend": requested_backend_name,
                 "used_backend": resolution.backend,
@@ -2687,7 +2743,7 @@ def resume_plan(
         purpose="resume",
     )
     if verdict["held"]:
-        raise BudgetHold(verdict)
+        raise _actionable_budget_hold(verdict, config=config)
     backend.setdefault("sandbox", record.get("sandbox"))
     return _backends.launch_plan(
         backend_name=str(record.get("backend") or ""),
@@ -2820,7 +2876,7 @@ def change_lane(
         purpose="dispatch",
     )
     if verdict["held"]:
-        raise BudgetHold(verdict)
+        raise _actionable_budget_hold(verdict, config=config)
 
     source_launch = str(record.get("launch") or "")
     target_launch = resolution.launch
