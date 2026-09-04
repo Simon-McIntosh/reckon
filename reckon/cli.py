@@ -1230,6 +1230,19 @@ def _follow_selects(
     return True
 
 
+def _sweep_lapsed_holds(project: str, *, dry_run: bool = False) -> dict[str, Any]:
+    """Resume this project's runs whose provider refusal has lapsed.
+
+    Deferred like every other crew import in this file, and wrapped so a
+    recovery that cannot run never takes the follower down with it: the pane a
+    reader is watching matters more than any single sweep, and the next cadence
+    tick tries again.
+    """
+    from reckon.crew.recover import sweep
+
+    return sweep(project, dry_run=dry_run)
+
+
 def _follow_watch_lines(
     project: str,
     *,
@@ -1240,6 +1253,9 @@ def _follow_watch_lines(
     sleeper=time.sleep,
     stop=None,
     on_poll=None,
+    sweep=_sweep_lapsed_holds,
+    sweep_interval: float | None = None,
+    clock=time.monotonic,
 ):
     """Yield this follower's transitions for as long as its session lives.
 
@@ -1283,7 +1299,33 @@ def _follow_watch_lines(
             reported[run_id] = state
         return event
 
+    from reckon.crew.recover import DEFAULT_SWEEP_SECONDS
+
+    cadence = DEFAULT_SWEEP_SECONDS if sweep_interval is None else float(sweep_interval)
+    swept_at: float | None = None
+
+    def _sweep_on_cadence() -> None:
+        """Run the recovery sweep at most once per cadence.
+
+        The follower polls in a tight loop, so the cadence is what stops a
+        cheap sweep from becoming a hot path. It is time since the last sweep
+        rather than a count of iterations, because the loop's own rate depends
+        on whether a producer is up.
+        """
+        nonlocal swept_at
+        if sweep is None:
+            return
+        moment = clock()
+        if swept_at is not None and moment - swept_at < cadence:
+            return
+        swept_at = moment
+        try:
+            sweep(project)
+        except Exception:  # noqa: BLE001 - a failed recovery must not end the pane
+            return
+
     while not _stopped():
+        _sweep_on_cadence()
         if not runs.producer_live(project):
             _tick()
             sleeper(poll_interval)
@@ -1597,6 +1639,33 @@ def crew_watch(
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit({"ok": True, **result}, pretty)
+
+
+@crew.command(name="resume-held")
+@click.option("--project", required=True, help="Project whose held runs to sweep.")
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Report what would be resumed without resuming anything.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_resume_held(project, dry_run, pretty):
+    """Resume every run a lapsed provider refusal is still holding.
+
+    Idempotent and cheap: eligibility is computed from records already on disk,
+    so nothing is spent to discover it and a second pass over the same fleet
+    reports nothing to do. The follower runs this on a cadence, which is how
+    the recovery happens without anyone noticing the outage; this command is
+    the same sweep by hand.
+    """
+    from reckon.crew.node import CrewError
+    from reckon.crew.recover import sweep
+
+    try:
+        report = sweep(project, dry_run=dry_run)
+    except CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit({"ok": True, **report}, pretty)
 
 
 @crew.command(name="unwatch")
