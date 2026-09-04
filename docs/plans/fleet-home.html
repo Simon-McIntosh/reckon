@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-commits" content="6481026,2b3b276,2125e17">
 <meta name="plan-impl" content="0.75">
 </head>
@@ -163,6 +163,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260904T063359494663-merged-head-verification" data-who="s16-verify" data-when="2026-09-04T07:12:28Z">
     <div class="r-comment-body"><p>base 85dc0f4 had 37 failing ids with 3106 passed; merged head 19c24fc1 has 43 with 3092. Of 8 raw added ids only 3 are attributable to this wave, all nearest 2b3b276: two stale project-visibility assertions referencing deleted cockpit helpers, and the real-browser containment case waiting on the retired .r-overview-project-row selector. The remaining 5 are wheel-build failures from a malformed local rescue tag whose commit is an ancestor of both revisions, so they predate the wave</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260904T071406874653-stale-cockpit-references-in-tests" data-who="s16-stale" data-when="2026-09-04T07:25:17Z">
+    <div class="r-comment-body"><p>the three test references the cockpit retirement left behind now name the live contracts: the project-visibility assertions read the home and topbar surfaces instead of deleted overview helpers, and the containment harness traverses only routable surfaces so its browser measurement executes rather than waiting on the retired .r-overview-project-row, which greps to 0. 11 passed, 4 skipped</p></div>
 </div>
 </section>
 </main>

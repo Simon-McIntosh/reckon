@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T09:14:41",
+  "updated": "2026-09-04T09:30:03",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -883,9 +883,11 @@
         "id": "s16-stale",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a06b44-bce2-7fb1-a38e-f000e3df6296",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06b44-bce2-7fb1-a38e-f000e3df6296"
+        },
         "created": "2026-09-04"
       },
       {
@@ -919,6 +921,15 @@
         "sessions": {
           "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06b20-2e06-7802-a2cd-8eb9e7ea8642"
         },
+        "created": "2026-09-04"
+      },
+      {
+        "id": "s16-vtag",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
         "created": "2026-09-04"
       },
       {
@@ -52371,6 +52382,116 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260904T071406874653-stale-cockpit-references-in-tests",
+        "plan": "fleet-home",
+        "section": "\u00a73",
+        "node": "stale-cockpit-references-in-tests",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_spa_project_visibility.py tests/test_spa_viewport_containment.py -q passes: the two project-visibility assertions no longer reference deleted cockpit helpers or contracts, and the containment harness's route list and selectors no longer wait for the retired .r-overview-project-row, so the previously failing real-browser containment case executes rather than timing out",
+          "estimated_hours": 1.0,
+          "goal": "The three test references left pointing at the retired cockpit are updated so the merged head adds no failure",
+          "id": "stale-cockpit-references-in-tests",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T071406874653-stale-cockpit-references-in-tests/manifest.md",
+          "plan": "fleet-home",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "exact",
+          "time_budget": "35m",
+          "write_paths": [
+            "tests/test_spa_project_visibility.py",
+            "tests/spa_containment_harness.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s16-stale",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T07:14:21Z",
+        "completed_at": "2026-09-04T07:25:17Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 656,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 656,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "41fdc02540cbd6bc00e5a93525049b0e33358b76",
+        "commits": [
+          "572774c419025cb1ce64828985f8bfa390349d9e"
+        ],
+        "changed_lines": {
+          "added": 30,
+          "removed": 33,
+          "files": 2
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_project_visibility.py tests/test_spa_viewport_containment.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T071406874653-stale-cockpit-references-in-tests/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T071406874653-stale-cockpit-references-in-tests/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06b44-bce2-7fb1-a38e-f000e3df6296",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 4025984,
+            "cached_input_tokens_cumulative": 4025984,
+            "input_tokens": 4161629,
+            "input_tokens_cumulative": 4161629,
+            "output_tokens": 15292,
+            "output_tokens_cumulative": 15292,
+            "reasoning_output_tokens": 5085,
+            "reasoning_output_tokens_cumulative": 5085
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 20377,
+          "peak_input_tokens": 8187613
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_spa_project_visibility.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -52543,6 +52664,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 846
+    "_version": 849
   }
 }
