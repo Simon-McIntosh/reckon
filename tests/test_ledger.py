@@ -1197,14 +1197,13 @@ def test_completing_a_record_whose_pid_is_the_releasing_process_never_signals_it
 ) -> None:
     """A run record naming the releasing process's own pid must never kill it.
 
-    Measured: the release path used to call os.killpg on a recorded pid's own
-    process group unconditionally, and every dispatch helper in this file
-    substitutes os.getpid() for the launched pid — so the very first
-    completed run to reach the signal branch killed the pytest runner
-    executing it (exit 143). Asserted on the release outcome rather than on
-    survival alone, though survival to this assertion is itself part of the
-    evidence: a regression here would take this process down before the
-    assertion could run.
+    Calling os.killpg on a recorded pid's own process group would kill the
+    release caller. Every dispatch helper in this file substitutes os.getpid()
+    for the launched pid, so any completed run reaching an unguarded signal
+    branch would kill the pytest runner (exit 143). Asserted on the release
+    outcome rather than on survival alone, though survival to this assertion
+    is itself part of the evidence: a regression here would take this process
+    down before the assertion could run.
     """
     record = _dispatch(repo)
     _deliver(record)
