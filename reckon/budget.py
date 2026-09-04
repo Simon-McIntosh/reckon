@@ -22,12 +22,11 @@ state, and it decays only through its own reset time. Taking "most recent" at
 face value would let one silent run erase a real exhaustion and open the wave
 this module exists to hold.
 
-**The pre-flight spends nothing.** It reads what earlier runs already recorded in
-the ledger (:mod:`reckon.ledger`) and the pointers of runs still in flight. A
-probe would spend the very resource it is measuring, and would do so most often
-exactly when headroom is scarcest. A backend whose config asks for it may also
-have its own account surface read — that runs no model and costs no worker
-budget — but it is never the base case.
+**An undated refusal is probed, not timed.** A refusal naming a reset remains
+stronger evidence until that time. One naming no reset cannot say when the lane
+will serve again, so an opted-in backend receives one minimal serving request.
+Its bounded per-backend cache turns a wave of callers into one request. Where a
+host cannot make that request, the declared shelf life remains the fallback.
 
 A hold is never destructive and never silent. It creates no worktree, fails no
 node and cancels nothing; the nodes stay ready. It reports which backend, at what
@@ -75,6 +74,7 @@ UNSET_RESERVE_PCT = 0.0
 # spent is re-recorded by the very dispatch that tests it. Set the key to zero
 # or less to disable ageing and keep the indefinite hold.
 DEFAULT_SHELF_LIFE_MINUTES = 60.0
+DEFAULT_AVAILABILITY_PROBE_CACHE_SECONDS = 60.0
 
 
 @dataclass
@@ -99,11 +99,17 @@ class BudgetState:
     source: str = "none"
     expired: bool = False
     detail: str = ""
+    availability: str | None = None
+    availability_observed_at: str | None = None
+    availability_cached: bool = False
 
     def as_dict(self) -> dict[str, Any]:
         """Return the state as sorted JSON-ready data."""
         return {
             "backend": self.backend,
+            "availability": self.availability,
+            "availability_cached": self.availability_cached,
+            "availability_observed_at": self.availability_observed_at,
             "detail": self.detail,
             "expired": self.expired,
             "headroom": self.headroom,
@@ -133,7 +139,7 @@ def policy(config: Mapping[str, Any] | None) -> dict[str, Any]:
     reserve = block.get("resume_reserve_pct")
     statuses = block.get("exhausted_statuses") or ()
     shelf_life = block.get("evidence_shelf_life_minutes")
-    return {
+    resolved = {
         "utilisation_ceiling_pct": (
             UNSET_CEILING_PCT if ceiling is None else float(ceiling)
         ),
@@ -143,6 +149,22 @@ def policy(config: Mapping[str, Any] | None) -> dict[str, Any]:
             DEFAULT_SHELF_LIFE_MINUTES if shelf_life is None else float(shelf_life)
         ),
     }
+    resolved["availability_probe_cache_seconds"] = availability_probe_cache_seconds(
+        resolved
+    )
+    return resolved
+
+
+def availability_probe_cache_seconds(policy_block: Mapping[str, Any]) -> float:
+    """Bound probe reuse by the configured shelf life and the short default."""
+    shelf_seconds = max(
+        0.0,
+        float(
+            policy_block.get("evidence_shelf_life_minutes", DEFAULT_SHELF_LIFE_MINUTES)
+        )
+        * 60.0,
+    )
+    return min(DEFAULT_AVAILABILITY_PROBE_CACHE_SECONDS, shelf_seconds)
 
 
 def effective_ceiling(policy_block: Mapping[str, Any], purpose: str) -> float:
@@ -582,6 +604,19 @@ def decide(
         "held": False,
         "state": state.as_dict(),
     }
+    if state.availability == "served":
+        verdict["reason"] = (
+            f"backend {state.backend!r} served the minimal availability request at "
+            f"{state.availability_observed_at}; the lane is open"
+        )
+        return verdict
+    if state.availability == "refused":
+        verdict["held"] = True
+        verdict["reason"] = (
+            f"backend {state.backend!r} refused the minimal availability request at "
+            f"{state.availability_observed_at}; that refusal is the current evidence"
+        )
+        return verdict
     if state.headroom != "known":
         verdict["reason"] = (
             "headroom is unknown, and absence of a signal is never read as "
@@ -684,12 +719,19 @@ def preflight(
     purpose: str = "dispatch",
     now: datetime | None = None,
     probe_runner: Callable[[Any], Mapping[str, Any] | None] | None = None,
+    lane_probe_runner: Callable[[str, Mapping[str, Any]], Mapping[str, Any] | None]
+    | None = None,
 ) -> dict[str, Any]:
-    """Decide, per backend, whether a wave may open — without spending anything.
+    """Decide, per backend, whether a wave may open.
 
     This is an observational check. Command paths that act on its verdict call
     :func:`record_checks`; read-only surfaces return the report without
     inventing hold history.
+
+    A backend opting into ``budget_check`` is asked only when recorded
+    exhaustion names no reset. The probe is serialized and cached per backend,
+    so ten callers in one wave still issue one minimal request. A backend that
+    has never reported exhaustion is neither held nor probed.
 
     Per-backend rather than global, because that is the whole reason budget state
     is tracked per backend: one backend being spent must not stop ready nodes
@@ -718,7 +760,57 @@ def preflight(
             now=moment,
             probe_runner=probe_runner,
         )
-        verdicts.append(decide(state, policy_block, purpose=purpose))
+        # First judge without ageing. This identifies an undated exhaustion
+        # even after its fallback shelf life has elapsed: when this host can
+        # probe, provider availability is observed rather than inferred from a
+        # clock. A stated reset and an unknown backend never reach the probe.
+        timeless_policy = {
+            **policy_block,
+            "evidence_shelf_life_minutes": 0,
+        }
+        recorded_verdict = decide(state, timeless_policy, purpose=purpose, now=moment)
+        if (
+            recorded_verdict["held"]
+            and state.resets_at is None
+            and isinstance(settings, Mapping)
+            and bool(settings.get("budget_check"))
+        ):
+            from reckon.crew.recover import probe_lane_availability
+
+            observation = probe_lane_availability(
+                project,
+                name,
+                settings,
+                root=root,
+                cache_seconds=availability_probe_cache_seconds(policy_block),
+                now=moment,
+                runner=lane_probe_runner,
+            )
+            status = str(observation.get("status") or "unavailable")
+            if status in {"served", "refused"}:
+                observed_at = str(observation.get("observed_at") or _iso(moment))
+                probe_budget = observation.get("budget")
+                if status == "refused" and isinstance(probe_budget, Mapping):
+                    state = _from_block(
+                        name,
+                        probe_budget,
+                        observed_at=observed_at,
+                        source="lane-probe",
+                        now=moment,
+                    )
+                else:
+                    state = replace(state, source="lane-probe")
+                state = replace(
+                    state,
+                    observed_at=(
+                        observed_at if status == "refused" else state.observed_at
+                    ),
+                    availability=status,
+                    availability_observed_at=observed_at,
+                    availability_cached=bool(observation.get("cached")),
+                    detail=str(observation.get("detail") or state.detail),
+                )
+        verdicts.append(decide(state, policy_block, purpose=purpose, now=moment))
 
     held = [verdict for verdict in verdicts if verdict["held"]]
     waits = [

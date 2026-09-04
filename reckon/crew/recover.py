@@ -34,15 +34,18 @@ alive again.
 
 from __future__ import annotations
 
+import fcntl
 import json
 import os
+import subprocess
 from collections.abc import Callable, Mapping
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from reckon import _backends, ledger
 from reckon import budget as budget_module
-from reckon import ledger
 from reckon.crew.dispatch import (
     BudgetHold,
     _backend_settings,
@@ -79,6 +82,12 @@ CONTINUE_ADVICE = (
 # later is picked up while the wave still matters.
 DEFAULT_SWEEP_SECONDS = 120.0
 
+# A served request is current availability evidence, but only briefly. The
+# cache exists to turn a wave of callers into one provider request; it never
+# turns a historical observation into a long-lived verdict.
+DEFAULT_AVAILABILITY_PROBE_CACHE_SECONDS = 60.0
+AVAILABILITY_PROBE_PROMPT = "Reply with OK."
+
 
 def _parse_stamp(value: Any) -> datetime | None:
     """Parse an ISO-8601 stamp, returning None for anything unreadable."""
@@ -91,6 +100,195 @@ def _parse_stamp(value: Any) -> datetime | None:
 
 def _now(now: datetime | None = None) -> datetime:
     return now or datetime.now(tz=UTC)
+
+
+def _safe_project(project: str) -> str:
+    return (
+        "".join(
+            character if character.isalnum() or character in "._-" else "-"
+            for character in str(project)
+        ).strip("-")
+        or "project"
+    )
+
+
+def lane_probe_cache_path(project: str, backend_name: str) -> Path:
+    """Return one backend's durable availability observation cache."""
+    return (
+        crew_home()
+        / "recovery"
+        / "lane-probes"
+        / _safe_project(project)
+        / f"{_safe_project(backend_name)}.json"
+    )
+
+
+@contextmanager
+def _lane_probe_lock(project: str, backend_name: str):
+    """Serialize cache refreshes so concurrent callers issue one request."""
+    path = lane_probe_cache_path(project, backend_name).with_suffix(".lock")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+", encoding="utf-8") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+def _read_lane_probe_cache(project: str, backend_name: str) -> dict[str, Any]:
+    path = lane_probe_cache_path(project, backend_name)
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, TypeError, ValueError):
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
+def _write_lane_probe_cache(
+    project: str, backend_name: str, observation: Mapping[str, Any]
+) -> None:
+    path = lane_probe_cache_path(project, backend_name)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(f".{os.getpid()}.tmp")
+    temporary.write_text(
+        json.dumps(dict(observation), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    os.replace(temporary, path)
+
+
+def _normalise_lane_probe(
+    backend_name: str,
+    result: Mapping[str, Any] | None,
+    *,
+    observed_at: str,
+) -> dict[str, Any]:
+    """Return the closed availability observation shape used by the fence."""
+    result = result if isinstance(result, Mapping) else {}
+    status = str(result.get("status") or "unavailable")
+    if status not in {"served", "refused", "unavailable"}:
+        status = "unavailable"
+    return {
+        "backend": backend_name,
+        "status": status,
+        "observed_at": str(result.get("observed_at") or observed_at),
+        "detail": str(
+            result.get("detail")
+            or (
+                f"the minimal request was {status}"
+                if status != "unavailable"
+                else "availability probe returned no result"
+            )
+        ),
+        "budget": dict(result.get("budget") or {}),
+        "cached": False,
+    }
+
+
+def _request_lane_availability(
+    backend_name: str,
+    backend: Mapping[str, Any],
+    *,
+    root: str | Path | None,
+) -> dict[str, Any]:
+    """Issue the smallest supported model request and classify its stream."""
+    if backend.get("launch") != "cli":
+        return {
+            "status": "unavailable",
+            "detail": "the host cannot spawn an in-harness backend for a probe",
+        }
+    worktree = Path(root or ".").resolve()
+    if not worktree.is_dir():
+        return {
+            "status": "unavailable",
+            "detail": f"the probe working directory {worktree} is unavailable",
+        }
+    directory = crew_home() / "recovery" / "lane-probes" / "requests"
+    directory.mkdir(parents=True, exist_ok=True)
+    safe_backend = _safe_project(backend_name)
+    stamp = datetime.now(tz=UTC).strftime("%Y%m%dT%H%M%S%f")
+    log_path = directory / f"{safe_backend}-{stamp}.jsonl"
+    stderr_path = directory / f"{safe_backend}-{stamp}.stderr.log"
+    final_path = directory / f"{safe_backend}-{stamp}.final.txt"
+    try:
+        plan = _backends.launch_plan(
+            backend_name=backend_name,
+            backend=backend,
+            prompt=AVAILABILITY_PROBE_PROMPT,
+            worktree=worktree,
+            final_message_path=final_path,
+        )
+        completed = subprocess.run(
+            plan.argv,
+            cwd=plan.cwd,
+            env={**os.environ, **plan.environment},
+            input=plan.stdin_text,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=60,
+        )
+        log_path.write_text(completed.stdout, encoding="utf-8")
+        stderr_path.write_text(completed.stderr, encoding="utf-8")
+        observation = _backends.observe_log(
+            backend_name=backend_name,
+            backend=backend,
+            log_path=log_path,
+        )
+    except (_backends.BackendError, OSError, subprocess.SubprocessError) as exc:
+        return {"status": "unavailable", "detail": f"lane probe could not run: {exc}"}
+    if observation.budget.get("refusal"):
+        return {
+            "status": "refused",
+            "detail": observation.detail or "the minimal request was refused",
+            "budget": observation.budget,
+        }
+    if completed.returncode == 0:
+        return {
+            "status": "served",
+            "detail": observation.detail or "the minimal request was served",
+            "budget": observation.budget,
+        }
+    return {
+        "status": "unavailable",
+        "detail": f"lane probe exited {completed.returncode} without availability evidence",
+        "budget": observation.budget,
+    }
+
+
+def probe_lane_availability(
+    project: str,
+    backend_name: str,
+    backend: Mapping[str, Any],
+    *,
+    root: str | Path | None = None,
+    cache_seconds: float = DEFAULT_AVAILABILITY_PROBE_CACHE_SECONDS,
+    now: datetime | None = None,
+    runner: Callable[[str, Mapping[str, Any]], Mapping[str, Any] | None] | None = None,
+) -> dict[str, Any]:
+    """Return one bounded, serialized serving observation for a backend."""
+    moment = _now(now)
+    with _lane_probe_lock(project, backend_name):
+        previous = _read_lane_probe_cache(project, backend_name)
+        if previous and cache_seconds > 0:
+            observed = _parse_stamp(previous.get("observed_at"))
+            if observed is not None:
+                age = max(0.0, (moment - observed).total_seconds())
+                if age <= cache_seconds:
+                    return {**dict(previous), "cached": True, "cache_age_seconds": age}
+        result = (
+            runner(backend_name, backend)
+            if runner is not None
+            else _request_lane_availability(backend_name, backend, root=root)
+        )
+        observation = _normalise_lane_probe(
+            backend_name,
+            result,
+            observed_at=moment.isoformat(timespec="seconds").replace("+00:00", "Z"),
+        )
+        _write_lane_probe_cache(project, backend_name, observation)
+        return observation
 
 
 def recovery_log_path(project: str) -> Path:

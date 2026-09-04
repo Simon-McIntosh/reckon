@@ -16,8 +16,8 @@ The measures this file exists to demonstrate:
   - holds are per-backend: one held backend leaves another dispatching
   - the reserve stops a dispatch that would leave nothing to answer a stuck
     worker with, while leaving that answer itself possible
-  - the pre-flight spends no worker budget, asserted by making any spawned
-    process an error
+  - only an opted-in backend with an undated exhaustion is probed, once per
+    bounded cache interval rather than once per node
 """
 
 from __future__ import annotations
@@ -1487,3 +1487,212 @@ def test_observing_a_stated_reset_is_not_aged_by_the_observe(home, repo) -> None
     after = budget.preflight("proj", CONFIG, backends=["alpha"], root=repo)
     assert after["backends"][0]["held"] is True
     assert "shelf life" not in after["backends"][0]["reason"]
+
+
+# ── An undated hold is decided by a lane probe ─────────────────────────────
+
+
+def _probing_config(*backend_names: str, cache_seconds: float = 30) -> dict:
+    """Enable the serving probe only on the named configured backends."""
+    return {
+        **CONFIG,
+        "backends": {
+            name: {
+                **CONFIG["backends"][name],
+                "budget_check": True,
+            }
+            for name in backend_names
+        },
+        "budget": {
+            **CONFIG["budget"],
+            "evidence_shelf_life_minutes": cache_seconds / 60,
+        },
+    }
+
+
+def test_a_served_lane_probe_opens_an_undated_hold_and_records_the_observation(
+    home, repo
+) -> None:
+    checked_at = datetime(2026, 9, 4, 4, 0, tzinfo=UTC)
+    _record(
+        "proj",
+        repo,
+        backend="alpha",
+        budget_block=_spent_with_no_stated_reset(),
+        run_id="r-undated",
+        completed_at=(checked_at - timedelta(minutes=5)).isoformat(),
+    )
+    probes: list[str] = []
+
+    def served(backend_name, _backend):
+        probes.append(backend_name)
+        return {"status": "served", "detail": "minimal request was served"}
+
+    report = budget.preflight(
+        "proj",
+        _probing_config("alpha"),
+        backends=["alpha"],
+        root=repo,
+        now=checked_at,
+        probe_runner=lambda _probe: None,
+        lane_probe_runner=served,
+    )
+    cached_report = budget.preflight(
+        "proj",
+        _probing_config("alpha"),
+        backends=["alpha"],
+        root=repo,
+        now=checked_at + timedelta(seconds=10),
+        probe_runner=lambda _probe: None,
+        lane_probe_runner=served,
+    )
+
+    verdict = report["backends"][0]
+    assert probes == ["alpha"]
+    assert verdict["held"] is False
+    assert verdict["state"]["availability"] == "served"
+    assert verdict["state"]["availability_observed_at"] == "2026-09-04T04:00:00Z"
+    assert verdict["state"]["source"] == "lane-probe"
+    assert report["policy"]["availability_probe_cache_seconds"] == 30
+    assert "served" in verdict["reason"]
+    assert cached_report["backends"][0]["held"] is False
+    assert cached_report["backends"][0]["state"]["availability_cached"] is True
+
+
+def test_a_refused_lane_probe_rearms_the_hold_and_is_reused_only_within_its_cache(
+    home, repo
+) -> None:
+    first_check = datetime(2026, 9, 4, 4, 0, tzinfo=UTC)
+    _record(
+        "proj",
+        repo,
+        backend="alpha",
+        budget_block=_spent_with_no_stated_reset(),
+        run_id="r-undated",
+        completed_at=(first_check - timedelta(hours=4)).isoformat(),
+    )
+    answers = iter(
+        [
+            {
+                "status": "refused",
+                "detail": "minimal request was refused",
+                "budget": _spent_with_no_stated_reset(),
+            },
+            {"status": "served", "detail": "minimal request was served"},
+        ]
+    )
+    probes = 0
+
+    def probe(_backend_name, _backend):
+        nonlocal probes
+        probes += 1
+        return next(answers)
+
+    config = _probing_config("alpha", cache_seconds=30)
+    refused = budget.preflight(
+        "proj",
+        config,
+        backends=["alpha"],
+        root=repo,
+        now=first_check,
+        probe_runner=lambda _probe: None,
+        lane_probe_runner=probe,
+    )["backends"][0]
+    cached = budget.preflight(
+        "proj",
+        config,
+        backends=["alpha"],
+        root=repo,
+        now=first_check + timedelta(seconds=20),
+        probe_runner=lambda _probe: None,
+        lane_probe_runner=probe,
+    )["backends"][0]
+    served = budget.preflight(
+        "proj",
+        config,
+        backends=["alpha"],
+        root=repo,
+        now=first_check + timedelta(seconds=31),
+        probe_runner=lambda _probe: None,
+        lane_probe_runner=probe,
+    )["backends"][0]
+
+    assert refused["held"] is True
+    assert refused["state"]["availability"] == "refused"
+    assert refused["state"]["observed_at"] == "2026-09-04T04:00:00Z"
+    assert cached["held"] is True
+    assert cached["state"]["availability_cached"] is True
+    assert served["held"] is False
+    assert probes == 2
+
+
+def test_lane_probes_are_once_per_backend_not_once_per_record(home, repo) -> None:
+    checked_at = datetime(2026, 9, 4, 4, 0, tzinfo=UTC)
+    for index in range(10):
+        _record(
+            "proj",
+            repo,
+            backend="alpha",
+            budget_block=_spent_with_no_stated_reset(),
+            run_id=f"r-alpha-{index}",
+            completed_at=(checked_at - timedelta(seconds=index + 1)).isoformat(),
+        )
+    _record(
+        "proj",
+        repo,
+        backend="beta",
+        budget_block=_spent_with_no_stated_reset(),
+        run_id="r-beta",
+        completed_at=(checked_at - timedelta(seconds=1)).isoformat(),
+    )
+    probes: list[str] = []
+
+    def served(backend_name, _backend):
+        probes.append(backend_name)
+        return {"status": "served"}
+
+    report = budget.preflight(
+        "proj",
+        _probing_config("alpha", "beta"),
+        backends=["alpha", "beta"],
+        root=repo,
+        now=checked_at,
+        probe_runner=lambda _probe: None,
+        lane_probe_runner=served,
+    )
+
+    assert probes == ["alpha", "beta"]
+    assert report["held"] is False
+
+
+def test_a_reset_bearing_hold_and_an_unreported_backend_are_not_probed(
+    home, repo
+) -> None:
+    checked_at = datetime.now(tz=UTC).replace(microsecond=0)
+    _record(
+        "proj",
+        repo,
+        backend="alpha",
+        budget_block=_known(100.0, resets_in=600),
+        run_id="r-dated",
+        completed_at=checked_at.isoformat(),
+    )
+
+    def forbidden(_backend_name, _backend):
+        raise AssertionError("this backend has no undated exhaustion to probe")
+
+    report = budget.preflight(
+        "proj",
+        _probing_config("alpha", "beta"),
+        backends=["alpha", "beta"],
+        root=repo,
+        now=checked_at,
+        probe_runner=lambda _probe: None,
+        lane_probe_runner=forbidden,
+    )
+
+    alpha, beta = report["backends"]
+    assert alpha["held"] is True
+    assert alpha["state"]["resets_at"] is not None
+    assert beta["held"] is False
+    assert beta["state"]["headroom"] == "unknown"
