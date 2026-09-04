@@ -1797,7 +1797,14 @@ def dispatch(
         agent["local"] = True
     committed_runs = ledger.runs(project, root=ledger_root)
     reuse_session = (
-        _session_for_configuration(roster_member, agent, committed_runs)
+        _session_for_configuration(
+            roster_member,
+            agent,
+            committed_runs,
+            harness_default_model=_harness_default_model(
+                config, str(roster_member.get("harness") or "")
+            ),
+        )
         if roster_member and backend.get("session_reuse")
         else None
     )
@@ -2273,10 +2280,29 @@ def _apply_orientation_check(record: dict[str, Any], manifest: Path | None) -> N
     record["detail"] = detail
 
 
+def _harness_default_model(config: Mapping[str, Any], harness: str) -> str:
+    """Return the model a member's declared harness resolves to by default.
+
+    `member add` has no `--model` flag, so a session it records carries no
+    configuration of its own — this is the value it would have recorded had
+    it accepted one, read from the same backend declaration `resolve_role`
+    would use absent any role overlay.
+    """
+    if not harness:
+        return ""
+    backends = config.get("backends")
+    backend = backends.get(harness) if isinstance(backends, Mapping) else None
+    if not isinstance(backend, Mapping):
+        return ""
+    return str(backend.get("model") or "").strip()
+
+
 def _session_for_configuration(
     member: Mapping[str, Any],
     agent: Mapping[str, Any],
     runs: Iterable[Mapping[str, Any]] = (),
+    *,
+    harness_default_model: str = "",
 ) -> str | None:
     """Return the member session proved to belong to this configuration.
 
@@ -2284,6 +2310,17 @@ def _session_for_configuration(
     predate that representation, so they are eligible only when the committed
     run that captured the session identifies one unambiguous matching agent
     configuration.
+
+    A session set bare, through `member add --session` with no prior capture
+    at all, carries neither a `session_model` nor a `sessions` map — there is
+    no run history to disambiguate it against, because it was never dispatched
+    through here before. It is resolved once against the harness's own
+    configured default model instead, and only when that default matches the
+    model this dispatch actually resolved to; a role overlay that moves the
+    resolved model away from the harness default is exactly the mismatch that
+    must start a fresh session rather than risk resuming the wrong one. Once
+    resumed, the ordinary capture path records both the configuration key and
+    the model onto the roster, the same way it does for any other session.
     """
     configuration_key = agent_configuration_key({"agent": agent})
     sessions = member.get("sessions")
@@ -2293,13 +2330,22 @@ def _session_for_configuration(
     model = str(agent.get("model") or "").strip()
     if not model:
         return None
+    session_id = member.get("session_id")
+    if not session_id:
+        return None
+    recorded_model = str(member.get("session_model") or "").strip()
+    has_capture_history = isinstance(sessions, Mapping) and bool(sessions)
+
+    if not recorded_model and not has_capture_history:
+        if harness_default_model and harness_default_model == model:
+            return str(session_id)
+        return None
+
     legacy_session = None
     if isinstance(sessions, Mapping) and sessions.get(model):
         legacy_session = str(sessions[model])
-    elif str(member.get("session_model") or "").strip() == model and member.get(
-        "session_id"
-    ):
-        legacy_session = str(member["session_id"])
+    elif recorded_model == model:
+        legacy_session = str(session_id)
     if not legacy_session:
         return None
 
