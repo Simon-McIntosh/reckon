@@ -175,6 +175,7 @@ def _node(**overrides) -> crew.TaskNode:
         "section": "§2",
         "done_when": "uv run pytest tests/test_budget.py reports 0 failures",
         "write_paths": ["reckon/budget.py"],
+        "spec_level": "exact",
         "time_budget": "20m",
         "manifest_path": "/tmp/node-a-manifest.md",
     }
@@ -1307,6 +1308,8 @@ def test_cli_dispatch_reports_a_hold_on_its_own_exit_code(home, repo) -> None:
             "uv run pytest tests/test_budget.py reports 0 failures",
             "--write-path",
             "reckon/budget.py",
+            "--spec-level",
+            "exact",
             "--session",
             "sess",
             "--repo",
@@ -1502,6 +1505,61 @@ def _live_pointer(
     return record
 
 
+def _refused_stream_pointer(
+    project: str,
+    run_id: str,
+    *,
+    stream: Path,
+    created_at: str,
+    refusal_at: datetime,
+    include_rate_limit_event: bool = True,
+) -> dict:
+    """Write a live CLI pointer whose stream ends in a real quota refusal."""
+    before = (refusal_at - timedelta(seconds=1)).isoformat().replace("+00:00", "Z")
+    after = refusal_at.isoformat().replace("+00:00", "Z")
+    events = [
+        {
+            "type": "assistant",
+            "timestamp": before,
+            "message": {"content": [{"type": "text", "text": "working"}]},
+        },
+    ]
+    if include_rate_limit_event:
+        events.append(
+            {
+                "type": "rate_limit_event",
+                "rate_limit_info": {"status": "rejected"},
+            }
+        )
+    events.extend(
+        [
+            {
+                "type": "assistant",
+                "timestamp": after,
+                "message": {"content": [{"type": "text", "text": "request refused"}]},
+            },
+            {
+                "type": "result",
+                "is_error": True,
+                "result": "You've hit your usage limit.",
+            },
+        ]
+    )
+    stream.write_text("".join(f"{json.dumps(event)}\n" for event in events))
+    record = {
+        "run_id": run_id,
+        "project": project,
+        "backend": "beta",
+        "launch": "cli",
+        "phase": "working",
+        "log_path": str(stream),
+        "created_at": created_at,
+        "observed_at": created_at,
+    }
+    crew._write_json(crew.pointer_path(run_id), record)
+    return record
+
+
 def test_observing_a_refused_run_does_not_renew_its_hold(home, repo) -> None:
     """Re-reading a refused run's stream must not restamp an old refusal as new.
 
@@ -1511,58 +1569,106 @@ def test_observing_a_refused_run_does_not_renew_its_hold(home, repo) -> None:
     and reasoning separately about what a later observe would do.
     """
     bound = budget.policy(CONFIG)["evidence_shelf_life_minutes"]
-    refused_at = datetime.now(tz=UTC) - timedelta(minutes=bound * 3)
-    stamp = refused_at.isoformat(timespec="seconds").replace("+00:00", "Z")
-    record = _live_pointer(
+    now = datetime.now(tz=UTC)
+    refused_at = now - timedelta(minutes=bound * 3)
+    refusal_stamp = refused_at.isoformat().replace("+00:00", "Z")
+    created_stamp = (
+        (refused_at - timedelta(minutes=bound)).isoformat().replace("+00:00", "Z")
+    )
+    record = _refused_stream_pointer(
         "proj",
         "r-observed-refusal",
-        backend="alpha",
-        budget_block=_spent_with_no_stated_reset(),
-        created_at=stamp,
+        stream=home / "refused.jsonl",
+        created_at=created_stamp,
+        refusal_at=refused_at,
     )
+    crew.observe(record["run_id"], config=CONFIG)
 
-    before = budget.preflight("proj", CONFIG, backends=["alpha"], root=repo)
+    before = budget.preflight("proj", CONFIG, backends=["beta"], root=repo, now=now)
     verdict_before = before["backends"][0]
     assert verdict_before["held"] is False
     assert verdict_before["state"]["headroom"] == "unknown"
+    assert verdict_before["state"]["observed_at"] == refusal_stamp
+    assert verdict_before["state"]["age_source"] == "rate-limit-event"
 
-    for _ in range(10):
+    for _ in range(100):
         crew.observe(record["run_id"], config=CONFIG)
 
     refreshed = crew.read_pointer(record["run_id"])
     # observe() really did rewrite the mutable stamp, so this assertion would
     # fail to distinguish the fix from the defect if it had not.
-    assert refreshed["observed_at"] != stamp
-    assert refreshed["created_at"] == stamp
+    assert refreshed["observed_at"] != refusal_stamp
+    assert refreshed["created_at"] == created_stamp
 
-    after = budget.preflight("proj", CONFIG, backends=["alpha"], root=repo)
+    after = budget.preflight("proj", CONFIG, backends=["beta"], root=repo, now=now)
     verdict_after = after["backends"][0]
 
     assert verdict_after["held"] == verdict_before["held"] is False
     assert verdict_after["state"]["headroom"] == verdict_before["state"]["headroom"]
+    assert verdict_after["state"]["observed_at"] == refusal_stamp
+    assert verdict_after["state"]["age_source"] == "rate-limit-event"
     assert verdict_after["reason"] == verdict_before["reason"]
 
 
 def test_observing_a_fresh_refusal_still_holds(home, repo) -> None:
     """A genuinely fresh refusal keeps holding across a re-read, not just an old one."""
-    refused_at = datetime.now(tz=UTC) - timedelta(seconds=5)
-    stamp = refused_at.isoformat(timespec="seconds").replace("+00:00", "Z")
-    record = _live_pointer(
+    now = datetime.now(tz=UTC)
+    refused_at = now - timedelta(seconds=5)
+    created_at = now - timedelta(hours=3)
+    record = _refused_stream_pointer(
         "proj",
         "r-fresh-refusal",
-        backend="alpha",
-        budget_block=_spent_with_no_stated_reset(),
-        created_at=stamp,
+        stream=home / "fresh-refusal.jsonl",
+        created_at=created_at.isoformat().replace("+00:00", "Z"),
+        refusal_at=refused_at,
     )
+    crew.observe(record["run_id"], config=CONFIG)
 
-    before = budget.preflight("proj", CONFIG, backends=["alpha"], root=repo)
-    assert before["backends"][0]["held"] is True
+    before = budget.preflight("proj", CONFIG, backends=["beta"], root=repo, now=now)[
+        "backends"
+    ][0]
+    assert before["held"] is True
+    assert before["state"]["age_source"] == "rate-limit-event"
+    assert before["state"]["observed_at"] == refused_at.isoformat().replace(
+        "+00:00", "Z"
+    )
 
     crew.observe(record["run_id"], config=CONFIG)
 
-    after = budget.preflight("proj", CONFIG, backends=["alpha"], root=repo)
-    assert after["backends"][0]["held"] is True
-    assert "shelf life" not in after["backends"][0]["reason"]
+    after = budget.preflight("proj", CONFIG, backends=["beta"], root=repo, now=now)[
+        "backends"
+    ][0]
+    assert after["held"] is True
+    assert after["state"]["observed_at"] == before["state"]["observed_at"]
+    assert "shelf life" not in after["reason"]
+
+
+def test_an_unparseable_refusal_time_is_a_stated_lower_bound(home, repo) -> None:
+    """A refusal without a usable rate-limit event is never restamped as fresh."""
+    bound = budget.policy(CONFIG)["evidence_shelf_life_minutes"]
+    now = datetime.now(tz=UTC)
+    created_at = now - timedelta(minutes=bound * 3)
+    created_stamp = created_at.isoformat().replace("+00:00", "Z")
+    record = _refused_stream_pointer(
+        "proj",
+        "r-unparseable-refusal",
+        stream=home / "unparseable-refusal.jsonl",
+        created_at=created_stamp,
+        refusal_at=now,
+        include_rate_limit_event=False,
+    )
+
+    crew.observe(record["run_id"], config=CONFIG)
+    verdict = budget.preflight("proj", CONFIG, backends=["beta"], root=repo, now=now)[
+        "backends"
+    ][0]
+
+    assert verdict["held"] is False
+    assert verdict["state"]["headroom"] == "unknown"
+    assert verdict["state"]["observed_at"] == created_stamp
+    assert verdict["state"]["age_source"] == "created_at-lower-bound"
+    assert "created_at is only a lower bound" in verdict["reason"]
+    assert "never a fresh refusal" in verdict["reason"]
 
 
 def test_observing_a_stated_reset_is_not_aged_by_the_observe(home, repo) -> None:

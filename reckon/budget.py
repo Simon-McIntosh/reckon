@@ -97,6 +97,7 @@ class BudgetState:
     seconds_until_reset: int | None = None
     threshold_status: str | None = None
     observed_at: str | None = None
+    age_source: str | None = None
     source: str = "none"
     expired: bool = False
     detail: str = ""
@@ -112,6 +113,7 @@ class BudgetState:
             "availability": self.availability,
             "availability_cached": self.availability_cached,
             "availability_observed_at": self.availability_observed_at,
+            "age_source": self.age_source,
             "detail": self.detail,
             "expired": self.expired,
             "headroom": self.headroom,
@@ -210,6 +212,7 @@ class _Reading:
     observed_at: str
     when: datetime
     source: str
+    age_source: str
     record_id: str = ""
     attribution: str = ""
 
@@ -295,6 +298,57 @@ def _record_backend(
     return None, "unattributed"
 
 
+def _event_stamp(event: Mapping[str, Any]) -> str | None:
+    """Return an event timestamp only when it is usable as an age anchor."""
+    stamp = event.get("timestamp")
+    return str(stamp) if _parse_stamp(stamp) is not None else None
+
+
+def _refusal_event_stamp(pointer: Mapping[str, Any]) -> str | None:
+    """Locate the newest rejected rate-limit event in a live run's stream.
+
+    Rate-limit records do not consistently carry their own timestamp. Their
+    immutable stream position does, however, place them between timestamped
+    records. The closest surrounding stamp is therefore used; an equally near
+    following record wins because expiring a real hold early is the unsafe
+    direction.
+    """
+    log_path = pointer.get("log_path")
+    if not log_path:
+        return None
+    try:
+        with Path(str(log_path)).open() as stream:
+            events, _malformed = _backends.parse_events(stream)
+    except OSError:
+        return None
+
+    rejected = []
+    for index, event in enumerate(events):
+        info = event.get("rate_limit_info")
+        if (
+            event.get("type") == "rate_limit_event"
+            and isinstance(info, Mapping)
+            and str(info.get("status") or "").casefold() == "rejected"
+        ):
+            rejected.append(index)
+
+    for index in reversed(rejected):
+        if stamp := _event_stamp(events[index]):
+            return stamp
+        distance = 1
+        while index - distance >= 0 or index + distance < len(events):
+            if index + distance < len(events) and (
+                stamp := _event_stamp(events[index + distance])
+            ):
+                return stamp
+            if index - distance >= 0 and (
+                stamp := _event_stamp(events[index - distance])
+            ):
+                return stamp
+            distance += 1
+    return None
+
+
 def _readings(
     project: str,
     *,
@@ -317,17 +371,23 @@ def _readings(
         budget = pointer.get("budget")
         if when is None or not isinstance(budget, Mapping):
             continue
-        # `when` picks the freshest reading and may legitimately track the
-        # mutable observed_at — re-reading a live run is exactly what makes
-        # its data the best available. The age an ageing rule measures is a
-        # different question: the pointer's observed_at is rewritten by
-        # every `observe()`, so anchoring age to it lets a coordinator
-        # investigating a hold renew that hold by looking. created_at is
-        # written once at dispatch and never touched again, and it precedes
-        # every event the run's stream can carry — including whichever one
-        # produced this budget block — so it is a lower bound on the
-        # refusal's own time that survives any number of re-reads.
-        refusal_stamp = pointer.get("created_at") or fresh_stamp
+        # `when` chooses the freshest reading and may track mutable observed_at.
+        # Age is a different fact: it belongs to the refusal event that created
+        # the hold. The event's fixed stream position survives every re-read.
+        # created_at is only the explicit lower-bound fallback when the stream
+        # carries no rejected event with a usable surrounding timestamp.
+        is_refusal = bool(budget.get("refusal")) or str(
+            budget.get("threshold_status") or ""
+        ).casefold() in {"exhausted", "rejected"}
+        refusal_stamp = _refusal_event_stamp(pointer) if is_refusal else None
+        if refusal_stamp is not None:
+            age_source = "rate-limit-event"
+        elif is_refusal:
+            refusal_stamp = pointer.get("created_at") or ""
+            age_source = "created_at-lower-bound"
+        else:
+            refusal_stamp = fresh_stamp
+            age_source = "observed-at"
         found.append(
             _Reading(
                 backend=str(pointer.get("backend") or ""),
@@ -335,6 +395,7 @@ def _readings(
                 observed_at=str(refusal_stamp),
                 when=when,
                 source="live-run",
+                age_source=age_source,
                 record_id=str(pointer.get("run_id") or ""),
                 attribution="record",
             )
@@ -369,6 +430,7 @@ def _readings(
                 observed_at=str(stamp),
                 when=when,
                 source="ledger",
+                age_source="completed-at",
                 record_id=str(record.get("run_id") or ""),
                 attribution=attribution,
             )
@@ -440,6 +502,7 @@ def state_for(
             recorded.budget,
             observed_at=recorded.observed_at,
             source=recorded.source,
+            age_source=recorded.age_source,
             now=moment,
         )
     elif unmatched := sorted(unattributed, key=lambda item: item.when):
@@ -449,6 +512,7 @@ def state_for(
         identity = f"; latest record {latest.record_id}" if latest.record_id else ""
         state.source = "unattributed-ledger"
         state.observed_at = latest.observed_at
+        state.age_source = latest.age_source
         state.detail = (
             f"{count} known headroom {noun} were recorded but could not be "
             f"attributed to a backend{identity}"
@@ -465,6 +529,7 @@ def state_for(
                 block,
                 observed_at=_iso(moment),
                 source="account-surface",
+                age_source="account-observation",
                 now=moment,
             )
         detail = str(block.get("detail") or "")
@@ -481,6 +546,7 @@ def _from_block(
     observed_at: str,
     source: str,
     now: datetime,
+    age_source: str | None = None,
 ) -> BudgetState:
     """Build a state from one budget block, expiring a window that has reset.
 
@@ -532,6 +598,7 @@ def _from_block(
         seconds_until_reset=remaining,
         threshold_status=block.get("threshold_status"),
         observed_at=observed_at,
+        age_source=age_source,
         source=source,
         expired=expired,
         detail=detail,
@@ -584,6 +651,16 @@ def _position(state: BudgetState) -> str:
         f"{state.burn_multiple:.1f}x" if state.burn_multiple is not None else "unknown"
     )
     return f"utilisation {utilisation} with burn multiple {burn}"
+
+
+def _age_basis(state: BudgetState) -> str:
+    """Explain an age fallback whose bound is weaker than an event stamp."""
+    if state.age_source != "created_at-lower-bound":
+        return ""
+    return (
+        "; the stream had no parseable rejected rate-limit event, so created_at "
+        "is only a lower bound on the refusal time, never a fresh refusal"
+    )
 
 
 # ── The decision ────────────────────────────────────────────────────────────
@@ -671,6 +748,7 @@ def decide(
             detail=(
                 f"the reading is {minutes} minutes old, past the {bound:g} minute "
                 "shelf life, and states no reset time to decay through"
+                f"{_age_basis(state)}"
             ),
         )
         verdict["state"] = stale.as_dict()
@@ -678,6 +756,7 @@ def decide(
             f"the only evidence is {minutes} minutes old against a {bound:g} minute "
             "shelf life and names no reset, so it describes the past rather than "
             "now — headroom is unknown until a run records a fresh reading"
+            f"{_age_basis(state)}"
         )
         return verdict
 
@@ -687,6 +766,7 @@ def decide(
         verdict["reason"] = (
             f"backend reports threshold status {state.threshold_status!r}, which "
             f"policy counts as exhausted regardless of utilisation; {_position(state)}"
+            f"{_age_basis(state)}"
         )
         return verdict
 
@@ -702,7 +782,7 @@ def decide(
         margin = "" if purpose == "resume" else f" (ceiling {ceiling}% less reserve)"
         verdict["reason"] = (
             f"{_position(state)} is at or above the {limit}% ceiling for a "
-            f"{purpose}{margin}"
+            f"{purpose}{margin}{_age_basis(state)}"
         )
         return verdict
     verdict["reason"] = f"{_position(state)} is below the {limit}% ceiling"
@@ -835,6 +915,7 @@ def preflight(
                         probe_budget,
                         observed_at=observed_at,
                         source="lane-probe",
+                        age_source="lane-probe",
                         now=moment,
                     )
                 else:
