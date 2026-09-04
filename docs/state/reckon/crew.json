@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T14:36:21",
+  "updated": "2026-09-04T14:38:59",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -717,9 +717,11 @@
         "id": "s15-classifier",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a06c5f-07d5-7d91-bb80-818031a41a25",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06c5f-07d5-7d91-bb80-818031a41a25"
+        },
         "created": "2026-09-04"
       },
       {
@@ -773,6 +775,15 @@
         "sessions": {
           "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06c60-3d17-7441-86de-f0d5297d4c48"
         },
+        "created": "2026-09-04"
+      },
+      {
+        "id": "s15-ledgerguard",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
         "created": "2026-09-04"
       },
       {
@@ -936,6 +947,15 @@
         "sessions": {
           "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06bcb-3bf0-7523-ab22-5e98c2d42256"
         },
+        "created": "2026-09-04"
+      },
+      {
+        "id": "s16-conebtn",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
         "created": "2026-09-04"
       },
       {
@@ -58754,6 +58774,322 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T122623539547-one-published-queue-for-four-kinds",
+        "plan": "back-to-the-canvas",
+        "section": "\u00a73",
+        "node": "one-published-queue-for-four-kinds",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 304,
+                "cached_input_tokens": 943191,
+                "input_tokens": 943497,
+                "output_tokens": 1286,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 944783,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "798e59ac-3d9b-497a-824a-44b7647c524e",
+            "session_id": "ship-s16"
+          },
+          "done_when": "uv run pytest tests/test_spa_reader_queue.py -q passes through the file-URL harness. For each of plans, research, evidence and figures, against an index rendering at least three items: the readout on the first reads 1 / 3; next reaches the second and reads 2 / 3; next again reaches the third and reads 3 / 3; prev from the third reaches the second and reads 2 / 3; the arrow is disabled at each end rather than inert-looking; and with a status filter and a created sort applied the order stepped is that filtered sorted order. A negative case asserts the readout is never 0 / 0 while the index rendered any row",
+          "estimated_hours": 3.0,
+          "goal": "Prev, next and the readout read one published list for every artifact kind",
+          "id": "one-published-queue-for-four-kinds",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T122623539547-one-published-queue-for-four-kinds/manifest.md",
+          "plan": "back-to-the-canvas",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "docs/ui/shell-titlebar.jsx",
+            "docs/ui/shell-plans.jsx",
+            "tests/test_spa_reader_queue.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-queue",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T12:26:33Z",
+        "completed_at": "2026-09-04T12:37:05Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 632,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 632,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "fee90bd65e02f65de47af865078fb0497f30b142",
+        "commits": [
+          "46e5976b385e08ddf6b50b044bc3e1e8bca3e365"
+        ],
+        "changed_lines": {
+          "added": 188,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_reader_queue.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T122623539547-one-published-queue-for-four-kinds/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T122623539547-one-published-queue-for-four-kinds/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06c62-8fa0-7d23-8839-e366d17831f9",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 5354880,
+            "cached_input_tokens_cumulative": 5354880,
+            "input_tokens": 5532459,
+            "input_tokens_cumulative": 5532459,
+            "output_tokens": 23800,
+            "output_tokens_cumulative": 23800,
+            "reasoning_output_tokens": 7980,
+            "reasoning_output_tokens_cumulative": 7980
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 31780,
+          "peak_input_tokens": 10887339
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16/one-published-queue-for-four-kinds",
+          "session_id": "01a06c62-8fa0-7d23-8839-e366d17831f9",
+          "session_source": "pointer",
+          "retained_at": "2026-09-04T12:37:05Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_spa_reader_queue.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260904T122232760989-cot-live-pid-outranks-terminal",
+        "plan": "crew-observability-truth",
+        "section": "\u00a74",
+        "node": "cot-live-pid-outranks-terminal",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 3721,
+                "cached_input_tokens": 496428,
+                "input_tokens": 500151,
+                "output_tokens": 1026,
+                "reasoning_output_tokens": 217,
+                "total_tokens": 501177,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "uv run --no-sync pytest tests/test_crew_recovery.py -q passes at zero failures against its base of 3 failed: a pointer whose manifest reads a terminal word but whose process is alive classifies as working, asserted for every terminal word the vocabulary holds rather than for blocked alone; a pointer whose process is gone still classifies from its manifest exactly as today, so the change adds no optimism; and test_observe_and_watch_render_failure_only_after_the_process_stops is reconciled with the live recheck rather than deleted, since its intent that failure must not render while the process lives agrees with this change while its mechanism of retaining a stale alive observation is the remembered-liveness defect this plan removes - rewrite it to the intent, keeping its comment honest about which half changed",
+          "estimated_hours": 2.0,
+          "goal": "Make a live process outrank every self-reported terminal manifest status, not only blocked",
+          "id": "cot-live-pid-outranks-terminal",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T122232760989-cot-live-pid-outranks-terminal/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_crew_recovery.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s15-classifier",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T12:22:41Z",
+        "completed_at": "2026-09-04T12:32:39Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 598,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 598,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "5c5a62e28cefbf5a989a9b78f8e8c5c29e1a7b16",
+        "commits": [
+          "06e7a5f4e0851ebf95a7bb2c72fb0bc7096e695e"
+        ],
+        "changed_lines": {
+          "added": 42,
+          "removed": 39,
+          "files": 2
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "uv run --no-sync pytest tests/test_crew_recovery.py -q",
+          "exit_status": 0,
+          "log_path": null,
+          "log_digest": "62 passed, 0 failed in 0.56s"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T122232760989-cot-live-pid-outranks-terminal/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06c5f-07d5-7d91-bb80-818031a41a25",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 13847936,
+            "cached_input_tokens_cumulative": 13847936,
+            "input_tokens": 14047785,
+            "input_tokens_cumulative": 14047785,
+            "output_tokens": 22104,
+            "output_tokens_cumulative": 22104,
+            "reasoning_output_tokens": 7470,
+            "reasoning_output_tokens_cumulative": 7470
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2400,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 1177,
+              "external_wait": null,
+              "log_age_seconds": 492,
+              "log_fresh": true,
+              "manifest_commits": [
+                "[\"8a87d077909b780bbf346287d2033e51ba1d6228\"]; changed_paths: [\"docs/ui/graph.css\"",
+                "\"docs/ui/reader.css\"",
+                "\"docs/ui/styles.css\"",
+                "\"tests/test_spa_vertical_scroll.py\"]"
+              ],
+              "manifest_derived": false,
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T120255587186-every-view-scrolls/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260904T120255587186-every-view-scrolls --gate <verdict> --commit [\"8a87d077909b780bbf346287d2033e51ba1d6228\"]; changed_paths: [\"docs/ui/graph.css\" --commit \"docs/ui/reader.css\" --commit \"docs/ui/styles.css\" --commit \"tests/test_spa_vertical_scroll.py\"]",
+              "node": "every-view-scrolls",
+              "phase": "complete",
+              "plan": "back-to-the-canvas",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260904T120255587186-every-view-scrolls",
+              "session": "ship-s16",
+              "terminal_age_seconds": 508,
+              "terminal_at": "2026-09-04T12:14:10Z",
+              "wait_age_seconds": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16/every-view-scrolls"
+            }
+          ]
+        },
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 29574,
+          "peak_input_tokens": 27895721
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/cot-live-pid-outranks-terminal",
+          "session_id": "01a06c5f-07d5-7d91-bb80-818031a41a25",
+          "session_source": "pointer",
+          "retained_at": "2026-09-04T12:32:39Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_crew_recovery.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -58926,6 +59262,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 973
+    "_version": 978
   }
 }
