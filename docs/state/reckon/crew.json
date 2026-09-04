@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T14:27:11",
+  "updated": "2026-09-04T14:28:34",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -905,9 +905,11 @@
         "id": "s15-specfix",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a06c5d-3bab-78b3-93f6-b5d31845a15c",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06c5d-3bab-78b3-93f6-b5d31845a15c"
+        },
         "created": "2026-09-04"
       },
       {
@@ -57818,6 +57820,223 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T122036078754-dcdn-spec-level-fixture-sweep",
+        "plan": "dispatch-cost-per-durable-node",
+        "section": "\u00a75",
+        "node": "dcdn-spec-level-fixture-sweep",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 547,
+                "cached_input_tokens": 493790,
+                "input_tokens": 494339,
+                "output_tokens": 1519,
+                "reasoning_output_tokens": 179,
+                "total_tokens": 495858,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "uv run --no-sync pytest tests/test_flight.py -q passes at zero failures against its base of 1 failed and 71 passed, with test_retired_backend_concurrency_is_ignored_with_a_runtime_warning green because its fixture declares a spec level rather than because the requirement was relaxed; assert in the same file that a fixture omitting spec_level is still refused, so the requirement cannot be weakened to make a fixture pass",
+          "estimated_hours": 0.5,
+          "goal": "Declare a specification level in every remaining test fixture the required-spec-level change refused",
+          "id": "dcdn-spec-level-fixture-sweep",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T122036078754-dcdn-spec-level-fixture-sweep/manifest.md",
+          "plan": "dispatch-cost-per-durable-node",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "25m",
+          "write_paths": [
+            "tests/test_flight.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s15-specfix",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T12:20:44Z",
+        "completed_at": "2026-09-04T12:27:24Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 400,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 400,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "0a1b8b2c4213325c73f0bb85be52bc01503df50f",
+        "commits": [
+          "eedf5b892fbcb96fdeb37ebd4c8d1df00d7a4baa"
+        ],
+        "changed_lines": {
+          "added": 18,
+          "removed": 0,
+          "files": 1
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "uv run --no-sync pytest tests/test_flight.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T122036078754-dcdn-spec-level-fixture-sweep/after-test-flight.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T122036078754-dcdn-spec-level-fixture-sweep/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06c5d-3bab-78b3-93f6-b5d31845a15c",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 4934272,
+            "cached_input_tokens_cumulative": 4934272,
+            "input_tokens": 5035389,
+            "input_tokens_cumulative": 5035389,
+            "output_tokens": 13322,
+            "output_tokens_cumulative": 13322,
+            "reasoning_output_tokens": 4296,
+            "reasoning_output_tokens_cumulative": 4296
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2100,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 1086,
+              "external_wait": null,
+              "log_age_seconds": 670,
+              "log_fresh": true,
+              "manifest_commits": [
+                "[\"85844ecc946c16769f352f1360cededafb4f5289\"]; changed_paths: [\"docs/ui/state-loader.js\"",
+                "\"tests/test_spa_state_boundary.py\"]"
+              ],
+              "manifest_derived": false,
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T120228086544-the-loader-carries-what-the-server-sends/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260904T120228086544-the-loader-carries-what-the-server-sends --gate <verdict> --commit [\"85844ecc946c16769f352f1360cededafb4f5289\"]; changed_paths: [\"docs/ui/state-loader.js\" --commit \"tests/test_spa_state_boundary.py\"]",
+              "node": "the-loader-carries-what-the-server-sends",
+              "phase": "working",
+              "plan": "derived-state-parity",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260904T120228086544-the-loader-carries-what-the-server-sends",
+              "session": "ship-s16",
+              "terminal_age_seconds": 701,
+              "terminal_at": "2026-09-04T12:08:59Z",
+              "wait_age_seconds": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16/the-loader-carries-what-the-server-sends"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2400,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 1059,
+              "external_wait": null,
+              "log_age_seconds": 374,
+              "log_fresh": true,
+              "manifest_commits": [
+                "[\"8a87d077909b780bbf346287d2033e51ba1d6228\"]; changed_paths: [\"docs/ui/graph.css\"",
+                "\"docs/ui/reader.css\"",
+                "\"docs/ui/styles.css\"",
+                "\"tests/test_spa_vertical_scroll.py\"]"
+              ],
+              "manifest_derived": false,
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T120255587186-every-view-scrolls/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260904T120255587186-every-view-scrolls --gate <verdict> --commit [\"8a87d077909b780bbf346287d2033e51ba1d6228\"]; changed_paths: [\"docs/ui/graph.css\" --commit \"docs/ui/reader.css\" --commit \"docs/ui/styles.css\" --commit \"tests/test_spa_vertical_scroll.py\"]",
+              "node": "every-view-scrolls",
+              "phase": "working",
+              "plan": "back-to-the-canvas",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260904T120255587186-every-view-scrolls",
+              "session": "ship-s16",
+              "terminal_age_seconds": 390,
+              "terminal_at": "2026-09-04T12:14:10Z",
+              "wait_age_seconds": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16/every-view-scrolls"
+            }
+          ]
+        },
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 17618,
+          "peak_input_tokens": 9969661
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/dcdn-spec-level-fixture-sweep",
+          "session_id": "01a06c5d-3bab-78b3-93f6-b5d31845a15c",
+          "session_source": "pointer",
+          "retained_at": "2026-09-04T12:27:24Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_flight.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -57990,6 +58209,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 964
+    "_version": 966
   }
 }
