@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 </head>
 <body>
   <main class="plan-doc">
@@ -258,6 +258,67 @@
       refusals and help can reach every verb this plan adds. Asserted by
       collecting the refusal messages the surface can emit and requiring each to
       name a verb or an explicit absence.
+    </p>
+
+    <h2 id="s7">§7 — A worker can find the worker it needs to talk to</h2>
+    <p>
+      Six coordinators were live on this workstation across four repositories on
+      2026-09-04, and no tool could say so. Every cross-session message this
+      night was addressed by a name someone happened to remember, and every
+      question of the form <em>whose run is that</em> was answered by reading
+      another session's pointer files by hand — a boundary no coordinator should
+      have to cross to learn who owns a run.
+    </p>
+    <p>
+      The cost is not hypothetical. This session told a nova coordinator to
+      resume a run that belonged to <strong>a different nova coordinator</strong>
+      — nova had two, <code>s18-pta</code> and <code>s19-relaunch</code>, and
+      nothing surfaced that. They corrected it, and the correct answer was
+      already on disk: the run's pointer named its session, its project and its
+      repository. A peer separately guessed a run id from memory of dispatch
+      order and got a microsecond timestamp wrong, because the only ways to
+      learn one were to glob a config directory or parse a committed ledger.
+    </p>
+    <p>
+      <strong>The join already exists and the tool is a thin read.</strong> Every
+      live pointer carries the coordinator's own session label, the project, the
+      plan its node serves, and the repository in its worktree path. Grouping
+      those four fields produces the directory directly, demonstrated against
+      the live fleet before this section was written. What the pointer cannot
+      supply is the harness address a message is sent to, which arrives on every
+      cross-session message as its sender socket — so the tool reports the
+      reckon-side identity it knows and the transport identity where it has seen
+      one, and never invents the second from the first.
+    </p>
+    <p>
+      Done when one read answers, for a project or for the whole workstation,
+      every live coordinator session with its project, its repository, the plans
+      or sprint it is shipping, and its live node count; when a run can be
+      resolved to its owning session without reading another session's files;
+      when a node id rather than a run id is enough to identify a run, since the
+      node id is the human handle and the run id carries a timestamp nobody can
+      reconstruct; when the answer distinguishes a session that is dispatching
+      from one whose runs are all terminal, because those want different
+      messages; and when the transport address is reported only where it has
+      been observed rather than derived from a name. Asserted through the read a
+      coordinator calls, over pointers built the way dispatch writes them,
+      including the two-coordinators-in-one-project case that caused the
+      misaddressed instruction.
+    </p>
+    <p>
+      <strong>And the default is collaboration, not silence.</strong> A finding
+      about another repository is worth more to the session working in it than to
+      the one that found it, and this night's evidence is one-sided: every
+      correction that mattered came from a peer measuring something the author
+      could not see. A stale-base warning caught a merge misreading inherited
+      ancestry as delivered work. A count of five-of-six dead-process claims
+      holding unintegrated work stopped a data-loss predicate shipping. A
+      measurement of zero file-writing tool calls corrected a loss claim in the
+      other direction. Each arrived unbidden, and each was cheaper to send than
+      to rediscover. So a coordinator that finds a defect touching a repository
+      it does not own reports it to the session working there when one is live —
+      as a finding, never as an instruction, and never as authority, since a
+      peer cannot authorise work in a repository that is not theirs.
     </p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
