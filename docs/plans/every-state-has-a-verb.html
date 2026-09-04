@@ -24,8 +24,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="22">
-<meta name="plan-impl" content="0.6">
+<meta name="plan-version" content="23">
+<meta name="plan-impl" content="0.7">
+<meta name="plan-commits" content="e5f4ef4">
 </head>
 <body>
   <main class="plan-doc">
@@ -88,44 +89,26 @@
       </figcaption>
     </figure>
 
-    <h2 id="s2">§2 — A follower never runs code older than the fleet it watches</h2>
-    <p>
-      A <code>crew follow</code> process holds the module code it started with
-      for its entire life. When a recovery sweep landed and was wired into that
-      loop, every follower on the workstation had been started hours earlier, so
-      not one of them called it. Two independent sessions were simultaneously
-      unable to perform a recovery they had just gained, and neither could see
-      that from the pane — one of them left a run blocked for five hours and
-      forty-two minutes with its limit long lifted.
-    </p>
-    <p>
-      The failure is silent in the direction that costs work. A stale renderer
-      draws a wrong column and somebody notices; a stale follower recovers
-      nothing and is indistinguishable from a fleet with nothing to recover.
-      Restarting is the known remedy, it works, and it is an operator habit with
-      no bound check — which is the same class of control this repository has
-      already watched fail twice in a day.
-    </p>
-    <p>
-      Three shapes, in the order they should be tried. The follower detects that
-      the package it imported is older than the one on disk and re-execs itself
-      in place, keeping its session registration and its stdout so a watching
-      pane never sees a gap. Failing that, the watch seat publishes a version
-      stamp each cycle and a follower reading a newer stamp re-execs. Failing
-      both, the follower says once, in the pane, that it is stale and how to
-      cycle it — which is strictly worse than the first two but strictly better
-      than silence.
-    </p>
-    <p>
-      Done when a follower running while new crew code lands performs the new
-      behaviour without an operator restarting it; when the transition costs no
-      gap in the pane and no lost session registration; when a follower that
-      cannot re-exec says so explicitly rather than continuing quietly; and when
-      no skill text anywhere instructs a reader to restart a follower after a
-      merge. Asserted by landing a change to the swept behaviour under a running
-      follower and requiring the new behaviour, not by asserting that a re-exec
-      function exists.
-    </p>
+    <section id="s2" class="section-landed">
+      <header><span class="badge badge-shipped">&#10003; landed 2026-09-04</span>
+        <h2>&#167;2 &mdash; A follower never runs code older than the fleet it watches</h2></header>
+      <p class="landed-summary">The first of the three shapes landed at <code>07:02</code> in
+        <code>e5f4ef4</code>: the follower compares <code>follower_code_stamp()</code> &mdash;
+        a hash over <code>cli.py</code> and <code>crew/*.py</code> mtimes and sizes &mdash;
+        against the stamp it started with, at a one-second cadence, and re-execs itself
+        through the <code>sys.path</code> root that supplied the imported package, carrying a
+        reader checkpoint across the replacement. The third shape is the failure path rather
+        than the mechanism: when <code>os.execv</code> itself fails it prints that it is stale
+        and the exact command to cycle it.
+        <strong>Asserted the way this section demanded &mdash; on a running follower, not on
+        the existence of a function.</strong> This session's own follower was started from the
+        console script at 14:15:24 and, after five crew modules landed beneath it, its argv is
+        the launcher form while its pid, start time, session registration and stdout are all
+        unchanged. <code>os.execv</code> replaces the image in place, so the argv is the only
+        tell &mdash; an unchanged pid is consistent with a reload, not evidence against one.
+        Full record:
+        <a href="/reckon/evidence/archive/every-state-has-a-verb-landed#s2-follower-reload">§2 landed</a>.</p>
+    </section>
 
     <h2 id="s3">§3 — Waiting on an external job is a state, not a blocker</h2>
     <p>
@@ -411,6 +394,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260904T044732847265-a-follower-never-runs-stale-code" data-who="codex-b" data-when="2026-09-04T05:04:22Z">
     <div class="r-comment-body"><p>A running follower reloads from the imported installation when its source advances and emits the new behaviour - asserted by patching the formatter and requiring the live process to render the changed output it did not render before - with no event lost or duplicated, the same pid and its registration intact; a re-exec that cannot proceed reports once and keeps delivering.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-esv-follower-reload-measured-live" data-who="reckon-ship" data-when="2026-09-04T14:54:00Z">
+    <div class="r-comment-body">Landed under commit e5f4ef4 at 07:02, and measured on a running follower rather than on a function's existence, which is what this section's done-when explicitly required. Evidence from this session: my follower was started from the console script at 14:15:24; five crew modules then landed beneath it (promotion.py, prompts.py, query.py, recovery.py and ledger.py); its argv is now the launcher form python3 -c importing reckon.cli, while its pid 4176213, its start time, its session registration and its stdout are all unchanged, and my monitor received transitions continuously across the whole period. So the reload costs no gap in the pane and no lost registration. One reading trap worth recording because I fell into it: os.execv replaces the process image IN PLACE, so pid and start time survive a reload and an unchanged pid is consistent with reloading rather than evidence against it - the argv is the only tell. THE LIMITATION IS REAL AND BELONGS IN THIS RECORD. The mechanism cannot retrofit itself into a process that predates it, because the code that would re-exec was never in that image. Measured on the peer coordinator's follower the same afternoon: started 05:48:52, seventy-four minutes before e5f4ef4, still carrying the plain console-script argv nine hours later, and therefore missing every crew behaviour landed today - including 6af7656, the live-view recheck that is the fix for the exact failure that session had reported to me, terminal rows sitting unnoticed while it believed it was waiting. That is this section's own motivating failure reproduced with the fix in place, and it is a property of the chosen shape rather than a bug in it: self-reexec protects followers started after it and no earlier. The operational consequence is that a fleet adopting this needs one cycling pass at adoption, once, and never again - which is worth stating in the skill text rather than leaving each session to discover. The fourth clause of the done-when, that no skill text instructs a reader to restart a follower after a merge, is satisfied: the ship skill now states that a long-lived follower reloads the installed code when it advances and reports explicitly when a reload fails.</div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260904T065748218334-a-worker-can-find-the-worker-it-needs" data-who="codex-k" data-when="2026-09-04T07:14:15Z">
     <div class="r-comment-body"><p>One read names every live coordinator with its project, repository, plans and node count, resolves a run to its owner from a node id, reports transport only where observed, and lands as a CLI verb and a view on the existing crew tool; the ship skill makes a cross-repository finding the default.</p></div>
