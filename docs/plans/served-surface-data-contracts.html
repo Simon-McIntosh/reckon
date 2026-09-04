@@ -22,14 +22,14 @@
   <meta name="plan-tags" content="reckon-tooling,spa">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-blocks" content="artifact-feeds-and-reader,fleet-home">
-  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,design/reckon-spa-handoff.md,reckon/figures.py,tests/test_serve_figure_rows.py">
+  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,design/reckon-spa-handoff.md,reckon/figures.py,reckon/fleet_index.py,tests/test_serve_figure_rows.py,tests/test_fleet_index.py">
   <title>What the Server Must Serve Before the Canvas Can Land | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="3">
-<meta name="plan-commits" content="4611f38">
-<meta name="plan-impl" content="0.5">
+<meta name="plan-version" content="5">
+<meta name="plan-commits" content="4611f38,ec16a7a">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
 <main class="plan-doc">
@@ -141,6 +141,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260903T215312089962-figure-rows-and-edited-stamps" data-who="s16-serve" data-when="2026-09-03T23:55:03.564Z">
     <div class="r-comment-body"><p>discovery emits one figure row per PNG and SVG under docs/figures with slug, dims and for_plan read from the file headers with no imaging dependency, and every inventory row of every type now carries an ISO-8601 edited stamp taken from the last git commit or the mtime when the path is dirty: 13 passed</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260904T035040670936-fleet-index-live-counts" data-who="s16-serve" data-when="2026-09-04T04:19:52.051Z">
+    <div class="r-comment-body"><p>every mounted project's fleet-index row is computed from its own repository rather than a superseded index file, including a thirty-day plan-edit series that reports an empty list for a silent project so the surface can tell silence from a flat line: 70 passed (8 new plus 62 regression)</p></div>
 </div>
 </section>
 </main>
