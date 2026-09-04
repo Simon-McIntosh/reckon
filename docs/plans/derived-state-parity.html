@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-commits" content="42104d3,f5fbac7,77d0edf">
 <meta name="plan-impl" content="0.4">
 </head>
@@ -251,7 +251,10 @@
     <div class="r-comment-body"><p>the endpoint rows now reach window.STATE through ready_set_view, so the Graph tab renders from the roadmap's enumeration rather than its own walk: the gate that read 13 passed 2 failed now reads 16 passed, plus the adjacent projection-composition gate. An agent can now enumerate every endpoint a human sees, including the unnamed ones no handle addresses</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260904T094130968040-endpoint-enumeration" data-who="s16-endpoints" data-when="2026-09-04T09:55:15Z">
-    <div class="r-comment-body"><p>the work is correct and merged: roadmap enumerates every dependency endpoint with its closure metrics, named or not, with 47 regressions and 5 new endpoint-contract tests passing. The node was malformed by its coordinator — the fence named the computation and the consuming component while the projection carrying the rows to window.STATE sat outside it, so the two rendered cases could not pass from inside. The identical scoping error had been diagnosed and fixed fifteen minutes earlier on this plan&#x27;s other derivation and was repeated here; the rule is now stated in the plan as section 1c so the remaining nodes inherit it rather than depending on the coordinator remembering</p></div>
+    <div class="r-comment-body"><p>the work is correct and merged: roadmap enumerates every dependency endpoint with its closure metrics, named or not, with 47 regressions and 5 new endpoint-contract tests passing. The node was malformed by its coordinator — the fence named the computation and the consuming component while the projection carrying the rows to window.STATE sat outside it, so the two rendered cases could not pass from inside. The identical scoping error had been diagnosed and fixed fifteen minutes earlier on this plan's other derivation and was repeated here; the rule is now stated in the plan as section 1c so the remaining nodes inherit it rather than depending on the coordinator remembering</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260904T120228086544-the-loader-carries-what-the-server-sends" data-who="s16-loader" data-when="2026-09-04T12:09:31Z">
+    <div class="r-comment-body"><p>window.STATE now carries endpoints and ready_set from the discovery payload, closing the third hop nobody&#x27;s fence had included: roadmap computed the rows, serve.py projected them, and the loader assembled state from eighteen named fields with neither among them, so graph.jsx read undefined and rendered the no-dependency empty state for a project with 23 endpoints. The served loader carries the field and the Graph tab renders its index rather than the empty state</p></div>
 </div>
 </section>
 </main>
