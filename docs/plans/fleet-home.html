@@ -22,14 +22,14 @@
   <meta name="plan-tags" content="reckon-tooling,spa">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-depends-on" content="spa-shell-scope-and-visibility,served-surface-data-contracts">
-  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,design/reckon-spa-handoff.md,docs/ui/home.jsx,docs/ui/home.css,tests/test_spa_home_surface.py,tests/test_spa_home_geometry.py">
+  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,design/reckon-spa-handoff.md,docs/ui/home.jsx,docs/ui/home.css,tests/test_spa_home_surface.py,tests/test_spa_home_geometry.py,docs/figures/fleet-home/after/capture-index.json">
   <title>A Fleet Home That Hides at Zero | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="7">
-<meta name="plan-commits" content="6481026,2b3b276,2125e17">
-<meta name="plan-impl" content="0.75">
+<meta name="plan-version" content="9">
+<meta name="plan-commits" content="6481026,2b3b276,2125e17,572774c,db42211">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
 <main class="plan-doc">
@@ -166,6 +166,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260904T071406874653-stale-cockpit-references-in-tests" data-who="s16-stale" data-when="2026-09-04T07:25:17Z">
     <div class="r-comment-body"><p>the three test references the cockpit retirement left behind now name the live contracts: the project-visibility assertions read the home and topbar surfaces instead of deleted overview helpers, and the containment harness traverses only routable surfaces so its browser measurement executes rather than waiting on the retired .r-overview-project-row, which greps to 0. 11 passed, 4 skipped</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260904T080540876315-home-captures" data-who="s16-homeshots" data-when="2026-09-04T08:15:27Z">
+    <div class="r-comment-body"><p>four captures of the landed fleet home at 1374 and 1920 with an index. Coordinator read home-1374 directly: the stat band reads 3 projects moving, 39 plans, 9 active, 2 in flight, 3 held, 20 shipped over 4 of 4 shown; rows are ordered by last edit with streaklines reading 23 edits and 14 edits, while imas-ambix renders the no-recorded-activity text and no polyline, which is the decision that distinguishes silence from a flat series; the dormant strip reports its count and In flight sits beside Just landed with no horizontal scroll</p></div>
 </div>
 </section>
 </main>
