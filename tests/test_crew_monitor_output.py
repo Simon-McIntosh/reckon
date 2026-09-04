@@ -224,7 +224,7 @@ def test_the_filter_stays_quiet_through_progress_carrying_a_blocked_count(
     transition's own state cannot express that mistake.
     """
     event = _transition(state, blocked=3)
-    assert "blocked" in recovery.format_watch_transition(event)
+    assert " 3b " in recovery.format_watch_transition(event)
     assert not _selected(event)
 
 
@@ -273,7 +273,7 @@ def test_watch_payloads_carry_the_line_that_attaches_this_session(
 def test_every_emitted_state_lands_in_exactly_one_fleet_bucket() -> None:
     """A figure a reader adds up has to add up.
 
-    The three summary buckets partition the fleet, so a state that belongs to
+    The four summary buckets partition the fleet, so a state that belongs to
     none of them silently vanishes from every total while the line still prints
     — the same shape as the routing gap that left `stalled` unmatched by any
     filter. Read the states out of the function that emits them rather than
@@ -288,11 +288,15 @@ def test_every_emitted_state_lands_in_exactly_one_fleet_bucket() -> None:
         "working": set(recovery.FLEET_WORKING_STATES),
         "blocked": set(recovery.FLEET_BLOCKED_STATES),
         "unpromoted": set(recovery.FLEET_UNPROMOTED_STATES),
+        "waiting": set(recovery.FLEET_WAITING_STATES),
     }
     for left, right in (
         ("working", "blocked"),
         ("working", "unpromoted"),
+        ("working", "waiting"),
         ("blocked", "unpromoted"),
+        ("blocked", "waiting"),
+        ("unpromoted", "waiting"),
     ):
         assert not buckets[left] & buckets[right], f"{left} and {right} overlap"
 
@@ -308,7 +312,8 @@ def test_a_blocked_or_delivered_run_is_not_counted_as_working() -> None:
         "r-2": {"run_id": "r-2", "state": "blocked"},
         "r-3": {"run_id": "r-3", "state": "complete"},
         "r-4": {"run_id": "r-4", "state": "stalled"},
+        "r-5": {"run_id": "r-5", "state": "waiting"},
     }
     counts = recovery._fleet_counts(fleet)
-    assert counts == {"working": 1, "blocked": 2, "unpromoted": 1}
+    assert counts == {"working": 1, "blocked": 2, "unpromoted": 1, "waiting": 1}
     assert sum(counts.values()) == len(fleet), "the buckets must account for the fleet"
