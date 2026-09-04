@@ -203,3 +203,31 @@ def test_escape_path_exits_focus_without_routing_or_clearing_selection() -> None
     assert "setReadingMode" in escape
     assert "nav(" not in escape
     assert "route.slug" not in escape
+
+
+def test_reader_steps_the_published_rendered_order_instead_of_rederiving_it() -> None:
+    list_rows = [
+        {"key": "first", "slug": "first", "type": "plan"},
+        {"key": "second", "slug": "second", "type": "plan"},
+        {"key": "third", "slug": "third", "type": "plan"},
+    ]
+    position = _evaluate(
+        ["readerListPosition"],
+        f"readerListPosition({json.dumps(list_rows)}, 'second', 'second')",
+        PLAN,
+    )
+    target = _evaluate(
+        ["readerListPosition", "readerStepTarget"],
+        f"readerStepTarget({json.dumps(list_rows)}, 'second', 'second', 1)",
+        PLAN,
+    )
+
+    assert position == {"current": 2, "total": 3}
+    assert target == {"key": "third", "slug": "third", "type": "plan"}
+    reader = _function_source("Plan", PLAN)
+    assert 'document.addEventListener("keydown", handleReaderKey, true)' in reader
+    assert "matches?.(\"input, textarea, select, [contenteditable='true']\")" in reader
+    assert "document.activeElement?.matches?." in reader
+    assert "focusPosition" not in reader
+    assert "onPage" not in reader
+    assert "setReaderSelectionKey(target.key)" in reader

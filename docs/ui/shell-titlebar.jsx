@@ -11,6 +11,140 @@ const LIFECYCLE_STATUSES = [
   { value: "abandoned",  label: "Abandoned",  group: "done"     },
 ];
 
+function canonicalReaderKind(value) {
+  const kind = String(value || "plan").toLowerCase();
+  return kind === "doc" ? "research" : kind;
+}
+
+function readerReferenceSlug(value) {
+  return String(value || "").split("#", 1)[0].split(":").pop();
+}
+
+function readerPlanFor(item, state) {
+  const kind = canonicalReaderKind(item?.type);
+  const parentRef = kind === "plan"
+    ? item?.slug
+    : kind === "research"
+      ? (item?.informs || [])[0]
+      : kind === "evidence"
+        ? item?.evidence_for?.[0] || item?.verifies?.[0]
+        : item?.for_plan || item?.forPlan;
+  const slug = readerReferenceSlug(parentRef);
+  return (state?.inventory || []).find(candidate =>
+    canonicalReaderKind(candidate.type) === "plan" && candidate.slug === slug
+  ) || null;
+}
+
+function readerSourceTrail(item, state) {
+  if (!item) return [];
+  const kind = canonicalReaderKind(item.type);
+  const plan = readerPlanFor(item, state);
+  const trail = [];
+  if (plan?.sprint) {
+    trail.push({ key: `sprint:${plan.sprint}`, label: plan.sprint, view: "sprint", sprint: plan.sprint });
+  }
+  if (plan && kind !== "plan") {
+    trail.push({ key: `plan:${plan.slug}`, label: plan.title || plan.slug, view: "plan", slug: plan.slug });
+  }
+  trail.push({
+    key: `${kind}:${item.nav_key || item.slug}`,
+    label: item.title || item.slug,
+    view: kind,
+    slug: item.slug,
+  });
+  return trail.map((segment, index) => ({
+    ...segment,
+    navigates: index < trail.length - 1,
+  }));
+}
+
+function readerMetadataRows(item, project) {
+  if (!item) return [];
+  const kind = canonicalReaderKind(item.type);
+  const rows = kind === "plan"
+    ? [
+        ["status", item.effective_status || item.status],
+        ["impl", item.impl !== null && item.impl !== undefined && String(item.impl).trim() !== "" && Number.isFinite(Number(item.impl)) ? `${Math.round(Number(item.impl) * 100)}%` : ""],
+        ["effort", item.effort_hours == null ? "" : `${item.effort_hours} worker-h`],
+        ["wall", item.wall_clock_hours == null ? "" : `${item.wall_clock_hours}h`],
+        ["sprint", item.sprint],
+        ["repo", item.repository || project],
+      ]
+    : [
+        [kind === "research" ? "verdict" : kind === "evidence" ? "gate" : "dimensions", kind === "research" ? item.verdict : kind === "evidence" ? (item.gate || item.verdict) : item.dims],
+        ["created", item.created],
+        ["edited", item.edited || item.last],
+        ["repo", item.repository || project],
+      ];
+  return rows.filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== "");
+}
+
+const renderedReaderLists = new Map();
+
+function publishRenderedReaderList(kind, items) {
+  const canonicalKind = canonicalReaderKind(kind);
+  const list = Array.isArray(items) ? items.filter(Boolean).map(item =>
+    typeof item === "string" ? { key: item, slug: readerReferenceSlug(item), type: canonicalKind } : {
+      key: item.nav_key || item.key || item.slug,
+      slug: item.slug || readerReferenceSlug(item.nav_key || item.key),
+      type: canonicalReaderKind(item.type || canonicalKind),
+    }
+  ).filter(item => item.key && item.slug) : [];
+  renderedReaderLists.set(canonicalKind, list);
+  window.dispatchEvent(new CustomEvent("reckon:reader-list-published", {
+    detail: { kind: canonicalKind, count: list.length },
+  }));
+  return list;
+}
+
+function readerListFor(kind) {
+  return renderedReaderLists.get(canonicalReaderKind(kind)) || [];
+}
+
+window.addEventListener("reckon:rendered-reader-list", event => {
+  publishRenderedReaderList(event.detail?.kind, event.detail?.items);
+});
+
+function ReaderChrome({ item, state, project, focusMode, position, onNav, onBack, onStep, onToggleFocus }) {
+  const kind = canonicalReaderKind(item?.type);
+  const trail = readerSourceTrail(item, state);
+  const metadata = readerMetadataRows(item, project);
+  const copyValue = kind === "plan" ? `/reckon-ship ${item.slug}` : item.slug;
+  const copy = () => {
+    navigator.clipboard?.writeText(copyValue);
+    window.flashSaved?.("reader source copied");
+  };
+  return (
+    <>
+      <nav className="r-reading-controls" aria-label="Reader controls">
+        <button type="button" className="r-reading-back" onClick={onBack}>← {kind === "figure" ? "Figures" : `${kind[0].toUpperCase()}${kind.slice(1)}`}</button>
+        <span className="r-reading-paging">
+          <button type="button" onClick={() => onStep(-1)} aria-label="Previous item in rendered list" disabled={position.current <= 1}>‹</button>
+          <span className="r-reading-position" role="status">{position.current} / {position.total}</span>
+          <button type="button" onClick={() => onStep(1)} aria-label="Next item in rendered list" disabled={position.current < 1 || position.current >= position.total}>›</button>
+        </span>
+        <span className="r-reading-trail" aria-label="Source trail">
+          {trail.map((segment, index) => (
+            <React.Fragment key={segment.key}>
+              {index > 0 && <span className="r-reading-trail-separator" aria-hidden="true">/</span>}
+              {segment.navigates ? (
+                <button type="button" className="r-reading-trail-link" onClick={() => onNav(segment)}>{segment.label}</button>
+              ) : (
+                <span className="r-reading-trail-current" aria-current="page">{segment.label}</span>
+              )}
+            </React.Fragment>
+          ))}
+        </span>
+        <button type="button" className="r-reading-focus" onClick={onToggleFocus} aria-pressed={focusMode} title={focusMode ? "Leave full screen (Escape)" : "Read full screen (f)"}>{focusMode ? "esc" : "f"}</button>
+        <button type="button" className="r-reading-copy" onClick={copy} title={`Copy ${copyValue}`}>Copy</button>
+      </nav>
+      <div className="r-reading-metadata" aria-label="Reader metadata">
+        {metadata.map(([key, value]) => <span key={key}><span>{key}</span> {value}</span>)}
+      </div>
+    </>
+  );
+}
+
 function statusWriteNotice(slug, result) {
   if (result?.persistence === "canonical" && result.ok) {
     return { state: "saved", text: `${slug} · saved to plan HTML`, version: result.version };
@@ -151,6 +285,7 @@ function TitleBar({ route, onNav, onOpenPrompt, onPlanMutated }) {
     return null;
   }
   if (route.view === "plan") {
+    if (route.slug) return null;
     const p = M.inventory.find(x => (x.nav_key || x.slug) === route.slug);
     if (!p) return null;
     const isPlan = (p.type || "plan") === "plan";
@@ -305,4 +440,18 @@ function TitleBar({ route, onNav, onOpenPrompt, onPlanMutated }) {
 
 
 window.ReckonShell = window.ReckonShell || {};
-window.ReckonShell.title = { LIFECYCLE_STATUSES, statusWriteNotice, persistStatusPatch, StatusMenu, TitleBar };
+window.ReckonShell.title = {
+  LIFECYCLE_STATUSES,
+  statusWriteNotice,
+  persistStatusPatch,
+  StatusMenu,
+  TitleBar,
+  canonicalReaderKind,
+  readerReferenceSlug,
+  readerPlanFor,
+  readerSourceTrail,
+  readerMetadataRows,
+  publishRenderedReaderList,
+  readerListFor,
+  ReaderChrome,
+};
