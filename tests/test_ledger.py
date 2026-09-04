@@ -46,6 +46,103 @@ FIXTURES = Path(__file__).parent / "fixtures" / "backends"
 PROJECT = "proj"
 SESSION_ID = "019ff509-8a60-7723-94fd-65942a6d8faa"
 
+# The complete observed row keeps checkout routing independent of which
+# promotion fields are populated. A smaller synthetic mapping would not pin
+# the boundary that a full promotion record crosses.
+MISROUTED_PROMOTED_ROW = json.loads(
+    r"""
+{
+  "run_id": "r-20260903T151345329064-n-a-spend-hold-expires",
+  "plan": "sn-west-catalog-release",
+  "section": "entry-gate",
+  "node": "n-a-spend-hold-expires",
+  "node_definition": {
+    "done_when": "a test proves a hold built from a rejection whose text names a reset time stores that time and reads as expired once it passes, a second test proves a hold whose reset time is unknown does not block indefinitely but is re-probed, and uv run --project . pytest tests/test_budget.py -q exits 0",
+    "estimated_hours": 2.0,
+    "goal": "Make a budget hold derived from a provider rejection record the reset time the rejection itself states, so the hold expires on its own, because a hold written from a refusal currently stores no reset time at all and only a served run writes a budget record while a hold blocks every run, which leaves it self-sustaining and refusing a lane the provider is serving",
+    "id": "n-a-spend-hold-expires",
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/a-spend-hold-expires.json",
+    "plan": "sn-west-catalog-release",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "entry-gate",
+    "spec_level": "exact",
+    "time_budget": "50m",
+    "write_paths": [
+      "reckon/budget.py",
+      "reckon/ledger.py",
+      "tests/test_budget.py"
+    ]
+  },
+  "role": "implement",
+  "spec_level": "exact",
+  "member": "impl-reckonbudget",
+  "backend": "claude",
+  "local": false,
+  "agent": {
+    "alias": "sonnet 5",
+    "backend": "claude",
+    "effort": "medium",
+    "launch": "cli",
+    "model": "claude-sonnet-5",
+    "sandbox": "worktree-full"
+  },
+  "dispatched_at": "2026-09-03T15:13:49Z",
+  "completed_at": "2026-09-03T15:14:45.180Z",
+  "completed_at_source": "terminal_event",
+  "worker_seconds": 49,
+  "worker_seconds_source": "stream_events",
+  "wall_seconds": 56,
+  "stalled": false,
+  "time_budget": "50m",
+  "base_sha": "2322564aa326bcbb6d124608c62c845b1201a119",
+  "commits": [],
+  "changed_lines": null,
+  "tests_added": null,
+  "gate": "failed",
+  "gate_check": null,
+  "suite_delta": null,
+  "failure_classification": "correct-refusal",
+  "outcome": "a reckon session dispatched a broader node on the same two files five seconds later, so this one yields: the owning project holds the plan record and its goal generalises to any exhaustion judgement outliving its evidence, while this node only parsed the stated reset time",
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/a-spend-hold-expires.json",
+  "scope_changed": false,
+  "session_id": "f79953c7-d26c-4be1-89b0-0bd8d256afb4",
+  "budget": {
+    "cost_usd": null,
+    "detail": "no events yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": null,
+    "utilisation_pct": null
+  },
+  "lineage": null,
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "unreconciled_override": {
+    "grace": "5m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "no_commit": "stopped in favour of the repository owner's own node on the same file",
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest tests/test_budget.py",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  }
+}
+"""
+)
+
 
 @pytest.fixture()
 def home(tmp_path, monkeypatch):
@@ -211,6 +308,59 @@ def _historical_stream(
 
 
 # ── Round-trip: pointer in flight, ledger on completion ─────────────────────
+
+
+def test_a_foreign_projects_promoted_row_reaches_its_registered_checkout(
+    home, repo, tmp_path
+) -> None:
+    owner = tmp_path / "imas-codex"
+    owner_state = owner / "docs" / "state" / "imas-codex"
+    owner_state.mkdir(parents=True)
+    (owner_state / "index.json").write_text(
+        json.dumps({"project": "imas-codex", "data": {"_version": 0}}) + "\n"
+    )
+    (home / "mounts.json").write_text(
+        json.dumps(
+            {
+                PROJECT: str(repo / "docs"),
+                "imas-codex": str(owner / "docs"),
+            }
+        )
+        + "\n"
+    )
+
+    promoted = ledger.append_run("imas-codex", MISROUTED_PROMOTED_ROW, root=repo)
+
+    owner_ledger = owner_state / "crew.json"
+    stray_ledger = repo / "docs" / "state" / "imas-codex" / "crew.json"
+    assert promoted["path"] == str(owner_ledger)
+    assert ledger.runs("imas-codex", owner) == [MISROUTED_PROMOTED_ROW]
+    assert promoted["run"] == MISROUTED_PROMOTED_ROW
+    assert not stray_ledger.exists()
+
+
+def test_a_promoted_row_without_a_resolvable_checkout_is_refused(home, repo) -> None:
+    mounts_path = home / "mounts.json"
+    stray_ledger = repo / "docs" / "state" / "imas-codex" / "crew.json"
+
+    with pytest.raises(ledger.LedgerError) as excinfo:
+        ledger.append_run("imas-codex", MISROUTED_PROMOTED_ROW, root=repo)
+
+    detail = str(excinfo.value)
+    assert str(stray_ledger) in detail
+    assert str(mounts_path) in detail
+    assert not stray_ledger.exists()
+
+
+def test_a_projects_own_checkout_remains_its_promotion_target(home, repo) -> None:
+    (home / "mounts.json").write_text(json.dumps({PROJECT: str(repo / "docs")}) + "\n")
+    row = ledger.build_record(run_id="r-own-checkout", plan="plan-a", gate="passed")
+
+    promoted = ledger.append_run(PROJECT, row, root=repo)
+
+    expected = repo / "docs" / "state" / PROJECT / "crew.json"
+    assert promoted["path"] == str(expected)
+    assert ledger.runs(PROJECT, repo) == [row]
 
 
 def test_completion_promotes_the_pointer_into_the_repositorys_ledger(

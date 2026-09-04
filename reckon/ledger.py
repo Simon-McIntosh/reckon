@@ -404,6 +404,53 @@ def ledger_path(project: str, root: str | Path | None = None) -> Path:
     return _store.state_path(project, LEDGER_SLUG, root)
 
 
+def _run_ledger_root(project: str, root: str | Path | None) -> Path | None:
+    """Resolve the checkout that owns a promoted run's project.
+
+    A run may implement one project's plan in a different repository. Its
+    pointer therefore names the code checkout, which is not necessarily where
+    the project's durable state belongs. A checkout proves local ownership by
+    carrying that project's index; otherwise the mount registry is the
+    authority. Missing registry data fails closed once a registry exists,
+    rather than creating another project's state beneath the code checkout.
+    """
+    if root is None:
+        return None
+    requested = Path(root).expanduser().resolve()
+    local_index = _store.state_path(project, "index", requested)
+    if local_index.is_file():
+        return requested
+
+    mounts_path = _store._mounts_path()
+    if not mounts_path.is_file():
+        requested_ledger = ledger_path(project, requested)
+        raise LedgerError(
+            f"cannot resolve the ledger checkout for project {project!r}: "
+            f"the promoting checkout would write {requested_ledger}, but mount "
+            f"registry {mounts_path} does not exist"
+        )
+
+    from reckon import flight
+
+    try:
+        mounted_docs = flight.mounted_project_docs().get(project)
+    except flight.FlightConfigError as exc:
+        raise LedgerError(
+            f"cannot resolve the ledger checkout for project {project!r}: "
+            f"the promoting checkout is {requested}, and mount registry "
+            f"{mounts_path} is unreadable: {exc}"
+        ) from exc
+    if mounted_docs is not None and mounted_docs.is_dir():
+        return mounted_docs.parent.resolve()
+
+    requested_ledger = ledger_path(project, requested)
+    raise LedgerError(
+        f"cannot resolve the ledger checkout for project {project!r}: "
+        f"the promoting checkout would write {requested_ledger}, but mount "
+        f"registry {mounts_path} names no readable checkout for that project"
+    )
+
+
 def load(project: str, root: str | Path | None = None) -> tuple[dict[str, Any], int]:
     """Read the ledger, returning its data and current version.
 
@@ -780,9 +827,10 @@ def append_run(
     run_id = str(record.get("run_id") or "")
     if not run_id:
         raise LedgerError("a run record must carry a run_id")
+    ledger_root = _run_ledger_root(project, root)
     last: LedgerError | None = None
     for _attempt in range(max(1, attempts)):
-        data, version = load(project, root)
+        data, version = load(project, ledger_root)
         existing = next(
             (item for item in data["runs"] if str(item.get("run_id")) == run_id), None
         )
@@ -794,13 +842,13 @@ def append_run(
             )
         data["runs"] = data["runs"] + [dict(record)]
         try:
-            new_version = write(project, data, version, root)
+            new_version = write(project, data, version, ledger_root)
         except LedgerError as exc:
             last = exc
             _retry_backoff(_attempt)
             continue
         return {
-            "path": str(ledger_path(project, root)),
+            "path": str(ledger_path(project, ledger_root)),
             "version": new_version,
             "run": dict(record),
         }
