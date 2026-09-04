@@ -89,6 +89,24 @@
   white-space: nowrap;
 }
 
+.r-reading-controls .r-reading-dependencies {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-color: var(--line-2);
+  border-radius: 6px;
+}
+
+.r-reading-controls .r-reading-dependencies[aria-expanded="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.r-reading-controls .r-reading-dependencies.is-standalone {
+  opacity: .55;
+}
+
 .r-reading-paging {
   display: flex;
   align-items: center;
@@ -174,6 +192,7 @@
   border-color: var(--line-2) !important;
   border-left-width: 1px !important;
   border-radius: 8px;
+  background: var(--bg) !important;
 }
 
 .r-reading .r-inflight-heading {
@@ -214,6 +233,28 @@
 
 .r-reader-with-attachments .r-plan-graph {
   margin-top: 26px;
+}
+
+.r-reader-with-attachments > .r-body > .r-dependency-cone {
+  display: none;
+}
+
+.r-reading .r-reader-dependency-panel {
+  display: block;
+  margin: 0 0 22px;
+  padding: 14px 16px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.r-reading .r-reader-dependency-panel .r-dependency-cone-columns {
+  padding: 0;
+}
+
+.r-reading .r-reader-dependency-panel .r-dependency-cone-card,
+.r-reading .r-reader-dependency-panel .r-dependency-cone-card.is-focal {
+  background: var(--bg);
 }
 
 .r-reader-with-attachments .r-plan-graph:has(.r-fan-empty) {
