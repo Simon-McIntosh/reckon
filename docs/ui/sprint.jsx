@@ -1,11 +1,7 @@
 const { useEffect, useMemo, useState } = React;
 
-const HORIZON_HOURS = 48;
-const HORIZON_REFRESH_MS = 30 * 1000;
-const HOUR_MS = 60 * 60 * 1000;
-
 const CLOSED_ITEM_STATUSES = new Set(["shipped", "done", "superseded", "abandoned", "historical"]);
-const CLOSED_SPRINT_STATUSES = new Set(["shipped", "done", "superseded", "abandoned", "historical"]);
+const CLOSED_SPRINT_AUTHORED_STATUSES = new Set(["done", "superseded", "abandoned", "historical"]);
 
 function naturalSprintKey(value) {
   return String(value || "").split(/(\d+)/).filter(Boolean).map(part => /^\d+$/.test(part) ? Number(part) : part.toLowerCase());
@@ -68,24 +64,106 @@ function sprintInventoryItems(sprint, inventory) {
   }).filter(Boolean);
 }
 
-function sprintStateRows(sprints, todayValue) {
-  const today = String(todayValue || "").slice(0, 10);
-  return (sprints || []).map((sprint, index) => {
-    const metrics = sprint.metrics || {};
-    const counts = metrics.by_effective_status || {};
-    const closedItems = [...CLOSED_ITEM_STATUSES].reduce((total, status) => total + Number(counts[status] || 0), 0);
-    const openCount = Math.max(0, Number(metrics.item_count || 0) - closedItems);
-    return {
-      sprint,
-      position: index + 1,
-      metrics,
-      openCount,
-      blockedCount: Number(counts.blocked || 0),
-      active: sprint.status === "active",
-      delayed: Boolean(today && sprint.ends && sprint.ends < today && openCount > 0),
-      closed: CLOSED_SPRINT_STATUSES.has(sprint.status),
-    };
+function sprintRefSlug(ref) {
+  return typeof ref === "string" ? ref : ref?.slug;
+}
+
+function sprintMemberSlugs(sprint) {
+  return (sprint?.items || []).map(item => typeof item === "string" ? item : item.slug).filter(Boolean);
+}
+
+function sprintMembers(sprint, inventory) {
+  const bySlug = new Map((inventory || []).map(plan => [plan.slug, plan]));
+  return sprintMemberSlugs(sprint).map(slug => bySlug.get(slug)).filter(Boolean);
+}
+
+function sprintHoursSummary(members) {
+  const total = (members || []).reduce((sum, plan) => sum + Number(plan.effort_hours || 0), 0);
+  const left = (members || []).reduce(
+    (sum, plan) => sum + Number(plan.effort_hours || 0) * (1 - Math.min(1, Number(plan.impl || 0))),
+    0
+  );
+  return { total, left };
+}
+
+// State is derived from members, never read from the sprint's own status
+// field, because the field can silently drift from what actually landed.
+function derivedSprintState(sprint, inventory) {
+  const members = sprintMembers(sprint, inventory);
+  const authored = sprint?.status || "planned";
+  let state;
+  if (!members.length) state = "empty";
+  else if (members.every(plan => Number(plan.impl || 0) >= 1)) state = "shipped";
+  else if (members.some(plan => Number(plan.impl || 0) > 0 || plan.status === "active")) state = "active";
+  else state = "planned";
+  const heldCount = members.filter(plan => plan.status === "blocked").length;
+  const flag = authored !== state
+    ? `was ${authored}`
+    : (heldCount > 0 ? `${heldCount} held` : null);
+  const meanImpl = members.length
+    ? members.reduce((sum, plan) => sum + Number(plan.impl || 0), 0) / members.length
+    : 0;
+  return { state, flag, heldCount, members, meanImpl };
+}
+
+function sprintStateRows(sprints, inventory) {
+  return (sprints || []).map(sprint => {
+    const derived = derivedSprintState(sprint, inventory);
+    const hours = sprintHoursSummary(derived.members);
+    const closed = derived.state === "shipped" || CLOSED_SPRINT_AUTHORED_STATUSES.has(sprint.status);
+    return { sprint, ...derived, hours, closed };
   });
+}
+
+// The transitive prerequisite closure of a sprint's members that falls
+// outside the sprint, tagged as ghost context for the DAG body. Reading
+// `depends_on` only keeps this in step with the Graph tab's closure.
+function transitivePrerequisiteGhosts(members, inventory) {
+  const bySlug = new Map((inventory || []).map(plan => [plan.slug, plan]));
+  const memberSlugs = new Set((members || []).map(plan => plan.slug));
+  const ghosts = new Map();
+  const visit = (slug, seen) => {
+    const plan = bySlug.get(slug);
+    if (!plan || seen.has(slug)) return;
+    seen.add(slug);
+    (plan.depends_on || []).map(sprintRefSlug).filter(Boolean).forEach(depSlug => {
+      const dependency = bySlug.get(depSlug);
+      if (!dependency) return;
+      if (!memberSlugs.has(depSlug) && !ghosts.has(depSlug)) {
+        ghosts.set(depSlug, { ...dependency, ghost: true });
+      }
+      visit(depSlug, seen);
+    });
+  };
+  (members || []).forEach(plan => visit(plan.slug, new Set()));
+  return [...ghosts.values()];
+}
+
+function sprintDagPlans(sprint, inventory) {
+  const members = sprintMembers(sprint, inventory);
+  const ghosts = transitivePrerequisiteGhosts(members, inventory);
+  return [...members, ...ghosts];
+}
+
+function planOpenDecisionCount(plan) {
+  if (Array.isArray(plan?.decisions)) return plan.decisions.filter(decision => !decision.choice).length;
+  return Number(plan?.dec_open || 0);
+}
+
+function sprintDetailStats(sprint, inventory) {
+  const members = sprintMembers(sprint, inventory);
+  const ghosts = transitivePrerequisiteGhosts(members, inventory);
+  const hours = sprintHoursSummary(members);
+  const layout = window.ReckonGraph ? window.ReckonGraph.layout([...members, ...ghosts], "sprint-detail-stats") : null;
+  const depth = layout ? Math.max(0, ...Object.values(layout.depth)) : 0;
+  return {
+    plans: members.length,
+    workerHours: hours.total,
+    depth,
+    held: members.filter(plan => plan.status === "blocked").length,
+    prerequisites: ghosts.length,
+    openDecisions: members.reduce((total, plan) => total + planOpenDecisionCount(plan), 0),
+  };
 }
 
 function readyLaneRows(readySet, sprints, inventory) {
@@ -144,81 +222,88 @@ function activeSprintConflict(activeSprints, activePointer) {
   return ids.length !== 1 || ids[0] !== activePointer;
 }
 
-function completedRunTime(run) {
-  for (const field of ["completed_at", "dispatched_at"]) {
-    const timestamp = Date.parse(run?.[field] || "");
-    if (!Number.isNaN(timestamp)) return timestamp;
-  }
-  return null;
-}
+function SprintDetail({ sprint, inventory, onBack, onNav }) {
+  const dagPlans = useMemo(() => sprintDagPlans(sprint, inventory), [sprint, inventory]);
+  const layout = useMemo(
+    () => (window.ReckonGraph ? window.ReckonGraph.layout(dagPlans, `sprint-${sprint.id}`) : null),
+    [dagPlans, sprint.id]
+  );
+  const stats = useMemo(() => sprintDetailStats(sprint, inventory), [sprint, inventory]);
+  const openDecisions = stats.openDecisions;
 
-function sprintCompletedRuns(sprint, runsByPlan) {
-  const memberPlans = new Set((sprint?.items || []).map(item => typeof item === "string" ? item : item.slug));
-  return Object.entries(runsByPlan || {})
-    .filter(([slug]) => memberPlans.has(slug))
-    .flatMap(([, runs]) => Array.isArray(runs) ? runs : [])
-    .sort((left, right) => (completedRunTime(right) || 0) - (completedRunTime(left) || 0));
-}
-
-function sprintLiveRuns(sprint, runs) {
-  const memberPlans = new Set((sprint?.items || []).map(item => typeof item === "string" ? item : item.slug));
-  return (runs || []).filter(run => memberPlans.has(run?.plan));
-}
-
-function horizonStrip(currentInstant, completedRuns = [], liveRuns = []) {
-  const instant = new Date(currentInstant);
-  const safeInstant = Number.isNaN(instant.getTime()) ? new Date() : instant;
-  const start = new Date(
-    safeInstant.getFullYear(),
-    safeInstant.getMonth(),
-    safeInstant.getDate()
-  ).getTime();
-  const span = HORIZON_HOURS * HOUR_MS;
-  const end = start + span;
-  const tomorrow = new Date(
-    safeInstant.getFullYear(),
-    safeInstant.getMonth(),
-    safeInstant.getDate() + 1
-  ).getTime();
-  const position = timestamp => {
-    if (timestamp === null || timestamp < start || timestamp > end) return null;
-    return ((timestamp - start) / span) * 100;
+  const copyShipLine = async () => {
+    if (openDecisions > 0) return;
+    await navigator.clipboard?.writeText(`/reckon-ship ${sprint.id}`);
+    if (window.flashSaved) window.flashSaved("ship line copied");
   };
-  const events = [
-    ...(completedRuns || []).map(run => ({ kind: "completed", run, timestamp: completedRunTime(run) })),
-    ...(liveRuns || []).map(run => {
-      const timestamp = Date.parse(run?.dispatched_at || "");
-      return { kind: "live", run, timestamp: Number.isNaN(timestamp) ? null : timestamp };
-    }),
-  ].map(event => ({ ...event, left: position(event.timestamp) }))
-    .filter(event => event.left !== null)
-    .sort((left, right) => left.timestamp - right.timestamp);
-  const ticks = Array.from({ length: 9 }, (_, index) => {
-    const timestamp = start + index * 6 * HOUR_MS;
-    return {
-      left: index * 12.5,
-      label: new Date(timestamp).toLocaleTimeString(undefined, {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      }),
-    };
-  });
-  return {
-    start: new Date(start).toISOString(),
-    end: new Date(end).toISOString(),
-    nowPosition: position(safeInstant.getTime()),
-    tomorrowPosition: position(tomorrow),
-    ticks,
-    events,
-  };
-}
 
-function sprintActivityStrip(sprint, currentInstant, completedRuns, liveRuns) {
-  return horizonStrip(
-    currentInstant,
-    completedRuns,
-    sprintLiveRuns(sprint, liveRuns),
+  return (
+    <section className="r-sprint-detail" aria-label={`${sprint.id} detail`}>
+      <header className="r-sprint-detail-head">
+        <button type="button" className="r-sprint-back" onClick={onBack}>← Sprints</button>
+        <strong>{sprint.id}</strong>
+        <span className="r-sprint-detail-theme">{sprint.theme || sprint.summary}</span>
+        <button
+          type="button"
+          className="r-sprint-ship"
+          disabled={openDecisions > 0}
+          title={openDecisions ? `${openDecisions} open decision${openDecisions === 1 ? "" : "s"}` : `Copy /reckon-ship ${sprint.id}`}
+          onClick={copyShipLine}
+        >
+          {openDecisions > 0 ? `${openDecisions} open decision${openDecisions === 1 ? "" : "s"}` : `/reckon-ship ${sprint.id}`}
+        </button>
+      </header>
+      <div className="r-sprint-detail-stats">
+        <div><span>plans</span><strong>{stats.plans}</strong></div>
+        <div><span>worker-hours</span><strong>{Math.round(stats.workerHours)}</strong></div>
+        <div><span>depth</span><strong>{stats.depth}</strong></div>
+        <div><span>held</span><strong>{stats.held}</strong></div>
+        <div><span>prerequisites</span><strong>{stats.prerequisites}</strong></div>
+        <div><span>open decisions</span><strong>{stats.openDecisions}</strong></div>
+      </div>
+      <div className="r-sprint-detail-legend">
+        <span><i className="solid"></i>shipped prerequisite</span>
+        <span><i className="dashed"></i>unshipped prerequisite</span>
+      </div>
+      {layout ? (
+        <div className="r-sprint-dag-scroll">
+          <div className="r-sprint-dag-stage" style={{ width: layout.width, height: layout.height }}>
+            <svg width={layout.width} height={layout.height} aria-hidden="true">
+              {layout.edges.map(edge => (
+                <g key={edge.key}>
+                  <path d={edge.d} stroke={edge.stroke} strokeWidth={edge.strokeWidth} strokeDasharray={edge.dash} fill="none" />
+                  <polygon points={edge.head} fill={edge.stroke} />
+                </g>
+              ))}
+            </svg>
+            {layout.nodes.map(node => (
+              <a
+                key={node.key}
+                className={`r-sprint-dag-card ${node.ghost ? "ghost" : ""} ${node.blocked ? "blocked" : ""}`}
+                href={node.ghost ? undefined : `#plan/${node.slug}`}
+                style={{
+                  left: node.x,
+                  top: node.y,
+                  width: node.width,
+                  height: node.height,
+                  borderStyle: node.borderStyle,
+                  background: node.background,
+                  opacity: node.opacity,
+                }}
+                onClick={event => {
+                  event.preventDefault();
+                  if (node.ghost) return;
+                  onNav && onNav({ view: "plan", slug: node.slug });
+                }}
+              >
+                <strong>{node.title}</strong>
+                <span>{node.statusText}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      ) : <p className="r-sprint-dag-empty">Graph layout is unavailable.</p>}
+    </section>
   );
 }
 
@@ -239,59 +324,9 @@ function Sprint({ sprintId, onNav }) {
   const [foldClosed, setFoldClosed] = useState(true);
   const [showSprintPrompt, setShowSprintPrompt] = useState(false);
   const [sprintPromptText, setSprintPromptText] = useState(null);
-  const [liveRuns, setLiveRuns] = useState([]);
-  const [finishedRunsByPlan, setFinishedRunsByPlan] = useState({});
-  const [finishedRunsState, setFinishedRunsState] = useState("loading");
-  const [currentInstant, setCurrentInstant] = useState(() => Date.now());
+  const [detailSprintId, setDetailSprintId] = useState(null);
   const project = M.project || document.querySelector('meta[name="docs-project"]')?.content || "";
   const items = sprintInventoryItems(sprint, M.inventory);
-  const sprintPlanSlugs = useMemo(
-    () => (sprint.items || []).map(item => typeof item === "string" ? item : item.slug).filter(Boolean),
-    [sprint]
-  );
-  const sprintPlanKey = sprintPlanSlugs.join("\u0000");
-
-  useEffect(() => {
-    if (!project) { setLiveRuns([]); return; }
-    let active = true;
-    const poll = async () => {
-      try {
-        const response = await fetch(`/crew/${encodeURIComponent(project)}`, { cache: "no-store" });
-        if (!response.ok) return;
-        const payload = await response.json();
-        if (active && Array.isArray(payload.runs)) setLiveRuns(payload.runs);
-      } catch (_) { /* Navigation remains available without live run state. */ }
-    };
-    poll();
-    const timer = window.setInterval(poll, 3000);
-    return () => { active = false; window.clearInterval(timer); };
-  }, [project]);
-
-  useEffect(() => {
-    if (!project) { setFinishedRunsByPlan({}); setFinishedRunsState("empty"); return; }
-    let active = true;
-    setFinishedRunsState("loading");
-    setFinishedRunsByPlan({});
-    Promise.all(sprintPlanSlugs.map(async slug => {
-      const response = await fetch(`/crew/${encodeURIComponent(project)}/finished/${encodeURIComponent(slug)}`, { cache: "no-store" });
-      if (!response.ok) throw new Error(`Finished work request failed with ${response.status}`);
-      const payload = await response.json();
-      return [slug, Array.isArray(payload.runs) ? payload.runs : []];
-    })).then(entries => {
-      if (!active) return;
-      const records = Object.fromEntries(entries);
-      setFinishedRunsByPlan(records);
-      setFinishedRunsState(sprintCompletedRuns(sprint, records).length ? "ready" : "empty");
-    }).catch(() => {
-      if (active) setFinishedRunsState("error");
-    });
-    return () => { active = false; };
-  }, [project, sprint.id, sprintPlanKey]);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setCurrentInstant(Date.now()), HORIZON_REFRESH_MS);
-    return () => window.clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     if (!showSprintPrompt) { setSprintPromptText(null); return; }
@@ -314,20 +349,23 @@ function Sprint({ sprintId, onNav }) {
     if (rows.length) return rows.map(decision => ({ plan, label: decision.question || decision.key || "Open decision" }));
     return Array.from({ length: plan.dec_open || 0 }, (_, index) => ({ plan, label: `Open decision ${index + 1}` }));
   });
-  const stateRows = sprintStateRows(allSprints, M.today);
+  const stateRows = useMemo(() => sprintStateRows(allSprints, M.inventory), [allSprints, M.inventory]);
   const foldedCount = stateRows.filter(row => row.closed).length;
-  const finishedRuns = useMemo(() => sprintCompletedRuns(sprint, finishedRunsByPlan), [sprint, finishedRunsByPlan]);
-  const strip = useMemo(
-    () => sprintActivityStrip(sprint, currentInstant, finishedRuns, liveRuns),
-    [sprint, currentInstant, finishedRuns, liveRuns]
-  );
   const activeConflict = activeSprintConflict(M.active_sprints, M.active_sprint_id);
+  const detailSprint = detailSprintId ? allSprints.find(candidate => candidate.id === detailSprintId) : null;
 
-  const navigateSprint = (event, id) => {
-    if (!onNav) return;
-    event.preventDefault();
-    onNav({ view: "sprint", sprint: id });
-  };
+  if (detailSprint) {
+    return (
+      <div className="r-page wide r-sprint-surface">
+        <SprintDetail
+          sprint={detailSprint}
+          inventory={M.inventory}
+          onBack={() => setDetailSprintId(null)}
+          onNav={onNav}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="r-page wide r-sprint-surface">
@@ -341,30 +379,6 @@ function Sprint({ sprintId, onNav }) {
 
       {surface === "overview" ? (
         <section className="r-sprint-overview" aria-label="All-sprints state overview">
-          <section className="r-horizon-strip" aria-label="48-hour activity strip">
-            <header>
-              <span>Today</span>
-              <span>Tomorrow</span>
-            </header>
-            <div className="r-horizon-track">
-              <i className="r-tomorrow-line" style={{ left: `${strip.tomorrowPosition}%` }} aria-hidden="true"></i>
-              {strip.ticks.map(tick => <span key={tick.left} className="r-horizon-tick" style={{ left: `${tick.left}%` }}>{tick.label}</span>)}
-              {strip.events.map(event => {
-                const run = event.run;
-                const title = `${event.kind === "live" ? "Live" : "Completed"}: ${run.node || run.plan || "run"}`;
-                return <a
-                  key={`${event.kind}-${run.run_id}`}
-                  className={`r-horizon-event ${event.kind} ${run.gate || ""}`}
-                  href={run.plan ? `#plan/${run.plan}` : "#sprints"}
-                  style={{ left: `${event.left}%` }}
-                  aria-label={title}
-                  title={title}
-                ></a>;
-              })}
-              <i className="r-now-line" style={{ left: `${strip.nowPosition}%` }} aria-label="Current time"></i>
-            </div>
-            <footer><span><i className="completed"></i> completed</span><span><i className="live"></i> live</span><span>{strip.events.length} timestamped {strip.events.length === 1 ? "event" : "events"}</span></footer>
-          </section>
           <section className="r-sprint-state" aria-labelledby="sprint-state-heading">
             <header>
               <div><span className="r-eyebrow">Project state</span><h2 id="sprint-state-heading">Every sprint</h2></div>
@@ -376,18 +390,17 @@ function Sprint({ sprintId, onNav }) {
             </header>
             <div className="r-sprint-table-wrap">
               <table className="r-sprint-table">
-                <thead><tr><th scope="col">Order</th><th scope="col">Sprint</th><th scope="col">Status</th><th scope="col">Implementation</th><th scope="col">Flags</th><th scope="col">Current work</th></tr></thead>
+                <thead><tr><th scope="col">Sprint</th><th scope="col">State</th><th scope="col">Implementation</th><th scope="col">Hours</th><th scope="col">Flags</th></tr></thead>
                 <tbody>{stateRows.map(row => {
-                  const { sprint: listedSprint, metrics } = row;
-                  const percent = Math.round(Number(metrics.mean_impl || 0) * 100);
+                  const { sprint: listedSprint, hours } = row;
+                  const percent = Math.round(row.meanImpl * 100);
                   const findings = subjectFindings(reviewFindings, "sprint", listedSprint.id);
                   return <tr key={listedSprint.id} hidden={foldClosed && row.closed} className={row.closed ? "closed" : ""}>
-                    <td className="r-sprint-order"><span>{row.position}</span></td>
-                    <th scope="row"><a href={`#sprint/${listedSprint.id}`} onClick={event => navigateSprint(event, listedSprint.id)}><strong>{listedSprint.id}</strong><span>{listedSprint.theme || listedSprint.summary || "Untitled sprint"}</span></a></th>
-                    <td><span className={`r-sprint-status ${listedSprint.status || "planned"}`}>{listedSprint.status || "planned"}</span></td>
+                    <th scope="row"><a href={`#sprint/${listedSprint.id}`} onClick={event => { event.preventDefault(); setDetailSprintId(listedSprint.id); }}><strong>{listedSprint.id}</strong><span>{listedSprint.theme || listedSprint.summary || "Untitled sprint"}</span></a></th>
+                    <td><span className={`r-sprint-status ${row.state}`}>{row.state}</span></td>
                     <td><div className="r-sprint-implementation" aria-label={`${listedSprint.id}: ${percent}% implemented`}><span><i style={{ width: `${percent}%` }}></i></span><strong>{percent}%</strong></div></td>
-                    <td><div className="r-sprint-flags">{row.active && <span className="active">active</span>}{row.blockedCount > 0 && <span className="blocked">blocked {row.blockedCount}</span>}{row.delayed && <span className="delayed">delayed</span>}{listedSprint.id === M.active_sprint_id && <span className="focus">focus</span>}<FindingBadges findings={findings} /></div></td>
-                    <td><div className="r-sprint-current">{(metrics.current_work || []).map(item => <a key={item.slug} href={`#plan/${item.slug}`}>{item.title || item.slug}</a>)}{!(metrics.current_work || []).length && <span>None</span>}</div></td>
+                    <td className="r-sprint-hours">{Math.round(hours.total)}h · {Math.round(hours.left)}h left</td>
+                    <td><div className="r-sprint-flags">{row.flag && <span className={row.flag.startsWith("was ") ? "drift" : "held"}>{row.flag}</span>}{listedSprint.id === M.active_sprint_id && <span className="focus">focus</span>}<FindingBadges findings={findings} /></div></td>
                   </tr>;
                 })}</tbody>
               </table>
@@ -408,17 +421,6 @@ function Sprint({ sprintId, onNav }) {
             ))}</ol> : <p className="r-priority-empty">No plans are ranked in the current review.</p>}
           </section>}
           {review && reviewFindings.length > 0 && <section className="r-review-findings" aria-label="Open review findings"><header><span className="r-eyebrow">Open findings</span><strong>{reviewFindings.length}</strong></header>{reviewFindings.map(finding => <article id={`review-finding-${finding.id}`} key={finding.id}><FindingBadges findings={[finding]} /><span>{finding.subject?.kind}: {finding.subject?.id}</span><p>{(finding.evidence || []).join(" ")}</p></article>)}</section>}
-          <section className="r-completed-work" aria-live="polite" aria-label={`${sprint.id} completed work`}>
-            <header><div><span className="r-eyebrow">Recorded work</span><h2>{sprint.id} · {sprint.theme || sprint.summary}</h2></div><span>{finishedRuns.length} completed {finishedRuns.length === 1 ? "run" : "runs"}</span></header>
-            {finishedRunsState === "loading" && <p className="r-completed-work-state">Loading completed work…</p>}
-            {finishedRunsState === "error" && <p className="r-completed-work-state bad">Completed work could not be loaded.</p>}
-            {finishedRunsState === "empty" && <p className="r-completed-work-state">No completed work is recorded for this sprint.</p>}
-            {finishedRunsState === "ready" && <ol>{finishedRuns.map(run => <li key={run.run_id}>
-              <div className="r-completed-work-primary"><strong>{run.node || run.plan}</strong><span className={`r-run-verdict ${run.gate || "unknown"}`}>{run.gate || "not recorded"}</span></div>
-              <div className="r-completed-work-stamps"><time dateTime={run.dispatched_at}>dispatched {run.dispatched_at || "not recorded"}</time><time dateTime={run.completed_at}>completed {run.completed_at || "not recorded"}</time></div>
-              <div className="r-completed-work-meta"><a href={`#plan/${run.plan}`}>{run.plan}</a><span>{run.section || "unsectioned"}</span><code>{(run.commits || [])[0] || "no commit"}</code></div>
-            </li>)}</ol>}
-          </section>
         </section>
       ) : (
         <section className="r-ready-lanes" aria-labelledby="ready-lanes-heading">
