@@ -908,6 +908,22 @@ def resolve_graph_target(
 CLOSED_SPRINT_STATUSES = frozenset({"done", "shipped", "closed", "archived"})
 
 
+def _derived_sprint_state(members: list[dict[str, Any]]) -> str:
+    """Return lifecycle state from the resolved members that actually exist."""
+
+    found = [member for member in members if member.get("found")]
+    if not found:
+        return "empty"
+    if all(_progress(member) >= 1.0 for member in found):
+        return "shipped"
+    if any(
+        _progress(member) > 0.0 or str(member.get("status") or "") == "active"
+        for member in found
+    ):
+        return "active"
+    return "planned"
+
+
 def build_roadmap(
     project: str,
     inventory: list[dict[str, Any]],
@@ -1608,6 +1624,7 @@ def build_roadmap(
         sprint_project = str(sprint.get("_project") or project)
         sprint_status = str(sprint.get("status") or "planned")
         members = resolved_sprint_items.get(sprint_ref, [])
+        derived_state = _derived_sprint_state(members)
         completed = sum(
             bool(member.get("found"))
             and str(member.get("status") or "") in COMPLETED_STATUSES
@@ -1627,6 +1644,7 @@ def build_roadmap(
                 "project": sprint_project,
                 "found": not bool(sprint.get("_unresolved")),
                 "status": sprint_status,
+                "derived_state": derived_state,
                 "items": len(members),
                 "members": members,
                 "resolved_items": sum(bool(member.get("found")) for member in members),
@@ -1651,6 +1669,16 @@ def build_roadmap(
                     "feeds_sprints", []
                 ),
                 "unblocks": downstream.get(sprint_ref, {}).get("unblocks", []),
+                **(
+                    {
+                        "state_drift": {
+                            "stored": sprint_status,
+                            "derived": derived_state,
+                        }
+                    }
+                    if sprint_status != derived_state
+                    else {}
+                ),
             }
         )
 

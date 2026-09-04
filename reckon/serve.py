@@ -1413,7 +1413,7 @@ def _attach_composed_review(result: dict, docs_dir: Path, project: str) -> None:
 
 
 def _attach_ready_set(result: dict, project: str) -> None:
-    """Attach the HTTP projection of the roadmap's canonical readiness."""
+    """Attach the HTTP projection of roadmap-owned readiness and sprint state."""
 
     from reckon.mcp_views import ready_set_view
     from reckon.roadmap import build_roadmap
@@ -1426,7 +1426,26 @@ def _attach_ready_set(result: dict, project: str) -> None:
         project_manifest=result,
         review=result.get("review") or {},
     )
-    result["ready_set"] = ready_set_view(roadmap)
+    projection = ready_set_view(roadmap)
+    result["ready_set"] = projection
+
+    state_by_ref = {
+        str(row.get("ref") or row.get("id")): row
+        for row in projection.get("sprints", [])
+        if isinstance(row, dict) and (row.get("ref") or row.get("id"))
+    }
+    for sprint in result.get("sprints", []):
+        if not isinstance(sprint, dict):
+            continue
+        sprint_ref = str(sprint.get("_ref") or sprint.get("id") or "")
+        state = state_by_ref.get(sprint_ref)
+        if state is None:
+            continue
+        sprint.update(
+            {key: value for key, value in state.items() if key not in {"id", "ref"}}
+        )
+        if "state_drift" not in state:
+            sprint.pop("state_drift", None)
 
 
 def _read_readiness_state(

@@ -71,6 +71,24 @@ def sprint_metrics(items: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def sprint_state_view(roadmap: dict[str, Any]) -> list[dict[str, Any]]:
+    """Project roadmap-owned sprint facts for transport to composed clients."""
+
+    fields = (
+        "id",
+        "ref",
+        "derived_state",
+        "state_drift",
+        "implementation_pct",
+        "blocked",
+    )
+    return [
+        {key: sprint[key] for key in fields if key in sprint}
+        for sprint in roadmap.get("sprints", [])
+        if isinstance(sprint, dict) and sprint.get("id")
+    ]
+
+
 def ready_set_view(roadmap: dict[str, Any]) -> dict[str, Any]:
     """Project the canonical roadmap's ready rows for composed clients."""
 
@@ -93,6 +111,7 @@ def ready_set_view(roadmap: dict[str, Any]) -> dict[str, Any]:
         "project": roadmap.get("project"),
         "ready": ready,
         "review": roadmap.get("review"),
+        "sprints": sprint_state_view(roadmap),
     }
 
 

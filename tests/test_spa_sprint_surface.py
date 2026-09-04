@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from reckon.serve import _attach_ready_set
 from tests import spa_module_eval
 
 ROOT = Path(__file__).parents[1]
@@ -130,23 +131,74 @@ def test_horizon_strip_and_recorded_work_are_retired():
     assert 0 == source.count("HORIZON_HOURS")
 
 
-def test_planned_sprint_with_fully_shipped_members_derives_shipped_and_flags_drift(tmp_path):
+def test_sprint_state_flag_reads_roadmap_payload(tmp_path):
     inventory = [
         {"slug": "one", "status": "shipped", "impl": 1.0, "effort_hours": 5},
         {"slug": "two", "status": "shipped", "impl": 1.0, "effort_hours": 3},
     ]
-    sprints = [
-        {"id": "S9", "status": "planned", "items": [{"slug": "one"}, {"slug": "two"}]},
-    ]
+    sprint = {
+        "id": "delivery",
+        "status": "planned",
+        "items": [{"slug": "one"}, {"slug": "two"}],
+        "derived_state": "shipped",
+        "state_drift": {"stored": "planned", "derived": "shipped"},
+        "implementation_pct": 100.0,
+        "blocked": 0,
+    }
+    changed = {
+        **sprint,
+        "derived_state": "active",
+        "state_drift": {"stored": "queued", "derived": "active"},
+    }
     result = _evaluate_helpers(
         "(() => {"
-        f"const rows = sprintStateRows({json.dumps(sprints)}, {json.dumps(inventory)});"
-        "return rows.map(row => ({id: row.sprint.id, state: row.state, flag: row.flag}));"
+        f"const inventory = {json.dumps(inventory)};"
+        f"const original = sprintStateRows([{json.dumps(sprint)}], inventory)[0];"
+        f"const changed = sprintStateRows([{json.dumps(changed)}], inventory)[0];"
+        "return {original: {state: original.state, flag: original.flag}, "
+        "changed: {state: changed.state, flag: changed.flag}};"
         "})()",
         tmp_path,
     )
 
-    assert result == [{"id": "S9", "state": "shipped", "flag": "was planned"}]
+    assert result == {
+        "original": {"state": "shipped", "flag": "was planned"},
+        "changed": {"state": "active", "flag": "was queued"},
+    }
+
+
+def test_http_roadmap_projection_enriches_sprints_with_derived_state() -> None:
+    result = {
+        "inventory": [
+            {
+                "slug": "member",
+                "title": "Member",
+                "type": "plan",
+                "status": "shipped",
+                "impl": 1.0,
+                "depends_on": [],
+            }
+        ],
+        "sprints": [
+            {
+                "id": "delivery",
+                "status": "planned",
+                "items": [{"slug": "member"}],
+            }
+        ],
+        "active_sprint_id": None,
+    }
+
+    _attach_ready_set(result, "sample")
+
+    assert result["sprints"][0]["derived_state"] == "shipped"
+    assert result["sprints"][0]["state_drift"] == {
+        "stored": "planned",
+        "derived": "shipped",
+    }
+    assert result["sprints"][0]["implementation_pct"] == 100.0
+    assert result["sprints"][0]["items"] == [{"slug": "member"}]
+    assert result["ready_set"]["sprints"][0]["derived_state"] == "shipped"
 
 
 def test_sprint_detail_pulls_out_of_sprint_prerequisites_as_ghosts(tmp_path):
