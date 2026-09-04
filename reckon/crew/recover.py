@@ -35,12 +35,14 @@ alive again.
 from __future__ import annotations
 
 import json
+import os
 from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from reckon import budget as budget_module
+from reckon import ledger
 from reckon.crew.dispatch import (
     BudgetHold,
     _backend_settings,
@@ -161,21 +163,30 @@ def hold_state(
     }
 
 
-def _recoverable_session(record: Mapping[str, Any]) -> dict[str, str] | None:
-    """The session a resume could continue, and which source held it.
+# The three places a run's session can be, in the order a resolver must read
+# them: the cheap authoritative one, the one that answers when the cheap one has
+# simply not been folded in yet, and the one that answers after promotion has
+# taken the pointer away.
+SESSION_SOURCES = ("pointer", "stream", "ledger")
 
-    A pointer carrying no session id is not evidence of an unresumable run: a
-    resume that finds none on the record re-reads the run's stream for one, so
-    the stream is a second source rather than a fallback nobody consults.
+
+def _pointer_session(record: Mapping[str, Any]) -> str:
+    return str(record.get("session_id") or "").strip()
+
+
+def _stream_session(record: Mapping[str, Any]) -> str:
+    """The session id the run's own stream carries, or empty.
+
+    This is the source the incident turned on. A pointer carrying no session id
+    means only that nothing has folded the stream in yet — resume has re-read
+    it for months — so reading the pointer alone reports an absence that is not
+    one.
     """
-    pointer_session = str(record.get("session_id") or "").strip()
-    if pointer_session:
-        return {"session_id": pointer_session, "source": "pointer"}
     from reckon import _backends
 
     log = Path(str(record.get("log_path") or ""))
     if record.get("launch") != "cli" or not log.is_file():
-        return None
+        return ""
     try:
         backend = _backend_settings(record, None)
         observation = _backends.observe_log(
@@ -184,11 +195,85 @@ def _recoverable_session(record: Mapping[str, Any]) -> dict[str, str] | None:
             log_path=log,
         )
     except (CrewError, OSError, ValueError):
-        return None
-    stream_session = str(observation.session_id or "").strip()
-    return (
-        {"session_id": stream_session, "source": "stream"} if stream_session else None
+        return ""
+    return str(observation.session_id or "").strip()
+
+
+def _ledger_session(run_id: str, *, project: str, root: Any) -> str:
+    """The session the promoted row recorded, or empty.
+
+    A promoted run has no pointer and no live stream to consult, and its
+    session may still be resumable — so the committed row is the third source
+    rather than the end of the search.
+    """
+    if not project:
+        return ""
+    try:
+        data, _version = ledger.load(project, root=root)
+    except Exception:  # noqa: BLE001 - an unreadable ledger answers nothing
+        return ""
+    for row in reversed(data.get("runs") or []):
+        if str(row.get("run_id") or "") == run_id:
+            return str(row.get("session_id") or "").strip()
+    return ""
+
+
+def resolve_session(
+    run_id: str,
+    *,
+    record: Mapping[str, Any] | None = None,
+    project: str = "",
+    root: Any = None,
+) -> dict[str, Any]:
+    """Answer the session for one run, and say which source answered.
+
+    Every surface that reports a session asks this, so two surfaces asked about
+    the same run cannot disagree. The sources are consulted in order — live
+    pointer, the run's own stream, the promoted ledger row — and the answer
+    carries the one that supplied it.
+
+    Where none has an id the answer is a stated absence naming all three as
+    consulted, because *not yet observed* and *genuinely absent* are different
+    facts and nothing expressed the difference. A coordinator read a bare null
+    as a verdict on five runs and promoted them; the ids were in their streams.
+    """
+    pointer: Mapping[str, Any] = {}
+    if record is not None:
+        pointer = record
+    else:
+        try:
+            pointer = read_pointer(run_id)
+        except (CrewError, OSError):
+            pointer = {}
+    # A promoted run has no pointer to name its project, so a caller asking
+    # about one states it; otherwise the pointer does.
+    project = str(project or pointer.get("project") or "")
+    answer = {
+        "run_id": run_id,
+        "session_id": None,
+        "source": None,
+        "resolved": False,
+        "consulted": list(SESSION_SOURCES),
+    }
+    found = _pointer_session(pointer)
+    if found:
+        return {**answer, "session_id": found, "source": "pointer", "resolved": True}
+    found = _stream_session(pointer)
+    if found:
+        return {**answer, "session_id": found, "source": "stream", "resolved": True}
+    found = _ledger_session(
+        run_id, project=project, root=root if root is not None else pointer.get("repo")
     )
+    if found:
+        return {**answer, "session_id": found, "source": "ledger", "resolved": True}
+    return {
+        **answer,
+        "detail": (
+            "no session id in the live pointer, the run's own stream or the "
+            "promoted ledger row; all three were consulted, so this is an "
+            "absence rather than a reading nobody has taken yet"
+        ),
+    }
 
 
 def _claimed_write_paths(record: Mapping[str, Any]) -> list[str]:
@@ -262,6 +347,46 @@ def _stamp_hold(run_id: str, signature: str) -> None:
         _write_json(pointer_path(run_id), current)
 
 
+def sweep_status_path(project: str) -> Path:
+    """Where one project's most recent sweep records that it ran."""
+    return recovery_log_path(project).with_suffix(".status.json")
+
+
+def _write_sweep_status(project: str, report: Mapping[str, Any]) -> None:
+    """Record that a sweep ran, what it found, and which process ran it.
+
+    Overwritten rather than appended: the question this answers is whether the
+    recovery is running at all, and the answer is only ever the latest one. The
+    pid and the module version are on it because the failure it exposes is a
+    follower still executing pre-merge code — a process that cannot perform the
+    recovery it appears to be performing.
+    """
+    path = sweep_status_path(project)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps(
+                {
+                    "project": project,
+                    "swept_at": report.get("swept_at"),
+                    "dry_run": report.get("dry_run"),
+                    "checked": report.get("checked"),
+                    "resumed": len(report.get("resumed") or []),
+                    "skipped": len(report.get("skipped") or []),
+                    "swept_by_pid": os.getpid(),
+                },
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+    except OSError:
+        # A status that cannot be written must not stop the recovery it
+        # describes; the next tick writes it.
+        return
+
+
 def sweep(
     project: str,
     *,
@@ -317,13 +442,13 @@ def sweep(
                 }
             )
             continue
-        session = _recoverable_session(pointer)
-        if session is None:
+        session = resolve_session(run_id, record=pointer)
+        if not session["resolved"]:
             skipped.append(
                 {
                     **entry,
                     "reason": "no-recoverable-session",
-                    "detail": "neither the pointer nor the run's stream carries a session id",
+                    "detail": session["detail"],
                 }
             )
             continue
@@ -403,12 +528,20 @@ def sweep(
         "skipped": skipped,
         "swept_at": _utc_now(),
     }
-    # A sweep that found nothing to judge says nothing: an operator reading the
-    # record wants the recoveries and the refusals to recover, not a heartbeat
-    # from every cadence tick of every follower.
+    # Two records, because they answer different questions. The append-only log
+    # holds what happened, and only sweeps that judged something write to it —
+    # an operator reading it wants recoveries and the refusals to recover, not a
+    # heartbeat from every tick of every follower.
     if considered:
         path = recovery_log_path(project)
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(report, sort_keys=True) + "\n")
+    # The status file holds THAT it happened, and is overwritten every sweep. A
+    # sweep that runs and finds nothing and a sweep that never ran are
+    # indistinguishable otherwise, which is exactly how a fleet of followers
+    # running pre-merge code looked healthy while none of them could recover
+    # anything: the capability was absent and the pane said the same thing it
+    # says when the fleet is simply quiet.
+    _write_sweep_status(project, report)
     return report

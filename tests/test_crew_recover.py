@@ -65,6 +65,30 @@ def _stated_reset():
     return moment
 
 
+def _stream_without_a_session(source: Path) -> str:
+    """The same recorded refusal with its session id fields removed.
+
+    Still a real refused stream — the refusal, its stated reset and every other
+    event are the recorded ones — so the absence under test is an absence of
+    the session and not of the refusal.
+    """
+    lines = []
+    for line in source.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            event = json.loads(line)
+        except ValueError:
+            lines.append(line)
+            continue
+        # Both spellings: this dialect names it thread_id and another names it
+        # session_id, and stripping only one leaves the id in place.
+        event.pop("session_id", None)
+        event.pop("thread_id", None)
+        lines.append(json.dumps(event))
+    return "\n".join(lines) + "\n"
+
+
 def _refused_run(
     tmp_path: Path,
     run_id: str,
@@ -72,12 +96,16 @@ def _refused_run(
     worktree: bool = True,
     write_paths: tuple[str, ...] = ("reckon/one.py",),
     session_on_pointer: bool = False,
+    session_in_stream: bool = True,
 ) -> dict:
     """A pointer for a run a provider refusal stopped, as dispatch leaves it."""
     directory = tmp_path / "runs" / run_id
     directory.mkdir(parents=True, exist_ok=True)
     stream = directory / "stream.jsonl"
-    stream.write_bytes(REFUSED_STREAM.read_bytes())
+    if session_in_stream:
+        stream.write_bytes(REFUSED_STREAM.read_bytes())
+    else:
+        stream.write_text(_stream_without_a_session(REFUSED_STREAM), encoding="utf-8")
     tree = tmp_path / "trees" / run_id
     if worktree:
         tree.mkdir(parents=True, exist_ok=True)
@@ -135,8 +163,12 @@ def _clock_at(monkeypatch: pytest.MonkeyPatch, moment) -> None:
     that moves one and not the other is measuring a disagreement it invented.
     """
     from reckon import budget as budget_module
+    from reckon.crew import recover as recover_module
 
     monkeypatch.setattr(budget_module, "_now", lambda now=None: now or moment)
+    # The sweep's own clock too, because a surface that takes no ``now`` — the
+    # command an operator runs — must read the same moment as one that does.
+    monkeypatch.setattr(recover_module, "_now", lambda now=None: now or moment)
 
 
 def _real_crew_home(monkeypatch: pytest.MonkeyPatch) -> Path:
@@ -395,3 +427,175 @@ def test_the_follow_loop_sweeps_on_a_cadence_not_every_iteration(
     # Twenty-five iterations, one second apart, at a ten-second cadence: the
     # sweep runs on the first pass and then only when the cadence has elapsed.
     assert swept == [PROJECT, PROJECT, PROJECT]
+
+
+# ── One session answer, whichever surface is asked ──────────────────────────
+#
+# The incident this closes turned on a bare null. A coordinator read
+# `session_id: null` on five live pointers, took it for a verdict, and promoted
+# all five — while resume had been recovering exactly that case from the stream
+# for months. The null meant only that nothing had folded the stream in yet, and
+# nothing anywhere expressed the difference between that and a genuine absence.
+
+
+def _stream_session_of(run_id: str) -> str:
+    """The id the run's own stream carries, read independently of the resolver."""
+    from reckon import _backends
+
+    record = crew.read_pointer(run_id)
+    observation = _backends.observe_log(
+        backend_name=str(record.get("backend") or ""),
+        backend={"launch": "cli", "command": "codex"},
+        log_path=Path(str(record["log_path"])),
+    )
+    return str(observation.session_id or "")
+
+
+def _surface_answers(run_id: str, now) -> dict[str, dict]:
+    """What each entry point says about one run's session, asked in turn.
+
+    The mutating surface goes last on purpose: `crew observe` folds the stream
+    into the pointer, so asking it first would change what every later surface
+    is reading and turn one state into two.
+    """
+    from click.testing import CliRunner
+
+    from reckon.crew.recover import sweep as sweep_entry
+
+    runner = CliRunner()
+    swept = sweep_entry(PROJECT, dry_run=True, now=now)
+    judged = (swept["resumed"] or swept["skipped"])[0]
+    command = json.loads(
+        runner.invoke(
+            cli_module.main,
+            ["crew", "resume-held", "--project", PROJECT, "--dry-run"],
+        ).output
+    )
+    commanded = (command["resumed"] or command["skipped"])[0]
+    listed = json.loads(
+        runner.invoke(cli_module.main, ["crew", "list", "--project", PROJECT]).output
+    )
+    row = next(item for item in listed["runs"] if item["run_id"] == run_id)
+    observed = json.loads(
+        runner.invoke(cli_module.main, ["crew", "observe", "--run", run_id]).output
+    )
+    return {
+        "sweep": judged,
+        "command": commanded,
+        "list": row,
+        "observe": observed,
+    }
+
+
+def test_every_surface_answers_the_same_session_from_the_same_source(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A pointer with no id and a stream with one: every surface says stream."""
+    run_id = "r-20260904T030000000000-node-a"
+    _refused_run(tmp_path, run_id)
+    assert "session_id" not in crew.read_pointer(run_id)
+    expected = _stream_session_of(run_id)
+    assert expected
+    after = _stated_reset() + timedelta(minutes=1)
+    _clock_at(monkeypatch, after)
+
+    answers = _surface_answers(run_id, after)
+
+    assert {name: answer.get("session_id") for name, answer in answers.items()} == {
+        "sweep": expected,
+        "command": expected,
+        "list": expected,
+        "observe": expected,
+    }
+    assert {name: answer.get("session_source") for name, answer in answers.items()} == {
+        "sweep": "stream",
+        "command": "stream",
+        "list": "stream",
+        "observe": "stream",
+    }
+    assert not (_real_crew_home(monkeypatch) / "live" / f"{run_id}.json").exists()
+
+
+def test_every_surface_states_the_same_absence(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An absence names what was consulted, so it cannot read as a verdict."""
+    run_id = "r-20260904T031000000000-node-a"
+    _refused_run(tmp_path, run_id, session_in_stream=False)
+    after = _stated_reset() + timedelta(minutes=1)
+    _clock_at(monkeypatch, after)
+
+    answers = _surface_answers(run_id, after)
+
+    for name in ("list", "observe"):
+        assert answers[name]["session_id"] is None, name
+        assert answers[name]["session_source"] is None, name
+        resolution = answers[name]["session_resolution"]
+        assert resolution["resolved"] is False
+        # All three named, so a reader can tell this from a reading nobody took.
+        assert resolution["consulted"] == ["pointer", "stream", "ledger"]
+        assert "all three were consulted" in resolution["detail"]
+    for name in ("sweep", "command"):
+        assert answers[name]["reason"] == "no-recoverable-session", name
+        assert "all three were consulted" in answers[name]["detail"], name
+
+
+def test_a_promoted_run_still_answers_from_its_ledger_row(
+    home: Path, tmp_path: Path
+) -> None:
+    """Promotion takes the pointer; the session it recorded still answers.
+
+    This is the third source, and it is the one a coordinator needs after the
+    operation that made the incident irreversible has already happened.
+    """
+    from reckon import ledger
+    from reckon.crew.recover import resolve_session
+
+    run_id = "r-20260904T032000000000-node-a"
+    repo = tmp_path / "repo"
+    repo.mkdir(parents=True, exist_ok=True)
+    row = ledger.build_record(
+        run_id=run_id,
+        plan="plan-a",
+        gate="not-run",
+        agent={"backend": "alpha"},
+        completed_at="2026-09-04T03:20:00Z",
+        session_id="sess-in-the-ledger",
+        outcome="promoted while the lane was refusing",
+    )
+    ledger.append_run(PROJECT, row, root=repo)
+
+    answer = resolve_session(run_id, project=PROJECT, root=repo)
+
+    assert answer["session_id"] == "sess-in-the-ledger"
+    assert answer["source"] == "ledger"
+    assert answer["resolved"] is True
+
+
+def test_the_cadence_records_that_it_ran_even_when_it_finds_nothing(
+    home: Path, tmp_path: Path
+) -> None:
+    """A running sweep and an absent sweep must not look identical.
+
+    One merge left every follower on this workstation executing pre-merge code,
+    unable to perform the recovery it appeared to have, and the pane said what
+    it says when a fleet is simply quiet. The status record is what separates
+    those two, so it is written on every sweep rather than only on the ones
+    that found work.
+    """
+    from reckon.crew.recover import sweep, sweep_status_path
+
+    report = sweep(PROJECT, dry_run=True)
+
+    assert report["checked"] == 0
+    status = json.loads(sweep_status_path(PROJECT).read_text(encoding="utf-8"))
+    assert status["project"] == PROJECT
+    assert status["checked"] == 0
+    assert status["resumed"] == 0
+    assert status["swept_at"] == report["swept_at"]
+    # Which process swept, because the failure this exposes is a follower
+    # running code that cannot do the work.
+    assert status["swept_by_pid"] > 0
+    # And nothing went into the append-only record, which holds what happened
+    # rather than that anything ran.
+    assert not recovery_log_path(PROJECT).exists()
