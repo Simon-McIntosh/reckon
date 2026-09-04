@@ -3,19 +3,20 @@ const { useCallback, useEffect, useMemo, useRef, useState } = React;
 
 function parseHash() {
   const h = (window.location.hash || "").replace(/^#/, "");
-  if (!h || h === "cockpit") return { view: "cockpit" };
+  if (!h || h === "home") return { view: "home" };
+  if (h === "cockpit") return { view: "cockpit" };
   if (h.startsWith("plan/")) return { view: "plan", slug: decodeURIComponent(h.slice(5)) };
   if (h.startsWith("sprint/")) return { view: "sprint", sprint: decodeURIComponent(h.slice(7)) };
   if (h === "graph") return { view: "graph" };
   if (h === "crew") return { view: "crew" };
   if (h === "plans") return { view: "plan", slug: null };
   if (h === "sprints") return { view: "sprint", sprint: null };
-  return { view: "cockpit" };
+  return { view: "home" };
 }
 
 function canvasViewForRoute(route) {
   const view = route?.view;
-  return ["cockpit", "plan", "sprint", "graph", "crew"].includes(view)
+  return ["home", "cockpit", "plan", "sprint", "graph", "crew"].includes(view)
     ? view
     : "cockpit";
 }
@@ -39,7 +40,8 @@ function useHashRoute() {
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
   const nav = useCallback((to) => {
-    if (to.view === "cockpit") window.location.hash = "#cockpit";
+    if (to.view === "home") window.location.hash = "#home";
+    else if (to.view === "cockpit") window.location.hash = "#cockpit";
     else if (to.view === "plan") window.location.hash = `#plan/${encodeURIComponent(to.slug)}`;
     else if (to.view === "sprint") window.location.hash = `#sprint/${encodeURIComponent(to.sprint)}`;
     else if (to.view === "graph") window.location.hash = "#graph";

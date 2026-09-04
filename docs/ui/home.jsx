@@ -1,264 +1,147 @@
-// Fleet home page — renders at http://localhost:8765/
-// Fetches /_projects/index.json for the project list.
+// Read-only fleet home rendered inside the Reckon shell.
+const { useMemo: useHomeMemo, useState: useHomeState } = React;
 
-const {useState, useEffect, useRef, useMemo, useCallback} = React;
+const HOME_LANDED_WINDOW_MS = 72 * 60 * 60 * 1000;
 
-function normalizeProject(raw) {
-  const d = (raw && raw.data) || {};
-  // Shape A: data.projects[0] has per-project summary
-  if (Array.isArray(d.projects) && d.projects.length) {
-    const s = d.projects[0];
-    return {
-      project:       raw.project,
-      path:          raw.path || "",
-      accent:        s.accent || window.ACCENTS?.[raw.project] || window.ACCENTS?._default || "var(--accent)",
-      plans_count:   (s.plans_count | 0),
-      active:        (s.active  | 0),
-      blocked:       (s.blocked | 0),
-      pending:       (s.pending | 0),
-      shipped:       (s.shipped | 0),
-      last_modified: s.last_modified || raw.updated || "",
-      activity30:    Array.isArray(s.activity30) ? s.activity30 : [],
-    };
-  }
-  // Shape B: data.counts.status
-  const sb    = (d.counts && d.counts.status) || {};
-  const plans = Array.isArray(d.plans) ? d.plans : (Array.isArray(d.inventory) ? d.inventory : []);
-  const totalPlans = (d.counts && d.counts.total) || plans.length || 0;
+function homeVisibleSummary(projects, runs) {
+  const moving = (projects || []).filter(project => Number(project.plans_count) > 0);
   return {
-    project:       raw.project,
-    path:          raw.path || "",
-    accent:        d.accent || window.ACCENTS?.[raw.project] || window.ACCENTS?._default || "var(--accent)",
-    plans_count:   totalPlans,
-    active:        (sb.active  | 0),
-    blocked:       (sb.blocked | 0),
-    pending:       (sb.pending | 0),
-    shipped:       (sb.shipped | 0),
-    last_modified: d.audit_date || raw.updated || "",
-    activity30:    Array.isArray(d.activity30) ? d.activity30 : [],
+    moving: moving.length,
+    plans: moving.reduce((total, project) => total + Number(project.plans_count || 0), 0),
+    active: moving.reduce((total, project) => total + Number(project.active || 0), 0),
+    inFlight: (runs || []).length,
+    held: moving.reduce((total, project) => total + Number(project.blocked || 0), 0),
+    shipped: moving.reduce((total, project) => total + Number(project.shipped || 0), 0),
   };
 }
 
-function FleetPage({projects, mountsPath, refreshedAt, onOpen}) {
-  const tot     = projects.reduce((a, p) => a + p.plans_count, 0);
-  const active  = projects.reduce((a, p) => a + p.active, 0);
-  const blocked = projects.reduce((a, p) => a + p.blocked, 0);
-  const shipped = projects.reduce((a, p) => a + p.shipped, 0);
-  return (
-    <main className="page">
-      <div className="page-head">
-        <h1>Across projects.</h1>
-        <div className="subtitle">all reckon-managed projects · click to open</div>
-      </div>
-      <div className="fstrip">
-        <div className="fcell"><div className="k">projects</div><div className="v">{projects.length}</div></div>
-        <div className="fcell"><div className="k">plans</div><div className="v">{tot}</div></div>
-        <div className="fcell"><div className="k">active</div><div className="v">{active}</div></div>
-        <div className="fcell"><div className="k">blocked</div><div className={`v ${blocked ? "bad" : ""}`}>{blocked}</div></div>
-        <div className="sp"/>
-        <div className="fcell"><div className="k">shipped</div><div className="v">{shipped}</div></div>
-      </div>
-      {window.ProjectCard && projects.map(p => <window.ProjectCard key={p.project} p={p} onOpen={onOpen}/>)}
-      <div className="add-hint">
-        Add a project: edit <code>{mountsPath}</code>. No restart needed.
-      </div>
-    </main>
-  );
+function homeProjectRows(projects) {
+  return (projects || []).filter(project => Number(project.plans_count) > 0)
+    .sort((left, right) => String(right.last_edited || "").localeCompare(String(left.last_edited || "")));
 }
 
-function FleetCmdKPalette({onClose, projects}) {
-  const [q, setQ] = useState("");
-  const [idx, setIdx] = useState(0);
-  const [inventory, setInventory] = useState([]);
-  const inp = useRef(null);
-  useEffect(() => { inp.current?.focus(); }, []);
+function homeDormantRows(projects) {
+  return (projects || []).filter(project => Number(project.plans_count) === 0);
+}
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      const items = [];
-      for (const proj of projects) {
-        try {
-          const r = await fetch(`/_discover/${proj.project}`, {cache: "no-store"});
-          if (!r.ok) continue;
-          const d = await r.json();
-          if (Array.isArray(d.inventory)) {
-            const enriched = await Promise.all(d.inventory.map(async p => {
-              if ((p.type || "plan") !== "plan") return p;
-              try {
-                const detail = await fetch(`/plan/${proj.project}/${p.slug}`, {cache: "no-store"});
-                if (!detail.ok) return p;
-                const state = await detail.json();
-                return {...p, effort_hours: state.effort_hours};
-              } catch {
-                return p;
-              }
-            }));
-            for (const p of enriched) items.push({...p, project: proj.project, accent: proj.accent});
-          }
-        } catch {}
-      }
-      if (!cancelled) setInventory(items);
-    }
-    load();
-    return () => { cancelled = true; };
-  }, [projects.map(p => p.project).join(",")]);
+function homeVisibleRuns(runs, projects) {
+  const visible = new Set((projects || []).map(project => project.project));
+  return (runs || []).filter(run => visible.has(run.project));
+}
 
-  const filtered = useMemo(() => {
-    const n = q.trim().toLowerCase();
-    if (!n) return inventory.slice(0, 40);
-    return inventory.filter(p =>
-      p.title?.toLowerCase().includes(n) ||
-      p.slug?.toLowerCase().includes(n) ||
-      p.project?.toLowerCase().includes(n) ||
-      p.type?.toLowerCase().includes(n) ||
-      p.verdict?.toLowerCase().includes(n) ||
-      p.source?.toLowerCase().includes(n) ||
-      (p.informs || []).some(ref => ref.toLowerCase().includes(n)) ||
-      (p.evidence_for || []).some(ref => ref.toLowerCase().includes(n))
-    ).slice(0, 40);
-  }, [q, inventory]);
+function homeActivityProjection(series) {
+  if (!Array.isArray(series) || series.length === 0) return null;
+  const values = series.map(value => Math.max(0, Number(value) || 0));
+  const peak = Math.max(1, ...values);
+  const line = values.map((value, index) => {
+    const x = values.length === 1 ? 180 : (index / (values.length - 1)) * 180;
+    const y = 27 - (value / peak) * 24;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  const total = values.reduce((sum, value) => sum + value, 0);
+  const recent = values.slice(-3).reduce((sum, value) => sum + value, 0);
+  return { line, area: `0,30 ${line} 180,30`, total, recent };
+}
 
-  useEffect(() => { setIdx(0); }, [q]);
-  useEffect(() => {
-    const k = (e) => {
-      if (e.key === "Escape") onClose();
-      if (e.key === "ArrowDown") { e.preventDefault(); setIdx(i => Math.min(filtered.length - 1, i + 1)); }
-      if (e.key === "ArrowUp")   { e.preventDefault(); setIdx(i => Math.max(0, i - 1)); }
-      if (e.key === "Enter" && filtered[idx]) {
-        window.location.href = `/${filtered[idx].project}/#plan/${filtered[idx].slug}`;
-        onClose();
-      }
-    };
-    document.addEventListener("keydown", k);
-    return () => document.removeEventListener("keydown", k);
-  }, [filtered, idx, onClose]);
+function homeJustLanded(projects, now = Date.now()) {
+  return (projects || []).flatMap(project => (project.artifacts || []).map(item => ({...item, project: project.project})))
+    .filter(item => {
+      const kind = item.type || "plan";
+      const landed = kind === "evidence" || (kind === "plan" && ["done", "shipped"].includes(item.effective_status || item.status));
+      const stamp = new Date(item.edited || item.last || 0).getTime();
+      return landed && Number.isFinite(stamp) && stamp >= now - HOME_LANDED_WINDOW_MS && stamp <= now;
+    })
+    .sort((left, right) => new Date(right.edited || right.last) - new Date(left.edited || left.last))
+    .slice(0, 7);
+}
 
-  function statusColor(s) {
-    return s === "active" ? "var(--accent)" : s === "blocked" ? "var(--bad)" :
-           s === "shipped" ? "var(--ok)" : "var(--line-2)";
-  }
+function homeRelativeTime(value, now = Date.now()) {
+  const stamp = new Date(value || 0).getTime();
+  if (!Number.isFinite(stamp) || !value) return "no edits recorded";
+  const seconds = Math.max(0, Math.floor((now - stamp) / 1000));
+  if (seconds < 60) return "edited just now";
+  if (seconds < 3600) return `edited ${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `edited ${Math.floor(seconds / 3600)}h ago`;
+  return `edited ${Math.floor(seconds / 86400)}d ago`;
+}
 
-  return (
-    <div className="cmdk-scrim" onMouseDown={onClose}>
-      <div className="cmdk" onMouseDown={e => e.stopPropagation()}>
-        <input ref={inp} placeholder="Search plans, research and evidence…" value={q} onChange={e => setQ(e.target.value)}/>
-        <div className="list">
-          {filtered.map((p, i) => (
-            <button key={p.project + "/" + p.slug}
-                    className={`cmdk-item ${i === idx ? "on" : ""}`}
-                    onMouseEnter={() => setIdx(i)}
-                    onClick={() => { window.location.href = `/${p.project}/#plan/${p.slug}`; onClose(); }}>
-              <span className="cdot" style={{width:8,height:8,borderRadius:"50%",background:statusColor(p.status)}}/>
-              <span className="cgl" style={{color: p.accent || "var(--accent)"}}>
-                {window.GLYPHS?.[p.project] || window.GLYPHS?._default}
-              </span>
-              <span><span className="ct">{p.title}</span> <span className="cs">/{p.slug}</span></span>
-              <span className="cmeta">
-                {p.project} · {p.type || "plan"}
-                {(p.type || "plan") === "plan" ? ` · ${Math.round((p.impl || 0) * 100)}%` : ""}
-                {(p.type || "plan") === "plan" && Number.isFinite(p.effort_hours) ? ` · ${p.effort_hours} worker-hours` : ""}
-                {p.type === "evidence" && p.verdict ? ` · ${p.verdict}` : ""}
-              </span>
-            </button>
-          ))}
-          {filtered.length === 0 && (
-            <div style={{padding: 24, textAlign: "center", color: "var(--muted)", fontSize: 13}}>
-              {inventory.length === 0 ? "Loading artifacts…" : "No artifacts match."}
-            </div>
-          )}
-        </div>
-        <div className="cmdk-foot"><span>↑↓ navigate</span><span>↵ open</span><span>esc close</span></div>
-      </div>
+function homeBudget(run) {
+  const elapsed = Math.max(0, Number(run.elapsed_seconds || 0));
+  const total = Math.max(0, Number(run.budget_seconds || run.time_budget_seconds || 0));
+  return {
+    percent: total ? Math.min(100, Math.round((elapsed / total) * 100)) : 0,
+    label: total ? `${Math.round(elapsed / 60)}m / ${Math.round(total / 60)}m` : `${Math.round(elapsed / 60)}m`,
+  };
+}
+
+function HomeStreak({ series }) {
+  const activity = homeActivityProjection(series);
+  if (!activity) return <span className="r-home-no-activity">no recorded activity</span>;
+  return <span className="r-home-streak">
+    <svg viewBox="0 0 180 30" preserveAspectRatio="none" aria-hidden="true">
+      <polygon points={activity.area}></polygon><polyline points={activity.line}></polyline>
+    </svg>
+    <span>{activity.total} edits · {activity.recent} last 3d</span>
+  </span>;
+}
+
+function HomeStatusBar({ project }) {
+  const total = Math.max(1, Number(project.plans_count || 0));
+  const buckets = [["shipped", project.shipped], ["active", project.active], ["held", project.blocked], ["pending", project.pending]];
+  return <span className="r-home-status-wrap">
+    <span className="r-home-status-bar" aria-label={`${project.project} plan status composition`}>
+      {buckets.map(([name, value]) => Number(value) > 0 && <i key={name} className={name} style={{width: `${(Number(value) / total) * 100}%`}} title={`${value} ${name}`}></i>)}
+    </span>
+    <span className="r-home-status-labels"><span>{project.plans_count} plans</span>{Number(project.blocked) > 0 && <span className="held">{project.blocked} held</span>}</span>
+  </span>;
+}
+
+function FleetHome({ projects, fleetRuns, mountedProjectCount, onConfigureVisibility }) {
+  const [dormantOpen, setDormantOpen] = useHomeState(false);
+  const rows = useHomeMemo(() => homeProjectRows(projects), [projects]);
+  const dormant = useHomeMemo(() => homeDormantRows(projects), [projects]);
+  const runs = useHomeMemo(() => homeVisibleRuns(fleetRuns, projects), [fleetRuns, projects]);
+  const landed = useHomeMemo(() => homeJustLanded(projects), [projects]);
+  const summary = useHomeMemo(() => homeVisibleSummary(projects, runs), [projects, runs]);
+  const stats = [["projects moving", summary.moving], ["plans", summary.plans], ["active", summary.active], ["in flight", summary.inFlight], ["held", summary.held], ["shipped", summary.shipped]];
+  const today = new Date().toLocaleDateString([], {year: "numeric", month: "short", day: "numeric"});
+  const openProject = project => { window.location.href = `/${project}/#plans`; };
+  const openArtifact = item => { window.location.href = `/${item.project}/#plan/${encodeURIComponent(item.nav_key || item.slug)}`; };
+
+  return <main className="r-home" aria-label="Fleet home"><div className="r-home-inner">
+    <header className="r-home-eyebrow"><span>Fleet · {today}</span><span className="r-home-scope">{projects.length} of {mountedProjectCount} shown</span><button type="button" onClick={onConfigureVisibility}>configure</button></header>
+    <section className="r-home-stats" aria-label="Visible fleet totals">
+      {stats.map(([label, value]) => <div className="r-home-stat" key={label}><span>{label}</span><strong>{value}</strong></div>)}
+    </section>
+    <section className="r-home-projects" aria-label="Projects with recorded plans">
+      {rows.map(project => <button className="r-home-project" type="button" key={project.project} onClick={() => openProject(project.project)}>
+        <span className="r-home-project-id"><span><i className={`r-live-dot ${project.live ? "is-live" : ""}`}></i><strong>{project.project}</strong></span><small>{homeRelativeTime(project.last_edited)}</small></span>
+        <HomeStreak series={project.activity30}/><HomeStatusBar project={project}/>
+        <span className="r-home-sprint"><strong>{project.active_sprint?.id || "no active sprint"}</strong><small>{project.active_sprint?.theme || ""}</small></span>
+      </button>)}
+      {dormant.length > 0 && <div className="r-home-dormant">
+        <button type="button" onClick={() => setDormantOpen(open => !open)} aria-expanded={dormantOpen}>{dormant.length} visible projects with no recorded work — {dormantOpen ? "hide" : "show"}</button>
+        {dormantOpen && <div className="r-home-dormant-chips">{dormant.map(project => <button type="button" key={project.project} onClick={() => openProject(project.project)}>{project.project}</button>)}</div>}
+      </div>}
+    </section>
+    <div className="r-home-lower">
+      <section className="r-home-panel r-home-flight" aria-labelledby="home-flight-heading">
+        <header><h2 id="home-flight-heading">In flight</h2><span>{runs.length} runs · polling every 3s</span></header>
+        {runs.map(run => { const budget = homeBudget(run); return <article key={run.run_id || `${run.project}-${run.plan}`}>
+          <div className="r-home-run-title"><i className="r-live-dot is-live"></i><strong>{run.title || run.plan || run.node || "Untitled run"}</strong><span>{run.section || ""}</span><code>{run.project}</code></div>
+          <p>{run.current_line || run.gate || run.done_when || "Waiting for worker activity."}</p>
+          <div className="r-home-budget"><span><i style={{width: `${budget.percent}%`}}></i></span><code>{budget.label}</code><code>{run.phase || "working"}</code></div>
+        </article>; })}
+        {runs.length === 0 && <p className="r-home-empty">No runs in flight across the visible set.</p>}
+      </section>
+      <section className="r-home-panel r-home-landed" aria-labelledby="home-landed-heading">
+        <header><h2 id="home-landed-heading">Just landed</h2><span>last 72 hours</span></header>
+        {landed.map(item => <button type="button" key={`${item.project}:${item.nav_key || item.slug}`} onClick={() => openArtifact(item)}><span className={`r-home-kind ${item.type || "plan"}`}>{item.type || "plan"}</span><strong>{item.title || item.slug}</strong><time>{homeRelativeTime(item.edited || item.last).replace(/^edited /, "")}</time></button>)}
+        {landed.length === 0 && <p className="r-home-empty">Nothing landed in the visible set during the last 72 hours.</p>}
+      </section>
     </div>
-  );
+  </div></main>;
 }
 
-function HomeApp() {
-  const [projects, setProjects] = useState([]);
-  const [mountsPath, setMountsPath] = useState("mounts.json");
-  const [refreshedAt, setRefreshedAt] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [cmdK, setCmdK] = useState(false);
-  const [theme, setTheme] = useState("light");
-  const [density, setDensity] = useState("comfortable");
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-  }, [theme]);
-
-  useEffect(() => {
-    const k = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setCmdK(true); }
-    };
-    document.addEventListener("keydown", k);
-    return () => document.removeEventListener("keydown", k);
-  }, []);
-
-  useEffect(() => {
-    fetch("/_projects/index.json", {cache: "no-store"})
-      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
-      .then(data => {
-        if (data.updated) setRefreshedAt(new Date(data.updated).toLocaleTimeString());
-        if (data.mounts_path) setMountsPath(data.mounts_path);
-        setProjects((data.projects || []).map(normalizeProject));
-        setLoading(false);
-      })
-      .catch(e => { setError(e.message); setLoading(false); });
-  }, []);
-
-  const onOpen = (projectKey) => {
-    window.location.href = `/${projectKey}/`;
-  };
-
-  return (
-    <>
-      <div className="topbar">
-        {window.ProjectPicker
-          ? <window.ProjectPicker current={null} projects={projects} onNav={p => p ? onOpen(p) : null}/>
-          : <span className="label fleet">fleet</span>}
-        <button className="r-cmdk-trigger" onClick={() => setCmdK(true)}>
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-            <circle cx="7" cy="7" r="4.5"/><path d="M13 13l-2.5-2.5"/>
-          </svg>
-          <span>Search</span>
-          <span className="kbd">⌘K</span>
-        </button>
-        <span className="sp"/>
-        <div className="top-r">
-          {window.SettingsMenu && <window.SettingsMenu theme={theme} setTheme={setTheme} density={density} setDensity={setDensity}/>}
-          {refreshedAt && <span className="meta-time">refreshed {refreshedAt}</span>}
-        </div>
-      </div>
-      {loading && (
-        <main className="page">
-          <div style={{padding: "48px 0", textAlign: "center", color: "var(--muted)"}}>Loading fleet data…</div>
-        </main>
-      )}
-      {error && (
-        <main className="page">
-          <div style={{padding: 32, textAlign: "center"}}>
-            <div style={{color: "var(--bad)", fontFamily: "var(--mono)", fontSize: 12}}>{error}</div>
-            <p style={{color: "var(--muted)", marginTop: 8}}>Is the reckon server running? <code>uv run reckon serve</code></p>
-          </div>
-        </main>
-      )}
-      {!loading && !error && projects.length === 0 && (
-        <main className="page">
-          <div style={{padding: "48px 24px", textAlign: "center", color: "var(--muted)"}}>
-            <div style={{fontSize: 28, marginBottom: 12}}>🗂</div>
-            <h2 style={{fontSize: 15, fontWeight: 600}}>No projects mounted yet</h2>
-            <p>Edit <code>{mountsPath}</code> to register a project, then run <code>uv run reckon serve</code>.</p>
-          </div>
-        </main>
-      )}
-      {!loading && !error && projects.length > 0 && (
-        <FleetPage projects={projects} mountsPath={mountsPath} refreshedAt={refreshedAt} onOpen={onOpen}/>
-      )}
-      {cmdK && <FleetCmdKPalette projects={projects} onClose={() => setCmdK(false)}/>}
-    </>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById("root")).render(<HomeApp/>);
+window.ReckonShell = window.ReckonShell || {};
+window.ReckonShell.home = {HOME_LANDED_WINDOW_MS, homeVisibleSummary, homeProjectRows, homeDormantRows, homeVisibleRuns, homeActivityProjection, homeJustLanded, homeRelativeTime, homeBudget, HomeStreak, HomeStatusBar, FleetHome};

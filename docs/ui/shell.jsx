@@ -109,23 +109,32 @@ function App() {
     } catch { return null; }
   });
   useEffect(() => {
+    let cancelled = false;
     Promise.all([
       fetch("/_projects/index.json").then(response => response.ok ? response.json() : null),
       fetch("/crew")
         .then(response => response.ok ? response.json() : null)
         .catch(() => ({ runs: [] })),
     ])
-      .then(([data, crew]) => {
+      .then(async ([data, crew]) => {
+        if (cancelled) return;
         setFleetRuns(Array.isArray(crew?.runs) ? crew.runs : []);
         if (!data?.projects) return;
+        const discoveries = await Promise.all(data.projects.map(project =>
+          fetch(`/_discover/${project.project}`)
+            .then(response => response.ok ? response.json() : {})
+            .catch(() => ({}))
+        ));
+        if (cancelled) return;
         const liveCounts = (crew?.runs || []).reduce((counts, run) => {
           counts.set(run.project, (counts.get(run.project) || 0) + 1);
           return counts;
         }, new Map());
-        setProjects(data.projects.map(project => {
+        setProjects(data.projects.map((project, index) => {
           const state = project.data || {};
           const summary = Array.isArray(state.projects) ? state.projects[0] : null;
-          const inventory = Array.isArray(state.inventory) ? state.inventory : [];
+          const discovery = discoveries[index] || {};
+          const inventory = Array.isArray(discovery.inventory) ? discovery.inventory : [];
           const plans = Array.isArray(state.plans) ? state.plans : inventory;
           return {
             project: project.project,
@@ -133,11 +142,29 @@ function App() {
             plans_count: Number(summary?.plans_count ?? state.counts?.total ?? plans.length ?? 0),
             live: liveCounts.has(project.project),
             live_count: liveCounts.get(project.project) || 0,
-            state,
+            active: Number(summary?.active || 0),
+            blocked: Number(summary?.blocked || 0),
+            pending: Number(summary?.pending || 0),
+            shipped: Number(summary?.shipped || 0),
+            last_edited: summary?.last_edited || summary?.last_modified || "",
+            activity30: Array.isArray(summary?.activity30) ? summary.activity30 : [],
+            active_sprint: summary?.active_sprint || null,
+            artifacts: inventory,
+            state: discovery,
           };
         }));
       })
       .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    const refreshRuns = () => fetch("/crew")
+      .then(response => response.ok ? response.json() : null)
+      .then(crew => { if (Array.isArray(crew?.runs)) setFleetRuns(crew.runs); })
+      .catch(() => {});
+    const timer = window.setInterval(refreshRuns, 3000);
+    return () => window.clearInterval(timer);
   }, []);
 
   const [theme, setTheme] = useState(() => {
@@ -157,18 +184,19 @@ function App() {
 
   const navProject = useCallback((destProject) => {
     if (!destProject) {
-      window.location.href = "/";
+      nav({ view: "home" });
       return;
     }
     const M = window.STATE;
     const currentProject = M?.project || null;
     const isFromProject = !!currentProject;
-    let hash = "#cockpit";
+    let hash = "#home";
     if (isFromProject) {
       if (route.view === "graph") hash = "#graph";
       else if (route.view === "crew") hash = "#crew";
       else if (route.view === "plan") hash = "#plans";
       else if (route.view === "sprint") hash = "#sprints";
+      else if (route.view === "home") hash = "#home";
       else hash = "#cockpit";
     }
     window.location.href = `/${destProject}/${hash}`;
@@ -276,7 +304,7 @@ function App() {
     <div className={`r-app ${readingMode ? "r-focus-mode" : ""}`}>
       {!readingMode && <window.ReckonShell.topbar.TopBar
           route={route}
-          onNav={nav}
+          onNav={to => nav(to.view === "cockpit" ? { view: "home" } : to)}
           navProject={navProject}
           onOpenCmdK={() => setCmdKOpen(true)}
           filtersHidden={filtersHidden}
@@ -320,6 +348,7 @@ function App() {
             <window.ReckonShell.title.TitleBar route={route} onNav={nav} onOpenPrompt={() => setPromptOpen(true)} onPlanMutated={bumpInv} />
             <div className={`r-reader-with-attachments ${route.view === "cockpit" ? "r-overview-container" : ""}`}>
               <div className={`r-body ${route.view === "cockpit" ? "r-overview-view" : ""}`}>
+                {canvasView === "home" && <window.ReckonShell.home.FleetHome projects={shownProjects} fleetRuns={window.ReckonShell.home.homeVisibleRuns(fleetRuns, shownProjects)} mountedProjectCount={projects.length} onConfigureVisibility={() => document.querySelector(".r-project-configure")?.click()} />}
                 {canvasView === "cockpit" && <window.ReckonShell.overview.CockpitBody onNav={nav} projects={shownProjects} fleetRuns={fleetRuns} mountedProjectCount={projects.length} />}
                 {canvasView === "sprint" && <><window.ReckonShell.prompt.FleetPrompt sprintId={route.sprint} /><window.Sprint sprintId={route.sprint} onNav={nav} /></>}
                 {canvasView === "graph" && <window.GraphView onNav={nav} items={items} focal={graphFocal} setFocal={setGraphFocal} />}

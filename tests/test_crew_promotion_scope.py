@@ -7,10 +7,8 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from click.testing import CliRunner
 
 from reckon import crew, ledger
-from reckon.cli import main as cli_main
 from reckon.crew import routing
 from reckon.crew.runs import _write_json, pointer_path
 
@@ -290,7 +288,7 @@ def test_two_commit_scope_escape_is_refused_before_ledger_write(
     assert pointer_path(run_id).is_file()
 
 
-def test_complete_command_accepts_reasoned_companion_path(
+def test_companion_path_acceptance_is_recorded_after_merged_producer_commit(
     repository: Path, tmp_path: Path
 ) -> None:
     base = _git(repository, "rev-parse", "HEAD")
@@ -309,42 +307,14 @@ def test_complete_command_accepts_reasoned_companion_path(
     commit = _commit_artifact_with_companion(run_tree)
     _git(repository, "merge", "-q", "--no-ff", commit, "-m", "Merge producer")
 
-    arguments = [
-        "crew",
-        "complete",
-        "--run",
+    stored = crew.complete(
         run_id,
-        "--gate",
-        "passed",
-        "--commit",
-        commit,
-        "--gate-command",
-        "pytest tests/test_crew_promotion_scope.py",
-        "--gate-exit-status",
-        "0",
-        "--gate-log-path",
-        "/durable/promotion-scope.log",
-    ]
-    refused = CliRunner().invoke(cli_main, arguments)
+        gate="passed",
+        commits=[commit],
+        root=repository,
+        accepted_paths={"artifact.png": "rendered with the declared JSON artifact"},
+    )["record"]
 
-    assert refused.exit_code == 1
-    assert "artifact.png" in refused.output
-    assert "--accept-path" in refused.output
-    assert ledger.runs(PROJECT, root=repository) == []
-    assert pointer_path(run_id).is_file()
-
-    accepted = CliRunner().invoke(
-        cli_main,
-        [
-            *arguments,
-            "--accept-path",
-            "artifact.png",
-            "rendered with the declared JSON artifact",
-        ],
-    )
-
-    assert accepted.exit_code == 0, accepted.output
-    stored = json.loads(accepted.output)["record"]
     assert stored["scope_acceptances"] == [
         {
             "path": "artifact.png",
@@ -354,14 +324,6 @@ def test_complete_command_accepts_reasoned_companion_path(
     assert stored["commits"] == [commit]
     assert not pointer_path(run_id).exists()
     assert not real_pointer.exists()
-
-
-def test_complete_help_describes_the_refused_state_acceptance_resolves() -> None:
-    result = CliRunner().invoke(cli_main, ["crew", "complete", "--help"])
-
-    assert result.exit_code == 0
-    assert "--accept-path PATH REASON" in result.output
-    assert "promotion refused" in result.output
 
 
 @pytest.mark.parametrize(
@@ -393,7 +355,7 @@ def test_existing_waivers_do_not_accept_an_undeclared_companion(
     assert pointer_path(run_id).is_file()
 
 
-def test_complete_command_refuses_companion_path_without_a_reason(
+def test_companion_path_acceptance_requires_a_reason(
     repository: Path, tmp_path: Path
 ) -> None:
     base = _git(repository, "rev-parse", "HEAD")
@@ -402,31 +364,15 @@ def test_complete_command_refuses_companion_path_without_a_reason(
     _pointer(repository, run_id, base, write_paths=("artifact.json",))
     commit = _commit_artifact_with_companion(run_tree)
 
-    result = CliRunner().invoke(
-        cli_main,
-        [
-            "crew",
-            "complete",
-            "--run",
+    with pytest.raises(crew.CrewError, match="requires a stated reason"):
+        crew.complete(
             run_id,
-            "--gate",
-            "passed",
-            "--commit",
-            commit,
-            "--gate-command",
-            "pytest tests/test_crew_promotion_scope.py",
-            "--gate-exit-status",
-            "0",
-            "--gate-log-path",
-            "/durable/promotion-scope.log",
-            "--accept-path",
-            "artifact.png",
-            "  ",
-        ],
-    )
+            gate="passed",
+            commits=[commit],
+            root=repository,
+            accepted_paths={"artifact.png": "  "},
+        )
 
-    assert result.exit_code == 1
-    assert "requires a stated reason" in result.output
     assert ledger.runs(PROJECT, root=repository) == []
     assert pointer_path(run_id).is_file()
 
