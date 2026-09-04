@@ -13,7 +13,6 @@ from reckon import _plan_html, _store, crew, ledger
 from reckon.cli import main as cli_main
 from reckon.crew.runs import _write_json, pointer_path
 
-
 PROJECT = "proj"
 PLAN = "plan-a"
 
@@ -51,6 +50,76 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         json.dumps({PROJECT: str(root / "docs")}), encoding="utf-8"
     )
     return root
+
+
+def _git(repository: Path, *arguments: str) -> str:
+    result = subprocess.run(
+        ["git", *arguments],
+        cwd=repository,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip()
+
+
+def _resolves_as_commit(repository: Path, revision: str) -> bool:
+    result = subprocess.run(
+        [
+            "git",
+            "rev-parse",
+            "--verify",
+            "--quiet",
+            "--end-of-options",
+            f"{revision}^{{commit}}",
+        ],
+        cwd=repository,
+        capture_output=True,
+        check=False,
+    )
+    return result.returncode == 0 and bool(result.stdout.strip())
+
+
+def _repository_with_candidate(repository: Path) -> tuple[str, str]:
+    candidate = repository / "candidate.txt"
+    candidate.write_text("seed\n", encoding="utf-8")
+    for arguments in (
+        ("init", "-q", "-b", "main"),
+        ("config", "user.email", "worker@example.invalid"),
+        ("config", "user.name", "Worker"),
+        ("add", "candidate.txt"),
+        ("commit", "-q", "-m", "test: seed repository"),
+    ):
+        _git(repository, *arguments)
+    base = _git(repository, "rev-parse", "HEAD")
+    candidate.write_text("seed\ndelivered\n", encoding="utf-8")
+    _git(repository, "add", "candidate.txt")
+    _git(repository, "commit", "-q", "-m", "test: record candidate")
+    return base, _git(repository, "rev-parse", "HEAD")
+
+
+def _write_commit_pointer(repository: Path, run_id: str, base: str) -> None:
+    _write_json(
+        pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": PROJECT,
+            "repo": str(repository),
+            "worktree": str(repository),
+            "base_sha": base,
+            "launch": "in-harness",
+            "role": "implement",
+            "backend": "native",
+            "created_at": "2026-09-04T12:00:00Z",
+            "node": {
+                "id": "commit-resolution",
+                "plan": PLAN,
+                "section": "commit-resolution",
+                "time_budget": "25m",
+                "write_paths": ["candidate.txt"],
+            },
+        },
+    )
 
 
 def test_promotion_splits_narrative_from_run_measurements(repository: Path) -> None:
@@ -245,6 +314,89 @@ def test_an_unresolvable_commit_says_what_else_to_check(tmp_path, monkeypatch) -
         promotion._resolve_commits(cwd=root, revisions=["0" * 40], run_id="r-y")
 
     assert "committed rather than only staging" in str(refusal.value)
+
+
+def test_full_width_non_object_is_refused_before_a_passing_gate_is_recorded(
+    repository: Path,
+) -> None:
+    base, _candidate = _repository_with_candidate(repository)
+    run_id = "r-full-width-non-object"
+    _write_commit_pointer(repository, run_id, base)
+    missing = "0" * 40
+    assert not any(
+        _resolves_as_commit(repository, missing[:width])
+        for width in range(4, len(missing) + 1)
+    )
+
+    with pytest.raises(crew.CrewError, match=missing):
+        crew.complete(
+            run_id,
+            gate="passed",
+            commits=[missing],
+            root=repository,
+        )
+
+    assert ledger.runs(PROJECT, root=repository) == []
+    assert pointer_path(run_id).is_file()
+
+
+def test_log_abbreviation_is_resolved_to_its_full_commit(repository: Path) -> None:
+    base, commit = _repository_with_candidate(repository)
+    run_id = "r-log-abbreviation"
+    _write_commit_pointer(repository, run_id, base)
+    abbreviation = _git(repository, "log", "-1", "--oneline").split(maxsplit=1)[0]
+    assert 0 < len(abbreviation) < len(commit)
+
+    stored = crew.complete(
+        run_id,
+        gate="passed",
+        commits=[abbreviation],
+        root=repository,
+    )["record"]
+
+    assert stored["commits"] == [commit]
+
+
+def test_unresolvable_abbreviation_names_the_repository_it_consulted(
+    repository: Path,
+) -> None:
+    base, _candidate = _repository_with_candidate(repository)
+    run_id = "r-unresolvable-abbreviation"
+    _write_commit_pointer(repository, run_id, base)
+    missing = "0" * 12
+    assert not _resolves_as_commit(repository, missing)
+
+    with pytest.raises(crew.CrewError) as refusal:
+        crew.complete(
+            run_id,
+            gate="passed",
+            commits=[missing],
+            root=repository,
+        )
+
+    message = str(refusal.value)
+    assert missing in message
+    assert f"run repository ({repository})" in message
+    assert ledger.runs(PROJECT, root=repository) == []
+    assert pointer_path(run_id).is_file()
+
+
+def test_full_commit_promotes_without_rewriting_its_identity(
+    repository: Path,
+) -> None:
+    base, commit = _repository_with_candidate(repository)
+    run_id = "r-full-commit"
+    _write_commit_pointer(repository, run_id, base)
+
+    stored = crew.complete(
+        run_id,
+        gate="passed",
+        commits=[commit],
+        root=repository,
+    )["record"]
+
+    assert stored["commits"] == [commit]
+    assert not pointer_path(run_id).exists()
 
 
 # ── A promotion that would delete a resume path ─────────────────────────────
