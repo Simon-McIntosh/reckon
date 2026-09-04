@@ -26,10 +26,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="6">
-<meta name="plan-commits" content="06b44041d580156b31d6d3da9e5ab3e318bc01b9,148d1ccc0966db0d7e3433382b4798efc540f8da">
-<meta name="plan-impl" content="0.667">
-<meta name="plan-artifacts" content="reckon/crew/query.py,reckon/mcp.py,tests/test_crew_runs_view.py,tests/test_crew_run_identity.py">
+<meta name="plan-version" content="8">
+<meta name="plan-commits" content="06b44041d580156b31d6d3da9e5ab3e318bc01b9,148d1ccc0966db0d7e3433382b4798efc540f8da,702fb76f76c0fa54eeec750306769390df8961ee,2c8ad6458bcb63b5b038759910b265f98e8d369f">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-artifacts" content="reckon/crew/query.py,reckon/mcp.py,tests/test_crew_runs_view.py,tests/test_crew_run_identity.py,tests/test_crew_runs_scope.py">
 </head>
 <body>
 <main class="plan-doc">
@@ -217,6 +217,12 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260904T114832525305-riq-resumable-fixture-repair" data-who="s15-riq" data-when="2026-09-04T11:52:23Z">
     <div class="r-comment-body"><p>10 of 10 passed; the filter fixture now asserts the derived resumability verdict rather than a stored flag, with resumable false while a process is alive and a separate case where a dead process with an existing worktree and a resolved session filters as resumable true</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260904T122154381017-riq-workstation-scope" data-who="s15-scope" data-when="2026-09-04T12:31:33Z">
+    <div class="r-comment-body"><p>1 passed carrying 13 assertions over all five required behaviours, plus 17 passed on the two sibling files as the compatibility gate and zero added ruff findings; scope project returns only the named project's rows, scope workstation returns every project's each labelled with its project and repo, a pointer whose repository is gone is returned with repo_exists false rather than omitted or raising, the ledger source reads each project's own committed file, and the real config home is proved untouched by asserting its mtime is unchanged while a temporary one is injected</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-riq-workstation-scope" data-who="reckon-ship" data-when="2026-09-04T14:32:34Z">
+    <div class="r-comment-body">Workstation scope landed - commit 2c8ad64; gate uv run --no-sync pytest tests/test_crew_runs_scope.py -q passed, one test carrying 13 assertions over all five required behaviours, plus 17 passed across the two sibling files as the compatibility gate and zero added ruff findings; measure: scope project returns only the named project's rows, scope workstation returns every project's each labelled with its owning project and repo, a pointer whose repository no longer exists is returned with repo_exists false rather than omitted or raising, the ledger source under workstation scope reads each project's own committed file, and the real config home is proved untouched by asserting its mtime unchanged while a temporary one is injected. I checked the shape of that single test before accepting it, because one passing test against a five-part done-when is the pattern that hides an under-delivery, and it genuinely carries all five - though a failure in it will not say which behaviour broke, which is the cost of one shared fixture. All three sections and the fixture repair have now landed, so this plan's executable scope is complete at impl 1.0. Status stays active for one stated reason rather than a hidden one: three of this lane's own tests are red at the merged head from an unrelated ledger-guard defect a node is repairing, and a plan should not read shipped while the surface it delivered cannot be demonstrated. It flips to shipped when that head is green.</div>
 </div>
 </section>
 </main>
