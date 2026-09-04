@@ -24,10 +24,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="97">
+<meta name="plan-version" content="98">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md">
 <meta name="plan-impl" content="0.85">
-<meta name="plan-commits" content="8c1b637,45fc1b9,9f9b464,957c042,896ba48,71b50b0,17f8686">
+<meta name="plan-commits" content="896ba48,45fc1b9">
 </head>
 <body>
   <main class="plan-doc">
@@ -53,58 +53,36 @@
     is the evidence base for &#167;2. It closed two of its three defects; this plan owns the
     third.</p>
 
-    <h2 id="s2">&#167;2 &mdash; The registry disagrees with the machine, and the guard trusts the registry</h2>
-    <p><strong>Measured 2026-09-03.</strong> <code>crew list</code> returned
-    <code>watcher pid: None</code>, <code>seat_held: None</code>,
-    <code>watcher_live: None</code> for the reckon project while
-    <code>reckon crew watch --project reckon</code> was running as pid 85432, had been since
-    07:33:13, and had emitted four transitions in the preceding twenty minutes. The registry
-    and the process table were both readable and they disagreed.</p>
-    <p>This is not a display nicety. <code>watcher_live</code> and
-    <code>session_attached</code> are the fields <code>crew dispatch</code> reads to decide
-    whether to refuse with <code>watcher-required</code>. A guard whose whole purpose is to
-    stop work being dispatched into a fleet nobody is listening to is deciding on a value
-    that can be wrong in either direction: it can refuse a dispatch whose producer is alive,
-    or admit one whose producer is gone.</p>
-    <p>The likely mechanism, stated as the next thing to check rather than as a finding: the
-    registry is a written record guarded by a seat lock, and the binding between that record
-    and the process is one-way. The arming path already carries a comment describing the
-    opposite failure &mdash; a producer whose supervisor died keeps appending real
-    transitions while holding the seat, so the stale record outlives every session that cared.
-    Both failures together suggest the record and the process have no reliable binding in
-    either direction, and that a liveness answer should be derived from the process rather
-    than read from a file that hopes to describe it.</p>
-    <table>
-      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
-      <tbody>
-        <tr><td>Liveness is derived, not remembered</td><td>A producer that is running is reported live, and one whose process is gone is reported absent, in both cases regardless of what the seat record says. Asserted against a synthesised registry that has been deliberately desynchronised from the process table in each direction.</td></tr>
-        <tr><td>The guard cannot be fooled</td><td>A dispatch into a project whose producer is alive is admitted, and one whose producer is gone is refused with <code>watcher-required</code>, when the record claims the opposite in each case. Asserted through the dispatch path rather than the helper.</td></tr>
-        <tr><td>A desync is repaired, not merely reported</td><td>Reading liveness reconciles a stale record rather than leaving the next reader to find the same disagreement, and the reconciliation never takes the seat lock, so observing still cannot deny an arming.</td></tr>
-      </tbody>
-    </table>
+    <section id="s2" class="section-landed">
+      <header><span class="badge badge-shipped">&#10003; landed 2026-09-04</span>
+        <h2>&#167;2 &mdash; The registry disagrees with the machine, and the guard trusts the registry</h2></header>
+      <p class="landed-summary">Liveness is derived from the process table on every read, not
+        remembered: <code>_record_producer_running</code> in <code>reckon/crew/runs.py</code>
+        answers from the pid alone and deliberately not from the seat's held-state, so a live
+        producer holding no lock still reads live &mdash; the direction a guard must not be
+        fooled in. <code>_reconcile_watch_record</code> repairs a stale record in place
+        without taking the seat lock, so observing can never deny an arming. Asserted in
+        <code>tests/test_crew_watch_visibility.py</code> in both directions through the
+        dispatch path rather than the helper: a stale record claiming a live watcher refuses,
+        and a running producer whose record says absent is admitted. Landed under commit
+        <code>896ba48</code>, which wrote no comment against this section. Full record:
+        <a href="/reckon/evidence/archive/crew-observability-truth-landed#s2-liveness-derived">&#167;2 landed</a>.</p>
+    </section>
 
-    <h2 id="s3">&#167;3 &mdash; <code>gc</code> scans the repository it is standing in, not the one it names</h2>
-    <p><strong>Measured 2026-09-03.</strong> Running
-    <code>reckon crew gc --project nova</code>, then <code>--project imas-codex</code>, then
-    <code>--project imas-ambix</code>, all from the reckon checkout, returned byte-identical
-    counts: <code>dirty 8, live-referenced 2, unintegrated 2, reclaimable 0</code>. Those are
-    reckon's own worktrees. <code>--repo</code> defaults to the enclosing repository, so the
-    command paired each named project's ledger with the current directory's worktrees and
-    reported the result without qualification. Supplying <code>--repo</code> explicitly gave
-    nova's true figure: <strong>124 reclaimable</strong> against 12 dirty and 21
-    unintegrated.</p>
-    <p>The failure mode is the one this fleet keeps producing: a confident wrong answer rather
-    than a refusal. An operator running <code>gc</code> for another project from the wrong
-    directory is told there is nothing to reclaim, and 124 worktrees stay on disk. Nothing in
-    the output names which repository was actually scanned.</p>
-    <table>
-      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
-      <tbody>
-        <tr><td>The pairing is checked</td><td>A <code>--project</code> whose registered checkout differs from the resolved <code>--repo</code> is refused, naming both paths, unless the caller states the cross-pairing deliberately. Asserted by test in both directions.</td></tr>
-        <tr><td>The answer says what it measured</td><td>Every <code>gc</code> result names the repository whose worktrees it scanned and the ledger it read, so a result cannot be attributed to the wrong project by a reader.</td></tr>
-        <tr><td>The default resolves the project's own checkout</td><td>With no <code>--repo</code>, a named project resolves the checkout registered in mounts rather than the current directory; asserted from a third directory belonging to neither.</td></tr>
-      </tbody>
-    </table>
+    <section id="s3" class="section-landed">
+      <header><span class="badge badge-shipped">&#10003; landed 2026-09-04</span>
+        <h2>&#167;3 &mdash; gc scans the repository it is standing in, not the one it names</h2></header>
+      <p class="landed-summary">All three measures hold. <code>_resolved_gc_repo</code> in
+        <code>reckon/cli.py</code> resolves a named project to its checkout registered in
+        mounts rather than the current directory, refuses an explicit <code>--repo</code>
+        that disagrees while naming both paths, and takes
+        <code>--confirm-cross-repo</code> to state a cross-pairing deliberately. Five cases
+        in <code>tests/test_crew_gc.py</code> cover both directions plus
+        <code>test_gc_result_names_the_repository_and_the_ledger_it_read</code>, so an answer
+        can no longer be attributed to the wrong project by a reader. Landed under commit
+        <code>45fc1b9</code>, which wrote no comment against this section. Full record:
+        <a href="/reckon/evidence/archive/crew-observability-truth-landed#s3-gc-pairing">&#167;3 landed</a>.</p>
+    </section>
 
     <h2 id="s4">&#167;4 &mdash; What a person should be able to read off the pane</h2>
     <p>The three sections above are individual defects. This one is the standing obligation
@@ -443,12 +421,12 @@
     </article>
 <article class="r-fu" data-id="f-cot-promotion-accepts-unresolvable-sha" data-status="open" data-written-by="reckon-ship-s15" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship crew-observability-truth" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Promotion accepted a forty-character commit sha that resolves to no object, and recorded the gate as passed</h4>
-    <div class="r-fu-body"><p>The width guard is not an existence guard, and the difference is a recorded success that never happened. Found by following the mirror of the misrouted-ledger defect to its source.</p><p>A stray single-row ledger for this project was found in another repository's checkout holding <code>r-20260902T210020995337-codex-agents-md-sub-scoped</code>, node <code>codex-agents-md-sub-scoped</code>, member <code>flash-c</code>, gate <strong>passed</strong>, commit <code>7f41635f770e9700ba01cfd0c4119ab25e9675d4</code>. <strong>That sha resolves to no object in this repository at any abbreviation length</strong> &#x2014; not the full forty, not eight, not six. It is not a pruned worktree commit reachable by a shorter prefix; there is nothing there.</p><p>The row was very nearly relocated into this project's ledger as a recovery. It must not be. This project's ledger already holds the sibling run <code>r-20260902T205922510859-reckon-agents-md-sub-scoped</code>, node <code>reckon-agents-md-sub-scoped</code>, member <code>flash-a</code>, gate passed, commit <code>6f99ac2106b2ee5d5a45378c9765a4b67f08c98b</code>, which <em>is</em> reachable from the primary branch and carries the real change. The two runs are the same node dispatched to two members; the recorded one completed at 21:14:08 and the stray at 21:16:19. So the stray is a duplicate attempt whose commit field is unverifiable, and importing it would have written a second passed row for one piece of work, with a fabricated sha, into the record that cost and attribution accounting reads.</p><p><strong>Promotion must verify the commit resolves</strong>, not merely that it is forty characters wide. A peer measured the same field from the other direction in the same session: two manifests carried a real abbreviation with an invented tail, refused only because the width was wrong. Both observations are one defect &#x2014; the commit field is taken on trust &#x2014; and the width check is what made it look guarded. Resolve the sha at promotion, refuse when it names no object, and the confabulation becomes a loud failure at the moment it is made rather than a passed row found by luck in the wrong repository.</p></div>
+    <div class="r-fu-body"><p>The width guard is not an existence guard, and the difference is a recorded success that never happened. Found by following the mirror of the misrouted-ledger defect to its source.</p><p>A stray single-row ledger for this project was found in another repository's checkout holding <code>r-20260902T210020995337-codex-agents-md-sub-scoped</code>, node <code>codex-agents-md-sub-scoped</code>, member <code>flash-c</code>, gate <strong>passed</strong>, commit <code>7f41635f770e9700ba01cfd0c4119ab25e9675d4</code>. <strong>That sha resolves to no object in this repository at any abbreviation length</strong> — not the full forty, not eight, not six. It is not a pruned worktree commit reachable by a shorter prefix; there is nothing there.</p><p>The row was very nearly relocated into this project's ledger as a recovery. It must not be. This project's ledger already holds the sibling run <code>r-20260902T205922510859-reckon-agents-md-sub-scoped</code>, node <code>reckon-agents-md-sub-scoped</code>, member <code>flash-a</code>, gate passed, commit <code>6f99ac2106b2ee5d5a45378c9765a4b67f08c98b</code>, which <em>is</em> reachable from the primary branch and carries the real change. The two runs are the same node dispatched to two members; the recorded one completed at 21:14:08 and the stray at 21:16:19. So the stray is a duplicate attempt whose commit field is unverifiable, and importing it would have written a second passed row for one piece of work, with a fabricated sha, into the record that cost and attribution accounting reads.</p><p><strong>Promotion must verify the commit resolves</strong>, not merely that it is forty characters wide. A peer measured the same field from the other direction in the same session: two manifests carried a real abbreviation with an invented tail, refused only because the width was wrong. Both observations are one defect — the commit field is taken on trust — and the width check is what made it look guarded. Resolve the sha at promotion, refuse when it names no object, and the confabulation becomes a loud failure at the moment it is made rather than a passed row found by luck in the wrong repository.</p></div>
     <pre class="r-fu-prompt">/reckon-ship crew-observability-truth</pre>
     </article>
 <article class="r-fu" data-id="f-cot-six-worktrees-hold-unlanded-deltas" data-status="open" data-written-by="reckon-ship-s15" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship crew-observability-truth" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Six worktrees hold uncommitted worker deltas that never reached the primary branch</h4>
-    <div class="r-fu-body"><p>Found auditing worktrees at session close. Six of this session's thirty worktrees carry modified files that were never committed, and probe lines from each confirm the content is <strong>not</strong> in the primary branch. They are held deliberately and must not be removed; the worktrees are the only durable copy.</p><table><thead><tr><th>Worktree</th><th>Uncommitted</th><th>Files</th></tr></thead><tbody><tr><td><code>model-and-effort-are-separate-columns</code></td><td>267 insertions, 86 deletions</td><td><code>crew/ticker.py</code>, <code>crew/recovery.py</code>, <code>tests/test_crew_ticker_layout.py</code></td></tr><tr><td><code>liveness-is-derived-not-remembered</code></td><td>69 insertions, 31 deletions</td><td><code>crew/runs.py</code></td></tr><tr><td><code>the-transition-carries-the-role-it-renders</code></td><td>34 insertions, 1 deletion</td><td><code>crew/recovery.py</code>, <code>tests/test_crew_recovery.py</code></td></tr><tr><td><code>a-spent-lane-judgement-has-a-shelf-life</code></td><td>25 insertions, 1 deletion</td><td><code>budget.py</code></td></tr><tr><td><code>the-working-bucket-counts-only-work</code></td><td>8 insertions, 6 deletions</td><td><code>crew/recovery.py</code></td></tr><tr><td><code>the-promotion-gate-reads-the-attribution</code></td><td>5 insertions, 3 deletions</td><td><code>crew/promotion.py</code></td></tr></tbody></table><p>The largest is the model-and-effort column split, which adds an <code>_agent_columns</code> helper and separate <code>model</code> and <code>effort</code> fields; none of its four probe lines appear in the branch, which matches the fleet pane still rendering the two values joined in one cell. The promotion-gate delta adds a <code>failure_attribution</code> field through <code>new_failure_attribution</code>.</p><p><strong>Why this was invisible:</strong> a worktree whose HEAD is an ancestor of the primary branch reads as reachable, and that is also true of the base revision a worktree was created at. So &ldquo;reachable&rdquo; does not mean the worker committed &#x2014; it means the sha is in history, which the base always is. Cleanup that gates on reachability alone therefore looks safe while discarding every uncommitted delta. Gate on cleanliness <em>and</em> reachability, and treat a dirty worktree as a blocker carrying work rather than as residue.</p><p>Each delta needs its own audit and gate before landing; none should be merged unreviewed on the strength of this note.</p></div>
+    <div class="r-fu-body"><p>Found auditing worktrees at session close. Six of this session's thirty worktrees carry modified files that were never committed, and probe lines from each confirm the content is <strong>not</strong> in the primary branch. They are held deliberately and must not be removed; the worktrees are the only durable copy.</p><table><thead><tr><th>Worktree</th><th>Uncommitted</th><th>Files</th></tr></thead><tbody><tr><td><code>model-and-effort-are-separate-columns</code></td><td>267 insertions, 86 deletions</td><td><code>crew/ticker.py</code>, <code>crew/recovery.py</code>, <code>tests/test_crew_ticker_layout.py</code></td></tr><tr><td><code>liveness-is-derived-not-remembered</code></td><td>69 insertions, 31 deletions</td><td><code>crew/runs.py</code></td></tr><tr><td><code>the-transition-carries-the-role-it-renders</code></td><td>34 insertions, 1 deletion</td><td><code>crew/recovery.py</code>, <code>tests/test_crew_recovery.py</code></td></tr><tr><td><code>a-spent-lane-judgement-has-a-shelf-life</code></td><td>25 insertions, 1 deletion</td><td><code>budget.py</code></td></tr><tr><td><code>the-working-bucket-counts-only-work</code></td><td>8 insertions, 6 deletions</td><td><code>crew/recovery.py</code></td></tr><tr><td><code>the-promotion-gate-reads-the-attribution</code></td><td>5 insertions, 3 deletions</td><td><code>crew/promotion.py</code></td></tr></tbody></table><p>The largest is the model-and-effort column split, which adds an <code>_agent_columns</code> helper and separate <code>model</code> and <code>effort</code> fields; none of its four probe lines appear in the branch, which matches the fleet pane still rendering the two values joined in one cell. The promotion-gate delta adds a <code>failure_attribution</code> field through <code>new_failure_attribution</code>.</p><p><strong>Why this was invisible:</strong> a worktree whose HEAD is an ancestor of the primary branch reads as reachable, and that is also true of the base revision a worktree was created at. So “reachable” does not mean the worker committed — it means the sha is in history, which the base always is. Cleanup that gates on reachability alone therefore looks safe while discarding every uncommitted delta. Gate on cleanliness <em>and</em> reachability, and treat a dirty worktree as a blocker carrying work rather than as residue.</p><p>Each delta needs its own audit and gate before landing; none should be merged unreviewed on the strength of this note.</p></div>
     <pre class="r-fu-prompt">/reckon-ship crew-observability-truth</pre>
     </article>
 </section>
@@ -498,6 +476,9 @@
 <div class="r-comment" data-section="s2" data-id="c-20260903T1053" data-who="reckon-ship" data-when="2026-09-03T08:53:00+00:00">
     <div class="r-comment-body">liveness-reconciled-against-the-process-table landed — commit 896ba48, merged; gate passed; measure tests/test_crew_watch_visibility.py 5 passed, plus a regression set of 273 across the watch surface (20 over watchlife, version-stamp, dispatch-arming and dispatch-guard; 48 over orphan, monitor-output and session-delivery; 189 over the watch-and-arming selection in test_crew.py; 16 over live-listing, surface-parity, watch-lifetime and arming-isolation), ruff clean on both files against a clean baseline; 314 insertions and 23 deletions over 2 files, 4 tests added, on the local lane at deepseek-v4-flash, full-diff audited. All three measures are met: a producer whose process is gone reports absent and a running one reports live regardless of the seat record, asserted against a registry desynchronised in each direction; the dispatch guard admits a live producer and refuses a gone one with watcher-required when the record claims the opposite, asserted through the dispatch path rather than the helper; and reading liveness repairs the stale record in place without taking the seat lock. This is the section's own defect closed, and it closed against the very failure it was written from: the registry reported watcher pid None while a producer had been running for twenty minutes and emitting transitions. Recorded for the sequencing rather than the outcome — the breadth of that regression set is what a fenced node can honestly claim, since runs.py is imported by most of the watch surface, and it is the counter-example to this morning's other lesson, where four nodes each ran their own module's tests and nobody ran the ones that would have caught the merge.</div>
 </div>
+<div class="r-comment" data-section="s2" data-id="c-cot-liveness-derived" data-who="reckon-ship" data-when="2026-09-04T13:34:00Z">
+    <div class="r-comment-body">Currency audit finding, not a dispatched node: all three measures already hold at HEAD under commit 896ba48, which wrote no comment against this section. Liveness is derived from the process table by _record_producer_running in reckon/crew/runs.py, which answers from the pid alone and deliberately not from the seat's held-state; _reconcile_watch_record repairs a stale record as a side effect of reading it and never takes the seat lock, so observing cannot deny an arming. The guard half is asserted through the dispatch path rather than the helper, in tests/test_crew_watch_visibility.py: a stale record claiming a live watcher refuses, and a running producer whose record says absent is admitted. Section collapsed; full record at the evidence anchor s2-liveness-derived.</div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260903T080227590786-gc-scans-the-repository-it-names" data-who="impl-obs-gc" data-when="2026-09-03T08:08:56.547Z">
     <div class="r-comment-body"><p>Killed by the claude account's individual spend limit, reset 12pm Europe/Paris; the stream's terminal event was type result subtype success carrying the refusal text, so nothing classified it as a failure</p></div>
 </div>
@@ -506,6 +487,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260903T1028" data-who="reckon-ship" data-when="2026-09-03T08:28:00+00:00">
     <div class="r-comment-body">gc-pairing-carried-forward landed — commit 45fc1b9, merged; gate passed; measure tests/test_crew_gc.py 14 passed against 9 at base 9cfde98 with zero added failures, ruff delta 13 findings before and 13 after so nothing added; 215 insertions over 3 files, 5 of the new tests covering the three measures, 419 worker-seconds against a 35m budget on the local lane at deepseek-v4-flash, full-diff audited. All three measures are met: with no --repo a named project resolves its mounts-registered checkout, asserted from a third directory belonging to neither; an explicit --repo disagreeing with the registration is refused before garbage_collect naming both paths, with --confirm-cross-repo as the deliberate statement, and a matching --repo is not refused; and every result names the repository scanned and the ledger read. Two things about how this landed rather than what landed. It carried the commit of a worker killed mid-run by the account spend limit, and it verified the carry rather than trusting it: the three fenced files were byte-identical between that commit's parent and this base, so the patch applied cleanly and the result matched. Its only deviation from the dead run's version was to scrub a plan slug out of a docstring, which is the repository's naming rule applied unprompted — the node contract said nothing about it. And it produced a real baseline-versus-after suite pair by archiving the base tree to a temporary path, which is the honest form of the delta measure rather than an absolute count.</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-cot-gc-pairing" data-who="reckon-ship" data-when="2026-09-04T13:34:30Z">
+    <div class="r-comment-body">Currency audit finding, not a dispatched node: landed under commit 45fc1b9 with no comment against this section. _resolved_gc_repo in reckon/cli.py resolves a named project to its registered checkout even from an unrelated working directory, refuses a disagreeing explicit --repo while naming both paths, and takes --confirm-cross-repo for a deliberate cross-pairing; five cases in tests/test_crew_gc.py cover both directions plus test_gc_result_names_the_repository_and_the_ledger_it_read. Section collapsed; full record at the evidence anchor s3-gc-pairing. Four sections across four plans in this sprint were found landed under commits that wrote no plan comment - this one, s2, e196e00 on the native-agent guard and 30a4460 on the shelf-life key - which is the same record-without-a-binding shape this plan documents in the display, produced by the orchestration rather than by the code.</div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260903T080329021153-the-working-bucket-counts-only-work" data-who="impl-fit" data-when="2026-09-03T08:08:56.320Z">
     <div class="r-comment-body"><p>Killed by the claude account's individual spend limit, reset 12pm Europe/Paris; the stream's terminal event was type result subtype success carrying the refusal text, so nothing classified it as a failure</p></div>

@@ -24,9 +24,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="14">
-<meta name="plan-commits" content="d5811b204966f31db83bab190b6440a6eb7b9842,db329f84e6eecc232e8cf41f35e828f84365dee8">
-<meta name="plan-impl" content="0.333">
+<meta name="plan-version" content="16">
+<meta name="plan-commits" content="d5811b204966f31db83bab190b6440a6eb7b9842,db329f84e6eecc232e8cf41f35e828f84365dee8,b99ccdf829c50659c34efdd354642b5a9cba6827">
+<meta name="plan-impl" content="0.5">
+<meta name="plan-artifacts" content="reckon/crew/node.py,reckon/budget.py,reckon/crew/dispatch.py,tests/test_crew_node.py,tests/test_budget.py,tests/test_crew_coordinator_spend.py,skills/reckon-ship/SKILL.md">
 </head>
 <body>
   <main class="plan-doc">
@@ -666,6 +667,15 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-dcdn-burn-multiple" data-who="reckon-ship" data-when="2026-09-04T13:27:53Z">
     <div class="r-comment-body">Burn multiple reported landed - commit db329f8; gate uv run pytest tests/test_budget.py -q passed, 61 passed in 4.59s against a 57-passed baseline at cea3934; measure: burn is (utilisation/100) divided by the window-elapsed fraction derived from rate_limit_period_minutes and resets_at, so the plan's own reading of 13 percent utilisation at 1.7 percent elapsed reports 7.6x, an unknown period reports unknown rather than a number, and the 7.6x lane still reads clear because the figure holds nothing; reachable from crew(view='budget') and named in the preflight summary; artifacts reckon/budget.py, tests/test_budget.py with 4 added cases.</div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-dcdn-burn-reachable" data-who="reckon-ship" data-when="2026-09-04T13:32:00Z">
+    <div class="r-comment-body">Verified at the entry point rather than in the module: reckon crew preflight --project reckon --role implement now answers WHY codex: utilisation 32% with burn multiple 7.6x is below the 95.0% ceiling, carries burn_multiple 7.55 in the backend state block, and states in its WHEN axis that the burn multiple is report-only and never holds. The lane also moved from 28% to 32% utilisation during this session's own dispatches against a 7-day window, which is the reading the section exists to make visible.</div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20260904T102948115654-dcdn-coordinator-spend" data-who="s15-coord" data-when="2026-09-04T10:46:38Z">
+    <div class="r-comment-body"><p>5 passed in 1.15s; a live run pointer now carries coordinator.session_id, runtime_session_id, harness and authoring_turn, an absent transcript usage records status unknown with tokens null and never zero, and promotion preserves the identical block at node_definition.coordinator</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-dcdn-coordinator-spend" data-who="reckon-ship" data-when="2026-09-04T13:30:50Z">
+    <div class="r-comment-body">Coordinator spend recorded against dispatched nodes landed - commit b99ccdf; gate uv run pytest tests/test_crew_coordinator_spend.py -q passed, 5 passed in 1.15s; measure: a live run pointer now carries coordinator.session_id, coordinator.runtime_session_id, coordinator.harness and coordinator.authoring_turn, the authoring turn measured from a token map or recorded as status unknown with tokens null and never zero, and promotion preserves the identical block at node_definition.coordinator because promoted rows are rebuilt from selected fields while node_definition is the durable authored contract; artifacts reckon/crew/dispatch.py, tests/test_crew_coordinator_spend.py. This closes the gap the section names - no run record carried any coordinator field at all across 2,567 records - so the routing surface of section 3 can now carry its coordinator column rather than scoring every worker-to-coordinator transfer as a saving.</div>
 </div>
 </section>
 </main>

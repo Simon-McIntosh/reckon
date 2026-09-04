@@ -24,8 +24,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="7">
-<meta name="plan-impl" content="0.75">
+<meta name="plan-version" content="9">
+<meta name="plan-impl" content="0.333">
+<meta name="plan-commits" content="30a4460">
+<meta name="plan-artifacts" content="reckon/schema/flight.yaml">
 </head>
 <body>
   <main class="plan-doc">
@@ -124,37 +126,21 @@
       as one case rather than two.
     </p>
 
-    <h2 id="s3">§3 — The shelf life is declared, so the fence has a lever</h2>
-    <p>
-      Every other fence in this system carries a waiver. Dispatch takes an
-      explicit flag to proceed past an unreconciled-run backlog, past an
-      execution-capability mismatch, and past a missing watcher, and each waiver
-      is recorded on the run so a deliberate override is auditable afterwards.
-      The budget hold carries none, and the absence is not a design choice — it
-      is an undeclared configuration key.
-    </p>
-    <p>
-      <code>budget.policy()</code> reads
-      <code>evidence_shelf_life_minutes</code> and falls back to a module
-      default. <code>BudgetConfig</code> does not declare the field, and the
-      configuration model rejects unknown inputs, so
-      <code>--set budget.evidence_shelf_life_minutes=1</code> fails as an extra
-      input. The mechanism is reachable from code and unreachable from the
-      command line, which is the worst of both: the value looks configurable to
-      a reader of the source and is not configurable by the operator holding the
-      incident.
-    </p>
-    <p>
-      Declaring it is most of the fix and it must be declared with its meaning,
-      not merely its type: the field bounds how long a refusal that named no
-      reset time keeps describing the present, zero or less disables ageing and
-      restores the indefinite hold, and it has no effect on a refusal that did
-      name a reset, because a stated reset is stronger evidence than an age.
-      Done when the key is declared in the flight schema with that description,
-      when an override through <code>--set</code> is accepted and changes the
-      verdict, when zero restores the un-aged behaviour, and when the shipped
-      default is unchanged so no existing host's behaviour moves.
-    </p>
+    <section id="s3" class="section-landed">
+      <header><span class="badge badge-shipped">&#10003; landed 2026-09-04</span>
+        <h2>§3 — The shelf life is declared, so the fence has a lever</h2></header>
+      <p class="landed-summary">Declared in <code>reckon/schema/flight.yaml</code> with its
+        meaning rather than only its type — the description states that the field bounds how
+        long a refusal naming no reset keeps describing the present, that a value at or
+        below zero restores the indefinite hold, and that it has no effect on a refusal that
+        named a reset. Verified at the entry point an operator holding an incident actually
+        uses: <code>reckon crew preflight --project reckon --set
+        budget.evidence_shelf_life_minutes=1</code> is accepted and reports
+        <code>evidence_shelf_life_minutes: 1.0</code> in its resolved policy, where it
+        previously failed as an extra input. Landed under commit <code>30a4460</code>,
+        which wrote no comment against this section — found by the currency audit against
+        the tree rather than the page.</p>
+    </section>
 
     <h2 id="s4">§4 — The refusal names the instrument that would inform it</h2>
     <p>
@@ -235,6 +221,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260903T215213955714-the-shelf-life-is-declared-configuration" data-who="impl-fit" data-when="2026-09-03T22:00:31.145Z">
     <div class="r-comment-body"><p>The evidence shelf life is declared in the LinkML source and regenerated into both artifacts, so --set reaches it and zero restores the indefinite hold; the shipped default is unchanged.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-haor-shelf-life-declared" data-who="reckon-ship" data-when="2026-09-04T13:33:00Z">
+    <div class="r-comment-body">Currency audit finding rather than a dispatched node: the section's premise was already false at the tree. evidence_shelf_life_minutes is declared in reckon/schema/flight.yaml with the full description the section asks for, and reckon crew preflight --project reckon --set budget.evidence_shelf_life_minutes=1 is accepted, returning evidence_shelf_life_minutes 1.0 in its resolved policy where the section says it fails as an extra input. Landed under commit 30a4460, feat(flight): declare evidence shelf life as a configuration key, which wrote no comment against this section - the third instance of that same defect found in this sprint, alongside 896ba48 and 45fc1b9 on crew-observability-truth and e196e00 on native-agent-dispatch-guard. The remaining work here is section 2, the load-bearing correction now that refusal-time-source is locked to the rate-limit event, and section 4's refusal message; both were dispatched in this session's second wave.</div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260903T215106400228-a-hold-ages-from-its-refusal" data-who="sonnet-a" data-when="2026-09-03T22:01:03.945Z">
     <div class="r-comment-body"><p>The hold ages from the run's immutable created_at rather than the pointer's rewritable observed_at, so observing a refused run no longer renews the fence it was meant to expire.</p></div>

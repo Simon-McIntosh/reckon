@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T13:28:01",
+  "updated": "2026-09-04T13:30:58",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -55448,6 +55448,221 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T102948115654-dcdn-coordinator-spend",
+        "plan": "dispatch-cost-per-durable-node",
+        "section": "\u00a79",
+        "node": "dcdn-coordinator-spend",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_crew_coordinator_spend.py -q passes, asserting a dispatched run's record carries the coordinator session identity and its authoring-turn token spend, that an absent spend reads as a stated unknown rather than zero, and that the field survives promotion into the committed ledger row; reachable by reading the run record written by reckon crew dispatch",
+          "estimated_hours": 2.0,
+          "goal": "Record the dispatching coordinator's identity and authoring-turn token spend on every run record",
+          "id": "dcdn-coordinator-spend",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T102948115654-dcdn-coordinator-spend/manifest.md",
+          "plan": "dispatch-cost-per-durable-node",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a79",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "tests/test_crew_coordinator_spend.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s15-coord",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T10:30:03Z",
+        "completed_at": "2026-09-04T10:46:38Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 995,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 995,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "cea3934dfc215c24a7d7f48d8926d79b4e850ccf",
+        "commits": [
+          "b99ccdf829c50659c34efdd354642b5a9cba6827"
+        ],
+        "changed_lines": {
+          "added": 461,
+          "removed": 1,
+          "files": 2
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "uv run pytest tests/test_crew_coordinator_spend.py -q",
+          "exit_status": 0,
+          "log_path": null,
+          "log_digest": "5 passed in 1.15s"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T102948115654-dcdn-coordinator-spend/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06bf7-e975-7910-b922-fe6cc0cda1eb",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 15439104,
+            "cached_input_tokens_cumulative": 15439104,
+            "input_tokens": 15642082,
+            "input_tokens_cumulative": 15642082,
+            "output_tokens": 37199,
+            "output_tokens_cumulative": 37199,
+            "reasoning_output_tokens": 13032,
+            "reasoning_output_tokens_cumulative": 13032
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 50231,
+          "peak_input_tokens": 31081186
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_crew_coordinator_spend.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260904T103016976022-clw-session-keying-verify",
+        "plan": "clive-local-workers",
+        "section": "\u00a77",
+        "node": "clw-session-keying-verify",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_crew_session_keying.py tests/test_crew.py -q passes, covering changed-effort, unchanged-configuration, changed-model, independent-history and legacy-migration reuse through hermetic dispatches, with no failure count above the base revision",
+          "estimated_hours": 1.0,
+          "goal": "Bring the session-keying integration suite green against the configuration-aware lookup that main already carries",
+          "id": "clw-session-keying-verify",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T103016976022-clw-session-keying-verify/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "exact",
+          "time_budget": "35m",
+          "write_paths": [
+            "tests/test_crew_session_keying.py",
+            "tests/test_crew.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s15-keying",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T10:30:24Z",
+        "completed_at": "2026-09-04T10:55:30Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1506,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1506,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "cea3934dfc215c24a7d7f48d8926d79b4e850ccf",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "uv run pytest tests/test_crew_session_keying.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T103016976022-clw-session-keying-verify/session-keying.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T103016976022-clw-session-keying-verify/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06bf8-37db-7a63-8442-0e5bd28a7097",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 11972352,
+            "cached_input_tokens_cumulative": 11972352,
+            "input_tokens": 12160372,
+            "input_tokens_cumulative": 12160372,
+            "output_tokens": 20415,
+            "output_tokens_cumulative": 20415,
+            "reasoning_output_tokens": 7297,
+            "reasoning_output_tokens_cumulative": 7297
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 27712,
+          "peak_input_tokens": 24132724
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "the verification found the subject already green on main and identified no scoped repair, so there was nothing to change",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_crew_session_keying.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -55620,6 +55835,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 913
+    "_version": 915
   }
 }

@@ -313,6 +313,59 @@
     unstamped reachability claim gives a reader no way to tell whether it has expired, and
     "reachable" is itself ambiguous between merged-locally and pushed.</p>
   </section>
+
+  <section id="s2-liveness-derived">
+    <h2 id="s2-liveness-derived-h">&sect;2 &mdash; Liveness is derived from the process table, and a desync is repaired in place</h2>
+    <p>Recorded 2026-09-04 by a currency audit against the tree, not by a dispatched node.
+    All three of the section's measures hold at <code>HEAD</code>, landed under commit
+    <code>896ba48</code> &mdash; <em>reconcile watcher liveness against the process table on
+    read</em> &mdash; which wrote no comment against the section it closed.</p>
+    <p><code>_record_producer_running</code> (<code>reckon/crew/runs.py</code>) answers from
+    the recorded pid and <code>process_alive</code> alone. Its docstring states the
+    deliberate choice that matters: it is <em>not</em> the start-time gate
+    <code>producer_live</code> applies, because a running process is live whether or not its
+    recorded start time still matches &mdash; the start-time check governs who may
+    <em>signal</em> that process, a different question.
+    <code>_reconcile_watch_record</code> repairs a stale record as a side effect of reading
+    it and never takes the seat lock, so observing cannot deny an arming.</p>
+    <p>The guard half is asserted through the dispatch path rather than the helper, which is
+    what the measure demanded: <code>tests/test_crew_watch_visibility.py</code> carries
+    <code>test_dispatch_refuses_when_the_stale_record_claims_a_live_watcher</code> and
+    <code>test_dispatch_admits_a_running_producer_whose_record_says_absent</code> &mdash;
+    the two directions of the measured 2026-09-03 defect, where the registry read
+    <code>watcher_live: None</code> for a producer that had been running as pid 85432 since
+    07:33:13 and had emitted four transitions in the preceding twenty minutes.</p>
+  </section>
+
+  <section id="s3-gc-pairing">
+    <h2 id="s3-gc-pairing-h">&sect;3 &mdash; gc names the repository it scanned, and refuses a pairing it was not asked for</h2>
+    <p>Recorded 2026-09-04 by the same currency audit, landed under commit
+    <code>45fc1b9</code> &mdash; <em>gc resolves the named project's registered
+    checkout</em> &mdash; likewise with no comment against the section.</p>
+    <p><code>_resolved_gc_repo</code> (<code>reckon/cli.py</code>) resolves a
+    <code>--project</code> to the checkout registered in mounts even when the caller's
+    working directory belongs to a different repository, refuses an explicit
+    <code>--repo</code> that disagrees while naming <em>both</em> paths, and accepts
+    <code>--confirm-cross-repo</code> for a deliberate cross-pairing. With no
+    <code>--project</code> it defers to the enclosing repository unchanged, which is the only
+    sensible default there.</p>
+    <p>Five cases in <code>tests/test_crew_gc.py</code> cover it, including
+    <code>test_gc_with_no_repo_resolves_the_named_projects_registered_checkout</code>,
+    the refusal and its confirmation in both directions, and
+    <code>test_gc_result_names_the_repository_and_the_ledger_it_read</code> &mdash; so the
+    measured failure, three projects returning byte-identical counts scanned from the reckon
+    checkout while nova's 124 reclaimable worktrees read as zero, can no longer be produced
+    silently.</p>
+    <p><strong>One observation about the pattern rather than the code.</strong> Four sections
+    across four plans in this sprint were found implemented under commits that wrote no plan
+    comment: this one, &sect;2 above, <code>e196e00</code> on the native-agent guard, and
+    <code>30a4460</code> on the shelf-life key. Each plan therefore reported work as
+    outstanding that a reader of the tree would have called done, and each was found only
+    because the currency audit ran against the code instead of the page. That is the same
+    shape as the defects this plan documents in the display and the parser &mdash; a record
+    and the thing it describes with no binding between them &mdash; produced here by the
+    orchestration rather than by the code.</p>
+  </section>
 </main>
 </body>
 </html>
