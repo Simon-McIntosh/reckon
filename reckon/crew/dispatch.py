@@ -2384,8 +2384,10 @@ def attach(run_id: str, task: str) -> dict[str, Any]:
 
 
 def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    from reckon.crew.query import _resumability
     from reckon.crew.recovery import _apply_budget_watchdog
     from reckon.crew.reports import parse_manifest
+    from reckon.crew.resumption import resolve_session
 
     """Fold a run's on-disk evidence back into its pointer and return it.
 
@@ -2396,6 +2398,9 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
     """
 
     def fold(record: dict[str, Any]) -> dict[str, Any]:
+        # Resolve before folding the stream into the pointer so the answer says
+        # where the session was recovered rather than always reporting pointer.
+        session = resolve_session(run_id, record=record)
         backend_name = str(record.get("backend") or "")
         manifest = Path(record.get("manifest_path") or "")
         manifest_file_present, manifest_fresh = _manifest_freshness(record)
@@ -2454,6 +2459,18 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
 
         _apply_budget_watchdog(record, config)
         _apply_orientation_check(record, manifest if manifest_fresh else None)
+
+        worktree = str(record.get("worktree") or "").strip()
+        resumable, reason = _resumability(
+            session,
+            worktree_exists=bool(worktree) and Path(worktree).is_dir(),
+            process_alive=record["process_alive"],
+        )
+        record["session_source"] = session["source"]
+        record["session_resolution"] = session
+        record["resumable"] = resumable
+        record["resumable_reason"] = reason
+        record["resume_session_id"] = session["session_id"] if resumable else None
 
         capture = _capture_member_session(record)
         if capture is not None:

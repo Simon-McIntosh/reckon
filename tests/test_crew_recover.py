@@ -631,6 +631,55 @@ def test_every_surface_states_the_same_absence(
         assert "all three were consulted" in answers[name]["detail"], name
 
 
+def test_observe_reports_a_dead_run_as_resumable_from_its_stream(
+    home: Path, tmp_path: Path
+) -> None:
+    """Observe derives the positive answer and names the recovered session."""
+    from click.testing import CliRunner
+
+    run_id = "r-20260904T031500000000-node-a"
+    record = _refused_run(tmp_path, run_id)
+    record["pid"] = DEAD_PID
+    _write_json(pointer_path(run_id), record)
+    expected = _stream_session_of(run_id)
+
+    result = CliRunner().invoke(cli_module.main, ["crew", "observe", "--run", run_id])
+
+    assert result.exit_code == 0
+    answer = json.loads(result.output)
+    assert answer["resumable"] is True
+    assert answer["resume_session_id"] == expected
+    assert answer["session_source"] == "stream"
+    assert answer["resumable_reason"] == (
+        "session resolved, worktree exists and process is not alive"
+    )
+
+
+def test_observe_reports_why_a_dead_run_is_not_resumable(
+    home: Path, tmp_path: Path
+) -> None:
+    """Observe states the negative and every absent source without inference."""
+    from click.testing import CliRunner
+
+    run_id = "r-20260904T031600000000-node-a"
+    record = _refused_run(tmp_path, run_id, session_in_stream=False)
+    record["pid"] = DEAD_PID
+    _write_json(pointer_path(run_id), record)
+
+    result = CliRunner().invoke(cli_module.main, ["crew", "observe", "--run", run_id])
+
+    assert result.exit_code == 0
+    answer = json.loads(result.output)
+    assert answer["resumable"] is False
+    assert answer["resume_session_id"] is None
+    assert answer["session_source"] is None
+    assert "all three were consulted" in answer["resumable_reason"]
+    assert all(
+        source in answer["resumable_reason"]
+        for source in ("pointer", "stream", "ledger")
+    )
+
+
 def test_a_promoted_run_still_answers_from_its_ledger_row(
     home: Path, tmp_path: Path
 ) -> None:
