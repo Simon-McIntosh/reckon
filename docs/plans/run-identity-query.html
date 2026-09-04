@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="run-identity-query">
   <meta name="plan-title" content="Ask For a Run by Name">
   <meta name="plan-summary" content="One read that answers a run&#x27;s id, its session with provenance, and whether it can be resumed — across the config home and every repository.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="7.0">
   <meta name="plan-wall-clock-hours" content="4.0">
@@ -26,10 +26,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-commits" content="06b44041d580156b31d6d3da9e5ab3e318bc01b9,148d1ccc0966db0d7e3433382b4798efc540f8da,702fb76f76c0fa54eeec750306769390df8961ee,2c8ad6458bcb63b5b038759910b265f98e8d369f">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-artifacts" content="reckon/crew/query.py,reckon/mcp.py,tests/test_crew_runs_view.py,tests/test_crew_run_identity.py,tests/test_crew_runs_scope.py">
+<meta name="plan-artifacts" content="reckon/crew/query.py,reckon/mcp.py,tests/test_crew_runs_view.py,tests/test_crew_run_identity.py,tests/test_crew_runs_scope.py,docs/evidence/archive/run-identity-query-landed.html">
 </head>
 <body>
 <main class="plan-doc">
@@ -187,10 +187,11 @@
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-riq-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship run-identity-query" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-riq-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship run-identity-query" data-resolved-at="2026-09-04T13:04:33+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Land the view, then its provenance, then its span</h4>
     <div class="r-fu-body"><p>All three nodes write <code>reckon/crew/query.py</code>, so they are one serial lane on one roster member in section order: the view and its filters first, then session provenance and the resumability verdict, then workstation scope. Each lands with its named test and the third carries the recorded run against this workstation's real config home for the gate.</p></div>
     <pre class="r-fu-prompt">/reckon-ship run-identity-query</pre>
+    <p class="r-fu-outcome">done - no followup. All three sections landed in the serial order this followup set, on one roster member as it required, plus one repair the lane's own change made necessary. Commits: 06b4404 the runs view and its filters, 148d1cc session provenance and the resumability verdict, 2c8ad64 workstation scope, and 702fb76 realigning the section-2 filter fixture with the computed contract section 3 introduced. impl 1.0, status shipped, and the merged head is green - 17 passed across the two runs-view files and 256 passed across the twelve ledger-touching files once an unrelated ledger-guard defect was repaired, which is why this plan waited for green rather than declaring shipped on its own per-node gates alone. The gate this plan set itself is met: against a config home carrying a pointer with no session field, a promoted row with no pointer, and a run whose only session evidence is its stream, the view answers all three with the same ids and sources crew resume resolves, and reports a stated absence naming all three consulted sources for a run that genuinely has none. Cumulative record at docs/evidence/archive/run-identity-query-landed.html, which also carries the two references in this plan's own text that the prior-art scout corrected. Nothing in this plan's scope remains; the promotion guard consuming session_id_source belongs to work-survives-a-provider-outage, as section 5 always said, and it landed there today.</p>
     </article>
 </section>
 

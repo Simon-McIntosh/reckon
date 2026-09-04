@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="run-identity-query-landed">
+  <meta name="plan-title" content="Ask for a run by name — landed evidence">
+  <meta name="plan-summary" content="One read now joins the four roots a run's identity occupies: a runs view on the crew tool answering by node id, every row carrying its session with the source that answered, a resumability verdict carrying its reason, and workstation scope across every project in the config home.">
+  <meta name="plan-evidence-for" content="run-identity-query">
+  <meta name="plan-verifies" content="reckon:run-identity-query#s2,reckon:run-identity-query#s3,reckon:run-identity-query#s4">
+  <meta name="plan-recorded-at" content="2026-09-04">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; detached git worktrees; every case runs against a synthesised config home and a synthesised project ledger, with the real config home asserted untouched">
+  <meta name="plan-commits" content="06b44041d580156b31d6d3da9e5ab3e318bc01b9,148d1ccc0966db0d7e3433382b4798efc540f8da,702fb76f76c0fa54eeec750306769390df8961ee,2c8ad6458bcb63b5b038759910b265f98e8d369f">
+  <meta name="plan-artifacts" content="reckon/crew/query.py,reckon/mcp.py,tests/test_crew_runs_view.py,tests/test_crew_run_identity.py,tests/test_crew_runs_scope.py">
+  <title>Ask for a run by name — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Ask for a run by name — landed evidence</h1>
+    <p class="plan-summary">A run's identity was spread across four filesystem roots with
+    three naming schemes and nothing joined them. One read now does, answering from the node
+    id a human actually holds, and reporting how it knows.</p>
+  </header>
+
+  <section id="overview">
+    <h2>Record scope</h2>
+    <p>Three sections, three nodes, one serial lane on one roster member — all three write
+    <code>reckon/crew/query.py</code>, so the plan required sequencing rather than a fleet.
+    A fourth commit repairs a fixture the lane's own third section invalidated.</p>
+    <p><strong>Verdict: pass.</strong> impl 1.0, status shipped. 265 assertions across three
+    new test files, and the merged head green — 17 passed across the two runs-view files, and
+    256 passed across the twelve ledger-touching files once an unrelated ledger-guard defect
+    was repaired. This plan deliberately waited for that head rather than declaring itself
+    shipped on its own per-node gates, because a surface that cannot be demonstrated is not
+    delivered.</p>
+  </section>
+
+  <section id="s2-runs-view">
+    <h2>&sect;2 &mdash; A runs view on the existing crew tool</h2>
+    <p>Commit <code>06b4404</code>, 545 insertions. Gate
+    <code>uv run --no-sync pytest tests/test_crew_runs_view.py -q</code> &mdash;
+    <strong>10 passed in 1.67&nbsp;s</strong>, with
+    <code>tests/test_ledger.py</code> at 73 passed as the compatibility gate.</p>
+    <p>A ninth <em>view</em> on the existing <code>crew</code> tool rather than a second tool,
+    per the locked decision: the surface was deliberately collapsed to one tool over eight
+    views and its docstring says so, and a second tool covering the same subject invites the
+    two to answer differently. It stays a read — it launches, resumes and promotes nothing.</p>
+    <p>The default row is fifteen short fields with five opt-in, eight filters and three
+    source modes. <code>node</code> is the load-bearing filter, because a node id is the
+    handle a human holds while a run id is machine identity: the incident behind this plan
+    had a coordinator typing a microsecond-precision timestamp from memory and getting it
+    wrong. <code>newest_per_node</code> collapses an attempt history to one row, which is
+    what "resume the fleet-index run" actually means. Compactness is a measured requirement
+    rather than taste — three existing reads exceeded the response ceiling in one session and
+    had to be answered through a spill file.</p>
+  </section>
+
+  <section id="s3-session-provenance">
+    <h2>&sect;3 &mdash; A session has a provenance, and an absence is stated</h2>
+    <p>Commit <code>148d1cc</code>. Gate
+    <code>uv run --no-sync pytest tests/test_crew_run_identity.py tests/test_crew_recover.py -q</code>
+    &mdash; <strong>23 passed</strong>, 7 new and the recover suite's 16 held.</p>
+    <p><code>resolve_session</code> is the sole authority and the view calls it, so a query
+    and a resume cannot disagree about the same run. A pointer carrying an id short-circuits
+    stream access; a promoted row with no pointer resolves from its committed row — the
+    source that gets forgotten, and a false negative on exactly the runs a later audit asks
+    about; a run with none anywhere yields a <em>stated absence naming all three consulted
+    sources</em>, never a bare null, because <em>not yet observed</em> and <em>genuinely
+    absent</em> are different facts and a coordinator once read one as a verdict on five
+    runs.</p>
+    <p><code>resumable</code> is the join across three roots, and its negative form is the
+    useful half: false naming the released worktree when the directory is gone, false naming
+    the live process when one is alive, true when a session resolves against an existing tree
+    with a dead process. The reason string is what was actually needed at 19:41Z on the day
+    of the incident and had to be derived by hand from a release result reporting only
+    <code>worktree_released: true</code>.</p>
+    <p><strong>This node reported an out-of-scope consequence instead of reaching for
+    it</strong> — the section-2 test file expected a stored <code>resumable</code> flag to be
+    authoritative, where the computed contract now correctly returns false naming the live
+    process. Repaired separately in <code>702fb76</code>, so the fixture asserts the derived
+    verdict rather than a stored one. That is one failure at a merged head that no per-node
+    gate could have seen.</p>
+  </section>
+
+  <section id="s4-workstation-scope">
+    <h2>&sect;4 &mdash; Workstation scope, because the roots have different spans</h2>
+    <p>Commit <code>2c8ad64</code>. Gate
+    <code>uv run --no-sync pytest tests/test_crew_runs_scope.py -q</code> &mdash;
+    <strong>1 passed carrying 13 assertions</strong> over all five required behaviours, plus
+    17 passed across the two sibling files and zero added ruff findings.</p>
+    <p>The config home is workstation-global while a ledger is per-repository, so "what is
+    running on this machine" and "what has this repository recorded" are different questions
+    against different roots. <code>scope: "workstation"</code> enumerates live pointers across
+    every project in the config home and labels each row with the project and repository that
+    owns it, including projects whose repository is not the working directory. A pointer whose
+    repository no longer exists is returned with the repository reported <em>absent</em>
+    rather than omitted or raising. A row from another project is data, never something to act
+    on: the view is read-only, and the label is precisely what lets a coordinator tell a
+    peer's run from its own <strong>without reading the peer's files</strong> — a boundary
+    crossed four times across three sessions before this landed.</p>
+    <p>Isolation is asserted rather than assumed: with the environment pointed at a temporary
+    config home, the real directory's mtime is checked unchanged. An isolated read does not
+    prove an isolated write.</p>
+    <p>One note on the shape of the evidence. A single test carrying five behaviours was
+    checked before acceptance, because one passing test against a five-part done-when is the
+    pattern that hides an under-delivery; it genuinely carries all five. The cost is that a
+    failure in it will not say which behaviour broke, which is the price of one shared
+    fixture.</p>
+  </section>
+
+  <section id="corrections">
+    <h2>Two corrections to the plan's own text</h2>
+    <p>The prior-art scout dispatched at pre-flight found two references in this plan that
+    named the wrong module, both of which would have cost a later node time:
+    <code>resolve_session</code> lives in <code>reckon/crew/resumption.py</code>, not
+    <code>recover.py</code>; and the workstation project-to-repository join is
+    <code>reckon/crew/routing.py:mounted_repository_projects</code>. Recorded here rather
+    than silently fixed, because a plan whose references drift is the currency defect this
+    sprint met six times.</p>
+    <p>What this plan does <em>not</em> build, restated so it is not looked for here: the
+    promotion guard that consumes <code>session_id_source</code> belongs to
+    <a href="/reckon/plans/work-survives-a-provider-outage">work-survives-a-provider-outage</a>,
+    which is where it landed. This plan informs it rather than duplicating its join.</p>
+  </section>
+
+</main>
+</body>
+</html>
