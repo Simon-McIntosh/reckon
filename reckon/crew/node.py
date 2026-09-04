@@ -8,7 +8,7 @@ from typing import Any, Iterable, Mapping
 
 from reckon import ledger
 
-# The seven properties of the task-definition contract, in the order a reader of
+# The eight properties of the task-definition contract, in the order a reader of
 # the plan meets them. Order is part of the contract: a node that is not scoped
 # cannot be judged bounded.
 NODE_PROPERTIES = (
@@ -19,6 +19,7 @@ NODE_PROPERTIES = (
     "scoped",
     "bounded",
     "independently-verifiable",
+    "spec-level",
 )
 
 # The four fences a dispatch carries, and nothing else. The live plan stays the
@@ -410,7 +411,7 @@ def validate_node(
     locked_decisions: Iterable[str] = (),
     budget_ceiling: str = "",
 ) -> NodeValidation:
-    """Judge a node against all seven properties, reporting every failure.
+    """Judge a node against all eight properties, reporting every failure.
 
     Every property is reported rather than stopping at the first, because a
     caller reshaping a node wants the whole list in one pass. The verdict is
@@ -525,6 +526,13 @@ def validate_node(
             "independently-verifiable",
             f"manifest path {node.manifest_path!r} is relative; it would resolve "
             "against the worker's worktree and be invisible to the orchestrator",
+        )
+
+    if not node.spec_level:
+        fail(
+            "spec-level",
+            "no specification level is declared; pass --spec-level exact, guided "
+            "or open so the run remains visible to calibration",
         )
 
     return NodeValidation(ok=not findings, findings=findings)
