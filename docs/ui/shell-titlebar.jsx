@@ -105,10 +105,27 @@ window.addEventListener("reckon:rendered-reader-list", event => {
   publishRenderedReaderList(event.detail?.kind, event.detail?.items);
 });
 
-function ReaderChrome({ item, state, project, focusMode, position, onNav, onBack, onStep, onToggleFocus }) {
+function ReaderChrome({
+  item,
+  state,
+  project,
+  focusMode,
+  position,
+  dependencyCone,
+  dependenciesOpen,
+  onNav,
+  onBack,
+  onStep,
+  onToggleDependencies,
+  onToggleFocus,
+}) {
   const kind = canonicalReaderKind(item?.type);
   const trail = readerSourceTrail(item, state);
   const metadata = readerMetadataRows(item, project);
+  const dependencyLabel = dependencyCone
+    ? window.ReckonShell.plans.dependencyConeLabel(dependencyCone)
+    : "";
+  const standalone = dependencyLabel === "standalone";
   const copyValue = kind === "plan" ? `/reckon-ship ${item.slug}` : item.slug;
   const copy = () => {
     navigator.clipboard?.writeText(copyValue);
@@ -136,6 +153,24 @@ function ReaderChrome({ item, state, project, focusMode, position, onNav, onBack
           ))}
         </span>
         <button type="button" className="r-reading-focus" onClick={onToggleFocus} aria-pressed={focusMode} title={focusMode ? "Leave full screen (Escape)" : "Read full screen (f)"}>{focusMode ? "esc" : "f"}</button>
+        {dependencyCone?.focal && !focusMode && (
+          <button
+            type="button"
+            className={`r-reading-dependencies ${standalone ? "is-standalone" : ""}`}
+            aria-expanded={dependenciesOpen}
+            aria-controls={`reader-dependencies-${item.slug}`}
+            onClick={onToggleDependencies}
+            title={standalone ? "No plan dependencies" : dependenciesOpen ? "Close plan dependencies" : "Open plan dependencies"}
+          >
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+              <circle cx="3.5" cy="4" r="1.5" />
+              <circle cx="3.5" cy="12" r="1.5" />
+              <circle cx="12.5" cy="8" r="1.5" />
+              <path d="M5 4l6 3.5M5 12l6-3.5" />
+            </svg>
+            <span>{dependencyLabel}</span>
+          </button>
+        )}
         <button type="button" className="r-reading-copy" onClick={copy} title={`Copy ${copyValue}`}>Copy</button>
       </nav>
       <div className="r-reading-metadata" aria-label="Reader metadata">

@@ -166,7 +166,7 @@ function PlanInFlightBand({ runs, effortHours }) {
   };
 
   return (
-    <aside className="r-inflight-band" role="status" aria-label="Work in flight" style={{ marginBottom: 18, padding: "12px 14px", border: "1px solid var(--border)", borderLeft: "3px solid var(--accent)", background: "var(--accent-2)", fontSize: 12 }}>
+    <aside className="r-inflight-band" role="status" aria-label="Work in flight" style={{ marginBottom: 18, padding: "12px 14px", border: "1px solid var(--border)", borderLeft: "3px solid var(--accent)", background: "var(--bg)", fontSize: 12 }}>
       <div className="r-inflight-heading" style={{ marginBottom: 8, color: "var(--muted)", fontSize: 10, fontWeight: 750, letterSpacing: ".12em", textTransform: "uppercase" }}>In flight</div>
       <ul className="r-inflight-runs" style={{ display: "grid", gap: 9, margin: 0, padding: 0, listStyle: "none" }}>
         {runs.map(run => (
@@ -179,7 +179,7 @@ function PlanInFlightBand({ runs, effortHours }) {
 
 function ReaderSourceFailure({ source, status, missing, onRetry }) {
   return (
-    <div className="r-reader-source-failure" role="alert" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 18, marginBottom: 12, padding: "11px 13px", border: "1px solid var(--border)", borderLeft: "3px solid var(--danger, #b42318)", background: "var(--surface)" }}>
+    <div className="r-reader-source-failure" role="alert" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 18, marginBottom: 12, padding: "11px 13px", border: "1px solid var(--border)", borderLeft: "3px solid var(--danger, #b42318)", background: "var(--bg)" }}>
       <div style={{ display: "grid", gap: 3 }}>
         <strong>Partial plan — {source} failed</strong>
         <span style={{ color: "var(--muted)", fontSize: 12 }}>Status: {status}. Missing: {missing.join(", ")}.</span>
@@ -234,6 +234,36 @@ function ReaderAttachmentBars({ groups, selectedKey, onNav }) {
         </details>
       ))}
     </div>
+  );
+}
+
+function ReaderDependencyPanel({ cone, slug, onNav }) {
+  if (!cone?.focal) return null;
+  return (
+    <section
+      className="r-reader-dependency-panel r-dependency-cone"
+      id={`reader-dependencies-${slug}`}
+      aria-label="Plan dependencies"
+    >
+      <div className="r-dependency-cone-columns">
+        <div className="r-dependency-cone-column" data-cone-column="up">
+          <h3>Depends on <span>{cone.prerequisites.length}</span></h3>
+          {cone.prerequisites.map(plan => (
+            <window.ReckonShell.plans.DependencyConeCard key={plan.nav_key || plan.slug} plan={plan} direction="up" onNav={onNav} />
+          ))}
+        </div>
+        <div className="r-dependency-cone-column is-focal" data-cone-column="self">
+          <h3>This plan</h3>
+          <window.ReckonShell.plans.DependencyConeCard plan={cone.focal} direction="self" onNav={onNav} />
+        </div>
+        <div className="r-dependency-cone-column" data-cone-column="down">
+          <h3>Blocks <span>{cone.dependents.length}</span></h3>
+          {cone.dependents.map(plan => (
+            <window.ReckonShell.plans.DependencyConeCard key={plan.nav_key || plan.slug} plan={plan} direction="down" onNav={onNav} />
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -312,10 +342,16 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
   const projectSource = M.project || document.querySelector('meta[name="docs-project"]')?.content || "";
   const project = metadataValueIsPresent(projectSource) ? projectSource : "";
   const [liveRuns, setLiveRuns] = useState([]);
+  const [dependenciesOpen, setDependenciesOpen] = useState(false);
   const [figureZoom, setFigureZoom] = useState(1);
   const [figurePanning, setFigurePanning] = useState(false);
   const figureViewportRef = useRef(null);
   const figureDragRef = useRef(null);
+  const dependencyCone = isPlan
+    ? window.ReckonShell.plans?.dependencyConeRows?.(M.inventory || [], slug)
+    : null;
+
+  useEffect(() => setDependenciesOpen(false), [kind, PG.slug]);
 
   useEffect(() => {
     setFigureZoom(1);
@@ -698,13 +734,19 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
             project={project}
             focusMode={focusMode}
             position={readerPosition}
+            dependencyCone={dependencyCone}
+            dependenciesOpen={dependenciesOpen}
             onNav={onNav}
             onBack={() => onNav?.({ view: kind, slug: null })}
             onStep={stepReader}
+            onToggleDependencies={() => setDependenciesOpen(open => !open)}
             onToggleFocus={onToggleFocus}
           />
           <div className="r-reading-viewport">
             <div className="r-reading-content">
+          {isPlan && dependenciesOpen && (
+            <ReaderDependencyPanel cone={dependencyCone} slug={PG.slug} onNav={onNav} />
+          )}
           {isPlan && <PlanInFlightBand runs={liveRuns} effortHours={P.effort_hours} />}
           {provenanceSignals.htmlFailure && (
             <ReaderSourceFailure
