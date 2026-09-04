@@ -455,6 +455,31 @@ def test_account_limit_checks_are_an_explicit_host_opt_in(layers):
     assert resolved.origin("backends.native.budget_check") == "host"
 
 
+def test_backend_input_window_resolves_with_leaf_provenance(layers):
+    write(
+        layers["host"],
+        "backends:\n  native:\n    usable_input_window: 73728\n",
+    )
+
+    resolved = resolve_files(layers)
+
+    assert resolved.config["backends"]["native"]["usable_input_window"] == 73_728
+    assert resolved.origin("backends.native.usable_input_window") == "host"
+    assert "usable_input_window" in BackendConfig.model_fields
+
+
+def test_backend_input_window_must_be_positive(layers):
+    write(
+        layers["host"],
+        "backends:\n  native:\n    usable_input_window: 0\n",
+    )
+
+    with pytest.raises(FlightConfigError) as excinfo:
+        resolve_files(layers)
+
+    assert excinfo.value.key_path == "backends.native.usable_input_window"
+
+
 def test_a_utilisation_ceiling_beyond_a_percentage_is_rejected(layers):
     write(layers["host"], "budget:\n  utilisation_ceiling_pct: 140\n")
     with pytest.raises(FlightConfigError) as excinfo:

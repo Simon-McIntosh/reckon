@@ -1,17 +1,39 @@
 from __future__ import annotations
 
 import http.client
+import importlib
 import json
 import os
+import subprocess
 import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
 
-from reckon import crew, ledger
-import reckon.serve as serve
+from reckon import cli as cli_module
+from reckon import crew, ledger, serve
+from reckon.crew import routing
+
+
+CONTEXT_CONFIG = {
+    "default_backend": "bounded",
+    "backends": {
+        "bounded": {
+            "launch": "cli",
+            "command": "clive",
+            "model": "worker-model",
+            "sandbox": "worktree-full",
+            "usable_input_window": 73_728,
+        }
+    },
+    "roles": {"implement": {}},
+    "fences": {"time_budget": "8m", "needs_help_after_failures": 2},
+}
+
+ROOT = Path(__file__).resolve().parent.parent
 
 
 def _add_project(root: Path, name: str, mounts: dict[str, str]) -> Path:
@@ -74,6 +96,46 @@ def crew_server(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         server.server_close()
         thread.join(timeout=5)
         serve._DISC_CACHE.clear()
+
+
+@pytest.fixture()
+def context_dispatch_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+
+    repo = tmp_path / "repo"
+    plans = repo / "docs" / "plans"
+    fleet_scripts = repo / "skills" / "reckon-ship" / "scripts"
+    target = repo / "tests" / "large_context.py"
+    plans.mkdir(parents=True)
+    fleet_scripts.mkdir(parents=True)
+    target.parent.mkdir(parents=True)
+    (plans / "visible-work.html").write_text(
+        "<!doctype html><html><head>"
+        '<meta name="docs-project" content="context-project">'
+        '<meta name="reckon-type" content="plan">'
+        '<meta name="plan-slug" content="visible-work">'
+        '</head><body><h2 id="dispatch">Dispatch</h2></body></html>',
+        encoding="utf-8",
+    )
+    target.write_text("#" * 100_000 + "\n", encoding="utf-8")
+    source = ROOT / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py"
+    (fleet_scripts / "worktree_fleet.py").write_text(
+        source.read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    for arguments in (
+        ["init", "-q", "-b", "main"],
+        ["config", "user.email", "worker@example.invalid"],
+        ["config", "user.name", "Worker"],
+        ["add", "docs", "skills", "tests/large_context.py"],
+        ["commit", "-q", "-m", "chore: seed repository"],
+    ):
+        subprocess.run(["git", *arguments], cwd=repo, check=True, capture_output=True)
+    (config_home / "mounts.json").write_text(
+        json.dumps({"context-project": str(repo / "docs")}), encoding="utf-8"
+    )
+    return repo
 
 
 def _write_pointer(
@@ -299,3 +361,264 @@ def test_discovery_serves_declared_directions_and_plan_alignment(crew_server) ->
     assert state_status == 200
     assert state_payload["data"]["north_stars"] == directions
     assert state_payload["data"]["inventory"][0]["north_star"] == "reliable-delivery"
+
+
+def _context_node(*, node_id: str = "context-reader") -> crew.TaskNode:
+    return crew.TaskNode(
+        id=node_id,
+        goal="measure the declared repository input",
+        plan="visible-work",
+        section="dispatch",
+        role="implement",
+        spec_level="exact",
+        done_when=(
+            "uv run pytest tests/large_context.py reports no failures and names "
+            "tests/large_context.py in the estimate"
+        ),
+        write_paths=["tests/large_context.py"],
+        time_budget="8m",
+    )
+
+
+def _fixed_standing_input(*_args, **_kwargs) -> tuple[int, dict]:
+    return 50_392, {
+        "calculated_tokens": 50_392,
+        "floor_tokens": 50_392,
+        "effective_tokens": 50_392,
+        "token_estimator": "measured-fixture",
+        "files": [],
+    }
+
+
+def test_standing_context_records_every_effective_instruction_input(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured: dict = {}
+
+    def context_manifest(request):
+        captured["request"] = request
+        return {
+            "instructions": {
+                "effective_chain": [
+                    {
+                        "path": "/policy/repository.md",
+                        "resolved_path": "/policy/repository.md",
+                        "readable": True,
+                        "bytes": 140_000,
+                    },
+                    {
+                        "path": "/policy/missing.md",
+                        "resolved_path": "/policy/missing.md",
+                        "readable": False,
+                        "bytes": 9_999,
+                    },
+                ]
+            },
+            "canonical_policy": {
+                "path": "/policy/canonical.md",
+                "resolved_path": "/policy/canonical.md",
+                "readable": True,
+                "bytes": 42_000,
+            },
+        }
+
+    monkeypatch.setattr(
+        routing.agent_context, "build_context_manifest", context_manifest
+    )
+
+    tokens, inputs = routing._standing_context_input(tmp_path, {"launch": "in-harness"})
+
+    assert captured["request"].target == tmp_path
+    assert captured["request"].agent == "codex"
+    assert tokens == inputs["effective_tokens"] == 52_000
+    assert inputs["calculated_tokens"] == 52_000
+    assert [item["path"] for item in inputs["files"]] == [
+        "/policy/repository.md",
+        "/policy/canonical.md",
+    ]
+
+
+def test_context_refusal_is_exit_five_before_worktree_creation(
+    context_dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        cli_module, "_resolved_flight", lambda *_a, **_k: CONTEXT_CONFIG
+    )
+    monkeypatch.setattr(routing, "_standing_context_input", _fixed_standing_input)
+    monkeypatch.setattr(
+        crew.capabilities, "load_capabilities", lambda: {"configurations": []}
+    )
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+
+    def forbid_worktree(*_args, **_kwargs):
+        raise AssertionError("context refusal reached worktree creation")
+
+    arguments = [
+        "crew",
+        "dispatch",
+        "--project",
+        "context-project",
+        "--plan",
+        "visible-work",
+        "--section",
+        "dispatch",
+        "--spec-level",
+        "exact",
+        "--node",
+        "context-reader",
+        "--goal",
+        "measure the declared repository input",
+        "--done-when",
+        (
+            "uv run pytest tests/large_context.py reports no failures and names "
+            "tests/large_context.py in the estimate"
+        ),
+        "--write-path",
+        "tests/large_context.py",
+        "--session",
+        "session",
+        "--repo",
+        str(context_dispatch_repo),
+    ]
+    with monkeypatch.context() as guarded:
+        guarded.setattr(dispatch_module, "_create_worktree", forbid_worktree)
+        real = CliRunner().invoke(cli_module.main, arguments)
+    dry = CliRunner().invoke(cli_module.main, [*arguments, "--dry-run"])
+
+    assert real.output, repr(real.exception)
+    real_payload = json.loads(real.output)
+    dry_payload = json.loads(dry.output)
+    assert real.exit_code == dry.exit_code == 5
+    assert real_payload["error"] == dry_payload["error"] == "competence-refusal"
+    assert real_payload["competence"] == dry_payload["competence"]
+    verdict = real_payload["competence"]
+    assert verdict["reason"] == "context-window-exceeded"
+    assert verdict["estimated_tokens"] > verdict["window_tokens"] == 73_728
+    assert verdict["shortfall_tokens"] == (
+        verdict["estimated_tokens"] - verdict["window_tokens"]
+    )
+    assert verdict["context"]["inputs"]["repository_file_tokens"] > 0
+    worktrees = subprocess.run(
+        ["git", "worktree", "list"],
+        cwd=context_dispatch_repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    assert "context-reader" not in worktrees
+    assert crew.list_live() == []
+
+
+def test_fitting_and_unbounded_backends_dispatch_without_context_refusal(
+    context_dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(routing, "_standing_context_input", _fixed_standing_input)
+    monkeypatch.setattr(
+        crew.capabilities, "load_capabilities", lambda: {"configurations": []}
+    )
+    fitting = {
+        **CONTEXT_CONFIG,
+        "backends": {
+            "bounded": {
+                **CONTEXT_CONFIG["backends"]["bounded"],
+                "usable_input_window": 492_288,
+            }
+        },
+    }
+
+    record = crew.dispatch(
+        node=_context_node(node_id="fitting-reader"),
+        project="context-project",
+        repo=context_dispatch_repo,
+        config=fitting,
+        session="session",
+        launcher=lambda *_a, **_k: 4242,
+    )
+
+    context_fit = record["competence"]["context"]
+    assert context_fit["allowed"] is True
+    assert context_fit["estimated_tokens"] < context_fit["window_tokens"] == 492_288
+    assert context_fit["shortfall_tokens"] == 0
+    assert context_fit["inputs"]["repository_files"]["write_paths"]
+    assert record["node"]["write_paths"] == ["tests/large_context.py"]
+    assert record["agent"]["usable_input_window"] == 492_288
+
+    unbounded = {
+        **CONTEXT_CONFIG,
+        "backends": {
+            "bounded": {
+                key: value
+                for key, value in CONTEXT_CONFIG["backends"]["bounded"].items()
+                if key != "usable_input_window"
+            }
+        },
+    }
+    resolution = crew.plan_dispatch(node=_context_node(), config=unbounded)
+    verdict = routing._context_fit_verdict(
+        resolution=resolution, repo=context_dispatch_repo
+    )
+    assert verdict is None
+
+
+@pytest.mark.parametrize(
+    ("write_paths", "done_when"),
+    [
+        (
+            ["tests/test_crew.py"],
+            (
+                "uv run pytest tests/test_crew.py "
+                "tests/test_crew_session_keying.py reports no failures"
+            ),
+        ),
+        (
+            [
+                "reckon/crew/dispatch.py",
+                "reckon/crew/routing.py",
+                "tests/test_crew_shadow_paths.py",
+            ],
+            (
+                "uv run pytest tests/test_crew_shadow_paths.py tests/test_crew_gc.py "
+                "reports no failures"
+            ),
+        ),
+    ],
+)
+def test_recorded_repository_scopes_refuse_glm_and_fit_flash(
+    monkeypatch: pytest.MonkeyPatch,
+    write_paths: list[str],
+    done_when: str,
+) -> None:
+    monkeypatch.setattr(routing, "_standing_context_input", _fixed_standing_input)
+    node = crew.TaskNode(
+        id="recorded-context-reader",
+        goal="exercise the recorded repository scope",
+        plan="visible-work",
+        section="dispatch",
+        role="implement",
+        spec_level="exact",
+        done_when=done_when,
+        write_paths=write_paths,
+        time_budget="8m",
+    )
+    glm_resolution = crew.plan_dispatch(node=node, config=CONTEXT_CONFIG)
+    glm = routing._context_fit_verdict(resolution=glm_resolution, repo=ROOT)
+    flash_config = {
+        **CONTEXT_CONFIG,
+        "backends": {
+            "bounded": {
+                **CONTEXT_CONFIG["backends"]["bounded"],
+                "usable_input_window": 492_288,
+            }
+        },
+    }
+    flash_resolution = crew.plan_dispatch(node=node, config=flash_config)
+    flash = routing._context_fit_verdict(resolution=flash_resolution, repo=ROOT)
+
+    assert glm is not None
+    assert glm["allowed"] is False
+    assert glm["window_tokens"] == 73_728
+    assert glm["shortfall_tokens"] > 0
+    assert flash is not None
+    assert flash["allowed"] is True
+    assert flash["window_tokens"] == 492_288
+    assert flash["shortfall_tokens"] == 0
