@@ -8,16 +8,29 @@ from tests import spa_module_eval
 
 ROOT = Path(__file__).parents[1]
 SOURCE = ROOT / "docs" / "ui" / "sprint.jsx"
+GRAPH = ROOT / "docs" / "ui" / "graph.jsx"
 
 
 def _evaluate_helpers(expression: str, tmp_path: Path):
     source = SOURCE.read_text()
     helpers = source[
-        source.index("const HORIZON_HOURS") : source.index("function Sprint(")
+        source.index("const CLOSED_ITEM_STATUSES") : source.index("function SprintDetail(")
     ]
     helper_module = tmp_path / "sprint_helpers.jsx"
     helper_module.write_text(helpers)
     return spa_module_eval.evaluate_jsx_module(helper_module, expression)
+
+
+def _evaluate_with_layout(expression: str, tmp_path: Path):
+    """Sprint helpers plus the real exported `window.ReckonGraph.layout`."""
+    source = SOURCE.read_text()
+    helpers = source[
+        source.index("const CLOSED_ITEM_STATUSES") : source.index("function SprintDetail(")
+    ]
+    combined = f"{GRAPH.read_text()}\n{helpers}"
+    module = tmp_path / "sprint_with_graph.jsx"
+    module.write_text(combined)
+    return spa_module_eval.evaluate_jsx_module(module, expression)
 
 
 def test_module_evaluator_rejects_raw_jsx(monkeypatch, tmp_path):
@@ -36,6 +49,12 @@ def test_module_evaluator_rejects_raw_jsx(monkeypatch, tmp_path):
 
 
 def test_overview_keeps_every_active_sprint_and_folds_only_closed_rows(tmp_path):
+    inventory = [
+        {"slug": "alpha", "status": "active", "impl": 0.5, "effort_hours": 4},
+        {"slug": "beta", "status": "active", "impl": 0.5, "effort_hours": 4},
+        {"slug": "gamma", "status": "active", "impl": 0.5, "effort_hours": 4},
+        {"slug": "delta", "status": "shipped", "impl": 1.0, "effort_hours": 4},
+    ]
     sprints = [
         {"id": "SA", "status": "active", "items": [{"slug": "alpha"}]},
         {"id": "SB", "status": "active", "items": [{"slug": "beta"}]},
@@ -44,7 +63,7 @@ def test_overview_keeps_every_active_sprint_and_folds_only_closed_rows(tmp_path)
     ]
     result = _evaluate_helpers(
         "(() => {"
-        f"const rows = sprintStateRows({json.dumps(sprints)}, '2026-09-01');"
+        f"const rows = sprintStateRows({json.dumps(sprints)}, {json.dumps(inventory)});"
         "return {visible: rows.filter(row => !row.closed), folded: rows.filter(row => row.closed)};"
         "})()",
         tmp_path,
@@ -81,7 +100,6 @@ def test_surface_keeps_description_concise_and_contract_reachable():
     assert 'surface === "ready"' in source
     assert "active_sprints" in source
     assert 'className="r-sprint-conflict"' in source
-    assert 'className="r-horizon-strip"' in source
     assert '<table className="r-sprint-table">' in source
     assert 'className="r-needs-you"' in source
 
@@ -90,15 +108,6 @@ def test_sprint_styles_do_not_force_a_sideways_canvas():
     styles = (ROOT / "docs" / "ui" / "sprints.css").read_text()
     base_styles = (ROOT / "docs" / "ui" / "styles-base.css").read_text()
 
-    assert ".r-horizon-track { position: relative; height: 44px" in styles
-    assert (
-        ".r-horizon-strip > header { display: grid; grid-template-columns: repeat(2, 1fr)"
-        in styles
-    )
-    assert (
-        "grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr))"
-        in styles
-    )
     assert ".r-ready-lane { display: grid; gap: 8px; min-width: 0" in styles
     assert "overflow-wrap: anywhere" in styles
     assert "overflow-x: clip" in styles
@@ -112,73 +121,146 @@ def test_sprint_styles_do_not_force_a_sideways_canvas():
     assert "overflow-y: auto" in owner_rule
 
 
-def test_selected_sprint_opens_completed_work_newest_first_with_fixed_event_strip(
-    tmp_path,
-):
-    sprints = [
-        {
-            "id": "SA",
-            "status": "active",
-            "items": [{"slug": "alpha"}, {"slug": "beta"}],
-        },
-        {"id": "SB", "status": "active", "items": [{"slug": "gamma"}]},
-        {"id": "SC", "status": "active", "items": [{"slug": "delta"}]},
+def test_horizon_strip_and_recorded_work_are_retired():
+    source = SOURCE.read_text()
+    assert "HORIZON_HOURS" not in source
+    assert "horizonStrip" not in source
+    assert "r-horizon-strip" not in source
+    assert "r-completed-work" not in source
+    assert 0 == source.count("HORIZON_HOURS")
+
+
+def test_planned_sprint_with_fully_shipped_members_derives_shipped_and_flags_drift(tmp_path):
+    inventory = [
+        {"slug": "one", "status": "shipped", "impl": 1.0, "effort_hours": 5},
+        {"slug": "two", "status": "shipped", "impl": 1.0, "effort_hours": 3},
     ]
-    runs = {
-        "alpha": [
-            {
-                "run_id": "older",
-                "plan": "alpha",
-                "node": "implement-owner",
-                "section": "delivery",
-                "gate": "passed",
-                "commits": ["1111111"],
-                "dispatched_at": "2026-08-25T08:00:00Z",
-                "completed_at": "2026-08-25T08:15:00Z",
-            }
-        ],
-        "beta": [
-            {
-                "run_id": "newer",
-                "plan": "beta",
-                "node": "verification-owner",
-                "section": "verification",
-                "gate": "failed",
-                "commits": ["2222222"],
-                "dispatched_at": "2026-08-25T09:00:00Z",
-                "completed_at": "2026-08-25T09:20:00Z",
-            }
-        ],
-    }
+    sprints = [
+        {"id": "S9", "status": "planned", "items": [{"slug": "one"}, {"slug": "two"}]},
+    ]
     result = _evaluate_helpers(
         "(() => {"
-        f"const sprints = {json.dumps(sprints)};"
-        f"const runs = sprintCompletedRuns(sprints[0], {json.dumps(runs)});"
-        "const strip = horizonStrip(Date.parse('2026-08-25T12:00:00Z'), runs, []);"
+        f"const rows = sprintStateRows({json.dumps(sprints)}, {json.dumps(inventory)});"
+        "return rows.map(row => ({id: row.sprint.id, state: row.state, flag: row.flag}));"
+        "})()",
+        tmp_path,
+    )
+
+    assert result == [{"id": "S9", "state": "shipped", "flag": "was planned"}]
+
+
+def test_sprint_detail_pulls_out_of_sprint_prerequisites_as_ghosts(tmp_path):
+    inventory = [
+        {"slug": "prereq-a", "status": "shipped", "impl": 1.0, "effort_hours": 4, "depends_on": [], "sprint": "S1"},
+        {"slug": "prereq-b", "status": "pending", "impl": 0.0, "effort_hours": 4, "depends_on": [], "sprint": "S1"},
+        {"slug": "member-a", "status": "active", "impl": 0.3, "effort_hours": 6, "depends_on": ["prereq-a"], "sprint": "S2"},
+        {"slug": "member-b", "status": "blocked", "impl": 0.0, "effort_hours": 6, "depends_on": ["prereq-b"], "sprint": "S2"},
+    ]
+    sprint = {"id": "S2", "status": "active", "items": [{"slug": "member-a"}, {"slug": "member-b"}]}
+
+    result = _evaluate_with_layout(
+        "(() => {"
+        f"const sprint = {json.dumps(sprint)};"
+        f"const inventory = {json.dumps(inventory)};"
+        "const plans = sprintDagPlans(sprint, inventory);"
+        "const layout = window.ReckonGraph.layout(plans, 'test');"
         "return {"
-        "runIds: runs.map(run => run.run_id),"
-        "eventIds: strip.events.map(event => event.run.run_id),"
-        "durationHours: (Date.parse(strip.end) - Date.parse(strip.start)) / HOUR_MS,"
-        "tickLabels: strip.ticks.map(tick => tick.label),"
-        "active: sprintStateRows(sprints, '2026-08-25').filter(row => row.active).map(row => row.sprint.id)"
+        "nodeCount: layout.nodes.length,"
+        "ghostCount: layout.nodes.filter(n => n.ghost).length,"
+        "edgeCount: layout.edges.length,"
+        "dashedFromUnshipped: layout.edges.find(e => e.from === 'prereq-b').dash !== '0',"
+        "solidFromShipped: layout.edges.find(e => e.from === 'prereq-a').dash === '0',"
+        "heldStroke: layout.edges.find(e => e.from === 'prereq-b').held,"
+        "notHeldFromShipped: layout.edges.find(e => e.from === 'prereq-a').held,"
         "};"
         "})()",
         tmp_path,
     )
-    source = SOURCE.read_text()
 
-    assert result["runIds"] == ["newer", "older"]
-    assert result["eventIds"] == ["older", "newer"]
-    assert result["durationHours"] == 48
-    assert len(result["tickLabels"]) == 9
-    assert all(":" in label for label in result["tickLabels"])
-    assert result["active"] == ["SA", "SB", "SC"]
-    assert 'run.dispatched_at || "not recorded"' in source
-    assert 'run.completed_at || "not recorded"' in source
-    assert "run.node || run.plan" in source
-    assert 'run.section || "unsectioned"' in source
-    assert 'run.gate || "not recorded"' in source
-    assert '(run.commits || [])[0] || "no commit"' in source
-    assert "No completed work is recorded for this sprint." in source
-    assert "SPRINT_HORIZONS" not in source
-    assert "sprintAxis" not in source
+    assert result["nodeCount"] == 4
+    assert result["ghostCount"] == 2
+    assert result["edgeCount"] == 2
+    assert result["dashedFromUnshipped"] is True
+    assert result["solidFromShipped"] is True
+    assert result["heldStroke"] is True
+    assert result["notHeldFromShipped"] is False
+
+
+def test_sprint_ship_control_disabled_with_open_decision_count(tmp_path):
+    inventory = [
+        {
+            "slug": "member-a",
+            "status": "active",
+            "impl": 0.2,
+            "effort_hours": 4,
+            "depends_on": [],
+            "decisions": [{"key": "d1"}, {"key": "d2", "choice": "x"}],
+        },
+        {
+            "slug": "member-b",
+            "status": "active",
+            "impl": 0.2,
+            "effort_hours": 4,
+            "depends_on": [],
+            "decisions": [{"key": "d3"}],
+        },
+    ]
+    sprint = {"id": "S3", "status": "active", "items": [{"slug": "member-a"}, {"slug": "member-b"}]}
+
+    result = _evaluate_with_layout(
+        "(() => {"
+        f"const sprint = {json.dumps(sprint)};"
+        f"const inventory = {json.dumps(inventory)};"
+        "return sprintDetailStats(sprint, inventory).openDecisions;"
+        "})()",
+        tmp_path,
+    )
+
+    assert result == 2
+    source = SOURCE.read_text()
+    assert 'disabled={openDecisions > 0}' in source
+    assert '`${openDecisions} open decision${openDecisions === 1 ? "" : "s"}`' in source
+
+
+def test_sprint_detail_header_stats_render_fixture_counts(tmp_path):
+    inventory = [
+        {"slug": "prereq-a", "status": "shipped", "impl": 1.0, "effort_hours": 4, "depends_on": []},
+        {"slug": "prereq-b", "status": "pending", "impl": 0.0, "effort_hours": 4, "depends_on": []},
+        {
+            "slug": "member-a",
+            "status": "active",
+            "impl": 0.3,
+            "effort_hours": 6,
+            "depends_on": ["prereq-a"],
+            "decisions": [{"key": "d1"}],
+        },
+        {
+            "slug": "member-b",
+            "status": "blocked",
+            "impl": 0.0,
+            "effort_hours": 6,
+            "depends_on": ["prereq-b"],
+            "decisions": [{"key": "d2"}],
+        },
+    ]
+    sprint = {"id": "S2", "status": "active", "items": [{"slug": "member-a"}, {"slug": "member-b"}]}
+
+    stats = _evaluate_with_layout(
+        "(() => {"
+        f"const sprint = {json.dumps(sprint)};"
+        f"const inventory = {json.dumps(inventory)};"
+        "return sprintDetailStats(sprint, inventory);"
+        "})()",
+        tmp_path,
+    )
+
+    assert stats["plans"] == 2
+    assert stats["workerHours"] == 12
+    assert stats["depth"] == 1
+    assert stats["held"] == 1
+    assert stats["prerequisites"] == 2
+    assert stats["openDecisions"] == 2
+
+    source = SOURCE.read_text()
+    for label in ("plans", "worker-hours", "depth", "held", "prerequisites", "open decisions"):
+        assert f"<span>{label}</span>" in source
