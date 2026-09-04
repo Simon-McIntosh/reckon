@@ -347,22 +347,64 @@ def test_dead_process_never_counts_as_working_at_any_phase(home) -> None:
         )
 
 
-def test_terminal_manifest_never_counts_as_working(home) -> None:
-    # A manifest that has reached a verdict is a finished run no matter what the
-    # record phase claims, so none of the terminal readings may land in the
-    # working bucket.
-    for status in ("complete", "blocked", "failed"):
-        snapshot = _snapshot_pointer(
-            home,
-            f"r-term-{status}",
-            phase="working",
-            alive=True,
-            manifest_status=status,
-        )
-        assert snapshot["state"] not in recovery.FLEET_WORKING_STATES, (
-            f"a terminal manifest ({status!r}) read as {snapshot['state']!r}, "
-            "which counts as working"
-        )
+def test_blocked_manifest_never_counts_as_working(home) -> None:
+    # A block asks the coordinator for action even if its process has not exited.
+    snapshot = _snapshot_pointer(
+        home,
+        "r-term-blocked",
+        phase="working",
+        alive=True,
+        manifest_status="blocked",
+    )
+    assert snapshot["state"] not in recovery.FLEET_WORKING_STATES
+
+
+@pytest.mark.parametrize(
+    ("status", "stopped_classification", "stopped_state"),
+    [
+        ("complete", "completed_unpromoted", "complete"),
+        ("failed", "failed", "failed"),
+    ],
+)
+def test_manifest_outcome_waits_until_the_pointer_says_the_process_stopped(
+    home, status, stopped_classification, stopped_state
+) -> None:
+    # Complete and failed reports have the same liveness shape: both are kept
+    # while the pointer says the worker is alive, and become outcomes only once
+    # it says the worker stopped. The failure arm is also the negative guard — a
+    # genuine stopped failure retains its existing classification and reason.
+    manifest = home / "manifests" / f"r-live-{status}.md"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text(
+        f"node: r-live-{status}\nstatus: {status}\nblockers: implementation failed\n"
+    )
+    pointer = {
+        "run_id": f"r-live-{status}",
+        "project": "proj",
+        "node": {"id": f"r-live-{status}", "plan": "plan-a", "time_budget": "20m"},
+        "phase": "working",
+        "manifest_path": str(manifest),
+        "log_path": str(home / "streams" / f"r-live-{status}.jsonl"),
+        "process_alive": True,
+    }
+
+    live_row = recovery.classify_pointer(pointer, now_seconds=time.time())
+    live_snapshot = recovery._watch_snapshot(
+        pointer, moment=time.time(), stall_seconds=3600
+    )
+    assert live_row["classification"] == "running"
+    assert live_row["process_alive"] is True
+    assert live_snapshot["state"] == "working"
+
+    pointer["process_alive"] = False
+    stopped_row = recovery.classify_pointer(pointer, now_seconds=time.time())
+    stopped_snapshot = recovery._watch_snapshot(
+        pointer, moment=time.time(), stall_seconds=3600
+    )
+    assert stopped_row["classification"] == stopped_classification
+    assert stopped_snapshot["state"] == stopped_state
+    if status == "failed":
+        assert "implementation failed" in stopped_row["detail"]
 
 
 def test_fleet_counts_still_partition_the_runs_in_flight(home) -> None:
@@ -375,12 +417,90 @@ def test_fleet_counts_still_partition_the_runs_in_flight(home) -> None:
             home, "r-dead-starting", phase="starting", alive=False
         ),
         "r-done": _snapshot_pointer(
-            home, "r-done", phase="working", alive=True, manifest_status="complete"
+            home, "r-done", phase="working", alive=False, manifest_status="complete"
         ),
     }
     counts = recovery._fleet_counts(snapshots)
     assert counts == {"working": 1, "blocked": 1, "unpromoted": 1}
     assert sum(counts.values()) == len(snapshots)
+
+
+def test_observe_and_watch_render_failure_only_after_the_process_stops(
+    tmp_path, monkeypatch
+) -> None:
+    # Exercise the two production boundaries together. Observe persists the
+    # process fact onto the live pointer; the producer reduces that pointer and
+    # the follower renders its stored transition. No one re-probes liveness in
+    # between those boundaries.
+    fallback_home = tmp_path / "fallback-home"
+    monkeypatch.setenv("HOME", str(fallback_home))
+    monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
+    monkeypatch.delenv("RECKON_HOME", raising=False)
+    untouched_home = fallback_home / ".config" / "reckon"
+
+    config_home = tmp_path / "isolated-config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+
+    run_id = "r-live-failure"
+    stream = config_home / "runs" / run_id / "stream.jsonl"
+    stream.parent.mkdir(parents=True)
+    stream.write_text('{"type":"turn.started"}\n')
+    manifest = config_home / "runs" / run_id / "manifest.md"
+    manifest.write_text(
+        "node: r-live-failure\n"
+        "status: failed\n"
+        "blockers: implementation and required evidence are not yet complete\n"
+    )
+    crew._write_json(
+        crew.pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": "proj",
+            "node": {"id": run_id, "plan": "plan-a", "time_budget": "20m"},
+            "phase": "working",
+            "created_at": datetime.now(tz=UTC).isoformat(),
+            "pid": 4242,
+            "process_alive": False,
+            "manifest_path": str(manifest),
+            "log_path": str(stream),
+            "stderr_path": str(config_home / "runs" / run_id / "stderr.log"),
+        },
+    )
+
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    liveness = iter((True, False))
+    monkeypatch.setattr(dispatch_module, "process_alive", lambda _pid: next(liveness))
+
+    live_pointer = crew.observe(run_id)
+    assert live_pointer["process_alive"] is True
+    assert recovery.classify_pointer(live_pointer)["classification"] == "running"
+
+    producer = runs._WatchStreamProducer(
+        path=runs.watch_stream_path("proj"), known={}, stall_window="1h"
+    )
+    runs._WATCH_STREAM_PRODUCERS["proj"] = producer
+    try:
+        crew.list_live(project="proj")
+        stopped_pointer = crew.observe(run_id)
+        crew.list_live(project="proj")
+    finally:
+        runs._WATCH_STREAM_PRODUCERS.pop("proj", None)
+
+    events = list(runs.read_stream_events(producer.path))
+    assert [(event["event"], event["to_state"]) for event in events] == [
+        ("baseline", "working"),
+        ("transition", "failed"),
+    ]
+    assert events[1]["from_state"] == "working"
+    assert stopped_pointer["process_alive"] is False
+    assert recovery.classify_pointer(stopped_pointer)["classification"] == "failed"
+
+    rendered = [recovery.format_watch_transition(event) for event in events]
+    assert "working" in rendered[0]
+    assert "failed" in rendered[1]
+    assert "implementation and required evidence" in rendered[1]
+    assert not untouched_home.exists()
 
 
 def _cli_pointer(
