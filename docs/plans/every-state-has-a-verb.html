@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="every-state-has-a-verb">
+  <meta name="plan-title" content="Every State Has A Verb">
+  <meta name="plan-summary" content="A run reaches states the crew surface has no command for, so agents invent manual workarounds that the rest of the system guards against.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="12.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S15">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-depends-on" content="work-survives-a-provider-outage">
+  <title>Every State Has A Verb | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-04">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — Five findings, one shape</h2>
+    <p>
+      Four coordinators working four projects reported five separate problems
+      on 2026-09-03 and 2026-09-04. They look unrelated — a stale process, a
+      SLURM wait, a lane switch, an undeclared companion file, a mislabelled
+      row — and they are one thing. <strong>In each, a run reached a state the
+      command surface has no verb for, so a competent agent invented a manual
+      workaround, and in three of the five the workaround was an operation the
+      rest of the system actively guards against.</strong>
+    </p>
+    <p>
+      That last clause is what makes this urgent rather than tidy. A worker
+      whose lane is exhausted can only be discarded and re-dispatched, so the
+      surface pushes an operator toward deleting a resumable session — the
+      exact act that cost another session five runs the same night, and the act
+      a promotion guard was landed hours earlier to prevent. A gap in the verbs
+      is not a missing convenience; it is a channel that routes careful people
+      into the dangerous path.
+    </p>
+
+    <figure>
+      <svg viewBox="0 0 640 176" width="100%" role="img"
+           aria-label="Five run states, each lacking a command, each producing a manual workaround.">
+        <text x="0" y="12" font-family="system-ui, sans-serif" font-size="11" fill="#5a5a5a">state reached</text>
+        <text x="228" y="12" font-family="system-ui, sans-serif" font-size="11" fill="#5a5a5a">verb today</text>
+        <text x="392" y="12" font-family="system-ui, sans-serif" font-size="11" fill="#5a5a5a">what an agent does instead</text>
+        <line x1="0" y1="18" x2="640" y2="18" stroke="#c8c8c8" stroke-width="1"/>
+
+        <text x="0" y="38" font-family="system-ui, sans-serif" font-size="13" fill="#1a1a1a">follower holds old code</text>
+        <text x="228" y="38" font-family="system-ui, sans-serif" font-size="13" fill="#8a1c1c">none</text>
+        <text x="392" y="38" font-family="system-ui, sans-serif" font-size="13" fill="#1a1a1a">remember to restart it</text>
+
+        <text x="0" y="62" font-family="system-ui, sans-serif" font-size="13" fill="#1a1a1a">waiting on a cluster job</text>
+        <text x="228" y="62" font-family="system-ui, sans-serif" font-size="13" fill="#8a1c1c">none</text>
+        <text x="392" y="62" font-family="system-ui, sans-serif" font-size="13" fill="#1a1a1a">park as blocked, resume by hand</text>
+
+        <text x="0" y="86" font-family="system-ui, sans-serif" font-size="13" fill="#1a1a1a">lane spent, work sound</text>
+        <text x="228" y="86" font-family="system-ui, sans-serif" font-size="13" fill="#8a1c1c">none</text>
+        <text x="392" y="86" font-family="system-ui, sans-serif" font-size="13" fill="#8a1c1c">discard the session, redispatch</text>
+
+        <text x="0" y="110" font-family="system-ui, sans-serif" font-size="13" fill="#1a1a1a">companion file written</text>
+        <text x="228" y="110" font-family="system-ui, sans-serif" font-size="13" fill="#8a1c1c">none</text>
+        <text x="392" y="110" font-family="system-ui, sans-serif" font-size="13" fill="#8a1c1c">edit the live pointer by hand</text>
+
+        <text x="0" y="134" font-family="system-ui, sans-serif" font-size="13" fill="#1a1a1a">run discarded</text>
+        <text x="228" y="134" font-family="system-ui, sans-serif" font-size="13" fill="#1a1a1a">discard</text>
+        <text x="392" y="134" font-family="system-ui, sans-serif" font-size="13" fill="#8a1c1c">reads as &#8220;promoted&#8221; in the pane</text>
+
+        <line x1="0" y1="148" x2="640" y2="148" stroke="#c8c8c8" stroke-width="1"/>
+        <text x="0" y="168" font-family="system-ui, sans-serif" font-size="11" fill="#5a5a5a">Three of the five workarounds are operations another part of the system was built to prevent.</text>
+      </svg>
+      <figcaption>
+        Reported independently by four coordinators across four projects. The
+        right-hand column is what a careful agent does when the middle column
+        is empty.
+      </figcaption>
+    </figure>
+
+    <h2 id="s2">§2 — A follower never runs code older than the fleet it watches</h2>
+    <p>
+      A <code>crew follow</code> process holds the module code it started with
+      for its entire life. When a recovery sweep landed and was wired into that
+      loop, every follower on the workstation had been started hours earlier, so
+      not one of them called it. Two independent sessions were simultaneously
+      unable to perform a recovery they had just gained, and neither could see
+      that from the pane — one of them left a run blocked for five hours and
+      forty-two minutes with its limit long lifted.
+    </p>
+    <p>
+      The failure is silent in the direction that costs work. A stale renderer
+      draws a wrong column and somebody notices; a stale follower recovers
+      nothing and is indistinguishable from a fleet with nothing to recover.
+      Restarting is the known remedy, it works, and it is an operator habit with
+      no bound check — which is the same class of control this repository has
+      already watched fail twice in a day.
+    </p>
+    <p>
+      Three shapes, in the order they should be tried. The follower detects that
+      the package it imported is older than the one on disk and re-execs itself
+      in place, keeping its session registration and its stdout so a watching
+      pane never sees a gap. Failing that, the watch seat publishes a version
+      stamp each cycle and a follower reading a newer stamp re-execs. Failing
+      both, the follower says once, in the pane, that it is stale and how to
+      cycle it — which is strictly worse than the first two but strictly better
+      than silence.
+    </p>
+    <p>
+      Done when a follower running while new crew code lands performs the new
+      behaviour without an operator restarting it; when the transition costs no
+      gap in the pane and no lost session registration; when a follower that
+      cannot re-exec says so explicitly rather than continuing quietly; and when
+      no skill text anywhere instructs a reader to restart a follower after a
+      merge. Asserted by landing a change to the swept behaviour under a running
+      follower and requiring the new behaviour, not by asserting that a re-exec
+      function exists.
+    </p>
+
+    <h2 id="s3">§3 — Waiting on an external job is a state, not a blocker</h2>
+    <p>
+      A worker that submits a cluster job and outlives its own turn has nowhere
+      to put that fact. The manifest vocabulary has no state for waiting on an
+      external condition, so the worker parks as <code>blocked</code> with prose
+      naming the job. The follower then counts it in the blocked bucket beside
+      genuine failures, a coordinator resumes it by hand when a separate watch
+      fires, and the recovery sweep cannot help because nothing refused it.
+    </p>
+    <p>
+      Measured on four runs in one night: two parked on jobs that ran
+      forty-two minutes and three hours, each needing a hand resume; two more
+      lost their turn while backgrounding a poll and were indistinguishable from
+      crashes. The second pair is the sharper half — a wait that ends in silence
+      and a crash that ends in silence produce the same record, so the
+      coordinator cannot tell a healthy long job from a dead worker.
+    </p>
+    <p>
+      The state carries what a resumer needs and nothing more: what is being
+      waited on, how to ask whether it is finished, what finished means, and the
+      brief to hand back on resumption. The follower gives it its own bucket, so
+      a fleet with four healthy waits does not read as four failures. And the
+      sweep that already resumes lapsed provider holds acts on it when the named
+      condition turns terminal — the same actor, a second trigger, because the
+      shape is identical: a run that stopped for a reason that has since gone
+      away.
+    </p>
+    <p>
+      Done when a worker can declare in its manifest that it is waiting on a
+      named external condition with a way to test it and a resume brief; when
+      the follower renders that as a bucket distinct from blocked and from
+      working; when the sweep resumes such a run once the condition reaches a
+      terminal state and leaves it alone until then; when a run waiting on a
+      condition that never terminates is surfaced by age rather than waiting
+      forever; and when a crashed worker is still distinguishable from a waiting
+      one. Asserted through the follower's own rendering and the sweep's entry
+      point, with the condition test injected so no test submits a job.
+    </p>
+
+    <h2 id="s4">§4 — A run changes lane without losing its identity</h2>
+    <p>
+      Moving a dispatched run from one backend to another costs
+      <code>stop</code>, then <code>discard</code>, then a fresh dispatch — and
+      that dispatch is refused twice on the way, once because the member is
+      still in flight until the old pointer is gone, and once because the
+      worktree path already exists. So the price of a lane switch is either a
+      new node id, which breaks the node's identity across the ledger, or a
+      manual worktree removal.
+    </p>
+    <p>
+      <strong>Both prices are paid in the currency this system spent the night
+      protecting.</strong> A new node id makes one piece of work appear as two
+      unrelated runs in the record. A manual worktree removal is the act that
+      turned a ten-minute provider outage into an unrecoverable loss, and the
+      act that a promotion guard now refuses to perform on a recoverable run.
+      Meanwhile <code>resume</code> accepts no backend override, so a run whose
+      lane is genuinely spent cannot be continued elsewhere at all — the one
+      case where moving lanes is obviously right is the case with no verb.
+    </p>
+    <p>
+      Done when a dispatched run can be moved to another backend keeping its
+      node id, its worktree and its ledger identity; when the move records both
+      lanes and the reason, so the run's history shows where it ran rather than
+      appearing to have always run on the second; when a move onto a held lane
+      is refused with the hold named; and when a session that cannot follow the
+      move — because the new backend is a different harness — is reported as
+      starting fresh rather than silently losing its context. Asserted through
+      the command a coordinator invokes, over a dispatched run, requiring the
+      worktree path and node id to be unchanged afterwards.
+    </p>
+
+    <h2 id="s5">§5 — A promotion can accept a path the node did not declare</h2>
+    <p>
+      A producer regenerated a declared JSON artifact and, in the same call,
+      its companion image. The image was not in the write scope, so
+      <code>crew complete</code> refused the promotion for changed paths
+      outside the declared scope — and neither the scope-changed flag nor the
+      boundary waiver lifts that particular refusal. The run's commit was
+      already merged to the primary branch. There was no way to record it.
+    </p>
+    <p>
+      The two available exits are both wrong. Discarding the record throws away
+      the account of work that is already in the tree, leaving a commit no
+      ledger row explains. Leaving the pointer strands it as an unreconciled
+      remainder that also blocks its member from further dispatch. A third exit
+      exists but is undocumented and unsafe by construction: hand-editing the
+      live pointer's declared paths, which this coordinator has done, and which
+      makes the fence agree by rewriting the thing it checks against.
+    </p>
+    <p>
+      The fence is right to refuse by default — an undeclared write is how one
+      worker silently overwrites another. What is missing is the deliberate,
+      recorded exception every other fence here already has. Done when a
+      promotion accepts a named path outside the declared scope with a stated
+      reason; when the accepted paths and reasons land on the promoted ledger
+      row so the exception is auditable; when accepting a path claimed by
+      another live run is still refused, because that is a collision rather than
+      a companion; and when a promotion with undeclared paths and no acceptance
+      is refused exactly as it is today. Asserted through the completion entry
+      point over a run whose commit touches one declared and one undeclared
+      path.
+    </p>
+
+    <h2 id="s6">§6 — The surface answers the question an agent is holding</h2>
+    <p>
+      The four sections above each add a verb. This one is about whether the
+      next agent finds them. Every finding in this plan was discovered by an
+      agent hitting a wall and improvising, not by reading a surface and
+      choosing correctly, and several improvised around capabilities that
+      already existed — a session id recoverable from a stream, a sweep already
+      wired to a loop, a hold already ageing out. <strong>A capability nobody
+      can find is indistinguishable from one that does not exist</strong>, which
+      is this repository's oldest recurring finding wearing a different hat.
+    </p>
+    <p>
+      The unit of discovery is the moment of failure. An agent reads a refusal
+      far more often than it reads a manual, so the refusal is where the verb
+      belongs: a promotion blocked by an undeclared path names the acceptance
+      flag, a dispatch blocked by a held lane names the probe and the sweep, a
+      resume refused for a live process names the stop. Each of these is one
+      sentence in a message that is already being printed.
+    </p>
+    <p>
+      Done when every refusal the crew surface emits names the verb that
+      resolves it or states plainly that none exists; when the command help for
+      each verb says which state it applies to rather than only what it does;
+      when no two commands whose names differ by a word do unrelated things
+      without saying so in the first line of help — the classification command
+      and the sweep currently sit one word apart; and when an agent reading only
+      refusals and help can reach every verb this plan adds. Asserted by
+      collecting the refusal messages the surface can emit and requiring each to
+      name a verb or an explicit absence.
+    </p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="follower-freshness-mechanism" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">How does a follower stop running stale code?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="self-reexec">It re-execs itself when the package on disk is newer</button>
+      <button class="r-opt" data-value="stamp-driven">The watch seat publishes a stamp and a stale follower re-execs</button>
+      <button class="r-opt" data-value="announce-only">It announces staleness and leaves cycling to the operator</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="lane-change-verb" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">What shape moves a run between lanes?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="resume-backend">A backend override on resume</button>
+      <button class="r-opt" data-value="redispatch-verb">A redispatch verb keeping node id and worktree</button>
+      <button class="r-opt" data-value="both">Both, sharing one implementation</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-esv-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship every-state-has-a-verb §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The follower first, because every other fix here is invisible without it</h4>
+    <div class="r-fu-body"><p>
+            §2 goes first and the ordering is not preference. Every section
+            below it changes behaviour a follower executes, and a follower that
+            holds stale code will not perform any of them - so landing §3, §4 or
+            §5 before §2 means landing capabilities that the running fleet
+            cannot reach, which is precisely the failure §2 describes. It has
+            already happened once with the recovery sweep.
+          </p>
+<p>
+            §3 and §4 are independent of each other and can run together. §5 is
+            a small, self-contained change to the completion path and can run
+            beside either. §6 goes LAST by construction: it asserts that every
+            refusal names its verb, and it cannot be measured until the verbs
+            §2 to §5 add exist.
+          </p>
+<p>
+            Two decisions are open and only one blocks: the follower freshness
+            mechanism should be settled before §2 is dispatched, since the three
+            candidate shapes have different failure modes and the weakest is
+            explicitly a fallback. The lane-change verb can be settled by the
+            node that implements it, since both shapes are described and the
+            third option is to share one implementation.
+          </p></div>
+    <pre class="r-fu-prompt">/reckon-ship every-state-has-a-verb §2</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>

@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T06:41:19",
+  "updated": "2026-09-04T06:44:22",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -49467,6 +49467,117 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T042406291751-a-lane-is-probed-not-timed",
+        "plan": "a-hold-is-as-old-as-its-refusal",
+        "section": "\u00a74",
+        "node": "a-lane-is-probed-not-timed",
+        "node_definition": {
+          "done_when": "THE TIMER IS SELF-EXTENDING AND A RETRY LOOP CANNOT CONVERGE. Measured tonight from this repository's committed ledger, data.holds: a claude dispatch hold opened 20:02:18Z and closed 23:52:19Z, held_seconds 13801, three hours fifty minutes on a lane that was serving. The control sits beside it - a claude-opus resume hold, held_seconds 83, closed the moment one served run reached that backend. The two differ only in whether traffic reached that specific backend. Every refused resume re-stamps the backend's budget record, so a caller retrying on any cadence shorter than the shelf life pushes the expiry ahead of itself, and observing the refused run does the same because its stream carries the rejection - the obvious check-before-believing move makes it worse. AVAILABILITY IS POLLED RATHER THAN READ FROM WRITTEN EVIDENCE, which is this workstation's standing direction, and this is the case that forces it: a timer answers only whether enough time has passed that a lane might serve, while one cheap request answers whether it does. Done when a hold whose refusal names no reset time is unknown-until-probed rather than exhausted-until-a-clock: the fence probes that backend with a minimal request and the probe's result, not the record's age, decides whether the wave opens. A served probe clears the hold and records the served observation so the next caller reads a fact rather than repeating the probe; a refused probe re-arms the hold and records that refusal as the new evidence. THE PROBE MUST NOT BECOME THE COST IT PREVENTS: rate-limited per backend so a wave of held dispatches issues one probe rather than one each, its result cached for a bounded interval that is itself configuration, and a backend that has never reported anything is still never held, because absence of a signal remains not evidence of exhaustion. A refusal that DOES name a reset keeps its current behaviour and is not probed before that time, since a stated reset is stronger evidence than a probe. The declared shelf life remains the fallback for a host that cannot probe, and its configuration description is updated to say so. ASSERT THROUGH THE DECIDE CALL preflight makes, with the probe injected so no test issues a real request: a held lane whose probe is served opens and records the served observation; a held lane whose probe is refused stays held and records the new refusal; two held backends produce two probes while ten held runs on one backend produce one; a lane with a stated reset is not probed; a backend that has reported nothing is neither held nor probed. At least one added assertion must fail against base 91f977e. Measured over tests/test_budget.py and tests/test_crew_recover.py in ONE invocation: zero failures against their combined count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 3.0,
+          "goal": "A lane whose refusal names no reset is unknown until probed, not exhausted until a clock runs out.",
+          "id": "a-lane-is-probed-not-timed",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/lane-probe-manifest.md",
+          "plan": "a-hold-is-as-old-as-its-refusal",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/budget.py",
+            "reckon/crew/recover.py",
+            "tests/test_budget.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-a",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T04:24:14Z",
+        "completed_at": "2026-09-04T04:40:05Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 951,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 951,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "91f977ea1b4167798f4ccf330f3169bc92829451",
+        "commits": [
+          "ec8524f5f1ba7024aa65a8fd7de98d94fd4df586"
+        ],
+        "changed_lines": {
+          "added": 511,
+          "removed": 12,
+          "files": 3
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_budget.py tests/test_crew_recover.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vlp.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/lane-probe-manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06aa8-ff71-7420-8a1b-7aa4ea3f43cf",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 10401280,
+            "cached_input_tokens_cumulative": 10401280,
+            "input_tokens": 10611401,
+            "input_tokens_cumulative": 10611401,
+            "output_tokens": 36069,
+            "output_tokens_cumulative": 36069,
+            "reasoning_output_tokens": 11746,
+            "reasoning_output_tokens_cumulative": 11746
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 47815,
+          "peak_input_tokens": 21012681
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -49639,6 +49750,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 811
+    "_version": 812
   }
 }
