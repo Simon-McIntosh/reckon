@@ -269,6 +269,7 @@ def _blocked_pointer(
     session_id: str = "",
     stream: Path | None = None,
     status: str = "blocked",
+    worktree: Path | None = None,
 ) -> None:
     """A pointer and manifest in the shape dispatch leaves behind."""
     manifest.parent.mkdir(parents=True, exist_ok=True)
@@ -305,6 +306,8 @@ def _blocked_pointer(
         stream.write_bytes(STREAM_FIXTURE.read_bytes())
         record["argv"] = ["claude", "-p"]
         record["log_path"] = str(stream)
+    if worktree is not None:
+        record["worktree"] = str(worktree)
     _write_json(pointer_path(run_id), record)
 
 
@@ -327,6 +330,52 @@ def _real_crew_home(monkeypatch: pytest.MonkeyPatch) -> Path:
     with monkeypatch.context() as fresh:
         fresh.delenv("RECKON_HOME", raising=False)
         return crew.crew_home()
+
+
+def _linked_worktree(
+    repository: Path,
+    tmp_path: Path,
+    name: str,
+    *,
+    divergent: bool = False,
+) -> Path:
+    """Create the clean linked tree that promotion is responsible for."""
+    commands = (
+        ("init", "-q", "-b", "main"),
+        ("config", "user.email", "worker@example.invalid"),
+        ("config", "user.name", "Worker"),
+        ("add", "docs"),
+        ("commit", "-q", "-m", "test: seed repository"),
+    )
+    for arguments in commands:
+        subprocess.run(
+            ["git", *arguments],
+            cwd=repository,
+            check=True,
+            capture_output=True,
+        )
+    worktree = tmp_path / "worktrees" / name
+    worktree.parent.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        ["git", "worktree", "add", "--detach", str(worktree), "HEAD"],
+        cwd=repository,
+        check=True,
+        capture_output=True,
+    )
+    if divergent:
+        marker = worktree / "candidate.txt"
+        marker.write_text("committed only in the worker tree\n")
+        for arguments in (
+            ("add", "candidate.txt"),
+            ("commit", "-q", "-m", "test: record worker result"),
+        ):
+            subprocess.run(
+                ["git", *arguments],
+                cwd=worktree,
+                check=True,
+                capture_output=True,
+            )
+    return worktree
 
 
 def test_promoting_a_blocked_run_with_a_live_session_is_refused(
@@ -618,3 +667,150 @@ def test_a_run_terminal_for_another_reason_is_unaffected(
 
     assert promoted["pointer_removed"] is True
     assert "resume_waiver" not in promoted["record"]
+
+
+@pytest.mark.parametrize(
+    ("divergent", "artifact_classification"),
+    [(False, "integrated"), (True, "unintegrated")],
+)
+def test_a_recoverable_session_retains_its_worktree_as_a_distinct_audit_state(
+    repository: Path,
+    tmp_path: Path,
+    divergent: bool,
+    artifact_classification: str,
+) -> None:
+    """Session retention supersedes both ordinary artifact classifications."""
+    suffix = "divergent" if divergent else "reachable"
+    run_id = f"r-20260903T110000000000-{suffix}"
+    worktree = _linked_worktree(
+        repository,
+        tmp_path,
+        suffix,
+        divergent=divergent,
+    )
+    _blocked_pointer(
+        repository,
+        run_id,
+        manifest=tmp_path / "manifests" / f"{run_id}.md",
+        session_id=f"session-{suffix}",
+        status="complete",
+        worktree=worktree,
+    )
+
+    promoted = crew.complete(
+        run_id,
+        gate="passed",
+        outcome="the node delivered its result",
+        root=repository,
+    )
+
+    assert worktree.is_dir()
+    assert promoted["release"]["worktree_released"] is False
+    retention = promoted["record"]["worktree_retention"]
+    assert retention["classification"] == "retained-for-resume"
+    assert retention["session_id"] == f"session-{suffix}"
+    assert retention["worktree"] == str(worktree.resolve())
+    audit = promoted["release"]["worktree_audit"]
+    row = next(item for item in audit["worktrees"] if item["path"] == str(worktree))
+    assert row["classification"] == "retained-for-resume"
+    assert row["artifact_classification"] == artifact_classification
+    assert row["reclaimable"] is False
+    assert audit["counts"]["retained-for-resume"] == 1
+    stored = next(
+        item
+        for item in ledger.runs(PROJECT, root=repository)
+        if item["run_id"] == run_id
+    )
+    assert stored["worktree_retention"] == retention
+
+
+def test_an_unrecoverable_session_releases_its_worktree(
+    repository: Path,
+    tmp_path: Path,
+) -> None:
+    run_id = "r-20260903T111000000000-unrecoverable"
+    worktree = _linked_worktree(repository, tmp_path, "unrecoverable")
+    _blocked_pointer(
+        repository,
+        run_id,
+        manifest=tmp_path / "manifests" / f"{run_id}.md",
+        worktree=worktree,
+    )
+
+    promoted = crew.complete(
+        run_id,
+        gate="not-run",
+        outcome="the session could not be recovered",
+        root=repository,
+    )
+
+    assert promoted["release"]["worktree_released"] is True
+    assert not worktree.exists()
+    assert "worktree_retention" not in promoted["record"]
+
+
+def test_a_resume_waiver_retains_the_worktree_by_default(
+    repository: Path,
+    tmp_path: Path,
+) -> None:
+    run_id = "r-20260903T112000000000-waived"
+    worktree = _linked_worktree(repository, tmp_path, "waived")
+    _blocked_pointer(
+        repository,
+        run_id,
+        manifest=tmp_path / "manifests" / f"{run_id}.md",
+        session_id="session-waived",
+        worktree=worktree,
+    )
+
+    result = CliRunner().invoke(
+        cli_main,
+        [
+            "crew",
+            "complete",
+            "--run",
+            run_id,
+            "--gate",
+            "not-run",
+            "--outcome",
+            "the provider refused the turn",
+            "--waive-resume-path",
+            "the result must be recorded before recovery continues",
+        ],
+    )
+    promoted = json.loads(result.output)
+
+    assert result.exit_code == 0, result.output
+    assert worktree.is_dir()
+    assert promoted["release"]["worktree_released"] is False
+    assert promoted["record"]["worktree_retention"]["session_id"] == "session-waived"
+    assert "worktree_discarded" not in promoted["record"]["resume_waiver"]
+
+
+def test_a_resume_waiver_can_explicitly_discard_the_worktree(
+    repository: Path,
+    tmp_path: Path,
+) -> None:
+    run_id = "r-20260903T113000000000-discarded"
+    worktree = _linked_worktree(repository, tmp_path, "discarded")
+    _blocked_pointer(
+        repository,
+        run_id,
+        manifest=tmp_path / "manifests" / f"{run_id}.md",
+        session_id="session-discarded",
+        worktree=worktree,
+    )
+
+    promoted = crew.complete(
+        run_id,
+        gate="not-run",
+        outcome="the provider refused the turn",
+        resume_waiver="the replacement run has recovered the useful context",
+        discard_resume_worktree=True,
+        root=repository,
+    )
+
+    assert promoted["release"]["worktree_released"] is True
+    assert not worktree.exists()
+    assert "worktree_retention" not in promoted["record"]
+    assert promoted["record"]["resume_waiver"]["worktree_discarded"] is True
