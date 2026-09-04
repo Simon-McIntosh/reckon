@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 </head>
 <body>
   <main class="plan-doc">
@@ -240,6 +240,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260904T042406291751-a-lane-is-probed-not-timed" data-who="codex-a" data-when="2026-09-04T04:40:05Z">
     <div class="r-comment-body"><p>A hold whose refusal names no reset is probed rather than timed: a served probe opens the lane and records the observation, a refused probe re-arms it, probes are once per backend and cached, and a reset-bearing hold or an unreported backend is never probed.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260904T0740" data-who="reckon-ship" data-when="2026-09-04T05:40:00+00:00">
+    <div class="r-comment-body">A FOREIGN SESSION'S FOUR-DAY-OLD REFUSAL HOLDS EVERY RESUME IN A PROJECT WHILE THE LANE SERVES, and the two halves of this are separately wrong. Measured on nova at 07:10 by that project's coordinator: crew resume on two codex runs was refused with utilisation 100.0 at or above the 100.0 ceiling for a resume, while crew dispatch on the SAME backend in the SAME minute succeeded and preflight read codex clear for dispatch. The only exhausted codex reading in the project belongs to a third session's pointer, whose refusal names a reset on 2026-09-08 - four days out - and resume-held listed exactly that run as hold-in-force. So a stranded pointer nobody owns fenced every resume in the project. FIRST WRONG THING: THE TWO PURPOSES DISAGREE ABOUT ONE READING. Dispatch and resume differ only by a reserve - the ceiling less a reserve for dispatch, the full ceiling for resume - which was meant to protect a stuck worker's ability to be answered by withholding headroom from new work. At a recorded 100.0 that inverts: dispatch opens on the reserve while resume, the cheaper and more valuable call, is the one refused. The purpose that exists to keep a worker answerable is the purpose that cannot answer it. SECOND WRONG THING, AND IT IS THE ONE TO FIX: A PER-RUN REFUSAL IS BEING READ AS A PER-PROJECT FACT. A refusal is evidence about one account at one moment, and it arrived on one run. Aggregating it to the project means one abandoned pointer speaks for every run on that backend, and the older and more stranded the pointer the longer it speaks - which is the shelf-life problem this plan already fixes, made worse by a scope that lets a single stale record fence work that never touched that account. The lane probe landed in section 4 answers the freshness half and does not touch the aggregation: a probe would clear this hold, but only after the reading is scoped so a foreign run's refusal is not consulted for a resume that is not its own. THE COORDINATOR'S EXIT WAS THE ONE THIS PLAN FAMILY EXISTS TO REMOVE: discard plus a fresh dispatch with a new node id, losing a NEEDS-HELP brief's context. That is the third time in two days that a missing verb routed a careful operator into destroying recoverable context, and it is the case section 4 of every-state-has-a-verb is written for - a run whose lane is spent continuing on another lane, keeping its identity. Done when a refusal recorded against one run is not consulted as evidence for a different run's resume; when the resume purpose never refuses on a reading the dispatch purpose treats as clear, since a reserve that inverts at the ceiling protects nothing; and when a stranded pointer from a session that has ended cannot fence a project's work at all.</div>
 </div>
 </section>
 </main>
