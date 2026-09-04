@@ -138,7 +138,7 @@ prerequisite, user-owned decision, excess spend, or consent for an outward effec
 ```text
 resolve target
 ├─ plan → roadmap + full plan → classify sections → delegate in dependency order
-├─ sprint → roadmap + all plans/research/evidence → enrich DAG → run ready queue
+├─ sprint → roadmap(view=summary) + PENDING plans + their deps/evidence → enrich DAG → ready queue
 └─ graph → graph roadmap + every closure plan/evidence → run derived ready queue
      ↓
 read task requirements + apply explicit runtime routing + applicable skill
@@ -232,7 +232,27 @@ measured instances: `~/.agents/AGENTS.md`, *Name The Target*.
 
 ## Hard rules
 
-1. **Read the FULL selected scope before ANY dispatch.** On a single-plan target, read the complete plan. On a sprint target, read the sprint index, every member plan, transitive dependency, linked research document, and prior evidence record before dispatch. On a graph target, read every plan in the returned derived closure and its linked evidence.
+1. **Read the full PENDING scope before ANY dispatch — not the whole sprint.** On a
+   single-plan target, read the complete plan. On a sprint target, read the sprint
+   index, then `roadmap(project, sprint=<id>, view="summary")`, and then **every plan
+   in `pending_work`** together with each of their transitive dependencies, linked
+   research and prior evidence. On a graph target, read every plan in the returned
+   derived closure and its linked evidence.
+
+   **A completed plan is a record and is not re-read on a relaunch.** `roadmap`
+   already excludes a plan at `impl` 1.0 **or** status `shipped`/`done` from
+   `pending_work`, `ready_now`, `critical_path` and every open path — that is §7a-bis's
+   mechanism, and reading those plans in full is the single largest re-litigation cost
+   of resuming an in-work sprint in a fresh session. Measured 2026-09-04 on this
+   project: 14 member plans against 9 pending, so a third of the reading bought
+   nothing. Read a completed plan only when a pending plan **depends** on it, and then
+   only for the contract it provides — its landed-summary and locked decisions, not its
+   run history.
+
+   **Trust `pending_work` rather than recounting.** It was verified against an
+   independent count of the same sprint on 2026-09-04 and agreed exactly at 9. Note
+   that a sprint's `completed` figure counts membership from the project index and can
+   differ from a plan-metadata count; `pending_work` is the set that governs dispatch.
 2. **Full plan by default.** `/reckon-ship <slug>` without a section flag means ALL implementable sections. Never implement one section and stop unless there is a hard blocker.
 3. **Whole sprint by default.** `/reckon-ship S1` means every executable item in the sprint plus actionable same-project prerequisites.
 4. **Whole graph by default.** `/reckon-ship <handle>` or its unambiguous long
