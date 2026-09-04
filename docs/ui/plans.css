@@ -499,7 +499,149 @@
   text-align: center;
 }
 
+.r-dependency-cone {
+  margin: 0 0 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.r-dependency-cone-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 2px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  font: 600 10.5px var(--mono);
+  letter-spacing: .06em;
+  text-align: left;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.r-dependency-cone-toggle:hover {
+  color: var(--ink);
+}
+
+.r-dependency-cone.is-standalone .r-dependency-cone-toggle {
+  opacity: .55;
+}
+
+.r-dependency-cone-caret {
+  flex: none;
+  color: var(--muted);
+  transform: rotate(-90deg);
+  transition: transform 150ms ease;
+}
+
+.r-dependency-cone.is-open .r-dependency-cone-caret {
+  transform: rotate(0);
+}
+
+.r-dependency-cone-count {
+  margin-left: auto;
+  color: var(--muted);
+  font-weight: 500;
+  letter-spacing: .02em;
+  text-transform: none;
+}
+
+.r-dependency-cone-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 1.1fr) minmax(0, 1fr);
+  gap: 18px;
+  padding: 6px 0 18px;
+}
+
+.r-dependency-cone-column {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.r-dependency-cone-column > h3 {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font: 500 10px var(--mono);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.r-dependency-cone-card {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--ink-2);
+  text-align: left;
+  cursor: pointer;
+}
+
+.r-dependency-cone-card:hover,
+.r-dependency-cone-card.is-focal {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+
+.r-dependency-cone-card.is-focal {
+  background: var(--accent-2);
+}
+
+.r-dependency-cone-title,
+.r-dependency-cone-card code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.r-dependency-cone-title {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.r-dependency-cone-card code,
+.r-dependency-cone-meta {
+  color: var(--muted);
+  font: 9.5px var(--mono);
+}
+
+.r-dependency-cone-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 9px;
+}
+
+.r-dependency-cone-status {
+  color: var(--ink-2);
+}
+
+.r-dependency-cone-progress {
+  height: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--line);
+}
+
+.r-dependency-cone-progress i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
 @media (max-width: 900px) {
+  .r-dependency-cone-columns {
+    grid-template-columns: 1fr;
+  }
+
   .r-artifact-index-head {
     grid-template-columns: 1fr;
   }
