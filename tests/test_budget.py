@@ -175,6 +175,7 @@ def _node(**overrides) -> crew.TaskNode:
         "section": "§2",
         "done_when": "uv run pytest tests/test_budget.py reports 0 failures",
         "write_paths": ["reckon/budget.py"],
+        "spec_level": "exact",
         "time_budget": "20m",
         "manifest_path": "/tmp/node-a-manifest.md",
     }
@@ -1307,6 +1308,8 @@ def test_cli_dispatch_reports_a_hold_on_its_own_exit_code(home, repo) -> None:
             "uv run pytest tests/test_budget.py reports 0 failures",
             "--write-path",
             "reckon/budget.py",
+            "--spec-level",
+            "exact",
             "--session",
             "sess",
             "--repo",
