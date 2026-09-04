@@ -118,6 +118,29 @@ def _known(utilisation: float, *, resets_in: int = 3600, status=None) -> dict:
     return block
 
 
+def _window_budget(
+    utilisation: float,
+    *,
+    now: datetime,
+    elapsed_fraction: float,
+    period_minutes: float = 10080,
+) -> dict:
+    """A known reading at an exact point inside its quota window."""
+    remaining_minutes = period_minutes * (1.0 - elapsed_fraction)
+    block = _backends.unknown_budget("recorded by the backend's own report")
+    block.update(
+        {
+            "headroom": "known",
+            "utilisation_pct": utilisation,
+            "rate_limit_period_minutes": period_minutes,
+            "resets_at": (now + timedelta(minutes=remaining_minutes))
+            .isoformat(timespec="seconds")
+            .replace("+00:00", "Z"),
+        }
+    )
+    return block
+
+
 def _record(
     project: str,
     root: Path,
@@ -220,6 +243,86 @@ def test_a_backend_with_no_headroom_signal_reads_unknown(home, repo) -> None:
     report = budget.preflight("proj", CONFIG, root=repo)
     state = next(item for item in report["backends"] if item["backend"] == "alpha")
     assert state["state"]["headroom"] == "unknown"
+
+
+def test_burn_multiple_is_utilisation_divided_by_elapsed_window(home, repo) -> None:
+    moment = datetime(2030, 1, 1, tzinfo=UTC)
+    block = _window_budget(42.0, now=moment, elapsed_fraction=0.25)
+    _record(
+        "proj",
+        repo,
+        backend="alpha",
+        budget_block=block,
+        run_id="r-window-rate",
+        completed_at=moment.isoformat(),
+    )
+
+    report = budget.preflight("proj", CONFIG, root=repo, backends=["alpha"], now=moment)
+    state = report["backends"][0]["state"]
+
+    assert state["burn_multiple"] == pytest.approx((42.0 / 100.0) / 0.25)
+
+
+def test_high_burn_is_reported_without_holding_the_wave(home, repo) -> None:
+    moment = datetime(2030, 1, 1, tzinfo=UTC)
+    block = _window_budget(13.0, now=moment, elapsed_fraction=0.017)
+    _record(
+        "proj",
+        repo,
+        backend="alpha",
+        budget_block=block,
+        run_id="r-fast-burn",
+        completed_at=moment.isoformat(),
+    )
+
+    report = budget.preflight("proj", CONFIG, root=repo, backends=["alpha"], now=moment)
+    verdict = report["backends"][0]
+
+    assert round(verdict["state"]["burn_multiple"], 1) == 7.6
+    assert "utilisation 13% with burn multiple 7.6x" in verdict["reason"]
+    assert "burn multiple 7.6x" in report["summary"]
+    assert verdict["held"] is False
+    assert report["held"] is False
+
+
+def test_unknown_window_period_reports_unknown_burn(home, repo) -> None:
+    _record(
+        "proj",
+        repo,
+        backend="alpha",
+        budget_block=_known(13.0),
+        run_id="r-unknown-period",
+    )
+
+    report = budget.preflight("proj", CONFIG, root=repo, backends=["alpha"])
+    state = report["backends"][0]["state"]
+
+    assert state["burn_multiple"] is None
+    assert "utilisation 13% with burn multiple unknown" in report["summary"]
+    assert report["held"] is False
+
+
+def test_crew_budget_view_exposes_the_burn_multiple(
+    home, repo, monkeypatch, tmp_path
+) -> None:
+    from reckon import mcp
+
+    monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(tmp_path / "absent.yaml"))
+    now = datetime.now(tz=UTC)
+    block = _window_budget(13.0, now=now, elapsed_fraction=0.017)
+    _record(
+        "proj",
+        repo,
+        backend="native",
+        budget_block=block,
+        run_id="r-crew-budget",
+    )
+
+    report = mcp._crew("proj", view="budget", checkout_path=str(repo))
+    state = report["backends"][0]["state"]
+
+    assert report["ok"] is True
+    assert round(state["burn_multiple"], 1) == 7.6
 
 
 def test_a_wave_opens_on_a_backend_whose_headroom_is_unknown(home, repo) -> None:
@@ -971,9 +1074,10 @@ def test_a_hold_reports_on_all_four_axes_with_a_figure(home, repo) -> None:
     assert report["resume_at"] == report["backends"][0]["state"]["resets_at"]
 
 
-def test_a_clear_preflight_reports_no_hold_summary(home, repo) -> None:
+def test_a_clear_preflight_summary_reports_that_the_wave_can_open(home, repo) -> None:
     report = budget.preflight("proj", CONFIG, root=repo)
-    assert report["summary"] == ""
+    assert "0 backend(s) held" in report["summary"]
+    assert "the wave may open now" in report["summary"]
 
 
 # ── Holds are committed measurements ───────────────────────────────────────
