@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T08:33:07",
+  "updated": "2026-09-04T08:36:53",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -898,6 +898,15 @@
           "{\"alias\":\"sonnet 5\",\"backend\":\"claude\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "25a7517b-9a8e-4370-a295-694b35cab7ba"
         },
         "created": "2026-09-03"
+      },
+      {
+        "id": "s16-verify",
+        "harness": "codex",
+        "role": "test",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-04"
       },
       {
         "id": "sandbox-fix",
@@ -51187,6 +51196,362 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T061238158948-the-read-surface-answers-without-a-shell",
+        "plan": "every-state-has-a-verb",
+        "section": "\u00a76",
+        "node": "the-read-surface-answers-without-a-shell",
+        "node_definition": {
+          "done_when": "THREE MEASURED DEFECTS, ONE OF WHICH IS A LIVE TEST FAILURE. FIRST, THE FIVE-TOOL INVARIANT IS VIOLATED AND ITS GUARD IS RED. docs/AGENTS.md line 135 states the surface is five tools, and the crew tool's own docstring says it is deliberately one tool over eight views rather than eight tools - the invariant is stated twice. A sixth top-level tool for the recovery surface was registered an hour ago, so tests/test_ledger.py::test_the_mcp_surface_holds_at_five_tools has been failing on main since, its extra item named as the recovery tool. The test is correct and the code is wrong. Done when resume, the session query and the sweep are reachable as VIEWS or actions on the existing crew tool rather than as a separate tool, when the tool-name set is exactly the five the test asserts, and when every capability that node added stays reachable - assert each of the three through the crew tool after the reshape, not merely that the count is five, because deleting them would also make the count five. SECOND, THE DEFAULT ANSWER DOES NOT FIT ITS TRANSPORT. A single-project roadmap called without a view preserves the lossless legacy response, and that response cannot be returned at this project's size: five of five attempts by a peer exceeded the ceiling at between eighty-seven and a hundred and seventy-six thousand characters, each spilling to a file answered with jq, while the identical sprint-scoped call with view summary returned about nine hundred characters carrying completion, the ready and blocked counts, the finding counts and the critical path. So the cheap path is opt-in and the default is unreturnable, and a caller cannot distinguish an expensive tool from a call made wrongly. Done when a single-project roadmap with no view returns the summary and raw is opt-in, OR when the overrun path returns the summary plus a stated note that raw needs paging - choose one, state which and why in the code, and never leave a call whose only outcome is a file. A multi-project call keeps its current behaviour. THIRD, PER-DOCUMENT VALIDATION LEAVES MCP. audit-doc is CLI-only while the MCP audit is project-scoped, so an otherwise MCP-first authoring loop - read the version, write the edit, check the file - leaves MCP for its final step, and a peer ran it in bash six times this session. Validating a file you just authored is a read. Done when a single document can be validated through the audit tool by path, returning the same findings the CLI returns for that path, with no new tool added. ASSERT THROUGH THE MCP TOOL ENTRY POINTS as a client invokes them, over a temporary config home with the real config home asserted untouched. At least one added assertion must fail against base 2fb74ea. Measured over tests/test_ledger.py plus tests/test_mcp_recovery.py in ONE invocation: zero failures against a base of one. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 3.0,
+          "goal": "The read surface answers a coordinator's routine questions inline, at five tools, without a shell.",
+          "id": "the-read-surface-answers-without-a-shell",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/read-surface-manifest.md",
+          "plan": "every-state-has-a-verb",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/mcp.py",
+            "reckon/mcp_views.py",
+            "tests/test_ledger.py",
+            "tests/test_mcp_recovery.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-h",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T06:12:52Z",
+        "completed_at": "2026-09-04T06:30:42Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1070,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1070,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "2fb74ea1a0625e7fe4e9b26b6a211be3bda0d989",
+        "commits": [
+          "55ccf39fb25f3b46c9bff2bdb13a6d5355a8988c"
+        ],
+        "changed_lines": {
+          "added": 266,
+          "removed": 46,
+          "files": 2
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_ledger.py tests/test_mcp_recovery.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vrs.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/read-surface-manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06b0c-73a1-79f2-acd4-bb820e1669d4",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 8904576,
+            "cached_input_tokens_cumulative": 8904576,
+            "input_tokens": 9085291,
+            "input_tokens_cumulative": 9085291,
+            "output_tokens": 26411,
+            "output_tokens_cumulative": 26411,
+            "reasoning_output_tokens": 6676,
+            "reasoning_output_tokens_cumulative": 6676
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2100,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 1767,
+              "external_wait": null,
+              "log_age_seconds": 1044,
+              "log_fresh": false,
+              "manifest_commits": [
+                "[263b92a",
+                "764865b",
+                "c3268d6]; changed_paths: [\"reckon/crew/recovery.py\"",
+                "\"tests/test_crew_recovery.py\"]"
+              ],
+              "manifest_derived": false,
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/manifest-verdict-manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260904T054309199355-a-manifest-is-not-a-verdict-while-the-process-lives --gate <verdict> --commit [263b92a --commit 764865b --commit c3268d6]; changed_paths: [\"reckon/crew/recovery.py\" --commit \"tests/test_crew_recovery.py\"]",
+              "node": "a-manifest-is-not-a-verdict-while-the-process-lives",
+              "phase": "starting",
+              "plan": "crew-observability-truth",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260904T054309199355-a-manifest-is-not-a-verdict-while-the-process-lives",
+              "session": "ship-s15-0903",
+              "terminal_age_seconds": 1066,
+              "terminal_at": "2026-09-04T05:55:01Z",
+              "wait_age_seconds": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-0903/a-manifest-is-not-a-verdict-while-the-process-lives"
+            }
+          ]
+        },
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 33087,
+          "peak_input_tokens": 17989867
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260904T062930756769-the-resume-waiver-reaches-the-command",
+        "plan": "work-survives-a-provider-outage",
+        "section": "\u00a72",
+        "node": "the-resume-waiver-reaches-the-command",
+        "node_definition": {
+          "done_when": "The guard that refuses to promote a run whose session is still recoverable emits a refusal naming --waive-resume-path REASON, at reckon/crew/promotion.py line 934, and the parameter resume_waiver exists on the promotion path. A grep for waive-resume-path and resume_waiver across reckon/cli.py returns zero, and crew complete --help lists only --waive-suite-delta and --waive-boundary-refusal. So the guard instructs a coordinator to use a flag the command does not accept, which is worse than offering no waiver: a reader following the refusal's own advice reaches a dead end, and the only remaining exits are undocumented. This is the second time in one night that a promotion capability landed with its call site outside the adding node's fence, the first being the companion-path acceptance. Done when crew complete accepts --waive-resume-path with a required reason and passes both to the existing resume_waiver parameter without reimplementing any of its logic; when the waiver and its reason land on the promoted ledger row so a deliberately discarded session is afterwards distinguishable from an accidental one; when the option's help text names the state it resolves, being a promotion refused because the run's session is still recoverable, rather than only what it does; and when a waiver passed with no reason is refused by the command as it is by the function. Do not change the guard's semantics - they are landed and asserted, and this node wires them. ASSERT THROUGH THE COMMAND as a coordinator invokes it, over a blocked run whose session is recoverable from its stream, built the way dispatch writes a pointer under a temporary config home with the real config home asserted untouched: the promotion is refused without the option, succeeds with it, and the row carries the waiver and reason. Assert also that a blocked run with no recoverable session still promotes without the option, so the guard's negative stays reachable. At least one added assertion must fail against base 6abcb29. Measured over tests/test_crew_promotion.py plus tests/test_crew_promotion_scope.py in ONE invocation: zero failures against their combined count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 1.0,
+          "goal": "The waiver the promotion guard names in its own refusal is accepted by the command.",
+          "id": "the-resume-waiver-reaches-the-command",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/resume-waiver-manifest.md",
+          "plan": "work-survives-a-provider-outage",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/cli.py",
+            "tests/test_crew_promotion.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "codex-i",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T06:30:22Z",
+        "completed_at": "2026-09-04T06:36:25Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 363,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 363,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "6abcb293958c3a3fc2e2ec9143a09d09255bf348",
+        "commits": [
+          "9b28174a504df40e05573fa87c29076e242a950e"
+        ],
+        "changed_lines": {
+          "added": 139,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_promotion.py tests/test_crew_promotion_scope.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vrw.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/resume-waiver-manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06b1c-778b-7192-8fb3-e8a77b2dd34c",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2154112,
+            "cached_input_tokens_cumulative": 2154112,
+            "input_tokens": 2263992,
+            "input_tokens_cumulative": 2263992,
+            "output_tokens": 12913,
+            "output_tokens_cumulative": 12913,
+            "reasoning_output_tokens": 3625,
+            "reasoning_output_tokens_cumulative": 3625
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 700,
+              "budget_seconds": 2100,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 2800,
+              "external_wait": null,
+              "log_age_seconds": 2076,
+              "log_fresh": false,
+              "manifest_commits": [
+                "[263b92a",
+                "764865b",
+                "c3268d6]; changed_paths: [\"reckon/crew/recovery.py\"",
+                "\"tests/test_crew_recovery.py\"]"
+              ],
+              "manifest_derived": false,
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/manifest-verdict-manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260904T054309199355-a-manifest-is-not-a-verdict-while-the-process-lives --gate <verdict> --commit [263b92a --commit 764865b --commit c3268d6]; changed_paths: [\"reckon/crew/recovery.py\" --commit \"tests/test_crew_recovery.py\"]",
+              "node": "a-manifest-is-not-a-verdict-while-the-process-lives",
+              "phase": "starting",
+              "plan": "crew-observability-truth",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260904T054309199355-a-manifest-is-not-a-verdict-while-the-process-lives",
+              "session": "ship-s15-0903",
+              "terminal_age_seconds": 2099,
+              "terminal_at": "2026-09-04T05:55:01Z",
+              "wait_age_seconds": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-0903/a-manifest-is-not-a-verdict-while-the-process-lives"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2700,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 1354,
+              "external_wait": null,
+              "log_age_seconds": 723,
+              "log_fresh": true,
+              "manifest_commits": [
+                "[\"2b3b27639e9db1d6860c7021ff53c6ce6096092e\"]; changed_paths: [\"docs/home.html\"",
+                "\"docs/index.html\"",
+                "\"docs/ui/overview.css\"",
+                "\"docs/ui/shell-overview.jsx\"",
+                "\"docs/ui/shell-prompt.jsx\"",
+                "\"docs/ui/shell-route.jsx\"",
+                "\"docs/ui/shell.jsx\"",
+                "\"reckon/serve.py\"",
+                "\"tests/test_build.py\"",
+                "\"tests/test_spa_overview_geometry.py\"",
+                "\"tests/test_spa_overview_surface.py\"]"
+              ],
+              "manifest_derived": false,
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T060712873403-retire-cockpit-and-standalone-home/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260904T060712873403-retire-cockpit-and-standalone-home --gate <verdict> --commit [\"2b3b27639e9db1d6860c7021ff53c6ce6096092e\"]; changed_paths: [\"docs/home.html\" --commit \"docs/index.html\" --commit \"docs/ui/overview.css\" --commit \"docs/ui/shell-overview.jsx\" --commit \"docs/ui/shell-prompt.jsx\" --commit \"docs/ui/shell-route.jsx\" --commit \"docs/ui/shell.jsx\" --commit \"reckon/serve.py\" --commit \"tests/test_build.py\" --commit \"tests/test_spa_overview_geometry.py\" --commit \"tests/test_spa_overview_surface.py\"]",
+              "node": "retire-cockpit-and-standalone-home",
+              "phase": "starting",
+              "plan": "fleet-home",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260904T060712873403-retire-cockpit-and-standalone-home",
+              "session": "ship-s16",
+              "terminal_age_seconds": 747,
+              "terminal_at": "2026-09-04T06:17:34Z",
+              "wait_age_seconds": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16/retire-cockpit-and-standalone-home"
+            }
+          ]
+        },
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 16538,
+          "peak_input_tokens": 4418104
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -51359,6 +51724,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 835
+    "_version": 838
   }
 }
