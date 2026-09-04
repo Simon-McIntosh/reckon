@@ -9,6 +9,7 @@ from typing import Any
 from reckon import ledger
 from reckon.crew.node import normalize_section
 from reckon.crew.recovery import classify_pointer
+from reckon.crew.resumption import resolve_session
 from reckon.crew.runs import list_live
 
 DEFAULT_RUN_FIELDS = (
@@ -74,19 +75,33 @@ def _selected_fields(fields: Iterable[str] | None) -> tuple[str, ...]:
     return (*DEFAULT_RUN_FIELDS, *extras)
 
 
-def _session_fields(record: Mapping[str, Any], source: str) -> tuple[Any, Any]:
-    """Preserve directly recorded session evidence and name its source."""
-    session_id = record.get("session_id") or None
-    session_source = record.get("session_id_source") or None
-    if session_id is not None and session_source is None:
-        session_source = "pointer" if source == "live" else "ledger"
-    return session_id, session_source
+def _resumability(
+    session: Mapping[str, Any],
+    *,
+    worktree_exists: bool,
+    process_alive: Any,
+) -> tuple[bool, str]:
+    """Join the three independent facts that make a run recoverable."""
+    if not session.get("resolved"):
+        return False, str(
+            session.get("detail")
+            or "no session id in the pointer, stream or ledger; all three were consulted"
+        )
+    if not worktree_exists:
+        return False, "worktree released by promotion"
+    if process_alive is True:
+        return False, "the run's process is alive"
+    if process_alive is not False:
+        return False, "process liveness is unknown"
+    return True, "session resolved, worktree exists and process is not alive"
 
 
 def _compact_row(
     record: Mapping[str, Any],
     *,
     source: str,
+    project: str,
+    checkout_path: str | None,
     selected_fields: tuple[str, ...],
 ) -> dict[str, Any]:
     """Project one source record into the stable compact row shape."""
@@ -97,14 +112,30 @@ def _compact_row(
     plan = classified.get("plan") if source == "live" else record.get("plan")
     section = node_mapping.get("section") if source == "live" else record.get("section")
     worktree = record.get("worktree") or None
+    worktree_exists = _path_exists(worktree, directory=True)
     transcript = record.get("transcript_path") or None
-    session_id, session_id_source = _session_fields(record, source)
+    session = resolve_session(
+        str(record.get("run_id") or ""),
+        record=record if source == "live" else None,
+        project=project,
+        root=checkout_path,
+    )
     if source == "live":
         commits = classified.get("manifest_commits") or record.get("commits") or []
         manifest_present = classified.get("manifest_present", False)
     else:
         commits = record.get("commits") or []
         manifest_present = _path_exists(record.get("manifest_path"))
+    process_alive = (
+        classified.get("process_alive")
+        if source == "live"
+        else record.get("process_alive")
+    )
+    resumable, resumable_reason = _resumability(
+        session,
+        worktree_exists=worktree_exists,
+        process_alive=process_alive,
+    )
     complete = {
         "run_id": str(record.get("run_id") or ""),
         "node": str(node or ""),
@@ -116,27 +147,19 @@ def _compact_row(
             if source == "live"
             else record.get("classification")
         ),
-        "process_alive": (
-            classified.get("process_alive")
-            if source == "live"
-            else record.get("process_alive")
-        ),
-        "session_id": session_id,
-        "session_id_source": session_id_source,
+        "process_alive": process_alive,
+        "session_id": session["session_id"],
+        "session_id_source": session["source"],
         "worktree": worktree,
-        "worktree_exists": (
-            bool(record.get("worktree_exists"))
-            if "worktree_exists" in record
-            else _path_exists(worktree, directory=True)
-        ),
+        "worktree_exists": worktree_exists,
         "transcript_path": transcript,
         "transcript_exists": (
             bool(record.get("transcript_exists"))
             if "transcript_exists" in record
             else _path_exists(transcript)
         ),
-        "resumable": record.get("resumable"),
-        "resumable_reason": record.get("resumable_reason") or None,
+        "resumable": resumable,
+        "resumable_reason": resumable_reason,
         "member": str(record.get("member") or ""),
         "agent": (
             dict(record["agent"]) if isinstance(record.get("agent"), Mapping) else {}
@@ -215,13 +238,25 @@ def runs_view(
     rows: list[dict[str, Any]] = []
     if selected_source in {"all", "live"}:
         rows.extend(
-            _compact_row(record, source="live", selected_fields=row_fields)
+            _compact_row(
+                record,
+                source="live",
+                project=project,
+                checkout_path=checkout_path,
+                selected_fields=row_fields,
+            )
             for record in list_live()
             if str(record.get("project") or "") == project
         )
     if selected_source in {"all", "ledger"}:
         rows.extend(
-            _compact_row(record, source="ledger", selected_fields=row_fields)
+            _compact_row(
+                record,
+                source="ledger",
+                project=project,
+                checkout_path=checkout_path,
+                selected_fields=row_fields,
+            )
             for record in ledger.runs(project, checkout_path)
         )
 
