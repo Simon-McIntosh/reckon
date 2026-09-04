@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T09:13:10",
+  "updated": "2026-09-04T09:14:41",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -52193,6 +52193,184 @@
           "role": "test",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260904T065748218334-a-worker-can-find-the-worker-it-needs",
+        "plan": "every-state-has-a-verb",
+        "section": "\u00a77",
+        "node": "a-worker-can-find-the-worker-it-needs",
+        "node_definition": {
+          "done_when": "Six coordinators were live across four repositories on 2026-09-04 and no tool could say so. Every cross-session message was addressed by a remembered name, and every question of whose run is that was answered by reading another session's pointer files by hand. The measured cost: this session instructed a nova coordinator to resume a run belonging to a DIFFERENT nova coordinator, because nova had two - s18-pta and s19-relaunch - and nothing surfaced that; a peer separately guessed a run id from memory of dispatch order and got its microsecond timestamp wrong, the only alternatives being a config-directory glob or a ledger parse. THE JOIN ALREADY EXISTS AND THIS IS A THIN READ, demonstrated against the live fleet before dispatch: every live pointer carries the coordinator's own session label under session, the project, the plan its node serves, and the repository inside its worktree path, and grouping those four produces the directory directly. Done when one read answers, for a project or for the whole workstation, every live coordinator session with its project, its repository, the plans or sprint it is shipping and its live node count; when a run resolves to its owning session without reading another session's files; when a NODE id is sufficient to identify a run, since the node id is the human handle and the run id carries a timestamp nobody can reconstruct; when the answer distinguishes a session still dispatching from one whose runs are all terminal, because those want different messages; and when a transport address is reported ONLY where it has been observed rather than derived from a session name, since deriving it is the misattribution this fleet has already made. Expose it as a view or action on the existing crew tool and as a CLI verb - the surface is five MCP tools and a sixth is refused by test_the_mcp_surface_holds_at_five_tools. AND THE SHIP SKILL GAINS THE COLLABORATION DEFAULT, which the lead directed and which section 7 of the plan argues from evidence: a coordinator that finds a defect touching a repository it does not own reports it to the session working there when one is live. State it as an imperative a coordinator can follow, name this new read as how to find that session, and carry the two guardrails that make it safe - a finding is sent AS a finding and never as an instruction, and never as authority, because a peer cannot authorise work in a repository that is not theirs and a relayed approval is not consent. Cite the evidence briefly: every correction that mattered on 2026-09-04 came from a peer measuring what the author could not see, and each was cheaper to send than to rediscover. ASSERT THROUGH THE READ a coordinator calls, over pointers built the way dispatch writes them under a temporary config home with the real config home asserted untouched, and include the two-coordinators-in-one-project case that caused the misaddressed instruction. At least one added assertion must fail against base c930f36. Measured over tests/test_crew_directory.py plus tests/test_ledger.py in ONE invocation: zero failures against their combined count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 3.0,
+          "goal": "One read names every live coordinator, what it is shipping and where, and the ship skill makes cross-repo findings the default.",
+          "id": "a-worker-can-find-the-worker-it-needs",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/worker-directory-manifest.md",
+          "plan": "every-state-has-a-verb",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/directory.py",
+            "reckon/cli.py",
+            "reckon/mcp.py",
+            "tests/test_crew_directory.py",
+            "skills/reckon-ship/SKILL.md"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-k",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T06:58:00Z",
+        "completed_at": "2026-09-04T07:14:15Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 975,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 975,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "c930f36da7156e60e4b926038176513977c4d4aa",
+        "commits": [
+          "2828bd7a6e8038368d62c0cac4f8e31d669aeccb"
+        ],
+        "changed_lines": {
+          "added": 447,
+          "removed": 4,
+          "files": 5
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_directory.py tests/test_ledger.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vwd.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/worker-directory-manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06b35-c4e6-7e81-b31d-cfd2d6a4fd99",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no events yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 2376,
+              "budget_seconds": 2100,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 4476,
+              "external_wait": null,
+              "log_age_seconds": 3753,
+              "log_fresh": false,
+              "manifest_commits": [
+                "[263b92a",
+                "764865b",
+                "c3268d6]; changed_paths: [\"reckon/crew/recovery.py\"",
+                "\"tests/test_crew_recovery.py\"]"
+              ],
+              "manifest_derived": false,
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/manifest-verdict-manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260904T054309199355-a-manifest-is-not-a-verdict-while-the-process-lives --gate <verdict> --commit [263b92a --commit 764865b --commit c3268d6]; changed_paths: [\"reckon/crew/recovery.py\" --commit \"tests/test_crew_recovery.py\"]",
+              "node": "a-manifest-is-not-a-verdict-while-the-process-lives",
+              "phase": "starting",
+              "plan": "crew-observability-truth",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260904T054309199355-a-manifest-is-not-a-verdict-while-the-process-lives",
+              "session": "ship-s15-0903",
+              "terminal_age_seconds": 3775,
+              "terminal_at": "2026-09-04T05:55:01Z",
+              "wait_age_seconds": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-0903/a-manifest-is-not-a-verdict-while-the-process-lives"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 1800,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 1716,
+              "external_wait": null,
+              "log_age_seconds": 1370,
+              "log_fresh": false,
+              "manifest_commits": [
+                "[\"ba6ff352234429b3e3f0cb33964e4b3c70e1d697\"]; changed_paths: [\"docs/ui/shell-palette.jsx\"",
+                "\"tests/test_spa_palette_open.py\"]"
+              ],
+              "manifest_derived": false,
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T062837949630-palette-resolves-its-label-helper/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260904T062837949630-palette-resolves-its-label-helper --gate <verdict> --commit [\"ba6ff352234429b3e3f0cb33964e4b3c70e1d697\"]; changed_paths: [\"docs/ui/shell-palette.jsx\" --commit \"tests/test_spa_palette_open.py\"]",
+              "node": "palette-resolves-its-label-helper",
+              "phase": "starting",
+              "plan": "artifact-feeds-and-reader",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260904T062837949630-palette-resolves-its-label-helper",
+              "session": "ship-s16",
+              "terminal_age_seconds": 1392,
+              "terminal_at": "2026-09-04T06:34:45Z",
+              "wait_age_seconds": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16/palette-resolves-its-label-helper"
+            }
+          ]
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -52365,6 +52543,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 845
+    "_version": 846
   }
 }
