@@ -64,8 +64,8 @@ function ListFilterControls({ filters, setFilters, onClearFilters }) {
 // Default direction per sort key: "asc" = smallest/earliest/A/high-priority first.
 const SORT_DIR_DEFAULTS = { edited: "desc", created: "desc" };
 
-function sortItems(items, sortBy, dir) {
-  const arr = items.filter(item => (item.type || "plan") === "plan");
+function sortItems(items, sortBy, dir, kind = "plan") {
+  const arr = items.filter(item => (item.type || "plan") === kind);
   const m = dir === "asc" ? 1 : -1;
   if (sortBy === "created") {
     // created is a Unix timestamp (integer seconds) — numeric comparison for second precision
@@ -76,12 +76,15 @@ function sortItems(items, sortBy, dir) {
       return m * ((a.created || 0) - (b.created || 0));
     });
   } else {
-    // edited / recent (default): sort by plan-modified date string; undated items go to end
+    // Edited is the canonical cross-artifact stamp; last is retained for
+    // older discovery payloads that predate it.
     arr.sort((a, b) => {
-      if (!a.last && !b.last) return 0;
-      if (!a.last) return 1;
-      if (!b.last) return -1;
-      return m * a.last.localeCompare(b.last);
+      const aEdited = a.edited || a.last;
+      const bEdited = b.edited || b.last;
+      if (!aEdited && !bEdited) return 0;
+      if (!aEdited) return 1;
+      if (!bEdited) return -1;
+      return m * String(aEdited).localeCompare(String(bEdited));
     });
   }
   return arr;
@@ -180,7 +183,162 @@ function paletteItems(currentState, projects) {
 }
 
 function paletteKindLabel(kind) {
-  return ({ plan: "Plans", research: "Research", evidence: "Evidence", archive: "Archive" })[kind] || kind;
+  return ({ plan: "Plans", research: "Research", evidence: "Evidence", figure: "Figures", archive: "Archive" })[kind] || kind;
+}
+
+function artifactKindLabel(kind) {
+  return ({ plan: "Plans", research: "Research", evidence: "Evidence", figure: "Figures" })[kind] || readableFilterLabel(kind);
+}
+
+function artifactStamp(value, numeric = false) {
+  if (value === null || value === undefined || value === "") return "unknown";
+  if (numeric || typeof value === "number") {
+    const stamp = new Date(Number(value) * 1000);
+    return Number.isNaN(stamp.getTime()) ? String(value) : stamp.toISOString().slice(0, 10);
+  }
+  return String(value).replace("T", " ").replace(/Z$/, "");
+}
+
+function artifactState(item, kind) {
+  if (kind === "plan") return item.effective_status || item.status || "pending";
+  if (kind === "research") return item.verdict || "neutral";
+  if (kind === "evidence") return item.gate || item.verdict || "running";
+  return "neutral";
+}
+
+function artifactIsDone(item, kind) {
+  if (kind === "plan") return Number(item.impl || 0) >= 1;
+  if (kind === "evidence") return ["pass", "passed"].includes(String(artifactState(item, kind)).toLowerCase());
+  return false;
+}
+
+function artifactIndexRows(items, kind, sortBy, sortDir, status, hideDone) {
+  let rows = (items || []).filter(item => (item.type || "plan") === kind);
+  if (kind === "plan" && status) {
+    rows = rows.filter(item => artifactState(item, kind) === status);
+  }
+  const shippedSelected = kind === "plan" && status === "shipped";
+  if (hideDone && !shippedSelected) {
+    rows = rows.filter(item => !artifactIsDone(item, kind));
+  }
+  return sortItems(rows, sortBy, sortDir, kind);
+}
+
+function ArtifactIndex({ kind, onSelect, filters, setFilters, sortBy, setSortBy, sortDir, toggleSortDir }) {
+  const state = window.STATE || {};
+  const inventory = state.inventory || [];
+  const project = state.project || "project";
+  const label = artifactKindLabel(kind);
+  const status = kind === "plan" ? (filters?.status || [])[0] || "" : "";
+  const hideStorage = `reckon:${project}:showShipped`;
+  const [hideDone, setHideDone] = React.useState(() => {
+    try { return localStorage.getItem(hideStorage) !== "1"; } catch { return true; }
+  });
+  React.useEffect(() => {
+    try { localStorage.setItem(hideStorage, hideDone ? "0" : "1"); } catch {}
+  }, [hideDone, hideStorage]);
+
+  const allKindRows = React.useMemo(
+    () => inventory.filter(item => (item.type || "plan") === kind),
+    [inventory, kind]
+  );
+  const rows = React.useMemo(
+    () => artifactIndexRows(inventory, kind, sortBy, sortDir, status, hideDone),
+    [inventory, kind, sortBy, sortDir, status, hideDone]
+  );
+  const statusChoices = ["active", "blocked", "pending", "shipped"];
+  const left = allKindRows.filter(item => !artifactIsDone(item, kind)).length;
+  const held = allKindRows.filter(item => artifactState(item, kind) === "blocked").length;
+  const today = new Date().toISOString().slice(0, 10);
+  const todayCount = allKindRows.filter(item => String(item.edited || item.last || "").startsWith(today)).length;
+  const rowsWithoutHide = artifactIndexRows(inventory, kind, sortBy, sortDir, status, false);
+  const hiddenEverything = hideDone && rowsWithoutHide.length > 0 && rows.length === 0;
+
+  const setStatus = next => {
+    if (kind !== "plan") return;
+    setFilters(current => ({ ...current, status: next ? [next] : [] }));
+  };
+
+  return (
+    <section className="r-artifact-index" aria-label={`${label} index`}>
+      <header className="r-artifact-index-head">
+        <div className="r-artifact-index-title">
+          <p>{label}</p>
+          <h1>{allKindRows.length} in {project}</h1>
+          <span className="r-artifact-index-figures">
+            {kind === "plan" ? <>{left} left <i>·</i> {held} held</> : <>{todayCount} today</>}
+          </span>
+        </div>
+        <div className="r-artifact-index-actions">
+          <div className="r-sort-segments" aria-label={`Sort ${label.toLowerCase()} by`}>
+            {SORT_OPTIONS.map(option => (
+              <button type="button" key={option.value} className={sortBy === option.value ? "active" : ""} aria-pressed={sortBy === option.value} onClick={() => setSortBy(option.value)}>
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <button type="button" className="r-sort-dir" onClick={toggleSortDir} aria-label={sortDir === "asc" ? "Sort ascending" : "Sort descending"}>
+            {sortDir === "asc" ? "↑" : "↓"}
+          </button>
+          <label className="r-hide-done">
+            <input type="checkbox" checked={hideDone} onChange={event => setHideDone(event.target.checked)} />
+            hide done
+          </label>
+        </div>
+        {kind === "plan" && (
+          <div className="r-feed-status-filters" aria-label="Filter plans by status">
+            <button type="button" className={!status ? "active" : ""} aria-pressed={!status} data-count={allKindRows.length} onClick={() => setStatus("")}>All <span>{allKindRows.length}</span></button>
+            {statusChoices.map(choice => {
+              const count = allKindRows.filter(item => artifactState(item, kind) === choice).length;
+              return <button type="button" key={choice} className={status === choice ? "active" : ""} aria-pressed={status === choice} data-count={count} onClick={() => setStatus(choice)}>{choice} <span>{count}</span></button>;
+            })}
+          </div>
+        )}
+      </header>
+
+      <div className="r-artifact-feed" data-artifact-feed={kind}>
+        {rows.length === 0 ? (
+          <div className="r-artifact-empty" role="status">
+            {hiddenEverything
+              ? `Everything in ${label.toLowerCase()} is done for ${project}.`
+              : `No ${label.toLowerCase()} in ${project}.`}
+          </div>
+        ) : rows.map(item => {
+          const navKey = item.nav_key || item.slug;
+          const itemState = artifactState(item, kind);
+          const percent = Math.round(Number(item.impl || 0) * 100);
+          const hours = Number(item.effort_hours);
+          return (
+            <button type="button" key={navKey} className={`r-artifact-row r-artifact-row-${kind}`} data-artifact-slug={navKey} onClick={() => onSelect(navKey)}>
+              <span className={`r-artifact-dot ${kind}-${itemState}`} aria-hidden="true"></span>
+              {kind === "figure" && <img className="r-artifact-thumb" src={item.href} alt="" width="50" height="34" />}
+              <span className="r-artifact-row-main">
+                <span className="r-artifact-row-title">{item.title || item.slug}</span>
+                <code>{item.slug}</code>
+                {kind === "plan" && (
+                  <span className="r-artifact-plan-progress">
+                    <span className="r-artifact-progress" aria-label={`${percent} percent complete`}><i style={{ width: `${percent}%` }}></i></span>
+                    <span>{Number.isFinite(hours) ? `${hours}h` : (item.effort || "—")} · {item.sprint || "unassigned"}</span>
+                  </span>
+                )}
+                {kind === "figure" && <span className="r-artifact-dimensions">{item.dims || "dimensions unknown"}</span>}
+              </span>
+              <span className="r-artifact-row-trailing">
+                <span className="r-artifact-stamps">
+                  <span>created {artifactStamp(item.created, true)}</span>
+                  <i aria-hidden="true">·</i>
+                  <span>edited {artifactStamp(item.edited || item.last)}</span>
+                </span>
+                {kind === "plan"
+                  ? <span className={`r-artifact-status-chip ${itemState}`}>{itemState}</span>
+                  : <span className={`r-artifact-verdict r-artifact-verdict-${itemState}`}>{itemState}</span>}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
 }
 
 function selectPlanSection(event, onSelectPlan, slug, sectionId) {
@@ -370,4 +528,4 @@ function PlanGraphStrip({ slug, onNav, hidden, setHidden }) {
 // active set; the second group covers paused / completed / abandoned states.
 
 window.ReckonShell = window.ReckonShell || {};
-window.ReckonShell.plans = { readableFilterLabel, ListFilterControls, SORT_DIR_DEFAULTS, sortItems, SORT_OPTIONS, openGateCount, attachmentGroups, readingQueue, readingQueueStep, nextReadingMode, paletteItems, paletteKindLabel, selectPlanSection, ListCol, PlanGraphStrip };
+window.ReckonShell.plans = { readableFilterLabel, ListFilterControls, SORT_DIR_DEFAULTS, sortItems, SORT_OPTIONS, openGateCount, attachmentGroups, readingQueue, readingQueueStep, nextReadingMode, paletteItems, paletteKindLabel, artifactKindLabel, artifactStamp, artifactState, artifactIsDone, artifactIndexRows, ArtifactIndex, selectPlanSection, ListCol, PlanGraphStrip };

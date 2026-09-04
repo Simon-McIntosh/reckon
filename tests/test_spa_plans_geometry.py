@@ -80,13 +80,11 @@ def _assert_declarations(actual: dict[str, str], expected: dict[str, str]) -> No
     assert actual.items() >= expected.items()
 
 
-def test_plan_workspace_uses_a_fluid_clamped_index_and_reader() -> None:
+def test_artifact_index_uses_the_full_width_and_owns_its_scroll() -> None:
     workspace = _declarations(PLANS_CSS, ".r-canvas-view")
-    listing = _declarations(PLANS_CSS, ".r-plans-view > .r-list")
     content = _declarations(PLANS_CSS, ".r-canvas-view > .r-content")
-    reader = _declarations(
-        PLANS_CSS, ".r-plans-view .r-reader-with-attachments > .r-body"
-    )
+    index = _declarations(PLANS_CSS, ".r-artifact-index")
+    feed = _declarations(PLANS_CSS, ".r-artifact-feed")
 
     _assert_declarations(
         workspace,
@@ -98,65 +96,50 @@ def test_plan_workspace_uses_a_fluid_clamped_index_and_reader() -> None:
         },
     )
     _assert_declarations(
-        listing,
+        index,
         {
-            "width": "clamp(300px, 30%, 480px)",
-            "flex": "0 0 clamp(300px, 30%, 480px)",
+            "display": "flex",
+            "flex": "1",
             "min-width": "0",
-            "border-right": "1px solid var(--line)",
+            "min-height": "0",
+            "overflow": "hidden",
         },
     )
     _assert_declarations(content, {"display": "flex", "flex": "1", "min-width": "0"})
-    _assert_declarations(
-        reader,
-        {
-            "flex": "1",
-            "min-width": "300px",
-            "padding": "22px 26px 34px",
-        },
-    )
+    _assert_declarations(feed, {"flex": "1", "min-height": "0", "overflow": "auto"})
     assert ".r-attachment-rail" not in PLANS_CSS.read_text()
 
 
-def test_filter_controls_share_the_plan_list_header() -> None:
-    header = _declarations(PLANS_CSS, ".r-plans-view .r-sort-bar")
-    controls = _declarations(PLANS_CSS, ".r-list-filter-controls")
-    filter_control = _declarations(PLANS_CSS, ".r-list-filter")
-    select = _declarations(PLANS_CSS, ".r-list-filter select")
-    square_buttons = _declarations(PLANS_CSS, ".r-sort-dir,\n.r-sort-more")
-    body = _declarations(PLANS_CSS, ".r-list-body")
+def test_feed_controls_share_the_artifact_index_header() -> None:
+    header = _declarations(PLANS_CSS, ".r-artifact-index-head")
+    actions = _declarations(
+        PLANS_CSS, ".r-artifact-index-actions,\n.r-feed-status-filters"
+    )
+    chips = _declarations(PLANS_CSS, ".r-feed-status-filters button")
+    hide_done = _declarations(PLANS_CSS, ".r-hide-done")
 
     _assert_declarations(
         header,
         {
-            "display": "flex",
-            "flex-wrap": "wrap",
-            "gap": "8px",
-            "padding": "10px 12px",
+            "display": "grid",
+            "grid-template-columns": "minmax(180px, 1fr) auto",
+            "gap": "12px 24px",
+            "padding": "24px 28px 16px",
             "border-bottom": "1px solid var(--line)",
-            "flex": "none",
         },
     )
     _assert_declarations(
-        controls,
-        {"display": "flex", "flex": "1 0 100%", "gap": "6px", "min-width": "0"},
+        actions, {"display": "flex", "align-items": "center", "gap": "8px"}
     )
-    _assert_declarations(
-        filter_control, {"display": "grid", "flex": "1", "min-width": "0"}
-    )
-    _assert_declarations(select, {"width": "100%", "min-width": "0", "height": "25px"})
-    _assert_declarations(square_buttons, {"width": "25px", "height": "25px"})
-    _assert_declarations(body, {"flex": "1", "overflow": "auto"})
+    _assert_declarations(chips, {"border-radius": "999px", "font": "11px var(--mono)"})
+    _assert_declarations(hide_done, {"display": "inline-flex", "white-space": "nowrap"})
 
-    shell = SHELL.read_text()
-    listing = _function_source("ListCol")
-    filters = _function_source("ListFilterControls")
-    assert "FiltersCol" not in shell
-    assert 'className="r-filters"' not in shell
-    assert "<ListFilterControls" in listing
-    assert 'aria-label="Filter plans by status"' in filters
-    assert 'aria-label="Filter plans by sprint"' in filters
-    assert "data-count={count}" in filters
+    index = _function_source("ArtifactIndex")
+    assert '<div className="r-feed-status-filters"' in index
+    assert 'aria-label="Filter plans by status"' in index
+    assert 'className="r-hide-done"' in index
+    assert "data-count={count}" in index
+    assert 'kind === "plan"' in index
 
 
 def test_reader_typography_is_preserved_without_a_width_floor() -> None:
@@ -192,21 +175,17 @@ def test_reader_typography_is_preserved_without_a_width_floor() -> None:
     assert 'className="r-reader-attachment-bar"' in PLAN.read_text()
 
 
-@pytest.mark.parametrize(
-    ("viewport_width", "expected_index_width"),
-    [(1280, 384), (1440, 432), (1920, 480)],
-)
-def test_rendered_plan_workspace_fits_the_window_and_clamps_the_index(
+@pytest.mark.parametrize("viewport_width", [1280, 1440, 1920])
+def test_rendered_plan_index_fills_the_window(
     tmp_path: Path,
     rendered_browser: str,
     viewport_width: int,
-    expected_index_width: int,
 ) -> None:
     browser = rendered_browser
 
     probe = r"""(() => {
       const root = document.documentElement;
-      const listing = document.querySelector(".r-plans-view > .r-list");
+      const listing = document.querySelector(".r-artifact-index");
       const visible = [...document.body.querySelectorAll("*")].filter(element => {
         const style = getComputedStyle(element);
         const rect = element.getBoundingClientRect();
@@ -231,51 +210,40 @@ def test_rendered_plan_workspace_fits_the_window_and_clamps_the_index(
         geometry = context.run_probe(
             probe,
             viewport=(viewport_width, 900),
-            ready_expression='Boolean(document.querySelector(".r-list-body > .r-row"))',
+            ready_expression='Boolean(document.querySelector(".r-artifact-row"))',
         )
 
     assert geometry["scrollWidth"] == geometry["clientWidth"], geometry
-    assert geometry["indexWidth"] == pytest.approx(expected_index_width, abs=3), (
-        geometry
-    )
+    assert geometry["indexWidth"] == pytest.approx(viewport_width, abs=3), geometry
     assert geometry["overflow"] == [], geometry
 
 
-def test_rendered_header_status_and_sprint_filters_reduce_the_plan_list(
+def test_rendered_status_chips_reduce_the_plan_feed(
     tmp_path: Path,
     rendered_browser: str,
 ) -> None:
     browser = rendered_browser
 
     probe = r"""(async () => {
-      const countRows = () => document.querySelectorAll(".r-list-body > .r-row").length;
-      const chooseReducingOption = select => [...select.options]
-        .find(option => option.value && Number(option.dataset.count) > 0 && Number(option.dataset.count) < countRows());
-      const choose = async (select, option) => {
-        select.value = option.value;
-        select.dispatchEvent(new Event("change", { bubbles: true }));
+      const countRows = () => document.querySelectorAll(".r-artifact-row").length;
+      const choose = async button => {
+        button.click();
         await new Promise(resolve => setTimeout(resolve, 150));
         return countRows();
       };
 
-      const status = document.querySelector('[aria-label="Filter plans by status"]');
-      const sprint = document.querySelector('[aria-label="Filter plans by sprint"]');
+      const status = document.querySelector('.r-feed-status-filters');
       const baseline = countRows();
-      const statusOption = chooseReducingOption(status);
-      const statusCount = await choose(status, statusOption);
-      status.value = "";
-      status.dispatchEvent(new Event("change", { bubbles: true }));
-      await new Promise(resolve => setTimeout(resolve, 150));
-      const restored = countRows();
-      const sprintOption = chooseReducingOption(sprint);
-      const sprintCount = await choose(sprint, sprintOption);
+      const statusOption = [...status.querySelectorAll("button")]
+        .find(button => Number(button.dataset.count) > 0 && Number(button.dataset.count) < baseline);
+      const statusCount = await choose(statusOption);
+      const all = status.querySelector("button");
+      const restored = await choose(all);
       return {
         baseline,
         statusCount,
         restored,
-        sprintCount,
-        statusValue: statusOption.value,
-        sprintValue: sprintOption.value,
+        statusLabel: statusOption.textContent.trim(),
       };
     })()"""
 
@@ -284,14 +252,14 @@ def test_rendered_header_status_and_sprint_filters_reduce_the_plan_list(
             probe,
             viewport=(1440, 900),
             ready_expression=(
-                'Boolean(document.querySelector(".r-list-body > .r-row") '
-                '&& document.querySelectorAll("[aria-label=\\"Filter plans by sprint\\"] option").length > 1)'
+                'Boolean(document.querySelector(".r-artifact-row") '
+                '&& document.querySelectorAll(".r-feed-status-filters button").length === 5)'
             ),
         )
 
     assert result["baseline"] > result["statusCount"] > 0, result
     assert result["restored"] == result["baseline"], result
-    assert result["baseline"] > result["sprintCount"] > 0, result
+    assert result["statusLabel"], result
 
 
 @pytest.mark.parametrize("viewport_width", [1280, 1440, 1920])
@@ -301,38 +269,26 @@ def test_rendered_plan_rows_and_controls_are_legible(
     browser = rendered_browser
 
     probe = r"""(() => {
-      const list = document.querySelector(".r-list-body");
-      const rows = [...list.querySelectorAll(":scope > .r-row")];
-      const transitions = [...list.querySelectorAll(".r-status-transition")];
-      const clippedTransitions = transitions.map(element => {
-        const row = element.closest(".r-row").getBoundingClientRect();
+      const list = document.querySelector(".r-artifact-feed");
+      const rows = [...list.querySelectorAll(":scope > .r-artifact-row")];
+      const clippedRows = rows.map(element => {
+        const row = element.getBoundingClientRect();
         const rect = element.getBoundingClientRect();
         return {
           clippedContent: element.scrollWidth > element.clientWidth,
           outsideRow: rect.left < row.left || rect.right > row.right,
         };
       }).filter(result => result.clippedContent || result.outsideRow).length;
-      const trailingSeparators = rows.filter(row =>
-        row.querySelector(":scope > div > .meta")?.lastElementChild?.classList.contains("sp")
-      ).length;
-      const shown = document.querySelector(".r-sort-n")?.textContent.trim() || "";
-      const statusControl = document.querySelector('[aria-label="Filter plans by status"]');
-      const sprintControl = document.querySelector('[aria-label="Filter plans by sprint"]');
-      const status = statusControl?.selectedOptions[0]?.textContent.trim() || "";
-      const sprint = sprintControl?.selectedOptions[0]?.textContent.trim() || "";
-      const emptyState = document.querySelector(".r-reader-empty-state");
+      const title = document.querySelector(".r-artifact-index-title h1")?.textContent.trim() || "";
+      const chips = [...document.querySelectorAll(".r-feed-status-filters button")]
+        .map(button => button.textContent.trim());
       return {
-        transitionCount: transitions.length,
-        clippedTransitions,
-        trailingSeparators,
-        counts: {
-          shown,
-          status,
-          sprint,
-          statusLabel: statusControl?.closest("label")?.querySelector("span")?.textContent.trim() || "",
-          sprintLabel: sprintControl?.closest("label")?.querySelector("span")?.textContent.trim() || "",
-        },
-        emptyState: emptyState?.textContent.trim() || "",
+        rowCount: rows.length,
+        clippedRows,
+        stampRows: rows.filter(row => row.querySelectorAll(".r-artifact-stamps span").length === 2).length,
+        statusRows: rows.filter(row => row.querySelector(".r-artifact-status-chip")).length,
+        title,
+        chips,
         notFoundOccurrences: (document.body.textContent.toLowerCase().match(/not found/g) || []).length,
       };
     })()"""
@@ -342,20 +298,21 @@ def test_rendered_plan_rows_and_controls_are_legible(
             probe,
             viewport=(viewport_width, 900),
             ready_expression=(
-                'Boolean(document.querySelector(".r-list-body > .r-row .meta") '
-                '&& document.querySelector(".r-reader-empty-state"))'
+                'Boolean(document.querySelector(".r-artifact-row") '
+                '&& document.querySelector(".r-feed-status-filters"))'
             ),
         )
 
-    assert geometry["transitionCount"] > 0, geometry
-    assert geometry["clippedTransitions"] == 0, geometry
-    assert geometry["trailingSeparators"] == 0, geometry
-    assert geometry["counts"]["shown"].endswith(" shown"), geometry
-    assert geometry["counts"]["statusLabel"] == "Status · total plans", geometry
-    assert geometry["counts"]["sprintLabel"] == "Sprint · assigned plans", geometry
-    assert geometry["counts"]["status"].startswith("All · "), geometry
-    assert geometry["counts"]["sprint"].startswith("All · "), geometry
-    assert "Select a plan to read" in geometry["emptyState"], geometry
+    assert geometry["rowCount"] > 0, geometry
+    assert geometry["clippedRows"] == 0, geometry
+    assert geometry["stampRows"] == geometry["rowCount"], geometry
+    assert geometry["statusRows"] == geometry["rowCount"], geometry
+    assert geometry["title"].endswith(" in reckon"), geometry
+    assert len(geometry["chips"]) == 5, geometry
+    assert all(
+        any(chip.startswith(label) for chip in geometry["chips"])
+        for label in ("All", "active", "blocked", "pending", "shipped")
+    ), geometry
     assert geometry["notFoundOccurrences"] == 0, geometry
 
 
