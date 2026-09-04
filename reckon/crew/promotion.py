@@ -1225,7 +1225,7 @@ def _worktree_audit(
     record: Mapping[str, Any],
     retention: Mapping[str, str] | None,
 ) -> dict[str, Any]:
-    """Enumerate repository worktrees, preserving resume retention as its own state.
+    """Audit the promoted run's worktree, preserving retention as its own state.
 
     Artifact safety and session recoverability answer different questions. A
     clean reachable tree is normally reclaimable, and an unintegrated tree is
@@ -1235,11 +1235,13 @@ def _worktree_audit(
     as the operative classification.
     """
     repo_value = str(record.get("repo") or "").strip()
-    if not repo_value or not Path(repo_value).is_dir():
+    worktree_value = str(record.get("worktree") or "").strip()
+    if not repo_value or not Path(repo_value).is_dir() or not worktree_value:
         return {"counts": {}, "worktrees": []}
     repo = Path(repo_value).resolve()
-    claims = _live_worktree_claims()
-    snapshot = _repository_tree_snapshot(repo)
+    worktree = Path(worktree_value).resolve()
+    claims = _live_worktree_claims().get(worktree, ())
+    snapshot = _repository_tree_snapshot(repo, roots=(worktree,))
     retained_path = (
         Path(str(retention["worktree"])).resolve() if retention is not None else None
     )
@@ -1256,7 +1258,7 @@ def _worktree_audit(
             repo,
             path,
             "HEAD",
-            claims.get(path, ()),
+            claims,
             shadow_record,
         )
         row = {**tree_state, **inspected}

@@ -876,6 +876,60 @@ def test_a_recoverable_session_retains_its_worktree_as_a_distinct_audit_state(
     assert stored["worktree_retention"] == retention
 
 
+def test_promotion_audits_only_its_own_worktree(
+    repository: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    worktree = _linked_worktree(repository, tmp_path, "promoted")
+    for index in range(20):
+        peer = tmp_path / "worktrees" / f"peer-{index}"
+        subprocess.run(
+            ["git", "worktree", "add", "--detach", str(peer), "HEAD"],
+            cwd=repository,
+            check=True,
+            capture_output=True,
+        )
+    registered = [
+        line
+        for line in _git(repository, "worktree", "list", "--porcelain").splitlines()
+        if line.startswith("worktree ")
+    ]
+    assert len(registered) >= 22
+
+    run_id = "r-20260903T110500000000-promoted"
+    _blocked_pointer(
+        repository,
+        run_id,
+        manifest=tmp_path / "manifests" / f"{run_id}.md",
+        session_id="session-promoted",
+        status="complete",
+        worktree=worktree,
+    )
+    real_run = subprocess.run
+    git_invocations: list[tuple[str, ...]] = []
+
+    def counting_run(command, *args, **kwargs):
+        if command and command[0] == "git":
+            git_invocations.append(tuple(str(part) for part in command))
+        return real_run(command, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", counting_run)
+    promoted = crew.complete(
+        run_id,
+        gate="passed",
+        outcome="the node delivered its result",
+        root=repository,
+    )
+
+    assert len(git_invocations) <= 6
+    assert promoted["release"]["worktree_released"] is False
+    rows = promoted["release"]["worktree_audit"]["worktrees"]
+    assert [row["path"] for row in rows] == [str(worktree.resolve())]
+    assert rows[0]["classification"] == "retained-for-resume"
+    assert rows[0]["artifact_classification"] == "integrated"
+
+
 def test_an_unrecoverable_session_releases_its_worktree(
     repository: Path,
     tmp_path: Path,
