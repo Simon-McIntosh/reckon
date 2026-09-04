@@ -100,6 +100,8 @@ source = "vcs"
 
 [tool.hatch.version.raw-options]
 local_scheme = "no-local-version"
+git_describe_command = "git describe --dirty --tags --long --abbrev=40 --match 'v[0-9]*'"
+tag_regex = "^v(?P<version>\\d+\\.\\d+\\.\\d+(?:rc\\d+)?)$"
 
 [tool.hatch.build.targets.wheel]
 packages = ["reckon"]
