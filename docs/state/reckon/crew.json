@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T05:49:48",
+  "updated": "2026-09-04T06:19:14",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -355,7 +355,8 @@
         "session_id": "7c43a41a-e41a-46f5-b0c4-bd5baf1d1fda",
         "session_model": "claude-sonnet-5",
         "sessions": {
-          "{\"backend\":\"claude\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "7c43a41a-e41a-46f5-b0c4-bd5baf1d1fda"
+          "{\"backend\":\"claude\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "7c43a41a-e41a-46f5-b0c4-bd5baf1d1fda",
+          "{\"alias\":\"sonnet 5\",\"backend\":\"claude\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "9897d715-5f3c-41c4-80c9-e75dc9baa084"
         },
         "created": "2026-09-03"
       },
@@ -780,9 +781,11 @@
         "id": "s16-sprint",
         "harness": "claude",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "beceae5c-c497-4719-865a-7577a72810cf",
+        "session_model": "claude-sonnet-5",
+        "sessions": {
+          "{\"alias\":\"sonnet 5\",\"backend\":\"claude\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "beceae5c-c497-4719-865a-7577a72810cf"
+        },
         "created": "2026-09-03"
       },
       {
@@ -855,7 +858,8 @@
         "session_model": "claude-sonnet-5",
         "sessions": {
           "claude-sonnet-5": "c148c9f8-1c96-4534-bf08-7c443135bcc9",
-          "{\"backend\":\"claude\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "c148c9f8-1c96-4534-bf08-7c443135bcc9"
+          "{\"backend\":\"claude\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "c148c9f8-1c96-4534-bf08-7c443135bcc9",
+          "{\"alias\":\"sonnet 5\",\"backend\":\"claude\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "3c178c48-4524-4440-b3c4-21ce032dcce8"
         },
         "created": "2026-09-03"
       },
@@ -48400,6 +48404,344 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260904T035133094427-a-session-id-is-always-answerable",
+        "plan": "work-survives-a-provider-outage",
+        "section": "\u00a77",
+        "node": "a-session-id-is-always-answerable",
+        "node_definition": {
+          "done_when": "THE INCIDENT THIS PLAN RECORDS TURNED ON A NULL. A coordinator read session_id null on five live pointers, concluded the runs were unresumable, and promoted all five; resume_plan had recovered exactly that case for months by calling observe and re-reading the stream. The null was never evidence of anything except that observe had not run, and it read as a verdict. Tonight a second run sat blocked five hours and forty-two minutes carrying the same null while its id sat in its own stream. THREE PARTS. ONE, A RESOLVER THAT NEVER ANSWERS A BARE NULL: one function answers the session for a run by consulting, in order, the live pointer, the run's own stream, and the promoted ledger row, returning the id together with which of the three supplied it. Where no source has one it returns a stated absence naming all three as consulted, so a caller can tell not-yet-observed from genuinely-absent - the distinction nothing expressed and which cost the five runs. TWO, EVERY SURFACE USES IT: crew observe, the recovery sweep, and any listing reporting a session report the resolved answer and its source rather than passing the pointer field through, and the value must never differ between two surfaces asked about the same run. THREE, THE SWEEP BECOMES A COMMAND. It landed callable in-process and wired to the follow loop with no operator surface, so a person who wants the recovery cannot run it. Add a crew subcommand running it for a project with a dry-run flag reporting what it would resume without resuming, named and described distinctly from the existing crew recover, which classifies pointers left by an interrupted orchestrator and keeps its behaviour unchanged. AND MAKE THE CADENCE OBSERVABLE, which a peer's measurement settled tonight: one merge left every follower on this workstation running pre-merge code and unable to perform the recovery it had just gained, invisible from the pane, because a running sweep and an absent sweep look identical. The cadence tick must record that it ran and what it found, so a stale follower is distinguishable from a quiet fleet. ASSERT THROUGH EACH ENTRY POINT rather than the resolver alone: the command, crew observe, and the sweep, each asked about one run whose pointer carries no id and whose stream does, each required to report the same id and the same source; and the stated-absence case through the same three. Build pointers, streams and a ledger the way dispatch and promotion write them under a temporary config home, and assert the real config home is untouched. At least one added assertion must fail against base 6b1670c. Measured over tests/test_crew_recover.py in one invocation: zero failures against its count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 3.0,
+          "goal": "Every surface that reports a session id resolves it, and the recovery sweep is a command an operator can run.",
+          "id": "a-session-id-is-always-answerable",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/session-resolver-manifest.md",
+          "plan": "work-survives-a-provider-outage",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/recover.py",
+            "reckon/cli.py",
+            "tests/test_crew_recover.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "opus-a",
+        "backend": "claude-opus",
+        "local": false,
+        "agent": {
+          "alias": "opus 5",
+          "backend": "claude-opus",
+          "effort": "high",
+          "launch": "cli",
+          "model": "claude-opus-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T03:51:39Z",
+        "completed_at": "2026-09-04T03:57:06.057Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 312,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 327,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "6b1670c64e0f23e3a3b403bf428f5cb44b0e67c3",
+        "commits": [
+          "c7d36ff30c96f2eed86f872a786f4d55cfb868ad"
+        ],
+        "changed_lines": {
+          "added": 389,
+          "removed": 23,
+          "files": 3
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_recover.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vsr.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/session-resolver-manifest.md",
+        "scope_changed": false,
+        "session_id": "3e81786c-e969-4c9e-9fed-220afdde1bf7",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 0.95,
+          "rate_limit_type": "five_hour",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-09-04T04:50:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 0.9,
+          "tokens": {
+            "cache_creation_input_tokens": 30591,
+            "cache_creation_input_tokens_cumulative": 344257,
+            "cache_read_input_tokens": 118708,
+            "cache_read_input_tokens_cumulative": 6508807,
+            "inference_geo": "not_available",
+            "input_tokens": 0,
+            "input_tokens_cumulative": 40,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 21457,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 0.10261899999999802,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 7.233598499999999
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 323.691,
+          "generated_tokens": 21457,
+          "generation_seconds": 301.194,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 35.5,
+          "machine_seconds": 22.497,
+          "peak_input_tokens": 354959,
+          "tokens_per_second": 71.24,
+          "wall_tokens_per_second": 66.29
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260904T035006139158-sprint-table-and-detail-dag",
+        "plan": "graph-derived-schedule",
+        "section": "\u00a74",
+        "node": "sprint-table-and-detail-dag",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_spa_sprint_surface.py tests/test_spa_sprints_geometry.py -q passes with every case \u00a74 names, including the was-planned drift flag, a detail with two ghost prerequisite nodes and their edges, and grep -c HORIZON_HOURS docs/ui/sprint.jsx printing 0",
+          "estimated_hours": 3.5,
+          "goal": "Sprint rows derive their state from members and open a detail whose body is the DAG including out-of-sprint prerequisites",
+          "id": "sprint-table-and-detail-dag",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T035006139158-sprint-table-and-detail-dag/manifest.md",
+          "plan": "graph-derived-schedule",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "docs/ui/sprint.jsx",
+            "docs/ui/sprints.css",
+            "tests/test_spa_sprint_surface.py",
+            "tests/test_spa_sprints_geometry.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-sprint",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "alias": "sonnet 5",
+          "backend": "claude",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T03:50:11Z",
+        "completed_at": "2026-09-04T03:58:44.968Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 506,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 513,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "43e82b3f198752754fec1713ae1f7942098e8fe9",
+        "commits": [
+          "3d7dc1a023b830fd50e7c0a676f1fb5a52349b75"
+        ],
+        "changed_lines": {
+          "added": 408,
+          "removed": 477,
+          "files": 4
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_sprint_surface.py tests/test_spa_sprints_geometry.py; grep -c HORIZON_HOURS docs/ui/sprint.jsx",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T035006139158-sprint-table-and-detail-dag/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T035006139158-sprint-table-and-detail-dag/manifest.md",
+        "scope_changed": false,
+        "session_id": "beceae5c-c497-4719-865a-7577a72810cf",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 100.0,
+          "rate_limit_type": "spend-limit",
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": "exhausted",
+          "surpassed_threshold": true,
+          "tokens": null,
+          "cost_usd": null,
+          "refusal": true,
+          "detail": "backend refused the turn: the account's spend-limit is reached"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 510.613,
+          "generated_tokens": 51520,
+          "generation_seconds": 493.974,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 18.3,
+          "machine_seconds": 16.639,
+          "peak_input_tokens": 182689,
+          "tokens_per_second": 104.3,
+          "wall_tokens_per_second": 100.9
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_spa_sprint_surface.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260904T035023026445-topbar-order-tabs-and-brand",
+        "plan": "spa-shell-scope-and-visibility",
+        "section": "\u00a73",
+        "node": "topbar-order-tabs-and-brand",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_spa_topbar_snapshot.py tests/test_spa_shell_geometry.py -q passes with every case \u00a73 names, including DOM order brand search artifact-group work-group receipt selector gear, the textless compass svg, and no element reading Overview or reckon",
+          "estimated_hours": 2.5,
+          "goal": "The topbar renders in the canvas order with two route-owned tab groups and the compass brand mark",
+          "id": "topbar-order-tabs-and-brand",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T035023026445-topbar-order-tabs-and-brand/manifest.md",
+          "plan": "spa-shell-scope-and-visibility",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "docs/ui/shell-topbar.jsx",
+            "docs/ui/shell-route.jsx",
+            "docs/ui/glyphs.jsx",
+            "docs/ui/topbar.css",
+            "tests/test_spa_topbar_snapshot.py",
+            "tests/test_spa_shell_geometry.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-topbar",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "alias": "sonnet 5",
+          "backend": "claude",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T03:50:28Z",
+        "completed_at": "2026-09-04T03:58:44.586Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 484,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 496,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "43e82b3f198752754fec1713ae1f7942098e8fe9",
+        "commits": [
+          "9539a96622d0b6b0a18ec59240b962ed8d141315"
+        ],
+        "changed_lines": {
+          "added": 303,
+          "removed": 97,
+          "files": 6
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_topbar_snapshot.py tests/test_spa_shell_geometry.py; grep -c Overview docs/ui/shell-topbar.jsx",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T035023026445-topbar-order-tabs-and-brand/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T035023026445-topbar-order-tabs-and-brand/manifest.md",
+        "scope_changed": false,
+        "session_id": "25a7517b-9a8e-4370-a295-694b35cab7ba",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 100.0,
+          "rate_limit_type": "spend-limit",
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": "exhausted",
+          "surpassed_threshold": true,
+          "tokens": null,
+          "cost_usd": null,
+          "refusal": true,
+          "detail": "backend refused the turn: the account's spend-limit is reached"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 493.366,
+          "generated_tokens": 30051,
+          "generation_seconds": 333.055,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 23.0,
+          "machine_seconds": 160.311,
+          "peak_input_tokens": 230381,
+          "tokens_per_second": 90.23,
+          "wall_tokens_per_second": 60.91
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_spa_topbar_snapshot.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -48478,13 +48820,13 @@
         "backend": "codex",
         "purpose": "dispatch",
         "opened_at": "2026-09-03T15:27:26Z",
-        "closed_at": null,
-        "held_seconds": null,
+        "closed_at": "2026-09-04T04:17:18Z",
+        "held_seconds": 46192,
         "utilisation_pct": 100.0,
         "resets_at": "2026-09-08T05:38:19Z",
         "effective_ceiling_pct": 95.0,
         "reason": "utilisation 100.0% is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
-        "closed_by_purpose": null,
+        "closed_by_purpose": "dispatch",
         "resumption_fired": false
       },
       {
@@ -48492,13 +48834,13 @@
         "backend": "codex-luna",
         "purpose": "dispatch",
         "opened_at": "2026-09-03T15:27:26Z",
-        "closed_at": null,
-        "held_seconds": null,
+        "closed_at": "2026-09-04T04:17:18Z",
+        "held_seconds": 46192,
         "utilisation_pct": 100.0,
         "resets_at": "2026-09-08T05:38:19Z",
         "effective_ceiling_pct": 95.0,
         "reason": "utilisation 100.0% is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
-        "closed_by_purpose": null,
+        "closed_by_purpose": "dispatch",
         "resumption_fired": false
       },
       {
@@ -48506,13 +48848,13 @@
         "backend": "codex-spark",
         "purpose": "dispatch",
         "opened_at": "2026-09-03T15:27:26Z",
-        "closed_at": null,
-        "held_seconds": null,
+        "closed_at": "2026-09-04T04:17:18Z",
+        "held_seconds": 46192,
         "utilisation_pct": 100.0,
         "resets_at": "2026-09-08T05:38:18Z",
         "effective_ceiling_pct": 95.0,
         "reason": "utilisation 100.0% is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
-        "closed_by_purpose": null,
+        "closed_by_purpose": "dispatch",
         "resumption_fired": false
       },
       {
@@ -48520,13 +48862,13 @@
         "backend": "codex-terra",
         "purpose": "dispatch",
         "opened_at": "2026-09-03T15:27:26Z",
-        "closed_at": null,
-        "held_seconds": null,
+        "closed_at": "2026-09-04T04:17:18Z",
+        "held_seconds": 46192,
         "utilisation_pct": 100.0,
         "resets_at": "2026-09-08T05:38:18Z",
         "effective_ceiling_pct": 95.0,
         "reason": "utilisation 100.0% is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
-        "closed_by_purpose": null,
+        "closed_by_purpose": "dispatch",
         "resumption_fired": false
       },
       {
@@ -48556,8 +48898,22 @@
         "reason": "utilisation 100.0% is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
         "closed_by_purpose": "dispatch",
         "resumption_fired": false
+      },
+      {
+        "hold_id": "hold-claude-20260904041551",
+        "backend": "claude",
+        "purpose": "resume",
+        "opened_at": "2026-09-04T04:15:51Z",
+        "closed_at": "2026-09-04T04:17:18Z",
+        "held_seconds": 87,
+        "utilisation_pct": 100.0,
+        "resets_at": null,
+        "effective_ceiling_pct": 100.0,
+        "reason": "utilisation 100.0% is at or above the 100.0% ceiling for a resume",
+        "closed_by_purpose": "dispatch",
+        "resumption_fired": false
       }
     ],
-    "_version": 791
+    "_version": 799
   }
 }

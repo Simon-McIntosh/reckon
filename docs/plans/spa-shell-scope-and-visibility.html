@@ -22,14 +22,14 @@
   <meta name="plan-tags" content="reckon-tooling,spa">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-blocks" content="artifact-feeds-and-reader,fleet-home">
-  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,design/reckon-spa-handoff.md,docs/ui/shell-topbar.jsx,docs/ui/_shared.jsx,docs/ui/topbar.css,docs/ui/crew.jsx,docs/ui/crew.css,docs/ui/shell.jsx,tests/test_spa_project_visibility.py">
+  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,design/reckon-spa-handoff.md,docs/ui/shell-topbar.jsx,docs/ui/shell-route.jsx,docs/ui/glyphs.jsx,docs/ui/_shared.jsx,docs/ui/topbar.css,docs/ui/crew.jsx,docs/ui/crew.css,docs/ui/shell.jsx,tests/test_spa_project_visibility.py,tests/test_spa_topbar_snapshot.py">
   <title>The Project Selector Scopes the Page | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="10">
-<meta name="plan-commits" content="98ff44c,346c730,77a473b">
-<meta name="plan-impl" content="0.6">
+<meta name="plan-version" content="12">
+<meta name="plan-commits" content="98ff44c,346c730,77a473b,9539a96">
+<meta name="plan-impl" content="0.8">
 </head>
 <body>
 <main class="plan-doc">
@@ -213,6 +213,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260903T215430606145-white-ground-and-type" data-who="s16-tokens" data-when="2026-09-03T22:01:03.066Z">
     <div class="r-comment-body"><p>the entry point stops overriding the token layer: 36-line inline &lt;style&gt; block removed from docs/index.html, so the white ground, Geist stack and passing contrast come solely from foundation.css; gate greps read fbfaf7 0/0, &lt;style&gt; 0, Geist 1, fonts.googleapis 0/0 and the four named tests report 10 passed 1 skipped</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260904T035023026445-topbar-order-tabs-and-brand" data-who="s16-topbar" data-when="2026-09-04T03:58:44.586Z">
+    <div class="r-comment-body"><p>the topbar renders brand, search, artifact group, work group, live receipt, project selector then gear, with the tab groups published by the route module and the compass mark as a textless SVG home button: 14 passed 1 skipped (the browser DOM-order test needs a Chrome binary; the source-order assertions cover it), and Overview greps to 0 in docs/ui/shell-topbar.jsx</p></div>
 </div>
 </section>
 </main>
