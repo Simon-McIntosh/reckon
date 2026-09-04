@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="work-survives-a-provider-outage">
   <meta name="plan-title" content="Work Survives A Provider Outage">
   <meta name="plan-summary" content="A refusal-killed run is resumed, not reconciled: promotion cannot silently destroy a recoverable session, and the worktree outlives it.">
-  <meta name="plan-status" content="shipped">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="7.0">
   <meta name="plan-capability-version" content="1.0">
@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="23">
-<meta name="plan-impl" content="1.0">
+<meta name="plan-version" content="24">
+<meta name="plan-impl" content="0.9">
 <meta name="plan-commits" content="a1bf7da70ca2f93d83ae92726ba03ccbe62a75c1,e4dacc2921057ceea0e231b1d61c4b67181e94f4,a88e833ce5d8a3ef06ade721a47d5fd5fd504c1f">
 <meta name="plan-artifacts" content="reckon/crew/promotion.py,reckon/crew/dispatch.py,reckon/crew/recovery.py,reckon/ledger.py,tests/test_crew_promotion.py,tests/test_crew_recover.py,tests/test_crew_recovery.py,docs/evidence/archive/work-survives-a-provider-outage-landed.html">
 </head>
@@ -315,6 +315,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-wspo-tree-outlives-promotion" data-who="reckon-ship" data-when="2026-09-04T13:57:39Z">
     <div class="r-comment-body">The worktree outlives the promotion while the session lives landed - commit a1bf7da, 340 insertions; gate uv run --no-sync pytest tests/test_crew_promotion.py -q passed, 19 passed in 1.50s, ruff findings delta zero against a baseline of 10; measure: the release is conditioned on the session being unrecoverable rather than on the run reaching a terminal state, a retained tree records its retention on the ledger row and reads as its own third category in the worktree audit rather than as clean-and-reachable or as holding unintegrated work, and a waived promotion retains the tree unless the waiver explicitly discards it; asserted through the crew complete entry point and through the audit that enumerates worktrees, never through the release helper. The section's insistence that this not be folded into section 2 was right: refusing a promotion and conditioning the release have different negatives, and one node would have let either pass on the other's evidence. This node was also killed once mid-flight by an infrastructure fault - codex reported apply_patch verification failed on multiple operations targeting its own manifest - and was resumed rather than redispatched after its worktree was confirmed clean and carrying nothing beyond base, so it kept its context and cost one turn.</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-wspo-audit-scan-regression" data-who="reckon-ship" data-when="2026-09-04T15:20:00Z">
+    <div class="r-comment-body">REGRESSION FROM THIS SECTION, reported by the nova S19 coordinator and reproduced by measurement. Commit a1bf7da ends _release_after_promotion with a _worktree_audit that enumerates EVERY worktree in the repository and runs a full inspection - git status plus a reachability check - on each. So every crew complete pays O(worktrees) sequential git subprocesses after the ledger append and pointer delete have already succeeded. Measured: nova carries 81 registered worktrees and one git status --porcelain on a nova worktree costs 0.49s on this filesystem, so a promotion there costs roughly 40 to 120 seconds; the peer had a 120s Bash timeout kill it twice and a timeout 90 guard catch it a third time, across three runs whose gate logs were 369 markdown lines, 22,809 JSON lines and an ordinary pytest log - which is how they correctly ruled log size out. reckon carries 20 worktrees, so my own 29 completions cost about ten seconds each and read as merely sluggish; imas-codex carries 110 and is worse affected than nova. The peer attributed it to the follower re-exec at e5f4ef4, 07:02, which is a red herring: their own earlier completions ran fine for five hours after that landed, and a1bf7da merged at about 11:57 UTC, half an hour before their first hang. Two changes went live the same day and only one was announced, so the correlation was reasonable and wrong. THE FIX IS NARROW, AND THIS SECTION'S OWN INTENT SAYS SO. The audit exists to state one thing: that a tree retained for a recoverable session is its own third category rather than reclaimable-or-unintegrated. That is a claim about the promoted run's OWN tree, and the docstring says as much - neither label states why THAT tree is present. Enumerating the repository was never required for it, so scoping the audit to the run's own worktree removes the scan entirely while keeping every measure this section asserted. Reopened to active at impl 0.9 rather than left shipped, because a section is not landed while it stalls every promotion in two other projects. Nothing is at risk meanwhile: the ledger row and the pointer delete both precede the audit, so a timed-out promotion has already fully promoted and the timeout is cosmetic.</div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260903T215004421663-a-promotion-cannot-discard-a-live-session" data-who="opus-a" data-when="2026-09-03T21:55:50.445Z">
     <div class="r-comment-body"><p>Promoting a blocked run whose session is recoverable from either the pointer or the stream is refused and names crew resume; an explicit waiver promotes and records itself on the ledger row; a run with no recoverable session and a run with a passing gate are unaffected.</p></div>
