@@ -898,6 +898,7 @@ def _require_resume_waiver(
     *,
     verdict: str,
     waiver_reason: str,
+    recoverable_session: Mapping[str, str] | None,
 ) -> dict[str, str] | None:
     """Refuse a promotion that would delete a resume path, unless it is stated.
 
@@ -920,7 +921,7 @@ def _require_resume_waiver(
 
     if str(classify_pointer(record).get("classification") or "") != "blocked":
         return None
-    found = _recoverable_session(record)
+    found = recoverable_session
     if found is None:
         return None
     reason = str(waiver_reason).strip()
@@ -954,6 +955,7 @@ def complete(
     suite_delta_waiver: str = "",
     boundary_waiver: str = "",
     resume_waiver: str = "",
+    discard_resume_worktree: bool = False,
     accepted_paths: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     """Promote a run, or finish cleanup when its record already landed."""
@@ -991,12 +993,19 @@ def complete(
             commits=commit_list,
             no_commit_reason=no_commit,
         )
+        recoverable_session = _recoverable_session(record)
         resume_waived = _require_resume_waiver(
             run_id,
             record,
             verdict=verdict,
             waiver_reason=resume_waiver,
+            recoverable_session=recoverable_session,
         )
+        if discard_resume_worktree and resume_waived is None:
+            raise CrewError(
+                "discard_resume_worktree requires a reasoned resume waiver for "
+                "a recoverable non-passing run"
+            )
         suite_delta = _evaluate_suite_delta(
             run_id,
             record,
@@ -1019,6 +1028,8 @@ def complete(
             suite_delta=suite_delta,
             boundary_waiver=boundary_waiver,
             resume_waived=resume_waived,
+            recoverable_session=recoverable_session,
+            discard_resume_worktree=discard_resume_worktree,
             accepted_paths=accepted_paths,
         )
 
@@ -1139,7 +1150,105 @@ def _release_terminal_manifest(record: Mapping[str, Any]) -> bool:
     }
 
 
-def _release_run_workspace(record: Mapping[str, Any]) -> dict[str, Any]:
+def _resume_worktree_retention(
+    record: Mapping[str, Any],
+    recoverable_session: Mapping[str, str] | None,
+    *,
+    retained_at: str,
+    discard: bool,
+) -> dict[str, str] | None:
+    """Describe a worktree deliberately kept as a session's working directory."""
+    worktree = str(record.get("worktree") or "").strip()
+    if recoverable_session is None or discard or not worktree:
+        return None
+    if not Path(worktree).is_dir():
+        return None
+    return {
+        "classification": "retained-for-resume",
+        "worktree": str(Path(worktree).resolve()),
+        "session_id": str(recoverable_session["session_id"]),
+        "session_source": str(recoverable_session["source"]),
+        "retained_at": retained_at,
+    }
+
+
+def _worktree_audit(
+    record: Mapping[str, Any],
+    retention: Mapping[str, str] | None,
+) -> dict[str, Any]:
+    """Enumerate repository worktrees, preserving resume retention as its own state.
+
+    Artifact safety and session recoverability answer different questions. A
+    clean reachable tree is normally reclaimable, and an unintegrated tree is
+    normally withheld for its commit. When the tree is a recoverable session's
+    working directory, neither label states why it is present, so the audit
+    carries the artifact classification separately and presents the retention
+    as the operative classification.
+    """
+    repo_value = str(record.get("repo") or "").strip()
+    if not repo_value or not Path(repo_value).is_dir():
+        return {"counts": {}, "worktrees": []}
+    repo = Path(repo_value).resolve()
+    claims = _live_worktree_claims()
+    snapshot = _repository_tree_snapshot(repo)
+    retained_path = (
+        Path(str(retention["worktree"])).resolve() if retention is not None else None
+    )
+    rows: list[dict[str, Any]] = []
+    for tree_state in snapshot.get("trees") or ():
+        if not tree_state.get("available"):
+            rows.append(dict(tree_state))
+            continue
+        path = Path(str(tree_state["path"])).resolve()
+        if path == repo:
+            continue
+        shadow_record = record if path == retained_path and _is_shadow(record) else None
+        inspected = _inspect_workspace(
+            repo,
+            path,
+            "HEAD",
+            claims.get(path, ()),
+            shadow_record,
+        )
+        row = {**tree_state, **inspected}
+        if retention is not None and path == retained_path:
+            row["artifact_classification"] = row["classification"]
+            row["classification"] = "retained-for-resume"
+            row["retention"] = dict(retention)
+            row["reclaimable"] = False
+            row["withheld"] = (
+                "this worktree is the working directory of recoverable session "
+                f"{retention['session_id']}"
+            )
+        else:
+            classification = str(row["classification"])
+            row["reclaimable"] = classification in RECLAIMABLE_CLASSES
+            if not row["reclaimable"]:
+                row["withheld"] = WITHHELD_REASONS.get(
+                    classification, "unrecognised classification"
+                )
+        rows.append(row)
+    names = {
+        "integrated",
+        "disposable",
+        "dirty",
+        "unintegrated",
+        "live-referenced",
+        "retained-for-resume",
+    }
+    return {
+        "counts": {
+            name: sum(row.get("classification") == name for row in rows)
+            for name in sorted(names)
+        },
+        "worktrees": rows,
+    }
+
+
+def _release_run_workspace(
+    record: Mapping[str, Any],
+    retention: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
     """Release a promoted run's own worktree and, if still alive, its process.
 
     Reuses the classification `crew gc` already applies rather than writing a
@@ -1157,7 +1266,13 @@ def _release_run_workspace(record: Mapping[str, Any]) -> dict[str, Any]:
     repo_value = str(record.get("repo") or "")
     worktree = Path(worktree_value) if worktree_value else None
     repo = Path(repo_value) if repo_value else None
-    if worktree is None:
+    if retention is not None:
+        result["worktree_withheld"] = (
+            "retained as the working directory of recoverable session "
+            f"{retention['session_id']}"
+        )
+        result["worktree_retention"] = dict(retention)
+    elif worktree is None:
         result["worktree_withheld"] = "no worktree recorded for this run"
     elif not worktree.is_dir():
         result["worktree_withheld"] = "tree is no longer available"
@@ -1205,10 +1320,15 @@ def _release_run_workspace(record: Mapping[str, Any]) -> dict[str, Any]:
         else:
             result["process_signalled"] = True
 
+    result["worktree_audit"] = _worktree_audit(record, retention)
     return result
 
 
-def _release_after_promotion(run_id: str, record: Mapping[str, Any]) -> dict[str, Any]:
+def _release_after_promotion(
+    run_id: str,
+    record: Mapping[str, Any],
+    retention: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
     """Release what promotion made transient, never at the cost of the ledger.
 
     A failure here — a git command that raises, a permission error signalling
@@ -1217,7 +1337,7 @@ def _release_after_promotion(run_id: str, record: Mapping[str, Any]) -> dict[str
     step is strictly additional cleanup on top of them.
     """
     try:
-        return _release_run_workspace(record)
+        return _release_run_workspace(record, retention)
     except Exception as exc:  # noqa: BLE001 - cleanup must never mask promotion
         return {
             "worktree_released": False,
@@ -1244,6 +1364,8 @@ def _complete_locked(
     suite_delta: Mapping[str, Any] | None = None,
     boundary_waiver: str = "",
     resume_waived: Mapping[str, str] | None = None,
+    recoverable_session: Mapping[str, str] | None = None,
+    discard_resume_worktree: bool = False,
     accepted_paths: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     """Promote a finished run into the owning repository's committed ledger.
@@ -1289,7 +1411,12 @@ def _complete_locked(
         capture = _capture_member_session(record)
         path = pointer_path(run_id)
         path.unlink(missing_ok=True)
-        release = _release_after_promotion(run_id, record)
+        retention = existing.get("worktree_retention")
+        release = _release_after_promotion(
+            run_id,
+            record,
+            retention if isinstance(retention, Mapping) else None,
+        )
         return {
             "run_id": run_id,
             "project": project,
@@ -1313,6 +1440,12 @@ def _complete_locked(
     else:
         finished = _utc_now()
         completion_source = "promotion_time"
+    worktree_retention = _resume_worktree_retention(
+        record,
+        recoverable_session,
+        retained_at=finished,
+        discard=discard_resume_worktree,
+    )
     commit_list = [str(sha) for sha in commits if str(sha).strip()]
     if shadow and commit_list:
         raise CrewError(
@@ -1466,6 +1599,10 @@ def _complete_locked(
     # accidental one this refusal exists to prevent.
     if resume_waived is not None:
         run["resume_waiver"] = dict(resume_waived)
+        if discard_resume_worktree:
+            run["resume_waiver"]["worktree_discarded"] = True
+    if worktree_retention is not None:
+        run["worktree_retention"] = dict(worktree_retention)
     watch_override = record.get("watch_override")
     if isinstance(watch_override, Mapping):
         run["watch_override"] = dict(watch_override)
@@ -1501,7 +1638,7 @@ def _complete_locked(
     # it has to be captured before the pointer goes.
     capture = _capture_member_session(record)
     pointer_path(run_id).unlink(missing_ok=True)
-    release = _release_after_promotion(run_id, record)
+    release = _release_after_promotion(run_id, record, worktree_retention)
     return {
         "run_id": run_id,
         "project": project,
