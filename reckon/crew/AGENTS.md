@@ -59,10 +59,11 @@ all.
 
 **The automatic path:** `reckon crew resume-held --project <project>` sweeps
 and resumes every run a lapsed refusal still holds; `reckon crew follow` runs
-it itself on a two-minute cadence. A `follow` process already running when
-this sweep's code changes keeps its pre-change code for its whole life and
+it itself on a two-minute cadence. The sweep, hold state, lane probe and session
+resolver live together in `reckon/crew/resumption.py`. A `follow` process already
+running when this code changes keeps its pre-change code for its whole life and
 will never call the new version — cycle any long-lived follower whenever
-recovery-path code lands.
+resumption-path code lands.
 
 Commands, verified with `--help`: `reckon crew observe`, `reckon crew resume
 --advice`, `reckon crew resume-held`, `reckon crew complete`, `reckon crew

@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import importlib
 import json
+import subprocess
+import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -18,7 +20,7 @@ import pytest
 
 from reckon import cli as cli_module
 from reckon import crew
-from reckon.crew.recover import (
+from reckon.crew.resumption import (
     CONTINUE_ADVICE,
     hold_state,
     recovery_log_path,
@@ -38,6 +40,37 @@ REFUSED_STREAM = (
 DEAD_PID = 4_194_303
 
 
+def test_facade_child_module_attributes_are_modules() -> None:
+    """A separately imported helper module cannot replace a public callable."""
+    script = """
+import json
+from pathlib import Path
+from types import ModuleType
+
+import reckon.crew as crew
+
+child_names = {
+    path.stem for path in Path(crew.__path__[0]).glob("*.py")
+} - set(crew._MODULE_EXPORTS)
+violations = {
+    name: type(value).__name__
+    for name in sorted(child_names)
+    if hasattr(crew, name)
+    and not isinstance((value := getattr(crew, name)), ModuleType)
+}
+print(json.dumps(violations, sort_keys=True))
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=Path(__file__).resolve().parents[1],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert json.loads(result.stdout) == {}
+
+
 @pytest.fixture()
 def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     config_home = tmp_path / "config"
@@ -48,8 +81,8 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 def _stated_reset():
     """The reset moment the recorded refusal itself names."""
-    from reckon.crew.recover import _parse_stamp
     from reckon.crew.recovery import _stream_refusal_block
+    from reckon.crew.resumption import _parse_stamp
 
     block = _stream_refusal_block(
         {
@@ -163,12 +196,12 @@ def _clock_at(monkeypatch: pytest.MonkeyPatch, moment) -> None:
     that moves one and not the other is measuring a disagreement it invented.
     """
     from reckon import budget as budget_module
-    from reckon.crew import recover as recover_module
+    from reckon.crew import resumption as resumption_module
 
     monkeypatch.setattr(budget_module, "_now", lambda now=None: now or moment)
     # The sweep's own clock too, because a surface that takes no ``now`` — the
     # command an operator runs — must read the same moment as one that does.
-    monkeypatch.setattr(recover_module, "_now", lambda now=None: now or moment)
+    monkeypatch.setattr(resumption_module, "_now", lambda now=None: now or moment)
 
 
 def _real_crew_home(monkeypatch: pytest.MonkeyPatch) -> Path:
@@ -319,7 +352,7 @@ def test_a_scope_another_live_run_claims_is_skipped(
     # The claimant is the run whose process is still alive; a stopped pointer
     # holds nothing, or every refused wave would be permanently unrecoverable.
     monkeypatch.setattr(
-        "reckon.crew.recover.process_alive",
+        "reckon.crew.resumption.process_alive",
         lambda pid: pid == 1,
     )
     launcher = _Launcher()
@@ -374,7 +407,7 @@ def test_the_hold_with_no_stated_reset_ages_out_of_the_shelf_life(
 
     assert observed["in_force"] is True and fresh["in_force"] is True
     assert "shelf life" in observed["detail"]
-    from reckon.crew.recover import _refusal_observed_at
+    from reckon.crew.resumption import _refusal_observed_at
 
     lapsed = hold_state(
         record,
@@ -460,7 +493,7 @@ def _surface_answers(run_id: str, now) -> dict[str, dict]:
     """
     from click.testing import CliRunner
 
-    from reckon.crew.recover import sweep as sweep_entry
+    from reckon.crew.resumption import sweep as sweep_entry
 
     runner = CliRunner()
     swept = sweep_entry(PROJECT, dry_run=True, now=now)
@@ -549,7 +582,7 @@ def test_a_promoted_run_still_answers_from_its_ledger_row(
     operation that made the incident irreversible has already happened.
     """
     from reckon import ledger
-    from reckon.crew.recover import resolve_session
+    from reckon.crew.resumption import resolve_session
 
     run_id = "r-20260904T032000000000-node-a"
     repo = tmp_path / "repo"
@@ -583,7 +616,7 @@ def test_the_cadence_records_that_it_ran_even_when_it_finds_nothing(
     those two, so it is written on every sweep rather than only on the ones
     that found work.
     """
-    from reckon.crew.recover import sweep, sweep_status_path
+    from reckon.crew.resumption import sweep, sweep_status_path
 
     report = sweep(PROJECT, dry_run=True)
 

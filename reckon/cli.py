@@ -1191,7 +1191,7 @@ def _resolved_session(run_id, record=None) -> dict[str, Any]:
     resolution naming every source consulted. Each surface reports the same
     three, so two of them asked about the same run cannot disagree.
     """
-    from reckon.crew.recover import resolve_session
+    from reckon.crew.resumption import resolve_session
 
     answer = resolve_session(run_id, record=record)
     return {
@@ -1265,7 +1265,7 @@ def _sweep_lapsed_holds(project: str, *, dry_run: bool = False) -> dict[str, Any
     reader is watching matters more than any single sweep, and the next cadence
     tick tries again.
     """
-    from reckon.crew.recover import sweep
+    from reckon.crew.resumption import sweep
 
     return sweep(project, dry_run=dry_run)
 
@@ -1438,7 +1438,7 @@ def _follow_watch_lines(
             reported[run_id] = state
         return event
 
-    from reckon.crew.recover import DEFAULT_SWEEP_SECONDS
+    from reckon.crew.resumption import DEFAULT_SWEEP_SECONDS
 
     cadence = DEFAULT_SWEEP_SECONDS if sweep_interval is None else float(sweep_interval)
     swept_at: float | None = None
@@ -1810,7 +1810,7 @@ def crew_resume_held(project, dry_run, pretty):
     the same sweep by hand.
     """
     from reckon.crew.node import CrewError
-    from reckon.crew.recover import sweep
+    from reckon.crew.resumption import sweep
 
     try:
         report = sweep(project, dry_run=dry_run)

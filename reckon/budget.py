@@ -775,7 +775,7 @@ def preflight(
             and isinstance(settings, Mapping)
             and bool(settings.get("budget_check"))
         ):
-            from reckon.crew.recover import probe_lane_availability
+            from reckon.crew.resumption import probe_lane_availability
 
             observation = probe_lane_availability(
                 project,
