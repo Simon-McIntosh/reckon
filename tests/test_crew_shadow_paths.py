@@ -50,6 +50,7 @@ def _node(manifest_path: str) -> crew.TaskNode:
         goal="record the launch matrix for one backend",
         plan="plan-a",
         section="§3",
+        spec_level="exact",
         done_when="uv run pytest tests/test_backends.py reports 34 passed",
         write_paths=["reckon/_backends.py"],
         time_budget="20m",
