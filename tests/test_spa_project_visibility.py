@@ -23,6 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SHELL = authored_shell_source(ROOT)
 SHARED = ROOT / "docs" / "ui" / "_shared.jsx"
 CREW = ROOT / "docs" / "ui" / "crew.jsx"
+HOME = ROOT / "docs" / "ui" / "home.jsx"
 TOPBAR = ROOT / "docs" / "ui" / "topbar.css"
 
 
@@ -75,25 +76,27 @@ def _evaluate(
 
 def test_topbar_is_one_row_with_four_within_project_tabs() -> None:
     source = _function_source(SHELL, "TopBar")
+    shell = SHELL.read_text()
     css = TOPBAR.read_text()
 
     assert "display: flex" in css
     assert "flex-wrap: nowrap" in css
     assert "margin-left: auto" in css
-    assert source.index('className="r-topbar-brand"') < source.index(
-        'className="r-project-manage"'
-    )
-    assert source.index('className="r-project-manage"') < source.index(
-        'className="r-glyph-tabs"'
-    )
-    assert source.index('className="r-glyph-tabs"') < source.index('className="top-r"')
-    assert source.index('className="top-r"') < source.index(
-        'className="r-cmdk-trigger"'
-    )
-    assert source.index('className="r-cmdk-trigger"') < source.index("<SM")
+    order = [
+        'className="r-topbar-brand"',
+        'className="r-topbar-search"',
+        'className="r-tabs-artifact"',
+        'className="r-tabs-work"',
+        'className="r-live-receipt"',
+        'className="r-project-manage"',
+        "<SM",
+    ]
+    indices = [source.index(marker) for marker in order]
+    assert indices == sorted(indices)
     assert ">Overview<" not in source
+    assert source.count("{tab.label}") == 2
     assert [
-        f"\n          {label}\n" in source
+        f'label: "{label}"' in shell
         for label in ("Plans", "Sprints", "Graph", "Crew")
     ] == [True] * 4
 
@@ -109,11 +112,14 @@ def test_topbar_keeps_one_ordered_row_with_tools_flush_right(
     expression = """(() => {
       const header = document.querySelector('.r-topbar');
       const brand = header?.querySelector('.r-topbar-brand');
+      const search = header?.querySelector('.r-topbar-search');
+      const artifactTabs = header?.querySelector('.r-tabs-artifact');
+      const workTabs = header?.querySelector('.r-tabs-work');
+      const receipt = header?.querySelector('.r-live-receipt');
       const project = header?.querySelector('.r-project-manage');
-      const tabs = header?.querySelector('.r-glyph-tabs');
       const tools = header?.querySelector('.top-r');
       const rect = element => element?.getBoundingClientRect();
-      const boxes = [brand, project, tabs, tools].map(rect);
+      const boxes = [brand, search, artifactTabs, workTabs, receipt, project, tools].map(rect);
       const headerBox = rect(header);
       const paddingRight = parseFloat(getComputedStyle(header).paddingRight);
       return {
@@ -125,11 +131,11 @@ def test_topbar_keeps_one_ordered_row_with_tools_flush_right(
       };
     })()"""
 
-    with served_spa(tmp_path, browser, route="#cockpit") as spa:
+    with served_spa(tmp_path, browser, route="#home") as spa:
         geometry = spa.run_probe(
             expression,
             viewport=(width, 900),
-            ready_expression="Boolean(document.querySelector('.r-topbar .top-r'))",
+            ready_expression="Boolean(document.querySelector('.r-topbar .r-tabs-work'))",
         )
 
     assert max(geometry["centers"]) - min(geometry["centers"]) <= 1
@@ -343,23 +349,19 @@ def test_toggling_a_hidden_project_back_on_reports_changed() -> None:
     assert change["locked"] is False
 
 
-def test_hidden_projects_leave_crew_and_overview_aggregates() -> None:
+def test_hidden_projects_leave_crew_and_home_aggregates() -> None:
     runs = [{"project": "alpha"}, {"project": "beta"}, {"project": "beta"}]
     crew_projects = _evaluate(
         [(CREW, "crewRunsForVisibleProjects")],
         f"crewRunsForVisibleProjects({json.dumps(runs)}, ['alpha']).map(run => run.project)",
     )
-    overview_projects = _evaluate(
-        [
-            (SHELL, "blockerIsUnresolved"),
-            (SHELL, "projectActiveSprints"),
-            (SHELL, "overviewProjectRows"),
-        ],
-        "overviewProjectRows([{project:'alpha',state:{} }], {}, []).map(row => row.project)",
+    home_projects = _evaluate(
+        [(HOME, "homeProjectRows")],
+        "homeProjectRows([{project:'alpha',plans_count:1}]).map(row => row.project)",
     )
 
     assert crew_projects == ["alpha"]
-    assert overview_projects == ["alpha"]
+    assert home_projects == ["alpha"]
 
 
 def test_hidden_project_remains_selectable_through_palette() -> None:
@@ -380,10 +382,10 @@ def test_hidden_project_remains_selectable_through_palette() -> None:
 
 
 def test_fleet_counts_distinguish_shown_from_mounted() -> None:
-    shell = SHELL.read_text()
+    home = HOME.read_text()
     crew = CREW.read_text()
     shared = SHARED.read_text()
 
-    assert "shown / ${mountedProjectCount} mounted" in shell
+    assert "{projects.length} of {mountedProjectCount} shown" in home
     assert "shown / {mountedProjectCount || 0} mounted" in crew
     assert "shown · {(projects || []).length} mounted" in shared

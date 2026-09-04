@@ -30,11 +30,6 @@ def routable_surfaces(state: Mapping[str, object]) -> tuple[dict[str, str], ...]
     sprint_id = str(state.get("active_sprint_id") or sprints[0]["id"])
     return (
         {"name": "home", "hash": "#home", "ready": ".r-home-project"},
-        {
-            "name": "cockpit",
-            "hash": "#cockpit",
-            "ready": ".r-overview-project-row",
-        },
         {"name": "plans", "hash": "#plans", "ready": ".r-list .r-row"},
         {
             "name": "plan-reader",
@@ -173,7 +168,7 @@ def file_spa_with_bootstrap(
     try:
         yield ServedSpa(
             browser=browser,
-            url=f"{page.resolve().as_uri()}#cockpit",
+            url=f"{page.resolve().as_uri()}#home",
             tmp_path=tmp_path,
         )
     finally:
