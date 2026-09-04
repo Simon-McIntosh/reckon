@@ -340,9 +340,25 @@ def test_a_foreign_projects_promoted_row_reaches_its_registered_checkout(
     assert not stray_ledger.exists()
 
 
-def test_a_promoted_row_without_a_resolvable_checkout_is_refused(home, repo) -> None:
+def test_an_explicit_checkout_is_used_when_the_mount_registry_is_absent(
+    home, repo
+) -> None:
+    promoted = ledger.append_run("imas-codex", MISROUTED_PROMOTED_ROW, root=repo)
+
+    requested_ledger = repo / "docs" / "state" / "imas-codex" / "crew.json"
+    assert promoted["path"] == str(requested_ledger)
+    assert ledger.runs("imas-codex", repo) == [MISROUTED_PROMOTED_ROW]
+    assert not (home / "mounts.json").exists()
+
+
+def test_a_promoted_row_without_a_resolvable_checkout_is_refused(
+    home, repo, tmp_path
+) -> None:
     mounts_path = home / "mounts.json"
     stray_ledger = repo / "docs" / "state" / "imas-codex" / "crew.json"
+    other_checkout = tmp_path / "other-checkout"
+    (other_checkout / "docs").mkdir(parents=True)
+    mounts_path.write_text(json.dumps({PROJECT: str(other_checkout / "docs")}) + "\n")
 
     with pytest.raises(ledger.LedgerError) as excinfo:
         ledger.append_run("imas-codex", MISROUTED_PROMOTED_ROW, root=repo)
