@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="native-agent-dispatch-guard">
   <meta name="plan-title" content="Native Background Agents Are Refused Where the Crew Ledger Rules">
   <meta name="plan-summary" content="A tool-boundary hook refuses new harness-native background agents in crew-managed repos; waivers cover crew-prepared in-harness runs and explicit override.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
@@ -22,10 +22,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="14">
-<meta name="plan-artifacts" content="~/.config/reckon/crew/reports/guard-reuse-map.md,reckon/hooks/native_agent_guard.py,tests/test_native_agent_guard.py">
-<meta name="plan-impl" content="0.9">
-<meta name="plan-commits" content="ba754c9,736dbfd">
+<meta name="plan-version" content="17">
+<meta name="plan-artifacts" content="reckon/hooks/native_agent_guard.py,reckon/cli.py,tests/test_native_agent_guard.py,tests/test_sync_hook_wiring.py,tests/test_skill_contracts.py,docs/evidence/archive/native-agent-dispatch-guard-landed.html">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-commits" content="736dbfd,ba754c9,e196e00,48cf59ac500d630505fe6085d274f445def26d82">
 </head>
 <body>
   <main class="plan-doc">
@@ -67,17 +67,20 @@
         <a href="/reckon/evidence/archive/native-agent-dispatch-guard-landed#s2-guard-reuse-map">§2 reuse map</a>.</p>
     </section>
 
-    <h2 id="s3">§3 — Distribution: reckon-sync owns the wiring</h2>
-    <p>
-      <code>reckon sync</code> installs or refreshes the hook wiring into a crew-managed
-      repository's harness settings the same way it owns CSS, mounts, and skill links —
-      idempotently, with a clean removal path, and never touching a repository that is not
-      crew-managed. The hook script itself stays in reckon so a fix lands once and reaches
-      every synced repository on its next sync.
-    </p>
-    <p><em>Done when:</em> a sync run on a synthetic temp repository installs the wiring
-      exactly once (a second run is a no-op, asserted byte-for-byte), and the removal path
-      leaves settings as found.</p>
+    <section id="s3" class="section-landed">
+      <header><span class="badge badge-shipped">&#10003; landed 2026-09-04</span>
+        <h2>§3 — Distribution: reckon-sync owns the wiring</h2></header>
+      <p class="landed-summary">The wiring was already installed at the assigned base —
+        <code>_configure_native_agent_guard</code> in <code>reckon/cli.py</code> from commit
+        <code>e196e00</code> — so what was genuinely absent was the measure, not the
+        mechanism. Added <code>tests/test_sync_hook_wiring.py</code>, 155 lines asserting
+        through the public <code>reckon sync</code> CLI: 3 passed in 0.37 s, one command
+        installed, second sync byte-for-byte identical, removal restoring the original
+        settings bytes, a stale command refreshed without duplication, and an unmanaged
+        repository untouched. Full record:
+        <a href="/reckon/evidence/archive/native-agent-dispatch-guard-landed#s3-sync-wiring-lands">§3 landed</a>
+        (commit <code>48cf59a</code>).</p>
+    </section>
 
     <section id="s4" class="section-landed">
       <header><span class="badge badge-shipped">&#10003; landed 2026-09-03</span>
@@ -112,12 +115,13 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-nag-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-verification="strict" data-written-by="reckon-3a" data-written-at="2026-08-26" data-recommends-skill="/reckon-ship native-agent-dispatch-guard" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-nag-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-verification="strict" data-written-by="reckon-3a" data-written-at="2026-08-26" data-recommends-skill="/reckon-ship native-agent-dispatch-guard" data-resolved-at="2026-09-04T11:29:37+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Ship the guard once the enforcement mode is locked</h4>
     <div class="r-fu-body"><p>The enforcement-mode decision is user-owned: it changes the
           default behavior of every session in every crew-managed repository. §2–§4 are executable
           the moment it locks; the recommended choice is hard-refuse with waivers.</p></div>
     <pre class="r-fu-prompt">/reckon-ship native-agent-dispatch-guard</pre>
+    <p class="r-fu-outcome">done - no followup. The enforcement mode locked to hard-refuse-with-waivers on 2026-09-03 and all three executable sections have landed: the hook (736dbfd), the rule locality fix across five files (ba754c9), the sync distribution path (e196e00) and its measure (48cf59a). impl 1.0, status shipped. The guard is live in every crew-managed repository on its next sync, refusing a harness-native background-agent spawn with two waivers - a crew-prepared in-harness run awaiting attachment, and a named environment override - and tests/test_skill_contracts.py fails the suite rather than quietly dropping the routing rule from any of the five files that carry it. No section, defect or open question remains against this plan.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -153,6 +157,12 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260904T082813071312-the-spawn-guard-is-wired-where-it-fires" data-who="codex-p" data-when="2026-09-04T08:42:49Z">
     <div class="r-comment-body"><p>The sync command registers the guard as a PreToolUse hook idempotently with a clean removal path, and it is now live in the operator's settings: verified end to end, a native Agent spawn is denied with routing advice and a Bash call passes untouched. Every pre-existing settings key is preserved and the file remains valid JSON. One defect recorded rather than fixed: the denial message resolves the wrong project for the reckon repository, naming imas-codex, while nova and imas-codex resolve correctly.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260904T102844580374-nag-sync-hook-wiring" data-who="s15-nag" data-when="2026-09-04T10:34:48Z">
+    <div class="r-comment-body"><p>3 passed in 0.37s through the reckon sync CLI: one hook installed, second sync byte-identical, removal restores original settings bytes, stale command refreshed without duplication, unmanaged repository untouched</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-nag-sync-wiring" data-who="reckon-ship" data-when="2026-09-04T13:27:22Z">
+    <div class="r-comment-body">nag-sync-hook-wiring landed - commit 48cf59a; gate uv run --no-sync pytest tests/test_sync_hook_wiring.py -q passed, 3 passed in 0.37s; measure: through the public reckon sync CLI, one hook command installed, the second sync byte-for-byte identical, the removal path restoring the original settings bytes, a stale command refreshed without duplication, and a non-crew-managed repository unchanged byte-for-byte; artifacts tests/test_sync_hook_wiring.py, 155 lines. The node found the mechanism already present at its base from commit e196e00, so the missing deliverable was the measure rather than the wiring - and the reason nobody knew is that e196e00 wrote no comment against this section, which is a binding obligation with no bound check one layer up from what this plan fixes.</div>
 </div>
 </section>
 </main>

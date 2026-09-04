@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T12:28:25",
+  "updated": "2026-09-04T13:28:01",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -697,18 +697,22 @@
         "id": "s15-burn",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a06bf7-7f00-7f93-acf6-fb0873235fde",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06bf7-7f00-7f93-acf6-fb0873235fde"
+        },
         "created": "2026-09-04"
       },
       {
         "id": "s15-coord",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a06bf7-e975-7910-b922-fe6cc0cda1eb",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06bf7-e975-7910-b922-fe6cc0cda1eb"
+        },
         "created": "2026-09-04"
       },
       {
@@ -724,36 +728,44 @@
         "id": "s15-nag",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a06bf6-cc64-7eb2-b58c-595fad466e3f",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06bf6-cc64-7eb2-b58c-595fad466e3f"
+        },
         "created": "2026-09-04"
       },
       {
         "id": "s15-riq",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a06bf6-94c3-78e0-81eb-47fffe6b0595",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06bf6-94c3-78e0-81eb-47fffe6b0595"
+        },
         "created": "2026-09-04"
       },
       {
         "id": "s15-scout",
         "harness": "claude",
         "role": "investigate",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a06bf1-fea2-7ad0-a429-6bf5fc86f6fa",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"read-only\"}": "01a06bf1-fea2-7ad0-a429-6bf5fc86f6fa"
+        },
         "created": "2026-09-04"
       },
       {
         "id": "s15-spec",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a06bf7-0453-78d3-bf82-6cd9145f63dc",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06bf7-0453-78d3-bf82-6cd9145f63dc"
+        },
         "created": "2026-09-04"
       },
       {
@@ -54847,6 +54859,595 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T102329781190-s15-reuse-scout",
+        "plan": "run-identity-query",
+        "section": "\u00a72",
+        "node": "s15-reuse-scout",
+        "node_definition": {
+          "done_when": "grep -c '^| ' on the report returns 15 or more rows, each row carrying a file:symbol reference, one of the five subject areas (run-identity query surface; dispatch cost and rework metrics; refusing harness-native background agents; locally served worker backends; fleet liveness and worktree gc), and a one-line fitness verdict of reuse, extend or unfit",
+          "estimated_hours": 0.5,
+          "goal": "Write a reuse map at the named report path listing existing reckon modules, symbols and tests that already solve part of each S15 subject area",
+          "id": "s15-reuse-scout",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T102329781190-s15-reuse-scout/manifest.md",
+          "plan": "run-identity-query",
+          "requires_decisions": [],
+          "role": "investigate",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "20m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/s15-reuse-map.md"
+          ]
+        },
+        "role": "investigate",
+        "spec_level": "guided",
+        "member": "s15-scout",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "read-only"
+        },
+        "dispatched_at": "2026-09-04T10:23:36Z",
+        "completed_at": "2026-09-04T10:30:42Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 426,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 426,
+        "stalled": false,
+        "time_budget": "20m",
+        "base_sha": "7bfd2302b9a27453577efb58529339f4f3ec9d87",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "grep -c '^| ' /home/ITER/mcintos/.config/reckon/crew/reports/s15-reuse-map.md",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/scout-gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T102329781190-s15-reuse-scout/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06bf1-fea2-7ad0-a429-6bf5fc86f6fa",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 5203840,
+            "cached_input_tokens_cumulative": 5203840,
+            "input_tokens": 5420902,
+            "input_tokens_cumulative": 5420902,
+            "output_tokens": 18907,
+            "output_tokens_cumulative": 18907,
+            "reasoning_output_tokens": 5532,
+            "reasoning_output_tokens_cumulative": 5532
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2700,
+              "classification": "blocked",
+              "detail": "the worker manifest reports blocked: \"The Graph tab can consume roadmap-owned endpoint rows; but the only HTTP composition path calls ready_set_view(); which currently returns only project; ready; review; and sprint fields; _attach_ready_set() therefore cannot place endpoints in window.STATE. The two rendered tests construct the same endpoint-free state. Those necessary transport and fixture changes are outside this node's exclusive write paths; leaving the done-when at 13 passed and 2 failed.\"",
+              "elapsed_seconds": 2517,
+              "external_wait": null,
+              "log_age_seconds": 1698,
+              "log_fresh": false,
+              "manifest_commits": [
+                "[\"8bff3e43903a5c974016e3edb5601eebc6aa7691\"]; changed_paths: [\"reckon/roadmap.py\"",
+                "\"docs/ui/graph.jsx\"",
+                "\"tests/test_roadmap_endpoints.py\"]"
+              ],
+              "manifest_derived": false,
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T094130968040-endpoint-enumeration/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "blocked",
+              "marker": "!",
+              "needs_help_complete": false,
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T094130968040-endpoint-enumeration/manifest.md; resolve the blocker before resuming the run",
+              "node": "endpoint-enumeration",
+              "phase": "starting",
+              "plan": "derived-state-parity",
+              "process_alive": null,
+              "project": "reckon",
+              "run_id": "r-20260904T094130968040-endpoint-enumeration",
+              "session": "ship-s16",
+              "terminal_age_seconds": 1734,
+              "terminal_at": "2026-09-04T09:54:40Z",
+              "wait_age_seconds": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16/endpoint-enumeration"
+            }
+          ]
+        },
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 24439,
+          "peak_input_tokens": 10624742
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "a read-only investigate node whose deliverable is a report outside the repository",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "investigate",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260904T102844580374-nag-sync-hook-wiring",
+        "plan": "native-agent-dispatch-guard",
+        "section": "\u00a73",
+        "node": "nag-sync-hook-wiring",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_sync_hook_wiring.py -q passes, asserting a first sync on a synthetic temp repository installs the wiring once, a second run is a byte-for-byte no-op, the removal path leaves settings as found, and a non-crew-managed repository is untouched; the behaviour is reachable from the reckon sync CLI entry point",
+          "estimated_hours": 1.0,
+          "goal": "Make reckon sync install and refresh the native-agent guard hook wiring in a crew-managed repository's harness settings",
+          "id": "nag-sync-hook-wiring",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T102844580374-nag-sync-hook-wiring/manifest.md",
+          "plan": "native-agent-dispatch-guard",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/cli.py",
+            "tests/test_sync_hook_wiring.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s15-nag",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T10:28:51Z",
+        "completed_at": "2026-09-04T10:34:48Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 357,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 357,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "319db8de5cd81cf9c95e1b80e8b2b894c6e884cd",
+        "commits": [
+          "48cf59ac500d630505fe6085d274f445def26d82"
+        ],
+        "changed_lines": {
+          "added": 155,
+          "removed": 0,
+          "files": 1
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "uv run --no-sync pytest tests/test_sync_hook_wiring.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T102844580374-nag-sync-hook-wiring/pytest-sync-hook-wiring-after-format.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T102844580374-nag-sync-hook-wiring/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06bf6-cc64-7eb2-b58c-595fad466e3f",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3596032,
+            "cached_input_tokens_cumulative": 3596032,
+            "input_tokens": 3713606,
+            "input_tokens_cumulative": 3713606,
+            "output_tokens": 15045,
+            "output_tokens_cumulative": 15045,
+            "reasoning_output_tokens": 5469,
+            "reasoning_output_tokens_cumulative": 5469
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 20514,
+          "peak_input_tokens": 7309638
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_sync_hook_wiring.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260904T102858701261-dcdn-spec-level-required",
+        "plan": "dispatch-cost-per-durable-node",
+        "section": "\u00a75",
+        "node": "dcdn-spec-level-required",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_crew_node.py -q passes with a new case asserting a dispatch omitting --spec-level exits 2 naming spec-level among the checked properties, and skills/reckon-ship/SKILL.md carries it as an eighth checklist box",
+          "estimated_hours": 1.0,
+          "goal": "Make a declared specification level a required property of the pre-dispatch node contract",
+          "id": "dcdn-spec-level-required",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T102858701261-dcdn-spec-level-required/manifest.md",
+          "plan": "dispatch-cost-per-durable-node",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/crew/node.py",
+            "tests/test_crew_node.py",
+            "skills/reckon-ship/SKILL.md"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s15-spec",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T10:29:05Z",
+        "completed_at": "2026-09-04T10:37:26Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 501,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 501,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "319db8de5cd81cf9c95e1b80e8b2b894c6e884cd",
+        "commits": [
+          "d5811b204966f31db83bab190b6440a6eb7b9842"
+        ],
+        "changed_lines": {
+          "added": 69,
+          "removed": 6,
+          "files": 3
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "uv run pytest tests/test_crew_node.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T102858701261-dcdn-spec-level-required/test_crew_node.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T102858701261-dcdn-spec-level-required/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06bf7-0453-78d3-bf82-6cd9145f63dc",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 5877760,
+            "cached_input_tokens_cumulative": 5877760,
+            "input_tokens": 6016399,
+            "input_tokens_cumulative": 6016399,
+            "output_tokens": 19563,
+            "output_tokens_cumulative": 19563,
+            "reasoning_output_tokens": 9061,
+            "reasoning_output_tokens_cumulative": 9061
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 28624,
+          "peak_input_tokens": 11894159
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_crew_node.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260904T102927554308-dcdn-burn-multiple",
+        "plan": "dispatch-cost-per-durable-node",
+        "section": "\u00a76",
+        "node": "dcdn-burn-multiple",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_budget.py -q passes with new cases asserting the burn multiple is utilisation divided by window-elapsed derived from rate_limit_period_minutes and resets_at, that a lane at 13 percent utilisation with 1.7 percent of the window elapsed reports 7.6, that an unknown period reports unknown rather than a number, and that no wave is held on the figure; the value is reachable from crew(view='budget') and named in the preflight summary",
+          "estimated_hours": 1.5,
+          "goal": "Report the burn multiple beside utilisation wherever budget position is reported today, without holding on it",
+          "id": "dcdn-burn-multiple",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T102927554308-dcdn-burn-multiple/manifest.md",
+          "plan": "dispatch-cost-per-durable-node",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/budget.py",
+            "tests/test_budget.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s15-burn",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T10:29:36Z",
+        "completed_at": "2026-09-04T10:38:42Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 546,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 546,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "cea3934dfc215c24a7d7f48d8926d79b4e850ccf",
+        "commits": [
+          "db329f84e6eecc232e8cf41f35e828f84365dee8"
+        ],
+        "changed_lines": {
+          "added": 171,
+          "removed": 21,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "uv run pytest tests/test_budget.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T102927554308-dcdn-burn-multiple/after-test-budget.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T102927554308-dcdn-burn-multiple/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06bf7-7f00-7f93-acf6-fb0873235fde",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 6466560,
+            "cached_input_tokens_cumulative": 6466560,
+            "input_tokens": 6612697,
+            "input_tokens_cumulative": 6612697,
+            "output_tokens": 22866,
+            "output_tokens_cumulative": 22866,
+            "reasoning_output_tokens": 8818,
+            "reasoning_output_tokens_cumulative": 8818
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 31684,
+          "peak_input_tokens": 13079257
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_budget.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260904T102830449837-riq-runs-view",
+        "plan": "run-identity-query",
+        "section": "\u00a72",
+        "node": "riq-runs-view",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_crew_runs_view.py -q passes, and crew(project, view='runs') is reachable through reckon/mcp.py so an MCP caller gets the rows without touching reckon/crew/query.py directly",
+          "estimated_hours": 2.5,
+          "goal": "Add a runs view to the crew MCP tool returning compact joined rows for the filters the section names",
+          "id": "riq-runs-view",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T102830449837-riq-runs-view/manifest.md",
+          "plan": "run-identity-query",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/query.py",
+            "reckon/mcp.py",
+            "tests/test_crew_runs_view.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s15-riq",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T10:28:36Z",
+        "completed_at": "2026-09-04T10:40:50Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 734,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 734,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "319db8de5cd81cf9c95e1b80e8b2b894c6e884cd",
+        "commits": [
+          "06b44041d580156b31d6d3da9e5ab3e318bc01b9"
+        ],
+        "changed_lines": {
+          "added": 545,
+          "removed": 6,
+          "files": 3
+        },
+        "tests_added": 10,
+        "gate": "passed",
+        "gate_check": {
+          "command": "uv run --no-sync pytest tests/test_crew_runs_view.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T102830449837-riq-runs-view/pytest-crew-runs-view-final.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T102830449837-riq-runs-view/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06bf6-94c3-78e0-81eb-47fffe6b0595",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 6929664,
+            "cached_input_tokens_cumulative": 6929664,
+            "input_tokens": 7222508,
+            "input_tokens_cumulative": 7222508,
+            "output_tokens": 29308,
+            "output_tokens_cumulative": 29308,
+            "reasoning_output_tokens": 12350,
+            "reasoning_output_tokens_cumulative": 12350
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 41658,
+          "peak_input_tokens": 14152172
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_crew_runs_view.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -55019,6 +55620,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 902
+    "_version": 913
   }
 }

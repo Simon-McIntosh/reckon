@@ -108,20 +108,38 @@
       already in use by the next worker within the hour, with no prompt telling it to.
     </p>
 
-    <h2 id="s3-open">&sect;3 remains open</h2>
+    <h2 id="s3-sync-wiring-lands">&sect;3 &mdash; The wiring was already installed; what was missing was the proof</h2>
     <p>
-      Of the plan's four numbered sections, this record closes two. &sect;1 is scene-setting
-      rather than a gated deliverable &mdash; it carries no &ldquo;done when&rdquo; clause
-      of its own and neither needs nor produces a landing entry. &sect;2 and &sect;4 are
-      recorded above. <strong>&sect;3 &mdash; distributing the hook wiring through
-      <code>reckon sync</code> &mdash; has landed nothing</strong>: no commit, no artifact,
-      and no comment against it anywhere in the plan. The reuse survey above named the
-      reason: nothing in reckon currently writes a harness hook setting, so &sect;3 is a
-      new artifact class for sync rather than a step beside the CSS and mounts wiring it
-      already owns, and no node has yet been dispatched to build it. The plan's own
-      <code>plan-impl</code> of 0.75 is consistent with this record: three of the plan's
-      four executable outcomes have landed, and the fourth &mdash; the sync-side
-      installation and removal path &mdash; is still undispatched.
+      Landed 2026-09-04, commit <code>48cf59a</code>, gate
+      <code>uv run --no-sync pytest tests/test_sync_hook_wiring.py -q</code> &mdash;
+      <strong>3 passed in 0.37&nbsp;s</strong>, 155 insertions in one file.
+      The node was dispatched to build the sync-side installation and removal path, and
+      found it already present at its assigned base in <code>reckon/cli.py</code> from
+      commit <code>e196e00</code>: <code>_configure_native_agent_guard</code> recognises a
+      repository-local <code>crew.json</code> or <code>flight.yaml</code>, installs or
+      refreshes exactly one Agent <code>PreToolUse</code> command hook, preserves unrelated
+      hook configuration, exposes <code>--remove-native-agent-guard</code>, and skips a
+      repository that is not crew-managed. So the deliverable that was genuinely absent was
+      the measure, not the mechanism, and the commit is a test file alone.
+    </p>
+    <p>
+      The three cases assert through the public <code>reckon sync</code> CLI rather than
+      through the helper that holds the mechanism: a first sync installs one command; a
+      second sync is <em>byte-for-byte</em> identical; the removal path restores the
+      original settings bytes exactly; a stale command is refreshed without duplication;
+      and a non-crew-managed repository's settings are unchanged byte-for-byte. Ruff check
+      and format pass on the changed path, and the commit touches exactly one declared
+      path.
+    </p>
+    <p>
+      <strong>What this record corrects.</strong> The paragraph this section replaces
+      reported &sect;3 as having landed nothing, and read the plan's <code>plan-impl</code>
+      of 0.75 as consistent with that. Both statements were true of the plan's own comment
+      trail and false of the tree: the implementation had landed under a commit that never
+      wrote a comment against &sect;3, which is the same defect this plan exists to fix one
+      layer up &mdash; a binding obligation with no bound check. An evidence record derived
+      from plan comments alone cannot see a commit that skipped them, so the currency audit
+      that found this ran against the code and not against the page.
     </p>
 
   </main>

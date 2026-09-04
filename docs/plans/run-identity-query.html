@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="run-identity-query">
   <meta name="plan-title" content="Ask For a Run by Name">
-  <meta name="plan-summary" content="One read that answers a run's id, its session with provenance, and whether it can be resumed — across the config home and every repository.">
+  <meta name="plan-summary" content="One read that answers a run&#x27;s id, its session with provenance, and whether it can be resumed — across the config home and every repository.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="7.0">
@@ -25,6 +25,10 @@
   <title>Ask For a Run by Name | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-04">
+<meta name="plan-version" content="3">
+<meta name="plan-commits" content="06b44041d580156b31d6d3da9e5ab3e318bc01b9">
+<meta name="plan-impl" content="0.333">
 </head>
 <body>
 <main class="plan-doc">
@@ -145,39 +149,39 @@
 
 <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="tool-shape" data-choice="ninth-view-on-crew" data-by="reckon-ship (deduced from the tool's own docstring)" data-when="2026-09-04">
-    <p class="r-dec-q">Is this a new MCP tool or another view on <code>crew</code>?</p>
+<div class="r-dec" data-key="tool-shape" data-choice="ninth-view-on-crew" data-by="reckon-ship (deduced from the tool&#x27;s own docstring)" data-when="2026-09-04">
+    <p class="r-dec-q">Is this a new MCP tool or another view on crew ?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="ninth-view-on-crew">A ninth view on the existing crew tool</button>
-      <button class="r-opt" data-value="new-runs-tool">A new <code>runs</code> tool</button>
-    </p>
+      <button class="r-opt chosen" data-value="ninth-view-on-crew">A ninth view on the existing crew tool</button>
+      <button class="r-opt" data-value="new-runs-tool">A new runs tool</button>
+      </p>
     <p class="r-dec-rat">The surface was deliberately collapsed to one crew tool over eight views rather than eight tools, and its docstring says so. A second tool covering the same subject splits the surface and invites the two to answer differently, which is the defect this plan exists to remove.</p>
-</div>
+    </div>
 <div class="r-dec" data-key="session-resolution" data-choice="call-resolve-session" data-by="reckon-ship (coordinated with the plan that authored it)" data-when="2026-09-04">
     <p class="r-dec-q">How does a row resolve its session id?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="call-resolve-session">Call <code>resolve_session</code>, the shared resolver</button>
+      <button class="r-opt chosen" data-value="call-resolve-session">Call resolve_session , the shared resolver</button>
       <button class="r-opt" data-value="read-pointer-only">Read the pointer field</button>
       <button class="r-opt" data-value="reimplement-the-walk">Reimplement the three-source walk locally</button>
-    </p>
+      </p>
     <p class="r-dec-rat">Reading the pointer alone is the measured defect: it reported null for five runs whose ids were in their streams. Reimplementing the walk creates a second authority that can drift from the resume path, and the whole value of the field is that a query and a resume agree about the same run.</p>
-</div>
+    </div>
 <div class="r-dec" data-key="absent-session-representation" data-choice="stated-absence-naming-sources" data-by="reckon-ship (deduced from the incident)" data-when="2026-09-04">
     <p class="r-dec-q">How is a run with no discoverable session represented?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="stated-absence-naming-sources">A stated absence naming the sources consulted</button>
+      <button class="r-opt chosen" data-value="stated-absence-naming-sources">A stated absence naming the sources consulted</button>
       <button class="r-opt" data-value="bare-null">A null session id</button>
-    </p>
-    <p class="r-dec-rat">A bare null cannot distinguish <em>not yet observed</em> from <em>genuinely absent</em>, and a coordinator read one as a verdict on five runs and promoted them. The distinction is the whole reason the field is worth reporting.</p>
-</div>
+      </p>
+    <p class="r-dec-rat">A bare null cannot distinguish not yet observed from genuinely absent , and a coordinator read one as a verdict on five runs and promoted them. The distinction is the whole reason the field is worth reporting.</p>
+    </div>
 <div class="r-dec" data-key="default-row-size" data-choice="compact-with-opt-in-fields" data-by="reckon-ship (deduced from measured response sizes)" data-when="2026-09-04">
     <p class="r-dec-q">What does a row return by default?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="compact-with-opt-in-fields">Fifteen short fields, with <code>fields</code> opting into more</button>
-      <button class="r-opt" data-value="full-record">The full record, as <code>records</code> does</button>
-    </p>
-    <p class="r-dec-rat">Three existing reads exceeded the response ceiling in one session and had to be answered through a spill file. A query whose default answer cannot be read is a query nobody uses, and the callers that need everything already have <code>records</code>.</p>
-</div>
+      <button class="r-opt chosen" data-value="compact-with-opt-in-fields">Fifteen short fields, with fields opting into more</button>
+      <button class="r-opt" data-value="full-record">The full record, as records does</button>
+      </p>
+    <p class="r-dec-rat">Three existing reads exceeded the response ceiling in one session and had to be answered through a spill file. A query whose default answer cannot be read is a query nobody uses, and the callers that need everything already have records .</p>
+    </div>
 </section>
 
 <section data-reckon="followups" id="followups" class="r-followups">
@@ -186,13 +190,23 @@
     <h4 class="r-fu-title">Land the view, then its provenance, then its span</h4>
     <div class="r-fu-body"><p>All three nodes write <code>reckon/crew/query.py</code>, so they are one serial lane on one roster member in section order: the view and its filters first, then session provenance and the resumability verdict, then workstation scope. Each lands with its named test and the third carries the recorded run against this workstation's real config home for the gate.</p></div>
     <pre class="r-fu-prompt">/reckon-ship run-identity-query</pre>
-</article>
+    </article>
 </section>
 
 <section data-reckon="research" id="research" class="r-research-list">
 <h2><span class="sec">§</span> Research</h2>
-<div class="r-research" data-id="r1" data-type="incident" data-url="work-survives-a-provider-outage">
-  <span class="r-research-title">The outage that measured every failure in &#167;1: five runs promoted as unresumable whose session ids were in their streams, and the worktree release that made a recoverable outage look like a loss.</span>
+<div class="r-research" data-id="r1" data-type="incident" data-source="" data-added-by="" data-when="" data-url="work-survives-a-provider-outage">
+    <span class="r-research-title"><a href="work-survives-a-provider-outage">The outage that measured every failure in §1: five runs promoted as unresumable whose session ids were in their streams, and the worktree release that made a recoverable outage look like a loss.</a></span></div>
+</section>
+<section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260904T102329781190-s15-reuse-scout" data-who="s15-scout" data-when="2026-09-04T10:30:42Z">
+    <div class="r-comment-body"><p>Reuse map delivered: 47 candidate rows across the five S15 subject areas, each with a file:symbol reference and a reuse/extend/unfit verdict</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260904T102830449837-riq-runs-view" data-who="s15-riq" data-when="2026-09-04T10:40:50Z">
+    <div class="r-comment-body"><p>10 passed in 1.67s plus test_ledger.py 73 passed as the compatibility gate; crew(view='runs') returns 15 default fields with 5 opt-in, 8 filters and 3 source modes, newest-first per node, newest_per_node collapsing attempts, and no watcher or follower payload</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-riq-runs-view" data-who="reckon-ship" data-when="2026-09-04T13:28:00Z">
+    <div class="r-comment-body">runs-view-and-filters landed - commit 06b4404; gate uv run pytest tests/test_crew_runs_view.py -q passed, 10 passed in 1.67s, with tests/test_ledger.py 73 passed as the compatibility gate; measure: the view returns 15 default row fields with 5 opt-in, 8 filters and 3 source modes, newest-first per node, newest_per_node collapsing an attempt history to one row, and no watcher or follower payload; artifacts reckon/crew/query.py (265 lines), the runs branch in reckon/mcp.py, tests/test_crew_runs_view.py. The scout's reuse map corrected two references the section carries: resolve_session lives in reckon/crew/resumption.py rather than recover.py, and the workstation project-to-repository join is reckon/crew/routing.py:mounted_repository_projects - both matter to the two nodes still to run in this lane.</div>
 </div>
 </section>
 </main>
