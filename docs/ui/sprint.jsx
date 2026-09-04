@@ -73,6 +73,7 @@ function sprintMemberSlugs(sprint) {
 }
 
 function sprintMembers(sprint, inventory) {
+  if (Array.isArray(sprint?.members)) return sprint.members.filter(member => member.found !== false);
   const bySlug = new Map((inventory || []).map(plan => [plan.slug, plan]));
   return sprintMemberSlugs(sprint).map(slug => bySlug.get(slug)).filter(Boolean);
 }
@@ -91,32 +92,19 @@ function derivedFlowChainHours(inventory, runs, project, now = new Date()) {
   return window.ReckonCrewSchedule.farEnd(inventory, runs, project, now);
 }
 
-// State is derived from members, never read from the sprint's own status
-// field, because the field can silently drift from what actually landed.
-function derivedSprintState(sprint, inventory) {
-  const members = sprintMembers(sprint, inventory);
-  const authored = sprint?.status || "planned";
-  let state;
-  if (!members.length) state = "empty";
-  else if (members.every(plan => Number(plan.impl || 0) >= 1)) state = "shipped";
-  else if (members.some(plan => Number(plan.impl || 0) > 0 || plan.status === "active")) state = "active";
-  else state = "planned";
-  const heldCount = members.filter(plan => plan.status === "blocked").length;
-  const flag = authored !== state
-    ? `was ${authored}`
-    : (heldCount > 0 ? `${heldCount} held` : null);
-  const meanImpl = members.length
-    ? members.reduce((sum, plan) => sum + Number(plan.impl || 0), 0) / members.length
-    : 0;
-  return { state, flag, heldCount, members, meanImpl };
-}
-
 function sprintStateRows(sprints, inventory) {
   return (sprints || []).map(sprint => {
-    const derived = derivedSprintState(sprint, inventory);
-    const hours = sprintHoursSummary(derived.members);
-    const closed = derived.state === "shipped" || CLOSED_SPRINT_AUTHORED_STATUSES.has(sprint.status);
-    return { sprint, ...derived, hours, closed };
+    const members = sprintMembers(sprint, inventory);
+    const state = sprint.derived_state || "unknown";
+    const drift = sprint.state_drift;
+    const heldCount = Number(sprint.blocked || 0);
+    const flag = drift
+      ? `was ${drift.stored}`
+      : (heldCount > 0 ? `${heldCount} held` : null);
+    const meanImpl = Number(sprint.implementation_pct || 0) / 100;
+    const hours = sprintHoursSummary(members);
+    const closed = state === "shipped" || CLOSED_SPRINT_AUTHORED_STATUSES.has(sprint.status);
+    return { sprint, state, flag, heldCount, members, meanImpl, hours, closed };
   });
 }
 
