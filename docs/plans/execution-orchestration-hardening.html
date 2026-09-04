@@ -11,14 +11,14 @@
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort" content="L">
-  <meta name="plan-sprint" content="S6">
+  <meta name="plan-sprint" content="S17">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-depends-on" content="codex-agent-context-compatibility,research-evidence-provenance,model-capability-schema">
   <title>Execution and Orchestration Hardening | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="22">
+<meta name="plan-modified" content="2026-09-04">
+<meta name="plan-version" content="23">
 <meta name="plan-impl" content="0.6">
 <meta name="plan-capability-version" content="1.0">
 <meta name="plan-capability-class" content="orchestrator">
@@ -72,7 +72,7 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-eoh-01" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship execution-orchestration-hardening" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-eoh-01" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="codex" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship execution-orchestration-hardening" data-resolved-at="2026-09-04T08:50:38+00:00" data-resolved-by="agent">
     <h4 class="r-fu-title">Build the portable execution ledger and bounded sprint surface</h4>
     <div class="r-fu-body"><p>Begin after the context manifest and provenance types land, then refactor the skill and MCP around capability-aware, evidence-gated execution.</p></div>
     <pre class="r-fu-prompt">Project: reckon
@@ -96,6 +96,7 @@ Done-when
   1. Bounded sprint operations and portable resumable execution land with failure tests
   2. tests still green
   3. followup written + this followup marked resolved</pre>
+    <p class="r-fu-outcome">Overtaken by the concrete open continuations for merge-time validation, promotion truth and worktree provisioning; the umbrella instruction is no longer the executable next step.</p>
     </article>
 <article class="r-fu" data-id="f-eoh-sprint-delivery-20260729" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-ship" data-written-at="2026-07-29" data-recommends-skill="/reckon-ship reckon:S5" data-resolved-at="2026-07-29T09:59:53+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Deliver the sprint orchestration skill slice</h4>
@@ -125,19 +126,26 @@ Done-when
     <div class="r-fu-body"><p>A worker's gate runs against the base revision its worktree was branched from, so a contract landed <em>after</em> that base cannot bind it — the run is legitimately green and the merge turns the primary branch red. Measured 2026-08-25: <code>4d7fdf8</code> (09:55) introduced a contract asserting every registered <code>crew</code> verb is named in the ship skill or explicitly exempt; <code>4656c7a</code> (09:58) registered <code>reckon crew shadow</code> from a worktree branched before it, passing its own full suite at 2357/2357; the merge <code>c82cf57</code> (10:09) turned main red and a peer session caught it three minutes later. The repair was one sentence plus one registry row (<code>a3c9f2b</code>), but the class recurs whenever a contract and the code it governs land in the same window from different bases.</p><p>The durable fix is at integration, not in the worker: re-run the affected gate against the merge result before the coordinator pushes, so what is verified is the tree that ships rather than the tree the worker started from. Note the coordinator already performs a scoped audit at this moment (<code>git show --stat</code> against declared scope), so the hook exists — what is missing is executing the check at the integrated revision. Reported independently by two peer sessions as the merge-time analogue of a monitor that reports success because it never looked.</p></div>
     <pre class="r-fu-prompt">/reckon-ship execution-orchestration-hardening</pre>
     </article>
-<article class="r-fu" data-id="f-eoh-03" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-ship crew-effort-routing §6 session 2026-08-25" data-written-at="2026-08-25" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-eoh-03" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-ship crew-effort-routing §6 session 2026-08-25" data-written-at="2026-08-25" data-recommends-skill="" data-resolved-at="2026-09-04T08:50:38+00:00" data-resolved-by="agent">
     <h4 class="r-fu-title">Dispatch payload must tell a session whether it holds the watcher seat</h4>
     <div class="r-fu-body"><p>Reported by two independent orchestration sessions (nova-18 2026-08-25; a second session 2026-08-21, nine dispatched nodes). <code>reckon crew dispatch</code> returns <code>watch.watcher_live</code>, computed by <code>project_watch_visibility</code> (<code>reckon/crew/runs.py</code>) from three project-global facts — the advisory lock being held, the registering process alive, and <code>observer_alive</code> — with no comparison against the caller's identity. So a session that does <em>not</em> hold the seat receives <code>watcher_live: true</code> on every dispatch, satisfies the watcher requirement, and is never wake-capable, because wake delivery is session-local while the requirement is project-global.</p><p>The failure is silent by construction — no error, no refusal, no artifact, only work that quietly never notifies — and it sent both sessions to hand-rolled manifest-polling loops. <code>reckon crew follow</code> now supplies the missing capability, but a session cannot learn it needs <code>follow</code> rather than <code>watch</code> while the payload reports everything is fine; one of the two reported reading the skill's liveness guidance and still shipping polling loops, which is the argument against a documentation-only fix.</p><p>Proposed: add <code>watch.seat_is_yours</code> (boolean) beside <code>watcher_live</code>, turning an invisible condition into a branchable one. Cheap by inspection — the watch record already stores <code>parent_pid</code> and <code>parent_start_time</code> and <code>project_watch_visibility</code> already reads both to derive <code>observer_alive</code>; only the derived boolean escapes today. No new capture, no new record field, no lock-file format change: a comparison against the caller's own process using values already in scope.</p></div>
     <pre class="r-fu-prompt">/reckon-ship execution-orchestration-hardening</pre>
+    <p class="r-fu-outcome">Overtaken by shipped session attachment enforcement: dispatch requires session_attached and the watcher contract exposes the scoped attach line.</p>
     </article>
-<article class="r-fu" data-id="f-eoh-promotion-truth" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-verification="strict" data-written-by="reckon-d8-s16-veracity-review" data-written-at="2026-08-26T15:38:00+00:00" data-recommends-skill="/reckon-ship execution-orchestration-hardening" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-eoh-promotion-truth" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-verification="strict" data-written-by="reckon-d8-s16-veracity-review" data-written-at="2026-08-26T15:38:00+00:00" data-recommends-skill="/reckon-ship execution-orchestration-hardening" data-resolved-at="2026-09-04T08:50:38+00:00" data-resolved-by="agent">
     <h4 class="r-fu-title">Make promotion validate what it records: six repairs from the S16 process audit</h4>
     <div class="r-fu-body">The S16 fleet audit (72 runs; report at crew/reports/s16-veracity-20260826/rev-process-audit.md) named six promotion-machinery defects, each observed in the wild: (1) promotion stores a partial commit stat instead of validating the cumulative base-to-tip diff against declared write_paths, so a scope escape was recorded clean (ea5d17e8, scope_changed=false); (2) a verifier can promote against a commit with no producer run in the ledger — an orphaned verification edge that cannot demonstrate independence; (3) a completed producer's gate can be retroactively rewritten by a later verifier's added requirement instead of freezing against its own done-when; (4) complete static audits are stored not-run because no command-shaped gate_check exists, making successful read-only investigations indistinguishable from zero-capacity runs; (5) legacy rows lack persisted node_definition.write_paths, so commit-bearing runs are retrospectively unauditable; (6) failure_classification membership is checked but not semantic consistency (a completed committing producer stored as correct-refusal). Each repair statement in the report is concrete and testable.</div>
     <pre class="r-fu-prompt">/reckon-ship execution-orchestration-hardening</pre>
+    <p class="r-fu-outcome">The first promotion-truth repair shipped; the unresolved repairs are carried by the narrowed continuation added in this triage.</p>
     </article>
 <article class="r-fu" data-id="f-eoh-worktree-provisioning" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-02" data-recommends-skill="/reckon-ship execution-orchestration-hardening" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Dispatch does not provision the worktree environment symlinks the guidance requires</h4>
     <div class="r-fu-body"><p>Agent guidance binds worktree provisioning to the moment of creation, because every other instruction depends on a worker remembering to set <code>UV_PROJECT_ENVIRONMENT</code> on each command, and one that forgets builds a second multi-gigabyte environment. <code>reckon crew dispatch</code> does not do it: it creates the worktree and links neither <code>.venv</code> to the root checkout nor the gitignored <code>.env</code>.</p><p>Measured on 2026-09-02 across all 14 live worktrees under this repository's fleet root, spanning at least five sessions: <strong>14 of 14 report <code>venv=none</code> and <code>env=missing</code></strong>. A verification node surfaced it after falling back to the root interpreter's absolute path to run the suite, which worked but is the fallback rather than the contract.</p><p>The severity is lower than the rule implies and the reason is worth keeping: <strong>0 of the 14 hold a real <code>.venv</code> directory</strong>, so the expensive failure the rule exists to prevent is not occurring — workers reach for the absolute path instead of letting <code>uv</code> create one. What is actually broken is that a plain <code>uv run</code> in a worktree would create a second environment, and that a fresh worktree has no credentials, so anything needing <code>.env</code> fails for a reason that looks like a code fault.</p><p>Note the paired detail when fixing: a bare <code>.venv</code> belongs in <code>.gitignore</code>, not only <code>.venv/</code>, or every provisioned worktree reports one untracked entry and the whole fleet reads as dirty.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship execution-orchestration-hardening</pre>
+    </article>
+<article class="r-fu" data-id="f-eoh-promotion-truth-remaining" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="agent" data-written-at="2026-09-04 10:00" data-recommends-skill="/reckon-ship execution-orchestration-hardening" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Finish the unresolved promotion-truth repairs</h4>
+    <div class="r-fu-body">Keep the still-open repairs that distinguish committed, merged and content-surviving outcomes. Do not repeat the already-landed session attachment or first promotion repair.</div>
     <pre class="r-fu-prompt">/reckon-ship execution-orchestration-hardening</pre>
     </article>
 </section>
@@ -184,6 +192,9 @@ Done-when
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260826T224352258234-n-promotion-commit-resolution" data-who="dispatch-repair" data-when="2026-08-26T22:46:50Z">
     <div class="r-comment-body"><p>Promoted commits resolve before ledger write; abbreviations canonicalised; nonexistent SHAs refused by name</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260904T085038256761" data-who="agent" data-when="2026-09-04">
+    <div class="r-comment-body">TRIAGE VERDICT — still wanted. Re-homed to S17. The umbrella execution instruction, the session-attachment instruction and the already-landed first promotion repair were overtaken; the merge-time gate, remaining promotion-truth repairs and worktree provisioning remain current.</div>
 </div>
 </section>
 </main>
