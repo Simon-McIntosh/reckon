@@ -258,6 +258,16 @@ slots:
       is never a model call and consumes no worker budget.
     range: boolean
 
+  usable_input_window:
+    description: >-
+      Maximum input tokens this backend can hold after any output reservation
+      has already been removed. Dispatch compares this declared window with a
+      deterministic estimate of the node's standing instructions and named
+      repository files before creating a worktree. Absence means unbounded,
+      never zero: an unknown ceiling cannot justify refusing work.
+    range: integer
+    minimum_value: 1
+
   fallback:
     description: >-
       Backend to substitute when this one is held on budget. Declared, never
@@ -441,6 +451,7 @@ classes:
       - sandbox
       - session_reuse
       - budget_check
+      - usable_input_window
       - fallback
       - time_budget
 

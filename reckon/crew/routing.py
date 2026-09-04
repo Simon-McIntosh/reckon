@@ -14,7 +14,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
-from reckon import _plan_html, capabilities, flight, ledger
+from reckon import _backends, _plan_html, agent_context, capabilities, flight, ledger
 from reckon.calibration import agent_configuration_key
 
 from reckon.crew.node import (
@@ -42,6 +42,15 @@ if TYPE_CHECKING:
     from reckon.crew.dispatch import DispatchPlan
 
 # ── Routing ─────────────────────────────────────────────────────────────────
+
+_CONTEXT_BYTES_PER_TOKEN = 3.5
+_MEASURED_LAUNCH_CONTEXT_FLOOR_TOKENS = 50_392
+_NAMED_REPOSITORY_FILE = re.compile(
+    r"(?<![A-Za-z0-9_./-])(?:/?(?:[A-Za-z0-9_.-]+/)+"
+    r"[A-Za-z0-9_.-]+\.[A-Za-z][A-Za-z0-9]*|"
+    r"[A-Za-z0-9_-]+\.[A-Za-z][A-Za-z0-9]*)"
+    r"(?=[^A-Za-z0-9_./-]|$)"
+)
 
 
 def _role_overlay(
@@ -644,8 +653,8 @@ def _fleet_script() -> Path:
     dispatched repository therefore bought no isolation and made dispatch
     depend on a per-repository file that nothing installs — so a repository
     that had never been hand-provisioned could not be dispatched into at all,
-    which is the whole failure mode for a write repository named separately
-    from the plan's. One resolved copy also keeps the script and the reckon
+    which is the whole failure mode when the write repository and authority
+    repository differ. One resolved copy also keeps the script and the reckon
     that invokes it at the same version.
     """
     package_dir = Path(__file__).resolve().parent.parent
@@ -997,13 +1006,16 @@ def _agent_configuration(
 ) -> dict[str, Any]:
     """Return the exact worker configuration persisted on a run record."""
 
-    return {
+    configuration = {
         "backend": backend_name,
         "launch": launch_kind,
         "model": backend.get("model"),
         "effort": backend.get("effort"),
         "sandbox": backend.get("sandbox"),
     }
+    if backend.get("usable_input_window") is not None:
+        configuration["usable_input_window"] = backend["usable_input_window"]
+    return configuration
 
 
 def _session_member_id(session: str) -> str:
@@ -1146,6 +1158,169 @@ def reap_idle_session_members(
     return {"reaped": [], "idle_window": idle_window}
 
 
+def _tokens_for_bytes(byte_count: int) -> int:
+    """Return the repository's conservative token estimate for UTF-8 bytes."""
+
+    return math.ceil(max(0, byte_count) / _CONTEXT_BYTES_PER_TOKEN)
+
+
+def _context_agent(backend: Mapping[str, Any]) -> str:
+    """Return the instruction layout used by the resolved worker harness."""
+
+    if backend.get("launch") != "cli":
+        return "codex"
+    try:
+        return _backends.dialect_for(backend).name
+    except _backends.BackendError:
+        return "codex"
+
+
+def _standing_context_input(
+    repo: Path, backend: Mapping[str, Any]
+) -> tuple[int, dict[str, Any]]:
+    """Measure the instruction files loaded before repository work begins."""
+
+    home = Path(os.environ.get("HOME") or Path.home()).expanduser()
+    manifest = agent_context.build_context_manifest(
+        agent_context.ContextRequest(
+            target=repo,
+            user_home=home,
+            agent=_context_agent(backend),
+        )
+    )
+    records = list(manifest["instructions"]["effective_chain"])
+    canonical = manifest.get("canonical_policy") or {}
+    loaded = {
+        str(item.get("resolved_path") or item.get("path") or "") for item in records
+    }
+    canonical_path = str(canonical.get("resolved_path") or canonical.get("path") or "")
+    if canonical.get("readable") and canonical_path not in loaded:
+        records.append({**canonical, "scope": "user", "loaded_via": canonical_path})
+
+    inputs = [
+        {
+            "path": str(item.get("path") or ""),
+            "bytes": int(item.get("bytes") or 0),
+            "estimated_tokens": _tokens_for_bytes(int(item.get("bytes") or 0)),
+        }
+        for item in records
+        if item.get("readable")
+    ]
+    measured_tokens = sum(item["estimated_tokens"] for item in inputs)
+    return max(measured_tokens, _MEASURED_LAUNCH_CONTEXT_FLOOR_TOKENS), {
+        "calculated_tokens": measured_tokens,
+        "floor_tokens": _MEASURED_LAUNCH_CONTEXT_FLOOR_TOKENS,
+        "effective_tokens": max(measured_tokens, _MEASURED_LAUNCH_CONTEXT_FLOOR_TOKENS),
+        "token_estimator": f"ceil(utf8-bytes/{_CONTEXT_BYTES_PER_TOKEN})",
+        "files": inputs,
+    }
+
+
+def _named_repository_files(node: TaskNode) -> list[str]:
+    """Extract repository file names carried by the node's own declaration."""
+
+    text = f"{node.goal}\n{node.done_when}"
+    return sorted(set(_NAMED_REPOSITORY_FILE.findall(text)))
+
+
+def _context_file_inputs(
+    repo: Path, node: TaskNode
+) -> tuple[int, dict[str, list[dict[str, Any]]]]:
+    """Measure unique readable files named by scope or node declaration."""
+
+    counted: set[Path] = set()
+
+    def describe(raw: str) -> dict[str, Any]:
+        candidate = Path(raw).expanduser()
+        resolved = (
+            candidate if candidate.is_absolute() else repo / candidate
+        ).resolve()
+        record: dict[str, Any] = {
+            "declared": raw,
+            "path": str(resolved),
+            "bytes": 0,
+            "estimated_tokens": 0,
+            "counted": False,
+            "status": "missing",
+        }
+        if not resolved.is_relative_to(repo):
+            record["status"] = "outside-repository"
+            return record
+        try:
+            is_file = resolved.is_file()
+            byte_count = resolved.stat().st_size if is_file else 0
+        except OSError:
+            record["status"] = "unreadable"
+            return record
+        if not is_file:
+            record["status"] = "directory" if resolved.is_dir() else "missing"
+            return record
+        tokens = _tokens_for_bytes(byte_count)
+        record.update(
+            {
+                "bytes": byte_count,
+                "estimated_tokens": tokens,
+                "counted": resolved not in counted,
+                "status": "file",
+            }
+        )
+        counted.add(resolved)
+        return record
+
+    write_paths = [describe(str(path)) for path in node.write_paths]
+    named_files = [describe(path) for path in _named_repository_files(node)]
+    all_inputs = [*write_paths, *named_files]
+    file_tokens = sum(
+        int(item["estimated_tokens"]) for item in all_inputs if item["counted"]
+    )
+    return file_tokens, {"write_paths": write_paths, "named_files": named_files}
+
+
+def _context_fit_verdict(
+    *, resolution: DispatchPlan, repo: Path
+) -> dict[str, Any] | None:
+    """Compare one node's deterministic context estimate with its backend window."""
+
+    declared_window = resolution.backend_settings.get("usable_input_window")
+    if declared_window is None:
+        return None
+    try:
+        window_tokens = int(declared_window)
+    except (TypeError, ValueError) as exc:
+        raise CrewError(
+            f"backend {resolution.backend!r} declares a non-integer usable input "
+            f"window {declared_window!r}"
+        ) from exc
+    if window_tokens <= 0:
+        raise CrewError(
+            f"backend {resolution.backend!r} declares a non-positive usable input "
+            f"window {window_tokens}"
+        )
+
+    standing_tokens, standing = _standing_context_input(
+        repo, resolution.backend_settings
+    )
+    file_tokens, files = _context_file_inputs(repo, resolution.node)
+    estimated_tokens = standing_tokens + file_tokens
+    shortfall_tokens = max(0, estimated_tokens - window_tokens)
+    return {
+        "allowed": shortfall_tokens == 0,
+        "estimated_tokens": estimated_tokens,
+        "window_tokens": window_tokens,
+        "shortfall_tokens": shortfall_tokens,
+        "reason": (
+            "within-context-window"
+            if shortfall_tokens == 0
+            else "context-window-exceeded"
+        ),
+        "inputs": {
+            "standing_instructions": standing,
+            "repository_files": files,
+            "repository_file_tokens": file_tokens,
+        },
+    }
+
+
 def _estimated_hours(
     repo: Path, project: str, node: TaskNode
 ) -> tuple[float | None, str]:
@@ -1219,14 +1394,43 @@ def _competence_verdict(
         "cache_status": cache_status,
         "reason": "no-measured-horizon",
     }
+
+    def with_context_fit() -> dict[str, Any]:
+        context_fit = _context_fit_verdict(resolution=resolution, repo=repo)
+        if context_fit is None:
+            return verdict
+        verdict["context"] = context_fit
+        if context_fit["allowed"]:
+            return verdict
+        verdict.update(
+            {
+                "allowed": False,
+                "reason": "context-window-exceeded",
+                "estimated_tokens": context_fit["estimated_tokens"],
+                "window_tokens": context_fit["window_tokens"],
+                "shortfall_tokens": context_fit["shortfall_tokens"],
+                "recommendation": (
+                    "split the node or route it to a backend with at least "
+                    f"{context_fit['estimated_tokens']} usable input tokens"
+                ),
+            }
+        )
+        # ``CompetenceLimit`` is the established exit-5 envelope. Its legacy
+        # message renders neutral-hour fields, while callers consume this
+        # structured verdict; keep the constructor total until that message is
+        # made dimension-aware at its owning boundary.
+        verdict.setdefault("competence_horizon_hours", 0.0)
+        verdict.setdefault("target_size_hours", 0.0)
+        return verdict
+
     if cache_status == "stale":
         verdict["reason"] = "stale-capability-cache"
-        return verdict
+        return with_context_fit()
     if not math.isfinite(horizon_hours) or horizon_hours <= 0:
-        return verdict
+        return with_context_fit()
     if estimated_hours is None:
         verdict["reason"] = "no-estimated-hours"
-        return verdict
+        return with_context_fit()
 
     speed = configuration.get("speed") if configuration else None
     try:
@@ -1258,4 +1462,4 @@ def _competence_verdict(
             f"split into nodes no larger than {verdict['target_size_hours']} "
             "worker-hours for this agent configuration"
         )
-    return verdict
+    return with_context_fit()
