@@ -1915,6 +1915,22 @@ def crew_list(project, phase, session, mine, pretty):
     _emit(payload, pretty)
 
 
+@crew.command(name="directory")
+@click.option("--project", default=None, help="Return coordinators for one project.")
+@click.option("--run", "run_id", default=None, help="Resolve one live run's owner.")
+@click.option("--node", "node_id", default=None, help="Resolve one live node's owner.")
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_directory(project, run_id, node_id, pretty):
+    """Name live coordinators, what they are shipping, and where."""
+    from reckon.crew.directory import DirectoryError, directory
+
+    try:
+        result = directory(project, run_id=run_id, node_id=node_id)
+    except DirectoryError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit(result, pretty)
+
+
 @crew.command(name="drain")
 @click.option("--project", required=True, help="Project whose live pointers to drain.")
 @click.option(
