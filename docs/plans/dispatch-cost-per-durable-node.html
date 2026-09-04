@@ -24,10 +24,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="16">
-<meta name="plan-commits" content="d5811b204966f31db83bab190b6440a6eb7b9842,db329f84e6eecc232e8cf41f35e828f84365dee8,b99ccdf829c50659c34efdd354642b5a9cba6827">
-<meta name="plan-impl" content="0.5">
-<meta name="plan-artifacts" content="reckon/crew/node.py,reckon/budget.py,reckon/crew/dispatch.py,tests/test_crew_node.py,tests/test_budget.py,tests/test_crew_coordinator_spend.py,skills/reckon-ship/SKILL.md">
+<meta name="plan-version" content="18">
+<meta name="plan-commits" content="d5811b204966f31db83bab190b6440a6eb7b9842,db329f84e6eecc232e8cf41f35e828f84365dee8,b99ccdf829c50659c34efdd354642b5a9cba6827,0b146679a6585b480b35fed528801a1bd4acedf8">
+<meta name="plan-impl" content="0.667">
+<meta name="plan-artifacts" content="reckon/crew/node.py,reckon/budget.py,reckon/crew/dispatch.py,reckon/capabilities.py,reckon/mcp.py,reckon/serve.py,tests/test_crew_node.py,tests/test_budget.py,tests/test_crew_coordinator_spend.py,tests/test_routing_surface.py,skills/reckon-ship/SKILL.md,skills/reckon-ship/references/effort-routing.md">
 </head>
 <body>
   <main class="plan-doc">
@@ -676,6 +676,12 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-dcdn-coordinator-spend" data-who="reckon-ship" data-when="2026-09-04T13:30:50Z">
     <div class="r-comment-body">Coordinator spend recorded against dispatched nodes landed - commit b99ccdf; gate uv run pytest tests/test_crew_coordinator_spend.py -q passed, 5 passed in 1.15s; measure: a live run pointer now carries coordinator.session_id, coordinator.runtime_session_id, coordinator.harness and coordinator.authoring_turn, the authoring turn measured from a token map or recorded as status unknown with tokens null and never zero, and promotion preserves the identical block at node_definition.coordinator because promoted rows are rebuilt from selected fields while node_definition is the durable authored contract; artifacts reckon/crew/dispatch.py, tests/test_crew_coordinator_spend.py. This closes the gap the section names - no run record carried any coordinator field at all across 2,567 records - so the routing surface of section 3 can now carry its coordinator column rather than scoring every worker-to-coordinator transfer as a saving.</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260904T113720947970-dcdn-routing-surface" data-who="s15-routing" data-when="2026-09-04T11:55:01Z">
+    <div class="r-comment-body"><p>5 passed in 1.80s plus 25 passed across test_capabilities.py and test_crew_routes.py as the compatibility gate; crew(view='routing') returns per model, effort, spec level and role the sample count, pass rate, rework rate, redispatch rate, median tool steps, median input and cost per durable node as median input over one minus rework, with a served-surface parity case and a case asserting the worker-plus-coordinator figure differs from the worker-only one; effort-routing.md now cites the call and carries zero hand-written pass-rate figures, verified by grep returning none</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-dcdn-routing-surface" data-who="reckon-ship" data-when="2026-09-04T13:55:19Z">
+    <div class="r-comment-body">A derived routing surface carrying the coordinator column landed - commit 0b14667, 726 insertions across five paths; gate uv run pytest tests/test_routing_surface.py -q passed, 5 passed in 1.80s, plus 25 passed across test_capabilities.py and test_crew_routes.py as the compatibility gate; measure: crew(view='routing') returns per model, effort, specification level and role across every mounted ledger the sample count, pass rate, rework rate, redispatch rate, median tool steps, median input and cost per durable node computed as median input over one minus rework, with a parity case asserting the served surface and the tool return identical rows and a case asserting the worker-plus-coordinator figure differs from the worker-only one on a node whose coordinator spend is non-zero. The ordering this plan insisted on held: section 9 landed first, so the surface carried its coordinator column from the moment it existed and never had an interval in which it scored a worker-to-coordinator transfer as a saving. skills/reckon-ship/references/effort-routing.md keeps its ownership table and decision procedure and now cites the call; grep for hand-written pass-rate figures returns zero, so the recorded absolutes this plan's own measurements contradicted are gone rather than merely corrected. One deployment note for readers this session: a Python change needs the served process restarted and the MCP reconnected, so crew(view='routing') is not callable from an already-connected client until turnover - the parity test is the evidence until then.</div>
 </div>
 </section>
 </main>
