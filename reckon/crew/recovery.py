@@ -56,6 +56,7 @@ RECOVERY_CLASSES = (
 
 WAITING_STATUS = "waiting"
 WAITING_STATES = frozenset({"waiting", "wait-aged"})
+TERMINAL_MANIFEST_STATUSES = frozenset({"complete", "blocked", "failed"})
 
 
 def _budget_timing(
@@ -433,16 +434,13 @@ def classify_pointer(
     age = None
     if log.is_file():
         age = max(0, int(_utc_seconds() - log.stat().st_mtime))
-    # Superseded-by-newer-activity applies to any manifest that is not yet a
-    # verdict. Complete and failed are preserved while a living worker keeps
-    # producing output, but neither is rendered as its outcome until that
-    # worker exits. Complete over a dead process is delivery and therefore a
-    # verdict; failed over a live process can still be a placeholder. Blocked
-    # is a solicitation: a newer log line from a live worker has answered it,
-    # so discarding that overtaken report makes the resumed work visible.
+    # Superseded-by-newer-activity applies to a non-terminal manifest that is
+    # not yet a verdict. Terminal-looking reports are handled below: the live
+    # process outranks every worker-reported outcome regardless of file
+    # recency, and the manifest becomes authoritative when that process exits.
     if (
         manifest_status
-        and manifest_status not in {"complete", "failed"}
+        and manifest_status not in TERMINAL_MANIFEST_STATUSES
         and alive is True
         and log.is_file()
         and manifest.is_file()
@@ -474,8 +472,8 @@ def classify_pointer(
     )
     terminal_at = None
     terminal_age_seconds = None
-    deferred_outcome = alive is True and manifest_status in {"complete", "failed"}
-    if manifest_status in {"complete", "blocked", "failed"} and not deferred_outcome:
+    deferred_outcome = alive is True and manifest_status in TERMINAL_MANIFEST_STATUSES
+    if manifest_status in TERMINAL_MANIFEST_STATUSES and not deferred_outcome:
         terminal_seconds = manifest.stat().st_mtime
         terminal_at = (
             datetime.fromtimestamp(terminal_seconds, tz=timezone.utc)
@@ -486,7 +484,11 @@ def classify_pointer(
 
     marker = None
     needs_help_complete_value = None
-    if manifest_status == "complete" and alive is not True:
+    if deferred_outcome:
+        classification = "running"
+        detail = "the process is alive"
+        action = f"reckon crew observe --run {run_id}"
+    elif manifest_status == "complete":
         classification = "completed_unpromoted"
         detail = (
             "the worker manifest reports completion and the run is still a "
@@ -518,7 +520,7 @@ def classify_pointer(
         else:
             marker = "!"
             action = f"read {manifest}; resolve the blocker before resuming the run"
-    elif manifest_status == "failed" and alive is not True:
+    elif manifest_status == "failed":
         classification = "failed"
         failure = "; ".join(manifest_blockers) or "the worker manifest reports failure"
         detail = f"the worker manifest reports failed: {failure}"
