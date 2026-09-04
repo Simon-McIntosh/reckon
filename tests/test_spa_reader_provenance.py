@@ -12,6 +12,7 @@ from tests.spa_browser_harness import (
 
 REPO_ROOT = Path(__file__).parents[1]
 PLAN_SOURCE = (REPO_ROOT / "docs" / "ui" / "plan.jsx").read_text()
+TITLE_SOURCE = (REPO_ROOT / "docs" / "ui" / "shell-titlebar.jsx").read_text()
 BITS_SOURCE = (REPO_ROOT / "docs" / "ui" / "bits.jsx").read_text()
 
 
@@ -34,6 +35,38 @@ def rendered_browser(tmp_path_factory) -> str:
 
 def _between(source: str, start: str, end: str) -> str:
     return source.split(start, 1)[1].split(end, 1)[0]
+
+
+def _function_source(source: str, name: str) -> str:
+    start = source.index(f"function {name}(")
+    brace = source.index("{", start)
+    depth = 0
+    for index in range(brace, len(source)):
+        if source[index] == "{":
+            depth += 1
+        elif source[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return source[start : index + 1]
+    raise AssertionError(f"unterminated function {name}")
+
+
+def _evaluate_helpers(source: str, functions: list[str], expression: str):
+    import subprocess
+
+    script = "\n".join(_function_source(source, name) for name in functions)
+    result = subprocess.run(
+        ["node", "-e", f"{script}\nconsole.log(JSON.stringify({expression}));"],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return json.loads(result.stdout)
+
+
+def _evaluate_title_helpers(functions: list[str], expression: str):
+    return _evaluate_helpers(TITLE_SOURCE, functions, expression)
 
 
 def test_inflight_band_identifies_work_without_rendering_a_run_hash():
@@ -159,21 +192,83 @@ def test_copied_handoff_carries_live_source_provenance_and_plan_version():
 
 
 def test_absent_reader_values_are_omitted_instead_of_rendered_as_placeholders():
-    controls = _between(
-        PLAN_SOURCE,
-        '<nav className="r-reading-controls"',
-        '<div className="r-reading-viewport">',
-    )
-    focus_title = _between(PLAN_SOURCE, "{focusMode && (", "<h1>")
+    metadata = _function_source(TITLE_SOURCE, "readerMetadataRows")
 
-    assert '{project && <span className="r-reading-project">' in controls
-    assert "{P.sprint && <span>" in controls
-    assert "{implementationLabel && <span>" in controls
-    assert 'P.impl !== ""' in PLAN_SOURCE
-    assert '.filter(Boolean).join(" · ")' in focus_title
-    assert 'P.sprint || "unscheduled"' not in focus_title
+    assert "rows.filter" in metadata
+    assert 'String(value).trim() !== ""' in metadata
+    assert 'item.sprint || "unscheduled"' not in metadata
     assert 'val.choice || "—"' not in PLAN_SOURCE
     assert ': "—"' not in PLAN_SOURCE
+
+
+def test_reader_source_trail_has_one_navigation_authority_for_all_kinds():
+    state = {
+        "inventory": [
+            {
+                "slug": "work",
+                "type": "plan",
+                "title": "Work plan",
+                "sprint": "current",
+            }
+        ]
+    }
+    functions = [
+        "canonicalReaderKind",
+        "readerReferenceSlug",
+        "readerPlanFor",
+        "readerSourceTrail",
+    ]
+    plan = _evaluate_title_helpers(
+        functions,
+        f"readerSourceTrail({json.dumps(state['inventory'][0])}, {json.dumps(state)})",
+    )
+    research = _evaluate_title_helpers(
+        functions,
+        f"readerSourceTrail({json.dumps({'slug': 'study', 'type': 'research', 'title': 'Study', 'informs': ['work']})}, {json.dumps(state)})",
+    )
+    figure = _evaluate_title_helpers(
+        functions,
+        f"readerSourceTrail({json.dumps({'slug': 'work/capture.png', 'type': 'figure', 'title': 'Capture', 'for_plan': 'work'})}, {json.dumps(state)})",
+    )
+
+    assert [segment["label"] for segment in plan] == ["current", "Work plan"]
+    assert [segment["navigates"] for segment in plan] == [True, False]
+    assert [segment["label"] for segment in research] == [
+        "current",
+        "Work plan",
+        "Study",
+    ]
+    assert [segment["navigates"] for segment in research] == [True, True, False]
+    assert [segment["label"] for segment in figure] == [
+        "current",
+        "Work plan",
+        "Capture",
+    ]
+    assert [segment["view"] for segment in figure[:2]] == ["sprint", "plan"]
+
+
+def test_figure_reader_uses_the_served_image_and_prints_its_source_path():
+    functions = ["readerFigureSource", "readerFigurePath"]
+    item = {
+        "slug": "work/capture.png",
+        "type": "figure",
+        "href": "/reckon/figures/work/capture.png",
+    }
+    source, path = _evaluate_helpers(
+        PLAN_SOURCE,
+        functions,
+        f"[readerFigureSource({json.dumps(item)}, 'reckon'), readerFigurePath({json.dumps(item)})]",
+    )
+    figure = _between(
+        PLAN_SOURCE,
+        '<figure className="r-reader-figure">',
+        "</figure>",
+    )
+
+    assert source == "/reckon/figures/work/capture.png"
+    assert path == "docs/figures/work/capture.png"
+    assert "<img src={readerFigureSource(PG, project)}" in figure
+    assert "{readerFigurePath(PG)}" in figure
 
 
 def test_reader_head_attachment_bars_render_typed_groups_and_route_entries(
@@ -276,12 +371,13 @@ def test_reader_head_attachment_bars_render_typed_groups_and_route_entries(
       bars[0].open = true;
       bars[0].querySelector('button')?.click();
       const attachmentOpened = await waitFor(() =>
-        document.querySelector('.r-reading-path')?.textContent.trim() === '/research:resource-a'
+        document.querySelector('.r-reading')?.dataset.readerKind === 'research'
+        && document.querySelector('.r-reading-trail-current')?.textContent.trim() === 'Resource A'
       );
-      const activatedRoute = document.querySelector('.r-reading-path')?.textContent.trim() || '';
+      const activatedRoute = location.hash;
       location.hash = '#plan/empty';
       const emptyOpened = await waitFor(() =>
-        document.querySelector('.r-reading-path')?.textContent.trim() === '/empty'
+        document.querySelector('.r-reading-trail-current')?.textContent.trim() === 'Empty plan'
         && document.querySelectorAll('.r-reader-attachment-bar').length === 0
       );
       return {
@@ -317,7 +413,7 @@ def test_reader_head_attachment_bars_render_typed_groups_and_route_entries(
         "railCount": 0,
         "barsBeforeBody": True,
         "attachmentOpened": True,
-        "activatedRoute": "/research:resource-a",
+        "activatedRoute": "#research/research%3Aresource-a",
         "emptyOpened": True,
         "emptyBars": 0,
     }

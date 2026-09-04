@@ -245,6 +245,45 @@ function readerProvenanceSignals(focusMode, htmlFailure, stateFailure) {
   };
 }
 
+function readerKindFromHash(hash) {
+  const match = String(hash || "").match(/^#(plan|research|evidence|figure)\//);
+  return match ? match[1] : "plan";
+}
+
+function readerItem(state, requestedSlug, kind) {
+  const canonicalKind = kind === "doc" ? "research" : kind;
+  const prefixed = `${canonicalKind}:${requestedSlug}`;
+  return state?.plans?.[requestedSlug]
+    || state?.plans?.[prefixed]
+    || (state?.inventory || []).find(item =>
+      (item.type || "plan") === canonicalKind
+      && (item.nav_key === requestedSlug || item.slug === requestedSlug)
+    )
+    || null;
+}
+
+function readerListPosition(list, selectedKey, selectedSlug) {
+  const index = (list || []).findIndex(item =>
+    item.key === selectedKey || item.slug === selectedSlug
+  );
+  return { current: index < 0 ? 0 : index + 1, total: (list || []).length };
+}
+
+function readerStepTarget(list, selectedKey, selectedSlug, direction) {
+  const position = readerListPosition(list, selectedKey, selectedSlug);
+  if (!position.current) return null;
+  return list[position.current - 1 + direction] || null;
+}
+
+function readerFigureSource(item, project) {
+  if (item?.href) return item.href;
+  return `/${project}/figures/${item?.slug || ""}`;
+}
+
+function readerFigurePath(item) {
+  return `docs/figures/${item?.slug || ""}`;
+}
+
 function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus, focusPosition, onPage }) {
   const M = window.STATE;
   if (!M) return null;
@@ -256,22 +295,26 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
       </div>
     );
   }
-  const PG = M.plans[slug];
+  const routeKind = readerKindFromHash(window.location.hash);
+  const PG = readerItem(M, slug, routeKind);
   if (!PG) return <div className="r-page">Artifact "{slug}" not found.</div>;
 
   const P = {
     ...PG,
     sprint: metadataValueIsPresent(PG.sprint) ? PG.sprint : "",
   };
-  const isResearch = PG.type === "research";
-  const isEvidence = PG.type === "evidence";
+  const kind = PG.type === "doc" ? "research" : (PG.type || routeKind || "plan");
+  const isPlan = kind === "plan";
+  const isResearch = kind === "research";
+  const isEvidence = kind === "evidence";
+  const isFigure = kind === "figure";
   const refSlug = (ref) => String(ref || "").split("#", 1)[0].split(":").pop();
   const projectSource = M.project || document.querySelector('meta[name="docs-project"]')?.content || "";
   const project = metadataValueIsPresent(projectSource) ? projectSource : "";
   const [liveRuns, setLiveRuns] = useState([]);
 
   useEffect(() => {
-    if (!project || isResearch || isEvidence) { setLiveRuns([]); return; }
+    if (!project || !isPlan) { setLiveRuns([]); return; }
     let active = true;
     const poll = async () => {
       try {
@@ -289,7 +332,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
       active = false;
       window.clearInterval(timer);
     };
-  }, [project, slug, isResearch, isEvidence]);
+  }, [project, slug, isPlan]);
 
   const stored = window.reckon.planLoad(slug) || {};
   // The inventory is lightweight; full per-doc state (decisions, followups) is
@@ -299,6 +342,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
   const [stateFailure, setStateFailure] = useState(null);
   const [stateRetry, setStateRetry] = useState(0);
   const [showPrompt, setShowPrompt] = useState(false);
+  const [, setReaderListRevision] = useState(0);
   const [composingAt, setComposingAt] = useState(null);
   const [reviewing, setReviewing] = useState(null); // { id, comment, x, y }
 
@@ -319,6 +363,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
     setPlanHtml(null);
     setHtmlFailure(null);
     if (!project) { setHtmlReady(true); return; }
+    if (isFigure) { setHtmlReady(true); return; }
 
     // Use plan's href (may include subdir e.g. "curated/slug") if available
     const href = PG.href || slug;
@@ -361,7 +406,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
         setHtmlFailure({ status: error?.responseStatus || "network error" });
         setHtmlReady(true);
       });
-  }, [project, slug, htmlRetry]);
+  }, [project, slug, isFigure, htmlRetry]);
 
   // ── Fetch full doc state (decisions, followups) ─────────────────────────
   useEffect(() => {
@@ -369,7 +414,8 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
     setDecs([]);
     setStateFailure(null);
     if (!project) return;
-    const stateRoot = { plan: "plans", research: "research", evidence: "evidence" }[PG.type || "plan"];
+    if (isFigure) return;
+    const stateRoot = { plan: "plans", research: "research", evidence: "evidence" }[kind];
     const statePath = `${stateRoot}/${PG.slug}`;
     fetch(`/plan/${project}/${statePath}`, { cache: "no-store" })
       .then(r => {
@@ -399,7 +445,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
         }));
       })
       .catch(error => setStateFailure({ status: error?.responseStatus || "network error" }));
-  }, [project, slug, PG.type, stateRetry]);
+  }, [project, slug, PG.type, isFigure, stateRetry]);
 
   // ── Comment / prompt wiring ─────────────────────────────────────────────
   useEffect(() => {
@@ -435,9 +481,6 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
 
   const author = window.STATE?.projects?.[0]?.owner || "user";
   const loadedPlanVersion = fullState?.version ?? P.version ?? "unavailable";
-  const implementationLabel = P.impl !== null && P.impl !== undefined && P.impl !== "" && metadataValueIsPresent(P.impl) && Number.isFinite(Number(P.impl))
-    ? `${Math.round(Number(P.impl) * 100)}%`
-    : null;
   const onUpdateDec = (key, choice, rationale) => {
     const now = new Date().toISOString().slice(0, 16).replace("T", " ");
     setDecs(arr => arr.map(x => x.key === key ? { ...x, chosen: choice || "", choice: choice || "", rationale, when: now, by: author } : x));
@@ -527,6 +570,44 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
     });
   }, [comments]);
 
+  useEffect(() => {
+    const updateReaderList = event => {
+      if (event.detail?.kind === kind) setReaderListRevision(value => value + 1);
+    };
+    window.addEventListener("reckon:reader-list-published", updateReaderList);
+    return () => window.removeEventListener("reckon:reader-list-published", updateReaderList);
+  }, [kind]);
+
+  const selectedKey = PG.nav_key || (kind === "plan" ? PG.slug : `${kind}:${PG.slug}`);
+  const publishedList = window.ReckonShell.title?.readerListFor?.(kind) || [];
+  const publishedPosition = readerListPosition(publishedList, selectedKey, PG.slug);
+  const readerPosition = publishedPosition.total > 0 ? publishedPosition : {
+    current: focusPosition?.current || 0,
+    total: focusPosition?.total || 0,
+  };
+  const stepReader = (direction) => {
+    const target = readerStepTarget(publishedList, selectedKey, PG.slug, direction);
+    if (target) {
+      onNav?.({ view: target.type || kind, slug: target.slug });
+      return;
+    }
+    if (publishedList.length === 0) onPage?.(direction);
+  };
+
+  useEffect(() => {
+    const handleReaderKey = event => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      if (event.target?.matches?.("input, textarea, select, [contenteditable='true']")) return;
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      stepReader(event.key === "ArrowRight" ? 1 : -1);
+    };
+    document.addEventListener("keydown", handleReaderKey, true);
+    return () => document.removeEventListener("keydown", handleReaderKey, true);
+  }, [kind, selectedKey, PG.slug, publishedList]);
+
   // Click-to-review: any click on an injected [data-cm] element opens
   // CommentReviewPopover anchored to that element's viewport rect.
   useEffect(() => {
@@ -549,37 +630,21 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
 
   return (
     <div className="r-page">
-      <article className={`r-reading ${focusMode ? "is-focus-mode" : ""}`} ref={articleRef} data-focus-mode={provenanceSignals.focusMode ? "true" : "false"}>
-          <nav className="r-reading-controls" aria-label="Reading controls">
-            {focusMode ? (
-              <>
-                <button type="button" className="r-reading-exit" onClick={onToggleFocus} aria-pressed="true" title="Leave focus mode (f or Escape)">esc</button>
-                <span className="r-reading-crumb"><span>{project}</span><span>/{slug}</span></span>
-                <span className="r-reading-position" role="status">{focusPosition?.current || 0} / {focusPosition?.total || 0}</span>
-                <span className="r-reading-paging">
-                  <button type="button" onClick={() => onPage?.(-1)} aria-label="Previous item in reading queue">‹</button>
-                  <button type="button" onClick={() => onPage?.(1)} aria-label="Next item in reading queue">›</button>
-                </span>
-              </>
-            ) : (
-              <>
-                <span className="r-reading-path">/{slug}</span>
-                <button type="button" onClick={onToggleFocus} aria-pressed="false" title="Enter focus mode (f)">Read <span aria-hidden="true">f</span></button>
-                {project && <span className="r-reading-project">{project}</span>}
-                {P.sprint && <span>{P.sprint}</span>}
-                {implementationLabel && <span>{implementationLabel}</span>}
-              </>
-            )}
-          </nav>
+      <article className={`r-reading ${focusMode ? "is-focus-mode" : ""}`} ref={articleRef} data-focus-mode={provenanceSignals.focusMode ? "true" : "false"} data-reader-kind={kind}>
+          <window.ReckonShell.title.ReaderChrome
+            item={PG}
+            state={M}
+            project={project}
+            focusMode={focusMode}
+            position={readerPosition}
+            onNav={onNav}
+            onBack={() => onNav?.({ view: kind, slug: null })}
+            onStep={stepReader}
+            onToggleFocus={onToggleFocus}
+          />
           <div className="r-reading-viewport">
             <div className="r-reading-content">
-          {focusMode && (
-            <header className="r-reading-focus-title">
-              <div>{[`/${slug}`, P.sprint, implementationLabel].filter(Boolean).join(" · ")}</div>
-              <h1>{P.title || slug}</h1>
-            </header>
-          )}
-          <PlanInFlightBand runs={liveRuns} effortHours={P.effort_hours} />
+          {isPlan && <PlanInFlightBand runs={liveRuns} effortHours={P.effort_hours} />}
           {provenanceSignals.htmlFailure && (
             <ReaderSourceFailure
               source="authored plan HTML"
@@ -641,7 +706,12 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
               {(PG.artifacts || []).length > 0 && <span>artifacts&nbsp;{PG.artifacts.join(", ")}</span>}
             </div>
           )}
-          {!htmlReady ? (
+          {isFigure ? (
+            <figure className="r-reader-figure">
+              <img src={readerFigureSource(PG, project)} alt={PG.title || PG.slug} />
+              <figcaption><code>{readerFigurePath(PG)}</code></figcaption>
+            </figure>
+          ) : !htmlReady ? (
             <div style={{ padding: 24, color: "var(--muted)", fontSize: 13 }}>Loading…</div>
           ) : planHtml ? (
             <>
