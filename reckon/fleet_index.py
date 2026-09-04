@@ -1,13 +1,14 @@
 """Compute one mounted project's fleet-index row from its own repository.
 
 Every field is derived live from discovery, live run pointers, and Git
-history — nothing here reads a persisted rollup file. See served-surface
-data contracts §3 for the field-by-field rationale.
+history — nothing here reads a persisted rollup file. The served-surface
+contract defines the field-by-field rationale.
 """
 
 from __future__ import annotations
 
 import subprocess
+from collections.abc import Mapping
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -145,3 +146,17 @@ def compute_project_row(
         "active_sprint": _active_sprint(discovered),
         "activity30": _activity30(docs_dir.parent, docs_dir, reference),
     }
+
+
+def collect_project_rows(
+    mounts: Mapping[str, Path],
+    *,
+    state_root: Path | None = None,
+    now: datetime | None = None,
+) -> list[dict]:
+    """Return compact fleet rows for every mounted project in stable order."""
+
+    return [
+        compute_project_row(path, name, state_root=state_root, now=now)
+        for name, path in sorted(mounts.items())
+    ]
