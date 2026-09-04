@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T11:34:11",
+  "updated": "2026-09-04T11:40:35",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -703,6 +703,15 @@
         "created": "2026-09-03"
       },
       {
+        "id": "s16-cone",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-04"
+      },
+      {
         "id": "s16-contain",
         "harness": "codex",
         "role": "implement",
@@ -723,6 +732,15 @@
           "{\"alias\":\"sonnet 5\",\"backend\":\"claude\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "8f18edbd-00e2-4762-9a4d-ad2f1453d0fd"
         },
         "created": "2026-09-03"
+      },
+      {
+        "id": "s16-endpoints",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-04"
       },
       {
         "id": "s16-feeds",
@@ -54070,6 +54088,228 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T092555922783-derived-sprint-state-reaches-the-surface",
+        "plan": "derived-state-parity",
+        "section": "\u00a72",
+        "node": "derived-sprint-state-reaches-the-surface",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_spa_sprint_surface.py tests/test_roadmap_sprint_derivation.py -q passes at this node's base, which already computes derived_state and state_drift in reckon/roadmap.py and removes the JSX-side derivation: the fields travel through the roadmap HTTP projection so a rendered sprint row reads them from state rather than deriving them, asserted by changing the payload and observing the rendered flag change; and tests/test_spa_sprint_surface.py asserts the payload-fed flag rather than the removed helper. grep -c 'deriveSprintState\\|derivedState' docs/ui/sprint.jsx still prints 0",
+          "estimated_hours": 2.0,
+          "goal": "The derived sprint state and drift computed in roadmap reach the surface that renders them, and the test asserting the deleted derivation reads the payload instead",
+          "id": "derived-sprint-state-reaches-the-surface",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T092555922783-derived-sprint-state-reaches-the-surface/manifest.md",
+          "plan": "derived-state-parity",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/mcp_views.py",
+            "reckon/serve.py",
+            "tests/test_spa_sprint_surface.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-transport",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T09:26:08Z",
+        "completed_at": "2026-09-04T09:35:27Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 559,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 559,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "f5fbac701306a99b8d611259155a55185b34d2f5",
+        "commits": [
+          "77d0edf023e6860b8138e37a8655f6abcaf16d31"
+        ],
+        "changed_lines": {
+          "added": 99,
+          "removed": 9,
+          "files": 3
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_sprint_surface.py tests/test_roadmap_sprint_derivation.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T092555922783-derived-sprint-state-reaches-the-surface/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T092555922783-derived-sprint-state-reaches-the-surface/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06bbd-628f-7590-aa56-81bb9412b853",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 6304256,
+            "cached_input_tokens_cumulative": 6304256,
+            "input_tokens": 6454091,
+            "input_tokens_cumulative": 6454091,
+            "output_tokens": 23180,
+            "output_tokens_cumulative": 23180,
+            "reasoning_output_tokens": 10784,
+            "reasoning_output_tokens_cumulative": 10784
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 33964,
+          "peak_input_tokens": 12758347
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_spa_sprint_surface.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260904T090004056609-sprint-state-derivation-in-roadmap",
+        "plan": "derived-state-parity",
+        "section": "\u00a72",
+        "node": "sprint-state-derivation-in-roadmap",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_roadmap_sprint_derivation.py tests/test_spa_sprint_surface.py -q passes with the cases \u00a72 names: a sprint whose file says planned while every member is at 100% reports derived_state shipped and state_drift naming stored planned against derived shipped; one whose file agrees reports no drift key; a sprint with no members reports derived_state empty; a sprint with one member started reports active. The surface test asserts the rendered flag text comes from the payload by changing the payload and observing the flag change, and grep -c 'deriveSprintState\\|derivedState' docs/ui/sprint.jsx prints 0",
+          "estimated_hours": 3.0,
+          "goal": "Roadmap reports each sprint's derived state and its drift from the stored value, and the surface consumes those fields instead of recomputing them",
+          "id": "sprint-state-derivation-in-roadmap",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T090004056609-sprint-state-derivation-in-roadmap/manifest.md",
+          "plan": "derived-state-parity",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/roadmap.py",
+            "docs/ui/sprint.jsx",
+            "tests/test_roadmap_sprint_derivation.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-sprintderive",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T09:00:15Z",
+        "completed_at": "2026-09-04T09:09:56Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 581,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 581,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "c3a6c1d8ba31b3cec567da51e95fc13f567879b2",
+        "commits": [
+          "f5fbac701306a99b8d611259155a55185b34d2f5"
+        ],
+        "changed_lines": {
+          "added": 142,
+          "removed": 24,
+          "files": 3
+        },
+        "tests_added": 1,
+        "gate": "failed",
+        "gate_check": {
+          "command": "",
+          "exit_status": null,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T090004056609-sprint-state-derivation-in-roadmap/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": "malformed-node",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T090004056609-sprint-state-derivation-in-roadmap/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06ba5-b1c3-7fe1-9ad1-78b221c6d6b0",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 5288320,
+            "cached_input_tokens_cumulative": 5288320,
+            "input_tokens": 5439192,
+            "input_tokens_cumulative": 5439192,
+            "output_tokens": 24685,
+            "output_tokens_cumulative": 24685,
+            "reasoning_output_tokens": 10121,
+            "reasoning_output_tokens_cumulative": 10121
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 34806,
+          "peak_input_tokens": 10727512
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_roadmap_sprint_derivation.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -54242,6 +54482,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 883
+    "_version": 887
   }
 }

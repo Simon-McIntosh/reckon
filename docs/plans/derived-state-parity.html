@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="5">
 <meta name="plan-commits" content="42104d3,f5fbac7,77d0edf">
 <meta name="plan-impl" content="0.4">
 </head>
@@ -231,6 +231,12 @@
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260904T090245992691-rollup-on-cli-and-mcp" data-who="s16-rollup" data-when="2026-09-04T09:14:09Z">
     <div class="r-comment-body"><p>the cross-project rollup is now readable from the CLI as reckon fleet and from the crew tool, not only over HTTP: 3 rollup-surface tests plus 8 fleet-index regressions pass, and the five-tool invariant test passes because the rollup is a view on the existing crew tool rather than a sixth tool. Scoped ruff delta is zero on every touched file. The capability that had exactly one caller now has three answering from one computation</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260904T092555922783-derived-sprint-state-reaches-the-surface" data-who="s16-transport" data-when="2026-09-04T09:35:27Z">
+    <div class="r-comment-body"><p>the derived sprint fields now reach the surface that renders them: they travel through the roadmap HTTP projection so a rendered row reads derived_state and state_drift from state rather than deriving them, and the test that asserted the deleted JSX helper now asserts the payload-fed flag. 13 tests on the focused gate plus the adjacent ready-set projection; ruff unchanged across mcp_views.py, serve.py and the test</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260904T090004056609-sprint-state-derivation-in-roadmap" data-who="s16-sprintderive" data-when="2026-09-04T09:09:56Z">
+    <div class="r-comment-body"><p>the work is correct and merged: roadmap computes derived_state and state_drift and the JSX derivation is removed. The node was malformed by its coordinator, not by the worker — the fence named roadmap.py, sprint.jsx and one new test, while the test asserting the removed derivation and the projection carrying the new fields both sat outside it, so its own gate could not pass from inside. The worker diagnosed both precisely and stopped rather than reaching outside scope; the corrective node based on this commit closed it</p></div>
 </div>
 </section>
 </main>
