@@ -924,6 +924,129 @@ def _derived_sprint_state(members: list[dict[str, Any]]) -> str:
     return "planned"
 
 
+def _dependency_endpoints(
+    project: str,
+    plans: Mapping[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Enumerate terminal dependency closures from the current project graph."""
+
+    dependencies: dict[str, list[str]] = {}
+    path_dependencies: dict[str, list[str]] = {}
+    depended_on: set[str] = set()
+    for slug, plan in plans.items():
+        members: set[str] = set()
+        path_members: set[str] = set()
+        for raw_ref in plan.get("depends_on") or []:
+            parsed = parse_plan_ref(raw_ref)
+            if (
+                parsed is None
+                or parsed.is_external(project)
+                or parsed.slug not in plans
+                or parsed.slug == slug
+            ):
+                continue
+            members.add(parsed.slug)
+            depended_on.add(parsed.slug)
+            if not parsed.stage:
+                path_members.add(parsed.slug)
+        dependencies[slug] = sorted(members)
+        path_dependencies[slug] = sorted(path_members)
+
+    depth_cache: dict[str, int] = {}
+
+    def structural_depth(slug: str, active: frozenset[str] = frozenset()) -> int:
+        if slug in depth_cache:
+            return depth_cache[slug]
+        if slug in active:
+            return 0
+        child_depths = [
+            structural_depth(dependency, active | {slug})
+            for dependency in path_dependencies.get(slug, [])
+        ]
+        depth_cache[slug] = 1 + max(child_depths, default=0)
+        return depth_cache[slug]
+
+    rows: list[dict[str, Any]] = []
+    endpoint_slugs = [
+        slug
+        for slug, prerequisite_slugs in dependencies.items()
+        if prerequisite_slugs and slug not in depended_on
+    ]
+    for endpoint_slug in endpoint_slugs:
+        member_slugs: set[str] = set()
+        pending = [endpoint_slug]
+        while pending:
+            slug = pending.pop()
+            if slug in member_slugs:
+                continue
+            member_slugs.add(slug)
+            pending.extend(dependencies.get(slug, []))
+
+        member_rows = [
+            {
+                "project": str(plans[slug].get("project") or project),
+                "slug": slug,
+                "ref": _qualified_plan(
+                    str(plans[slug].get("project") or project), slug
+                ),
+                "title": str(plans[slug].get("title") or slug),
+                "status": _status(plans[slug]),
+                "impl": _progress(plans[slug]),
+                "depends_on": list(plans[slug].get("depends_on") or []),
+                "open_decision_count": sum(
+                    row["status"] == "open" for row in _decision_rows(plans[slug])
+                ),
+            }
+            for slug in sorted(member_slugs)
+        ]
+        repository_counts: dict[str, int] = defaultdict(int)
+        for member in member_rows:
+            repository_counts[member["project"]] += 1
+
+        shipped = sum(
+            _status(plans[slug]) in COMPLETED_STATUSES for slug in member_slugs
+        )
+        held = sum(_status(plans[slug]) == "blocked" for slug in member_slugs)
+        open_decision_count = sum(
+            row["status"] == "open"
+            for slug in member_slugs
+            for row in _decision_rows(plans[slug])
+        )
+        total = len(member_slugs)
+        depth = structural_depth(endpoint_slug)
+        handle = str(plans[endpoint_slug].get("graph_handle") or "").strip() or None
+        endpoint_project = str(plans[endpoint_slug].get("project") or project)
+        rows.append(
+            {
+                "project": endpoint_project,
+                "slug": endpoint_slug,
+                "ref": _qualified_plan(endpoint_project, endpoint_slug),
+                "title": str(plans[endpoint_slug].get("title") or endpoint_slug),
+                "handle": handle,
+                "members": member_rows,
+                "repositories": [
+                    {"repository": repository, "count": count}
+                    for repository, count in sorted(repository_counts.items())
+                ],
+                "completion": {"shipped": shipped, "total": total},
+                "shipped_fraction": round(shipped / total, 3) if total else 0.0,
+                "held": held,
+                "open_decision_count": open_decision_count,
+                "structural_depth": depth,
+                "average_width": round(total / depth, 3) if depth else 0.0,
+            }
+        )
+
+    rows.sort(
+        key=lambda row: (
+            row["handle"] is None,
+            -row["structural_depth"],
+            row["slug"],
+        )
+    )
+    return rows
+
+
 def build_roadmap(
     project: str,
     inventory: list[dict[str, Any]],
@@ -1749,6 +1872,7 @@ def build_roadmap(
         },
         "review": review_block,
         "north_stars": _north_star_rows(plans, north_stars),
+        "endpoints": _dependency_endpoints(project, plans),
         "sprints": sprint_rows,
         "pending_work": pending,
         "ready_now": ready,

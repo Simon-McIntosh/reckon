@@ -166,6 +166,42 @@ function _graphEndpointRows(plans, fallbackProject) {
   });
 }
 
+// The project roadmap owns endpoint membership and closure metrics. This
+// adapter changes only field names and display formats for the graph surface.
+function _roadmapEndpointRows(endpoints) {
+  return (endpoints || []).map(endpoint => {
+    const handle = String(endpoint.handle || "").trim();
+    const completion = endpoint.completion || {};
+    const shipped = Number(completion.shipped || 0);
+    const total = Number(completion.total || 0);
+    const openDecisions = Number(endpoint.open_decision_count || 0);
+    const held = Number(endpoint.held || 0);
+    const structuralDepth = Number(endpoint.structural_depth || 0);
+    const flag = openDecisions
+      ? `${openDecisions} open`
+      : held ? `${held} held` : "ready";
+    return {
+      slug: endpoint.slug,
+      title: endpoint.title || endpoint.slug,
+      named: Boolean(handle),
+      handle: handle || "unnamed",
+      shipLine: handle ? `/reckon-ship graph:${handle}` : null,
+      members: endpoint.members || [],
+      repositories: endpoint.repositories || [],
+      shipped,
+      held,
+      total,
+      shippedPercent: Math.round(Number(endpoint.shipped_fraction || 0) * 100),
+      openDecisions,
+      structuralDepth,
+      averageWidth: Number(endpoint.average_width || 0).toFixed(2),
+      flag,
+      flagKind: openDecisions ? "open" : held ? "held" : "ready",
+      done: total > 0 && shipped === total,
+    };
+  });
+}
+
 // ─── One DAG layout, shared by every dependency surface ───────────────────
 //
 // Positions derive from structural dependency depth and row order, never from
@@ -433,15 +469,10 @@ function PathPromptModal({ chain, fullPrereqItems, bySlug, onClose }) {
 
 function DependencyChainView({ onNav }) {
   const M = window.STATE;
-  const inventory = M?.inventory || [];
 
   const rows = React.useMemo(
-    () => _graphEndpointRows(inventory, M?.project),
-    [inventory, M?.project],
-  );
-  const { bySlug } = React.useMemo(
-    () => _dependencyChainMeasure(inventory),
-    [inventory],
+    () => _roadmapEndpointRows(M?.endpoints),
+    [M?.endpoints],
   );
 
   const [hideDone, setHideDone] = React.useState(false);
@@ -455,7 +486,9 @@ function DependencyChainView({ onNav }) {
   const view = visible[selectedIndex] || null;
 
   const members = view ? view.members : [];
-  const endPlan = view ? bySlug[view.slug] : null;
+  const endPlan = view
+    ? members.find(member => member.slug === view.slug) || null
+    : null;
   const stage = React.useMemo(
     () => window.ReckonGraph.layout(members, "g"),
     [members],
@@ -474,7 +507,7 @@ function DependencyChainView({ onNav }) {
   const handleGenPrompt = () => {
     if (!view) return;
     if (view.openDecisions > 0) {
-      const firstBlocking = members.find(plan => _openDecisionCount(plan) > 0);
+      const firstBlocking = members.find(plan => plan.open_decision_count > 0);
       if (firstBlocking) { window.location.hash = `#plan/${firstBlocking.slug}`; return; }
     }
     setShowPrompt(true);

@@ -1276,6 +1276,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
                     "sprint": rec.get("sprint") or None,
                     "capability": rec.get("capability"),
                     "tier": rec.get("tier"),
+                    "graph_handle": rec.get("graph_handle") or None,
                     "impl": rec["impl"],
                     "dec_open": rec["dec_open"],
                     "decisions": decisions,
@@ -1428,6 +1429,7 @@ def _attach_ready_set(result: dict, project: str) -> None:
     )
     projection = ready_set_view(roadmap)
     result["ready_set"] = projection
+    result["endpoints"] = projection.get("endpoints", [])
 
     state_by_ref = {
         str(row.get("ref") or row.get("id")): row

@@ -112,6 +112,7 @@ def ready_set_view(roadmap: dict[str, Any]) -> dict[str, Any]:
         "ready": ready,
         "review": roadmap.get("review"),
         "sprints": sprint_state_view(roadmap),
+        "endpoints": roadmap.get("endpoints", []),
     }
 
 
