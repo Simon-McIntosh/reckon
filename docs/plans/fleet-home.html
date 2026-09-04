@@ -27,9 +27,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="2">
-<meta name="plan-commits" content="6481026">
-<meta name="plan-impl" content="0.33">
+<meta name="plan-version" content="5">
+<meta name="plan-commits" content="6481026,2b3b276,2125e17">
+<meta name="plan-impl" content="0.75">
 </head>
 <body>
 <main class="plan-doc">
@@ -154,6 +154,12 @@
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260904T042633367705-home-view" data-who="s16-fleet" data-when="2026-09-04T04:43:33Z">
     <div class="r-comment-body"><p>the fleet home renders inside the shell at the default route over the visible set: an empty hash routes to home, the eyebrow reads N of M shown, rows appear only for projects with plans in last-edited order, a project with an empty activity series renders the no-recorded-activity text and no polyline, and the dormant strip is absent at zero: 10 passed</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260904T060712873403-retire-cockpit-and-standalone-home" data-who="s16-retire" data-when="2026-09-04T06:17:57Z">
+    <div class="r-comment-body"><p>one home and one URL: GET / with two ordered mounts returns 302 to /&lt;first project&gt;/#home, the legacy #cockpit hash parses to the home view, no entry point loads shell-overview or shell-prompt, CockpitBody greps to 0 across 115 files, and docs/home.html is absent. 1,292 lines deleted against 70 added across 11 scoped paths; node-owned assertions 9 passed. Ruff delta on serve.py improved 29 to 27</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260904T062106775026-harness-drops-the-retired-stylesheet" data-who="s16-harness" data-when="2026-09-04T06:31:32Z">
+    <div class="r-comment-body"><p>the shared browser harness stops requiring the retired cockpit stylesheet, which would otherwise have raised FileNotFoundError for every browser gate in the repository once overview.css was deleted: overview.css greps to 0 in the harness, the file-backed SPA builds at 642,043 bytes, and the container test asserts the cockpit hash aliases to home rather than requiring a distinct canvas. 6 passed</p></div>
 </div>
 </section>
 </main>
