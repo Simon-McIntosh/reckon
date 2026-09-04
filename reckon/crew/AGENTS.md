@@ -30,6 +30,46 @@ delivery fences.
 | Roster | `reckon crew member add --project <project> --member <id> --harness <backend> [--session <id>]` · `reckon crew member list --project <project>` | The project's committed team. A member registered with no session captures one from its first run and reuses it for every later node and every escape-hatch resumption. |
 | Ledger | `reckon crew ledger --project <project> [--view summary\|records]` | Reads the committed record of how this project's plans were implemented: roster, gate outcomes, and measured worker-time per plan against its declared effort with the spread. |
 
+### Recovering a run blocked by a provider refusal
+
+A per-request provider refusal kills a worker's turn without killing its
+session: the run reads `blocked`, but its worktree is untouched and its
+session transcript is still on disk. A live pointer's `session_id` reading
+empty means only that `observe` has not run yet — not that the run is
+unresumable, since `resume_plan` recovers a missing id from the stream itself.
+Two coordinators read that empty field as a verdict on the same day: one
+promoted five recoverable runs, destroying their resume paths; the other left
+a run blocked for five hours and forty-two minutes after its refusal had
+already lifted. The order recorded for this failure was not applied the
+second time it was needed, four hours after the first.
+
+**The order:** inspect the worktree for committed and uncommitted work, resume
+the session, and reconcile (promote or discard) only once resume is
+impossible — never the reverse, because promotion deletes the pointer that a
+resume depends on and cannot be undone by resuming afterward. Promoting first
+to "tidy the fleet" is the mistake, not a shortcut to it; so is re-observing a
+held run to check on it — that used to actively renew the hold by rewriting
+the field its age was measured from, which is fixed, but it is why the
+instinct persists.
+
+**What is safe mid-hold:** `reckon crew observe` reads the local stream and
+manifest and never calls the provider, so it works identically before and
+during a refusal — there is no window where it must be run early or not at
+all.
+
+**The automatic path:** `reckon crew resume-held --project <project>` sweeps
+and resumes every run a lapsed refusal still holds; `reckon crew follow` runs
+it itself on a two-minute cadence. A `follow` process already running when
+this sweep's code changes keeps its pre-change code for its whole life and
+will never call the new version — cycle any long-lived follower whenever
+recovery-path code lands.
+
+Commands, verified with `--help`: `reckon crew observe`, `reckon crew resume
+--advice`, `reckon crew resume-held`, `reckon crew complete`, `reckon crew
+recover` (a different capability — it classifies abandoned live pointers and
+repairs the record only, it does not resume or promote). Full operational
+detail: `~/.claude/skills/reckon-ship/references/outage-recovery.md`.
+
 ### Fan-out boundary
 
 In a crew-managed repository, investigation and review fan-out is `reckon crew dispatch` work under the investigate and review roles; harness-native background agents bypass the run ledger, manifests and calibration and are refused by the guard.
