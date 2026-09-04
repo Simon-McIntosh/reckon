@@ -468,7 +468,7 @@ def test_compiled_spa_modules_isolate_scope_and_preserve_window_exports(
         "glyphs": ("GLYPHS", "ACCENTS"),
         "_shared": (
             "ProjectPicker",
-            "ProjectVisibilityPanel",
+            "ProjectVisibilitySheet",
             "SettingsMenu",
             "Sparkline",
             "Chip",

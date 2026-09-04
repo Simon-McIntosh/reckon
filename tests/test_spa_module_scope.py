@@ -28,7 +28,7 @@ WINDOW_EXPORTS = {
     "glyphs": ("GLYPHS", "ACCENTS"),
     "_shared": (
         "ProjectPicker",
-        "ProjectVisibilityPanel",
+        "ProjectVisibilitySheet",
         "SettingsMenu",
         "Sparkline",
         "Chip",
