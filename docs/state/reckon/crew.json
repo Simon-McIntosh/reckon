@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T01:57:00",
+  "updated": "2026-09-04T05:47:01",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -584,7 +584,8 @@
         "session_model": "claude-sonnet-5",
         "sessions": {
           "{\"backend\":\"claude\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "cc02e920-760b-40e8-aa15-07a89f2a244f",
-          "{\"alias\":\"opus 5\",\"backend\":\"claude-opus\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"claude-opus-5\",\"sandbox\":\"read-only\"}": "f657e51f-7ae7-4321-8c5f-281f0a63a5e7"
+          "{\"alias\":\"opus 5\",\"backend\":\"claude-opus\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"claude-opus-5\",\"sandbox\":\"read-only\"}": "f657e51f-7ae7-4321-8c5f-281f0a63a5e7",
+          "{\"alias\":\"sonnet 5\",\"backend\":\"claude\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "17d1dc38-d28e-4bd5-a988-a8575eac14c1"
         },
         "created": "2026-09-03"
       },
@@ -48160,6 +48161,126 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260903T235356722307-a-refused-wave-resumes-itself",
+        "plan": "work-survives-a-provider-outage",
+        "section": "\u00a77",
+        "node": "a-refused-wave-resumes-itself",
+        "node_definition": {
+          "done_when": "Everything landed against this failure so far is defence: a promotion that would delete a resume path is refused, the hold ages from its refusal, the shelf life is configurable. After all of it a person still has to notice the outage and type the resume, and the failure's defining property is happening while nobody watches, on a lane that returns minutes later, to a session whose only need is the word continue. Twice in one day nobody noticed in time. THE TRIGGER NEEDS NO PROVIDER POLLING: a refusal naming a reset time is dated by it, and one naming none ages out of the declared shelf life, so eligibility is computable from records already on disk. Done when an idempotent per-project sweep, exposed as a command and callable in-process, finds every run whose phase is blocked by a provider refusal, whose hold is no longer in force, whose session is recoverable from the pointer or its stream, and whose worktree is present, and resumes each exactly once with an advice stating the limit has reset and to continue from where it stopped. FOUR BOUNDS, EACH ASSERTED. At most one resume per hold: assert by refusing the resumed run a second time and requiring the sweep to wait for that new hold's own expiry rather than retrying. A run whose write scope has since been claimed by another live run is skipped, because resuming into a scope another run owns is a collision this would be creating. A run whose worktree is absent is skipped with that named as the reason rather than attempted. A lane whose hold is still in force is never resumed onto, so the sweep cannot spend the last of a recovering quota. Every skip states its reason and every resume is recorded, so an operator reading afterwards sees the recovery happen rather than inferring it. THEN MAKE IT AUTOMATIC: the follow loop in reckon/cli.py already runs per project and already calls runs.producer_live around lines 1287 to 1328; invoke the sweep from that loop on a cadence, so no attention is required and no new daemon exists. The cadence must not run the sweep on every iteration of a tight loop. ASSERT THROUGH THE SWEEP'S OWN ENTRY POINT and through the loop that calls it, over pointers and streams built the way dispatch writes them under a temporary config home, from a real refused stream rather than a synthesised one, and assert the real config home is untouched afterwards. A dry-run mode that reports what it would resume without resuming is required, and is how the loop-level assertion avoids launching workers. At least one added assertion must fail against base b22dcd1. Measured over tests/test_crew_recover.py in one invocation: zero failures against its count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 3.0,
+          "goal": "A run held by a lapsed provider refusal is resumed without anyone noticing the outage.",
+          "id": "a-refused-wave-resumes-itself",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/auto-recover-manifest.md",
+          "plan": "work-survives-a-provider-outage",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/recover.py",
+            "reckon/cli.py",
+            "tests/test_crew_recover.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "opus-a",
+        "backend": "claude-opus",
+        "local": false,
+        "agent": {
+          "alias": "opus 5",
+          "backend": "claude-opus",
+          "effort": "high",
+          "launch": "cli",
+          "model": "claude-opus-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T23:54:06Z",
+        "completed_at": "2026-09-04T00:01:04.231Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 407,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 418,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "9669065e47017469f055d0c26665c5f39333f2a9",
+        "commits": [
+          "eabc5054dc44dd1588679a699ff8eb3fcc3b30a3"
+        ],
+        "changed_lines": {
+          "added": 880,
+          "removed": 0,
+          "files": 3
+        },
+        "tests_added": 9,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_recover.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vr.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/auto-recover-manifest.md",
+        "scope_changed": false,
+        "session_id": "3e81786c-e969-4c9e-9fed-220afdde1bf7",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 0.82,
+          "rate_limit_type": "seven_day",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-09-07T20:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 0.75,
+          "tokens": {
+            "cache_creation_input_tokens": 7901,
+            "cache_creation_input_tokens_cumulative": 313666,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 6390099,
+            "inference_geo": "not_available",
+            "input_tokens": 0,
+            "input_tokens_cumulative": 44,
+            "output_tokens": 10942,
+            "output_tokens_cumulative": 31962,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 0.0,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 7.130979500000001
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 415.369,
+          "generated_tokens": 31962,
+          "generation_seconds": 398.959,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 32.4,
+          "machine_seconds": 16.41,
+          "peak_input_tokens": 324368,
+          "tokens_per_second": 80.11,
+          "wall_tokens_per_second": 76.95
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -48318,6 +48439,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 788
+    "_version": 790
   }
 }
