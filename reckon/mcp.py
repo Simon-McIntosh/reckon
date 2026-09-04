@@ -84,6 +84,7 @@ from reckon.capability import (
 )
 import reckon.crew.resumption as resumption_module
 from reckon.crew.directory import DirectoryError, directory as crew_directory
+from reckon.crew.query import RunQueryError, runs_view as crew_runs_view
 from reckon.crew.runs import project_watch_visibility
 from reckon.doccheck import SEVERITIES, audit_file, audit_lifecycle, audit_links
 from reckon.mcp_views import (
@@ -2879,13 +2880,20 @@ def _crew(
     advice: str | None = None,
     dry_run: bool = False,
     node: str | None = None,
+    section: str | None = None,
+    member: str | None = None,
+    classification: str | None = None,
+    resumable: bool | None = None,
+    newest_per_node: bool = False,
+    source: str = "all",
+    fields: list[str] | None = None,
 ) -> dict[str, Any]:
     """Read crew state or perform one recovery action through the crew surface.
 
-    Deliberately one tool over ten read views and three recovery actions rather
-    than eleven top-level tools. Set ``action`` to ``resume``, ``session`` or
-    ``resume-ready`` to reach the same implementation as the corresponding crew
-    CLI operation. Omit ``action`` for the read views below.
+    Deliberately one tool over eleven read views and three recovery actions
+    rather than twelve top-level tools. Set ``action`` to ``resume``, ``session``
+    or ``resume-ready`` to reach the same implementation as the corresponding
+    crew CLI operation. Omit ``action`` for the read views below.
     ``directory`` reads every live coordinator across the workstation, or one
     project's coordinators, and resolves a run or human node id to its owner.
     ``ledger``, ``records`` and ``summary`` read the project's committed runs —
@@ -2895,6 +2903,7 @@ def _crew(
     the session-closure count and recorded dispositions from those pointers;
     ``scopes`` reads live path claims and partitions the optional ordered
     ``candidates`` wave manifest into mutually independent serial lanes;
+    ``runs`` joins compact, filterable rows from live pointers and the ledger;
     ``fleet`` reads compact rows for every mounted project's cross-project rollup;
     ``flight`` reports the resolved routing config with the layer that supplied every value; and
     ``budget`` reports, per backend, whether a wave may open — read from what
@@ -2905,7 +2914,8 @@ def _crew(
     ``live``: every run row gains ``mine``, and the watcher block reports
     ``session_attached`` plus the session-scoped ``attach_line``. Without it the
     answer is project-wide, which says a producer exists and says nothing about
-    whether this session will hear its own runs finish.
+    whether this session will hear its own runs finish. On ``runs``, ``session``
+    filters the worker session identity carried by each compact row.
 
     ``checkout_path`` follows the same worktree-routing contract as
     ``read_plan``: with it, the ledger and the routing project layer resolve
@@ -2965,16 +2975,34 @@ def _crew(
         "budget",
         "directory",
         "fleet",
+        "runs",
     ):
         return {
             "ok": False,
             "error": "invalid_view",
             "detail": (
                 "view must be directory, drain, scopes, summary, flight, live, "
-                "records, ledger or budget; fleet is the cross-project view"
+                "records, ledger or budget; runs is the compact joined view and "
+                "fleet is the cross-project view"
             ),
         }
     try:
+        if view == "runs":
+            return crew_runs_view(
+                project,
+                checkout_path=checkout_path,
+                source=source,
+                node=node,
+                plan=plan,
+                section=section,
+                session=session,
+                member=member,
+                classification=classification,
+                resumable=resumable,
+                newest_per_node=newest_per_node,
+                fields=fields,
+                limit=limit,
+            )
         if view == "scopes":
             docs_dir = _docs_dir_for_project(project, checkout_path)
             if docs_dir is None:
@@ -3090,6 +3118,7 @@ def _crew(
         ledger_module.LedgerError,
         crew_module.CrewError,
         flight_module.FlightConfigError,
+        RunQueryError,
     ) as exc:
         return {
             "ok": False,
