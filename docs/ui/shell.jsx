@@ -30,7 +30,7 @@ function App() {
     try { localStorage.setItem(SK.shipped, showShipped ? "1" : "0"); } catch {}
   }, [showShipped]);
 
-  // Allow other components (e.g. cockpit milestone tiles) to set filters.
+  // Allow routed components to set the shared plan filters.
   useEffect(() => {
     const onSet = (e) => setFilters(e.detail || {});
     window.addEventListener("reckon:set-filters", onSet);
@@ -197,7 +197,7 @@ function App() {
       else if (route.view === "plan") hash = "#plans";
       else if (route.view === "sprint") hash = "#sprints";
       else if (route.view === "home") hash = "#home";
-      else hash = "#cockpit";
+      else hash = "#home";
     }
     window.location.href = `/${destProject}/${hash}`;
   }, [route]);
@@ -346,11 +346,10 @@ function App() {
         <div className={`r-canvas-view r-${canvasView}-view`}>
           <div className="r-content">
             <window.ReckonShell.title.TitleBar route={route} onNav={nav} onOpenPrompt={() => setPromptOpen(true)} onPlanMutated={bumpInv} />
-            <div className={`r-reader-with-attachments ${route.view === "cockpit" ? "r-overview-container" : ""}`}>
-              <div className={`r-body ${route.view === "cockpit" ? "r-overview-view" : ""}`}>
+            <div className="r-reader-with-attachments">
+              <div className="r-body">
                 {canvasView === "home" && <window.ReckonShell.home.FleetHome projects={shownProjects} fleetRuns={window.ReckonShell.home.homeVisibleRuns(fleetRuns, shownProjects)} mountedProjectCount={projects.length} onConfigureVisibility={() => document.querySelector(".r-project-configure")?.click()} />}
-                {canvasView === "cockpit" && <window.ReckonShell.overview.CockpitBody onNav={nav} projects={shownProjects} fleetRuns={fleetRuns} mountedProjectCount={projects.length} />}
-                {canvasView === "sprint" && <><window.ReckonShell.prompt.FleetPrompt sprintId={route.sprint} /><window.Sprint sprintId={route.sprint} onNav={nav} /></>}
+                {canvasView === "sprint" && <window.Sprint sprintId={route.sprint} onNav={nav} />}
                 {canvasView === "graph" && <window.GraphView onNav={nav} items={items} focal={graphFocal} setFocal={setGraphFocal} />}
                 {canvasView === "crew" && <window.CrewView visibleProjects={shownProjectNames} mountedProjectCount={projects.length} selectedProject={M?.project || null} />}
               </div>

@@ -6,8 +6,10 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
 import zipfile
 from contextlib import contextmanager
+from http.client import HTTPConnection
 from importlib.metadata import version
 from pathlib import Path
 
@@ -323,14 +325,57 @@ def test_spa_entry_points_load_exactly_the_canonical_modules(
     mutated = {**loaded, "served": loaded["served"][:-1]}
     with pytest.raises(AssertionError):
         _assert_spa_module_lists_match(mutated, expected_modules)
-    assert all("_ui/cockpit.js" not in modules for modules in loaded.values())
-    assert not (REPO_ROOT / "docs" / "ui" / "cockpit.jsx").exists()
-    assert not (docs_dir / "_ui" / "cockpit.jsx").exists()
+    retired_modules = ("cockpit", "shell-overview", "shell-prompt")
+    assert all(
+        all(f"_ui/{name}.js" not in modules for name in retired_modules)
+        for modules in loaded.values()
+    )
+    assert all(
+        not (REPO_ROOT / "docs" / "ui" / f"{name}.jsx").exists()
+        for name in retired_modules
+    )
+    assert all(
+        not (docs_dir / "_ui" / f"{name}.jsx").exists() for name in retired_modules
+    )
     assert all((docs_dir / module).is_file() for module in expected_modules)
     authored_sources = "\n".join(
         _authored_spa_source(module).read_text() for module in expected_modules
     )
-    assert authored_sources.count("function CockpitBody(") == 1
+    assert authored_sources.count("function CockpitBody(") == 0
+    assert authored_sources.count("function FleetHome(") == 1
+    assert not (REPO_ROOT / "docs" / "home.html").exists()
+    assert not (docs_dir / "home.html").exists()
+    assert "ReckonShell.prompt.FleetPrompt" not in authored_sources
+    route_source = (REPO_ROOT / "docs" / "ui" / "shell-route.jsx").read_text()
+    assert 'if (h === "cockpit") return { view: "home" };' in route_source
+
+
+def test_server_root_redirects_to_the_first_mounted_project_home(tmp_path, monkeypatch):
+    first = tmp_path / "first" / "docs"
+    second = tmp_path / "second" / "docs"
+    first.mkdir(parents=True)
+    second.mkdir(parents=True)
+    mounts = tmp_path / "mounts.json"
+    mounts.write_text(
+        json.dumps({"first-project": str(first), "second-project": str(second)}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(serve, "_MOUNTS_FILE", mounts)
+    server = serve.ThreadingHTTPServer(("127.0.0.1", 0), serve.Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    connection = HTTPConnection(*server.server_address, timeout=5)
+    try:
+        connection.request("GET", "/")
+        response = connection.getresponse()
+        response.read()
+        assert response.status == 302
+        assert response.getheader("Location") == "/first-project/#home"
+    finally:
+        connection.close()
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
 
 
 def test_spa_entry_points_use_local_runtime_without_browser_transforms(
@@ -605,7 +650,7 @@ def test_spa_entry_points_load_the_same_surface_stylesheets(
         "topbar.css",
         "plans.css",
         "reader.css",
-        "overview.css",
+        "home.css",
         "sprints.css",
         "crew.css",
         "graph.css",
