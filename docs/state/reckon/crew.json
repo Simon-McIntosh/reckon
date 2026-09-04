@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T08:36:53",
+  "updated": "2026-09-04T08:56:42",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -51552,6 +51552,185 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260904T064636647303-the-verbs-say-what-they-do",
+        "plan": "every-state-has-a-verb",
+        "section": "\u00a76",
+        "node": "the-verbs-say-what-they-do",
+        "node_definition": {
+          "done_when": "THREE NAMING DEFECTS, ONE FACTUALLY WRONG TODAY. FIRST, resume-held IS WRONG ABOUT HALF OF WHAT IT DOES. The sweep's own docstring reads resume runs whose provider hold OR DECLARED EXTERNAL WAIT has ended, while its help text names only the provider half, because the external-wait trigger landed after the verb was named. The word held is also the wrong tense for a command acting only on runs no longer held. Rename the verb to resume-ready, which covers a lapsed provider hold and a terminated external wait alike and extends to a third condition without a further rename, and rewrite its first help line to name both conditions. Rename any internal identifier carrying the old word so code and verb agree, and leave NO alias, since a deprecated spelling reintroduces the ambiguity the rename removes. The lead approved this rename explicitly. SECOND, recover PROMISES MORE THAN IT DOES AND ITS NAME IS KEPT DELIBERATELY. The lead likes the name, so it stays and the defect is its first help line: it classifies live pointers an interrupted orchestrator left and repairs the RECORD only, launching nothing and resuming nothing and promoting nothing, while a coordinator reading crew recover during an outage expects it to recover their WORK. Its first help line must state what it does not do in the same breath as what it does, because that line is all that stands between a coordinator and the wrong verb mid-incident. Do NOT rename it. THIRD, repair-completion KEEPS ITS NAME, recorded so a later reader does not change it for symmetry: it repairs completion measurements, reports by default, persists under a flag, and its name already states what it touches. AND ONE VERB IS UNDOCUMENTED: crew ledger reads the committed record of what a project landed and appears in no skill file, measured at zero mentions, which is why two coordinators reached for python and jq against crew.json instead. Document it in the ship skill's read-discipline section beside the view guidance, stating what it answers and that it is the documented route to the committed record. Update every occurrence of the old verb across the six staged paths; afterwards a grep for resume-held and resume_held across reckon, tests and skills returns nothing. ASSERT THROUGH THE COMMAND AND THE MCP ACTION a caller invokes: the new verb performs the sweep, the old verb is rejected as unknown, and the MCP action name matches the CLI verb so the two surfaces cannot diverge. At least one added assertion must fail against base e437c50. Measured over tests/test_crew_recover.py plus tests/test_mcp_recovery.py in ONE invocation: zero failures against their combined count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 1.5,
+          "goal": "Three crew verbs describe what they do, so a coordinator reading the surface picks the right one without trying it.",
+          "id": "the-verbs-say-what-they-do",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/verb-rename-manifest.md",
+          "plan": "every-state-has-a-verb",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "exact",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/cli.py",
+            "reckon/mcp.py",
+            "reckon/crew/AGENTS.md",
+            "tests/test_crew_recover.py",
+            "skills/reckon-ship/SKILL.md",
+            "skills/reckon-ship/references/outage-recovery.md"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "codex-j",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T06:46:48Z",
+        "completed_at": "2026-09-04T06:56:23Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 575,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 575,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "e437c50ef3d9a0d471e5237ea9ae687ffc4c91f6",
+        "commits": [
+          "74f5fdf479b2c1acbe59b2874b393b23c24ddc19"
+        ],
+        "changed_lines": {
+          "added": 105,
+          "removed": 37,
+          "files": 6
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_recover.py tests/test_mcp_recovery.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vvr.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/verb-rename-manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06b2b-8262-7f93-9039-ee036dc3bfc0",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no events yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 1704,
+              "budget_seconds": 2100,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 3804,
+              "external_wait": null,
+              "log_age_seconds": 3081,
+              "log_fresh": false,
+              "manifest_commits": [
+                "[263b92a",
+                "764865b",
+                "c3268d6]; changed_paths: [\"reckon/crew/recovery.py\"",
+                "\"tests/test_crew_recovery.py\"]"
+              ],
+              "manifest_derived": false,
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/manifest-verdict-manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260904T054309199355-a-manifest-is-not-a-verdict-while-the-process-lives --gate <verdict> --commit [263b92a --commit 764865b --commit c3268d6]; changed_paths: [\"reckon/crew/recovery.py\" --commit \"tests/test_crew_recovery.py\"]",
+              "node": "a-manifest-is-not-a-verdict-while-the-process-lives",
+              "phase": "starting",
+              "plan": "crew-observability-truth",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260904T054309199355-a-manifest-is-not-a-verdict-while-the-process-lives",
+              "session": "ship-s15-0903",
+              "terminal_age_seconds": 3103,
+              "terminal_at": "2026-09-04T05:55:01Z",
+              "wait_age_seconds": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-0903/a-manifest-is-not-a-verdict-while-the-process-lives"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 1800,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 1044,
+              "external_wait": null,
+              "log_age_seconds": 698,
+              "log_fresh": true,
+              "manifest_commits": [
+                "[\"ba6ff352234429b3e3f0cb33964e4b3c70e1d697\"]; changed_paths: [\"docs/ui/shell-palette.jsx\"",
+                "\"tests/test_spa_palette_open.py\"]"
+              ],
+              "manifest_derived": false,
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T062837949630-palette-resolves-its-label-helper/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260904T062837949630-palette-resolves-its-label-helper --gate <verdict> --commit [\"ba6ff352234429b3e3f0cb33964e4b3c70e1d697\"]; changed_paths: [\"docs/ui/shell-palette.jsx\" --commit \"tests/test_spa_palette_open.py\"]",
+              "node": "palette-resolves-its-label-helper",
+              "phase": "starting",
+              "plan": "artifact-feeds-and-reader",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260904T062837949630-palette-resolves-its-label-helper",
+              "session": "ship-s16",
+              "terminal_age_seconds": 720,
+              "terminal_at": "2026-09-04T06:34:45Z",
+              "wait_age_seconds": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16/palette-resolves-its-label-helper"
+            }
+          ]
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -51724,6 +51903,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 838
+    "_version": 839
   }
 }
