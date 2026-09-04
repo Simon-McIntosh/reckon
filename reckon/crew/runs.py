@@ -398,6 +398,18 @@ def list_live(
 ) -> list[dict[str, Any]]:
     """Return matching live pointers, newest run id last."""
     records = _list_live_records(project=project, phase=phase)
+    for record in records:
+        pid = record.get("pid")
+        if not pid:
+            continue
+        alive = process_alive(pid)
+        expected_start = record.get("pid_start_time")
+        if alive is True and expected_start is not None:
+            alive = _process_start_time(pid) == expected_start
+        # Return the re-derived fact without mutating the pointer. A read must
+        # not report a worker as live merely because the last observer did,
+        # while all consumers of this one snapshot must see the same answer.
+        record["process_alive"] = alive
     if project is not None and phase is None:
         _publish_watch_stream(project, records)
     return records
@@ -797,7 +809,13 @@ def drain(project: str) -> dict[str, Any]:
     """
     rows: list[dict[str, Any]] = []
     for pointer in list_live(project=project):
-        row = classify_pointer(pointer)
+        # ``still-working`` is a current liveness claim. Recheck it rather
+        # than letting a historical ``process_alive`` field keep the closure
+        # fence open after a terminal manifest arrives. A pointer with no pid
+        # has no process-table evidence and therefore cannot use that stored
+        # boolean to outrank delivery on disk.
+        current = {**pointer, "process_alive": process_alive(pointer.get("pid"))}
+        row = classify_pointer(current)
         recorded = pointer.get("closure_disposition")
         disposition = (
             str(recorded.get("kind") or "") if isinstance(recorded, Mapping) else ""
@@ -1769,8 +1787,10 @@ WATCH_ATTENTION_STATES = (
     "abandoned",
     "completed_unpromoted",
     "unknown",
+    "unreadable",
+    "wait-aged",
 )
-WATCH_PROGRESS_STATES = ("dispatched", "working", "running", "promoted")
+WATCH_PROGRESS_STATES = ("dispatched", "working", "running", "waiting", "promoted")
 
 
 def _watch_arming_line(project: str) -> str:
@@ -1846,9 +1866,29 @@ def _watch_event(project: str, *, stall_seconds: int) -> dict[str, Any] | None:
     classified = [
         (pointer, classify_pointer(pointer, now_seconds=moment)) for pointer in pointers
     ]
-    for _pointer, row in classified:
-        if row.get("manifest_status") in {"complete", "blocked", "failed"}:
-            return {"project": project, "event": "terminal", **row}
+    for pointer, row in classified:
+        manifest_status = row.get("manifest_status")
+        # A resumed attempt owns evidence newer than the baseline captured at
+        # resumption. Completion is never an early placeholder, so the
+        # one-event watcher may finish as soon as that attempt writes it even
+        # during the short interval before its process exits. Failed and
+        # blocked reports remain deferred while the process lives because
+        # workers can pre-arm those pessimistic statuses before doing work.
+        if (
+            manifest_status == "complete"
+            or manifest_status in {"blocked", "failed"}
+            or (
+                pointer.get("attempt_kind") == "resume"
+                and row.get("manifest_fresh") is True
+                and row.get("manifest_reported_status") == "complete"
+            )
+        ):
+            return {
+                "project": project,
+                "event": "terminal",
+                **row,
+                "manifest_status": manifest_status or "complete",
+            }
 
     for pointer, row in classified:
         quiet = _stream_quiet_seconds(pointer, now_seconds=moment)
