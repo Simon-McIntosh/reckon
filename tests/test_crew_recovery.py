@@ -394,6 +394,7 @@ def test_manifest_outcome_waits_until_the_pointer_says_the_process_stopped(
     )
     assert live_row["classification"] == "running"
     assert live_row["process_alive"] is True
+    assert live_row["manifest_status"] is None
     assert live_snapshot["state"] == "working"
 
     pointer["process_alive"] = False
@@ -402,6 +403,7 @@ def test_manifest_outcome_waits_until_the_pointer_says_the_process_stopped(
         pointer, moment=time.time(), stall_seconds=3600
     )
     assert stopped_row["classification"] == stopped_classification
+    assert stopped_row["manifest_status"] == status
     assert stopped_snapshot["state"] == stopped_state
     if status == "failed":
         assert "implementation failed" in stopped_row["detail"]
@@ -475,6 +477,7 @@ def test_observe_and_watch_render_failure_only_after_the_process_stops(
     live_pointer = crew.observe(run_id)
     assert live_pointer["process_alive"] is True
     assert recovery.classify_pointer(live_pointer)["classification"] == "running"
+    assert crew._watch_event("proj", stall_seconds=3600) is None
 
     producer = runs._WatchStreamProducer(
         path=runs.watch_stream_path("proj"), known={}, stall_window="1h"
@@ -495,6 +498,10 @@ def test_observe_and_watch_render_failure_only_after_the_process_stops(
     assert events[1]["from_state"] == "working"
     assert stopped_pointer["process_alive"] is False
     assert recovery.classify_pointer(stopped_pointer)["classification"] == "failed"
+    terminal_event = crew._watch_event("proj", stall_seconds=3600)
+    assert terminal_event is not None
+    assert terminal_event["event"] == "terminal"
+    assert terminal_event["classification"] == "failed"
 
     rendered = [recovery.format_watch_transition(event) for event in events]
     assert "working" in rendered[0]

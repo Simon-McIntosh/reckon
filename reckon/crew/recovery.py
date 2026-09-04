@@ -474,7 +474,8 @@ def classify_pointer(
     )
     terminal_at = None
     terminal_age_seconds = None
-    if manifest_status in {"complete", "blocked", "failed"}:
+    deferred_outcome = alive is True and manifest_status in {"complete", "failed"}
+    if manifest_status in {"complete", "blocked", "failed"} and not deferred_outcome:
         terminal_seconds = manifest.stat().st_mtime
         terminal_at = (
             datetime.fromtimestamp(terminal_seconds, tz=timezone.utc)
@@ -667,7 +668,11 @@ def classify_pointer(
         "manifest_file_present": manifest_file_present,
         "manifest_fresh": manifest_present,
         "manifest_path": str(manifest) if str(manifest) != "." else "",
-        "manifest_status": manifest_status or None,
+        # A living worker's complete or failed report remains on disk but is
+        # not exposed as a terminal outcome. The single-event watcher consumes
+        # this field, so returning the raw report here would call the run
+        # terminal while the classification and ticker correctly call it live.
+        "manifest_status": None if deferred_outcome else manifest_status or None,
         "manifest_derived": manifest_derived,
         "manifest_commits": manifest_commits,
         # The refusal text when a present manifest could not be read, carried on
