@@ -26,6 +26,8 @@
   <title>Four Artifact Tabs, One Reader | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-04">
+<meta name="plan-version" content="1">
 </head>
 <body>
 <main class="plan-doc">
@@ -138,6 +140,22 @@
   </tbody>
 </table>
 
+<h2 id="s9">&#167;9 &mdash; The palette crashes the application, and nothing opened it</h2>
+<p>Found 2026-09-04 by the containment guard's diagnostic, which could not measure the command palette because opening it destroys the page. <code>docs/ui/shell-palette.jsx</code> calls <code>paletteKindLabel(p.kind)</code> as a bare identifier at line 42, inside the map over result rows. That function is defined module-locally in <code>docs/ui/shell-plans.jsx</code> at line 182 and published only as <code>window.ReckonShell.plans.paletteKindLabel</code> at line 373. Each JSX file is compiled as its own module, so the bare reference resolves to nothing: opening the palette with any matching result raises <code>ReferenceError: paletteKindLabel is not defined</code> and unmounts <code>.r-app</code>, taking the whole shell with it.</p>
+<p>It survived because the reference sits inside the results map, so a palette opened against an empty result set never reaches it, and no test opens the palette with a populated one. The fix is to reach the function the way every other cross-module reference reaches its neighbour, through the published namespace. The measure has to open the palette <strong>with results</strong>, because that is the only state in which the defect exists.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>palette-resolves-its-label-helper</code></td>
+      <td>Opening the command palette with matching results renders them instead of unmounting the application.</td>
+      <td><code>uv run pytest tests/test_spa_palette_open.py -q</code> passes: rendered at 1374 against a fixture whose query matches at least one document of each kind, the palette opens, <code>.r-cmdk</code> is present, every result row renders its kind label, <code>.r-app</code> is still mounted, and the browser console reports no <code>ReferenceError</code>. <code>grep -c 'paletteKindLabel' docs/ui/shell-palette.jsx</code> shows every call site qualified by its namespace and no bare identifier remains. The previously unmeasurable overlay is then measurable, so <code>uv run pytest tests/test_spa_viewport_containment.py -q</code> reports the command palette among its measured surfaces rather than among the not-measured ones.</td>
+      <td><code>docs/ui/shell-palette.jsx</code>, <code>tests/test_spa_palette_open.py</code></td>
+      <td>exact &middot; sonnet</td>
+    </tr>
+  </tbody>
+</table>
+
 <h2 id="s8">&#167;8 &mdash; Out of scope</h2>
 <p>Whether the filtered list ghosts in on hover during full-screen reading is an open design question in the handoff; the canvas keeps it hidden until <code>esc</code> and so does this plan. No server change: figure rows and edited stamps come from <code>served-surface-data-contracts</code>, and the change stream is used as it exists. Comment authoring in the reader is unchanged.</p>
 
@@ -147,55 +165,53 @@
 <div class="r-dec" data-key="artifact-layout" data-choice="full-width-index-drilling-to-reader" data-by="reckon-ship (deduced from the canvas)" data-when="2026-09-03">
     <p class="r-dec-q">Do the artifact tabs keep the rail-plus-reader layout or follow Sprints and Graph?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="full-width-index-drilling-to-reader">A full-width index that drills into a full-width reader</button>
+      <button class="r-opt chosen" data-value="full-width-index-drilling-to-reader">A full-width index that drills into a full-width reader</button>
       <button class="r-opt" data-value="persistent-rail">A persistent rail beside the reader</button>
-    </p>
+      </p>
     <p class="r-dec-rat">The canvas states it: the artifact tabs now follow Sprints and Graph, so one layout serves seven surfaces and the reader gets the width its measure needs.</p>
-</div>
+    </div>
 <div class="r-dec" data-key="full-screen-drape" data-choice="whole-shell" data-by="reckon-ship (deduced from the canvas)" data-when="2026-09-03">
     <p class="r-dec-q">What does full-screen reading cover?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="whole-shell">The entire shell, topbar included</button>
+      <button class="r-opt chosen" data-value="whole-shell">The entire shell, topbar included</button>
       <button class="r-opt" data-value="reader-pane-only">The reader pane</button>
-    </p>
+      </p>
     <p class="r-dec-rat">Every topbar control navigates away from the document and the list is what you are already stepping through; nothing in the bar helps a reader.</p>
-</div>
+    </div>
 <div class="r-dec" data-key="cone-edges" data-choice="depends-on-only" data-by="reckon-ship (deduced from the canvas)" data-when="2026-09-03">
-    <p class="r-dec-q">Which edges does the reader's dependency cone draw?</p>
+    <p class="r-dec-q">Which edges does the reader&#x27;s dependency cone draw?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="depends-on-only">depends_on and its reverse</button>
+      <button class="r-opt chosen" data-value="depends-on-only">depends_on and its reverse</button>
       <button class="r-opt" data-value="all-relations">Prerequisites, informs, evidence-for and verifies</button>
-    </p>
+      </p>
     <p class="r-dec-rat">Research and evidence say why a plan exists and whether it worked, not what must land first; mixing them in made the old cone unreadable, and the Graph tab uses the same rule so the two agree.</p>
-</div>
+    </div>
 <div class="r-dec" data-key="arrival-discipline" data-choice="held-until-shown" data-by="reckon-ship (deduced from the canvas)" data-when="2026-09-03">
     <p class="r-dec-q">What happens to the list when a new document arrives?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="held-until-shown">Held as a counted receipt and banner, inserted on request</button>
+      <button class="r-opt chosen" data-value="held-until-shown">Held as a counted receipt and banner, inserted on request</button>
       <button class="r-opt" data-value="insert-immediately">Inserted immediately in sort position</button>
       <button class="r-opt" data-value="reload-state">Reload and re-render</button>
-    </p>
-    <p class="r-dec-rat">A list that re-sorts under the reader loses the reader's place; the canvas holds arrivals and shows the count, and the existing stream makes the reload path the measured defect.</p>
-</div>
+      </p>
+    <p class="r-dec-rat">A list that re-sorts under the reader loses the reader&#x27;s place; the canvas holds arrivals and shows the count, and the existing stream makes the reload path the measured defect.</p>
+    </div>
 </section>
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-afr-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-03" data-recommends-skill="/reckon-ship artifact-feeds-and-reader" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Land routes, then feeds and reader together, then cone and arrival</h4>
-    <div class="r-fu-body"><p>&#167;2 opens the chain once the shell plan's topbar and the fleet home's view have merged, because all three write the shell and route modules. &#167;3 and &#167;4 then run concurrently on disjoint files. &#167;5 and &#167;6 follow in sequence on the index module. &#167;7 captures last.</p></div>
+    <div class="r-fu-body"><p>§2 opens the chain once the shell plan's topbar and the fleet home's view have merged, because all three write the shell and route modules. §3 and §4 then run concurrently on disjoint files. §5 and §6 follow in sequence on the index module. §7 captures last.</p></div>
     <pre class="r-fu-prompt">/reckon-ship artifact-feeds-and-reader</pre>
-</article>
+    </article>
 </section>
 
 <section data-reckon="research" id="research" class="r-research-list">
 <h2><span class="sec">§</span> Research</h2>
-<div class="r-research" data-id="r1" data-type="design" data-url="design/reckon-spa-handoff.dc.html">
-  <span class="r-research-title">The handoff canvas: the artifact index, the reader with its trail, cone and full-screen mode, and the arrival receipt.</span>
-</div>
-<div class="r-research" data-id="r2" data-type="design" data-url="design/reckon-spa-handoff.md">
-  <span class="r-research-title">The designer's triage, items A6, B3, B3a, B3b and B7.</span>
-</div>
+<div class="r-research" data-id="r1" data-type="design" data-source="" data-added-by="" data-when="" data-url="design/reckon-spa-handoff.dc.html">
+    <span class="r-research-title"><a href="design/reckon-spa-handoff.dc.html">The handoff canvas: the artifact index, the reader with its trail, cone and full-screen mode, and the arrival receipt.</a></span></div>
+<div class="r-research" data-id="r2" data-type="design" data-source="" data-added-by="" data-when="" data-url="design/reckon-spa-handoff.md">
+    <span class="r-research-title"><a href="design/reckon-spa-handoff.md">The designer&#x27;s triage, items A6, B3, B3a, B3b and B7.</a></span></div>
 </section>
 </main>
 </body>
