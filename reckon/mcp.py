@@ -2882,7 +2882,7 @@ def _crew(
 ) -> dict[str, Any]:
     """Read crew state or perform one recovery action through the crew surface.
 
-    Deliberately one tool over nine read views and three recovery actions rather
+    Deliberately one tool over ten read views and three recovery actions rather
     than eleven top-level tools. Set ``action`` to ``resume``, ``session`` or
     ``resume-ready`` to reach the same implementation as the corresponding crew
     CLI operation. Omit ``action`` for the read views below.
@@ -2895,6 +2895,7 @@ def _crew(
     the session-closure count and recorded dispositions from those pointers;
     ``scopes`` reads live path claims and partitions the optional ordered
     ``candidates`` wave manifest into mutually independent serial lanes;
+    ``fleet`` reads compact rows for every mounted project's cross-project rollup;
     ``flight`` reports the resolved routing config with the layer that supplied every value; and
     ``budget`` reports, per backend, whether a wave may open — read from what
     earlier runs recorded, so it spends nothing, and holding only where
@@ -2918,6 +2919,25 @@ def _crew(
             advice=advice,
             dry_run=dry_run,
         )
+    if view == "fleet":
+        from reckon import fleet_index
+        from reckon.serve import load_mounts
+
+        try:
+            return {
+                "ok": True,
+                "view": view,
+                "projects": fleet_index.collect_project_rows(
+                    load_mounts(), state_root=_state_root()
+                ),
+            }
+        except (OSError, ProjectStateError, ValueError) as exc:
+            return {
+                "ok": False,
+                "error": "crew_error",
+                "view": view,
+                "detail": str(exc),
+            }
     if view == "directory":
         try:
             return crew_directory(project, run_id=run_id, node_id=node)
@@ -2944,13 +2964,14 @@ def _crew(
         "ledger",
         "budget",
         "directory",
+        "fleet",
     ):
         return {
             "ok": False,
             "error": "invalid_view",
             "detail": (
                 "view must be directory, drain, scopes, summary, flight, live, "
-                "records, ledger or budget"
+                "records, ledger or budget; fleet is the cross-project view"
             ),
         }
     try:

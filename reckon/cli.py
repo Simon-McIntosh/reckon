@@ -12,7 +12,7 @@ from typing import Any
 import click
 
 from reckon import __version__, pages
-from reckon._store import _config_home
+from reckon._store import _config_home, _state_root
 
 
 def _asset_root() -> Path:
@@ -442,6 +442,27 @@ def mcp():
     from reckon.mcp import main as mcp_main
 
     mcp_main()
+
+
+@main.command(name="fleet")
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def fleet(pretty):
+    """Read the compact cross-project fleet rollup."""
+
+    from reckon import fleet_index
+    from reckon.project_state import ProjectStateError
+    from reckon.serve import load_mounts
+
+    mounts = load_mounts()
+    if not mounts:
+        raise click.ClickException(
+            "no projects are mounted; run `reckon sync` in a project first"
+        )
+    try:
+        rows = fleet_index.collect_project_rows(mounts, state_root=_state_root())
+    except (OSError, ProjectStateError, ValueError) as exc:
+        raise click.ClickException(f"cannot read fleet rollup: {exc}") from exc
+    _emit({"ok": True, "view": "fleet", "projects": rows}, pretty)
 
 
 @main.command(name="badge")
