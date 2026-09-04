@@ -9,6 +9,7 @@ a working tree, and nothing durable may live only in the cache.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import subprocess
@@ -1521,6 +1522,151 @@ def test_the_summary_rolls_up_gates_roster_and_measured_effort(home, repo) -> No
 
 
 # ── The read tool ───────────────────────────────────────────────────────────
+
+
+def _mcp_tool(name: str):
+    """Return one client-facing tool entry rather than its implementation helper."""
+    from reckon import mcp
+
+    return next(
+        item for item in mcp.mcp._tool_manager.list_tools() if item.name == name
+    )
+
+
+def _call_mcp(name: str, **arguments):
+    """Exercise the argument validation and dispatch path an MCP client reaches."""
+    return asyncio.run(_mcp_tool(name).run(arguments))
+
+
+def test_every_read_tool_rejects_an_unknown_keyword_with_its_vocabulary() -> None:
+    for name in ("_read_plan", "_roadmap", "_audit", "_crew"):
+        tool = _mcp_tool(name)
+        accepted = sorted(tool.parameters["properties"])
+
+        with pytest.raises(Exception, match="Unknown parameters") as rejected:
+            asyncio.run(tool.run({"document": "not-an-accepted-parameter"}))
+
+        message = str(rejected.value)
+        assert "document" in message
+        assert "Accepted parameters:" in message
+        assert all(parameter in message for parameter in accepted)
+        assert tool.parameters["additionalProperties"] is False
+
+
+def test_every_read_view_returns_and_large_defaults_are_compact(home) -> None:
+    """A client can inspect every read shape without touching workstation state."""
+    checkout = Path(__file__).resolve().parents[1]
+    real_live = str(Path.home() / ".config" / "reckon" / "crew" / "live")
+
+    def durable_outside_state() -> dict[str, int]:
+        return {
+            path: modified
+            for path, modified in _outside_state()
+            if not path.startswith(f"{real_live}{os.sep}")
+        }
+
+    before = durable_outside_state()
+    assert _store._config_home() == home.resolve()
+
+    discovery = _call_mcp("_read_plan", project="reckon", checkout_path=str(checkout))
+    assert discovery["view"] == "summary"
+    selected = next(
+        item for item in discovery["resources"] if item.get("type") == "plan"
+    )
+    selector = {
+        "project": "reckon",
+        "type": "plan",
+        "id": selected["slug"],
+    }
+
+    responses = [discovery]
+    responses.extend(
+        [
+            _call_mcp(
+                "_read_plan",
+                resource=selector,
+                view=view,
+                checkout_path=str(checkout),
+                limit=1,
+            )
+            for view in ("summary", "detail", "history", "version", "raw", "schema")
+        ]
+    )
+    responses.extend(
+        [
+            _call_mcp(
+                "_roadmap",
+                project="reckon",
+                view=view,
+                checkout_path=str(checkout),
+                limit=1,
+            )
+            for view in ("summary", "detail", "raw")
+        ]
+    )
+    responses.extend(
+        [
+            _call_mcp(
+                "_audit",
+                project="reckon",
+                view=view,
+                checkout_path=str(checkout),
+                limit=1,
+            )
+            for view in ("summary", "detail", "raw", "schema")
+        ]
+    )
+    responses.extend(
+        [
+            _call_mcp(
+                "_crew",
+                project="reckon",
+                view=view,
+                checkout_path=str(checkout),
+                limit=1,
+            )
+            for view in (
+                "directory",
+                "drain",
+                "scopes",
+                "summary",
+                "flight",
+                "live",
+                "records",
+                "ledger",
+                "budget",
+            )
+        ]
+    )
+
+    audit_default = _call_mcp("_audit", project="reckon", checkout_path=str(checkout))
+    responses.append(audit_default)
+    assert audit_default["view"] == "summary"
+    assert audit_default["state"]["checked"] >= audit_default["state"]["conformant"]
+    counts = audit_default["state"]["finding_counts"]
+    assert {"by_severity", "by_code"} <= set(counts)
+    assert len(json.dumps(discovery)) < 32 * 1024
+    assert len(json.dumps(audit_default)) < 32 * 1024
+    assert all(isinstance(response, dict) for response in responses)
+    assert _store._config_home() == home.resolve()
+    assert durable_outside_state() == before
+
+
+def test_a_document_audit_keeps_its_own_findings_by_default(home) -> None:
+    checkout = Path(__file__).resolve().parents[1]
+    document = next((checkout / "docs" / "plans").glob("*.html"))
+
+    result = _call_mcp(
+        "_audit",
+        project="reckon",
+        path=str(document),
+        checkout_path=str(checkout),
+    )
+
+    assert result["checked"] == 1
+    assert result["path"] == str(document)
+    assert "findings" in result
+    assert "view" not in result
 
 
 def test_hold_history_is_exposed_with_count_and_total_duration(home, repo) -> None:
