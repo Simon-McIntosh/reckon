@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T10:31:48",
+  "updated": "2026-09-04T10:38:42",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -53454,6 +53454,118 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T080613561436-artifact-routes-and-tabs",
+        "plan": "artifact-feeds-and-reader",
+        "section": "\u00a72",
+        "node": "artifact-routes-and-tabs",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_spa_artifact_routes.py tests/test_spa_composition.py -q passes with the cases \u00a72 names: each of the eight hashes parses to its view and slug, the published artifact tab list reads Plans Research Evidence Figures in order, an unknown hash falls back to the home view, and switching from an open research document to the Evidence tab lands on the evidence index with nothing selected",
+          "estimated_hours": 2.5,
+          "goal": "Four artifact index routes and four reader routes mounted by one view switch with the tab group extended",
+          "id": "artifact-routes-and-tabs",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T080613561436-artifact-routes-and-tabs/manifest.md",
+          "plan": "artifact-feeds-and-reader",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "docs/ui/shell-route.jsx",
+            "docs/ui/shell.jsx",
+            "tests/test_spa_artifact_routes.py",
+            "tests/test_spa_composition.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-feeds",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T08:06:35Z",
+        "completed_at": "2026-09-04T08:22:05Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 930,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 930,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "5acfe36e3cbc5b302c7fbf4551e1b592cab8b9c1",
+        "commits": [
+          "ac57d8f685af35fec3556e38ae8ac2a000e2b793"
+        ],
+        "changed_lines": {
+          "added": 282,
+          "removed": 42,
+          "files": 4
+        },
+        "tests_added": 7,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_artifact_routes.py tests/test_spa_composition.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T080613561436-artifact-routes-and-tabs/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T080613561436-artifact-routes-and-tabs/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06b74-903c-7983-a324-106dc4ab4519",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 6507520,
+            "cached_input_tokens_cumulative": 6507520,
+            "input_tokens": 6657260,
+            "input_tokens_cumulative": 6657260,
+            "output_tokens": 25853,
+            "output_tokens_cumulative": 25853,
+            "reasoning_output_tokens": 8450,
+            "reasoning_output_tokens_cumulative": 8450
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 34303,
+          "peak_input_tokens": 13164780
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_spa_artifact_routes.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -53626,6 +53738,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 867
+    "_version": 868
   }
 }

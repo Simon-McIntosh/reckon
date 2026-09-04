@@ -22,12 +22,14 @@
   <meta name="plan-tags" content="reckon-tooling,spa">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-depends-on" content="spa-shell-scope-and-visibility,served-surface-data-contracts">
-  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,design/reckon-spa-handoff.md">
+  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,design/reckon-spa-handoff.md,docs/ui/shell-route.jsx,docs/ui/shell.jsx,docs/ui/shell-palette.jsx,tests/test_spa_artifact_routes.py,tests/test_spa_palette_open.py">
   <title>Four Artifact Tabs, One Reader | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="4">
+<meta name="plan-commits" content="ba6ff35,ac57d8f">
+<meta name="plan-impl" content="0.29">
 </head>
 <body>
 <main class="plan-doc">
@@ -216,6 +218,9 @@
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260904T062837949630-palette-resolves-its-label-helper" data-who="s16-palette" data-when="2026-09-04T06:35:06Z">
     <div class="r-comment-body"><p>the palette no longer unmounts the application: its sole call site now reaches window.ReckonShell.plans.paletteKindLabel across the module boundary. The browser fixture queries four matching resources, one of each kind, and all four rows render the label with the palette and .r-app still mounted and no ReferenceError observed. 2 passed</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260904T080613561436-artifact-routes-and-tabs" data-who="s16-feeds" data-when="2026-09-04T08:22:05Z">
+    <div class="r-comment-body"><p>four artifact index routes and four reader routes mount through one view switch: all eight hashes parse to their view and slug, the published tab list reads Plans Research Evidence Figures in order, an unknown hash falls back to home, and switching from an open research document to the Evidence tab lands on the evidence index with nothing selected. 12 passed on the gate plus 7 node-specific cases including three viewport containment ones. Three sprint-composition failures remain, corroborated as pre-existing by an independent verification at an earlier base, and are routed to derived-state-parity whose subject is exactly that derivation</p></div>
 </div>
 </section>
 </main>
