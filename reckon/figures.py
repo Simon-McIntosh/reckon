@@ -64,9 +64,10 @@ def _svg_dims(path: Path) -> tuple[float, float] | None:
     return None
 
 
-def _named_capture(path: Path) -> str | None:
-    """Return the capture name a sidecar declares for this file, if any."""
+def _capture_metadata(path: Path) -> tuple[str | None, str]:
+    """Return the sidecar capture name and index description for this file."""
 
+    capture_name = None
     geometry = path.parent / f"{path.stem}.geometry.json"
     if geometry.is_file():
         try:
@@ -74,7 +75,7 @@ def _named_capture(path: Path) -> str | None:
         except (OSError, json.JSONDecodeError):
             data = None
         if isinstance(data, dict) and data.get("capture"):
-            return str(data["capture"])
+            capture_name = str(data["capture"])
 
     index = path.parent / "capture-index.json"
     if index.is_file():
@@ -84,13 +85,13 @@ def _named_capture(path: Path) -> str | None:
             data = None
         if isinstance(data, dict):
             for capture in data.get("captures", []):
-                if (
-                    isinstance(capture, dict)
-                    and capture.get("image") == path.name
-                    and capture.get("capture")
-                ):
-                    return str(capture["capture"])
-    return None
+                if isinstance(capture, dict) and capture.get("image") == path.name:
+                    if capture.get("capture"):
+                        capture_name = str(capture["capture"])
+                    description = capture.get("description")
+                    caption = "" if description is None else str(description).strip()
+                    return capture_name, caption
+    return capture_name, ""
 
 
 def figure_rows(docs_dir: Path, project: str, plan_slugs: set[str]) -> list[dict]:
@@ -114,7 +115,7 @@ def figure_rows(docs_dir: Path, project: str, plan_slugs: set[str]) -> list[dict
     for path in paths:
         slug = path.relative_to(figures_dir).as_posix()
         dims = _png_dims(path) if path.suffix == ".png" else _svg_dims(path)
-        capture = _named_capture(path)
+        capture, caption = _capture_metadata(path)
         title = _titleize(capture) if capture else _titleize(path.stem)
         first_segment = slug.split("/", 1)[0]
         rows.append(
@@ -122,6 +123,7 @@ def figure_rows(docs_dir: Path, project: str, plan_slugs: set[str]) -> list[dict
                 "slug": slug,
                 "type": "figure",
                 "title": title,
+                "caption": caption,
                 "dims": _format_dims(*dims) if dims else "",
                 "for_plan": first_segment if first_segment in plan_slugs else "",
                 "href": f"/{project}/figures/{slug}",

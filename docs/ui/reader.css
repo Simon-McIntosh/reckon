@@ -322,19 +322,71 @@
   background: var(--bg-2);
 }
 
+.r-reader-figure-viewport {
+  max-height: calc(100vh - 210px);
+  overflow: auto;
+  background: var(--bg);
+  cursor: zoom-in;
+  overscroll-behavior: contain;
+  touch-action: none;
+}
+
+.r-reader-figure-viewport[data-zoomed="true"] {
+  cursor: grab;
+}
+
+.r-reader-figure-viewport.is-panning {
+  cursor: grabbing;
+  user-select: none;
+}
+
 .r-reader-figure img {
   display: block;
-  width: 100%;
-  max-height: calc(100vh - 210px);
-  object-fit: contain;
+  max-width: none;
+  height: auto;
   background: var(--bg);
 }
 
+.r-reader-figure-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 7px 10px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font: 10.5px var(--mono);
+}
+
+.r-reader-figure-tools button {
+  min-width: 26px;
+  height: 24px;
+  padding: 0 7px;
+  border: 1px solid var(--line-2);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--ink-2);
+  font: inherit;
+  cursor: pointer;
+}
+
+.r-reader-figure-tools button:disabled {
+  opacity: .35;
+  cursor: default;
+}
+
 .r-reader-figure figcaption {
+  display: grid;
+  gap: 4px;
   padding: 9px 13px;
   border-top: 1px solid var(--line);
   color: var(--muted);
   font: 11px var(--mono);
+}
+
+.r-reader-figure-caption {
+  color: var(--ink-2);
+  font: 13px/1.45 var(--sans);
 }
 
 .r-reader-attachment-bars {
