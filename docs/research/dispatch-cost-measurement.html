@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type"  content="research">
+  <meta name="plan-slug"    content="dispatch-cost-measurement">
+  <meta name="plan-title"   content="What A Dispatched Node Costs, And What Our Instruments Cannot See">
+  <meta name="plan-summary" content="Measurement record behind the dispatch-cost work: what the meter charges, the fixed per-node floor, and four instruments that read as informative while measuring nothing.">
+  <meta name="plan-tags"    content="crew,reckon-tooling">
+  <meta name="plan-informs" content="dispatch-cost-per-durable-node,crew-effort-routing,clive-local-workers">
+  <title>What A Dispatched Node Costs | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+
+  <h2 id="s1">&sect;1 &mdash; Corpus, method, and shelf life</h2>
+
+  <p>Read on 2026-09-04 between 07:00Z and 08:20Z across four committed crew
+  ledgers &mdash; <code>imas-ambix</code>, <code>reckon</code>,
+  <code>imas-codex</code> and <code>nova</code> &mdash; totalling <strong>2,567
+  run records</strong>, together with the raw <code>stream.jsonl</code> of 1,931
+  of those runs and two live readings of the metered backend's own account
+  surface.</p>
+
+  <p><strong>Every figure here has a shelf life.</strong> The ledgers are written
+  by live coordinators and the corpus grew from 2,555 to 2,567 during the session
+  itself; the meter moved from 12.0% to 18.0% in eighty minutes, none of it from
+  this work. Treat each number as a reading with a timestamp, not a constant, and
+  re-derive rather than quote. That is the same rule that made the routing
+  reference's hand-written priors wrong, which is why this document states method
+  alongside every result.</p>
+
+  <p>Two method choices matter for reproducing anything below. Runs classified
+  <code>infrastructure-failure</code>, <code>malformed-node</code>,
+  <code>correct-refusal</code>, <code>pre-existing-failure</code> or
+  <code>negative-result</code>, and those flagged <code>scope_changed</code>, are
+  excluded from outcome statistics: they measure the transport or the estimate
+  rather than the worker. And a resumed session records its whole accumulated
+  context on every turn, so run-level input sums are an <em>upper bound</em> on
+  true consumption; where that mattered, outliers above 60M input were dropped
+  and the fact is stated.</p>
+
+  <h2 id="s2">&sect;2 &mdash; The meter charges context read, not tokens generated</h2>
+
+  <p>Two disjoint intervals bracket the charging formula. Only one hypothesis is
+  consistent with both.</p>
+
+  <table>
+    <caption>Meter movement against tokens consumed, from the backend's own
+      account surface. The window is 10,080 minutes resetting 2026-09-11T04:24:27Z.</caption>
+    <thead><tr><th>Interval</th><th>Meter &Delta;</th><th>Total input</th><th>Fresh input</th><th>Implied weekly capacity</th></tr></thead>
+    <tbody>
+      <tr><td>window start &rarr; 07:04:04Z</td><td>12 points</td><td>376 M</td><td>~15 M</td><td>3.1 B total / 125 M fresh</td></tr>
+      <tr><td>07:04:04Z &rarr; 07:17:34Z</td><td>1 point</td><td>21.5 M</td><td>0.52 M</td><td>2.2 B total / 52 M fresh</td></tr>
+      <tr><td colspan="4"><strong>Verdict</strong></td><td><strong>total input consistent at 2.1&ndash;3.1 B; fresh input disagrees with itself by 2.4&times;</strong></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>So the prompt cache cannot buy headroom.</strong> Measured hit rate
+  is already 96.0% median across 1,970 runs, with a 5th percentile of 0.900 and
+  only 5.1% of runs below 0.90; of 23.6 B input tokens consumed on this lane,
+  23.0 B were cached re-reads that the meter charged anyway. Cache work buys
+  latency and money. It does not buy quota, and no further cache work will.</p>
+
+  <h2 id="s3">&sect;3 &mdash; Cost is a fixed floor per node, not a function of work done</h2>
+
+  <p>Regressing input tokens on delivered lines over 1,738 usable runs of the
+  default model:</p>
+
+  <p><code>input_tokens = 8,732,597 + 51 &times; changed_lines</code></p>
+
+  <p>The marginal cost of a delivered line is <strong>51 tokens</strong>; the
+  intercept is 158% of the median run's entire input. Cost is therefore a
+  property of how many nodes run.</p>
+
+  <table>
+    <caption>Cost per unit of delivered work. The normaliser is measured changed
+      lines, because declared estimates do not track work &mdash; the five-hour
+      band shows a 24-minute median wall time.</caption>
+    <thead><tr><th>Declared estimate</th><th>Runs</th><th>Median lines</th><th>Median input</th><th>Input per line</th><th>Rework</th><th>Rework-charged per line</th></tr></thead>
+    <tbody>
+      <tr><td>&le; 0.5 h</td><td>21</td><td>20</td><td>1,085,077</td><td>51,319</td><td>0.24</td><td>67,356</td></tr>
+      <tr><td>&le; 1.0 h</td><td>83</td><td>133</td><td>2,893,890</td><td>25,240</td><td>0.48</td><td>48,720</td></tr>
+      <tr><td>&le; 2.0 h</td><td>20</td><td>368</td><td>3,676,982</td><td>12,912</td><td>0.50</td><td>25,823</td></tr>
+      <tr><td>&le; 4.0 h</td><td>49</td><td>868</td><td>5,804,140</td><td><strong>6,221</strong></td><td>0.49</td><td><strong>12,194</strong></td></tr>
+      <tr><td>&gt; 4 h</td><td>14</td><td>776</td><td>7,497,112</td><td>9,800</td><td>0.36</td><td>15,245</td></tr>
+    </tbody>
+  </table>
+
+  <p>Larger nodes are five times more efficient per line delivered, and splitting
+  fixed work into <em>k</em> nodes multiplies its cost by <em>k</em> &mdash;
+  2.00&times;, 3.99&times; and 7.97&times; computed for two, four and eight, flat
+  across every work size tested. <strong>A node-size cap would therefore raise
+  burn while appearing to control it.</strong></p>
+
+  <p>Within a node, cost is linear in tool steps rather than quadratic: input per
+  step is flat at 170&ndash;230 k from the shortest runs to the longest, so a
+  step is the unit worth reducing.</p>
+
+  <table>
+    <caption>Input per tool step, binned. Flatness across the range is what rules
+      out a quadratic accumulation term.</caption>
+    <thead><tr><th>Tool steps</th><th>Runs</th><th>Median input</th><th>Input per step</th></tr></thead>
+    <tbody>
+      <tr><td>10&ndash;19</td><td>401</td><td>3,235,849</td><td>215,723</td></tr>
+      <tr><td>20&ndash;29</td><td>533</td><td>4,285,416</td><td>171,417</td></tr>
+      <tr><td>40&ndash;49</td><td>236</td><td>7,794,364</td><td>173,208</td></tr>
+      <tr><td>60&ndash;69</td><td>80</td><td>10,727,772</td><td>165,043</td></tr>
+      <tr><td>90&ndash;99</td><td>36</td><td>22,085,460</td><td>232,479</td></tr>
+    </tbody>
+  </table>
+
+  <table>
+    <caption>What each of those steps re-sends. The harness figure is a direct
+      probe: a one-word reply on this account costs 33,787 input tokens before any
+      repository is involved.</caption>
+    <thead><tr><th>Component</th><th>Tokens</th><th>Ours to change</th></tr></thead>
+    <tbody>
+      <tr><td>Harness system prompt and tool definitions</td><td>~34,000</td><td>no</td></tr>
+      <tr><td>Repository agent documents on the path</td><td>4,800 + 4,400 + 7,500</td><td>yes</td></tr>
+      <tr><td>Reckon's dispatch prompt</td><td>~2,000</td><td>yes, already lean</td></tr>
+      <tr><td>Accumulated tool output and reasoning</td><td><strong>~120,000</strong></td><td><strong>yes &mdash; the bulk</strong></td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="s4">&sect;4 &mdash; Four instruments that read as informative and measure nothing</h2>
+
+  <p>This is the section with the longest reach beyond the cost question. In each
+  case a number exists, is consulted, and cannot discriminate.</p>
+
+  <p><strong>Gate pass rate is saturated.</strong> Stratified by declared
+  specification level and declared difficulty over usable runs, the two effort
+  tiers are indistinguishable at 0.939 (n=115) and 0.930 (n=172), and no
+  configuration with a real sample falls below 0.93. The cause is structural
+  rather than statistical: the gate is a check the implementing worker wrote and
+  then ran against its own diff. Rework rate &mdash; a node whose declared write
+  paths a later run in the same plan re-touches &mdash; discriminates eightfold
+  on the same corpus and reverses the cost ordering, and the orchestrator's own
+  redispatch rate agrees in sign (0.115 against 0.265 on exact-level nodes).</p>
+
+  <p><strong>The competence horizon inherits that saturation and can never
+  fire.</strong> It is derived as the largest declared size whose success rate
+  clears 0.8. Because every size bin clears it, the horizon collapses to the
+  largest node anyone has ever declared: <strong>48.0 worker-hours</strong> for
+  the default configuration's 1,029-run slice, against a
+  <strong>maximum declared estimate of 10.0 hours</strong> anywhere in the corpus.
+  So the one fence that nominally bounds node size is unreachable by construction,
+  and its <code>CompetenceLimit</code> refusal has almost certainly never been
+  raised. It is not a loose fence; it is a fence calibrated on a broken
+  instrument.</p>
+
+  <p><strong>Model-active time is largely unlogged, so worker time means wall
+  clock.</strong> The generation/machine split exists in code and its own
+  docstring states the hazard &mdash; a node running its own suite has a wall rate
+  far below its generation rate. It reaches the ledger rarely:</p>
+
+  <table>
+    <caption>Coverage of the timing record across 2,567 runs.</caption>
+    <thead><tr><th>Field</th><th>Coverage</th></tr></thead>
+    <tbody>
+      <tr><td><code>throughput</code> block present</td><td>132 (5.1%)</td></tr>
+      <tr><td><code>generation_seconds</code> &mdash; model-active</td><td>89 (3.5%)</td></tr>
+      <tr><td><code>worker_seconds_source: wall_fallback</code></td><td><strong>1,980 (77.1%)</strong></td></tr>
+      <tr><td><code>worker_seconds_source: stream_events</code></td><td>240 (9.3%)</td></tr>
+    </tbody>
+  </table>
+
+  <p>Where it is measured, median model-active time is <strong>240.9 s</strong>
+  against 371.6 s elapsed and 60.6 s of machine time. For the other 77%, batch
+  waits and test runs are counted as worker time indistinguishably from
+  generation. The consequence for fencing is that the binding
+  <code>time_budget</code> is wall-clock, so a node waiting on a submitted job can
+  exhaust its fence having spent nothing, while another burns the full floor well
+  inside it.</p>
+
+  <p><strong>Coordinator spend is unrepresentable.</strong> A search of every key
+  across all 2,567 records finds no field naming a coordinator, orchestrator or
+  author, because coordinator sessions are not crew runs. A second session
+  reproduced this against a <em>live run pointer</em> rather than committed
+  records &mdash; its <code>agent</code>, <code>budget</code>,
+  <code>competence</code> and <code>execution_fit</code> blocks all present, no
+  coordinator attribution anywhere &mdash; which locates the gap in the run
+  representation itself rather than in what promotion keeps. Consequence: any
+  change moving reasoning from worker to coordinator scores as a saving, because
+  only the half that got cheaper is metered. Relatedly,
+  <code>suite_delta</code> is populated on 0 of 2,567 runs and
+  <code>gate_check.log_digest</code> on 32 of 876 &mdash; two fields designed for
+  independent verification that carry nothing.</p>
+
+  <h2 id="s5">&sect;5 &mdash; Burn history, and a node-size trend that explains the exhaustion</h2>
+
+  <p>Weekly consumption from recorded input, scaled by
+  <code>runs / runs_with_tokens</code> to cover unobserved runs. Scaled figures
+  are an upper bound for the resumed-session reason in &sect;1; the live account
+  surface is the authority.</p>
+
+  <table>
+    <caption>Codex-lane consumption per weekly window against a 2.6 B capacity midpoint.</caption>
+    <thead><tr><th>Window ending</th><th>Runs</th><th>Scaled input</th><th>Burn</th></tr></thead>
+    <tbody>
+      <tr><td>2026-08-14</td><td>151</td><td>3.6 B</td><td>1.39</td></tr>
+      <tr><td>2026-08-21</td><td>444</td><td>10.4 B</td><td><strong>4.01</strong></td></tr>
+      <tr><td>2026-08-28</td><td>1,204</td><td>9.4 B</td><td><strong>3.60</strong></td></tr>
+      <tr><td>2026-09-04</td><td>459</td><td>2.5 B</td><td>0.96</td></tr>
+    </tbody>
+  </table>
+
+  <p>The account was exhausted on 2026-09-03 with a reset eight days out. The
+  window in which that happened dispatched <strong>62% fewer nodes than the one
+  before it</strong> and burned nearly as much, and the reason is a size trend
+  rather than a volume one:</p>
+
+  <table>
+    <caption>Declared node size by window. Node count fell while the median node
+      roughly doubled.</caption>
+    <thead><tr><th>Window ending</th><th>Nodes</th><th>Median declared estimate</th><th>Share above 1 h</th></tr></thead>
+    <tbody>
+      <tr><td>2026-08-28</td><td>1,204</td><td>0.80 h</td><td>27%</td></tr>
+      <tr><td>2026-09-04</td><td>459</td><td><strong>1.50 h</strong></td><td><strong>51%</strong></td></tr>
+    </tbody>
+  </table>
+
+  <p>Read with &sect;3 this is not a contradiction. Cost per node is nearly
+  constant, so consumption tracks node count &mdash; but these windows also
+  differ in how much each node <em>delivered</em>, and the later window's larger
+  nodes were individually more expensive in absolute terms while cheaper per
+  line. The sustainable ceiling is roughly <strong>298 nodes per week</strong> at
+  the measured floor, against a four-window mean dispatch rate of
+  <strong>564</strong>. Aggregate node count, not node size and not effort, is
+  the quantity that decides whether the lane survives the week.</p>
+
+  <h2 id="s6">&sect;6 &mdash; Candidate lanes can be screened for free</h2>
+
+  <p>A published benchmark reports pass@1, dollar cost, output tokens and
+  <em>steps</em> per model and effort. Only the steps column bears on a metered
+  lane, and it transfers: the benchmark records 37 steps for the default
+  configuration on goal-only work, and our own open-specification runs at the same
+  configuration measure <strong>39</strong> &mdash; agreement to 5%. Multiplying a
+  candidate's published step count by the per-step figure of &sect;3 predicts its
+  burn before anything is dispatched.</p>
+
+  <p><strong>The dollar column is actively misleading here.</strong> The cheapest
+  family in dollars is the most expensive in steps, needing 49 to 102 steps to
+  reach the incumbent's accuracy &mdash; 1.3 to 2.7&times; the incumbent's burn,
+  so it cannot win even at zero rework. It is disqualified without a single
+  dispatch. The next candidate undercuts the incumbent's step count only at its
+  two lowest tiers, both scoring 15 to 34 points lower, so it must hold rework at
+  or below 0.24 to break even: worth one qualification slice, not a pilot on
+  faith. The one model better on both axes is refused on this account outright
+  &mdash; a probe returns HTTP 400, <em>"not supported when using Codex with a
+  ChatGPT account"</em>, while the incumbent answers the same probe &mdash; and
+  being API-key billed it would move spend to a card rather than reduce metered
+  burn.</p>
+
+  <p>Qualification is days rather than weeks, because rework is not the lagging
+  indicator it appears to be: across 493 observed instances its median lag is
+  <strong>1.1 hours</strong>, with 81.7% surfaced within 6 hours and 96.1% within
+  24. A shadow slice contributes none of it, though &mdash; a shadow is never
+  merged, so nothing can later re-touch its paths. Ten shadow pairs cost
+  2.0&ndash;2.7% of a weekly window and establish steps, input and controlled
+  agreement with the incumbent's own named check; rework needs a live gated pilot,
+  and discriminating 0.07 from a 0.24 break-even needs roughly 20 runs for two
+  standard errors and about 40 to be comfortable.</p>
+
+  <h2 id="s7">&sect;7 &mdash; What actually fences a node today</h2>
+
+  <p>Recorded because the answer surprised the session that went looking, and
+  because two of the three entries do not bind.</p>
+
+  <table>
+    <caption>Fences on node size and duration, as resolved for the default
+      backend on 2026-09-04.</caption>
+    <thead><tr><th>Fence</th><th>Resolved value</th><th>Binds?</th></tr></thead>
+    <tbody>
+      <tr><td><code>time_budget</code> against the backend ceiling</td><td>25 min wall clock</td><td>yes &mdash; the only one that fires</td></tr>
+      <tr><td><code>estimated_hours</code> against the competence horizon</td><td>48.0 worker-hours</td><td><strong>no</strong> &mdash; see &sect;4; max declared is 10.0 h</td></tr>
+      <tr><td>Input tokens or tool steps</td><td>none exists</td><td>no &mdash; the charged quantity is unfenced</td></tr>
+    </tbody>
+  </table>
+
+  <p>The quantity the meter charges has no fence, the fence that exists measures
+  wall clock on a lane where 77% of timing records cannot separate waiting from
+  working, and the size fence is unreachable. That combination is why a burn
+  problem was invisible until the account refused a turn.</p>
+
+  <h2 id="s8">&sect;8 &mdash; Incidental findings, recorded so they are not lost</h2>
+
+  <p>Neither belongs to the cost question; both were found while reading state and
+  would otherwise survive only in a conversation.</p>
+
+  <p><strong>A foreign ledger sits in this checkout.</strong>
+  <code>docs/state/imas-codex/crew.json</code> is untracked inside the
+  <code>reckon</code> repository &mdash; an <code>imas-codex</code> crew ledger
+  written to the wrong checkout, 4,135 bytes, dated 2026-09-03T17:16. It is not
+  reckon's state and reckon does not read it. Whether the writing session's
+  intended target received the same content is unverified, so it should be
+  inspected rather than deleted.</p>
+
+  <p><strong>Three plans declare a sprint that does not list them.</strong>
+  <code>every-state-has-a-verb</code>, <code>a-hold-is-as-old-as-its-refusal</code>
+  and <code>work-survives-a-provider-outage</code> each carry
+  <code>plan-sprint=S15</code> while being absent from that sprint's items, which
+  <code>roadmap</code> reports as three <code>plan-sprint-missing-item</code>
+  warnings. They were left alone deliberately: at least one is under active
+  concurrent work by another session, and sprint membership is the orchestrator's
+  to repair rather than a passing reader's.</p>
+
+</main>
+</body>
+</html>
