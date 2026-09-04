@@ -72,7 +72,14 @@ recover` (a different capability — it classifies abandoned live pointers and
 repairs the record only, it does not resume or promote). Full operational
 detail: `~/.claude/skills/reckon-ship/references/outage-recovery.md`.
 
-### Editing this package: two invariants a gate will not always catch
+### Editing this package: cross-cutting gates
+
+Any node touching `reckon/crew/recovery.py` or `reckon/mcp.py` includes
+`tests/test_ledger.py` in its gate. That module holds contracts crossing package
+boundaries, including the recovery classification census and the five-tool MCP
+surface, and changes fenced away from it have broken each contract once.
+
+Two further invariants are easy to miss even with that gate:
 
 **The MCP surface is five tools.** `docs/AGENTS.md` states it and `_crew`'s own
 docstring restates it — *deliberately one tool over eight views rather than

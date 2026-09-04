@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import os
 import re
 import subprocess
 import time
@@ -369,10 +370,10 @@ def test_blocked_manifest_never_counts_as_working(home) -> None:
 def test_manifest_outcome_waits_until_the_pointer_says_the_process_stopped(
     home, status, stopped_classification, stopped_state
 ) -> None:
-    # Complete and failed reports have the same liveness shape: both are kept
-    # while the pointer says the worker is alive, and become outcomes only once
-    # it says the worker stopped. The failure arm is also the negative guard — a
-    # genuine stopped failure retains its existing classification and reason.
+    # A manifest report is provisional while its writer remains alive, and
+    # becomes an outcome only once the pointer says the process stopped. The
+    # failure arm is also the negative guard: a genuine stopped failure retains
+    # its existing classification and reason.
     manifest = home / "manifests" / f"r-live-{status}.md"
     manifest.parent.mkdir(parents=True, exist_ok=True)
     manifest.write_text(
@@ -407,6 +408,38 @@ def test_manifest_outcome_waits_until_the_pointer_says_the_process_stopped(
     assert stopped_snapshot["state"] == stopped_state
     if status == "failed":
         assert "implementation failed" in stopped_row["detail"]
+
+
+def test_live_process_outgrows_a_blocked_placeholder(home) -> None:
+    manifest = home / "manifests" / "r-live-blocked.md"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text(
+        "node: r-live-blocked\n"
+        "status: blocked\n"
+        "blockers: implementation and required evidence are not yet complete\n"
+    )
+    stream = home / "streams" / "r-live-blocked.jsonl"
+    stream.parent.mkdir(parents=True, exist_ok=True)
+    stream.write_text('{"type":"turn.started"}\n')
+    manifest_mtime = manifest.stat().st_mtime_ns
+    os.utime(stream, ns=(manifest_mtime + 1, manifest_mtime + 1))
+    assert stream.stat().st_mtime_ns > manifest.stat().st_mtime_ns
+    pointer = {
+        "run_id": "r-live-blocked",
+        "project": "proj",
+        "node": {"id": "r-live-blocked", "plan": "plan-a", "time_budget": "20m"},
+        "phase": "working",
+        "manifest_path": str(manifest),
+        "log_path": str(stream),
+        "process_alive": True,
+    }
+
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+    snapshot = recovery._watch_snapshot(pointer, moment=time.time(), stall_seconds=3600)
+
+    assert row["classification"] == "running"
+    assert row["manifest_status"] is None
+    assert snapshot["state"] == "working"
 
 
 def test_fleet_counts_still_partition_the_runs_in_flight(home) -> None:
