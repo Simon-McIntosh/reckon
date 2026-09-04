@@ -14,7 +14,7 @@ description: >-
   to every dispatch, selecting the backend named by `local_backend`.
   For editing plan text use reckon-edit; for defining or rebalancing sprint
   state use reckon-sprint.
-allowed-tools: Read Write Edit Bash(*) Grep Agent mcp__reckon___read_plan mcp__reckon___edit_plan mcp__reckon___roadmap mcp__reckon___audit
+allowed-tools: Read Write Edit Bash(*) Grep Agent mcp__reckon___read_plan mcp__reckon___edit_plan mcp__reckon___roadmap mcp__reckon___audit mcp__reckon___crew
 ---
 
 # reckon-ship — execute a complete plan or sprint and record outcomes
@@ -625,6 +625,18 @@ measures, and, in records view, each completed run. It is the documented
 command route to the committed record when an operator is working from the
 shell; use the ledger or records MCP view for the same question inside an agent
 turn.
+
+`crew(view="directory")` is the cross-repository default before contacting a
+peer coordinator. Read it with no project to name every live coordinator, what
+plans it is shipping, its repository, and whether it is still dispatching; pass
+`project`, `run_id`, or `node` to narrow or resolve the owner. A coordinator
+that finds a defect touching a repository it does not own reports the finding
+to the live session working there when this directory names one. Send it as a
+finding, never as an instruction and never as authority: a peer cannot authorise
+work in another repository, and a relayed approval is not consent. Every
+correction that mattered in the measured 2026-09-04 fleet came from a peer
+measuring what the author could not see, and each was cheaper to send than to
+rediscover.
 
 `view="live"` answers "are my background workers alive, and where are they" for
 the whole fleet at once; `reckon crew list`, stream-file `stat`s, and `ps`

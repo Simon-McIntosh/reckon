@@ -83,6 +83,7 @@ from reckon.capability import (
     validate_capability,
 )
 import reckon.crew.resumption as resumption_module
+from reckon.crew.directory import DirectoryError, directory as crew_directory
 from reckon.crew.runs import project_watch_visibility
 from reckon.doccheck import SEVERITIES, audit_file, audit_lifecycle, audit_links
 from reckon.mcp_views import (
@@ -2827,13 +2828,16 @@ def _crew(
     run_id: str | None = None,
     advice: str | None = None,
     dry_run: bool = False,
+    node: str | None = None,
 ) -> dict[str, Any]:
     """Read crew state or perform one recovery action through the crew surface.
 
-    Deliberately one tool over eight read views and three recovery actions rather
+    Deliberately one tool over nine read views and three recovery actions rather
     than eleven top-level tools. Set ``action`` to ``resume``, ``session`` or
     ``resume-ready`` to reach the same implementation as the corresponding crew
     CLI operation. Omit ``action`` for the read views below.
+    ``directory`` reads every live coordinator across the workstation, or one
+    project's coordinators, and resolves a run or human node id to its owner.
     ``ledger``, ``records`` and ``summary`` read the project's committed runs —
     ``<repo>/docs/state/<project>/crew.json``, the durable half; ``live`` reads
     the never-committed pointers of runs still in flight, each carrying the
@@ -2864,6 +2868,16 @@ def _crew(
             advice=advice,
             dry_run=dry_run,
         )
+    if view == "directory":
+        try:
+            return crew_directory(project, run_id=run_id, node_id=node)
+        except DirectoryError as exc:
+            return {
+                "ok": False,
+                "error": "directory_error",
+                "project": project,
+                "detail": str(exc),
+            }
     if not project:
         return {
             "ok": False,
@@ -2879,13 +2893,14 @@ def _crew(
         "records",
         "ledger",
         "budget",
+        "directory",
     ):
         return {
             "ok": False,
             "error": "invalid_view",
             "detail": (
-                "view must be drain, scopes, or summary, flight, live, records, "
-                "ledger or budget"
+                "view must be directory, drain, scopes, summary, flight, live, "
+                "records, ledger or budget"
             ),
         }
     try:
