@@ -246,6 +246,11 @@ function ArtifactIndex({ kind, onSelect, filters, setFilters, sortBy, setSortBy,
     () => artifactIndexRows(inventory, kind, sortBy, sortDir, status, hideDone),
     [inventory, kind, sortBy, sortDir, status, hideDone]
   );
+  React.useLayoutEffect(() => {
+    window.dispatchEvent(new CustomEvent("reckon:rendered-reader-list", {
+      detail: { kind, items: rows },
+    }));
+  }, [kind, rows]);
   const statusChoices = ["active", "blocked", "pending", "shipped"];
   const left = allKindRows.filter(item => !artifactIsDone(item, kind)).length;
   const held = allKindRows.filter(item => artifactState(item, kind) === "blocked").length;
