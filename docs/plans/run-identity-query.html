@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 <meta name="plan-commits" content="06b44041d580156b31d6d3da9e5ab3e318bc01b9,148d1ccc0966db0d7e3433382b4798efc540f8da">
 <meta name="plan-impl" content="0.667">
 <meta name="plan-artifacts" content="reckon/crew/query.py,reckon/mcp.py,tests/test_crew_runs_view.py,tests/test_crew_run_identity.py">
@@ -214,6 +214,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-riq-session-provenance" data-who="reckon-ship" data-when="2026-09-04T13:46:08Z">
     <div class="r-comment-body">session-provenance-and-resumability landed - commit 148d1cc; gate uv run pytest tests/test_crew_run_identity.py tests/test_crew_recover.py -q passed, 23 passed, 7 new and the recover suite's 16 held; measure: resolve_session is the sole session authority and the view calls it, so a query and a resume cannot disagree about the same run - a live row passes its pointer so a pointer id short-circuits stream access, a ledger row resolves after the absent pointer, an unresolved answer carries the resolver's three-source detail in resumable_reason rather than an unexplained null, and resumable is true only for a resolved session with an existing worktree and a dead process; artifacts reckon/crew/query.py, tests/test_crew_run_identity.py. The node reported one out-of-scope consequence rather than reaching for it: tests/test_crew_runs_view.py, landed by the section 2 node, has a fixture supplying process_alive true with a stored resumable true and expecting the true filter to match, while the locked computed contract correctly returns false naming the live process. That is one failure at the merged head, dispatched as its own repair to the same member.</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260904T114832525305-riq-resumable-fixture-repair" data-who="s15-riq" data-when="2026-09-04T11:52:23Z">
+    <div class="r-comment-body"><p>10 of 10 passed; the filter fixture now asserts the derived resumability verdict rather than a stored flag, with resumable false while a process is alive and a separate case where a dead process with an existing worktree and a resolved session filters as resumable true</p></div>
 </div>
 </section>
 </main>

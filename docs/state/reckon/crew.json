@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T13:50:11",
+  "updated": "2026-09-04T13:52:34",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -56056,6 +56056,174 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T114832525305-riq-resumable-fixture-repair",
+        "plan": "run-identity-query",
+        "section": "\u00a73",
+        "node": "riq-resumable-fixture-repair",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 735,
+                "cached_input_tokens": 343985,
+                "input_tokens": 344722,
+                "output_tokens": 575,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 345297,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "uv run pytest tests/test_crew_runs_view.py -q passes with 10 of 10 green, the previously failing test_runs_view_applies_each_compact_filter[filters5-1] case now supplying a fixture consistent with the locked contract - resumable false while a process is alive, and a separate case where a dead process with an existing worktree and a resolved session filters as resumable true - so the file asserts the derived verdict rather than a stored flag",
+          "estimated_hours": 0.5,
+          "goal": "Bring the runs-view filter test in line with the computed resumability contract it predates",
+          "id": "riq-resumable-fixture-repair",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T114832525305-riq-resumable-fixture-repair/manifest.md",
+          "plan": "run-identity-query",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "exact",
+          "time_budget": "25m",
+          "write_paths": [
+            "tests/test_crew_runs_view.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s15-riq",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T11:48:39Z",
+        "completed_at": "2026-09-04T11:52:23Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 224,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 224,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "b400b15a59079265bedcd7dc69bdf1ad52552d19",
+        "commits": [
+          "702fb76f76c0fa54eeec750306769390df8961ee"
+        ],
+        "changed_lines": {
+          "added": 37,
+          "removed": 7,
+          "files": 1
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "uv run --no-sync pytest tests/test_crew_runs_view.py -q",
+          "exit_status": 0,
+          "log_path": null,
+          "log_digest": "10 passed in 1.08s"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T114832525305-riq-resumable-fixture-repair/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06bf6-94c3-78e0-81eb-47fffe6b0595",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3760128,
+            "cached_input_tokens_cumulative": 3760128,
+            "input_tokens": 3830129,
+            "input_tokens_cumulative": 3830129,
+            "output_tokens": 9816,
+            "output_tokens_cumulative": 9816,
+            "reasoning_output_tokens": 2591,
+            "reasoning_output_tokens_cumulative": 2591
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2400,
+              "classification": "blocked",
+              "detail": "the worker manifest reports blocked: implementation and focused evidence are still in progress",
+              "elapsed_seconds": 744,
+              "external_wait": null,
+              "log_age_seconds": 5,
+              "log_fresh": true,
+              "manifest_commits": [
+                "[]; changed_paths: []"
+              ],
+              "manifest_derived": false,
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T113558245834-haor-refusal-message/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "blocked",
+              "marker": "!",
+              "needs_help_complete": false,
+              "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T113558245834-haor-refusal-message/manifest.md; resolve the blocker before resuming the run",
+              "node": "haor-refusal-message",
+              "phase": "starting",
+              "plan": "a-hold-is-as-old-as-its-refusal",
+              "process_alive": null,
+              "project": "reckon",
+              "run_id": "r-20260904T113558245834-haor-refusal-message",
+              "session": "ship-s15-2026-09-04",
+              "terminal_age_seconds": 629,
+              "terminal_at": "2026-09-04T11:38:08Z",
+              "wait_age_seconds": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/haor-refusal-message"
+            }
+          ]
+        },
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 12407,
+          "peak_input_tokens": 7590257
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_crew_runs_view.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -56228,6 +56396,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 924
+    "_version": 925
   }
 }
