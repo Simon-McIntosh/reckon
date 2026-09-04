@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 <meta name="plan-commits" content="42104d3,f5fbac7,77d0edf">
 <meta name="plan-impl" content="0.4">
 </head>
@@ -95,6 +95,10 @@
   </svg>
   <figcaption>The move is not new capability; it is relocating four derivations to the one place every reader can consult, and binding a check to the agreement.</figcaption>
 </figure>
+
+<h3 id="s1c">&#167;1c &mdash; A derivation is not landed until it reaches its reader</h3>
+<p>Every node in this plan computes something in Python that a surface must render, and the path between them is <strong>not</strong> in the module that computes it. The only HTTP composition path is <code>_attach_ready_set</code> in <code>reckon/serve.py</code>, which projects through <code>ready_set_view</code> in <code>reckon/mcp_views.py</code>; a field absent from that projection cannot reach <code>window.STATE</code> however correctly it is computed. Two nodes here stopped at exactly that boundary before it was written down, each with a correct computation and a gate it could not pass from inside its fence.</p>
+<p>So every node's write scope includes the projection and the rendered fixtures, not only the computation and the consuming component. The rule generalises past this plan and is the cheap form of a lesson this repository has now paid for repeatedly: <strong>a node that computes something must be able to write the path to its reader, and a node that removes something must be able to write the tests asserting what it removed.</strong> Either omission produces a green suite over a dead feature, and neither is visible from inside the fence that caused it.</p>
 
 <h2 id="s2">&#167;2 &mdash; Sprint state derives once, and drift is reported everywhere</h2>
 <p>The rule is the surface's, and it is right: a sprint's state comes from member completion, and where the stored file disagrees the disagreement is <em>reported</em> rather than silently resolved, because resolving it hides a real inconsistency the sprint skill should repair. That rule belongs in <code>roadmap</code>, which is what every agent already reads for sprint order and readiness. Each sprint row gains <code>derived_state</code> and, when it differs from the stored value, <code>state_drift</code> naming both. <code>docs/ui/sprint.jsx</code> then reads those fields instead of recomputing them, and its <code>was &lt;status&gt;</code> flag renders whatever the payload reports.</p>
