@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-commits" content="42104d3,f5fbac7,77d0edf">
 <meta name="plan-impl" content="0.4">
 </head>
@@ -223,6 +223,11 @@
 <article class="r-fu" data-id="f-dsp-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship derived-state-parity" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Move the derivations in module order, then bind the check</h4>
     <div class="r-fu-body"><p>§2, §3 and §5 all write <code>reckon/roadmap.py</code>, so they are one serial lane in section order; §4 touches different modules and runs alongside them. §6 lands last, because it compares what the four produce and is the node that keeps parity from rotting.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship derived-state-parity</pre>
+    </article>
+<article class="r-fu" data-id="f-dsp-active-sprint-id-agrees-with-nothing" data-status="open" data-written-by="reckon-ship-s15" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship derived-state-parity" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The reported active sprint agrees with neither store, and disagrees with its own response</h4>
+    <div class="r-fu-body"><p>Measured 2026-09-04 immediately after four sprints were closed and a new one opened. Three sources, three different answers, and none of them right:</p><table><thead><tr><th>Source</th><th>Answer</th></tr></thead><tbody><tr><td><code>read_plan(view=&quot;summary&quot;)</code> &#x2192; <code>state.active_sprint_id</code></td><td><code>S12</code></td></tr><tr><td>The frozen aggregate index</td><td><code>S17</code></td></tr><tr><td>Canonical sprint resources &#x2014; the unique one whose status is <code>active</code></td><td><code>S15</code></td></tr></tbody></table><p><strong>The first answer contradicts its own payload.</strong> The same response that reports <code>active_sprint_id: S12</code> also lists that sprint's resource with <code>status: &quot;done&quot;</code>, so a reader has the refutation in hand without making a second call &#x2014; which is the only reason it was caught.</p><p>The field is not stored in <code>project.json</code>, so it is either derived from the sprint resources or served from a cache that the sprint writes did not invalidate. The two cannot be told apart from outside the process, and the distinction decides the repair: a stale cache needs invalidation on any sprint status write, a wrong derivation needs the unique-active rule applied to the resources at read time. Restarting the server and re-reading discriminates in one step.</p><p>Either way the guidance that resolves the active sprint from &ldquo;the unique sprint whose status is active&rdquo; is not what this field currently reports. It matters most to a session that opens cold and asks what is in flight before dispatching, which is exactly the relaunch path this project is trying to make cheap; a fresh coordinator would have been pointed at a sprint that closed hours earlier.</p></div>
     <pre class="r-fu-prompt">/reckon-ship derived-state-parity</pre>
     </article>
 </section>
