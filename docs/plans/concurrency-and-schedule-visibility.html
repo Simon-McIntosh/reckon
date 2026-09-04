@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="70">
+<meta name="plan-version" content="71">
 <meta name="plan-impl" content="0.96">
 </head>
 <body>
@@ -582,7 +582,7 @@
     <strong>Done when</strong> the drain separates runs dispatched by this session from those
     dispatched by another, the closure fence counts only the former, a peer's run is reported for
     visibility without blocking closure, and a session that genuinely leaves its own run
-    unreconciled is still refused exactly as it is today.</p>
+    unreconciled is still refused exactly as it is today. The refusal also names the <strong>owning session</strong> beside each run id, added 2026-09-04 on the S16 coordinator's measurement after this fence stopped a peer's dispatch twice in forty minutes: both times the blocked coordinator had to open the other session's pointer file to establish whose row it was, and both times the answer was already in the record, since a run carries its dispatching session. That turns a two-step diagnosis across a boundary no coordinator should cross into a readable sentence, and it needs no new state for the same reason the split itself does not.</p>
 
     <p><strong>A read-only role cannot write the delivery path it is given, and finds out only
     after launching.</strong> The <code>investigate</code> role resolves to the read-only sandbox
@@ -867,7 +867,10 @@
     <div class="r-comment-body"><p>The delivery directories reckon owns are reachable from the tier expected to deliver into them, and a node whose declared write path is unreachable in its resolved sandbox is refused before a worker is spawned.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260904T082947486750-the-open-work-is-rehomed-and-the-stale-sprints-close" data-who="codex-q" data-when="2026-09-04T08:58:51Z">
-    <div class="r-comment-body"><p>The nine plans are triaged and re-homed - eight to S17 with their open followups intact, one superseded as overtaken - and nothing was set terminal with work still open. The measure is unmet because closing the four sprints requires docs/sprints/*.html, which my fence excluded, so the live roadmap still reads horizon_depth 6. The node&#x27;s shape was wrong, not its work: the judgement half is delivered and committed, the canonical sprint closure remains.</p></div>
+    <div class="r-comment-body"><p>The nine plans are triaged and re-homed - eight to S17 with their open followups intact, one superseded as overtaken - and nothing was set terminal with work still open. The measure is unmet because closing the four sprints requires docs/sprints/*.html, which my fence excluded, so the live roadmap still reads horizon_depth 6. The node's shape was wrong, not its work: the judgement half is delivered and committed, the canonical sprint closure remains.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-cas-owning-session-in-the-refusal" data-who="reckon-ship" data-when="2026-09-04T14:25:00Z">
+    <div class="r-comment-body">Measure added, not landed - this section stays behind the horizon-consolidated gate and nothing was dispatched behind it. The refusal must name the owning session beside each run id. Contributed by the S16 coordinator after this exact fence stopped my dispatch twice in forty minutes on its runs: both times I had to open its pointer file to establish whose row it was, and both times a run already carried its dispatching session, so the information was in the record and only the message lacked it. It needs no new state for the same reason the session-versus-project split does not. Recorded here with the measured incident because the section's own argument is that a filter keyed on the wrong noun produces a fence that either blocks work it must not touch or is waived routinely - and it was waived routinely four times in this session, each waiver recorded on the new run. Worth noting the peer's framing too: a project-scoped fence with a session-local remedy is the same split this repository hit three times in one evening in different clothes - the watcher seat, a budget hold keyed to a project rather than an account, and now the closure drain.</div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260825T142832299679-n-readyqueuegap" data-who="codex-a" data-when="2026-08-25T14:36:10Z">
     <div class="r-comment-body"><p>Ready-queue gap report: one unshipped deliverable, three of four requested capabilities implemented, zero automatic end-to-end loops</p></div>
