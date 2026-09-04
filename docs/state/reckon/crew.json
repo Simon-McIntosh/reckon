@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T07:31:10",
+  "updated": "2026-09-04T07:32:21",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -50155,6 +50155,121 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260904T042633367705-home-view",
+        "plan": "fleet-home",
+        "section": "\u00a72",
+        "node": "home-view",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_spa_home_surface.py tests/test_spa_home_geometry.py -q passes with every case \u00a72 names, including an empty hash routing to home, the N of M shown eyebrow, rows only for projects with plans in last-edited order, the no recorded activity text with no polyline for an empty series, the dormant strip absent at zero, and no horizontal scroll at 1374 and 1920",
+          "estimated_hours": 4.0,
+          "goal": "The fleet home renders inside the shell at the default route computed over the visible set",
+          "id": "home-view",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T042633367705-home-view/manifest.md",
+          "plan": "fleet-home",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "write_paths": [
+            "docs/ui/home.jsx",
+            "docs/ui/home.css",
+            "docs/index.html",
+            "docs/ui/shell-route.jsx",
+            "docs/ui/shell.jsx",
+            "tests/test_spa_home_surface.py",
+            "tests/test_spa_home_geometry.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-fleet",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T04:26:50Z",
+        "completed_at": "2026-09-04T04:43:33Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1003,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1003,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "91f977ea1b4167798f4ccf330f3169bc92829451",
+        "commits": [
+          "64810268d32e89978d366ce37893677a7d165275"
+        ],
+        "changed_lines": {
+          "added": 598,
+          "removed": 256,
+          "files": 7
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_home_surface.py tests/test_spa_home_geometry.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T042633367705-home-view/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T042633367705-home-view/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06aab-5fa9-7fb1-8d07-91f7661518aa",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 9304320,
+            "cached_input_tokens_cumulative": 9304320,
+            "input_tokens": 9488690,
+            "input_tokens_cumulative": 9488690,
+            "output_tokens": 36886,
+            "output_tokens_cumulative": 36886,
+            "reasoning_output_tokens": 6863,
+            "reasoning_output_tokens_cumulative": 6863
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 43749,
+          "peak_input_tokens": 18793010
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_spa_home_surface.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -50327,6 +50442,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 818
+    "_version": 819
   }
 }

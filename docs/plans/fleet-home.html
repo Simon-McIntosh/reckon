@@ -22,10 +22,14 @@
   <meta name="plan-tags" content="reckon-tooling,spa">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-depends-on" content="spa-shell-scope-and-visibility,served-surface-data-contracts">
-  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,design/reckon-spa-handoff.md">
+  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,design/reckon-spa-handoff.md,docs/ui/home.jsx,docs/ui/home.css,tests/test_spa_home_surface.py,tests/test_spa_home_geometry.py">
   <title>A Fleet Home That Hides at Zero | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-04">
+<meta name="plan-version" content="2">
+<meta name="plan-commits" content="6481026">
+<meta name="plan-impl" content="0.33">
 </head>
 <body>
 <main class="plan-doc">
@@ -99,54 +103,57 @@
 <div class="r-dec" data-key="home-placement" data-choice="shell-view-replacing-cockpit" data-by="reckon-ship (deduced from the canvas tab set)" data-when="2026-09-03">
     <p class="r-dec-q">Where does the fleet home live, and what happens to the per-project cockpit?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="shell-view-replacing-cockpit">A shell view at the default route; the cockpit is retired</button>
+      <button class="r-opt chosen" data-value="shell-view-replacing-cockpit">A shell view at the default route; the cockpit is retired</button>
       <button class="r-opt" data-value="standalone-page-keep-cockpit">Keep the standalone page and the cockpit</button>
       <button class="r-opt" data-value="shell-view-keep-cockpit">A shell view beside a kept cockpit tab</button>
-    </p>
+      </p>
     <p class="r-dec-rat">The canvas has no Overview tab and its brand mark is the home button; keeping the cockpit would keep a second overview and an action queue the canvas explicitly rejects. The retirement is its own node so a revert is one commit.</p>
-</div>
+    </div>
 <div class="r-dec" data-key="dormant-projects" data-choice="collapsed-strip-absent-at-zero" data-by="reckon-ship (deduced from the canvas)" data-when="2026-09-03">
     <p class="r-dec-q">How are visible projects with no recorded work shown?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="collapsed-strip-absent-at-zero">One collapsed line under the table, absent when there are none</button>
+      <button class="r-opt chosen" data-value="collapsed-strip-absent-at-zero">One collapsed line under the table, absent when there are none</button>
       <button class="r-opt" data-value="rows-like-any-other">As table rows</button>
-    </p>
+      </p>
     <p class="r-dec-rat">Nine dead rows above four real ones is the measured defect; a control whose count is zero is hidden rather than rendered dead.</p>
-</div>
+    </div>
 <div class="r-dec" data-key="empty-series-rendering" data-choice="text-not-flat-line" data-by="reckon-ship (deduced from the canvas)" data-when="2026-09-03">
     <p class="r-dec-q">How is an empty activity series drawn?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="text-not-flat-line">The text "no recorded activity", no polyline</button>
+      <button class="r-opt chosen" data-value="text-not-flat-line">The text &quot;no recorded activity&quot;, no polyline</button>
       <button class="r-opt" data-value="flat-polyline">A zero-height polyline</button>
-    </p>
+      </p>
     <p class="r-dec-rat">A flat line reads as broken and is indistinguishable from a genuinely flat series; the payload distinguishes them and so must the surface.</p>
-</div>
-<div class="r-dec" data-key="root-url-target" data-choice="redirect-to-first-mounted-project-home" data-by="reckon-ship (deduced from the shell's project-scoped state)" data-when="2026-09-03">
-    <p class="r-dec-q">What does the server's root URL serve once the standalone home is gone?</p>
+    </div>
+<div class="r-dec" data-key="root-url-target" data-choice="redirect-to-first-mounted-project-home" data-by="reckon-ship (deduced from the shell&#x27;s project-scoped state)" data-when="2026-09-03">
+    <p class="r-dec-q">What does the server&#x27;s root URL serve once the standalone home is gone?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="redirect-to-first-mounted-project-home">A redirect to the first mounted project's #home</button>
+      <button class="r-opt chosen" data-value="redirect-to-first-mounted-project-home">A redirect to the first mounted project&#x27;s #home</button>
       <button class="r-opt" data-value="project-less-shell">A shell with no project in scope</button>
-    </p>
-    <p class="r-dec-rat">The shell's state is loaded per project and the canvas itself keeps a project in scope while showing the fleet; a project-less shell is a second loader for one route.</p>
-</div>
+      </p>
+    <p class="r-dec-rat">The shell&#x27;s state is loaded per project and the canvas itself keeps a project in scope while showing the fleet; a project-less shell is a second loader for one route.</p>
+    </div>
 </section>
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-fh-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-03" data-recommends-skill="/reckon-ship fleet-home" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Land the home view, then retire what it replaces</h4>
-    <div class="r-fu-body"><p>&#167;2 runs once the shell plan's Crew and token nodes have merged and the data plan has landed the live fleet index. &#167;3 follows on the same member because it writes the same shell files and the server module. &#167;4 captures last.</p></div>
+    <div class="r-fu-body"><p>§2 runs once the shell plan's Crew and token nodes have merged and the data plan has landed the live fleet index. §3 follows on the same member because it writes the same shell files and the server module. §4 captures last.</p></div>
     <pre class="r-fu-prompt">/reckon-ship fleet-home</pre>
-</article>
+    </article>
 </section>
 
 <section data-reckon="research" id="research" class="r-research-list">
 <h2><span class="sec">§</span> Research</h2>
-<div class="r-research" data-id="r1" data-type="design" data-url="design/reckon-spa-handoff.dc.html">
-  <span class="r-research-title">The handoff canvas: the fleet home with its stat band, project table, dormant strip, in-flight and just-landed panels.</span>
-</div>
-<div class="r-research" data-id="r2" data-type="design" data-url="design/reckon-spa-handoff.md">
-  <span class="r-research-title">The designer's triage, item B4 and part E item 4, the one place the design assumes data the backend did not have.</span>
+<div class="r-research" data-id="r1" data-type="design" data-source="" data-added-by="" data-when="" data-url="design/reckon-spa-handoff.dc.html">
+    <span class="r-research-title"><a href="design/reckon-spa-handoff.dc.html">The handoff canvas: the fleet home with its stat band, project table, dormant strip, in-flight and just-landed panels.</a></span></div>
+<div class="r-research" data-id="r2" data-type="design" data-source="" data-added-by="" data-when="" data-url="design/reckon-spa-handoff.md">
+    <span class="r-research-title"><a href="design/reckon-spa-handoff.md">The designer&#x27;s triage, item B4 and part E item 4, the one place the design assumes data the backend did not have.</a></span></div>
+</section>
+<section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260904T042633367705-home-view" data-who="s16-fleet" data-when="2026-09-04T04:43:33Z">
+    <div class="r-comment-body"><p>the fleet home renders inside the shell at the default route over the visible set: an empty hash routes to home, the eyebrow reads N of M shown, rows appear only for projects with plans in last-edited order, a project with an empty activity series renders the no-recorded-activity text and no polyline, and the dormant strip is absent at zero: 10 passed</p></div>
 </div>
 </section>
 </main>
