@@ -312,6 +312,67 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
   const projectSource = M.project || document.querySelector('meta[name="docs-project"]')?.content || "";
   const project = metadataValueIsPresent(projectSource) ? projectSource : "";
   const [liveRuns, setLiveRuns] = useState([]);
+  const [figureZoom, setFigureZoom] = useState(1);
+  const [figurePanning, setFigurePanning] = useState(false);
+  const figureViewportRef = useRef(null);
+  const figureDragRef = useRef(null);
+
+  useEffect(() => {
+    setFigureZoom(1);
+    setFigurePanning(false);
+    figureDragRef.current = null;
+    const viewport = figureViewportRef.current;
+    if (viewport) viewport.scrollTo({ left: 0, top: 0 });
+  }, [kind, PG.slug]);
+
+  const zoomFigureToNaturalSize = event => {
+    if (figureZoom > 1) return;
+    const image = event.currentTarget;
+    const viewport = figureViewportRef.current;
+    const fittedWidth = viewport?.clientWidth || image.clientWidth || 1;
+    setFigureZoom(Math.max(1.05, image.naturalWidth / fittedWidth));
+  };
+  const zoomFigureBy = factor => {
+    setFigureZoom(current => Math.max(1, Math.min(current * factor, 8)));
+  };
+  const resetFigureZoom = () => {
+    setFigureZoom(1);
+    setFigurePanning(false);
+    figureDragRef.current = null;
+    window.requestAnimationFrame(() => {
+      figureViewportRef.current?.scrollTo({ left: 0, top: 0 });
+    });
+  };
+  const beginFigurePan = event => {
+    const viewport = figureViewportRef.current;
+    if (!viewport || figureZoom <= 1) return;
+    figureDragRef.current = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      left: viewport.scrollLeft,
+      top: viewport.scrollTop,
+    };
+    setFigurePanning(true);
+    try { viewport.setPointerCapture(event.pointerId); } catch (_) { /* Synthetic pointers remain usable in checks. */ }
+    event.preventDefault();
+  };
+  const panFigure = event => {
+    const viewport = figureViewportRef.current;
+    const drag = figureDragRef.current;
+    if (!viewport || !drag || drag.pointerId !== event.pointerId) return;
+    viewport.scrollLeft = drag.left - (event.clientX - drag.x);
+    viewport.scrollTop = drag.top - (event.clientY - drag.y);
+    event.preventDefault();
+  };
+  const endFigurePan = event => {
+    const viewport = figureViewportRef.current;
+    const drag = figureDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    figureDragRef.current = null;
+    setFigurePanning(false);
+    try { viewport?.releasePointerCapture(event.pointerId); } catch (_) { /* Pointer capture is optional. */ }
+  };
 
   useEffect(() => {
     if (!project || !isPlan) { setLiveRuns([]); return; }
@@ -708,8 +769,32 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
           )}
           {isFigure ? (
             <figure className="r-reader-figure">
-              <img src={readerFigureSource(PG, project)} alt={PG.title || PG.slug} />
-              <figcaption><code>{readerFigurePath(PG)}</code></figcaption>
+              <div
+                className={`r-reader-figure-viewport ${figurePanning ? "is-panning" : ""}`}
+                data-zoomed={figureZoom > 1 ? "true" : "false"}
+                ref={figureViewportRef}
+                onPointerDown={beginFigurePan}
+                onPointerMove={panFigure}
+                onPointerUp={endFigurePan}
+                onPointerCancel={endFigurePan}
+              >
+                <img src={readerFigureSource(PG, project)}
+                  alt={PG.title || PG.slug}
+                  draggable={false}
+                  style={{ width: `${figureZoom * 100}%` }}
+                  onClick={zoomFigureToNaturalSize}
+                />
+              </div>
+              <div className="r-reader-figure-tools" aria-label="Figure zoom controls">
+                <button type="button" className="r-figure-zoom-out" aria-label="Zoom out" disabled={figureZoom <= 1} onClick={() => zoomFigureBy(0.8)}>−</button>
+                <span>{Math.round(figureZoom * 100)}%</span>
+                <button type="button" className="r-figure-zoom-in" aria-label="Zoom in" onClick={() => zoomFigureBy(1.25)}>+</button>
+                <button type="button" className="r-figure-zoom-reset" disabled={figureZoom <= 1} onClick={resetFigureZoom}>Reset</button>
+              </div>
+              <figcaption>
+                {metadataValueIsPresent(PG.caption) && <span className="r-reader-figure-caption">{PG.caption}</span>}
+                <code>{readerFigurePath(PG)}</code>
+              </figcaption>
             </figure>
           ) : !htmlReady ? (
             <div style={{ padding: 24, color: "var(--muted)", fontSize: 13 }}>Loading…</div>
