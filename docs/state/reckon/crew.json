@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T07:00:59",
+  "updated": "2026-09-04T07:05:09",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -49734,6 +49734,117 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260904T044732847265-a-follower-never-runs-stale-code",
+        "plan": "every-state-has-a-verb",
+        "section": "\u00a72",
+        "node": "a-follower-never-runs-stale-code",
+        "node_definition": {
+          "done_when": "A crew follow process holds the module code it imported for its entire life. When a recovery sweep landed and was wired into that loop, every follower on this workstation had started hours earlier, so not one called it - two independent sessions were simultaneously unable to perform a recovery they had just gained, and one left a run blocked five hours forty-two minutes with its limit long lifted. The failure is silent in the costly direction: a stale renderer draws a wrong column and someone notices, while a stale follower recovers nothing and is indistinguishable from a fleet with nothing to recover. THREE SHAPES IN THE ORDER TO TRY THEM, and the plan states this order deliberately. First, the follower detects that the installed package on disk is newer than the one it imported and re-execs itself in place, preserving its session registration and its stdout so a watching pane sees no gap. Second, if in-place re-exec cannot preserve those, the watch seat publishes a version stamp each cycle and a follower reading a stamp newer than its own re-execs. Third, only if neither is achievable, the follower emits one line saying it is stale and how to cycle it - this is a fallback, not the answer, because the done-when requires an operator who never restarts a follower to still get new behaviour. Report which shape you implemented and why the earlier ones were not achievable if you fell back. THE DETECTION MUST NOT BE THE PACKAGE VERSION STRING: reckon's __version__ is dynamic via vcs and frozen at install, so it does not move when a working-tree edit lands - a watch-seat stamp built on it was already landed and measured inert across eighty-five commits. Use something that actually moves with the code the follower executes. DO NOT RE-EXEC MID-LINE or while a transition is being rendered, and never lose or duplicate an event across the transition: a reader watching the pane must see an unbroken stream. Bound the check so it costs nothing per iteration of a tight loop. Done when a follower running while new crew code lands performs the new behaviour with no operator action; when its session registration survives; when no event is lost or repeated across the re-exec; when a follower that cannot re-exec says so explicitly rather than continuing quietly; and when no skill or documentation text instructs a reader to restart a follower after a merge - search for and remove any such instruction you find, since one was added to a skill reference tonight. ASSERT THROUGH A RUNNING FOLLOWER, not a helper: start one, land a change to the behaviour it calls, and require the new behaviour without restarting it. At least one added assertion must fail against base 417166e. Measured over tests/test_follower_freshness.py plus any existing module asserting on the follow loop, in ONE invocation: zero failures against their combined count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 3.0,
+          "goal": "A follower performs crew behaviour that lands while it is running, without an operator restarting it.",
+          "id": "a-follower-never-runs-stale-code",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/follower-freshness-manifest.md",
+          "plan": "every-state-has-a-verb",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/cli.py",
+            "reckon/crew/runs.py",
+            "tests/test_follower_freshness.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-b",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T04:48:10Z",
+        "completed_at": "2026-09-04T05:04:22Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 972,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 972,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "417166e031a9e55c884241c4ddd1dcdf86032ed9",
+        "commits": [
+          "e5f4ef49701fefa6a23deca58335fe20d568f84a"
+        ],
+        "changed_lines": {
+          "added": 406,
+          "removed": 12,
+          "files": 3
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_follower_freshness.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vff.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/follower-freshness-manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06abe-eb18-74a0-b754-946566fe747b",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 1446016,
+            "cached_input_tokens_cumulative": 1446016,
+            "input_tokens": 1588420,
+            "input_tokens_cumulative": 1588420,
+            "output_tokens": 8846,
+            "output_tokens_cumulative": 8846,
+            "reasoning_output_tokens": 2367,
+            "reasoning_output_tokens_cumulative": 2367
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 11213,
+          "peak_input_tokens": 3034436
+        },
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -49906,6 +50017,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 815
+    "_version": 816
   }
 }
