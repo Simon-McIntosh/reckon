@@ -79,7 +79,11 @@ RUNTIME FILESYSTEM
             " Your deliverable is an attribution, not a verdict: list new "
             "failures against the stated base separately from pre-existing "
             "ones, and name the candidate commit each new failure is "
-            "attributed to."
+            "attributed to. Record the pre-existing set in baseline_suite, "
+            "the merged-head result in after_suite, and every added failure "
+            "in failure_attribution. The repository is read-only for this "
+            "role; write only the manifest, report, and logs under the "
+            "declared delivery scope."
         )
     else:
         evidence_role_note = (

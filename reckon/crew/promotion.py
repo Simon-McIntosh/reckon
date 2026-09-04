@@ -1099,6 +1099,30 @@ def _evaluate_suite_delta(
     attribution = ledger.new_failure_attribution(
         baseline, after, manifest.get("failure_attribution")
     )
+    if str(record.get("role") or "").strip() == "test":
+        unattributed = sorted(set(added) - set(attribution))
+        if unattributed:
+            missing_attribution = [
+                f"failure_attribution[{failure_id}]" for failure_id in unattributed
+            ]
+            refusal = {
+                "status": "refused",
+                "suite_command": suite_command,
+                "baseline_suite": normalized_baseline,
+                "after_suite": normalized_after,
+                "missing_fields": missing_attribution,
+                "added_failure_ids": added,
+                "failure_attribution": attribution,
+            }
+            updated = dict(record)
+            updated["suite_delta_refusal"] = refusal
+            _write_json(pointer_path(run_id), updated)
+            raise ledger.SuiteDeltaError(
+                "test-role promotion requires a candidate commit for every "
+                "added suite failure; missing " + ", ".join(missing_attribution),
+                missing_fields=missing_attribution,
+                added_failure_ids=added,
+            )
     waiver = str(waiver_reason).strip()
     if added and not waiver:
         refusal = {
@@ -1468,6 +1492,15 @@ def _complete_locked(
             head=commit_list[-1],
         )
         if cumulative.changed_lines.get("available", True):
+            if str(record.get("role") or "").strip() == "test" and cumulative.paths:
+                raise CrewError(
+                    f"run {run_id!r} has role 'test', but its cited commit "
+                    "changes repository paths: "
+                    + ", ".join(cumulative.paths)
+                    + ". A verifier may read the repository it grades, but "
+                    "writes only its manifest, report, and logs outside the "
+                    "repository; dispatch an implement node for source edits"
+                )
             outside = _outside_declared_scope(
                 cumulative.paths,
                 node.get("write_paths") or (),
