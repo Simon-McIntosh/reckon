@@ -1,19 +1,37 @@
 from __future__ import annotations
 
 import re
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
+from reckon.serve import discover_plans
 from tests.spa_browser_harness import (
     BrowserProbeError,
+    file_spa,
     installed_browser,
+    installed_browser_or_skip,
     run_browser_probe,
     served_spa,
 )
 
 REPO_ROOT = Path(__file__).parents[1]
 UI_ROOT = REPO_ROOT / "docs" / "ui"
+
+
+def _composed_picker_state() -> dict[str, object]:
+    state = discover_plans(REPO_ROOT / "docs", "reckon", REPO_ROOT / "docs" / "state")
+    inventory = state.get("inventory", [])
+    loaded_at = datetime.now(UTC)
+    return {
+        **state,
+        "today": loaded_at.date().isoformat(),
+        "project": "reckon",
+        "projects": [{"project": "reckon", "plans_count": len(inventory)}],
+        "loaded_at": loaded_at.isoformat(),
+        "plans": {item["slug"]: item for item in inventory},
+    }
 
 
 def _declarations(source: str, selector: str) -> dict[str, str]:
@@ -131,6 +149,94 @@ def test_rendered_topbar_children_follow_the_canvas_order(
     assert positions == sorted(positions)
     assert "Overview" not in result["text"]
     assert "reckon" not in result["text"]
+
+
+@pytest.mark.parametrize("viewport_width", [1374, 1920])
+def test_open_project_picker_stays_inside_the_viewport(
+    tmp_path: Path, viewport_width: int
+) -> None:
+    browser = installed_browser_or_skip()
+    preload_expression = """{
+      const nativeFetch = window.fetch.bind(window);
+      const jsonResponse = payload => Promise.resolve(new Response(
+        JSON.stringify(payload),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      ));
+      window.fetch = (resource, options) => {
+        const url = String(resource);
+        if (url.endsWith('/_projects/index.json')) {
+          return jsonResponse({
+            projects: [
+              { project: 'reckon', data: { plans: [{ slug: 'viewport-proof' }] } },
+              { project: 'alpha', data: { plans: [{ slug: 'alpha-proof' }] } },
+              {
+                project: 'long-project-name',
+                data: { plans: [{ slug: 'long-name-proof' }] }
+              }
+            ]
+          });
+        }
+        if (url.endsWith('/_discover/reckon')) {
+          return jsonResponse({ inventory: [{ slug: 'viewport-proof' }] });
+        }
+        if (url.endsWith('/crew')) return jsonResponse({ runs: [] });
+        return nativeFetch(resource, options);
+      };
+    }"""
+    expression = """(() => {
+      const panel = document.querySelector('.r-project-menu');
+      const panelRect = panel.getBoundingClientRect();
+      const rows = [...panel.querySelectorAll(':scope > button:not(.r-project-configure)')];
+      const textRect = node => {
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        const rect = range.getBoundingClientRect();
+        range.detach();
+        return { left: rect.left, right: rect.right };
+      };
+      const rightmostTextByRow = rows.map(row => {
+        const walker = document.createTreeWalker(row, NodeFilter.SHOW_TEXT);
+        const rectangles = [];
+        let node;
+        while ((node = walker.nextNode())) {
+          if (node.textContent.trim()) rectangles.push(textRect(node));
+        }
+        return rectangles.reduce((rightmost, rect) => (
+          !rightmost || rect.right > rightmost.right ? rect : rightmost
+        ), null);
+      });
+      return {
+        viewportWidth: innerWidth,
+        panel: { left: panelRect.left, right: panelRect.right },
+        rowCount: rows.length,
+        rightmostTextByRow,
+      };
+    })()"""
+
+    with file_spa(tmp_path, browser, _composed_picker_state(), route="#cockpit") as spa:
+        result = spa.run_probe(
+            expression,
+            viewport=(viewport_width, 900),
+            ready_expression=(
+                "Boolean(document.querySelector("
+                "'.r-project-menu > button:not(.r-project-configure)'))"
+            ),
+            preload_expression=preload_expression,
+            prepare_expression=(
+                "document.querySelector('.r-project-manage > summary').click()"
+            ),
+        )
+
+    panel = result["panel"]
+    assert result["viewportWidth"] == viewport_width
+    assert panel["left"] >= 0
+    assert panel["right"] <= result["viewportWidth"]
+    assert panel["right"] < result["viewportWidth"]
+    assert result["rowCount"] == 3
+    assert all(
+        text_rect["left"] >= panel["left"] and text_rect["right"] <= panel["right"]
+        for text_rect in result["rightmostTextByRow"]
+    )
 
 
 def test_shell_styles_do_not_carry_version_label_comments():
