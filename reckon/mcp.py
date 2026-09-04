@@ -2823,7 +2823,7 @@ def _crew(
     limit: int | None = None,
     candidates: list[dict[str, Any]] | None = None,
     session: str | None = None,
-    action: Literal["resume", "session", "sweep"] | None = None,
+    action: Literal["resume", "session", "resume-ready", "sweep"] | None = None,
     run_id: str | None = None,
     advice: str | None = None,
     dry_run: bool = False,
@@ -2832,8 +2832,8 @@ def _crew(
 
     Deliberately one tool over eight read views and three recovery actions rather
     than eleven top-level tools. Set ``action`` to ``resume``, ``session`` or
-    ``sweep`` to reach the same implementation as the corresponding crew CLI
-    operation. Omit ``action`` for the read views below.
+    ``resume-ready`` to reach the same implementation as the corresponding crew
+    CLI operation. Omit ``action`` for the read views below.
     ``ledger``, ``records`` and ``summary`` read the project's committed runs —
     ``<repo>/docs/state/<project>/crew.json``, the durable half; ``live`` reads
     the never-committed pointers of runs still in flight, each carrying the
@@ -3038,26 +3038,27 @@ def _crew_recover(
     :func:`reckon.crew.resumption.resolve_session` the CLI calls, so the two
     surfaces cannot disagree about one run.
 
-    ``sweep`` is ``crew resume-held`` by another name: it resumes every run one
-    project holds on a lapsed provider refusal, one resume per run, and
-    ``dry_run`` reports what would be resumed without resuming anything.
+    ``resume-ready`` is the same action as ``crew resume-ready``: it resumes
+    every run whose provider hold or declared external wait has ended, one
+    resume per run, and ``dry_run`` reports what would be resumed without
+    resuming anything.
 
     Every refusal here is a readable dict carrying its reason, never a raised
     exception — a coordinator reading a stack trace mid-outage is the state
     this surface exists to prevent.
     """
-    if action not in ("resume", "session", "sweep"):
+    if action not in ("resume", "session", "resume-ready", "sweep"):
         return {
             "ok": False,
             "error": "invalid_action",
-            "detail": "action must be resume, session, or sweep",
+            "detail": "action must be resume, session, or resume-ready",
         }
-    if action == "sweep":
+    if action in ("resume-ready", "sweep"):
         if not project:
             return {
                 "ok": False,
                 "error": "missing_project",
-                "detail": "sweep needs project",
+                "detail": "resume-ready needs project",
             }
         try:
             report = resumption_module.sweep(project, dry_run=dry_run)
@@ -3068,7 +3069,7 @@ def _crew_recover(
                 "project": project,
                 "detail": str(exc),
             }
-        return {"ok": True, "action": action, **report}
+        return {"ok": True, "action": "resume-ready", **report}
 
     if not run_id:
         return {
@@ -3650,7 +3651,7 @@ def _audit(
 # (list_plans/list_projects/list_sprints/list_followups/list_questions) via
 # its discovery + with_schema modes; edit_plan folds the granular mutators via
 # its set/append/resolve/lock/move + create ops; crew reads run state over
-# several views plus the resume, session and sweep recovery actions, so a
+# several views plus the resume, session and resume-ready recovery actions, so a
 # coordinator can answer a provider refusal without shelling out to the CLI.
 
 if mcp is not None:

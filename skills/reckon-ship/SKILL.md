@@ -613,6 +613,13 @@ crew(project, view="records")   lossless committed run records for detailed audi
 crew(project, view="budget")    backend headroom, hold state, reset time, and dispatch ceiling
 ```
 
+`reckon crew ledger --project <project> [--view summary|records]` answers what
+the project committed as landed: the roster, gate outcomes, worker-time
+measures, and, in records view, each completed run. It is the documented
+command route to the committed record when an operator is working from the
+shell; use the ledger or records MCP view for the same question inside an agent
+turn.
+
 `view="live"` answers "are my background workers alive, and where are they" for
 the whole fleet at once; `reckon crew list`, stream-file `stat`s, and `ps`
 greps give less. Two caveats: **`phase` lags the stored record** (a working run
@@ -941,12 +948,13 @@ For each completed agent:
 never redispatched.** Its session usually still exists and its worktree is
 untouched; inspect the worktree, then resume the session, and reconcile
 (promote or discard) only once resume is impossible — promoting first
-deletes the pointer a resume depends on. `reckon crew resume-held` sweeps and
-resumes every run a lapsed refusal still holds, and `reckon crew follow` runs
-it on a cadence for you, but a `follow` already running when that code
-changes never picks it up. The full order, the two counter-instincts that
-have both been followed and were both wrong, and the verified commands are in
-`references/outage-recovery.md`.
+deletes the pointer a resume depends on. `reckon crew resume-ready` sweeps and
+resumes every run whose provider hold or declared external wait has ended, and
+`reckon crew follow` runs it on a cadence for you. A long-lived follower reloads
+the installed code when it advances, preserving its process and session
+registration; a failed reload reports explicitly in the pane. The full order,
+the two counter-instincts that have both been followed and were both wrong, and
+the verified commands are in `references/outage-recovery.md`.
 
 An agent that signals idle WITHOUT a report has probably not failed. Before
 redispatching: check the manifest path, then required test logs/artifacts, then

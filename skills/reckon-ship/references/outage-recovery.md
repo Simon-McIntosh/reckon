@@ -65,9 +65,9 @@ unwarranted.
 
 ## The automatic path
 
-`reckon crew resume-held --project <project>` sweeps every run in a project
-still held by a lapsed provider refusal and resumes each with a continue
-advice, bounded at one resume per hold. It is idempotent and reads only
+`reckon crew resume-ready --project <project>` sweeps every run in a project
+whose provider hold or declared external wait has ended and resumes each with a
+continue advice, bounded at one resume per stop condition. It is idempotent and reads only
 records already on disk. `reckon crew follow` runs this sweep itself on a
 two-minute cadence, so a coordinator attached to its own fleet needs to notice
 nothing.
@@ -92,7 +92,7 @@ this area of the codebase is actively worked:
 ```
 reckon crew observe --run <run-id> [--project <project>]
 reckon crew resume --run <run-id> --advice "<answer>" [--print-only]
-reckon crew resume-held --project <project> [--dry-run]
+reckon crew resume-ready --project <project> [--dry-run]
 reckon crew complete --run <run-id> --gate <verdict> --commit <sha> ...
 reckon crew recover [--project <project>]
 ```
