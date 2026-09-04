@@ -98,6 +98,21 @@ def watch_stream_path(project: str) -> Path:
     return watch_lock_path(project).with_suffix(".events")
 
 
+def follower_code_stamp() -> str:
+    """Return a stamp that advances when code used by a follower changes."""
+    package_dir = Path(__file__).resolve().parent.parent
+    sources = [package_dir / "cli.py", *sorted((package_dir / "crew").glob("*.py"))]
+    stamp = hashlib.sha256()
+    for source in sources:
+        try:
+            metadata = source.stat()
+        except OSError:
+            continue
+        stamp.update(str(source.relative_to(package_dir)).encode())
+        stamp.update(f":{metadata.st_mtime_ns}:{metadata.st_size}\n".encode())
+    return stamp.hexdigest()
+
+
 def follower_dir(project: str) -> Path:
     """Directory holding one registration per session consuming the ticker."""
     return watch_lock_path(project).with_suffix(".followers")
@@ -1303,6 +1318,40 @@ class _FollowerRegistration:
         self.blocked_by: dict[str, Any] = {}
         self._handle = None
 
+    def _adopt_inherited(self) -> bool:
+        """Keep the same advisory lock across an in-place process reload."""
+        raw = os.environ.pop(_FOLLOWER_REGISTRATION_ENV, "")
+        if not raw:
+            return False
+        try:
+            inherited = json.loads(raw)
+            fd = int(inherited["fd"])
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+            return False
+        if (
+            inherited.get("project") != self.project
+            or inherited.get("session") != self.session
+        ):
+            os.close(fd)
+            return False
+        try:
+            handle = os.fdopen(fd, "a+b")
+            os.set_inheritable(handle.fileno(), False)
+            record = _read_watch_record(handle)
+        except OSError:
+            return False
+        if (
+            record.get("project") != self.project
+            or record.get("session") != self.session
+        ):
+            handle.close()
+            return False
+        self._handle = handle
+        self.record = record
+        self.held = True
+        self.blocked_by = {}
+        return True
+
     def _open(self):
         if self._handle is None:
             path = follower_lock_path(self.project, self.session)
@@ -1313,6 +1362,8 @@ class _FollowerRegistration:
     def acquire(self) -> bool:
         """Take the registration if it is free, and report whether it is held."""
         if self.held:
+            return True
+        if self._adopt_inherited():
             return True
         handle = self._open()
         try:
@@ -1336,6 +1387,22 @@ class _FollowerRegistration:
         self.held = True
         self.blocked_by = {}
         return True
+
+    def prepare_reexec(self) -> None:
+        """Make this registration survive replacement of the current process."""
+        if not self.held or self._handle is None:
+            return
+        fd = self._handle.fileno()
+        os.set_inheritable(fd, True)
+        os.environ[_FOLLOWER_REGISTRATION_ENV] = json.dumps(
+            {"fd": fd, "project": self.project, "session": self.session}
+        )
+
+    def cancel_reexec(self) -> None:
+        """Undo descriptor inheritance when process replacement was refused."""
+        os.environ.pop(_FOLLOWER_REGISTRATION_ENV, None)
+        if self._handle is not None:
+            os.set_inheritable(self._handle.fileno(), False)
 
     def release(self) -> None:
         """Drop the claim, leaving the file as a record rather than removing it.
@@ -1409,6 +1476,10 @@ def follower_claim(
 # microseconds; treating that instant as "delivery unknown" would refuse a
 # dispatch against a follower that is fine, so a reader waits out the gap.
 _REGISTRATION_SETTLE_SECONDS = 0.25
+
+
+FOLLOWER_FRESHNESS_SECONDS = 1.0
+_FOLLOWER_REGISTRATION_ENV = "RECKON_FOLLOWER_REGISTRATION"
 
 
 def _follower_liveness(path: Path) -> dict[str, Any]:
