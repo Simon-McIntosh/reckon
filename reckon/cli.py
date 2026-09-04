@@ -2229,6 +2229,18 @@ def _ledger_module():
         "Refused if the run has no boundary violation to waive."
     ),
 )
+@click.option(
+    "--accept-path",
+    "accepted_paths",
+    type=(str, str),
+    multiple=True,
+    metavar="PATH REASON",
+    help=(
+        "Resolve a promotion refused because the run changed an undeclared "
+        "companion path. Name its repository path and the reason it belongs "
+        "to this run; repeat for each path."
+    ),
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_complete(
     run_id,
@@ -2247,6 +2259,7 @@ def crew_complete(
     gate_log_digest,
     waive_suite_delta,
     waive_boundary_refusal,
+    accepted_paths,
     pretty,
 ):
     """Promote a finished run into the owning repository's committed ledger.
@@ -2282,6 +2295,7 @@ def crew_complete(
             require_gate_check=True,
             suite_delta_waiver=waive_suite_delta,
             boundary_waiver=waive_boundary_refusal,
+            accepted_paths=dict(accepted_paths),
         )
     except ledger_module.SuiteDeltaError as exc:
         _emit(
@@ -2295,7 +2309,15 @@ def crew_complete(
             pretty,
         )
         raise click.exceptions.Exit(1) from exc
-    except (crew_module.CrewError, ledger_module.LedgerError) as exc:
+    except crew_module.CrewError as exc:
+        detail = str(exc)
+        if "changed paths outside its declared write scope" in detail:
+            detail += (
+                ". Retry with --accept-path PATH REASON for each deliberate "
+                "companion path"
+            )
+        raise click.ClickException(detail) from exc
+    except ledger_module.LedgerError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit({"ok": True, **result}, pretty)
 
