@@ -195,6 +195,7 @@ def _node(**overrides) -> crew.TaskNode:
         "done_when": "uv run pytest tests/test_backends.py reports 28 passed",
         "write_paths": ["reckon/target.py"],
         "time_budget": "20m",
+        "spec_level": "exact",
     }
     fields.update(overrides)
     return crew.TaskNode(**fields)
@@ -638,6 +639,11 @@ def test_a_completed_record_carries_the_declared_specification_level() -> None:
 
     assert "spec_level" in ledger.RECORD_FIELDS
     assert stored["spec_level"] == "exact"
+
+
+def test_dispatch_refuses_a_node_without_a_specification_level(repo) -> None:
+    with pytest.raises(crew.CrewError, match="spec-level: no specification level"):
+        _dispatch(repo, node_kwargs={"spec_level": ""})
 
 
 def test_a_completed_record_carries_shadow_replay_inputs() -> None:
