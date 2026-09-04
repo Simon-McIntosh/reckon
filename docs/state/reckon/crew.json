@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T13:55:19",
+  "updated": "2026-09-04T13:57:39",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -56366,6 +56366,141 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T113622691546-wspo-worktree-outlives-promotion",
+        "plan": "work-survives-a-provider-outage",
+        "section": "\u00a73",
+        "node": "wspo-worktree-outlives-promotion",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 461,
+                "cached_input_tokens": 292535,
+                "input_tokens": 292998,
+                "output_tokens": 2249,
+                "reasoning_output_tokens": 714,
+                "total_tokens": 295247,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "uv run pytest tests/test_crew_promotion.py -q passes, asserted through the reckon crew complete entry point and through the audit that enumerates worktrees rather than through the release helper: promoting a run whose session is recoverable retains its worktree and records the retention on the ledger row, promoting one whose session is unrecoverable releases it as today, a waived promotion retains the worktree unless the waiver explicitly discards it, and a retained-for-resume tree reads as its own third category in the worktree audit rather than as clean-and-reachable or as holding unintegrated work",
+          "estimated_hours": 2.0,
+          "goal": "Condition the worktree release on the session being unrecoverable rather than on the run reaching a terminal state, and record a retention",
+          "id": "wspo-worktree-outlives-promotion",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T113622691546-wspo-worktree-outlives-promotion/manifest.md",
+          "plan": "work-survives-a-provider-outage",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "tests/test_crew_promotion.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s15-promo",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T11:36:31Z",
+        "completed_at": "2026-09-04T11:57:09Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1238,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1238,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "49ba338b080809f6e9148cff062b2f373edbbb98",
+        "commits": [
+          "a1bf7da70ca2f93d83ae92726ba03ccbe62a75c1"
+        ],
+        "changed_lines": {
+          "added": 340,
+          "removed": 7,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "uv run --no-sync pytest tests/test_crew_promotion.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T113622691546-wspo-worktree-outlives-promotion/committed-pytest.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T113622691546-wspo-worktree-outlives-promotion/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06c34-bf99-7e63-b546-7cbbde576d5b",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 6241408,
+            "cached_input_tokens_cumulative": 6241408,
+            "input_tokens": 6288522,
+            "input_tokens_cumulative": 6288522,
+            "output_tokens": 23234,
+            "output_tokens_cumulative": 23234,
+            "reasoning_output_tokens": 10453,
+            "reasoning_output_tokens_cumulative": 10453
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 33687,
+          "peak_input_tokens": 12529930
+        },
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/wspo-worktree-outlives-promotion",
+          "session_id": "01a06c34-bf99-7e63-b546-7cbbde576d5b",
+          "session_source": "pointer",
+          "retained_at": "2026-09-04T11:57:09Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_crew_promotion.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -56538,6 +56673,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 928
+    "_version": 929
   }
 }
