@@ -32,26 +32,29 @@ an exact spec only amortises when several dispatches share it.
 Declare the level on the dispatch (`--spec-level exact|guided|open`) so the
 ledger can test this table against outcomes.
 
-## The mapping (measured priors)
+## The mapping (live measurements)
 
-These rows are what goes into `roles.<role>.by_spec_level` in a flight layer;
-the coordinator no longer applies them by hand on each call:
+The selected rows go into `roles.<role>.by_spec_level` in a flight layer; the
+coordinator no longer applies them by hand on each call. Read them from
+`crew(project, view="routing")`. That call groups every mounted committed
+ledger by model, effort, specification level and role, and returns the sample
+depth, pass, rework and redispatch rates, median tool steps, median input, and
+both worker-only and worker-plus-coordinator cost.
 
-| Declared level | Measured prior | Evidence |
-|---|---|---|
-| `exact` | default backend at medium effort | 158 medium runs passed at 0.86, against 197 high runs at 0.83. |
-| `guided` | default backend at medium effort | 416 medium runs passed at 0.91, against 279 high runs at 0.89. |
-| `open` | default backend at high effort | 61 high runs passed at 0.84; no medium sample exists, so high remains the prior until at least ten usable medium runs measure the alternative. |
+The call deliberately reports immediate per-run spend beside rework-charged
+cost per durable node. A short observation window can reflect the former while
+the latter is still back-loaded, so do not change a mapping merely because its
+first few hours show the immediate column rising. The durable column is the
+routing measure; the pass column remains a safety signal rather than the cost
+ranking.
 
-A node the mapping routes somewhere its gate forbids (an `open` node toward a
-small model, say) is a config bug — the mapping encodes this table, and the
-ledger's slices amend it at the plan's calibration checkpoints.
-
-Read the current slice results before trusting these rows: the committed
-ledger records pass rate, worker minutes, tokens and redispatch lineage per
-(configuration × declared level). The sweet spot for a slice is the cheapest
-configuration whose pass rate stays at or above the capabilities success
-threshold over at least ten usable runs, charged for its redispatches.
+At a calibration checkpoint, compare rows with the same role and specification
+level. Prefer the configuration with the lowest worker-plus-coordinator cost
+per durable node once its sample depth is adequate for the pilot being judged.
+Keep the incumbent when coordinator spend is unknown, the durable figure has
+not matured, or the candidate has not yet produced live rework evidence. A node
+the mapping routes somewhere its gate forbids is a config bug, regardless of
+the cost ordering.
 
 ## The small-model lane — defined, unrouted eligibility gate
 
@@ -133,14 +136,16 @@ source ever names one. The ladder, cheapest step first, each gating the next:
    and no `by_spec_level` overlay selects it.
 3. **Shadow qualification**: sampled shadow runs (`reckon crew shadow`) pair
    the candidate against live nodes' primaries — same node, same base sha,
-   same named check, never merged. A tier qualifies for a pilot at ≥ 10
-   usable shadow pairs meeting the capabilities success threshold.
+   same named check, never merged. A tier qualifies for a pilot after at least
+   ten usable controlled pairs establish its tool steps, input and gate
+   agreement. Shadow work cannot establish rework because it is never merged.
 4. **Gated pilot**: live routing under the small-model lane gate above (or a
    role overlay for a full-size tier), first twenty runs full-diff audited.
-5. **Slice-lock**: the calibration checkpoint locks the winner into
-   `roles.<role>.by_spec_level` per the decision rule — cheapest
-   configuration with pass ≥ 0.8 over ≥ 10 usable runs, charged for
-   redispatches.
+5. **Slice-lock**: the calibration checkpoint reads
+   `crew(project, view="routing")` and locks the winner into
+   `roles.<role>.by_spec_level` per the decision rule — the lowest measured
+   worker-plus-coordinator cost per durable node on the matching live pilot
+   slice, with redispatch and rework charged rather than treated as free.
 
 Shadow evidence qualifies a tier for its pilot; **only live gated evidence
 opens routing**. Layer placement: measured cross-project defaults live in the

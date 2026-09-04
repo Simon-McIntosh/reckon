@@ -45,6 +45,7 @@ except ImportError:
 from reckon import (
     _plan_html,
     budget as budget_module,
+    capabilities as capabilities_module,
     crew as crew_module,
     flight as flight_module,
     ledger as ledger_module,
@@ -2904,7 +2905,8 @@ def _crew(
     ``scopes`` reads live path claims and partitions the optional ordered
     ``candidates`` wave manifest into mutually independent serial lanes;
     ``runs`` joins compact, filterable rows from live pointers and the ledger;
-    ``fleet`` reads compact rows for every mounted project's cross-project rollup;
+    ``routing`` derives configuration cost and durability across every mounted
+    ledger; ``fleet`` reads compact rows for every mounted project's cross-project rollup;
     ``flight`` reports the resolved routing config with the layer that supplied every value; and
     ``budget`` reports, per backend, whether a wave may open — read from what
     earlier runs recorded, so it spends nothing, and holding only where
@@ -2973,6 +2975,7 @@ def _crew(
         "records",
         "ledger",
         "budget",
+        "routing",
         "directory",
         "fleet",
         "runs",
@@ -2982,8 +2985,9 @@ def _crew(
             "error": "invalid_view",
             "detail": (
                 "view must be directory, drain, scopes, summary, flight, live, "
-                "records, ledger or budget; runs is the compact joined view and "
-                "fleet is the cross-project view"
+                "records, ledger or budget; routing is the cross-ledger cost "
+                "view, runs is the compact joined view, and fleet is the "
+                "cross-project view"
             ),
         }
     try:
@@ -3047,6 +3051,24 @@ def _crew(
                 "ok": True,
                 "view": view,
                 **budget_module.preflight(project, config, root=checkout_path),
+            }
+        if view == "routing":
+            try:
+                routing = capabilities_module.routing_surface(
+                    project, checkout_path=checkout_path
+                )
+            except (OSError, ValueError) as exc:
+                return {
+                    "ok": False,
+                    "error": "crew_error",
+                    "project": project,
+                    "detail": str(exc),
+                }
+            return {
+                "ok": True,
+                "project": project,
+                "view": view,
+                **routing,
             }
         if view == "flight":
             return {

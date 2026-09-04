@@ -25,6 +25,7 @@ Routes:
   GET /_projects/<file>         → ~/docs-server/<file>
   GET /crew/<project>/finished[/<plan>]
                                 → committed completed runs, newest first
+  GET /crew/<project>/routing   → derived cross-ledger routing measurements
   GET /state/<project>/<doc>    → ~/docs-server/state/<project>/<doc>.json
   POST /state/<project>/<doc>   → write the same path (versioned)
   GET /_discover/<project>      → scan docs dir for HTML plan pages (meta tag opt-in)
@@ -57,7 +58,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 from urllib.request import urlopen
 
-from reckon import _backends, _plan_html, crew, fleet_index, ledger
+from reckon import _backends, _plan_html, capabilities, crew, fleet_index, ledger
 from reckon._store import _config_home, _mounts_path, _state_root
 from reckon.figures import figure_rows
 from reckon.lifecycle import (
@@ -1883,8 +1884,9 @@ class Handler(BaseHTTPRequestHandler):
             parts = path.strip("/").split("/")
             project = parts[1] if len(parts) >= 2 else None
             finished = len(parts) in (3, 4) and parts[2] == "finished"
+            routing = len(parts) == 3 and parts[2] == "routing"
             plan = parts[3] if len(parts) == 4 and finished else None
-            if len(parts) > 2 and not finished:
+            if len(parts) > 2 and not finished and not routing:
                 self._send(HTTPStatus.BAD_REQUEST, b"bad crew path")
                 return
             if project is not None and not SAFE_NAME.fullmatch(project):
@@ -1896,6 +1898,20 @@ class Handler(BaseHTTPRequestHandler):
             mounts = load_mounts()
             if project is not None and project not in mounts:
                 self._send(HTTPStatus.NOT_FOUND, b"project not found")
+                return
+            if routing:
+                try:
+                    report = capabilities.derive_routing(mounts)
+                except (OSError, ledger.LedgerError, ValueError) as exc:
+                    self._send_json(
+                        HTTPStatus.INTERNAL_SERVER_ERROR,
+                        {"error": "routing_error", "detail": str(exc)},
+                    )
+                    return
+                self._send_json(
+                    HTTPStatus.OK,
+                    {"project": project, "view": "routing", **report},
+                )
                 return
             if finished:
                 try:
