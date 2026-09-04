@@ -16,7 +16,9 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
 
+from reckon import cli as cli_module
 from reckon import crew
 from reckon.crew import node as node_module
 
@@ -106,6 +108,56 @@ def _pointer(
     if base_sha:
         record["base_sha"] = base_sha
     return record
+
+
+# ── The pre-dispatch contract ───────────────────────────────────────────────
+
+
+def test_dispatch_without_a_specification_level_exits_two(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = {
+        "default_backend": "native",
+        "backends": {"native": {"launch": "in-harness", "time_budget": "25m"}},
+        "roles": {"implement": {}},
+        "fences": {"time_budget": "25m"},
+    }
+    monkeypatch.setattr(
+        cli_module, "_resolved_flight", lambda *_args, **_kwargs: config
+    )
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "dispatch",
+            "--project",
+            "project-a",
+            "--plan",
+            "project-a-plan",
+            "--node",
+            "node-a",
+            "--goal",
+            "record one launch matrix",
+            "--done-when",
+            "the command exits 0 with one recorded row",
+            "--write-path",
+            "package/target.py",
+            "--session",
+            "session-a",
+            "--repo",
+            str(tmp_path),
+            "--dry-run",
+        ],
+    )
+
+    payload = json.loads(result.output)
+    assert result.exit_code == 2
+    assert "spec-level" in payload["validation"]["properties"]
+    assert any(
+        finding["property"] == "spec-level"
+        for finding in payload["validation"]["findings"]
+    )
 
 
 # ── Repository identity ─────────────────────────────────────────────────────

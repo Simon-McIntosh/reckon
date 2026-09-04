@@ -143,7 +143,7 @@ resolve target
      ↓
 read task requirements + apply explicit runtime routing + applicable skill
 → audit plan currency against the code + dispatch the prior-art scout (reuse map)
-→ check every node against the seven-property contract (§3b)
+→ check every node against the eight-property contract (§3b)
 → reckon crew preflight — a spent backend holds its nodes, the rest still run
 → reckon crew dispatch each ready node — branch only on the returned launch kind
 → emit the dispatch summary, naming the gate that closes the wave
@@ -454,7 +454,7 @@ well-formedness before dispatch, not after; that leaves the escape hatch handlin
 only the genuine residual. A node that fails is reshaped or split — never
 dispatched in the hope that the worker will work it out.
 
-All seven must hold:
+All eight must hold:
 
 - [ ] **Single goal** — one deliverable. Joined with "and" means two nodes.
 - [ ] **Fully specified** — every input is in the live plan or in the fences;
@@ -470,8 +470,11 @@ All seven must hold:
       budget is not a target to overrun.
 - [ ] **Independently verifiable** — auditable from the manifest, `git show
       --stat` and the gate evidence, without reading the implementation.
+- [ ] **Specification level declared** — `--spec-level` is one of `exact`,
+      `guided`, or `open`; undeclared work is refused because it cannot enter a
+      calibration slice.
 
-`reckon crew dispatch` enforces the same seven and exits 2 naming every failing
+`reckon crew dispatch` enforces the same eight and exits 2 naming every failing
 property. Check every node before it enters the ready queue:
 
 ```bash
@@ -1393,7 +1396,7 @@ handoff.
 ## Delegation, runtime routing, integration, and cleanup
 
 `references/worker-protocol.md` records everything true of a worker regardless of
-backend — the seven-property contract, the four fences, the manifest shape, the
+backend — the eight-property contract, the four fences, the manifest shape, the
 recovery ladder and the escape hatch. The engine injects that content; read the
 reference only when hand-composing a delegation Reckon did not prepare.
 (`references/worker-backends.md` is maintainer documentation of the translation
