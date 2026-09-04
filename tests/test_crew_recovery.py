@@ -348,32 +348,21 @@ def test_dead_process_never_counts_as_working_at_any_phase(home) -> None:
         )
 
 
-def test_blocked_manifest_never_counts_as_working(home) -> None:
-    # A block asks the coordinator for action even if its process has not exited.
-    snapshot = _snapshot_pointer(
-        home,
-        "r-term-blocked",
-        phase="working",
-        alive=True,
-        manifest_status="blocked",
-    )
-    assert snapshot["state"] not in recovery.FLEET_WORKING_STATES
-
-
 @pytest.mark.parametrize(
     ("status", "stopped_classification", "stopped_state"),
     [
         ("complete", "completed_unpromoted", "complete"),
+        ("blocked", "blocked", "blocked"),
         ("failed", "failed", "failed"),
     ],
 )
-def test_manifest_outcome_waits_until_the_pointer_says_the_process_stopped(
+def test_live_process_outranks_every_terminal_manifest_status_until_it_stops(
     home, status, stopped_classification, stopped_state
 ) -> None:
-    # A manifest report is provisional while its writer remains alive, and
-    # becomes an outcome only once the pointer says the process stopped. The
-    # failure arm is also the negative guard: a genuine stopped failure retains
-    # its existing classification and reason.
+    # Every status in the worker manifest's terminal vocabulary is provisional
+    # while its writer remains alive, then regains its existing meaning once
+    # that process stops. The stopped half guards against gaining optimism:
+    # delivered, blocked, and failed reports retain their distinct outcomes.
     manifest = home / "manifests" / f"r-live-{status}.md"
     manifest.parent.mkdir(parents=True, exist_ok=True)
     manifest.write_text(
@@ -406,7 +395,7 @@ def test_manifest_outcome_waits_until_the_pointer_says_the_process_stopped(
     assert stopped_row["classification"] == stopped_classification
     assert stopped_row["manifest_status"] == status
     assert stopped_snapshot["state"] == stopped_state
-    if status == "failed":
+    if status in {"blocked", "failed"}:
         assert "implementation failed" in stopped_row["detail"]
 
 
@@ -464,9 +453,10 @@ def test_observe_and_watch_render_failure_only_after_the_process_stops(
     tmp_path, monkeypatch
 ) -> None:
     # Exercise the two production boundaries together. Observe persists the
-    # process fact onto the live pointer; the producer reduces that pointer and
-    # the follower renders its stored transition. No one re-probes liveness in
-    # between those boundaries.
+    # process fact onto the live pointer; each live read rechecks that fact
+    # before the producer reduces the pointer and the follower renders its
+    # transition. The intent is unchanged: failure must not render while the
+    # process lives. The stale remembered observation is deliberately gone.
     fallback_home = tmp_path / "fallback-home"
     monkeypatch.setenv("HOME", str(fallback_home))
     monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
@@ -504,8 +494,11 @@ def test_observe_and_watch_render_failure_only_after_the_process_stops(
     )
 
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
-    liveness = iter((True, False))
-    monkeypatch.setattr(dispatch_module, "process_alive", lambda _pid: next(liveness))
+    liveness = {"alive": True}
+    monkeypatch.setattr(
+        dispatch_module, "process_alive", lambda _pid: liveness["alive"]
+    )
+    monkeypatch.setattr(runs, "process_alive", lambda _pid: liveness["alive"])
 
     live_pointer = crew.observe(run_id)
     assert live_pointer["process_alive"] is True
@@ -518,6 +511,7 @@ def test_observe_and_watch_render_failure_only_after_the_process_stops(
     runs._WATCH_STREAM_PRODUCERS["proj"] = producer
     try:
         crew.list_live(project="proj")
+        liveness["alive"] = False
         stopped_pointer = crew.observe(run_id)
         crew.list_live(project="proj")
     finally:
@@ -985,7 +979,7 @@ def _blocked_record(home: Path, run_id: str, *, manifest_text: str) -> dict:
         "created_at": datetime.now(tz=timezone.utc).isoformat(),
         "manifest_path": str(manifest),
         "log_path": str(home / "streams" / f"{run_id}.jsonl"),
-        "process_alive": True,
+        "process_alive": False,
     }
 
 
@@ -1142,6 +1136,7 @@ def _role_snapshot(
     node_role: str | None = None,
     manifest_status: str | None = None,
     agent: Mapping[str, Any] | None = None,
+    alive: bool | None = True,
 ) -> dict:
     """Reduce a pointer built from scratch, so the role field is the only
     difference between tests and cannot be smuggled in by a shared fixture."""
@@ -1157,7 +1152,7 @@ def _role_snapshot(
         "created_at": datetime.now(tz=UTC).isoformat(),
         "manifest_path": str(manifest),
         "log_path": str(home / "streams" / f"{run_id}.jsonl"),
-        "process_alive": True,
+        "process_alive": alive,
     }
     if role:
         record["role"] = role
@@ -1272,6 +1267,7 @@ def test_snapshot_carries_every_field_the_ticker_column_set_reads(home) -> None:
         "r-contract",
         role="implement",
         manifest_status="blocked",
+        alive=False,
         agent={
             "backend": "claude",
             "launch": "cli",
@@ -1350,7 +1346,7 @@ def _shadow_transition(home: Path, run_id: str, **lineage_overrides) -> dict:
     )
 
 
-def test_a_shadow_pointer_dims_the_row_it_emits(home) -> None:
+def test_a_shadow_pointer_dims_the_row_it_emits(home, monkeypatch) -> None:
     # The event built from a real shadow pointer carries the very lineage the
     # renderer reads, so a genuinely sourced shadow row dims end to end rather
     # than rendering like any other row.
@@ -1362,6 +1358,7 @@ def test_a_shadow_pointer_dims_the_row_it_emits(home) -> None:
     assert lineage.get("primary_run_id") == "r-shadow-primary"
     assert ticker_module.is_shadow(transition) is True
 
+    monkeypatch.delenv("NO_COLOR", raising=False)
     painter = ticker_module.Ticker(theme="light", color=True)
     shadow_line = painter.render(transition)
     # A shadow row reads dim end to end: every styled cell that would carry a
@@ -1374,7 +1371,9 @@ def test_a_shadow_pointer_dims_the_row_it_emits(home) -> None:
     assert re.search(r"\x1b\[38;5;", shadow_line) is None
 
 
-def test_a_pointer_without_lineage_renders_undimmed_without_raising(home) -> None:
+def test_a_pointer_without_lineage_renders_undimmed_without_raising(
+    home, monkeypatch
+) -> None:
     # The negative: a run that was never shadowed carries no lineage, keeps
     # rendering normally, and neither the producer nor the renderer raises on
     # its absence.
@@ -1382,6 +1381,7 @@ def test_a_pointer_without_lineage_renders_undimmed_without_raising(home) -> Non
 
     assert transition.get("lineage") in (None, {})
     assert ticker_module.is_shadow(transition) is False
+    monkeypatch.delenv("NO_COLOR", raising=False)
     painter = ticker_module.Ticker(theme="light", color=True)
     line = painter.render(transition)
     assert re.search(r"\x1b\[38;5;", line) is not None
@@ -1466,6 +1466,7 @@ def _fact_snapshot(
         run_id,
         role="implement",
         manifest_status=manifest_status,
+        alive=False,
         agent=agent
         or {
             "backend": "claude",
