@@ -1,19 +1,10 @@
 import json
 import re
-import subprocess
 from pathlib import Path
 
 import pytest
 
-from tests.spa_browser_harness import (
-    BrowserProbeError,
-    file_spa,
-    installed_browser,
-    run_browser_probe,
-    served_spa,
-    temporary_browser_profile,
-)
-from tests.test_spa_rendered_semantics import INDEX_STATE, NODE_PROBE, PLAN_HTML
+from tests.spa_browser_harness import file_spa, installed_browser_or_skip
 
 ROOT = Path(__file__).parents[1]
 READER_CSS = (ROOT / "docs" / "ui" / "reader.css").read_text()
@@ -22,20 +13,8 @@ TITLE_SOURCE = (ROOT / "docs" / "ui" / "shell-titlebar.jsx").read_text()
 
 
 @pytest.fixture(scope="module")
-def rendered_browser(tmp_path_factory) -> str:
-    browser = installed_browser()
-    if browser is None:
-        pytest.skip("no supported browser binary is installed")
-    try:
-        run_browser_probe(
-            tmp_path_factory.mktemp("browser-capability"),
-            browser,
-            "<!doctype html><html><body>ready</body></html>",
-            "document.body.textContent",
-        )
-    except BrowserProbeError as error:
-        pytest.skip(f"browser unavailable ({error.classification}): {error}")
-    return browser
+def rendered_browser() -> str:
+    return installed_browser_or_skip()
 
 
 def _declarations(selector: str) -> dict[str, str]:
@@ -105,7 +84,7 @@ def test_focus_header_paging_and_attachment_bars_keep_existing_navigation_paths(
     assert "onStep(-1)" in TITLE_SOURCE
     assert "onStep(1)" in TITLE_SOURCE
     assert 'className="r-reader-attachment-bars"' in PLAN_SOURCE
-    assert 'onNav?.({ view: "plan", slug: key })' in PLAN_SOURCE
+    assert "onNav?.({ view: type, slug: item.slug || key })" in PLAN_SOURCE
 
     bars = _declarations(".r-reader-attachment-bars")
     cards = _declarations(".r-reader-attachment-entries > button")
@@ -258,17 +237,6 @@ localStorage.setItem('reckon:reckon:groupBy', 'created');
 def test_reader_metadata_omits_absent_values_and_remains_one_line(
     tmp_path: Path, rendered_browser: str
 ) -> None:
-    browser = rendered_browser
-
-    docs = tmp_path / "docs"
-    plans = docs / "plans"
-    state = docs / "state" / "reckon"
-    plans.mkdir(parents=True)
-    state.mkdir(parents=True)
-    (docs / "index.html").symlink_to(ROOT / "docs" / "index.html")
-    (plans / "rendered-contract.html").write_text(PLAN_HTML, encoding="utf-8")
-    (state / "index.json").write_text(json.dumps(INDEX_STATE), encoding="utf-8")
-
     probe = r"""(() => {
       const row = document.querySelector(".r-reading-metadata");
       const bareDashFields = [...row.querySelectorAll(":scope > span")]
@@ -281,44 +249,18 @@ def test_reader_metadata_omits_absent_values_and_remains_one_line(
     })()"""
 
     measurements = {}
-    with served_spa(
-        tmp_path, browser, docs=docs, route="#plan/rendered-contract"
+    with file_spa(
+        tmp_path,
+        rendered_browser,
+        _reader_state(),
+        route="#plan/second",
     ) as context:
         for width in (1374, 1920):
-            configured_probe = NODE_PROBE.replace(
-                '"--window-size=1374,900"',
-                f'"--window-size={width},900"',
-            ).replace("width: 1374,", f"width: {width},")
-            if width != 1374:
-                assert configured_probe != NODE_PROBE
-            with temporary_browser_profile(tmp_path) as profile:
-                result = subprocess.run(
-                    [
-                        "node",
-                        "--input-type=module",
-                        "-e",
-                        configured_probe,
-                        json.dumps(
-                            {
-                                "browser": browser,
-                                "profile": str(profile),
-                                "url": context.url,
-                                "waitSelector": ".r-reading-metadata",
-                                "probe": probe,
-                                "removeSignal": "undefined",
-                                "failPlanHtml": False,
-                                "fixtureIndex": INDEX_STATE,
-                            }
-                        ),
-                    ],
-                    cwd=ROOT,
-                    check=False,
-                    capture_output=True,
-                    text=True,
-                    timeout=90,
-                )
-            assert result.returncode == 0, result.stderr
-            measurements[width] = json.loads(result.stdout)["baseline"]
+            measurements[width] = context.run_probe(
+                probe,
+                viewport=(width, 900),
+                ready_expression="Boolean(document.querySelector('.r-reading-metadata'))",
+            )
 
     assert measurements[1374]["bareDashFields"] == []
     assert measurements[1920]["bareDashFields"] == []

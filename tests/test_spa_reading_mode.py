@@ -227,3 +227,4 @@ def test_reader_steps_the_published_rendered_order_instead_of_rederiving_it() ->
     reader = _function_source("Plan", PLAN)
     assert 'document.addEventListener("keydown", handleReaderKey, true)' in reader
     assert "matches?.(\"input, textarea, select, [contenteditable='true']\")" in reader
+    assert "document.activeElement?.matches?." in reader

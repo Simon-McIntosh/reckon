@@ -221,7 +221,7 @@ function ReaderAttachmentBars({ groups, selectedKey, onNav }) {
                   key={key}
                   className={selectedKey === key ? "active" : ""}
                   aria-pressed={selectedKey === key}
-                  onClick={() => onNav?.({ view: "plan", slug: key })}
+                  onClick={() => onNav?.({ view: type, slug: item.slug || key })}
                 >
                   <span className={`r-reading-kind ${type}`}>{type}</span>
                   <span className="r-reader-attachment-title">{item.title || item.slug}</span>
@@ -597,7 +597,9 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
   useEffect(() => {
     const handleReaderKey = event => {
       if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-      if (event.target?.matches?.("input, textarea, select, [contenteditable='true']")) return;
+      const editable = event.target?.matches?.("input, textarea, select, [contenteditable='true']")
+        || document.activeElement?.matches?.("input, textarea, select, [contenteditable='true']");
+      if (editable) return;
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       event.preventDefault();
       event.stopPropagation();
