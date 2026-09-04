@@ -52,6 +52,162 @@ def _skills_source() -> Path:
     raise click.ClickException(f"reckon skills are missing; searched: {searched}")
 
 
+def _native_agent_guard_path() -> Path:
+    """Resolve the executable guard shipped with the installed package."""
+    source_guard = (
+        Path(__file__).resolve().parent / "hooks" / "native_agent_guard.py"
+    ).resolve()
+    guard = source_guard
+    for entry in sys.path:
+        if not entry:
+            continue
+        candidate = (
+            Path(entry).expanduser().resolve()
+            / "reckon"
+            / "hooks"
+            / "native_agent_guard.py"
+        )
+        if candidate != source_guard and candidate.is_file():
+            guard = candidate
+            break
+    if not guard.is_file() or not os.access(guard, os.X_OK):
+        raise click.ClickException(
+            f"native-agent guard is missing or not executable: {guard}"
+        )
+    return guard
+
+
+def _is_native_agent_guard_group(group: Any) -> bool:
+    """Return whether one harness hook group is managed by reckon."""
+    if not isinstance(group, dict) or group.get("matcher") != "Agent":
+        return False
+    hooks = group.get("hooks")
+    if not isinstance(hooks, list) or len(hooks) != 1:
+        return False
+    hook = hooks[0]
+    if not isinstance(hook, dict) or hook.get("type") != "command":
+        return False
+    try:
+        command = shlex.split(str(hook.get("command") or ""))
+    except ValueError:
+        return False
+    if len(command) != 1:
+        return False
+    path = Path(command[0])
+    return path.name == "native_agent_guard.py" and path.parent.name == "hooks"
+
+
+def _write_json_atomically(path: Path, payload: dict, original: bytes | None) -> None:
+    """Write JSON without exposing a partial file or overwriting a concurrent edit."""
+    encoded = (json.dumps(payload, indent=2, ensure_ascii=False) + "\n").encode()
+    if encoded == original:
+        return
+    if original is None:
+        if path.exists():
+            raise click.ClickException(
+                f"harness settings changed while being updated: {path}"
+            )
+        mode = None
+    else:
+        try:
+            current = path.read_bytes()
+        except OSError as exc:
+            raise click.ClickException(
+                f"cannot re-read harness settings {path}: {exc}"
+            ) from exc
+        if current != original:
+            raise click.ClickException(
+                f"harness settings changed while being updated: {path}"
+            )
+        mode = path.stat().st_mode
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.reckon-{os.getpid()}-{time.time_ns()}")
+    try:
+        temporary.write_bytes(encoded)
+        if mode is not None:
+            temporary.chmod(mode)
+        os.replace(temporary, path)
+    except OSError as exc:
+        temporary.unlink(missing_ok=True)
+        raise click.ClickException(
+            f"cannot write harness settings {path}: {exc}"
+        ) from exc
+
+
+def _configure_native_agent_guard(settings_path: Path, *, remove: bool) -> bool:
+    """Install or remove the reckon-owned harness hook group."""
+    settings_path = settings_path.expanduser().resolve()
+    original: bytes | None = None
+    settings: dict[str, Any] = {}
+    if settings_path.exists():
+        try:
+            original = settings_path.read_bytes()
+            loaded = json.loads(original)
+        except (OSError, json.JSONDecodeError) as exc:
+            raise click.ClickException(
+                f"cannot parse harness settings {settings_path}: {exc}"
+            ) from exc
+        if not isinstance(loaded, dict):
+            raise click.ClickException(
+                f"cannot parse harness settings {settings_path}: root must be an object"
+            )
+        settings = loaded
+
+    hooks = settings.get("hooks")
+    if hooks is None:
+        hooks = {}
+    elif not isinstance(hooks, dict):
+        raise click.ClickException(
+            f"cannot update harness settings {settings_path}: hooks must be an object"
+        )
+
+    pre_tool_use = hooks.get("PreToolUse")
+    if pre_tool_use is None:
+        pre_tool_use = []
+    elif not isinstance(pre_tool_use, list):
+        raise click.ClickException(
+            f"cannot update harness settings {settings_path}: PreToolUse must be a list"
+        )
+
+    retained = [
+        group for group in pre_tool_use if not _is_native_agent_guard_group(group)
+    ]
+    if not remove:
+        retained.append(
+            {
+                "matcher": "Agent",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": shlex.join([str(_native_agent_guard_path())]),
+                    }
+                ],
+            }
+        )
+
+    updated_hooks = dict(hooks)
+    if retained:
+        updated_hooks["PreToolUse"] = retained
+    else:
+        updated_hooks.pop("PreToolUse", None)
+    if updated_hooks:
+        settings["hooks"] = updated_hooks
+    else:
+        settings.pop("hooks", None)
+
+    encoded = (json.dumps(settings, indent=2, ensure_ascii=False) + "\n").encode()
+    changed = encoded != original
+    _write_json_atomically(settings_path, settings, original)
+    return changed
+
+
+def _crew_state_exists(docs_dir: Path, project: str) -> bool:
+    """Return whether the synced project carries repository-local crew state."""
+    state_dir = docs_dir / "state" / project
+    return (state_dir / "crew.json").is_file() or (state_dir / "flight.yaml").is_file()
+
+
 def _copied_where_linked(
     skills: list[Path], destination: Path
 ) -> list[tuple[Path, Path]]:
@@ -2765,7 +2921,27 @@ def service_uninstall():
     default=False,
     help="Opt into Pages publication and write a workflow when the strategy permits.",
 )
-def sync(docs_path, project, mounts_file, state_root, generate_ci):
+@click.option(
+    "--claude-settings",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Harness settings path (defaults to ~/.claude/settings.json).",
+)
+@click.option(
+    "--remove-native-agent-guard",
+    is_flag=True,
+    default=False,
+    help="Remove reckon's native background-agent guard from harness settings.",
+)
+def sync(
+    docs_path,
+    project,
+    mounts_file,
+    state_root,
+    generate_ci,
+    claude_settings,
+    remove_native_agent_guard,
+):
     """Register a project and copy reckon UI files into its docs directory.
 
     DOCS_PATH is the path to the project's docs/ directory
@@ -2918,6 +3094,17 @@ def sync(docs_path, project, mounts_file, state_root, generate_ci):
             click.echo("  added README plans badge")
         elif publication_strategy.site_url is not None:
             click.echo("  README plans badge already current")
+
+    settings_path = claude_settings or Path.home() / ".claude" / "settings.json"
+    if remove_native_agent_guard or _crew_state_exists(docs_dir, proj_name):
+        changed = _configure_native_agent_guard(
+            settings_path, remove=remove_native_agent_guard
+        )
+        action = "removed" if remove_native_agent_guard else "installed"
+        state = action if changed else f"already {action}"
+        click.echo(f"  native-agent guard {state}: {settings_path.expanduser()}")
+    else:
+        click.echo("  skipped native-agent guard — project has no crew state")
 
     click.echo(
         f"\nDone. Visit http://localhost:8765/{proj_name}/ once the server is running."
