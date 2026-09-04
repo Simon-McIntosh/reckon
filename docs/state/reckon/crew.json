@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T13:57:39",
+  "updated": "2026-09-04T14:00:56",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -736,6 +736,15 @@
         "created": "2026-09-04"
       },
       {
+        "id": "s15-ledgerrow",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-04"
+      },
+      {
         "id": "s15-nag",
         "harness": "codex",
         "role": "implement",
@@ -750,9 +759,11 @@
         "id": "s15-observe",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a06c43-f98a-7d01-82df-9b8a0107b75a",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06c43-f98a-7d01-82df-9b8a0107b75a"
+        },
         "created": "2026-09-04"
       },
       {
@@ -806,6 +817,15 @@
         "sessions": {
           "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"read-only\"}": "01a06bf1-fea2-7ad0-a429-6bf5fc86f6fa"
         },
+        "created": "2026-09-04"
+      },
+      {
+        "id": "s15-sha",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
         "created": "2026-09-04"
       },
       {
@@ -56501,6 +56521,125 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T115300293039-wspo-observe-reports-resumability",
+        "plan": "work-survives-a-provider-outage",
+        "section": "\u00a74",
+        "node": "wspo-observe-reports-resumability",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1428,
+                "cached_input_tokens": 365123,
+                "input_tokens": 366553,
+                "output_tokens": 1399,
+                "reasoning_output_tokens": 562,
+                "total_tokens": 367952,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "uv run pytest tests/test_crew_recover.py -q passes with no failure count above the base revision and new cases asserted through observe as a coordinator calls it: observing a dead run whose pointer carries no session id but whose stream does reports the run resumable and names the recovered id; a run with neither reports not resumable and says which evidence was absent, the negative asserted so that answer stays reachable; and neither answer requires the caller to read session_id directly",
+          "estimated_hours": 1.5,
+          "goal": "Make observe report a dead run's resumability as a derived answer instead of handing back a session field a reader must interpret",
+          "id": "wspo-observe-reports-resumability",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T115300293039-wspo-observe-reports-resumability/manifest.md",
+          "plan": "work-survives-a-provider-outage",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "tests/test_crew_recover.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s15-observe",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T11:53:08Z",
+        "completed_at": "2026-09-04T12:00:44Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 456,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 456,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "83fe2d8fe1e6208a5f796605a0921c60c4d3205b",
+        "commits": [
+          "e4dacc2921057ceea0e231b1d61c4b67181e94f4"
+        ],
+        "changed_lines": {
+          "added": 66,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "uv run --no-sync pytest tests/test_crew_recover.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T115300293039-wspo-observe-reports-resumability/final-test_crew_recover.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T115300293039-wspo-observe-reports-resumability/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06c43-f98a-7d01-82df-9b8a0107b75a",
+        "budget": {
+          "cost_usd": null,
+          "detail": "",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/wspo-observe-reports-resumability",
+          "session_id": "01a06c43-f98a-7d01-82df-9b8a0107b75a",
+          "session_source": "pointer",
+          "retained_at": "2026-09-04T12:00:44Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_crew_recover.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -56673,6 +56812,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 929
+    "_version": 933
   }
 }

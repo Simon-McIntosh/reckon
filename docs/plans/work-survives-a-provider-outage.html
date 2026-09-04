@@ -24,10 +24,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="19">
-<meta name="plan-impl" content="0.4">
-<meta name="plan-commits" content="a1bf7da70ca2f93d83ae92726ba03ccbe62a75c1">
-<meta name="plan-artifacts" content="reckon/crew/promotion.py,tests/test_crew_promotion.py">
+<meta name="plan-version" content="21">
+<meta name="plan-impl" content="0.75">
+<meta name="plan-commits" content="a1bf7da70ca2f93d83ae92726ba03ccbe62a75c1,e4dacc2921057ceea0e231b1d61c4b67181e94f4">
+<meta name="plan-artifacts" content="reckon/crew/promotion.py,reckon/crew/dispatch.py,tests/test_crew_promotion.py,tests/test_crew_recover.py">
 </head>
 <body>
   <main class="plan-doc">
@@ -130,35 +130,22 @@
         (commit <code>a1bf7da</code>).</p>
     </section>
 
-    <h2 id="s4">§4 — A missing session id is not evidence of an unresumable run</h2>
-    <p>
-      The coordinator's reasoning was sound given what it was shown. The live
-      pointer said <code>session_id: null</code>; nothing said that value was
-      merely unpopulated rather than absent, and nothing said the stream held
-      it. <code>resume_plan</code> has recovered exactly this case for some
-      time — if the record lacks a session id it calls <code>observe</code> and
-      re-reads — so the capability existed and its existence was invisible at
-      the moment of the decision.
-    </p>
-    <p>
-      This is the same defect family as the display work in
-      <a href="/reckon/fleet-monitor-legibility">fleet-monitor-legibility</a>:
-      a fact is recorded and its consumer discards it, or in this case never
-      learns it can be derived. The remedy is that anything reporting on a
-      terminal run reports recoverability as a derived answer rather than
-      leaving a reader to infer it from a null. A coordinator asking
-      <code>observe</code> about a dead run should be told whether it can be
-      resumed, not handed a field it must know the internals to interpret.
-    </p>
-    <p>
-      Done when observing a dead run whose pointer carries no session id, but
-      whose stream does, reports the run as resumable and names the recovered
-      id; when a run with neither reports as not resumable and says which
-      evidence was absent; and when neither answer requires the caller to read
-      <code>session_id</code> directly. The negative must be asserted so the
-      not-resumable answer stays reachable. Asserted through
-      <code>observe</code> as a coordinator calls it.
-    </p>
+    <section id="s4" class="section-landed">
+      <header><span class="badge badge-shipped">&#10003; landed 2026-09-04</span>
+        <h2>&#167;4 &mdash; A missing session id is not evidence of an unresumable run</h2></header>
+      <p class="landed-summary"><code>observe</code> now answers recoverability rather than
+        handing back a field the caller must know the internals to read. A dead run whose
+        pointer carries no session id but whose stream does reports <em>resumable</em> and
+        names the recovered id; a run with neither reports not resumable and says which
+        evidence was absent; and neither answer requires reading <code>session_id</code>
+        directly. 18 passed in 1.99&nbsp;s with the negative asserted, so the not-resumable
+        answer stays reachable, and every case goes through <code>observe</code> as a
+        coordinator calls it. This is the defect that cost five sessions: the capability to
+        re-read the stream already existed in <code>resume_plan</code> and its existence was
+        invisible at the moment of the decision. Full record:
+        <a href="/reckon/evidence/archive/work-survives-a-provider-outage-landed#s4-observe-answers-recoverability">§4 landed</a>
+        (commit <code>e4dacc2</code>).</p>
+    </section>
 
     <h2 id="s5">§5 — The recovery order is carried by the tool, not by memory</h2>
     <p>
@@ -367,6 +354,12 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260903T215307823121-a-member-session-names-the-model-it-serves" data-who="impl-guard" data-when="2026-09-04T03:49:13.678Z">
     <div class="r-comment-body"><p>A session recorded through member add resolves against the member's harness default, so a later dispatch reuses it instead of silently minting a new one; the run itself was refused mid-flight and resumed from its stream with nothing redone.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260904T115300293039-wspo-observe-reports-resumability" data-who="s15-observe" data-when="2026-09-04T12:00:44Z">
+    <div class="r-comment-body"><p>18 passed in 1.99s with zero failures; observing a dead run whose pointer carries no session id but whose stream does now reports it resumable and names the recovered id, a run with neither reports not resumable and says which evidence was absent, and neither answer requires the caller to read session_id - asserted through observe as a coordinator calls it, with the negative asserted so the not-resumable answer stays reachable</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-wspo-observe-resumability" data-who="reckon-ship" data-when="2026-09-04T14:00:56Z">
+    <div class="r-comment-body">A missing session id is not evidence of an unresumable run landed - commit e4dacc2; gate uv run --no-sync pytest tests/test_crew_recover.py -q passed, 18 passed in 1.99s, zero failures; measure: observing a dead run whose pointer carries no session id but whose stream does reports the run resumable and names the recovered id, a run with neither reports not resumable and states which evidence was absent, and neither answer requires the caller to read session_id directly; the negative is asserted so the not-resumable answer stays reachable, and every case goes through observe as a coordinator calls it rather than through a helper. Section 5 is the only executable work left here and it waits on reckon/crew/recovery.py, which a node is holding now; section 6, recovering the five lost runs, is owned by the S16 coordinator and is not this session's to execute.</div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260904T035302267329-the-recovery-is-written-where-a-coordinator-reads" data-who="doc-evidence" data-when="2026-09-04T04:19:05.749Z">
     <div class="r-comment-body"><p>The cause, the trap, the order, the two counter-instincts, hold safety, the automatic path and its stale-follower caveat are in reckon/crew/AGENTS.md and a ship-skill reference linked from the skill; all five commands verified with --help.</p></div>
