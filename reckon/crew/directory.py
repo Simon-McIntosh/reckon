@@ -10,7 +10,7 @@ from typing import Any
 
 from reckon import ledger
 from reckon.crew.recovery import classify_pointer
-from reckon.crew.runs import list_live
+from reckon.crew.runs import list_live, process_alive
 
 
 class DirectoryError(RuntimeError):
@@ -64,7 +64,10 @@ def _observed_transport(record: Mapping[str, Any]) -> dict[str, str] | None:
 
 def _run_row(record: Mapping[str, Any]) -> dict[str, Any]:
     node = _node(record)
-    classified = classify_pointer(record)
+    observed = dict(record)
+    if record.get("pid"):
+        observed["process_alive"] = process_alive(record["pid"])
+    classified = classify_pointer(observed)
     row = {
         "run_id": str(record.get("run_id") or ""),
         "node": str(node.get("id") or ""),
@@ -164,7 +167,7 @@ def directory(
                 if any(_is_dispatching(run) for run in ordered_runs)
                 else "all-terminal"
             ),
-            "live_node_count": len(ordered_runs),
+            "live_node_count": sum(_is_dispatching(run) for run in ordered_runs),
             "runs": ordered_runs,
         }
         if transports:
