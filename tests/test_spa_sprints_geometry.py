@@ -4,7 +4,12 @@ from pathlib import Path
 
 import pytest
 
-from tests.spa_browser_harness import BrowserProbeError, ServedSpa, installed_browser
+from tests.spa_browser_harness import (
+    BrowserProbeError,
+    ServedSpa,
+    file_spa,
+    installed_browser,
+)
 
 ROOT = Path(__file__).parents[1]
 CSS = (ROOT / "docs/ui/sprints.css").read_text()
@@ -102,7 +107,15 @@ def test_sprint_surface_and_header_use_content_geometry() -> None:
 
 
 def test_fixed_horizon_and_recorded_work_are_fully_retired() -> None:
-    for retired in ('"4w"', '"8w"', '"6m"', "SPRINT_HORIZONS", "sprintAxis", "HORIZON_HOURS", "horizonStrip"):
+    for retired in (
+        '"4w"',
+        '"8w"',
+        '"6m"',
+        "SPRINT_HORIZONS",
+        "sprintAxis",
+        "HORIZON_HOURS",
+        "horizonStrip",
+    ):
         assert retired not in JSX
     assert "r-sprint-mark" not in JSX
     assert "r-sprint-mark" not in CSS
@@ -113,7 +126,8 @@ def test_fixed_horizon_and_recorded_work_are_fully_retired() -> None:
 
 
 def test_derived_state_table_row_is_source_of_state_not_the_file() -> None:
-    assert "derivedSprintState(" in JSX
+    assert "derivedSprintState(" not in JSX
+    assert 'const state = sprint.derived_state || "unknown";' in JSX
     assert "sprintStateRows(" in JSX
     assert 'row.flag.startsWith("was ")' in JSX
     assert '<th scope="col">State</th>' in JSX
@@ -128,8 +142,160 @@ def test_sprint_detail_geometry_declares_stage_and_stats() -> None:
     )
     assert_declares(".r-sprint-dag-stage", "position: relative")
     assert_declares(".r-sprint-dag-card", "position: absolute")
+    assert_declares(".r-sprint-dag-column-label", "position: absolute", "top: 0")
+    assert_declares(
+        ".r-sprint-dag-card strong",
+        "max-height: 2.5em",
+        "white-space: normal",
+    )
     assert "window.ReckonGraph" in JSX
     assert "sprintDagPlans(" in JSX
+
+
+def test_sprint_detail_cards_render_the_layout_values_and_depth_labels(
+    tmp_path: Path,
+) -> None:
+    browser = installed_browser()
+    if browser is None:
+        pytest.skip("an installed browser is required for rendered geometry")
+
+    inventory = [
+        {
+            "slug": "root",
+            "title": "Root",
+            "status": "shipped",
+            "impl": 1.0,
+            "effort_hours": 2,
+            "depends_on": [],
+            "decisions": [],
+        },
+        {
+            "slug": "working",
+            "title": "Working",
+            "status": "active",
+            "impl": 0.64,
+            "effort_hours": 5,
+            "depends_on": [],
+            "decisions": [],
+        },
+        {
+            "slug": "blocked",
+            "title": "Carry all computed card values forward",
+            "status": "blocked",
+            "impl": 0.37,
+            "effort_hours": 7,
+            "depends_on": ["root"],
+            "decisions": [],
+        },
+    ]
+    sprint = {
+        "id": "focus",
+        "theme": "Rendered detail",
+        "status": "active",
+        "derived_state": "active",
+        "implementation_pct": 67,
+        "blocked": 1,
+        "items": [{"slug": plan["slug"]} for plan in inventory],
+    }
+    state = {
+        "project": "reckon",
+        "today": "2026-09-04",
+        "loaded_at": "2026-09-04T12:00:00Z",
+        "source_format": "distributed",
+        "active_sprint_id": "focus",
+        "active_sprints": [sprint],
+        "active_sprint_conflict": False,
+        "inventory": inventory,
+        "plans": {plan["slug"]: plan for plan in inventory},
+        "projects": [{"project": "reckon", "plans_count": len(inventory)}],
+        "sprints": [sprint],
+        "milestones": [],
+        "blockers": [],
+        "timeline": [],
+        "north_stars": [],
+        "ready_set": {"ready": []},
+    }
+
+    probe = r"""(async () => {
+      const detailLink = document.querySelector('.r-sprint-table a[href="#sprint/focus"]');
+      detailLink.click();
+      for (let attempt = 0; attempt < 40; attempt += 1) {
+        if (document.querySelectorAll('.r-sprint-dag-card').length === window.STATE.inventory.length) break;
+        await new Promise(resolve => setTimeout(resolve, 25));
+      }
+      const layout = window.ReckonGraph.layout(window.STATE.inventory, 'expected');
+      const expected = Object.fromEntries(layout.nodes.map(node => [node.slug, node]));
+      const cards = [...document.querySelectorAll('.r-sprint-dag-card')].map(card => {
+        const slug = card.dataset.planSlug;
+        const node = expected[slug];
+        const track = card.querySelector('.r-sprint-dag-progress');
+        const fill = track.querySelector('b');
+        return {
+          slug,
+          hours: card.querySelector('.r-sprint-dag-meta span:last-child').textContent.trim(),
+          expectedHours: node.hours,
+          percent: 100 * fill.getBoundingClientRect().width / track.getBoundingClientRect().width,
+          expectedPercent: node.percent,
+          border: getComputedStyle(card).borderTopColor,
+          background: getComputedStyle(card).backgroundColor,
+          blocked: node.blocked,
+        };
+      });
+      const tokenProbe = document.createElement('span');
+      tokenProbe.style.cssText = 'position:absolute;border:1px solid var(--bad);background:var(--bg)';
+      document.body.appendChild(tokenProbe);
+      const tokenStyle = getComputedStyle(tokenProbe);
+      const bad = tokenStyle.borderTopColor;
+      const ground = tokenStyle.backgroundColor;
+      tokenProbe.remove();
+      const singleTitle = document.querySelector('[data-plan-slug="root"] strong');
+      const wrappedTitle = document.querySelector('[data-plan-slug="blocked"] strong');
+      return {
+        cards,
+        labels: [...document.querySelectorAll('.r-sprint-dag-column-label')]
+          .map(label => label.textContent.trim()),
+        expectedLabels: layout.columns.map(column => column.label),
+        bad,
+        ground,
+        singleTitleHeight: singleTitle.getBoundingClientRect().height,
+        wrappedTitleHeight: wrappedTitle.getBoundingClientRect().height,
+        singleTitleLineHeight: parseFloat(getComputedStyle(singleTitle).lineHeight),
+      };
+    })()"""
+
+    with file_spa(
+        tmp_path,
+        browser,
+        state,
+        project="reckon",
+        route="#sprint/focus",
+    ) as context:
+        result = context.run_probe(
+            probe,
+            viewport=(1374, 900),
+            ready_expression='Boolean(document.querySelector(".r-sprint-table"))',
+        )
+
+    assert len(result["cards"]) == len(inventory)
+    for card in result["cards"]:
+        assert card["hours"] == card["expectedHours"], card
+        assert card["percent"] == pytest.approx(card["expectedPercent"], abs=0.75), card
+        assert (card["border"] == result["bad"]) is card["blocked"], card
+        assert card["background"] == result["ground"], card
+    assert (
+        result["labels"]
+        == result["expectedLabels"]
+        == [
+            "no prerequisites",
+            "depth 1",
+        ]
+    )
+    assert result["singleTitleHeight"] == pytest.approx(
+        result["singleTitleLineHeight"], abs=1
+    )
+    assert result["wrappedTitleHeight"] == pytest.approx(
+        2 * result["singleTitleLineHeight"], abs=1
+    )
 
 
 def test_undated_sprint_is_never_filtered_from_the_table() -> None:
