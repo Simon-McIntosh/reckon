@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T06:35:21",
+  "updated": "2026-09-04T06:41:19",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -49370,6 +49370,103 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T042610170793-derived-flow-lanes",
+        "plan": "graph-derived-schedule",
+        "section": "\u00a75",
+        "node": "derived-flow-lanes",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_spa_derived_flow.py tests/test_spa_crew_cards.py -q passes with every case \u00a75 names, including pending plans starting at their prerequisite end, a lane count of 2, the derived axis bounds, a now tick, and 0.28 opacity on non-selected sprint bars",
+          "estimated_hours": 3.5,
+          "goal": "A dependency-derived schedule with best-fit lanes renders above the crew cards",
+          "id": "derived-flow-lanes",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T042610170793-derived-flow-lanes/manifest.md",
+          "plan": "graph-derived-schedule",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "docs/ui/crew.jsx",
+            "docs/ui/crew.css",
+            "docs/ui/sprint.jsx",
+            "tests/test_spa_derived_flow.py",
+            "tests/test_spa_crew_cards.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-flow",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T04:26:18Z",
+        "completed_at": "2026-09-04T04:40:51Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 873,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 873,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "91f977ea1b4167798f4ccf330f3169bc92829451",
+        "commits": [
+          "152820441bed657ab8b58ddfdd18197efdeb3559"
+        ],
+        "changed_lines": {
+          "added": 724,
+          "removed": 2,
+          "files": 4
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_derived_flow.py tests/test_spa_crew_cards.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T042610170793-derived-flow-lanes/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T042610170793-derived-flow-lanes/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06aaa-e4a6-7231-92c8-615fdfd16862",
+        "budget": {
+          "cost_usd": null,
+          "detail": "",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_spa_derived_flow.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -49542,6 +49639,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 810
+    "_version": 811
   }
 }
