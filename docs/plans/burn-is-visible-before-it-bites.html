@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="burn-is-visible-before-it-bites">
+  <meta name="plan-title" content="Where You Are, And How Fast">
+  <meta name="plan-summary" content="A quota meter and a burn rate answer different questions; shown apart they reproduce the blindness that spent a lane at thirteen percent used.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-wall-clock-hours" content="4.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S16">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling,spa">
+  <meta name="plan-north-star" content="state-that-tells-the-truth">
+  <meta name="plan-depends-on" content="dispatch-cost-per-durable-node">
+  <meta name="plan-informs" content="derived-state-parity">
+  <title>Where You Are, And How Fast | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<header>
+  <p class="eyebrow">The Crew surface &middot; a meter, a rate, and the one number that combines them</p>
+  <h1>Where You Are, And How Fast</h1>
+  <p class="lead">A quota meter says where a lane stands. A burn rate says how fast it is moving. Neither predicts exhaustion, and shown as two independent tiles they reproduce the exact blindness that spent a lane on 2026-09-03: it read clear at thirteen percent used while burning at seven and a half times sustainable, and the position figure only became alarming once it was too late to act on. This plan renders the two on one mark, with the projected exhaustion beside the reset, so the dangerous combination is legible instead of inferable.</p>
+</header>
+
+<h2 id="s1">&#167;1 &mdash; Why this exists</h2>
+<p>Measured by a peer coordinator against the codex account surface and this repository's run corpus, and handed over rather than assumed. Four facts constrain the design, and each of them rules out a surface someone would otherwise build.</p>
+<table>
+  <thead><tr><th>Measurement</th><th>What it rules out</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>The codex account exposes exactly one metered window: <code>primary</code> with <code>windowDurationMins: 10080</code>, and <code>secondary: null</code>.</td>
+      <td>A five-hour meter for this backend. That period is another provider's concept, so a surface that renders one is displaying a window the account does not report. <strong>The window's duration is read from the payload and named on the surface; a backend reporting no window renders no meter rather than a default one.</strong></td>
+    </tr>
+    <tr>
+      <td>The meter charges total context read, cached tokens included. Cache hit rate is 96.0% median over 1,970 runs; 23.0B of 23.6B input was cached re-reads, charged anyway.</td>
+      <td>A cache-hit tile beside a burn tile. Placed together they imply a lever that does not exist — improving the hit rate does not reduce what the meter charges.</td>
+    </tr>
+    <tr>
+      <td>Rolling burn over four windows from the same corpus: 10.34&times; at one hour, 7.51&times; at five, 1.57&times; at twenty-four, 1.71&times; at one hundred and sixty-eight.</td>
+      <td>A single burn figure. Waves are bursty — several coordinators dispatching at once spike the short window and it decays to nothing between waves — so one number alone cries wolf. <strong>At least two windows are always shown together.</strong></td>
+    </tr>
+    <tr>
+      <td>The meter moved from 12% to 20% during one session, none of it that session's work, while the run corpus grew from 2,555 to 2,567 rows mid-read.</td>
+      <td>A cached figure. Every value carries its observation time and is re-derived on read, because a stale burn number is worse than none: it looks current.</td>
+    </tr>
+  </tbody>
+</table>
+<p>One caveat travels with the rates and belongs on the surface, not only in this plan. Run-level input tokens are an <strong>upper bound</strong>, because a resumed session records its whole accumulated context on every turn. The account surface is the authority for position; the derived rate is a trend indicator. A surface that presents them with equal confidence misrepresents the weaker one.</p>
+
+<h3 id="s1b">&#167;1b &mdash; Which instruments actually carry data</h3>
+<p>Coverage measured across 2,582 committed runs in four ledgers. This decides what may appear on a surface at all, and it rules out the fields a designer would reach for first.</p>
+<table>
+  <thead><tr><th>Field</th><th>Populated</th><th>Verdict</th></tr></thead>
+  <tbody>
+    <tr><td><code>budget.tokens.input_tokens</code>, <code>output_tokens</code></td><td>93.5%</td><td>Usable. Input tokens are the cost proxy.</td></tr>
+    <tr><td><code>worker_seconds</code></td><td>97.8%</td><td>Usable <em>only</em> beside <code>worker_seconds_source</code> &mdash; 77.1% of it is <code>wall_fallback</code>, so for three quarters of the fleet it is wall clock. Rendered as agent time, a node waiting on a batch queue looks like a node that worked.</td></tr>
+    <tr><td><code>wall_seconds</code></td><td>88.8%</td><td>Usable.</td></tr>
+    <tr><td><code>throughput.peak_input_tokens</code></td><td>5.5%</td><td rowspan="4">Too sparse to bind. The whole <code>throughput</code> block is present on 132 of 2,582 runs, so a card reading it is blank 95% of the time &mdash; which a reader interprets as <em>no data</em> rather than <em>not recorded</em>, the worst of both.</td></tr>
+    <tr><td><code>throughput.generated_tokens</code></td><td>5.6%</td></tr>
+    <tr><td><code>throughput.tokens_per_second</code></td><td>3.4%</td></tr>
+    <tr><td><code>throughput.generation_seconds</code>, <code>machine_seconds</code></td><td>3.4%</td></tr>
+    <tr><td><code>budget.cost_usd</code></td><td>8.4%</td><td><strong>Never surfaced.</strong> Zero of 2,280 codex runs carry it, and where it exists it is wrong in the direction that misleads most: the locally-served free-hardware lane totals the highest figure of any backend, $1,036.96, because it speaks the claude dialect and inherits that provider's per-token prices. A cost ranking built on this field puts free hardware at the top.</td></tr>
+    <tr><td><code>budget.utilisation_pct</code></td><td>6.4%</td><td>Not a coverage gap. Utilisation and reset are per <em>backend</em> and account-wide; the percentage is simply the runs that happened to probe. Read it from the account surface, never averaged over runs.</td></tr>
+  </tbody>
+</table>
+<p>Two further shapes follow from the same reading. <code>tokens_per_second</code> is a <strong>model speed, not a spend rate</strong> — the dialect reports it beside <code>wall_tokens_per_second</code> precisely because a node running its own test suite has a wall rate far below its generation rate, so rendering either as the other misattributes workstation load to the model or the reverse. And rework is a <strong>plan-scoped</strong> derivation, since it needs later runs against the same plan; it cannot sit on a run card whatever its coverage.</p>
+
+<h2 id="s2">&#167;2 &mdash; One mark, not two tiles</h2>
+<p>Position and rate are orthogonal, and the state that costs a session is <strong>low position with high burn</strong> — which two adjacent tiles render as reassuring, since the eye reads the small number and stops. The synthesis is a projection: at the observed rate, when is the ceiling reached, and is that before or after the window resets?</p>
+<p>So the meter is one bar carrying three marks: the position filled from <code>usedPercent</code>, the reset at its right edge labelled with the window duration the payload reported, and the <strong>projected exhaustion</strong> plotted on the same axis from position and rate together. When the projection falls left of the reset the lane will run out before it refills, and the bar says so; when it falls right, the lane is sustainable at the current rate however high the instantaneous multiple looks. That comparison is the actionable fact and no tile in the fleet currently expresses it.</p>
+<figure>
+  <svg viewBox="0 0 620 132" role="img" aria-label="A quota bar showing filled position, a projected-exhaustion mark that falls before the reset in the unsustainable case and after it in the sustainable case." style="max-width:100%;height:auto">
+    <text x="0" y="12" font-size="12" font-family="system-ui" fill="#6e7282">unsustainable &mdash; projection lands before the reset</text>
+    <rect x="0" y="22" width="520" height="18" fill="none" stroke="#c9ccd4" stroke-width="1"/>
+    <rect x="1" y="23" width="104" height="16" fill="#c9ccd4"/>
+    <line x1="232" y1="16" x2="232" y2="46" stroke="#b3261e" stroke-width="2"/>
+    <text x="238" y="14" font-size="11" font-family="system-ui" fill="#b3261e">ceiling reached</text>
+    <text x="524" y="35" font-size="11" font-family="system-ui" fill="#1c1c1e">reset</text>
+    <text x="0" y="58" font-size="11" font-family="system-ui" fill="#6e7282">20% used &middot; 7-day window &middot; burning 10.3&times;</text>
+
+    <text x="0" y="86" font-size="12" font-family="system-ui" fill="#6e7282">sustainable &mdash; projection lands past the reset</text>
+    <rect x="0" y="96" width="520" height="18" fill="none" stroke="#c9ccd4" stroke-width="1"/>
+    <rect x="1" y="97" width="104" height="16" fill="#c9ccd4"/>
+    <line x1="520" y1="90" x2="520" y2="120" stroke="#1c1c1e" stroke-width="1"/>
+    <text x="524" y="109" font-size="11" font-family="system-ui" fill="#1c1c1e">reset</text>
+    <text x="0" y="132" font-size="11" font-family="system-ui" fill="#6e7282">20% used &middot; 7-day window &middot; burning 1.7&times;</text>
+  </svg>
+  <figcaption>The same position reads differently once the projection is on the axis. Both bars are at twenty percent; only the rate distinguishes them, and only the projected mark makes the distinction visible without arithmetic.</figcaption>
+</figure>
+<p><strong>Gate for this plan, recorded when the measure runs: against this workstation's recorded backends the Crew surface renders one meter per backend that reports a window, labelled with that window's own duration, carrying the position, the reset and the projected exhaustion, beside at least two rate windows and every figure's observation time. Its evidence is a rendered capture of the unsustainable and the sustainable case with their figures recorded beside them, plus the surface rendering no meter at all for a backend whose payload reports no window.</strong></p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>burn-meter-on-crew</code></td>
+      <td>The Crew surface renders position, rate and projected exhaustion for each backend that reports a window.</td>
+      <td><code>uv run pytest tests/test_spa_crew_burn.py -q</code> passes. Cases, each against a fixture payload rather than a live account: a backend reporting <code>windowDurationMins: 10080</code> renders one meter labelled with a seven-day window; a backend whose payload reports no window renders no meter and no default period, asserted by the absence of any meter element rather than by its text; a fixture at 20% used with a rate whose projection precedes the reset renders the projection mark left of the reset and the bar in its warning state, and the same position with the lower rate renders it right of the reset and the bar unwarned; at least two rate windows render together and a fixture with only one available renders that one labelled as the only window rather than implying a comparison; every rendered figure carries an observation timestamp; and no cache-hit figure appears anywhere in the rendered region, asserted as a negative.</td>
+      <td><code>docs/ui/crew.jsx</code>, <code>docs/ui/crew.css</code>, <code>tests/test_spa_crew_burn.py</code></td>
+      <td>guided &middot; sonnet, after the derivation this plan depends on is readable</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s3">&#167;3 &mdash; Rendered evidence</h2>
+<p>Captures at 1374 and 1920 into <code>docs/figures/burn-is-visible-before-it-bites/after/</code> with a <code>capture-index.json</code>: the unsustainable case, the sustainable case at the same position, and a backend reporting no window. A capture of a meter at a plausible-looking twenty percent is the point of this plan, so each capture records the position, both rate windows and the projection beside it; a capture without those figures shows a bar and proves nothing.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>burn-meter-captures</code></td>
+      <td>Six captures of the meter's three states with their figures recorded.</td>
+      <td><code>docs/figures/burn-is-visible-before-it-bites/after/capture-index.json</code> lists six captures covering the unsustainable case, the sustainable case at the same position, and the no-window case at 1374 and 1920; each file exists at its recorded width and its index entry carries the position, both rate windows and the projected exhaustion the capture shows; <code>uv run pytest tests/test_spa_owed_captures.py tests/test_spa_viewport_containment.py -q</code> stays green, the containment run including the Crew surface among its measured rows.</td>
+      <td><code>docs/figures/burn-is-visible-before-it-bites</code></td>
+      <td>guided &middot; sonnet, after <code>burn-meter-on-crew</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s4">&#167;4 &mdash; Out of scope</h2>
+<p>The derivation itself, which belongs to <code>dispatch-cost-per-durable-node</code> and is this plan's declared prerequisite: the rate computation lives in Python so a CLI and MCP caller reach the same figures, and this plan only renders what that read returns. Building a second computation in the surface would be the defect the repository's invariant exists to prevent. The burn fence that refuses a dispatch is also that plan's, and is a different act from showing a reader where they stand. No cache-hit figure, for the measured reason above. And no alerting: a surface that shows the projection is not the same as a mechanism that interrupts someone, and the second is a decision about attention that this plan does not make.</p>
+<p><strong>Two neighbouring surfaces are deliberately not built here, and the reason is sequencing rather than scope.</strong> &ldquo;Is this run costing more than it should&rdquo; needs a calibrated expectation per configuration, and &ldquo;which backend returns most work per token&rdquo; needs a ranking that charges for rework. Both are <code>crew(view="routing")</code> in the prerequisite plan's own section, which does not exist yet, and its coordinator column lands before that ranking deliberately &mdash; without it a ranking scores work transferred from a worker to its coordinator as a saving. So this surface consumes that view when it arrives rather than deriving either figure now: a ranking built in JSX from sparse fields would be wrong twice over, once from the coverage above and once from the missing column.</p>
+
+<section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="meter-and-rate-together" data-choice="one-bar-with-a-projection" data-by="reckon-ship (from the handed-over measurement, 2026-09-04)" data-when="2026-09-04">
+    <p class="r-dec-q">How are position and rate presented?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="one-bar-with-a-projection">One bar carrying position, reset and projected exhaustion</button>
+      <button class="r-opt" data-value="two-adjacent-tiles">Two adjacent tiles, a meter and a rate</button>
+      <button class="r-opt" data-value="rate-only">The rate alone, since it is what predicts</button>
+    </p>
+    <p class="r-dec-rat">Two tiles are what the fleet effectively had on 2026-09-03: the lane read thirteen percent used, the reader relaxed, and the burn that settled it was seven and a half times sustainable. The rate alone cries wolf, because the same corpus reads 10.3 at one hour and 1.7 at a week. Only the projection against the reset turns two figures into a decision.</p>
+</div>
+<div class="r-dec" data-key="window-label-source" data-choice="from-the-payload-or-no-meter" data-by="reckon-ship (from the account probe)" data-when="2026-09-04">
+    <p class="r-dec-q">Where does the window period on the meter come from?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="from-the-payload-or-no-meter">The payload's own duration; no window reported means no meter</button>
+      <button class="r-opt" data-value="assume-a-standard-period">A standard period the surface knows</button>
+    </p>
+    <p class="r-dec-rat">The codex account reports one window of 10080 minutes and a null secondary, so a five-hour meter would display a period that account never reported. A surface that assumes a period is inventing state, which is the failure this repository has spent the day removing.</p>
+</div>
+<div class="r-dec" data-key="rate-window-count" data-choice="at-least-two-always" data-by="reckon-ship (from the four-window measurement)" data-when="2026-09-04">
+    <p class="r-dec-q">How many rate windows are shown?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="at-least-two-always">At least two, a short beside a long</button>
+      <button class="r-opt" data-value="one-configurable">One, chosen by the reader</button>
+    </p>
+    <p class="r-dec-rat">One number is unreadable without its neighbour: 10.3 and 1.7 come from the same corpus at different horizons, and either alone misleads in a different direction. A reader-chosen single window guarantees somebody reads the alarming one in isolation.</p>
+</div>
+<div class="r-dec" data-key="derived-rate-confidence" data-choice="marked-as-an-upper-bound" data-by="reckon-ship (from the measurement's own caveat)" data-when="2026-09-04">
+    <p class="r-dec-q">Are the derived rates presented with the same confidence as the meter?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="marked-as-an-upper-bound">No — the meter is authority, the rate is a marked upper bound</button>
+      <button class="r-opt" data-value="equal-weight">Yes, both are figures</button>
+    </p>
+    <p class="r-dec-rat">A resumed session records its whole accumulated context on every turn, so run-level input tokens over-count. Presenting a trend indicator as a measurement is how a reader comes to distrust every figure on the surface once one of them proves soft.</p>
+</div>
+</section>
+
+<section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-bvb-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship burn-is-visible-before-it-bites" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Render the meter once its derivation is readable, then capture all three states</h4>
+    <div class="r-fu-body"><p>&#167;2 waits on the prerequisite plan making the rate computation readable from Python, since building a second one in the surface is the defect the invariant prevents. &#167;3 captures afterwards, and the no-window case matters as much as the two rate cases because it is the state a surface is most tempted to fake.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship burn-is-visible-before-it-bites</pre>
+</article>
+</section>
+
+<section data-reckon="research" id="research" class="r-research-list">
+<h2><span class="sec">§</span> Research</h2>
+<div class="r-research" data-id="r1" data-type="measurement" data-url="dispatch-cost-measurement">
+  <span class="r-research-title">The measurement this plan is designed from: the account probe showing one window and a null secondary, the four rolling burn horizons, the cache-charging finding, and the method with its exclusion rules.</span>
+</div>
+</section>
+</main>
+</body>
+</html>
