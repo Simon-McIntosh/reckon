@@ -11,7 +11,7 @@ SOURCE = authored_shell_source(ROOT)
 def _function_source(name: str) -> str:
     source = SOURCE.read_text()
     start = source.index(f"function {name}(")
-    brace = source.index("{", start)
+    brace = source.index(") {", start) + 2
     depth = 0
     for index in range(brace, len(source)):
         if source[index] == "{":
@@ -87,7 +87,8 @@ def test_shell_passes_the_canonical_attachment_groups_into_the_reader() -> None:
     plan = (ROOT / "docs" / "ui" / "plan.jsx").read_text()
 
     assert shell.count("function attachmentGroups(") == 1
-    assert "attachmentGroups={attachmentGroups(M, route.slug)}" in shell
+    assert "attachmentGroups={attachmentGroups}" in shell
+    assert "attachmentGroups={attachmentGroups(state, selected)}" in shell
     assert "M.attachment_relations" not in plan
     assert "readerAttachments" not in plan
     assert "function AttachmentRail(" not in shell
@@ -111,19 +112,16 @@ def test_status_transition_reports_the_real_open_gate_count() -> None:
     assert 'open {gates === 1 ? "gate" : "gates"}' in source
 
 
-def test_compact_signals_have_labels_tooltips_and_navigation_targets() -> None:
+def test_artifact_rows_publish_progress_stamps_and_status() -> None:
     source = SOURCE.read_text()
+    index = _function_source("ArtifactIndex")
 
-    for marker, target in [
-        ('className="r-compact-signal pct"', '"implementation"'),
-        ('className="sig dec"', '"decisions"'),
-        ('className="sig blk"', '"blockers"'),
-        ('className="r-status-transition"', '"gate-state-heading"'),
-    ]:
-        line = next(line for line in source.splitlines() if marker in line)
-        assert "title=" in line
-        assert "aria-label=" in line
-        assert target in line
-
+    assert 'className="r-artifact-progress"' in index
+    assert 'className="r-artifact-stamps"' in index
+    assert "className={`r-artifact-status-chip ${itemState}`}" in index
+    assert "className={`r-artifact-verdict r-artifact-verdict-${itemState}`}" in index
+    assert 'className="r-artifact-thumb"' in index
+    assert 'className="r-artifact-dimensions"' in index
     assert 'className="r-sort-segments"' in source
-    assert "edited {edited}" in source
+    assert "created {artifactStamp(item.created, true)}" in index
+    assert "edited {artifactStamp(item.edited || item.last)}" in index

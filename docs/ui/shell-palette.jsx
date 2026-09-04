@@ -33,7 +33,7 @@ function CmdKPalette({ items, onClose, onPick }) {
   return (
     <div className="r-cmdk-scrim" onMouseDown={onClose}>
       <div className="r-cmdk" onMouseDown={(e) => e.stopPropagation()}>
-        <input ref={inputRef} placeholder="Search plans, research and evidence across projects…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input ref={inputRef} placeholder="Search plans, research, evidence and figures across projects…" value={q} onChange={(e) => setQ(e.target.value)} />
         <div className="list">
           {filtered.map((p, i) => (
             <button key={`${p.repository}:${p.nav_key}`} className={`item ${i === idx ? "on" : ""}`} onMouseEnter={() => setIdx(i)} onClick={() => onPick(p)}>
