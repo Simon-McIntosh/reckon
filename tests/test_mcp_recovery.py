@@ -136,8 +136,8 @@ def test_resume_reattaches_a_session_only_the_stream_carries(
     from datetime import timedelta
 
     from reckon import budget as budget_module
-    from reckon.crew.recover import _parse_stamp
     from reckon.crew.recovery import _stream_refusal_block
+    from reckon.crew.resumption import _parse_stamp
 
     run_id = "r-20260903T091000000000-node-a"
     record = _stopped_run(tmp_path, run_id, session_on_pointer=False)
@@ -266,8 +266,8 @@ def test_sweep_dry_run_reports_what_it_would_resume(
 ) -> None:
     from datetime import timedelta
 
-    from reckon.crew.recover import _parse_stamp
     from reckon.crew.recovery import _stream_refusal_block
+    from reckon.crew.resumption import _parse_stamp
 
     run_id = "r-20260903T096000000000-node-a"
     _stopped_run(tmp_path, run_id, session_on_pointer=False)
@@ -282,15 +282,15 @@ def test_sweep_dry_run_reports_what_it_would_resume(
     assert block is not None
     reset_moment = _parse_stamp(block["resets_at"])
     after = reset_moment + timedelta(minutes=1)
-    import reckon.crew.recover as recover_module
+    import reckon.crew.resumption as resumption_module
 
-    # The hold decision reads recover's own clock, not the budget module's;
+    # The hold decision reads resumption's own clock, not the budget module's;
     # the fixture's stated reset is in the future relative to wall-clock time,
     # so the test must move this clock rather than the ambient one.
-    monkeypatch.setattr(recover_module, "_now", lambda now=None: now or after)
+    monkeypatch.setattr(resumption_module, "_now", lambda now=None: now or after)
     spawn = _FakeSpawn()
     monkeypatch.setattr(mcp_module.crew_module, "_spawn", spawn)
-    monkeypatch.setattr(recover_module, "_spawn", spawn)
+    monkeypatch.setattr(resumption_module, "_spawn", spawn)
 
     result = mcp_module._crew_recover("sweep", project=PROJECT, dry_run=True)
 

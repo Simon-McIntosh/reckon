@@ -2,22 +2,14 @@
 
 from __future__ import annotations
 
-import importlib
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 
-from reckon import crew
 from reckon.crew import recovery
+from reckon.crew.resumption import sweep
 from reckon.crew.runs import _write_json, pointer_path
-
-# The facade propagates assignment of a concern-module name to concern modules
-# carrying a same-named callable. Preserve that callable while loading the
-# sibling module so this combined gate does not change another test's imports.
-_recover_command = crew.recover
-sweep = importlib.import_module("reckon.crew.recover").sweep
-crew.recover = _recover_command
 
 PROJECT = "proj"
 DEAD_PID = 4_194_303

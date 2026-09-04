@@ -82,7 +82,7 @@ from reckon.capability import (
     map_legacy_capabilities,
     validate_capability,
 )
-import reckon.crew.recover as recover_module
+import reckon.crew.resumption as resumption_module
 from reckon.crew.runs import project_watch_visibility
 from reckon.doccheck import audit_lifecycle, audit_links
 from reckon.mcp_views import (
@@ -2797,7 +2797,7 @@ def _crew(
     ``ledger``, ``records`` and ``summary`` read the project's committed runs —
     ``<repo>/docs/state/<project>/crew.json``, the durable half; ``live`` reads
     the never-committed pointers of runs still in flight, each carrying the
-    classification :func:`reckon.crew.recover` would give it; ``drain`` derives
+    classification :func:`reckon.crew.recovery.recover` would give it; ``drain`` derives
     the session-closure count and recorded dispositions from those pointers;
     ``scopes`` reads live path claims and partitions the optional ordered
     ``candidates`` wave manifest into mutually independent serial lanes;
@@ -2981,7 +2981,7 @@ def _crew_recover(
     ``session`` answers the same question ``crew observe`` now answers for
     every run: the session id and its source, or — never a bare null — a
     stated absence naming every source that was consulted. It calls the same
-    :func:`reckon.crew.recover.resolve_session` the CLI calls, so the two
+    :func:`reckon.crew.resumption.resolve_session` the CLI calls, so the two
     surfaces cannot disagree about one run.
 
     ``sweep`` is ``crew resume-held`` by another name: it resumes every run one
@@ -3006,7 +3006,7 @@ def _crew_recover(
                 "detail": "sweep needs project",
             }
         try:
-            report = recover_module.sweep(project, dry_run=dry_run)
+            report = resumption_module.sweep(project, dry_run=dry_run)
         except crew_module.CrewError as exc:
             return {
                 "ok": False,
@@ -3027,7 +3027,7 @@ def _crew_recover(
         return {
             "ok": True,
             "action": action,
-            **recover_module.resolve_session(run_id),
+            **resumption_module.resolve_session(run_id),
         }
 
     # action == "resume"
@@ -3046,7 +3046,7 @@ def _crew_recover(
             "run_id": run_id,
             "detail": str(exc),
         }
-    resolved = recover_module.resolve_session(run_id, record=record)
+    resolved = resumption_module.resolve_session(run_id, record=record)
     project_name = str(record.get("project") or "")
     config = None
     if project_name:
