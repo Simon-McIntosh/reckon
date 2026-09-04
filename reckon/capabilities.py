@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 import os
+import posixpath
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -147,6 +148,373 @@ def _outcome_exclusion_reason(run: Mapping[str, Any]) -> str | None:
             return classification
         return "unclassified_failure"
     return "gate_not_run"
+
+
+def _measured_number(value: Any) -> float | None:
+    """Return a finite non-negative measurement, without treating bool as one."""
+
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return None
+    measured = float(value)
+    return measured if math.isfinite(measured) and measured >= 0 else None
+
+
+def _input_tokens(run: Mapping[str, Any]) -> float | None:
+    """Read the charged worker input carried by one promoted run."""
+
+    direct = _measured_number(run.get("input_tokens"))
+    if direct is not None:
+        return direct
+    budget = run.get("budget")
+    if not isinstance(budget, Mapping):
+        return None
+    tokens = budget.get("tokens")
+    if not isinstance(tokens, Mapping):
+        return None
+    return _measured_number(tokens.get("input_tokens"))
+
+
+def _coordinator_input_tokens(run: Mapping[str, Any]) -> float | None:
+    """Read measured authoring input without turning an unknown value into zero."""
+
+    definition = run.get("node_definition")
+    coordinator = (
+        definition.get("coordinator") if isinstance(definition, Mapping) else None
+    )
+    if not isinstance(coordinator, Mapping):
+        coordinator = run.get("coordinator")
+    if not isinstance(coordinator, Mapping):
+        return None
+    authoring_turn = coordinator.get("authoring_turn")
+    if not isinstance(authoring_turn, Mapping):
+        return None
+    tokens = authoring_turn.get("tokens")
+    if not isinstance(tokens, Mapping):
+        return None
+    return _measured_number(tokens.get("input_tokens"))
+
+
+def _stream_path(run: Mapping[str, Any]) -> Path | None:
+    """Resolve the durable worker stream named by a committed run."""
+
+    manifest_path = str(run.get("manifest_path") or "").strip()
+    candidates = []
+    if manifest_path:
+        candidates.append(
+            Path(manifest_path).expanduser().resolve().parent / "stream.jsonl"
+        )
+    run_id = str(run.get("run_id") or "").strip()
+    if run_id:
+        candidates.append(_config_home() / "crew" / "runs" / run_id / "stream.jsonl")
+    return next((path for path in candidates if path.is_file()), None)
+
+
+def _tool_steps(run: Mapping[str, Any]) -> float | None:
+    """Count completed tool interactions, preferring a ledgered measurement."""
+
+    direct = _measured_number(run.get("tool_steps"))
+    if direct is not None:
+        return direct
+    for block_name in ("throughput", "budget"):
+        block = run.get(block_name)
+        if isinstance(block, Mapping):
+            measured = _measured_number(block.get("tool_steps"))
+            if measured is not None:
+                return measured
+
+    stream = _stream_path(run)
+    if stream is None:
+        return None
+    completed_items = 0
+    tool_use_blocks = 0
+    try:
+        with stream.open(encoding="utf-8") as handle:
+            for line in handle:
+                try:
+                    event = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if not isinstance(event, Mapping):
+                    continue
+                item = event.get("item")
+                if (
+                    event.get("type") == "item.completed"
+                    and isinstance(item, Mapping)
+                    and str(item.get("type") or "")
+                    not in {
+                        "",
+                        "agent_message",
+                        "reasoning",
+                    }
+                ):
+                    completed_items += 1
+                if event.get("type") != "assistant":
+                    continue
+                message = event.get("message")
+                content = (
+                    message.get("content") if isinstance(message, Mapping) else None
+                )
+                if isinstance(content, list):
+                    tool_use_blocks += sum(
+                        isinstance(block, Mapping) and block.get("type") == "tool_use"
+                        for block in content
+                    )
+    except OSError:
+        return None
+    return float(completed_items or tool_use_blocks)
+
+
+def _write_paths(run: Mapping[str, Any]) -> tuple[str, ...]:
+    """Return normalised declared paths from the durable node definition."""
+
+    definition = run.get("node_definition")
+    raw_paths = (
+        definition.get("write_paths") if isinstance(definition, Mapping) else None
+    )
+    if not isinstance(raw_paths, list):
+        return ()
+    normalised = []
+    for raw in raw_paths:
+        value = str(raw).strip().replace("\\", "/")
+        if value:
+            normalised.append(posixpath.normpath(value))
+    return tuple(sorted(set(normalised)))
+
+
+def _paths_overlap(first: Sequence[str], second: Sequence[str]) -> bool:
+    """Return whether two declared file-or-directory scopes intersect."""
+
+    for left in first:
+        for right in second:
+            if left == "." or right == ".":
+                return True
+            if (
+                left == right
+                or left.startswith(right.rstrip("/") + "/")
+                or right.startswith(left.rstrip("/") + "/")
+            ):
+                return True
+    return False
+
+
+def _redispatched(run: Mapping[str, Any]) -> bool:
+    """Read either explicit redispatch lineage or its attempt-number fallback."""
+
+    if str(run.get("attempt_kind") or "") == "redispatch":
+        return True
+    lineage = run.get("lineage")
+    if isinstance(lineage, Mapping) and lineage.get("kind") == "redispatch":
+        return True
+    try:
+        return int(run.get("attempt") or 1) > 1
+    except (TypeError, ValueError):
+        return False
+
+
+def _routing_outcome_exclusion(run: Mapping[str, Any]) -> str | None:
+    """Name why a committed outcome cannot contribute to routing quality."""
+
+    lineage = run.get("lineage")
+    if isinstance(lineage, Mapping) and lineage.get("kind") == "shadow":
+        return "shadow"
+    exclusion = ledger.measurement_exclusion_reason(run)
+    if exclusion:
+        return exclusion
+    return _outcome_exclusion_reason(run)
+
+
+def _median_or_none(values: Sequence[float]) -> float | None:
+    return round(float(median(values)), 6) if values else None
+
+
+def _charged_cost(median_input: float | None, rework_rate: float) -> float | None:
+    if median_input is None or rework_rate >= 1:
+        return None
+    return round(median_input / (1.0 - rework_rate), 6)
+
+
+def derive_routing(
+    mounted_docs: Mapping[str, str | Path],
+) -> dict[str, Any]:
+    """Derive current routing evidence from every supplied committed ledger.
+
+    Rows pool projects only after grouping by the complete worker configuration
+    that a coordinator selects: model, effort, specification ownership and role.
+    Each metric names its own sample depth so missing stream or coordinator
+    measurements remain unknown rather than becoming zero-cost work.
+    """
+
+    source_versions: dict[str, int] = {}
+    records: list[dict[str, Any]] = []
+    excluded: dict[str, int] = defaultdict(int)
+    for project, raw_docs in sorted(mounted_docs.items()):
+        docs_dir = Path(raw_docs).expanduser().resolve()
+        data, version = ledger.load(str(project), root=docs_dir.parent)
+        source_versions[str(project)] = version
+        for ledger_index, raw_run in enumerate(data["runs"]):
+            run = dict(raw_run)
+            run["_project"] = str(project)
+            run["_ledger_index"] = ledger_index
+            records.append(run)
+
+    usable_outcomes: list[dict[str, Any]] = []
+    for run in records:
+        reason = _routing_outcome_exclusion(run)
+        if reason:
+            excluded[reason] += 1
+            continue
+        usable_outcomes.append(run)
+
+    later_paths: dict[tuple[str, str], list[tuple[int, tuple[str, ...]]]] = defaultdict(
+        list
+    )
+    for run in usable_outcomes:
+        plan = str(run.get("plan") or "").strip()
+        paths = _write_paths(run)
+        if plan and paths:
+            later_paths[(run["_project"], plan)].append((run["_ledger_index"], paths))
+
+    grouped: dict[tuple[str, str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    for run in usable_outcomes:
+        agent = run.get("agent")
+        model = (
+            str(agent.get("model") or "").strip() if isinstance(agent, Mapping) else ""
+        )
+        effort = (
+            str(agent.get("effort") or "").strip() if isinstance(agent, Mapping) else ""
+        )
+        spec_level = str(run.get("spec_level") or "").strip()
+        role = str(run.get("role") or "").strip()
+        missing = [
+            name
+            for name, value in (
+                ("model", model),
+                ("effort", effort),
+                ("spec_level", spec_level),
+                ("role", role),
+            )
+            if not value
+        ]
+        if missing:
+            excluded["missing_" + "_and_".join(missing)] += 1
+            continue
+        own_paths = _write_paths(run)
+        plan = str(run.get("plan") or "").strip()
+        reworked = bool(own_paths and plan) and any(
+            index > run["_ledger_index"] and _paths_overlap(own_paths, paths)
+            for index, paths in later_paths.get((run["_project"], plan), ())
+        )
+        grouped[(model, effort, spec_level, role)].append(
+            {
+                "passed": str(run.get("gate") or "") == "passed",
+                "reworked": reworked,
+                "redispatched": _redispatched(run),
+                "tool_steps": _tool_steps(run),
+                "input_tokens": _input_tokens(run),
+                "coordinator_input_tokens": _coordinator_input_tokens(run),
+            }
+        )
+
+    rows: list[dict[str, Any]] = []
+    for (model, effort, spec_level, role), observations in sorted(grouped.items()):
+        samples = len(observations)
+        passed = sum(bool(item["passed"]) for item in observations)
+        reworked = sum(bool(item["reworked"]) for item in observations)
+        redispatched = sum(bool(item["redispatched"]) for item in observations)
+        rework_rate = reworked / samples
+        tool_steps = [
+            float(item["tool_steps"])
+            for item in observations
+            if item["tool_steps"] is not None
+        ]
+        worker_inputs = [
+            float(item["input_tokens"])
+            for item in observations
+            if item["input_tokens"] is not None
+        ]
+        coordinator_inputs = [
+            float(item["coordinator_input_tokens"])
+            for item in observations
+            if item["coordinator_input_tokens"] is not None
+        ]
+        combined_inputs = [
+            float(item["input_tokens"]) + float(item["coordinator_input_tokens"])
+            for item in observations
+            if item["input_tokens"] is not None
+            and item["coordinator_input_tokens"] is not None
+        ]
+        median_worker_input = _median_or_none(worker_inputs)
+        median_combined_input = _median_or_none(combined_inputs)
+        rows.append(
+            {
+                "model": model,
+                "effort": effort,
+                "spec_level": spec_level,
+                "role": role,
+                "samples": samples,
+                "passed": passed,
+                "pass_rate": round(passed / samples, 6),
+                "reworked": reworked,
+                "rework_rate": round(rework_rate, 6),
+                "redispatched": redispatched,
+                "redispatch_rate": round(redispatched / samples, 6),
+                "tool_step_samples": len(tool_steps),
+                "median_tool_steps": _median_or_none(tool_steps),
+                "input_samples": len(worker_inputs),
+                "median_input_tokens": median_worker_input,
+                "coordinator_input_samples": len(coordinator_inputs),
+                "median_coordinator_input_tokens": _median_or_none(coordinator_inputs),
+                "worker_plus_coordinator_samples": len(combined_inputs),
+                "median_worker_plus_coordinator_input_tokens": median_combined_input,
+                "per_run_cost": {
+                    "label": "immediate spend; a short window can reflect this",
+                    "short_window_can_reflect": True,
+                    "worker_only_input_tokens": median_worker_input,
+                    "worker_plus_coordinator_input_tokens": median_combined_input,
+                },
+                "rework_charged_cost_per_durable_node": {
+                    "label": (
+                        "back-loaded spend; a short window cannot yet reflect "
+                        "rework that has not surfaced"
+                    ),
+                    "short_window_can_reflect": False,
+                    "formula": "median input / (1 - rework rate)",
+                    "worker_only_input_tokens": _charged_cost(
+                        median_worker_input, rework_rate
+                    ),
+                    "worker_plus_coordinator_input_tokens": _charged_cost(
+                        median_combined_input, rework_rate
+                    ),
+                },
+            }
+        )
+
+    derived = {
+        "source": "committed_run_ledgers_and_durable_worker_streams",
+        "projects": sorted(source_versions),
+        "ledger_versions": source_versions,
+        "rows": rows,
+        "excluded": dict(sorted(excluded.items())),
+    }
+    canonical = json.dumps(derived, sort_keys=True, separators=(",", ":"))
+    return {**derived, "source_digest": hashlib.sha256(canonical.encode()).hexdigest()}
+
+
+def routing_surface(
+    project: str,
+    *,
+    checkout_path: str | Path | None = None,
+) -> dict[str, Any]:
+    """Derive routing across all mounts, remapping one project to its worktree."""
+
+    mounts: dict[str, str | Path] = _mounted_docs()
+    if checkout_path is not None:
+        checkout = Path(checkout_path).expanduser().resolve()
+        docs_dir = checkout if checkout.name == "docs" else checkout / "docs"
+        if not docs_dir.is_dir():
+            raise ValueError(f"checkout {checkout} has no readable docs directory")
+        mounts[str(project)] = docs_dir
+    return derive_routing(mounts)
 
 
 def derive_capabilities(
@@ -315,6 +683,7 @@ def derive_capabilities(
         "excluded": excluded,
         "configurations": configurations,
         "shadow_slices": shadow_slices,
+        "routing": derive_routing(mounted_docs),
     }
     canonical = json.dumps(derived, sort_keys=True, separators=(",", ":"))
     return {**derived, "source_digest": hashlib.sha256(canonical.encode()).hexdigest()}
@@ -351,6 +720,7 @@ def load_capabilities(path: str | Path | None = None) -> dict[str, Any]:
             "source": "committed_run_ledgers",
             "ledger_versions": {},
             "configurations": [],
+            "routing": {"rows": []},
             "cache_status": "missing",
         }
     data = json.loads(target.read_text())
@@ -376,6 +746,8 @@ def inspect_capabilities(
     cached_versions = cached.get("ledger_versions")
     if not isinstance(cached_versions, Mapping):
         cached_versions = {}
+    routing = cached.get("routing")
+    routing_rows = routing.get("rows") if isinstance(routing, Mapping) else None
     current_versions: dict[str, int] = {}
     for project, raw_docs in sorted(mounts.items()):
         docs_dir = Path(raw_docs).expanduser().resolve()
@@ -394,6 +766,7 @@ def inspect_capabilities(
         "cached_ledger_versions": dict(cached_versions),
         "current_ledger_versions": current_versions,
         "configurations": len(cached.get("configurations") or []),
+        "routing_rows": len(routing_rows) if isinstance(routing_rows, list) else 0,
     }
 
 
