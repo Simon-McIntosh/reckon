@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T13:46:53",
+  "updated": "2026-09-04T13:50:11",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -750,9 +750,11 @@
         "id": "s15-promo",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a06c34-bf99-7e63-b546-7cbbde576d5b",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06c34-bf99-7e63-b546-7cbbde576d5b"
+        },
         "created": "2026-09-04"
       },
       {
@@ -55813,6 +55815,247 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T113531673095-haor-age-from-refusal",
+        "plan": "a-hold-is-as-old-as-its-refusal",
+        "section": "\u00a72",
+        "node": "haor-age-from-refusal",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 461,
+                "cached_input_tokens": 292535,
+                "input_tokens": 292998,
+                "output_tokens": 2249,
+                "reasoning_output_tokens": 714,
+                "total_tokens": 295247,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "uv run pytest tests/test_budget.py -q passes with the observe-then-decide sequence asserted as one case: calling observe on a refused run one hundred times leaves the derived age and the hold verdict unchanged, a hold whose refusal is older than the shelf life reads expired immediately after such an observe rather than being renewed by it, a genuinely fresh refusal still holds, and a stream carrying no parseable rate-limit event falls back to created_at as a stated lower bound and never reads as a fresh refusal; asserted through the same decide call preflight makes, not through a helper",
+          "estimated_hours": 1.5,
+          "goal": "Take the hold-ageing age from the refusal event in the run's stream rather than from the pointer's last-written stamp",
+          "id": "haor-age-from-refusal",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T113531673095-haor-age-from-refusal/manifest.md",
+          "plan": "a-hold-is-as-old-as-its-refusal",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/budget.py",
+            "tests/test_budget.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s15-burn",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T11:35:47Z",
+        "completed_at": "2026-09-04T11:49:17Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 810,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 810,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "49ba338b080809f6e9148cff062b2f373edbbb98",
+        "commits": [
+          "8d6e4fc5ea0bcc4b2fe4de4d95f16812a1d656e6",
+          "c684a42a0eb73ebd4fc6689357498ef7c12c175a"
+        ],
+        "changed_lines": {
+          "added": 0,
+          "removed": 0,
+          "files": 0
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "uv run pytest tests/test_budget.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T113531673095-haor-age-from-refusal/after-test-budget.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T113531673095-haor-age-from-refusal/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06bf7-7f00-7f93-acf6-fb0873235fde",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 4420096,
+            "cached_input_tokens_cumulative": 10886656,
+            "input_tokens": 4480593,
+            "input_tokens_cumulative": 11093290,
+            "output_tokens": 7662,
+            "output_tokens_cumulative": 30528,
+            "reasoning_output_tokens": 3845,
+            "reasoning_output_tokens_cumulative": 12663
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 43191,
+          "peak_input_tokens": 21979946
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_budget.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260904T113558245834-haor-refusal-message",
+        "plan": "a-hold-is-as-old-as-its-refusal",
+        "section": "\u00a74",
+        "node": "haor-refusal-message",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 461,
+                "cached_input_tokens": 292535,
+                "input_tokens": 292998,
+                "output_tokens": 2249,
+                "reasoning_output_tokens": 714,
+                "total_tokens": 295247,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "uv run pytest tests/test_crew_refusal_visibility.py -q passes on the message the dispatch path emits rather than a formatting helper, for one aged hold and one reset-bearing hold: the aged refusal names its backend, states its evidence age against the bound in force and the wall-clock time at which ageing lifts it, and names a served turn on that same backend as the observation that would refresh it; the reset-bearing refusal names that time instead of an age; and no refusal message suggests re-reading the refused run",
+          "estimated_hours": 1.0,
+          "goal": "Make a budget refusal name the backend it governs, the age of its evidence against the bound, and the observation that would refresh it",
+          "id": "haor-refusal-message",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T113558245834-haor-refusal-message/manifest.md",
+          "plan": "a-hold-is-as-old-as-its-refusal",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "tests/test_crew_refusal_visibility.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s15-coord",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T11:36:13Z",
+        "completed_at": "2026-09-04T11:49:54Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 821,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 821,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "49ba338b080809f6e9148cff062b2f373edbbb98",
+        "commits": [
+          "9fc4d5d957f15bc3d55c01b315af4015ae4cb01d"
+        ],
+        "changed_lines": {
+          "added": 149,
+          "removed": 6,
+          "files": 2
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "uv run --no-sync pytest tests/test_crew_refusal_visibility.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T113558245834-haor-refusal-message/pytest-focused-attempt-3.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T113558245834-haor-refusal-message/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06bf7-e975-7910-b922-fe6cc0cda1eb",
+        "budget": {
+          "cost_usd": null,
+          "detail": "",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_crew_refusal_visibility.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -55985,6 +56228,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 921
+    "_version": 924
   }
 }

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-hold-is-as-old-as-its-refusal-landed">
+  <meta name="plan-title" content="A hold is as old as its refusal — landed evidence">
+  <meta name="plan-summary" content="A spend hold now ages from the rate-limit event that created it rather than from the last time anything read the record, so investigating a held lane can no longer extend the hold. The shelf life is a declared, settable key, and a refusal names the lane it governs, its evidence age against the bound, and the observation that would refresh it.">
+  <meta name="plan-evidence-for" content="reckon:a-hold-is-as-old-as-its-refusal">
+  <meta name="plan-verifies" content="reckon:a-hold-is-as-old-as-its-refusal#s2,reckon:a-hold-is-as-old-as-its-refusal#s3,reckon:a-hold-is-as-old-as-its-refusal#s4">
+  <meta name="plan-recorded-at" content="2026-09-04">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; detached git worktrees; assertions run through budget.preflight and a CliRunner invocation of crew dispatch rather than through helpers">
+  <meta name="plan-commits" content="8d6e4fc5ea0bcc4b2fe4de4d95f16812a1d656e6,c684a42a0eb73ebd4fc6689357498ef7c12c175a,9fc4d5d957f15bc3d55c01b315af4015ae4cb01d,30a4460">
+  <meta name="plan-artifacts" content="reckon/budget.py,reckon/crew/dispatch.py,reckon/schema/flight.yaml,tests/test_budget.py,tests/test_crew_refusal_visibility.py">
+  <title>A hold is as old as its refusal — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>A hold is as old as its refusal — landed evidence</h1>
+    <p class="plan-summary">Three sections, three measures, all passing. The load-bearing one
+    is &sect;2: a refusal's age is now derived from the event that <em>was</em> the refusal,
+    so the act of investigating a held lane cannot renew the hold on it. The other two make
+    the fence operable &mdash; a declared lever an operator can reach at the moment of an
+    incident, and a refusal that says what would clear it.</p>
+  </header>
+
+  <section id="overview">
+    <h2>Record scope</h2>
+    <p>The plan carried one defect and two absences. The defect was a renewal loop: the ageing
+    rule measured from the live pointer's <code>observed_at</code>, and <code>observe</code>
+    rewrites that stamp whenever it re-reads a run's stream &mdash; so re-reading a refused
+    run re-stamped an old refusal as a fresh one, and a coordinator investigating why its lane
+    was held extended the hold by looking. The absences were a configuration key that existed
+    in code and not in the schema, and a refusal message that stated the position without
+    stating the cure.</p>
+    <p>All three are closed. One of them, &sect;3, turned out to be closed already; that is
+    recorded below as its own finding rather than folded silently into a landing.</p>
+  </section>
+
+  <section id="s2-age-from-the-event">
+    <h2>&sect;2 &mdash; The age is taken from the refusal, not from the last read</h2>
+    <p>Commits <code>8d6e4fc</code> and <code>c684a42</code>. Gate
+    <code>uv run pytest tests/test_budget.py -q</code> &mdash; <strong>62 passed in
+    5.20&nbsp;s</strong> against a 61-passed pre-feature gate on the same file, 218 insertions
+    across the module and its tests.</p>
+    <p>The implementation reads the <em>newest rejected</em> <code>rate_limit_event</code> in
+    the run's stream together with its closest immutable surrounding timestamp, and publishes
+    which source answered as <code>age_source</code> in the budget state. The mutable pointer
+    stamp is not discarded &mdash; it survives for the one job it is still correct for,
+    choosing the freshest of several readings &mdash; but no age is derived from it. Where no
+    rejected event can be timed, the state says <code>created_at-lower-bound</code> in words,
+    so an unparseable stream reads as a bound rather than as a fresh refusal. That fallback is
+    what the locked decision required to be stated explicitly rather than left implicit.</p>
+    <p><strong>The measure that had to be one case, not two.</strong> The defect is invisible
+    to a test that decides once, which is precisely why the ageing rule shipped carrying it.
+    So the receipt is an observe-then-decide sequence: <strong>one hundred repeated
+    observations leave both the derived timestamp and the hold verdict unchanged</strong>; a
+    hold whose refusal is older than the shelf life reads expired <em>immediately after</em>
+    such an observe rather than being renewed by it; a genuinely fresh refusal still holds even
+    when its run was created three hours earlier, which is the case that would have failed
+    under a <code>created_at</code>-only rule; and no hold decision depends on
+    <code>age_source</code> itself beyond the existing shelf-life comparison.</p>
+    <p>Every assertion goes through <code>budget.preflight</code>, which builds its state from
+    live pointers and invokes the same decide path <code>crew dispatch</code> uses. That was a
+    stated requirement of the section and not an implementation detail: a measure taken against
+    a helper cannot tell whether the entry point a coordinator actually calls has the
+    behaviour.</p>
+    <p><strong>A second finding, delivered as a separate commit.</strong> The node's baseline
+    gate came back <strong>11 failed, 50 passed</strong> before it changed anything &mdash;
+    fallout from the specification-level requirement that landed earlier the same session,
+    whose dispatch fixtures in this file predated it. The worker repaired the fixtures under
+    <code>c684a42</code>, a three-line change touching no production behaviour, and kept it
+    separate from the feature so the feature's own delta stays readable. The post-repair
+    pre-feature gate was 61 passed, which is the number the 62 above is measured against.</p>
+  </section>
+
+  <section id="s3-shelf-life-declared">
+    <h2>&sect;3 &mdash; The shelf life was already declared, and nothing said so</h2>
+    <p>Landed under commit <code>30a4460</code>, found by a currency audit against the tree
+    rather than by a dispatched node. The section's premise &mdash; that
+    <code>BudgetConfig</code> does not declare the field, so
+    <code>--set budget.evidence_shelf_life_minutes=1</code> fails as an extra input &mdash;
+    was already false when the section was read.</p>
+    <p>The key is declared in <code>reckon/schema/flight.yaml</code> with its meaning and not
+    merely its type, which is what the section asked for: the description states that the field
+    bounds how long a refusal naming no reset keeps describing the present, that a value at or
+    below zero disables ageing and restores the indefinite hold, and that it has no effect on a
+    refusal that named a reset, since a stated reset is stronger evidence than an age.</p>
+    <p>Verified at the entry point an operator holding an incident would actually use, rather
+    than by reading the schema:</p>
+    <pre><code>reckon crew preflight --project reckon --role implement \
+  --set budget.evidence_shelf_life_minutes=1
+  &rarr; "policy": { "evidence_shelf_life_minutes": 1.0, ... }</code></pre>
+    <p>This was the fourth section in this sprint found implemented under a commit that wrote
+    no comment against it. The pattern is recorded in the observability plan's evidence, where
+    it belongs; noted here because it is the reason this section closed without a node.</p>
+  </section>
+
+  <section id="s4-refusal-names-the-cure">
+    <h2>&sect;4 &mdash; The refusal names the instrument that would inform it</h2>
+    <p>Commit <code>9fc4d5d</code>. Gate
+    <code>uv run --no-sync pytest tests/test_crew_refusal_visibility.py -q</code> &mdash;
+    <strong>8 passed in 0.68&nbsp;s</strong>, 149 insertions across two paths.</p>
+    <p>Three facts were already known at the moment a hold was emitted and none reached the
+    reader. All three now do. The refusal <strong>names the backend it governs</strong>, so it
+    implies nothing about a sibling backend on a different account &mdash; a distinction that
+    has misled a reader here before, when one account's reset was taken as evidence about
+    another's. Where ageing is what holds the wave, it <strong>states the evidence age against
+    the bound in force and the wall-clock time at which the bound will pass</strong>, measured
+    in the test as 20.0 minutes against a 60-minute bound, so an operator can wait
+    deliberately instead of retrying blindly. And it <strong>names a served turn on that same
+    backend</strong> as the observation that would refresh the record, because the cure is
+    per-lane exactly as the hold is.</p>
+    <p>The negative matters as much: <strong>no refusal message suggests re-reading the refused
+    run.</strong> That was the natural theory a coordinator supplied for itself, and before
+    &sect;2 it was actively harmful &mdash; observing the refused run looked like gathering
+    evidence and was in fact renewing the hold. &sect;2 removed the harm; this section removes
+    the mistake. A hold carrying a stated reset names that time instead of an age, since a
+    reset is the stronger evidence.</p>
+    <p>Both new assertions consume the JSON detail emitted by a <code>CliRunner</code>
+    invocation of <code>crew dispatch</code>. Neither calls the message helper. This was
+    stated in the measure for the same reason as in &sect;2, and it is the discipline that has
+    failed most often in this repository: a capability landing in the module that holds the
+    mechanism while the call site a reader reaches stays unchanged.</p>
+  </section>
+
+  <section id="what-this-does-not-do">
+    <h2>What this record does not claim</h2>
+    <p>The plan's own framing is worth preserving: none of this makes a hold correct, only
+    honest about its age and its cure. A refusal that named no reset time is still a weaker
+    piece of evidence than one that did, and the shelf life is still a policy number rather
+    than a measurement. What changed is that the number is now reachable, the age is now
+    immutable under reading, and the refusal now says which of the two is holding the wave.</p>
+    <p>The burn-rate fence that would catch a lane spending its window too fast is not part of
+    this plan &mdash; it landed the same day under
+    <a href="/reckon/plans/dispatch-cost-per-durable-node">dispatch-cost-per-durable-node</a>
+    &sect;6, deliberately report-only, and the two fences answer different questions: this one
+    is about whether a stored refusal still describes the present, that one about whether a
+    clear lane is on course to stop being one.</p>
+  </section>
+
+</main>
+</body>
+</html>

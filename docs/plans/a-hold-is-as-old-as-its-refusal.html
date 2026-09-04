@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-hold-is-as-old-as-its-refusal">
   <meta name="plan-title" content="A Hold Is As Old As Its Refusal">
   <meta name="plan-summary" content="A spend hold ages from the refusal that created it, not from the last time it was read, and carries a declared lever so a serving lane is never unclearable.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="5.0">
   <meta name="plan-capability-version" content="1.0">
@@ -24,10 +24,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="9">
-<meta name="plan-impl" content="0.333">
-<meta name="plan-commits" content="30a4460">
-<meta name="plan-artifacts" content="reckon/schema/flight.yaml">
+<meta name="plan-version" content="12">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-commits" content="30a4460,8d6e4fc5ea0bcc4b2fe4de4d95f16812a1d656e6,c684a42a0eb73ebd4fc6689357498ef7c12c175a,9fc4d5d957f15bc3d55c01b315af4015ae4cb01d">
+<meta name="plan-artifacts" content="reckon/budget.py,reckon/crew/dispatch.py,reckon/schema/flight.yaml,tests/test_budget.py,tests/test_crew_refusal_visibility.py,docs/evidence/archive/a-hold-is-as-old-as-its-refusal-landed.html">
 </head>
 <body>
   <main class="plan-doc">
@@ -95,36 +95,23 @@
       </figcaption>
     </figure>
 
-    <h2 id="s2">§2 — The age is taken from the refusal, not from the last read</h2>
-    <p>
-      A refusal happened once, at a knowable moment, and that moment does not
-      change however many times the record is read. The ageing rule must
-      therefore measure from the event rather than from the pointer's
-      last-written stamp, so that reading a record cannot alter the verdict
-      derived from it. This is the same principle the display work settled from
-      the other direction: a rendered row without a transition is a rumour about
-      time, because it invites a reader to infer recency from position rather
-      than from evidence. Here the system itself is making that inference.
-    </p>
-    <p>
-      The refusal's own time is available. A per-request rejection arrives as a
-      <code>rate_limit_event</code> in the run's stream, at a fixed position with
-      the surrounding records' timestamps, and the run's <code>created_at</code>
-      bounds it from below. Any of those is immutable under re-reading, which is
-      the only property that matters.
-    </p>
-    <p>
-      Done when the age used by the ageing rule is derived from the refusal
-      event rather than from the pointer's <code>observed_at</code>; when
-      calling <code>observe</code> on a refused run one hundred times leaves the
-      derived age and the hold verdict unchanged; when a hold whose refusal is
-      older than the shelf life reads as expired immediately after such an
-      observe rather than being renewed by it; and when a genuinely fresh
-      refusal still holds. Asserted through the same <code>decide</code> call
-      preflight makes, over a state built by the ledger reader from a stream
-      carrying a real rejection, with the observe-then-decide sequence asserted
-      as one case rather than two.
-    </p>
+    <section id="s2" class="section-landed">
+      <header><span class="badge badge-shipped">&#10003; landed 2026-09-04</span>
+        <h2>&#167;2 &mdash; The age is taken from the refusal, not from the last read</h2></header>
+      <p class="landed-summary">The age now comes from the newest rejected
+        <code>rate_limit_event</code> in the run's stream and its closest immutable
+        surrounding timestamp, published as <code>age_source</code>; the mutable pointer
+        <code>observed_at</code> survives only to pick the freshest reading. 62 passed
+        against a 61-passed pre-feature gate, asserted through <code>budget.preflight</code>
+        &mdash; the same decide path dispatch uses &mdash; with the observe-then-decide
+        sequence as one case: <strong>100 repeated observations leave both the timestamp and
+        the stale verdict unchanged</strong>, a stale refusal releases immediately after an
+        observe rather than being renewed by it, a fresh refusal still holds despite a run
+        created three hours earlier, and an unparseable stream reports
+        <code>created_at-lower-bound</code> explicitly. Full record:
+        <a href="/reckon/evidence/archive/a-hold-is-as-old-as-its-refusal-landed#s2-age-from-the-event">§2 landed</a>
+        (commits <code>8d6e4fc</code>, <code>c684a42</code>).</p>
+    </section>
 
     <section id="s3" class="section-landed">
       <header><span class="badge badge-shipped">&#10003; landed 2026-09-04</span>
@@ -142,36 +129,20 @@
         the tree rather than the page.</p>
     </section>
 
-    <h2 id="s4">§4 — The refusal names the instrument that would inform it</h2>
-    <p>
-      A held dispatch currently states the utilisation, the ceiling and the
-      purpose. It does not state what would change the answer, so a coordinator
-      supplies its own theory, and the natural theory is wrong in a way that
-      makes things worse: observing the refused run seems like gathering
-      evidence and is in fact renewing the hold. §2 removes the harm from that
-      mistake; this section removes the mistake.
-    </p>
-    <p>
-      Three facts turn the refusal into something actionable, and all three are
-      already known at the moment it is emitted. The hold is per backend, so it
-      names which lane it governs and does not imply anything about a sibling
-      backend on a different account. The cure is a served turn on that same
-      backend, so it names that rather than leaving a reader to infer that any
-      probe will do. And where the ageing rule is what holds it, it states the
-      refusal's age against the bound and the wall-clock time at which the bound
-      will pass, so the operator can wait deliberately instead of retrying
-      blindly.
-    </p>
-    <p>
-      Done when a budget refusal names the backend it governs, states the age of
-      its evidence against the bound in force, gives the time at which ageing
-      will lift it when that is what applies, and names a served turn on that
-      backend as the observation that would refresh it; when a refusal held by a
-      stated reset time names that time instead of an age; and when no refusal
-      message suggests re-reading the refused run. Asserted on the message the
-      dispatch path emits, not on a formatting helper, for one aged hold and one
-      reset-bearing hold.
-    </p>
+    <section id="s4" class="section-landed">
+      <header><span class="badge badge-shipped">&#10003; landed 2026-09-04</span>
+        <h2>&#167;4 &mdash; The refusal names the instrument that would inform it</h2></header>
+      <p class="landed-summary">A held dispatch now names the backend it governs, its
+        evidence age against the bound in force with the wall-clock time at which ageing
+        lifts it, and a served turn on that same backend as the observation that would
+        refresh it; a hold carrying a stated reset names that time instead of an age, and no
+        refusal suggests re-reading the refused run. 8 passed in 0.68 s, asserted on the JSON
+        detail a <code>CliRunner</code> invocation of <code>crew dispatch</code> emits rather
+        than on the message helper &mdash; a 20.0-minute age against a 60-minute bound for
+        the undated case. Full record:
+        <a href="/reckon/evidence/archive/a-hold-is-as-old-as-its-refusal-landed#s4-refusal-names-the-cure">§4 landed</a>
+        (commit <code>9fc4d5d</code>).</p>
+    </section>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -188,7 +159,7 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-haor-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-09-03" data-recommends-skill="/reckon-ship a-hold-is-as-old-as-its-refusal §3" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-haor-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-09-03" data-recommends-skill="/reckon-ship a-hold-is-as-old-as-its-refusal §3" data-resolved-at="2026-09-04T11:52:00+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Declare the key first, because it is the lever an operator needs tonight</h4>
     <div class="r-fu-body"><p>
             §3 goes first even though §2 is the deeper defect, and the ordering
@@ -215,6 +186,7 @@
             ageing rule shipped with it.
           </p></div>
     <pre class="r-fu-prompt">/reckon-ship a-hold-is-as-old-as-its-refusal §3</pre>
+    <p class="r-fu-outcome">done - no followup. All three executable sections have landed and the plan is shipped at impl 1.0. Section 3 needed no node: the key was already declared in reckon/schema/flight.yaml with its full meaning under commit 30a4460, verified by --set budget.evidence_shelf_life_minutes=1 being accepted at the preflight entry point, and the followup's ordering argument - declare the lever first because it is the only change that helps an operator holding a live incident - was already satisfied. Section 2 then landed the load-bearing correction under the lock the lead settled this session, with the observe-then-decide sequence asserted as one case, and section 4 made the refusal actionable. Cumulative record at docs/evidence/archive/a-hold-is-as-old-as-its-refusal-landed.html. Nothing in this plan's scope remains open; the burn-rate fence that catches a lane spending its window too fast is a different question and belongs to dispatch-cost-per-durable-node section 6, which landed report-only the same day.</p>
     </article>
 </section>
 
@@ -228,6 +200,12 @@
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260903T215106400228-a-hold-ages-from-its-refusal" data-who="sonnet-a" data-when="2026-09-03T22:01:03.945Z">
     <div class="r-comment-body"><p>The hold ages from the run's immutable created_at rather than the pointer's rewritable observed_at, so observing a refused run no longer renews the fence it was meant to expire.</p></div>
 </div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260904T113531673095-haor-age-from-refusal" data-who="s15-burn" data-when="2026-09-04T11:49:17Z">
+    <div class="r-comment-body"><p>62 passed in 5.20s against a 61-passed pre-feature gate; the age comes from the newest rejected rate-limit event and its closest immutable surrounding timestamp, published as age_source, so 100 repeated observations preserve both the timestamp and the stale verdict, a stale refusal releases immediately after an observe instead of being renewed by it, a fresh refusal still holds despite a run created three hours earlier, and an unparseable stream reports created_at-lower-bound explicitly; asserted through budget.preflight, the same decide path dispatch uses</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-haor-age-from-refusal" data-who="reckon-ship" data-when="2026-09-04T13:50:03Z">
+    <div class="r-comment-body">The age is taken from the refusal landed - commits 8d6e4fc and c684a42; gate uv run pytest tests/test_budget.py -q passed, 62 passed in 5.20s against a 61-passed pre-feature gate; measure: the age comes from the newest rejected rate_limit_event and its closest immutable surrounding timestamp, published as age_source, with the mutable pointer stamp kept only to choose the freshest reading - so 100 repeated observations leave both the timestamp and the hold verdict unchanged, a stale refusal releases immediately after an observe instead of being renewed by it, a fresh refusal still holds despite a run created three hours earlier, and an unparseable stream reports created_at-lower-bound in words; asserted through budget.preflight, the same decide path dispatch uses, with the observe-then-decide sequence as one case because the defect is invisible to a test that decides once. The node's baseline came back 11 failed and 50 passed before it changed anything, fallout from the specification-level requirement landed earlier the same session, and it repaired those fixtures under a separate three-line commit rather than folding them into the feature.</div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260904T042406291751-a-lane-is-probed-not-timed" data-who="codex-a" data-when="2026-09-04T04:40:05Z">
     <div class="r-comment-body"><p>A hold whose refusal names no reset is probed rather than timed: a served probe opens the lane and records the observation, a refused probe re-arms it, probes are once per backend and cached, and a reset-bearing hold or an unreported backend is never probed.</p></div>
 </div>
@@ -236,6 +214,12 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20260904T1036" data-who="reckon-ship" data-when="2026-09-04T08:36:00+00:00">
     <div class="r-comment-body">IMPL CORRECTED FROM ZERO, the same bookkeeping drift as the sibling plan and the same cause - I advanced impl on two plans tonight and not on these two, so the roadmap reported nothing delivered against a plan whose ageing, its declared lever and its replacement by a probe had all shipped. Set to 0.75 because one section's work remains and it is the sharpest one left. WHAT SHIPPED: the hold ages from the run's immutable created_at rather than the pointer's rewritable observed_at, so observing a refused run no longer renews the fence it was meant to expire - a defect a peer measured as a retry loop that could not converge, 13,801 seconds of hold on a serving lane against an 83-second control that cleared the moment one served run reached the same backend. The shelf life is declared in the flight schema and reachable from an override, where it had been honoured by the code and rejected by the model, leaving the fence with no lever under any permitted setting. And a refusal naming no reset is now PROBED rather than timed, which is the standing instruction that availability is polled rather than read from written evidence, with the probe bounded to one per backend per wave and cached. WHAT REMAINS, AND IT IS TWO FAULTS IN ONE MEASUREMENT. A foreign session's stale refusal fences every resume in a project while dispatch on the same backend succeeds and preflight reads the lane clear - so the resume purpose consults a figure the dispatch purpose already treats as clear, and the reserve that distinguishes them inverts at the ceiling, making the purpose meant to keep a worker answerable the one that cannot answer it. And a per-run refusal is aggregated to the project, so one abandoned pointer speaks for every run on that lane and the older it is the longer it speaks. The probe answers the freshness half and touches neither the purpose asymmetry nor the aggregation. Not dispatched.</div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260904T113558245834-haor-refusal-message" data-who="s15-coord" data-when="2026-09-04T11:49:54Z">
+    <div class="r-comment-body"><p>8 passed in 0.68s asserted on the JSON detail a CliRunner invocation of crew dispatch emits, never on the message helper; the undated hold names its backend, a 20.0-minute evidence age against the 60-minute bound and the computed lift time, the reset-bearing hold names the stated reset instead of an age, and both name a served turn on that same backend as the refreshing observation</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-haor-refusal-message" data-who="reckon-ship" data-when="2026-09-04T13:50:11Z">
+    <div class="r-comment-body">The refusal names the instrument that would inform it landed - commit 9fc4d5d; gate uv run --no-sync pytest tests/test_crew_refusal_visibility.py -q passed, 8 passed in 0.68s; measure: the emitted refusal names the backend it governs, states a 20.0-minute evidence age against the 60-minute bound in force with the computed time at which ageing lifts it, names a served turn on that same backend as the refreshing observation, names a stated reset instead of an age where one exists, and suggests re-reading the refused run nowhere; both new assertions consume the JSON detail a CliRunner invocation of crew dispatch emits rather than calling the message helper. Section 2 removed the harm from the natural wrong theory; this section removes the mistake.</div>
 </div>
 </section>
 </main>
