@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T14:40:39",
+  "updated": "2026-09-04T14:44:50",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -697,9 +697,11 @@
         "id": "s15-attrib",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a06c65-90d2-76a1-8747-9c27e7b47082",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06c65-90d2-76a1-8747-9c27e7b47082"
+        },
         "created": "2026-09-04"
       },
       {
@@ -953,9 +955,11 @@
         "id": "s16-conebtn",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a06c71-7367-7e63-982e-6158af4854fd",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06c71-7367-7e63-982e-6158af4854fd"
+        },
         "created": "2026-09-04"
       },
       {
@@ -59227,6 +59231,146 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T122937153419-clw-test-role-attribution",
+        "plan": "clive-local-workers",
+        "section": "\u00a712",
+        "node": "clw-test-role-attribution",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1302,
+                "cached_input_tokens": 524789,
+                "input_tokens": 526093,
+                "output_tokens": 977,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 527070,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "uv run --no-sync pytest tests/test_crew_test_role.py -q passes with no failure count above the base revision, asserting against a synthesised wave carrying one deliberately broken merge among several clean ones: the attribution separates new failure ids from pre-existing ones against the stated base revision, names for each new one the merged commit that introduced it, is reachable from the promoted ledger row rather than only from the manifest text, and a test node whose own commit touches a source path is refused at promotion so a verifier cannot edit what it grades",
+          "estimated_hours": 2.0,
+          "goal": "Make a test node's manifest report new failures against a stated base separately from pre-existing ones, each new one naming a candidate commit",
+          "id": "clw-test-role-attribution",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T122937153419-clw-test-role-attribution/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a712",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/crew/prompts.py",
+            "reckon/crew/promotion.py",
+            "tests/test_crew_test_role.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s15-attrib",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T12:29:49Z",
+        "completed_at": "2026-09-04T12:43:55Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 846,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 846,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "5cd93af898881ef90293c84b455333ea5562468e",
+        "commits": [
+          "1a103b6af582ed093a75506359879ff9e33113f0"
+        ],
+        "changed_lines": {
+          "added": 351,
+          "removed": 16,
+          "files": 3
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "uv run --no-sync pytest tests/test_crew_test_role.py -q",
+          "exit_status": 0,
+          "log_path": null,
+          "log_digest": "12 passed, base 10 passed, 0 added failures"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T122937153419-clw-test-role-attribution/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06c65-90d2-76a1-8747-9c27e7b47082",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 11824256,
+            "cached_input_tokens_cumulative": 11824256,
+            "input_tokens": 11990977,
+            "input_tokens_cumulative": 11990977,
+            "output_tokens": 33552,
+            "output_tokens_cumulative": 33552,
+            "reasoning_output_tokens": 13788,
+            "reasoning_output_tokens_cumulative": 13788
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 47340,
+          "peak_input_tokens": 23815233
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/clw-test-role-attribution",
+          "session_id": "01a06c65-90d2-76a1-8747-9c27e7b47082",
+          "session_source": "pointer",
+          "retained_at": "2026-09-04T12:43:55Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_crew_test_role.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -59399,6 +59543,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 979
+    "_version": 982
   }
 }

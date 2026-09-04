@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="127">
+<meta name="plan-version" content="129">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,~/.config/reckon/crew/reports/local-effort-probe.md,~/.config/reckon/crew/reports/read-only-tier-delivery-discriminator.md,~/.config/reckon/crew/reports/test-attribution-reuse-map.md,~/.config/reckon/crew/reports/context-fit-reuse-map.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md,docs/evidence/archive/clive-local-workers-landed.html,docs/figures/clive-local-workers/local-lane-model-outcomes.svg">
-<meta name="plan-impl" content="0.98">
+<meta name="plan-impl" content="0.99">
 <meta name="plan-commits" content="a91abe9,a56eae9,42a339f,a2e488b,ca6288d,0226835,e099fc5,5dc92ce,8b80bdc,8abc064,6f99ac2,7f41635,1908947,da054f7,1a77ce8,3ff87b2,5717d69,1badb66,1b7e72e,9b609d9,34e1d10,73ed06d,31d4e8d">
 </head>
 <body>
@@ -140,70 +140,24 @@
       </tbody>
     </table>
 
-    <h2 id="s12">&#167;12 &mdash; Verification is a role, not a chore appended to every node</h2>
-    <p><strong>The rules were never the problem; the done-whens were.</strong> Checked
-    against the code: <code>gates.suite_command</code> is undeclared, and the worker protocol
-    makes <code>baseline_suite</code> and <code>after_suite</code> required only when it is
-    armed. So the harness never asked any worker for a full suite. Every full-suite run this
-    session came from text I wrote into done-whens, and the workers did exactly as told. The
-    strictness was the orchestrator's, not the framework's.</p>
-    <p><strong>But there is a real gap, and it is structural.</strong> An implementation
-    worker is fenced to a few paths and cannot open the files a suite-wide failure lives in.
-    Asking it to run the whole suite and triage the result asks it to reason about what it is
-    blind to by construction; the best it can do is report an absolute count, which measures
-    the fleet rather than its change. Nothing in the prompt says so &mdash; the EVIDENCE
-    fence states the done-when and never states the division of labour &mdash; so a sloppy
-    done-when meets no resistance anywhere.</p>
-    <p><strong>The <code>test</code> role exists and is a label rather than a contract.</strong>
-    It carries <code>execution_capable</code> and a sandbox tier and nothing else: no time
-    budget for a suite that takes 700&ndash;900 seconds, no distinct prompt, no different
-    deliverable. Nineteen runs have been dispatched under it and each received the same
-    prompt an implementation worker gets, with <code>ROLE test</code> printed as a word. Give
-    it the contract the work actually has:</p>
-    <table>
-      <thead><tr><th>Property</th><th>Test role</th><th>Why it differs from an implement node</th></tr></thead>
-      <tbody>
-        <tr><td>Read scope</td><td>the whole repository</td><td>Triage requires opening the file a failure lives in; this is the exact capability a fenced implementation worker lacks.</td></tr>
-        <tr><td>Write scope</td><td>its report and logs, never source</td><td>A verifier that fixes is an implementation worker under the wrong name, and its verdict stops being independent of the change.</td></tr>
-        <tr><td>Deliverable</td><td>an attribution, not a verdict</td><td>Which failures are new against a stated base, which pre-existed, and for each new one the merged commit that introduced it.</td></tr>
-        <tr><td>Inputs</td><td>base revision, head revision, the commits merged between them</td><td>Attribution needs the candidate set; without it a triage can only say that something broke.</td></tr>
-        <tr><td>Time budget</td><td>sized for two suite runs</td><td>A base and an after measurement, which at 700&ndash;900 seconds each is the one role where the default budget is genuinely too small.</td></tr>
-      </tbody>
-    </table>
-    <p>With that in place the division states itself: an implementation node's gate measures
-    its own change, the orchestrator dispatches a test node once per wave to measure the
-    merge, and a failure outside a worker's scope is reported in <code>follow_ons</code>
-    rather than triaged or fixed. That is cheaper and it is also more honest &mdash; the
-    verifier is the one worker positioned to attribute a failure, and it is the only one
-    whose verdict was not written by the author of the change.</p>
-    <table>
-      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
-      <tbody>
-        <tr><td>The role carries a contract</td><td>The test role declares its own sandbox, budget and scope defaults in the flight schema, validated with leaf provenance and regenerated into both derived artifacts.</td></tr>
-        <tr><td>The prompt states the division</td><td>An implementation node's EVIDENCE fence says its gate measures its own change and that integration belongs to a test node; a test node's prompt states the attribution deliverable and names the base, head and merged commits it was given. Asserted against the composed prompt for both roles.</td></tr>
-        <tr><td>Attribution over verdict</td><td>A test node's manifest reports new failures against a stated base separately from pre-existing ones, and each new one names a candidate commit. Asserted against a synthesised wave with one deliberately broken merge among several clean ones.</td></tr>
-        <tr><td>A verifier cannot edit source</td><td>A test node whose commit touches a source path is refused at promotion. Asserted by test.</td></tr>
-      </tbody>
-    </table>
-
-    <section id="s11" class="section-landed">
+    <section id="s12" class="section-landed">
       <header><span class="badge badge-shipped">&#10003; landed 2026-09-04</span>
-        <h2>&#167;11 &mdash; The dispatch grade the fleet was missing is context fit</h2></header>
-      <p class="landed-summary">All four measures hold. Each backend declares a usable input
-        budget in flight config, validated through the layered schema with leaf provenance and
-        regenerated into both derived artifacts; a backend declaring none is treated as
-        <em>unbounded</em> rather than as zero and never refuses. A dispatch computes the
-        node's need from the standing instruction load plus its declared write paths and named
-        files, and records the estimate with its inputs on the run so a later reader can check
-        the arithmetic. A node whose need exceeds the resolved window is refused
-        <strong>before worktree creation</strong> through the existing capability envelope at
-        exit 5, naming the estimate, the window and the shortfall &mdash; and the negative is
-        asserted, so a node that fits dispatches unchanged. 78 passed and 1 failed against a
-        base of 71 passed and the identical single failure, so zero added; the generated pair
-        was verified current by re-running <code>scripts/regen_flight_schema.py</code> and
-        getting no diff. Full record:
-        <a href="/reckon/evidence/archive/clive-local-workers-landed#s11-context-fit">§11 landed</a>
-        (commit <code>9479569</code>).</p>
+        <h2>&#167;12 &mdash; Verification is a role, not a chore appended to every node</h2></header>
+      <p class="landed-summary">The role's three earlier measures &mdash; its own sandbox,
+        budget and scope defaults, the prompt stating the division of labour, and a verifier
+        refused at promotion for touching source &mdash; were already in place; the missing
+        one was the deliverable itself. A test node now reports an <em>attribution</em> rather
+        than a verdict: its prompt requires <code>baseline_suite</code>,
+        <code>after_suite</code> and a complete <code>failure_attribution</code> while
+        declaring the repository read-only, an armed promotion refuses any added failure
+        missing a candidate commit <strong>even when suite-delta waiver text is supplied</strong>,
+        and every repository-changing commit a test-role run cites is refused before the
+        ledger append regardless of a widened declared scope. The integration case promotes
+        report-only evidence, deletes its manifest, reloads the committed ledger and recovers
+        the pre-existing set, the one added failure, and its exact broken candidate commit.
+        12 passed against a base of 10, zero added. Full record:
+        <a href="/reckon/evidence/archive/clive-local-workers-landed#s12-attribution">§12 landed</a>
+        (commit <code>1a103b6</code>).</p>
     </section>
 
     <h2 id="s10">&#167;10 &mdash; An effort scan on real nodes, because the trivial probe was the wrong instrument</h2>
@@ -1133,6 +1087,12 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20260903T133538534595-the-day-is-reviewed-against-its-briefs" data-who="impl-guard" data-when="2026-09-03T13:53:16.004Z">
     <div class="r-comment-body"><p>11 of 40 merged code commits are met-in-letter-only (27.5%); the 92% gate pass rate is not reproducible, the ledger gives 71.6% by row and 81.4% by node; two defects still live at HEAD and two measured signals discarded at promotion.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20260904T122937153419-clw-test-role-attribution" data-who="s15-attrib" data-when="2026-09-04T12:43:55Z">
+    <div class="r-comment-body"><p>12 passed against a base of 10 with zero added failures; a test-role prompt now requires baseline_suite, after_suite and a complete failure_attribution while declaring the repository read-only, an armed test-role promotion refuses any added failure missing a candidate commit even when suite-delta waiver text is supplied, promotion refuses every repository-changing commit a test-role run cites before the ledger append regardless of a widened declared scope, and the synthetic integration path promotes report-only evidence, deletes its manifest, reloads the committed ledger and recovers the pre-existing set, the one added failure and its exact broken candidate commit</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-clw-attribution-landed" data-who="reckon-ship" data-when="2026-09-04T14:44:50Z">
+    <div class="r-comment-body">The attribution deliverable landed - commit 1a103b6; gate uv run --no-sync pytest tests/test_crew_test_role.py -q gave 12 passed against a base of 10 with zero added failures; measure: the test-role prompt requires baseline_suite, after_suite and a complete failure_attribution while declaring the repository read-only; an armed test-role promotion refuses any added failure missing a candidate commit even when suite-delta waiver text is supplied, which is the loophole worth naming because a waiver is exactly how this check would otherwise be talked past; every repository-changing commit a test-role run cites is refused before the ledger append regardless of a widened declared source scope, so a verifier cannot edit what it grades even with scope granted; and the synthetic integration case promotes report-only evidence, deletes its manifest, reloads the committed ledger through ledger.runs and recovers the pre-existing failure set, the one added failure and its exact broken candidate commit. This was the section's fourth measure and the only one still open - the role's sandbox and budget defaults, the prompt stating the division of labour, and the refusal of a source-touching verifier were already in place, which is the same mechanism-without-the-deliverable shape this session met six times. Remaining on this plan are the two measurement campaigns, section 10's paired effort scan and section 5's qualification, both of which need real dispatch volume on the local lane rather than code.</div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20260903T060422443082-promotion-releases-the-transient" data-who="sonnet-a" data-when="2026-09-03T06:11:42.903Z">
     <div class="r-comment-body"><p>Promotion now releases the worktree and any lingering process group after the ledger append and pointer delete, reusing gc's own conditions rather than a second policy, and naming every withheld release with the condition it failed. 34 passed. This is the first promotion to exercise it.</p></div>
