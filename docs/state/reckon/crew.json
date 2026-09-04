@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T09:50:18",
+  "updated": "2026-09-04T10:00:18",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -52756,6 +52756,220 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260904T073440247788-a-run-changes-lane-and-keeps-its-identity",
+        "plan": "every-state-has-a-verb",
+        "section": "\u00a74",
+        "node": "a-run-changes-lane-and-keeps-its-identity",
+        "node_definition": {
+          "done_when": "Moving a dispatched run between backends costs stop, then discard, then a fresh dispatch - refused twice on the way, once for member-in-flight until the old pointer is gone and once for worktree-path-already-exists until the tree is removed by hand or the node id is changed. So the price is either a NEW NODE ID, which makes one piece of work appear as two unrelated ledger rows, or a MANUAL WORKTREE REMOVAL. BOTH PRICES ARE PAID IN THE CURRENCY THIS SYSTEM SPENT THE NIGHT PROTECTING: manual worktree removal is the act that turned a ten-minute provider outage into a loss of five recoverable sessions, and crew complete now refuses to promote a blocked run whose session is recoverable precisely to prevent it - so the switching path routes a careful operator toward the one action the rest of the system guards against. And crew resume accepts no backend override, so a run whose lane is genuinely spent cannot be continued elsewhere at all. That case is live: a run on another project is held by a usage limit resetting four days out, so resume never becomes available for it and a lane change is the only lawful move. THE SHAPE IS LOCKED as the plan's lane-change-verb decision: BOTH entry points over ONE implementation - a backend override on resume for a blocked run whose lane is spent, and a redispatch keeping the node id for a working run the coordinator wants elsewhere - because each covers a state the other cannot and two implementations would be two code paths able to disagree about one run. Done when a dispatched run moves to another backend keeping its node id, its worktree and its ledger identity, with no manual tree removal and no new node id; when the move records BOTH lanes and the reason on the run, so its history shows where it ran rather than appearing to have always run on the second; when a move onto a held lane is refused with the hold named, since the sweep's own rule is never to spend the last of a recovering quota; and when a session that cannot follow the move because the new backend is a different harness is reported as starting fresh rather than silently losing its context - that report is the load-bearing negative, because a silent context loss here is the same defect as a promotion reporting success while discarding a session. ASSERT THROUGH THE COMMANDS a coordinator invokes, over a dispatched run built the way dispatch writes one under a temporary config home with the real config home asserted untouched: the node id and worktree path unchanged afterwards, the ledger carrying both lanes, a move onto a held lane refused naming the hold, and a cross-harness move reporting the fresh start. Assert both entry points reach the same implementation. At least one added assertion must fail against base ff0a594. Measured over tests/test_crew_lane_change.py plus tests/test_crew_dispatch_guard.py in ONE invocation: zero failures against their combined count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 3.0,
+          "goal": "A dispatched run continues on another backend keeping its node id, its worktree and its ledger identity.",
+          "id": "a-run-changes-lane-and-keeps-its-identity",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/lane-change-manifest.md",
+          "plan": "every-state-has-a-verb",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "reckon/cli.py",
+            "tests/test_crew_lane_change.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-m",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T07:34:56Z",
+        "completed_at": "2026-09-04T07:51:53Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1017,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1017,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "ff0a594dc87fa7c15a5b56f1928253502fd30e61",
+        "commits": [
+          "b01329fcb8d264bc4cdf638054357442b130b70e"
+        ],
+        "changed_lines": {
+          "added": 730,
+          "removed": 4,
+          "files": 3
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_lane_change.py tests/test_crew_dispatch_guard.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vlc.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/lane-change-manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06b57-a7d5-7b20-a098-9377758040c5",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no events yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260904T072018748329-no-read-has-a-file-as-its-only-answer",
+        "plan": "every-state-has-a-verb",
+        "section": "\u00a76",
+        "node": "no-read-has-a-file-as-its-only-answer",
+        "node_definition": {
+          "done_when": "A project-scoped audit through the MCP tool returns 94,026 characters and cannot be returned at all - measured against the reconnected server, twice, spilling to a file both times. That is the identical defect just fixed for the roadmap tool, where a single-project call without a view preserved a lossless legacy response that could not be returned; the fix was applied per tool while the defect is per surface, because the brief was written from one tool's measurement without asking which others shared the default. Done when a project-scoped audit returns a summary by default carrying at minimum the checked and conformant counts and the finding counts by severity and by code, with the full violation and finding lists reachable explicitly the way the roadmap tool now reaches raw; when the per-path audit already landed is unchanged, asserted as a negative, since passing a path must keep returning that document's own findings; and when NO MCP READ ON THIS SURFACE can answer only with a file - enumerate every read tool and every view, call each against this project, and assert each response is returnable, so a read whose default exceeds its transport fails a test rather than training a caller to spill and parse. That enumeration is the load-bearing part: two tools have now carried this defect and both were found by hand. AND FIX THE SILENT-KEYWORD HAZARD THE SAME EXERCISE EXPOSED: the audit tool was called with a parameter named document, which it does not accept, and it answered the project-wide question without complaint - so a caller believed it had asked about one document while being answered about the project, and briefly concluded a landed capability was unreachable. A read that accepts an unrecognised argument silently lets a caller act on an answer to a question it did not ask. Refuse an unknown keyword with a message naming the accepted parameters, on every read tool on this surface, and assert that refusal. ASSERT THROUGH THE MCP TOOL ENTRY POINTS as a client invokes them, over a temporary config home with the real config home asserted untouched. At least one added assertion must fail against base 3d37860. Measured over tests/test_ledger.py plus tests/test_mcp_recovery.py in ONE invocation: zero failures against their combined count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 1.5,
+          "goal": "No MCP read can answer only with a file: every read whose lossless form exceeds its transport has a returnable default.",
+          "id": "no-read-has-a-file-as-its-only-answer",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/returnable-reads-manifest.md",
+          "plan": "every-state-has-a-verb",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "exact",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/mcp.py",
+            "reckon/mcp_views.py",
+            "tests/test_ledger.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "codex-l",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T07:20:30Z",
+        "completed_at": "2026-09-04T07:56:26Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 2156,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 2156,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "3d3786003e7d96c85d2342812b7aaa96496f7413",
+        "commits": [
+          "32fced9c03a1c6a63188071821be114551d2f356"
+        ],
+        "changed_lines": {
+          "added": 267,
+          "removed": 3,
+          "files": 2
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_ledger.py tests/test_mcp_recovery.py",
+          "exit_status": 1,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vrr.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/returnable-reads-manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06b4a-5d32-76b2-ae37-5ebd49d9ba72",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 12737152,
+            "cached_input_tokens_cumulative": 12737152,
+            "input_tokens": 12946943,
+            "input_tokens_cumulative": 12946943,
+            "output_tokens": 25626,
+            "output_tokens_cumulative": 25626,
+            "reasoning_output_tokens": 7217,
+            "reasoning_output_tokens_cumulative": 7217
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 32843,
+          "peak_input_tokens": 25684095
+        },
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -52928,6 +53142,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 853
+    "_version": 855
   }
 }
