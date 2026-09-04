@@ -24,9 +24,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="25">
 <meta name="plan-commits" content="d5811b204966f31db83bab190b6440a6eb7b9842,db329f84e6eecc232e8cf41f35e828f84365dee8,b99ccdf829c50659c34efdd354642b5a9cba6827,0b146679a6585b480b35fed528801a1bd4acedf8">
-<meta name="plan-impl" content="0.667">
+<meta name="plan-impl" content="0.833">
 <meta name="plan-artifacts" content="reckon/crew/node.py,reckon/budget.py,reckon/crew/dispatch.py,reckon/capabilities.py,reckon/mcp.py,reckon/serve.py,tests/test_crew_node.py,tests/test_budget.py,tests/test_crew_coordinator_spend.py,tests/test_routing_surface.py,skills/reckon-ship/SKILL.md,skills/reckon-ship/references/effort-routing.md">
 </head>
 <body>
@@ -672,7 +672,7 @@
     <div class="r-comment-body"><p>77 passed and zero failed against a base of 40 failed and 36 passed; spec_level added to the shared test node only, plus a direct assertion that an empty specification level is still refused, so the forty are green because the fixture declares one and not because the requirement was relaxed</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260904T124852670289-dcdn-shadow-fixture-spec-level" data-who="s15-shadowfix" data-when="2026-09-04T12:54:04Z">
-    <div class="r-comment-body"><p>3 passed and zero failed against a base of 3 failed; the shadow-path helper&#x27;s TaskNode now declares a specification level, so the three cases are green because the fixture satisfies the requirement rather than because it was relaxed - the fourth and last file where making --spec-level required surfaced pre-existing fixtures</p></div>
+    <div class="r-comment-body"><p>3 passed and zero failed against a base of 3 failed; the shadow-path helper's TaskNode now declares a specification level, so the three cases are green because the fixture satisfies the requirement rather than because it was relaxed - the fourth and last file where making --spec-level required surfaced pre-existing fixtures</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260904T102927554308-dcdn-burn-multiple" data-who="s15-burn" data-when="2026-09-04T10:38:42Z">
     <div class="r-comment-body"><p>61 passed against a 57-passed baseline; burn multiple is (utilisation/100) divided by window-elapsed fraction, so 13 percent at 1.7 percent elapsed reports 7.6x, an unknown period reports unknown rather than a number, and the 7.6x lane still reads clear because the figure holds nothing</p></div>
@@ -697,6 +697,12 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260904T122131445856-dcdn-orientation-floor" data-who="s15-floor" data-when="2026-09-04T12:34:47Z">
     <div class="r-comment-body"><p>7 passed in 2.02s against a 5-test baseline; the orientation floor is derived from ledger data with its regression coefficients and sample count and carried on the routing surface per model, role and specification level, with a configuration holding too few observations reporting the floor as unknown rather than zero</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260904T124914123891-dcdn-changed-lines-stays-descriptive" data-who="s15-changedlines" data-when="2026-09-04T12:58:31Z">
+    <div class="r-comment-body"><p>17 passed and zero failed against a base of 1 failed and 16 passed; reckon/capabilities.py needed no change because the orientation-floor work's three new consumers were already descriptive, so only the test's approved-consumer census needed extending to _descriptive_changed_lines, _changed_line_count, _orientation_floor, derive_capabilities and derive_routing, with large, zero and absent values all retaining membership. The worker proved the guard still has teeth rather than only that the suite is green: it mutated derive_routing to exclude on _changed_line_count and confirmed the guard failed with 1 failed, which is the stays-quiet half asserted rather than assumed</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-dcdn-orientation-floor-and-its-guard" data-who="reckon-ship" data-when="2026-09-04T14:59:18Z">
+    <div class="r-comment-body">The orientation floor is reported rather than fenced, as this section's corrected reading requires - commit 67776c5; gate uv run --no-sync pytest tests/test_routing_surface.py -q passed, 7 passed in 2.02s against a 5-test baseline; measure: the floor is derived from ledger data carrying its regression coefficients and sample count, carried on the routing surface per model, role and specification level, with a configuration holding too few observations reporting the floor as unknown rather than zero. That closes the lever this plan says nothing had ever measured, at 158 percent of a median run's whole input. It also had a consequence, and the consequence is the better record. Adding three changed_lines consumers broke test_changed_lines_are_descriptive_and_never_enter_selection, the guard that stops delivered-line counts becoming a selection criterion. Commit 69c04e7 closed it, and reckon/capabilities.py needed no change - the three new consumers were already descriptive, so only the test's approved-consumer census needed extending, to _descriptive_changed_lines, _changed_line_count, _orientation_floor, derive_capabilities and derive_routing, with large, zero and absent values all retaining membership. The worker then did more than the brief asked: it mutated derive_routing to exclude on _changed_line_count and confirmed the guard failed, so the stays-quiet half is asserted rather than assumed. A guard that only ever passes is indistinguishable from one that cannot fail, and that mutation is what tells them apart. Whole-head verification after both: 256 passed and zero failed across the twelve ledger-touching files, against the 127 failed the day's ledger work had briefly produced.</div>
 </div>
 </section>
 </main>
