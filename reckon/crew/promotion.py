@@ -12,7 +12,7 @@ from typing import Any, Iterable, Mapping
 
 from reckon import _backends, _store, ledger
 from reckon.crew.dispatch import _backend_settings, _capture_member_session
-from reckon.crew.node import CrewError, STALL_BUDGET_MULTIPLE, parse_duration
+from reckon.crew.node import STALL_BUDGET_MULTIPLE, CrewError, parse_duration
 from reckon.crew.reports import parse_manifest
 from reckon.crew.routing import (
     RECLAIMABLE_CLASSES,
@@ -28,6 +28,7 @@ from reckon.crew.runs import (
     _pointer_lock,
     _utc_now,
     _write_json,
+    list_live,
     pointer_path,
     process_alive,
     read_pointer,
@@ -390,6 +391,89 @@ def _outside_declared_scope(
         if not any(path == root or path.is_relative_to(root) for root in roots):
             outside.append(changed)
     return tuple(outside)
+
+
+def _accepted_scope_exceptions(
+    run_id: str,
+    outside: Iterable[str],
+    accepted_paths: Mapping[str, str] | None,
+    *,
+    record: Mapping[str, Any],
+    tree: Path,
+) -> list[dict[str, str]]:
+    """Validate deliberate companion paths and return their durable account."""
+    outside_paths = tuple(str(path) for path in outside)
+    supplied = accepted_paths or {}
+    if not supplied:
+        raise CrewError(
+            f"run {run_id!r} changed paths outside its declared "
+            f"write scope: {', '.join(outside_paths)}"
+        )
+    if not isinstance(supplied, Mapping):
+        raise CrewError("accepted paths must map each repository path to its reason")
+
+    repository = Path(str(record.get("repo") or tree)).resolve()
+    normalized: dict[str, str] = {}
+    for raw_path, raw_reason in supplied.items():
+        roots = _repository_scope_paths(
+            (str(raw_path),), worktree=tree, repository=repository
+        )
+        if len(roots) != 1:
+            raise CrewError(
+                f"accepted path {raw_path!r} is not inside the run repository"
+            )
+        path = roots[0].as_posix()
+        reason = str(raw_reason).strip()
+        if not reason:
+            raise CrewError(f"accepted path {path!r} requires a stated reason")
+        if path in normalized:
+            raise CrewError(f"accepted path {path!r} was named more than once")
+        normalized[path] = reason
+
+    outside_set = set(outside_paths)
+    unaccepted = sorted(outside_set - normalized.keys())
+    if unaccepted:
+        raise CrewError(
+            f"run {run_id!r} changed paths outside its declared "
+            f"write scope: {', '.join(unaccepted)}"
+        )
+    unchanged = sorted(normalized.keys() - outside_set)
+    if unchanged:
+        raise CrewError(
+            "accepted paths must name changed paths outside the declared write "
+            f"scope; these do not: {', '.join(unchanged)}"
+        )
+
+    for pointer in list_live():
+        peer_run = str(pointer.get("run_id") or "")
+        if not peer_run or peer_run == run_id:
+            continue
+        peer_repository = Path(str(pointer.get("repo") or ".")).resolve()
+        if peer_repository != repository:
+            continue
+        peer_node = pointer.get("node")
+        if not isinstance(peer_node, Mapping):
+            continue
+        peer_tree = Path(str(pointer.get("worktree") or peer_repository))
+        claims = _repository_scope_paths(
+            peer_node.get("write_paths") or (),
+            worktree=peer_tree,
+            repository=peer_repository,
+        )
+        for path in sorted(normalized):
+            candidate = Path(path)
+            for claim in claims:
+                if (
+                    candidate == claim
+                    or candidate.is_relative_to(claim)
+                    or claim.is_relative_to(candidate)
+                ):
+                    raise CrewError(
+                        f"run {run_id!r} cannot accept {path}: live run "
+                        f"{peer_run!r} claims {claim.as_posix()}"
+                    )
+
+    return [{"path": path, "reason": normalized[path]} for path in sorted(normalized)]
 
 
 def _snapshot_entries(tree: Mapping[str, Any]) -> set[tuple[str, str]]:
@@ -870,6 +954,7 @@ def complete(
     suite_delta_waiver: str = "",
     boundary_waiver: str = "",
     resume_waiver: str = "",
+    accepted_paths: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     """Promote a run, or finish cleanup when its record already landed."""
     verdict = str(gate).strip().lower()
@@ -934,6 +1019,7 @@ def complete(
             suite_delta=suite_delta,
             boundary_waiver=boundary_waiver,
             resume_waived=resume_waived,
+            accepted_paths=accepted_paths,
         )
 
 
@@ -1158,6 +1244,7 @@ def _complete_locked(
     suite_delta: Mapping[str, Any] | None = None,
     boundary_waiver: str = "",
     resume_waived: Mapping[str, str] | None = None,
+    accepted_paths: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     """Promote a finished run into the owning repository's committed ledger.
 
@@ -1236,6 +1323,7 @@ def _complete_locked(
     if commit_list:
         commit_list = _resolve_commits(cwd=tree, revisions=commit_list, run_id=run_id)
     shadow_patch = ""
+    scope_acceptances: list[dict[str, str]] = []
     if shadow:
         artifact = _write_shadow_patch(record)
         changed_lines = _shadow_patch_stat(artifact, cwd=tree)
@@ -1271,9 +1359,12 @@ def _complete_locked(
                         "its scope: cite the worker's own commit, which "
                         "`reckon crew recover` reports as the run's next action"
                     )
-                raise CrewError(
-                    f"run {run_id!r} changed paths outside its declared "
-                    f"write scope: {', '.join(outside)}"
+                scope_acceptances = _accepted_scope_exceptions(
+                    run_id,
+                    outside,
+                    accepted_paths,
+                    record=record,
+                    tree=tree,
                 )
         changed_lines = cumulative.changed_lines
     else:
@@ -1368,6 +1459,8 @@ def _complete_locked(
         run["no_commit"] = str(no_commit).strip()
     if boundary_waived is not None:
         run["boundary_waiver"] = boundary_waived
+    if scope_acceptances:
+        run["scope_acceptances"] = scope_acceptances
     # A discarded resume path survives on the row with the session it discarded
     # and the reason given, so an audit can tell a deliberate discard from the
     # accidental one this refusal exists to prevent.
