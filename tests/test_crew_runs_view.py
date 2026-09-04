@@ -44,7 +44,7 @@ def _write_live(
     section: str = "§2",
     session_id: str = "session-a",
     member: str = "member-a",
-    resumable: bool | None = None,
+    process_alive: bool = True,
 ) -> None:
     worktree = home / "worktrees" / run_id
     worktree.mkdir(parents=True)
@@ -53,7 +53,7 @@ def _write_live(
         "project": PROJECT,
         "node": {"id": node, "plan": plan, "section": section},
         "phase": "starting",
-        "process_alive": True,
+        "process_alive": process_alive,
         "session_id": session_id,
         "member": member,
         "agent": {"backend": "alpha"},
@@ -62,8 +62,6 @@ def _write_live(
         "manifest_path": str(home / "manifests" / f"{run_id}.md"),
         "log_path": str(home / "logs" / f"{run_id}.jsonl"),
     }
-    if resumable is not None:
-        record["resumable"] = resumable
     crew._write_json(crew.pointer_path(run_id), record)
 
 
@@ -132,6 +130,13 @@ def test_runs_view_joins_sources_orders_attempts_and_stays_compact(
         "r-20260904T100003000000-node-a",
         "r-20260904T100001000000-node-a",
     ]
+    unknown = mcp._crew(
+        PROJECT,
+        view="runs",
+        checkout_path=str(repository),
+        node="unknown",
+    )
+    assert unknown["count"] == 0
 
     newest = mcp._crew(
         PROJECT,
@@ -170,8 +175,7 @@ def test_runs_view_joins_sources_orders_attempts_and_stays_compact(
         ({"session": "session-a"}, 1),
         ({"member": "member-a"}, 1),
         ({"classification": "running"}, 1),
-        ({"resumable": True}, 1),
-        ({"node": "unknown"}, 0),
+        ({"resumable": False}, 1),
     ],
 )
 def test_runs_view_applies_each_compact_filter(
@@ -184,7 +188,6 @@ def test_runs_view_applies_each_compact_filter(
         isolated_reckon_home,
         "r-20260904T100001000000-node-a",
         node="node-a",
-        resumable=True,
     )
 
     result = mcp._crew(
@@ -196,6 +199,33 @@ def test_runs_view_applies_each_compact_filter(
 
     assert result["count"] == expected
     assert len(result["rows"]) == expected
+    if filters == {"resumable": False}:
+        assert result["rows"][0]["process_alive"] is True
+        assert result["rows"][0]["resumable_reason"] == "the run's process is alive"
+
+
+def test_runs_view_filters_a_recoverable_dead_process(
+    isolated_reckon_home: Path,
+    repository: Path,
+) -> None:
+    _write_live(
+        isolated_reckon_home,
+        "r-20260904T100001000000-node-a",
+        node="node-a",
+        process_alive=False,
+    )
+
+    result = mcp._crew(
+        PROJECT,
+        view="runs",
+        checkout_path=str(repository),
+        resumable=True,
+    )
+
+    assert result["count"] == 1
+    assert result["rows"][0]["worktree_exists"] is True
+    assert result["rows"][0]["session_id_source"] == "pointer"
+    assert result["rows"][0]["resumable"] is True
 
 
 def test_runs_view_adds_only_requested_optional_fields(
