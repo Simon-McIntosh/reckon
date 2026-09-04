@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T07:36:04",
+  "updated": "2026-09-04T07:42:57",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -50291,6 +50291,115 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T053438090024-schedule-captures",
+        "plan": "graph-derived-schedule",
+        "section": "\u00a76",
+        "node": "schedule-captures",
+        "node_definition": {
+          "done_when": "docs/figures/graph-derived-schedule/after/capture-index.json lists eight captures covering graph named graph unnamed sprint detail and crew flow at 1374 and 1920, each file exists at its recorded width with a card or lane count above zero, and uv run pytest tests/test_spa_owed_captures.py -q stays green",
+          "estimated_hours": 1.0,
+          "goal": "Eight captures of the landed graph sprint and flow surfaces with an index",
+          "id": "schedule-captures",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T053438090024-schedule-captures/manifest.md",
+          "plan": "graph-derived-schedule",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "docs/figures/graph-derived-schedule"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-shots",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T05:34:48Z",
+        "completed_at": "2026-09-04T05:41:48Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 420,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 420,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "b4279d13c00161cb8df5022647bb296ccce094a5",
+        "commits": [
+          "dcb540b7e2a7c962f278d8c637958ae529e8cee2"
+        ],
+        "changed_lines": {
+          "added": 131,
+          "removed": 0,
+          "files": 9
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_owed_captures.py; capture-index artifact validation",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T053438090024-schedule-captures/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T053438090024-schedule-captures/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06aab-e8be-7c31-8a7d-ea6600a86ec0",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 0,
+            "cached_input_tokens_cumulative": 3199488,
+            "input_tokens": 0,
+            "input_tokens_cumulative": 3316653,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 15471,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 3619
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 19090,
+          "peak_input_tokens": 6516141
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_spa_owed_captures.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -50463,6 +50572,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 823
+    "_version": 824
   }
 }
