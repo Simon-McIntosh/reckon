@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T08:56:42",
+  "updated": "2026-09-04T09:03:24",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -788,9 +788,11 @@
         "id": "s16-palette",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a06b1b-a819-73c2-9d8c-8404288465ef",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06b1b-a819-73c2-9d8c-8404288465ef"
+        },
         "created": "2026-09-04"
       },
       {
@@ -51731,6 +51733,323 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260904T062837949630-palette-resolves-its-label-helper",
+        "plan": "artifact-feeds-and-reader",
+        "section": "\u00a79",
+        "node": "palette-resolves-its-label-helper",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_spa_palette_open.py -q passes: rendered at 1374 against a fixture whose query matches at least one document of each kind, the palette opens, .r-cmdk is present, every result row renders its kind label, .r-app is still mounted, and the browser console reports no ReferenceError; every paletteKindLabel call site in docs/ui/shell-palette.jsx is qualified by its published namespace with no bare identifier remaining",
+          "estimated_hours": 1.0,
+          "goal": "Opening the command palette with matching results renders them instead of unmounting the application",
+          "id": "palette-resolves-its-label-helper",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T062837949630-palette-resolves-its-label-helper/manifest.md",
+          "plan": "artifact-feeds-and-reader",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a79",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "write_paths": [
+            "docs/ui/shell-palette.jsx",
+            "tests/test_spa_palette_open.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s16-palette",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T06:29:21Z",
+        "completed_at": "2026-09-04T06:35:06Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 345,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 345,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "6abcb293958c3a3fc2e2ec9143a09d09255bf348",
+        "commits": [
+          "ba6ff352234429b3e3f0cb33964e4b3c70e1d697"
+        ],
+        "changed_lines": {
+          "added": 134,
+          "removed": 1,
+          "files": 2
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_palette_open.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T062837949630-palette-resolves-its-label-helper/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T062837949630-palette-resolves-its-label-helper/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06b1b-a819-73c2-9d8c-8404288465ef",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2523264,
+            "cached_input_tokens_cumulative": 2523264,
+            "input_tokens": 2651239,
+            "input_tokens_cumulative": 2651239,
+            "output_tokens": 11282,
+            "output_tokens_cumulative": 11282,
+            "reasoning_output_tokens": 3552,
+            "reasoning_output_tokens_cumulative": 3552
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 645,
+              "budget_seconds": 2100,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 2745,
+              "external_wait": null,
+              "log_age_seconds": 2022,
+              "log_fresh": false,
+              "manifest_commits": [
+                "[263b92a",
+                "764865b",
+                "c3268d6]; changed_paths: [\"reckon/crew/recovery.py\"",
+                "\"tests/test_crew_recovery.py\"]"
+              ],
+              "manifest_derived": false,
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/manifest-verdict-manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260904T054309199355-a-manifest-is-not-a-verdict-while-the-process-lives --gate <verdict> --commit [263b92a --commit 764865b --commit c3268d6]; changed_paths: [\"reckon/crew/recovery.py\" --commit \"tests/test_crew_recovery.py\"]",
+              "node": "a-manifest-is-not-a-verdict-while-the-process-lives",
+              "phase": "starting",
+              "plan": "crew-observability-truth",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260904T054309199355-a-manifest-is-not-a-verdict-while-the-process-lives",
+              "session": "ship-s15-0903",
+              "terminal_age_seconds": 2044,
+              "terminal_at": "2026-09-04T05:55:01Z",
+              "wait_age_seconds": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-0903/a-manifest-is-not-a-verdict-while-the-process-lives"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2700,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 1299,
+              "external_wait": null,
+              "log_age_seconds": 668,
+              "log_fresh": true,
+              "manifest_commits": [
+                "[\"2b3b27639e9db1d6860c7021ff53c6ce6096092e\"]; changed_paths: [\"docs/home.html\"",
+                "\"docs/index.html\"",
+                "\"docs/ui/overview.css\"",
+                "\"docs/ui/shell-overview.jsx\"",
+                "\"docs/ui/shell-prompt.jsx\"",
+                "\"docs/ui/shell-route.jsx\"",
+                "\"docs/ui/shell.jsx\"",
+                "\"reckon/serve.py\"",
+                "\"tests/test_build.py\"",
+                "\"tests/test_spa_overview_geometry.py\"",
+                "\"tests/test_spa_overview_surface.py\"]"
+              ],
+              "manifest_derived": false,
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T060712873403-retire-cockpit-and-standalone-home/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260904T060712873403-retire-cockpit-and-standalone-home --gate <verdict> --commit [\"2b3b27639e9db1d6860c7021ff53c6ce6096092e\"]; changed_paths: [\"docs/home.html\" --commit \"docs/index.html\" --commit \"docs/ui/overview.css\" --commit \"docs/ui/shell-overview.jsx\" --commit \"docs/ui/shell-prompt.jsx\" --commit \"docs/ui/shell-route.jsx\" --commit \"docs/ui/shell.jsx\" --commit \"reckon/serve.py\" --commit \"tests/test_build.py\" --commit \"tests/test_spa_overview_geometry.py\" --commit \"tests/test_spa_overview_surface.py\"]",
+              "node": "retire-cockpit-and-standalone-home",
+              "phase": "starting",
+              "plan": "fleet-home",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260904T060712873403-retire-cockpit-and-standalone-home",
+              "session": "ship-s16",
+              "terminal_age_seconds": 691,
+              "terminal_at": "2026-09-04T06:17:34Z",
+              "wait_age_seconds": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16/retire-cockpit-and-standalone-home"
+            }
+          ]
+        },
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 14834,
+          "peak_input_tokens": 5174503
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_spa_palette_open.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260904T054309199355-a-manifest-is-not-a-verdict-while-the-process-lives",
+        "plan": "crew-observability-truth",
+        "section": "\u00a76",
+        "node": "a-manifest-is-not-a-verdict-while-the-process-lives",
+        "node_definition": {
+          "done_when": "A run dispatched two minutes earlier rendered as dispatched arrow failed with the reason implementation and required evidence are not yet complete, while its process was alive at a known pid, its stream grew from 56 to 129 events, and it went on to write real logs - measured on another project at 07:27:58. The text was the worker's PLACEHOLDER manifest, written before any work began. In the same minute a redispatch over its paths was refused with the message still running as that pid, so the live pointer held the truth while the ticker announced a terminal verdict. THE MECHANISM IS IN reckon/crew/recovery.py AROUND LINE 437 AND ITS OWN COMMENT STATES IT: complete and failed are facts a later log line cannot undo, so they stay protected from this staleness path. That path exists to discard a manifest a newer log line has overtaken, and excluding failed means a placeholder failed survives every subsequent event indefinitely while the worker works. The exclusion was written into a dispatch brief by this coordinator and implemented faithfully; a day review already recorded this commit as a regression sourced from its brief, and a later commit narrowed the protected set while leaving failed inside it. Done when a run whose manifest status is failed and whose process is alive renders as running rather than terminal, so no terminal verdict is drawn over a living process; when the same run renders as failed once its process is gone, so nothing is lost and only deferred; when a run that genuinely failed with no live process renders exactly as it does today, asserted as a negative so that path stays reachable; when a manifest status of complete is considered on the same rule rather than left inconsistent - state in the code which of the two you changed and why, since complete over a live process is the same shape and may or may not be reachable; and when the liveness the decision uses is the pointer's own field, the one the redispatch refusal reads, rather than a second derivation that could disagree with it. If the placeholder is worth surfacing at all, surface it as a placeholder rather than as an outcome. ASSERT THROUGH THE CLASSIFIER AND THE FOLLOWER'S RENDERING PATH that observe and the watch producer call, over pointers and manifests built the way dispatch and a worker write them under a temporary config home, with the real config home asserted untouched. At least one added assertion must fail against base b79d07c. Measured over tests/test_crew_recovery.py plus tests/test_crew_ticker.py in ONE invocation: zero failures against their combined count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 2.0,
+          "goal": "A run whose manifest says failed renders as running while its process is alive, and as failed only once the process is gone.",
+          "id": "a-manifest-is-not-a-verdict-while-the-process-lives",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/manifest-verdict-manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "reckon/crew/ticker.py",
+            "tests/test_crew_recovery.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-g",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T05:43:21Z",
+        "completed_at": "2026-09-04T05:55:24Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 723,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 723,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "24a3925de9586aa4314ea65f8aa570d4d7222b66",
+        "commits": [
+          "263b92a0afca40f4c1f7100f7f648465ccdf774f",
+          "764865b7c3f1f6217910b2e2e39ca19c1119ac24",
+          "c3268d62332661926d707c2fb48aded429d8cdbd"
+        ],
+        "changed_lines": {
+          "added": 174,
+          "removed": 41,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_recovery.py tests/test_crew_ticker.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vmv.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/manifest-verdict-manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06af1-6dd6-7d30-82d1-58b78fb84406",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 8952704,
+            "cached_input_tokens_cumulative": 8952704,
+            "input_tokens": 9127632,
+            "input_tokens_cumulative": 9127632,
+            "output_tokens": 30021,
+            "output_tokens_cumulative": 30021,
+            "reasoning_output_tokens": 10506,
+            "reasoning_output_tokens_cumulative": 10506
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 40527,
+          "peak_input_tokens": 18080336
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -51903,6 +52222,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 839
+    "_version": 842
   }
 }
