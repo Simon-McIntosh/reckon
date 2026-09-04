@@ -48,7 +48,13 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return root
 
 
-def _pointer(repository: Path, run_id: str, base: str) -> None:
+def _pointer(
+    repository: Path,
+    run_id: str,
+    base: str,
+    *,
+    write_paths: tuple[str, ...] = ("allowed.txt",),
+) -> None:
     _write_json(
         pointer_path(run_id),
         {
@@ -66,7 +72,7 @@ def _pointer(repository: Path, run_id: str, base: str) -> None:
                 "plan": "fixture",
                 "section": "guard",
                 "time_budget": "25m",
-                "write_paths": ["allowed.txt"],
+                "write_paths": list(write_paths),
             },
         },
     )
@@ -89,6 +95,14 @@ def _commit_allowed(run_tree: Path) -> str:
     (run_tree / "allowed.txt").write_text("seed\nallowed\n", encoding="utf-8")
     _git(run_tree, "add", "allowed.txt")
     _git(run_tree, "commit", "-q", "-m", "test: update declared path")
+    return _git(run_tree, "rev-parse", "HEAD")
+
+
+def _commit_artifact_with_companion(run_tree: Path) -> str:
+    (run_tree / "artifact.json").write_text('{"result": "ready"}\n')
+    (run_tree / "artifact.png").write_bytes(b"companion image\n")
+    _git(run_tree, "add", "artifact.json", "artifact.png")
+    _git(run_tree, "commit", "-q", "-m", "test: generate artifact pair")
     return _git(run_tree, "rev-parse", "HEAD")
 
 
@@ -269,6 +283,123 @@ def test_two_commit_scope_escape_is_refused_before_ledger_write(
 
     with pytest.raises(crew.CrewError, match=r"outside\.txt"):
         crew.complete(run_id, gate="passed", commits=[first, tip], root=repository)
+
+    assert ledger.runs(PROJECT, root=repository) == []
+    assert pointer_path(run_id).is_file()
+
+
+def test_companion_path_acceptance_is_recorded_after_merged_producer_commit(
+    repository: Path, tmp_path: Path
+) -> None:
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = _detached_tree(repository, tmp_path / "run-tree")
+    run_id = "r-companion-acceptance-fixture"
+    real_pointer = (
+        Path.home() / ".config" / "reckon" / "crew" / "live" / f"{run_id}.json"
+    )
+    assert not real_pointer.exists()
+    _pointer(
+        repository,
+        run_id,
+        base,
+        write_paths=("artifact.json",),
+    )
+    commit = _commit_artifact_with_companion(run_tree)
+    _git(repository, "merge", "-q", "--no-ff", commit, "-m", "Merge producer")
+
+    stored = crew.complete(
+        run_id,
+        gate="passed",
+        commits=[commit],
+        root=repository,
+        accepted_paths={"artifact.png": "rendered with the declared JSON artifact"},
+    )["record"]
+
+    assert stored["scope_acceptances"] == [
+        {
+            "path": "artifact.png",
+            "reason": "rendered with the declared JSON artifact",
+        }
+    ]
+    assert stored["commits"] == [commit]
+    assert not pointer_path(run_id).exists()
+    assert not real_pointer.exists()
+
+
+@pytest.mark.parametrize(
+    "existing_waiver",
+    [
+        {"scope_changed": True},
+        {"boundary_waiver": "the companion is expected"},
+    ],
+)
+def test_existing_waivers_do_not_accept_an_undeclared_companion(
+    repository: Path, tmp_path: Path, existing_waiver: dict[str, object]
+) -> None:
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = _detached_tree(repository, tmp_path / "run-tree")
+    run_id = "r-unaccepted-companion"
+    _pointer(repository, run_id, base, write_paths=("artifact.json",))
+    commit = _commit_artifact_with_companion(run_tree)
+
+    with pytest.raises(crew.CrewError, match=r"artifact\.png"):
+        crew.complete(
+            run_id,
+            gate="passed",
+            commits=[commit],
+            root=repository,
+            **existing_waiver,
+        )
+
+    assert ledger.runs(PROJECT, root=repository) == []
+    assert pointer_path(run_id).is_file()
+
+
+def test_companion_path_acceptance_requires_a_reason(
+    repository: Path, tmp_path: Path
+) -> None:
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = _detached_tree(repository, tmp_path / "run-tree")
+    run_id = "r-unreasoned-companion"
+    _pointer(repository, run_id, base, write_paths=("artifact.json",))
+    commit = _commit_artifact_with_companion(run_tree)
+
+    with pytest.raises(crew.CrewError, match="requires a stated reason"):
+        crew.complete(
+            run_id,
+            gate="passed",
+            commits=[commit],
+            root=repository,
+            accepted_paths={"artifact.png": "  "},
+        )
+
+    assert ledger.runs(PROJECT, root=repository) == []
+    assert pointer_path(run_id).is_file()
+
+
+def test_companion_path_acceptance_refuses_another_live_run_claim(
+    repository: Path, tmp_path: Path
+) -> None:
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = _detached_tree(repository, tmp_path / "run-tree")
+    run_id = "r-colliding-companion"
+    _pointer(repository, run_id, base, write_paths=("artifact.json",))
+    _pointer(
+        repository,
+        "r-companion-owner",
+        base,
+        write_paths=("artifact.png",),
+    )
+    commit = _commit_artifact_with_companion(run_tree)
+
+    with pytest.raises(crew.CrewError, match=r"r-companion-owner.*artifact\.png"):
+        crew.complete(
+            run_id,
+            gate="passed",
+            commits=[commit],
+            root=repository,
+            accepted_paths={"artifact.png": "rendered companion"},
+        )
 
     assert ledger.runs(PROJECT, root=repository) == []
     assert pointer_path(run_id).is_file()
