@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from tests.spa_module_eval import evaluate_jsx_module
 
 ROOT = Path(__file__).resolve().parents[1]
 STYLESHEET = ROOT / "docs" / "ui" / "graph.css"
@@ -61,7 +62,7 @@ def test_authority_list_and_canvas_columns_use_declared_dimensions() -> None:
     assert authority["font-size"] == "11px"
 
     layout = _rule(source, ".r-graph-layout")
-    assert layout["grid-template-columns"] == "260px minmax(0, 1fr)"
+    assert layout["grid-template-columns"] == "280px minmax(0, 1fr)"
     assert layout["gap"] == "20px"
     assert layout["margin-top"] == "16px"
     assert _rule(source, ".r-graph-members")["gap"] == "5px"
@@ -87,10 +88,48 @@ def test_metric_strip_and_svg_nodes_keep_canvas_typography_and_size() -> None:
 
     node = _rule(source, ".r-graph-node-card")
     assert node["position"] == "absolute"
-    assert node["width"] == "178px"
-    assert node["height"] == "54px"
-    assert node["padding"] == "7px 9px"
-    assert node["border-radius"] == "6px"
-    assert "<svg width={canvas.width} height={canvas.height}" in component
-    assert "const columnGap = 62" in component
-    assert "const rowGap = 16" in component
+    assert node["padding"] == "10px 12px"
+    assert node["border-radius"] == "9px"
+    # The stylesheet and the stage read one geometry: a card whose CSS size
+    # disagrees with the layout's arithmetic overlaps its neighbour.
+    geometry = evaluate_jsx_module(COMPONENT, "window.ReckonGraph.geometry")
+    assert node["width"] == f"{geometry['cardWidth']}px"
+    assert node["height"] == f"{geometry['cardHeight']}px"
+    assert "<svg width={stage.width} height={stage.height}" in component
+    assert "window.ReckonGraph.layout(members" in component
+    # The surface draws no second layout of its own.
+    assert "const columnGap" not in component
+    assert "const rowGap" not in component
+
+
+def test_the_index_rows_and_the_unnamed_controls_are_styled() -> None:
+    source = STYLESHEET.read_text(encoding="utf-8")
+    component = COMPONENT.read_text(encoding="utf-8")
+
+    row = _rule(source, ".r-graph-index-row")
+    assert row["display"] == "grid"
+    assert row["align-items"] == "center"
+    assert row["cursor"] == "pointer"
+    assert _rule(source, ".r-graph-index-rows")["flex-direction"] == "column"
+
+    # Header figures are inline mono.
+    figure = _rule(source, ".r-graph-figure")
+    assert figure["font-family"] == "var(--mono)"
+    assert _rule(source, ".r-graph-figure b")["font"].endswith("var(--mono)")
+
+    # An endpoint without an authored handle reads grey, not black.
+    unnamed = _rule(source, ".r-graph-handle-token.unnamed")
+    assert unnamed["background"] == "var(--line)"
+    assert unnamed["color"] == "var(--muted)"
+
+    # The missing-precondition chip is dashed and amber, never a ship button.
+    chip = _rule(source, ".r-graph-needs-handle")
+    assert chip["border"] == "1px dashed var(--warn)"
+    assert chip["color"] == "var(--warn)"
+
+    for flag in ("ready", "held", "open"):
+        assert _rule(source, f".r-graph-index-flag.{flag}")["background"]
+
+    assert 'className="r-graph-index"' in component
+    assert 'className="r-graph-index-rows"' in component
+    assert 'className="r-graph-needs-handle"' in component

@@ -1,7 +1,7 @@
 // Two graph components:
-//   DependencyChainView — top-level Graph tab. Lead with graph handles, then
-//     dependency chains with ‹ › nav across current endpoints; status-grouped
-//     list below. Generate-prompt button opens PathPromptModal.
+//   DependencyChainView — top-level Graph tab. An index of every dependency
+//     endpoint in the project, named handles first, then the unnamed ones,
+//     over a detail whose body is the shared DAG layout.
 //   RadialFan — plan-view sub-mode. Focal plan centred, deps left, blocks
 //     right. Single-hop only. Click satellite to navigate.
 //
@@ -55,56 +55,6 @@ function _dependencyChainMeasure(plans) {
   return { chain, critLen, critEnd, pathLen, pathPrev, bySlug };
 }
 
-// Returns an array of all maximal-length chains (each is a slug array).
-// Sorted by chain length descending. Multiple endpoints may share the max length.
-function _allDependencyChains(plans) {
-  plans = plans.filter(p => (p.type || "plan") === "plan");
-  const bySlug = Object.fromEntries(plans.map(p => [p.slug, p]));
-  const pathLen = {}, pathPrev = {};
-  function lp(slug, seen = new Set()) {
-    if (pathLen[slug] !== undefined) return pathLen[slug];
-    if (seen.has(slug)) return 0;
-    seen.add(slug);
-    const deps = (bySlug[slug]?.depends_on || [])
-      .map(_refSlug)
-      .filter(d => bySlug[d]);
-    if (deps.length === 0) { pathLen[slug] = 1; return 1; }
-    let best = 0, bestPrev = null;
-    for (const d of deps) {
-      const v = lp(d, new Set(seen));
-      if (v > best) { best = v; bestPrev = d; }
-    }
-    pathLen[slug] = best + 1;
-    pathPrev[slug] = bestPrev;
-    return pathLen[slug];
-  }
-  plans.forEach(p => lp(p.slug));
-
-  const handled = plans.filter(p => String(p.graph_handle || "").trim());
-  const live = plans.filter(p =>
-    (p.status === "active" || p.status === "blocked") &&
-    !String(p.graph_handle || "").trim()
-  );
-  const endpoints = [...handled, ...live];
-  if (endpoints.length === 0) return [];
-
-  // Named graph endpoints lead; remaining live trajectories retain the
-  // structural depth ordering this view already used.
-  const allEndpoints = endpoints.sort((a, b) => {
-    const handleOrder = Number(Boolean(b.graph_handle)) - Number(Boolean(a.graph_handle));
-    if (handleOrder) return handleOrder;
-    const diff = (pathLen[b.slug] || 0) - (pathLen[a.slug] || 0);
-    return diff !== 0 ? diff : a.slug.localeCompare(b.slug);
-  });
-  if (allEndpoints.length === 0) return [];
-  return allEndpoints.map(ep => {
-    const chain = [];
-    let cur = ep.slug;
-    while (cur) { chain.unshift(cur); cur = pathPrev[cur]; }
-    return chain;
-  });
-}
-
 function _dependencyClosure(endpointSlug, bySlug) {
   if (!endpointSlug || !bySlug[endpointSlug]) return new Set();
   const visited = new Set();
@@ -127,9 +77,12 @@ function _openDecisionCount(plan) {
   return Number(plan?.dec_open || 0);
 }
 
-function _graphHandleView(endpoint, members, hopCount, fallbackProject) {
-  const handle = String(endpoint?.graph_handle || "").trim();
-  if (!handle) return null;
+// One endpoint view for every endpoint, named or not. A closure exists as soon
+// as a plan has prerequisites; an authored handle only decides whether that
+// closure has a ship target, so it cannot decide whether the endpoint renders.
+function _graphEndpointView(endpoint, members, hopCount, fallbackProject) {
+  if (!endpoint) return null;
+  const handle = String(endpoint.graph_handle || "").trim();
   const repositoryCounts = {};
   for (const member of members) {
     const repository = String(
@@ -139,24 +92,78 @@ function _graphHandleView(endpoint, members, hopCount, fallbackProject) {
   }
   const total = members.length;
   const shipped = members.filter(member => member.status === "shipped").length;
+  const held = members.filter(member => member.status === "blocked").length;
   const openDecisions = members.reduce(
     (count, member) => count + _openDecisionCount(member),
     0,
   );
   const structuralDepth = Math.max(1, Number(hopCount || 0));
   return {
-    handle,
-    shipLine: `/reckon-ship ${handle}`,
+    slug: endpoint.slug,
+    title: endpoint.title || endpoint.slug,
+    named: Boolean(handle),
+    handle: handle || "unnamed",
+    // The ship skill takes a closure by handle. Without one there is no
+    // resolvable target, and an unresolvable string in a copy control is worse
+    // than no control, because being paste-ready is its whole value.
+    shipLine: handle ? `/reckon-ship graph:${handle}` : null,
     members,
     repositories: Object.entries(repositoryCounts)
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([repository, count]) => ({ repository, count })),
     shipped,
+    held,
     total,
+    shippedPercent: total ? Math.round((shipped / total) * 100) : 0,
     openDecisions,
     structuralDepth,
     averageWidth: total ? (total / structuralDepth).toFixed(2) : "0.00",
   };
+}
+
+// An endpoint is a plan nothing else depends on. Named handles lead, in the
+// order the roadmap gives them; the rest are the unnamed live endpoints.
+function _graphEndpoints(plans, pathLen) {
+  const items = plans.filter(plan => (plan.type || "plan") === "plan");
+  const bySlug = Object.fromEntries(items.map(plan => [plan.slug, plan]));
+  const dependedOn = new Set();
+  const prerequisites = plan => (plan.depends_on || [])
+    .map(_refSlug)
+    .filter(slug => bySlug[slug] && slug !== plan.slug);
+  items.forEach(plan => prerequisites(plan).forEach(slug => dependedOn.add(slug)));
+  const named = items.filter(plan => String(plan.graph_handle || "").trim());
+  const unnamed = items.filter(plan =>
+    !String(plan.graph_handle || "").trim()
+    && prerequisites(plan).length > 0
+    && !dependedOn.has(plan.slug)
+  );
+  const byDepthThenSlug = (left, right) => {
+    const diff = (pathLen[right.slug] || 0) - (pathLen[left.slug] || 0);
+    return diff !== 0 ? diff : left.slug.localeCompare(right.slug);
+  };
+  return [...named.sort(byDepthThenSlug), ...unnamed.sort(byDepthThenSlug)];
+}
+
+// One index row per endpoint, each carrying the same derived closure the
+// detail draws, so a row and the detail it opens cannot disagree.
+function _graphEndpointRows(plans, fallbackProject) {
+  const { bySlug, pathLen } = _dependencyChainMeasure(plans);
+  return _graphEndpoints(plans, pathLen).map(endpoint => {
+    const closure = _dependencyClosure(endpoint.slug, bySlug);
+    const members = [...closure].map(slug => bySlug[slug]).filter(Boolean);
+    const view = _graphEndpointView(
+      endpoint, members, pathLen[endpoint.slug], fallbackProject
+    );
+    const flag = view.openDecisions
+      ? `${view.openDecisions} open`
+      : view.held ? `${view.held} held` : "ready";
+    return {
+      ...view,
+      flag,
+      flagKind: view.openDecisions ? "open" : view.held ? "held" : "ready",
+      done: view.total > 0 && view.shipped === view.total,
+    };
+  });
 }
 
 // ─── One DAG layout, shared by every dependency surface ───────────────────
@@ -426,255 +433,165 @@ function PathPromptModal({ chain, fullPrereqItems, bySlug, onClose }) {
 
 function DependencyChainView({ onNav }) {
   const M = window.STATE;
-  if (!M) return null;
+  const inventory = M?.inventory || [];
 
-  const allPaths = React.useMemo(() => _allDependencyChains(M.inventory), [M.inventory]);
-  const { bySlug, pathLen } = React.useMemo(
-    () => _dependencyChainMeasure(M.inventory),
-    [M.inventory],
+  const rows = React.useMemo(
+    () => _graphEndpointRows(inventory, M?.project),
+    [inventory, M?.project],
+  );
+  const { bySlug } = React.useMemo(
+    () => _dependencyChainMeasure(inventory),
+    [inventory],
   );
 
-  const [pathIdx, setPathIdx] = React.useState(0);
-  const safeIdx = Math.max(0, Math.min(pathIdx, allPaths.length - 1));
-  const chain = allPaths[safeIdx] || [];
-  const onPath = new Set(chain);
-
+  const [hideDone, setHideDone] = React.useState(false);
+  const [selected, setSelected] = React.useState(null);
   const [showPrompt, setShowPrompt] = React.useState(false);
 
-  // Map: endpoint slug → chain index (for mini-map endpoint-dot clicks)
-  const endpointToChain = React.useMemo(() => {
-    const m = {};
-    allPaths.forEach((c, i) => { if (c.length > 0) m[c[c.length - 1]] = i; });
-    return m;
-  }, [allPaths]);
+  // Hide-done drops endpoints whose whole closure has shipped, never the one
+  // being read: a filter that empties the detail under the reader is a bug.
+  const visible = hideDone ? rows.filter(row => !row.done || row.slug === selected) : rows;
+  const selectedIndex = Math.max(0, visible.findIndex(row => row.slug === selected));
+  const view = visible[selectedIndex] || null;
 
-  // Full transitive prereq set of the current endpoint (DFS through ALL deps)
-  const fullPrereqSet = React.useMemo(
-    () => _dependencyClosure(chain.at(-1), bySlug),
-    [chain, bySlug],
+  const members = view ? view.members : [];
+  const endPlan = view ? bySlug[view.slug] : null;
+  const stage = React.useMemo(
+    () => window.ReckonGraph.layout(members, "g"),
+    [members],
   );
 
-  // Plans in fullPrereqSet but NOT on the linear chain → DAG branches
-  const alsoRequired = React.useMemo(() =>
-    [...fullPrereqSet].filter(s => !onPath.has(s)).map(s => bySlug[s]).filter(Boolean),
-    [fullPrereqSet, onPath, bySlug]
-  );
+  const named = rows.filter(row => row.named);
+  const largest = Math.max(0, ...rows.map(row => row.total));
+  const lead = named[0] || null;
 
-  // Plans not in fullPrereqSet and active/blocked (other active plans)
-  const otherActive = M.inventory
-    .filter(p => (p.type || "plan") === "plan" && !fullPrereqSet.has(p.slug) && (p.status === "active" || p.status === "blocked"))
-    .sort((a, b) => (b.impl || 0) - (a.impl || 0));
-
-  // Mini-map data
-  const mini = React.useMemo(() => {
-    const plans = M.inventory;
-    const depth = {};
-    const bs = Object.fromEntries(plans.map(p => [_artifactKey(p), p]));
-    const researchInputs = {};
-    for (const artifact of plans) {
-      if (artifact.type !== "research") continue;
-      for (const ref of (artifact.informs || [])) {
-        const target = _refSlug(ref);
-        (researchInputs[target] = researchInputs[target] || []).push(_artifactKey(artifact));
-      }
-    }
-    function d(s, seen = new Set()) {
-      if (depth[s] !== undefined) return depth[s];
-      if (seen.has(s)) return 0;
-      seen.add(s);
-      const artifact = bs[s] || {};
-      const provenanceDeps = artifact.type === "evidence"
-        ? [...(artifact.evidence_for || []), ...(artifact.verifies || [])].map(_refSlug)
-        : artifact.type === "plan" ? (researchInputs[artifact.slug] || []) : [];
-      const authoredDeps = artifact.type === "plan"
-        ? (artifact.depends_on || []).map(_refSlug)
-        : [];
-      const dd = [...authoredDeps, ...provenanceDeps].filter(x => bs[x]);
-      if (dd.length === 0) { depth[s] = 0; return 0; }
-      depth[s] = 1 + Math.max(...dd.map(x => d(x, seen)));
-      return depth[s];
-    }
-    plans.forEach(p => d(_artifactKey(p)));
-    const maxD = Math.max(0, ...Object.values(depth));
-    const byDepth = {};
-    for (const p of plans) {
-      const key = _artifactKey(p);
-      (byDepth[depth[key]] = byDepth[depth[key]] || []).push(p);
-    }
-    const W = 280, H = 130;
-    const colW = W / (maxD + 2);
-    const pos = {};
-    for (let i = 0; i <= maxD; i++) {
-      const col = byDepth[i] || [];
-      const rowH = (H - 20) / Math.max(1, col.length);
-      col.forEach((p, j) => {
-        pos[_artifactKey(p)] = { x: 14 + i * colW, y: 10 + (j + 0.5) * rowH };
-      });
-    }
-    const edges = [];
-    for (const p of plans) {
-      for (const dep of (p.depends_on || [])) {
-        if (!bs[dep]) continue;
-        const a = pos[_refSlug(dep)], b = pos[_artifactKey(p)];
-        if (!a || !b) continue;
-        edges.push({ a, b, crit: onPath.has(dep) && onPath.has(p.slug) });
-      }
-      if (p.type === "research") {
-        for (const ref of (p.informs || [])) {
-          const target = _refSlug(ref);
-          const a = pos[_artifactKey(p)], b = pos[target];
-          if (a && b) edges.push({ a, b, crit: false, provenance: true });
-        }
-      }
-      if (p.type === "evidence") {
-        for (const ref of [...(p.evidence_for || []), ...(p.verifies || [])]) {
-          const source = _refSlug(ref);
-          const a = pos[source], b = pos[_artifactKey(p)];
-          if (a && b) edges.push({ a, b, crit: false, provenance: true });
-        }
-      }
-    }
-    return { plans, pos, edges, W, H };
-  }, [M.inventory, bySlug, chain]);
-
-  function statusColor(s) {
-    return s === "active" ? "var(--accent)" :
-      s === "blocked" ? "var(--bad)" :
-      s === "pending" ? "var(--warn)" :
-      s === "shipped" ? "var(--good)" : "var(--muted)";
-  }
-
-  // Full prereq items for the prompt (chain + DAG branches, in topological order via buildFleetPrompt)
-  const fullPrereqItems = [...fullPrereqSet].map(s => bySlug[s]).filter(Boolean);
-  const endSlug = chain.length > 0 ? chain[chain.length - 1] : null;
-  const endPlan = endSlug ? bySlug[endSlug] : null;
-
-  // Open decisions in the full prereq set
-  const openDecCount = fullPrereqItems.reduce(
-    (count, plan) => count + _openDecisionCount(plan),
-    0,
-  );
-  const graphHandle = _graphHandleView(
-    endPlan,
-    fullPrereqItems,
-    pathLen[endSlug],
-    M.project,
-  );
-  const canvas = React.useMemo(() => {
-    const members = fullPrereqItems;
-    const memberBySlug = Object.fromEntries(members.map(member => [member.slug, member]));
-    const depth = {};
-    function memberDepth(slug, seen = new Set()) {
-      if (depth[slug] !== undefined) return depth[slug];
-      if (seen.has(slug)) return 0;
-      seen.add(slug);
-      const dependencies = (memberBySlug[slug]?.depends_on || [])
-        .map(_refSlug)
-        .filter(dependency => memberBySlug[dependency]);
-      depth[slug] = dependencies.length
-        ? 1 + Math.max(...dependencies.map(dependency => memberDepth(dependency, new Set(seen))))
-        : 0;
-      return depth[slug];
-    }
-    members.forEach(member => memberDepth(member.slug));
-    const columns = {};
-    members.forEach(member => {
-      (columns[depth[member.slug]] ||= []).push(member);
-    });
-    Object.values(columns).forEach(column => column.sort((left, right) =>
-      left.slug.localeCompare(right.slug)
-    ));
-    const rows = {};
-    Object.values(columns).forEach(column => column.forEach((member, row) => {
-      rows[member.slug] = row;
-    }));
-    const cardWidth = 178;
-    const columnGap = 62;
-    const cardHeight = 54;
-    const rowGap = 16;
-    const position = member => ({
-      x: depth[member.slug] * (cardWidth + columnGap),
-      y: rows[member.slug] * (cardHeight + rowGap),
-    });
-    const edges = [];
-    for (const member of members) {
-      for (const dependencyRef of (member.depends_on || [])) {
-        const dependency = memberBySlug[_refSlug(dependencyRef)];
-        if (!dependency) continue;
-        const source = position(dependency);
-        const target = position(member);
-        const x1 = source.x + cardWidth;
-        const y1 = source.y + cardHeight / 2;
-        const x2 = target.x - 9;
-        const y2 = target.y + cardHeight / 2;
-        edges.push({
-          key: `${dependency.slug}-${member.slug}`,
-          d: `M ${x1} ${y1} C ${x1 + 30} ${y1}, ${x2 - 30} ${y2}, ${x2} ${y2}`,
-          head: `${x2},${y2 - 4} ${x2 + 8},${y2} ${x2},${y2 + 4}`,
-          blocked: dependency.status === "blocked" || member.status === "blocked",
-        });
-      }
-    }
-    const columnCount = Math.max(1, ...Object.values(depth).map(value => value + 1));
-    const rowCount = Math.max(1, ...Object.values(rows).map(value => value + 1));
-    return {
-      members,
-      edges,
-      position,
-      width: columnCount * (cardWidth + columnGap) - columnGap,
-      height: rowCount * (cardHeight + rowGap) - rowGap,
-    };
-  }, [fullPrereqItems]);
-
-  const copyGraphShipLine = async () => {
-    if (!graphHandle || graphHandle.openDecisions) return;
-    await navigator.clipboard?.writeText(graphHandle.shipLine);
+  const copyShipLine = async (line) => {
+    if (!line) return;
+    await navigator.clipboard?.writeText(line);
     if (window.flashSaved) window.flashSaved("graph ship line copied");
   };
 
   const handleGenPrompt = () => {
-    if (openDecCount > 0) {
-      const firstBlocking = fullPrereqItems.find(p =>
-        (p.decisions || []).some(d => !(d.chosen || d.choice))
-      );
+    if (!view) return;
+    if (view.openDecisions > 0) {
+      const firstBlocking = members.find(plan => _openDecisionCount(plan) > 0);
       if (firstBlocking) { window.location.hash = `#plan/${firstBlocking.slug}`; return; }
     }
     setShowPrompt(true);
   };
 
+  if (!M) return null;
+
+  if (rows.length === 0) {
+    return (
+      <div className="r-graph">
+        <p className="r-graph-empty">
+          No plan in this project depends on another, so there is no dependency
+          graph to derive.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="r-graph">
-      {graphHandle ? (
-        <>
-          <header className="r-graph-header">
-            <span className="r-graph-handle-token">{graphHandle.handle}</span>
-            <strong>{endPlan?.title || endSlug}</strong>
-            <span className="r-graph-subtitle">
-              endpoint /{endSlug} · closure {graphHandle.total} derived
-            </span>
-            <div className="r-graph-path-nav" aria-label="Graph trajectory navigation">
-              <button type="button" disabled={safeIdx <= 0}
-                onClick={() => setPathIdx(index => Math.max(0, index - 1))}>‹</button>
-              <span>{safeIdx + 1}/{allPaths.length}</span>
-              <button type="button" disabled={safeIdx >= allPaths.length - 1}
-                onClick={() => setPathIdx(index => Math.min(allPaths.length - 1, index + 1))}>›</button>
-            </div>
+      <section className="r-graph-index" aria-label="Dependency endpoints">
+        <header className="r-graph-index-header">
+          <span className="r-graph-label">Endpoints</span>
+          <span className="r-graph-figure">named<b>{named.length}</b></span>
+          <span className="r-graph-figure">unnamed<b>{rows.length - named.length}</b></span>
+          <span className="r-graph-figure">largest<b>{largest}</b></span>
+          <label className="r-graph-hide-done">
+            <input type="checkbox" checked={hideDone}
+              onChange={event => setHideDone(event.target.checked)} />
+            hide done
+          </label>
+          {lead && (
             <button
               type="button"
-              className="r-graph-ship"
-              onClick={copyGraphShipLine}
-              disabled={graphHandle.openDecisions > 0}
-              title={graphHandle.openDecisions
-                ? `${graphHandle.openDecisions} open decision${graphHandle.openDecisions === 1 ? "" : "s"} in the closure — shipping is held`
-                : `Copy ${graphHandle.shipLine}`}
+              className="r-graph-ship r-graph-index-ship"
+              onClick={() => copyShipLine(lead.shipLine)}
+              disabled={lead.openDecisions > 0}
+              title={lead.openDecisions
+                ? `${lead.openDecisions} open decision${lead.openDecisions === 1 ? "" : "s"} in the closure — shipping is held`
+                : `Copy ${lead.shipLine}`}
             >
-              {graphHandle.shipLine}
+              {lead.shipLine}
             </button>
+          )}
+        </header>
+        <div className="r-graph-index-rows">
+          {visible.map(row => (
+            <button
+              key={row.slug}
+              type="button"
+              className={`r-graph-index-row${row.slug === view?.slug ? " selected" : ""}`}
+              aria-current={row.slug === view?.slug}
+              onClick={() => setSelected(row.slug)}
+            >
+              <span className={`r-graph-handle-token${row.named ? "" : " unnamed"}`}>
+                {row.handle}
+              </span>
+              <span className="r-graph-index-title">{row.title}</span>
+              <span className="r-graph-index-slug">/{row.slug}</span>
+              <span className="r-graph-index-bar">
+                <i style={{ width: `${row.shippedPercent}%` }} />
+              </span>
+              <span className="r-graph-index-pct">{row.shippedPercent}%</span>
+              <span className="r-graph-index-shape">
+                {row.total} members · {row.structuralDepth} deep
+              </span>
+              <span className="r-graph-index-repos">
+                {row.repositories.map(scope => scope.repository).join(" · ")}
+              </span>
+              <span className={`r-graph-index-flag ${row.flagKind}`}>{row.flag}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {view && (
+        <section className="r-graph-detail" aria-label="Endpoint detail">
+          <header className="r-graph-header">
+            <div className="r-graph-path-nav" aria-label="Endpoint navigation">
+              <button type="button" disabled={selectedIndex <= 0}
+                onClick={() => setSelected(visible[selectedIndex - 1]?.slug)}>‹</button>
+              <span>{selectedIndex + 1}/{visible.length}</span>
+              <button type="button" disabled={selectedIndex >= visible.length - 1}
+                onClick={() => setSelected(visible[selectedIndex + 1]?.slug)}>›</button>
+            </div>
+            <span className={`r-graph-handle-token${view.named ? "" : " unnamed"}`}>
+              {view.handle}
+            </span>
+            <strong>{view.title}</strong>
+            <span className="r-graph-subtitle">
+              endpoint /{view.slug} · closure {view.total} derived
+            </span>
+            {view.named ? (
+              <button
+                type="button"
+                className="r-graph-ship"
+                onClick={() => copyShipLine(view.shipLine)}
+                disabled={view.openDecisions > 0}
+                title={view.openDecisions
+                  ? `${view.openDecisions} open decision${view.openDecisions === 1 ? "" : "s"} in the closure — shipping is held`
+                  : `Copy ${view.shipLine}`}
+              >
+                {view.shipLine}
+              </button>
+            ) : (
+              <span
+                className="r-graph-needs-handle"
+                title="Author a graph handle on this plan to give its closure a ship target"
+              >
+                needs plan-graph-handle
+              </span>
+            )}
           </header>
 
           <div className="r-graph-authority">
             <span className="r-graph-label">Derived authority</span>
-            {graphHandle.repositories.map(scope => (
+            {view.repositories.map(scope => (
               <span className="r-graph-scope" key={scope.repository}>
                 {scope.repository}<b>{scope.count}</b>
               </span>
@@ -682,17 +599,15 @@ function DependencyChainView({ onNav }) {
             <span className="r-graph-authority-note">
               repositories enter scope only through closure membership · writes outside scope refused
             </span>
-            <span className={`r-graph-ship-state ${graphHandle.openDecisions ? "held" : "ready"}`}>
-              {graphHandle.openDecisions
-                ? `held · ${graphHandle.openDecisions} open`
-                : "ready"}
+            <span className={`r-graph-ship-state ${view.openDecisions ? "held" : "ready"}`}>
+              {view.openDecisions ? `held · ${view.openDecisions} open` : "ready"}
             </span>
           </div>
 
           <div className="r-graph-layout">
             <nav className="r-graph-members" aria-label="Derived closure membership">
               <span className="r-graph-label">Derived closure</span>
-              {graphHandle.members.map(member => (
+              {view.members.map(member => (
                 <a key={member.slug} href={`#plan/${member.slug}`}>
                   <span className="r-graph-member-repo">
                     {member.project || member.repo || M.project}
@@ -707,50 +622,62 @@ function DependencyChainView({ onNav }) {
               <div className="r-graph-metrics">
                 <div>
                   <span>closure members</span>
-                  <strong>{graphHandle.total}</strong>
+                  <strong>{view.total}</strong>
                   <small>derived from the endpoint</small>
                 </div>
                 <div>
                   <span>average width</span>
-                  <strong>{graphHandle.averageWidth}</strong>
-                  <small>{graphHandle.total} members ÷ {graphHandle.structuralDepth} hops</small>
+                  <strong>{view.averageWidth}</strong>
+                  <small>{view.total} members ÷ {view.structuralDepth} hops</small>
                 </div>
                 <div>
                   <span>longest dependency chain by hop count</span>
-                  <strong>{graphHandle.structuralDepth}</strong>
+                  <strong>{view.structuralDepth}</strong>
                   <small>structural depth only; not execution ordering</small>
                 </div>
               </div>
 
               <div className="r-graph-canvas-scroll">
-                <div className="r-graph-canvas-stage" style={{ width: canvas.width, height: canvas.height }}>
-                  <svg width={canvas.width} height={canvas.height} aria-hidden="true">
-                    {canvas.edges.map(edge => (
+                <div className="r-graph-canvas-stage"
+                  style={{ width: stage.width, height: stage.height }}>
+                  {stage.columns.map(column => (
+                    <span key={column.depth} className="r-graph-column-label"
+                      style={{ left: column.x, width: column.width }}>
+                      {column.label}
+                    </span>
+                  ))}
+                  <svg width={stage.width} height={stage.height} aria-hidden="true">
+                    {stage.edges.map(edge => (
                       <React.Fragment key={edge.key}>
-                        <path d={edge.d} className={edge.blocked ? "blocked" : ""}/>
-                        <polygon points={edge.head} className={edge.blocked ? "blocked" : ""}/>
+                        <path d={edge.d} className={edge.held ? "blocked" : ""}
+                          strokeDasharray={edge.dash} strokeWidth={edge.strokeWidth} />
+                        <polygon points={edge.head} className={edge.held ? "blocked" : ""} />
                       </React.Fragment>
                     ))}
                   </svg>
-                  {canvas.members.map(member => {
-                    const position = canvas.position(member);
-                    const navKey = _artifactKey(member);
-                    return (
-                      <a
-                        key={member.slug}
-                        className={`r-graph-node-card ${member.status}`}
-                        href={`#plan/${member.slug}`}
-                        style={{ left: position.x, top: position.y }}
-                        onClick={event => {
-                          event.preventDefault();
-                          onNav({ view: "plan", slug: navKey });
-                        }}
-                      >
-                        <strong>{member.title || member.slug}</strong>
-                        <span>{member.status}</span>
-                      </a>
-                    );
-                  })}
+                  {stage.nodes.map(node => (
+                    <a
+                      key={node.key}
+                      className={`r-graph-node-card ${node.status}`}
+                      href={`#plan/${node.slug}`}
+                      style={{
+                        left: node.x, top: node.y,
+                        width: node.width, height: node.height,
+                        borderStyle: node.borderStyle, opacity: node.opacity,
+                      }}
+                      onClick={event => {
+                        event.preventDefault();
+                        onNav({ view: "plan", slug: _artifactKey(bySlug[node.slug] || node) });
+                      }}
+                    >
+                      <strong>{node.title}</strong>
+                      <span>{node.statusText}</span>
+                      <em>{node.hours}</em>
+                      <i className="r-graph-node-bar">
+                        <b style={{ width: `${node.percent}%` }} />
+                      </i>
+                    </a>
+                  ))}
                 </div>
               </div>
 
@@ -758,24 +685,24 @@ function DependencyChainView({ onNav }) {
                 <span><i></i>▶ depends on</span>
                 <span><i className="blocked"></i>blocking</span>
                 <button type="button" className="gen-prompt" onClick={handleGenPrompt}
-                  disabled={chain.length === 0}
-                  title={openDecCount > 0 ? `${openDecCount} open decisions — resolve first` : "Generate fleet prompt"}>
+                  disabled={view.total === 0}
+                  title={view.openDecisions > 0
+                    ? `${view.openDecisions} open decisions — resolve first`
+                    : "Generate fleet prompt"}>
                   Generate prompt
                 </button>
               </footer>
             </section>
           </div>
-        </>
-      ) : (
-        <p className="r-graph-empty">No shippable graph handle is available for this trajectory.</p>
+        </section>
       )}
 
       {showPrompt && window.reckon?.PromptModal && (
         <window.reckon.PromptModal
-          planSlug={endSlug || "graph"}
+          planSlug={view?.slug || "graph"}
           initialPrompt={
             window.buildFleetPrompt
-              ? window.buildFleetPrompt(fullPrereqItems, window.STATE, endPlan?.title)
+              ? window.buildFleetPrompt(members, window.STATE, endPlan?.title)
               : "(prompts.js not loaded)"
           }
           onClose={() => setShowPrompt(false)}
