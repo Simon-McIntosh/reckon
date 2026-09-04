@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="viewport-containment">
+  <meta name="plan-title" content="Nothing Leaves the Window">
+  <meta name="plan-summary" content="One guard across every surface for the class of defect a field assertion cannot express: a box that renders correctly and sits outside the viewport.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="5.0">
+  <meta name="plan-wall-clock-hours" content="3.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="low">
+  <meta name="plan-sprint" content="S16">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,spa">
+  <meta name="plan-north-star" content="legible-to-human-and-agent">
+  <meta name="plan-informs" content="spa-shell-scope-and-visibility">
+  <title>Nothing Leaves the Window | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<header>
+  <p class="eyebrow">Rendered truth &middot; the class an assertion about fields cannot reach</p>
+  <h1>Nothing Leaves the Window</h1>
+  <p class="lead">A surface can be correct in every field it exposes and still be unreadable, because the assertions available to it &mdash; document order, rendered row sets, computed properties &mdash; describe elements and say nothing about where those elements ended up. One defect of this kind was found today by a screenshot after five green gates. This plan builds the guard that makes the class measurable, applies it to every rendered surface, and records what it finds.</p>
+</header>
+
+<h2 id="s1">&#167;1 &mdash; Why this exists</h2>
+<p>Measured 2026-09-04. The project picker's dropdown is anchored to its selector's left edge and extends rightwards past the viewport, so its right border and every row's plan count are clipped off-screen at 1374 and again at 1920. Five gates were green while that was true, and none of them was wrong:</p>
+<table>
+  <thead><tr><th>Gate</th><th>What it asserts</th><th>Why it could not see this</th></tr></thead>
+  <tbody>
+    <tr><td><code>test_spa_topbar_snapshot</code></td><td>the bar's children in document order</td><td>order is correct; position is not asserted</td></tr>
+    <tr><td><code>test_spa_project_visibility</code></td><td>the picker renders exactly the visible rows</td><td>the right rows are present, and unreadable</td></tr>
+    <tr><td><code>test_spa_shell_geometry</code></td><td>computed properties of named elements</td><td>a computed property is a value on one element, not a relation between an element and the window</td></tr>
+    <tr><td><code>test_css_layering</code></td><td>which stylesheet owns which custom property</td><td>ownership is correct; the resulting box is not measured</td></tr>
+    <tr><td><code>test_shared_token_contrast</code></td><td>contrast ratios against the ground</td><td>the colours pass; the element is off-screen</td></tr>
+  </tbody>
+</table>
+<p><strong>This is not a missing assertion, and that is the point.</strong> Adding more assertions in any of those five styles would not have caught it, because none of those styles can express the proposition &ldquo;this box is inside the window&rdquo;. It is a whole dimension the measure does not reach, which is harder to notice than a wrong assertion: the suite is not failing to check carefully, it is checking something else. It was the third time in one session that a rendered reading beat a green suite, and the only one of the three where no existing test could have been strengthened into the catch.</p>
+<p>The remedy that fits the shape is a bound check on the class rather than a test for the instance &mdash; the same move that made an import-order-dependent module name and a three-source session id unreachable rather than merely fixed. Applied here: for every surface, at both widths, no element's bounding rectangle may leave the viewport.</p>
+
+<h2 id="s2">&#167;2 &mdash; One containment check over every surface</h2>
+<p>A single test walks each rendered surface at 1374 and 1920 and asserts, for every element in the document, that its bounding rectangle lies within the viewport horizontally: <code>left &gt;= 0</code> and <code>right &lt;= innerWidth</code>. Horizontal only, and deliberately: vertical overflow is what scrolling is for, and the existing container tests already hold that the document itself does not grow. The surfaces are the ones the shell can route to, each in a populated state, plus the three states a reader can open on top of one &mdash; the project picker, the visibility sheet and the command palette &mdash; because the defect that motivated this plan lives in an overlay and an unopened overlay has no box to measure.</p>
+<p>Two exemptions are legitimate and are declared as data rather than discovered as failures. An element inside a container that scrolls horizontally on purpose is measured against that container, not the window; the wide tables and the flow lanes are the cases. And an element deliberately positioned off-screen &mdash; a visually-hidden label, a transition's start state &mdash; is exempt by an explicit marker, so an exemption is a choice someone made and can be read, never an accident the check happens to tolerate.</p>
+<p><strong>Gate for this plan, recorded when the measure runs: against this repository the containment check runs over every routable surface at both widths and its verdict list is recorded in full &mdash; the number of surfaces walked, the number of elements measured, and every violation with its selector and overflow in pixels. Its evidence is that recorded list plus the check failing on a deliberately shifted element, because a check that has never failed has not been shown to work.</strong></p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>containment-check</code></td>
+      <td>One test asserts horizontal viewport containment across every routable surface and overlay at both widths, and records its full verdict.</td>
+      <td><code>uv run pytest tests/test_spa_viewport_containment.py -q</code> runs to completion and writes a verdict record naming every surface walked, the element count, and each violation with its selector and pixel overflow. Cases: the check reports the picker overflow when run against a tree where that defect is present, and reports none once it is fixed; an element shifted 40px past <code>innerWidth</code> by the test itself is reported, which is what proves the check works; an element inside a deliberately horizontally scrolling container is measured against that container and does not report; an element carrying the off-screen marker is exempt and the exemption appears in the verdict as an exemption rather than silently.</td>
+      <td><code>tests/test_spa_viewport_containment.py</code>, <code>tests/spa_containment_harness.py</code></td>
+      <td>guided &middot; sonnet</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s3">&#167;3 &mdash; Whatever it finds</h2>
+<p>The check is written before anyone knows what it will report, which is the only honest order: a guard authored after the surfaces were adjusted to pass it would measure the adjustment rather than the surfaces. The picker overflow is already being fixed under its own plan's section, so this node covers the remainder &mdash; every other violation the &#167;2 verdict lists, fixed at its own surface with the containment check as the measure. If the verdict lists nothing beyond the picker, this node closes as a recorded negative result rather than being quietly dropped, because &ldquo;the guard found one defect in the whole surface&rdquo; is a finding worth writing down.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>containment-violations</code></td>
+      <td>Every violation the check reports, other than the picker, is fixed at its own surface &mdash; or the absence of any is recorded.</td>
+      <td><code>uv run pytest tests/test_spa_viewport_containment.py -q</code> passes with an empty violation list, and the execution record carries the &#167;2 verdict before and after with the count of violations fixed. Where the verdict listed nothing beyond the picker, the record states that and the node resolves as a negative result with the surface and element counts that were walked.</td>
+      <td><code>docs/ui/topbar.css</code>, <code>docs/ui/plans.css</code>, <code>docs/ui/sprints.css</code>, <code>docs/ui/graph.css</code>, <code>docs/ui/crew.css</code>, <code>docs/ui/home.css</code></td>
+      <td>open &middot; sonnet, after <code>containment-check</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s4">&#167;4 &mdash; Out of scope</h2>
+<p>Vertical overflow, which is what scrolling is for and what the existing container tests already cover. Contrast, which <code>test_shared_token_contrast</code> owns. Element overlap, because no instance of it has been measured here and a guard built for a hypothesis measures the hypothesis. Responsive behaviour below 1374, which no capture width exercises and which the handoff does not specify. And the per-plan capture sections stay exactly as they are: a capture shows a human what a surface looks like, while this check answers one narrow question automatically, and neither replaces the other &mdash; it was a capture that found this defect, and a capture that will find the next one of a kind nobody has thought to guard.</p>
+
+<section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="guard-scope" data-choice="class-not-instance" data-by="reckon-ship (lead authorised absorbing this into the sprint, 2026-09-04)" data-when="2026-09-04">
+    <p class="r-dec-q">Does the fix target the picker or the class?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="class-not-instance">A containment check over every surface</button>
+      <button class="r-opt" data-value="one-more-assertion">One assertion on the picker</button>
+    </p>
+    <p class="r-dec-rat">The picker is already fixed under its own plan's section. An assertion there would leave every other surface unmeasured against a dimension no existing gate can express, and the next overflow would again be found by a screenshot or by a reader.</p>
+</div>
+<div class="r-dec" data-key="overflow-axis" data-choice="horizontal-only" data-by="reckon-ship (deduced from the existing container tests)" data-when="2026-09-04">
+    <p class="r-dec-q">Which axis does the check measure?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="horizontal-only">Horizontal only</button>
+      <button class="r-opt" data-value="both-axes">Both axes</button>
+    </p>
+    <p class="r-dec-rat">Vertical overflow is scrolling, which the surfaces are built to do and the container tests already hold; asserting it would fail on every correct page. Horizontal overflow has no legitimate whole-page form here.</p>
+</div>
+<div class="r-dec" data-key="exemption-representation" data-choice="declared-marker" data-by="reckon-ship (deduced from the silent-tolerance failure mode)" data-when="2026-09-04">
+    <p class="r-dec-q">How is a deliberately off-screen element handled?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="declared-marker">An explicit marker, reported as an exemption</button>
+      <button class="r-opt" data-value="heuristic-skip">Skipped by a heuristic on class or style</button>
+    </p>
+    <p class="r-dec-rat">A heuristic exemption grows until it covers the defect it was meant to permit around, and nobody can tell which elements it swallowed. A declared marker appearing in the verdict makes every exemption a readable choice.</p>
+</div>
+<div class="r-dec" data-key="authoring-order" data-choice="guard-before-fixes" data-by="reckon-ship (deduced from the measurement-integrity rule)" data-when="2026-09-04">
+    <p class="r-dec-q">Is the check written before or after the surfaces are adjusted?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="guard-before-fixes">Before, and its first verdict is recorded whatever it says</button>
+      <button class="r-opt" data-value="after-fixes-so-it-lands-green">After, so it lands green</button>
+    </p>
+    <p class="r-dec-rat">A guard authored to pass measures the adjustment rather than the surfaces, and its first verdict is the only unbiased inventory anyone will get. Recording it whatever it says is also what makes a low count a finding instead of an assumption.</p>
+</div>
+</section>
+
+<section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-vc-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship viewport-containment" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the guard, record its first verdict, then fix what it names</h4>
+    <div class="r-fu-body"><p>&#167;2 runs first and alone, and its verdict is recorded before any surface is touched. &#167;3 then fixes the remainder at each surface's own stylesheet, or records that there was none. The two nodes write disjoint paths, so only the ordering couples them.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship viewport-containment</pre>
+</article>
+</section>
+
+<section data-reckon="research" id="research" class="r-research-list">
+<h2><span class="sec">§</span> Research</h2>
+<div class="r-research" data-id="r1" data-type="evidence" data-url="spa-shell-scope-and-visibility">
+  <span class="r-research-title">The captures that found the defect: the shell's rendered evidence at 1374 and 1920, where the picker's clipped border and missing plan counts are visible in both.</span>
+</div>
+</section>
+</main>
+</body>
+</html>
