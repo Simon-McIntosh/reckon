@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="run-identity-query">
+  <meta name="plan-title" content="Ask For a Run by Name">
+  <meta name="plan-summary" content="One read that answers a run's id, its session with provenance, and whether it can be resumed — across the config home and every repository.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="7.0">
+  <meta name="plan-wall-clock-hours" content="4.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S15">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-north-star" content="state-that-tells-the-truth">
+  <meta name="plan-informs" content="work-survives-a-provider-outage">
+  <title>Ask For a Run by Name | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<header>
+  <p class="eyebrow">Run and session identity &middot; one read, three roots</p>
+  <h1>Ask For a Run by Name</h1>
+  <p class="lead">A run's identity is spread across three filesystem roots with three naming schemes, and nothing joins them. A coordinator who wants to resume a worker must know a microsecond-precision run id it cannot reconstruct, read a session field that reports <code>null</code> while the answer sits in the run's own stream, and reimplement a path-mangling rule to find the transcript that proves recovery is possible. This plan adds one read that answers all of it from the node id a human actually knows, and reports how it knows.</p>
+</header>
+
+<h2 id="s1">&#167;1 &mdash; Why this exists</h2>
+<p>Every failure below was measured on this workstation on 2026-09-03 and 2026-09-04, in one sprint's execution.</p>
+<table>
+  <thead><tr><th>What was asked</th><th>What it took</th><th>Cost</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>&ldquo;Resume the fleet-index run.&rdquo;</td>
+      <td>A run id is <code>r-&lt;YYYYMMDDThhmmss&gt;&lt;6 digits&gt;-&lt;node&gt;</code>. The microsecond field cannot be reconstructed, so the id must be copied from somewhere.</td>
+      <td>A coordinator typed <code>r-20260904T035049000000-fleet-index-live-counts</code> from memory of the dispatch order against a true id of <code>r-20260904T035040670936-&hellip;</code>. Refused cleanly, but the id had to be re-derived from a directory listing.</td>
+    </tr>
+    <tr>
+      <td>&ldquo;Can this refused run be resumed?&rdquo;</td>
+      <td>The live pointer's <code>session_id</code> reads <code>null</code> until an <code>observe</code> folds it in, while the id has been in the run's own stream since its first turn.</td>
+      <td>Five runs read as unresumable, were promoted as infrastructure failures, and had their worktrees released. The ids were recoverable the whole time; only the working directory was lost.</td>
+    </tr>
+    <tr>
+      <td>&ldquo;Is that blocked run mine or another session's?&rdquo;</td>
+      <td>The config home is workstation-global and the ledger is per-repository, so no single call spans both.</td>
+      <td>Answered four times across three sessions by parsing another session's pointer file directly &mdash; a boundary no coordinator should have to cross to read a label.</td>
+    </tr>
+    <tr>
+      <td>&ldquo;Does the transcript still exist?&rdquo;</td>
+      <td>Transcripts live at <code>~/.claude/projects/&lt;worktree path with separators replaced&gt;/&lt;session-id&gt;.jsonl</code>.</td>
+      <td>The mangling rule was reimplemented by hand to prove five transcripts survived. A rule held in one caller's head is a rule the next caller gets wrong.</td>
+    </tr>
+    <tr>
+      <td>&ldquo;What did that node do?&rdquo;</td>
+      <td>Promoted runs leave the live pointer entirely; their record is one of 539 entries in <code>docs/state/reckon/crew.json</code>.</td>
+      <td>Every such question was answered by a Python one-liner walking <code>data.runs</code>. The existing <code>ledger</code> and <code>records</code> views return the whole slice rather than the rows asked for.</td>
+    </tr>
+  </tbody>
+</table>
+<p>The four roots a run's identity occupies today, none of which references another:</p>
+<table>
+  <thead><tr><th>Root</th><th>Holds</th><th>Keyed by</th><th>In the repository?</th></tr></thead>
+  <tbody>
+    <tr><td><code>~/.config/reckon/crew/live/</code></td><td>the pointer of a run in flight</td><td>run id</td><td>no</td></tr>
+    <tr><td><code>~/.config/reckon/crew/runs/&lt;run-id&gt;/</code></td><td>stream, manifest, logs</td><td>run id</td><td>no</td></tr>
+    <tr><td><code>docs/state/&lt;project&gt;/crew.json</code></td><td>the promoted record</td><td>run id, inside an array</td><td>yes</td></tr>
+    <tr><td><code>~/.claude/projects/&lt;mangled worktree&gt;/</code></td><td>the resumable transcript</td><td>session id, under a derived path</td><td>no</td></tr>
+  </tbody>
+</table>
+<p>Recovery needs the first, second and fourth; an audit needs the third. The join is what nobody can perform, and it is the join that decides whether work survives an outage.</p>
+
+<h2 id="s2">&#167;2 &mdash; A runs view on the existing crew tool</h2>
+<p>The MCP surface is deliberately one <code>crew</code> tool over eight views rather than eight tools (<code>reckon/mcp.py</code>, <code>_crew</code>). This adds a ninth view rather than a tool, and it stays a read: it launches, resumes and promotes nothing, exactly as the read/action split requires.</p>
+<p><code>crew(project, view="runs", &hellip;)</code> takes filters and returns compact rows. <code>node</code> is the important one, because a node id is the handle a human holds while a run id is machine identity &mdash; a caller should never have to type a timestamp. <code>newest_per_node</code> collapses a node's attempt history to its latest run, which is what &ldquo;resume the fleet-index run&rdquo; means. The filters are <code>node</code>, <code>plan</code>, <code>section</code>, <code>session</code>, <code>member</code>, <code>classification</code>, <code>resumable</code> and <code>newest_per_node</code>; <code>source</code> selects <code>live</code>, <code>ledger</code> or <code>all</code>, defaulting to <code>all</code> so a promoted run and a live one answer from one namespace with a <code>source</code> field distinguishing them.</p>
+<p>Rows are compact by default because the existing views are too large to read: in one session <code>roadmap</code> returned 176,051 and 87,603 characters and <code>read_plan</code> at <code>view="raw"</code> returned 104,439, each exceeding the response ceiling and forcing a detour through a spill file, while <code>crew(view="live")</code> returns all twelve follower records on every call regardless of the question. The default row is fifteen short fields; <code>fields</code> opts into more and <code>limit</code> bounds the answer.</p>
+<table>
+  <thead><tr><th>Field</th><th>Answers</th></tr></thead>
+  <tbody>
+    <tr><td><code>run_id</code>, <code>node</code>, <code>plan</code>, <code>section</code>, <code>source</code></td><td>which run, and whether it is in flight or committed</td></tr>
+    <tr><td><code>classification</code>, <code>process_alive</code></td><td>blocked with a dead process is a different state from blocked with a live one, and the difference decides whether a resume needs a stop first</td></tr>
+    <tr><td><code>session_id</code>, <code>session_id_source</code></td><td>&#167;3</td></tr>
+    <tr><td><code>worktree</code>, <code>worktree_exists</code></td><td>whether a resume has a working directory to return to</td></tr>
+    <tr><td><code>transcript_path</code>, <code>transcript_exists</code></td><td>the derived fourth root, computed once here instead of in every caller</td></tr>
+    <tr><td><code>resumable</code>, <code>resumable_reason</code></td><td>&#167;3</td></tr>
+    <tr><td><code>member</code>, <code>agent</code>, <code>base_sha</code>, <code>manifest_present</code>, <code>commits</code></td><td>routing continuity, the revision a resumed session was oriented against, and what landed</td></tr>
+  </tbody>
+</table>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>runs-view-and-filters</code></td>
+      <td>A runs view on the crew tool returning compact joined rows for the filters above.</td>
+      <td><code>uv run pytest tests/test_crew_runs_view.py -q</code> passes. The test builds a temporary config home and a temporary project ledger, then asserts: a query by <code>node</code> returns that node's runs newest first; <code>newest_per_node</code> returns exactly one row per node; a promoted run and a live run both appear under <code>source: "all"</code> carrying <code>ledger</code> and <code>live</code> respectively, and each is excluded by the opposite <code>source</code> filter; <code>limit</code> bounds the row count; a default row carries exactly the fifteen documented fields and no follower records; an unknown node returns an empty rows list rather than an error.</td>
+      <td><code>reckon/crew/query.py</code>, <code>reckon/mcp.py</code>, <code>tests/test_crew_runs_view.py</code></td>
+      <td>guided &middot; sonnet</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s3">&#167;3 &mdash; A session has a provenance, and an absence is stated</h2>
+<p><strong>Call the resolver, never reimplement it.</strong> <code>resolve_session</code> (<code>reckon/crew/recover.py</code>) consults the live pointer, the run's own stream and the promoted ledger row in order and returns the source that answered. Where none has an id it returns a <em>stated absence</em> naming all three as consulted, because <em>not yet observed</em> and <em>genuinely absent</em> are different facts and a bare <code>null</code> expresses neither. The runs view calls it so that the query and <code>crew resume</code> can never disagree about the same run.</p>
+<p><strong>The ledger source is the one that gets forgotten.</strong> A promoted run has no pointer at all, and its session is still answerable from its committed row. Any implementation that reads only the pointer and the stream will report a promoted run as sessionless, which is a false negative on exactly the runs a later audit asks about.</p>
+<p><strong><code>resumable</code> is the join, and its negative form is the useful half.</strong> A run is resumable when a session id is present or recoverable, its worktree exists, and its process is not alive. Each condition lives in a different root, which is why no caller can compute it today. The reason string matters more than the boolean: <code>resumable: false, resumable_reason: "worktree released by promotion"</code> is the sentence that was needed at 19:41Z and had to be derived by hand from a release result that reported only <code>worktree_released: true</code>.</p>
+<p><strong>Gate for this plan, recorded when the measure runs: against a synthesised config home carrying one pointer with no session field, one promoted ledger row with no pointer, and one run whose only session evidence is its stream, the runs view answers all three with the same session ids and sources that <code>crew resume</code> resolves, and reports a stated absence for a fourth run that genuinely has none. Its evidence is the two named test files passing plus one recorded run of the view against this workstation's real config home, with the row count, the distribution of <code>session_id_source</code> values and one <code>resumable: false</code> reason written into the execution record.</strong></p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>session-provenance-and-resumability</code></td>
+      <td>Every row reports its session with the source that answered, and a computed resumability verdict carrying its reason.</td>
+      <td><code>uv run pytest tests/test_crew_run_identity.py -q</code> passes, and <code>uv run pytest tests/test_crew_recover.py -q</code> stays green. Cases: a pointer with no session field yields the id from the stream with <code>session_id_source: "stream"</code>; a promoted row with no pointer yields <code>"ledger"</code>; a pointer carrying one yields <code>"pointer"</code> without reading the stream; a run with none anywhere yields a stated absence naming all three sources and never a bare null; the view's session for a given run equals what <code>resolve_session</code> returns for it, asserted by calling both; <code>resumable</code> is false with reason naming the released worktree when the directory is absent, false with reason naming the live process when one is alive, and true when a session resolves against an existing tree with a dead process.</td>
+      <td><code>reckon/crew/query.py</code>, <code>tests/test_crew_run_identity.py</code></td>
+      <td>guided &middot; sonnet, after <code>runs-view-and-filters</code> (same module)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s4">&#167;4 &mdash; Workstation scope, because the roots have different spans</h2>
+<p>The config home is workstation-global while the ledger is per-repository, so &ldquo;what is running on this machine&rdquo; and &ldquo;what has this repository recorded&rdquo; are different questions against different roots. <code>crew recover</code> answers the first for one project only, and a fresh session inheriting a fleet it did not dispatch needs it for all of them. <code>scope</code> takes <code>project</code>, the default, or <code>workstation</code>, which enumerates live pointers across every project in the config home and labels each row with the project and repository that owns it &mdash; including projects whose repository is not the working directory. A row from another project is data, never something to act on: the view is read-only and the label is what lets a coordinator tell a peer's run from its own without reading the peer's files.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>workstation-scope</code></td>
+      <td>The runs view answers across every project in the config home, labelling each row with its owning project and repository.</td>
+      <td><code>uv run pytest tests/test_crew_runs_scope.py -q</code> passes. The test synthesises a config home holding pointers for three projects, two of whose repositories are not the working directory, and asserts: <code>scope: "project"</code> returns only the named project's rows; <code>scope: "workstation"</code> returns all of them, each carrying its <code>project</code> and <code>repo</code>; a pointer whose repository no longer exists is returned with the repository reported absent rather than omitted or raising; the ledger source under workstation scope reads each project's own committed file; and the real config home is never read when a temporary one is injected, asserted by pointing the environment at a temp path and checking the real directory's mtime is unchanged.</td>
+      <td><code>reckon/crew/query.py</code>, <code>reckon/mcp.py</code>, <code>tests/test_crew_runs_scope.py</code></td>
+      <td>guided &middot; sonnet, after <code>session-provenance-and-resumability</code> (same module)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s5">&#167;5 &mdash; Out of scope</h2>
+<p>No action verbs: this view resumes, promotes, discards and stops nothing, because reads belong to MCP and actions to the CLI. No change to the run-id format &mdash; the timestamp is fine as machine identity once nobody has to type it. No new store: the four roots stay where they are and this joins them, because a fifth copy of a run's identity would be one more thing to disagree. The promotion guard that consumes <code>session_id_source</code> and peak input belongs to <code>work-survives-a-provider-outage</code> and is not built here; this plan informs it and will be wired to it once both land, rather than each growing its own join.</p>
+
+<section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="tool-shape" data-choice="ninth-view-on-crew" data-by="reckon-ship (deduced from the tool's own docstring)" data-when="2026-09-04">
+    <p class="r-dec-q">Is this a new MCP tool or another view on <code>crew</code>?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="ninth-view-on-crew">A ninth view on the existing crew tool</button>
+      <button class="r-opt" data-value="new-runs-tool">A new <code>runs</code> tool</button>
+    </p>
+    <p class="r-dec-rat">The surface was deliberately collapsed to one crew tool over eight views rather than eight tools, and its docstring says so. A second tool covering the same subject splits the surface and invites the two to answer differently, which is the defect this plan exists to remove.</p>
+</div>
+<div class="r-dec" data-key="session-resolution" data-choice="call-resolve-session" data-by="reckon-ship (coordinated with the plan that authored it)" data-when="2026-09-04">
+    <p class="r-dec-q">How does a row resolve its session id?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="call-resolve-session">Call <code>resolve_session</code>, the shared resolver</button>
+      <button class="r-opt" data-value="read-pointer-only">Read the pointer field</button>
+      <button class="r-opt" data-value="reimplement-the-walk">Reimplement the three-source walk locally</button>
+    </p>
+    <p class="r-dec-rat">Reading the pointer alone is the measured defect: it reported null for five runs whose ids were in their streams. Reimplementing the walk creates a second authority that can drift from the resume path, and the whole value of the field is that a query and a resume agree about the same run.</p>
+</div>
+<div class="r-dec" data-key="absent-session-representation" data-choice="stated-absence-naming-sources" data-by="reckon-ship (deduced from the incident)" data-when="2026-09-04">
+    <p class="r-dec-q">How is a run with no discoverable session represented?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="stated-absence-naming-sources">A stated absence naming the sources consulted</button>
+      <button class="r-opt" data-value="bare-null">A null session id</button>
+    </p>
+    <p class="r-dec-rat">A bare null cannot distinguish <em>not yet observed</em> from <em>genuinely absent</em>, and a coordinator read one as a verdict on five runs and promoted them. The distinction is the whole reason the field is worth reporting.</p>
+</div>
+<div class="r-dec" data-key="default-row-size" data-choice="compact-with-opt-in-fields" data-by="reckon-ship (deduced from measured response sizes)" data-when="2026-09-04">
+    <p class="r-dec-q">What does a row return by default?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="compact-with-opt-in-fields">Fifteen short fields, with <code>fields</code> opting into more</button>
+      <button class="r-opt" data-value="full-record">The full record, as <code>records</code> does</button>
+    </p>
+    <p class="r-dec-rat">Three existing reads exceeded the response ceiling in one session and had to be answered through a spill file. A query whose default answer cannot be read is a query nobody uses, and the callers that need everything already have <code>records</code>.</p>
+</div>
+</section>
+
+<section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-riq-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship run-identity-query" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land the view, then its provenance, then its span</h4>
+    <div class="r-fu-body"><p>All three nodes write <code>reckon/crew/query.py</code>, so they are one serial lane on one roster member in section order: the view and its filters first, then session provenance and the resumability verdict, then workstation scope. Each lands with its named test and the third carries the recorded run against this workstation's real config home for the gate.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship run-identity-query</pre>
+</article>
+</section>
+
+<section data-reckon="research" id="research" class="r-research-list">
+<h2><span class="sec">§</span> Research</h2>
+<div class="r-research" data-id="r1" data-type="incident" data-url="work-survives-a-provider-outage">
+  <span class="r-research-title">The outage that measured every failure in &#167;1: five runs promoted as unresumable whose session ids were in their streams, and the worktree release that made a recoverable outage look like a loss.</span>
+</div>
+</section>
+</main>
+</body>
+</html>
