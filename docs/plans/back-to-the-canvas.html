@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="back-to-the-canvas">
   <meta name="plan-title" content="Read It Against The Canvas">
-  <meta name="plan-summary" content="Six surfaces drifted from the handoff because every node read the plan's prose and nothing read the canvas. Correct them, and make the canvas a measure.">
+  <meta name="plan-summary" content="Six surfaces drifted from the handoff because every node read the plan&#x27;s prose and nothing read the canvas. Correct them, and make the canvas a measure.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="18.0">
@@ -26,6 +26,8 @@
   <title>Read It Against The Canvas | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-04">
+<meta name="plan-version" content="2">
 </head>
 <body>
 <main class="plan-doc">
@@ -40,7 +42,7 @@
 <table>
   <thead><tr><th>Report</th><th>Verdict</th></tr></thead>
   <tbody>
-    <tr><td>The Graph tab says no plan in this project depends on another, for a project whose sprint diagram visibly draws edges</td><td><strong>Already fixed.</strong> The freshly restarted server returns 23 endpoint rows for that project, whose 42 plans carry <code>plan-depends-on</code>. The reading came through a server that predated the projection carrying those rows.</td></tr>
+    <tr><td>The Graph tab says no plan in this project depends on another, for a project whose sprint diagram visibly draws edges</td><td><strong>Real, and initially misdiagnosed here as already fixed.</strong> The restarted server does return 23 endpoint rows for that project, and the coordinator read that as the surface being correct. It was not: <code>window.STATE</code> was assembled from eighteen named fields with neither <code>endpoints</code> nor <code>ready_set</code> among them, so the consumer read <code>undefined</code> and rendered the empty state over a payload that carried the rows. The path has <em>three</em> hops rather than two &mdash; compute, project, load &mdash; and no node's fence had included the third. Fixed by carrying both fields through the loader; the misdiagnosis is recorded because checking the producer and reporting on the consumer is the same error &#167;8 exists to prevent.</td></tr>
     <tr><td>Plan DAGs draw research and evidence alongside prerequisites</td><td><strong>Already fixed.</strong> The cone became <code>depends_on</code>-only and opt-in; the reading predates that merge by about an hour.</td></tr>
     <tr><td>Research, evidence, figure and graph views do not scroll</td><td>Real. &#167;2.</td></tr>
     <tr><td>Prev and next do nothing on plans, research, evidence and figures; the readout reads <code>0 / 0</code></td><td>Real. &#167;3.</td></tr>
@@ -169,54 +171,57 @@
 <div class="r-dec" data-key="constant-reader-measure" data-choice="constant-at-the-larger" data-by="reckon-ship (lead instruction, 2026-09-04)" data-when="2026-09-04">
     <p class="r-dec-q">Does the reader measure grow when full screen is entered, as the canvas has it?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="constant-at-the-larger">No &mdash; constant at the larger of the two values</button>
+      <button class="r-opt chosen" data-value="constant-at-the-larger">No — constant at the larger of the two values</button>
       <button class="r-opt" data-value="canvas-760-to-820">Yes, 760px growing to 820px as the canvas draws it</button>
-    </p>
-    <p class="r-dec-rat">The lead's direction, and a deliberate deviation from the canvas recorded as one. Reflowing the text at the moment a reading mode is entered is the most disorienting thing that mode can do, and the canvas's stated reason for the growth — that full screen buys width — is served by using the wider measure throughout.</p>
-</div>
-<div class="r-dec" data-key="drift-remedy" data-choice="extract-canvas-values-into-a-check" data-by="reckon-ship (deduced from the drift's mechanism)" data-when="2026-09-04">
+      </p>
+    <p class="r-dec-rat">The lead&#x27;s direction, and a deliberate deviation from the canvas recorded as one. Reflowing the text at the moment a reading mode is entered is the most disorienting thing that mode can do, and the canvas&#x27;s stated reason for the growth — that full screen buys width — is served by using the wider measure throughout.</p>
+    </div>
+<div class="r-dec" data-key="drift-remedy" data-choice="extract-canvas-values-into-a-check" data-by="reckon-ship (deduced from the drift&#x27;s mechanism)" data-when="2026-09-04">
     <p class="r-dec-q">How is fidelity to the handoff held?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="extract-canvas-values-into-a-check">A check that reads the canvas's own values and compares them</button>
-      <button class="r-opt" data-value="restate-values-in-each-plan">Restate the canvas's values in each plan's prose</button>
+      <button class="r-opt chosen" data-value="extract-canvas-values-into-a-check">A check that reads the canvas&#x27;s own values and compares them</button>
+      <button class="r-opt" data-value="restate-values-in-each-plan">Restate the canvas&#x27;s values in each plan&#x27;s prose</button>
       <button class="r-opt" data-value="review-by-reading">A reviewer compares the surface to the canvas by eye</button>
-    </p>
+      </p>
     <p class="r-dec-rat">Restating in prose is what produced the drift: six nodes each measured against a sentence about the canvas rather than the canvas. Review by eye is what caught it, four surfaces late, and depends on someone looking. The canvas carries its values in a machine-readable form, so a check can compare them and fail.</p>
-</div>
+    </div>
 <div class="r-dec" data-key="figure-caption-source" data-choice="capture-index-description-or-nothing" data-by="reckon-ship (deduced from what the indexes already carry)" data-when="2026-09-04">
-    <p class="r-dec-q">Where does a figure's caption come from?</p>
+    <p class="r-dec-q">Where does a figure&#x27;s caption come from?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="capture-index-description-or-nothing">The sibling capture index's description, and nothing when absent</button>
+      <button class="r-opt chosen" data-value="capture-index-description-or-nothing">The sibling capture index&#x27;s description, and nothing when absent</button>
       <button class="r-opt" data-value="filename-fallback">The filename, prettified, when no description exists</button>
-    </p>
+      </p>
     <p class="r-dec-rat">The capture indexes this sprint produced already record a description beside each recorded width, so the text exists. A filename dressed as a caption is worse than an absent one: it looks like a description and carries no information, which is the same defect as a flat line standing in for an empty series.</p>
-</div>
+    </div>
 <div class="r-dec" data-key="queue-supersedes-readout-node" data-choice="supersede" data-by="reckon-ship (deduced from the stronger symptom)" data-when="2026-09-04">
     <p class="r-dec-q">Does the published-queue work supersede the readout off-by-one node, or sit beside it?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="supersede">Supersede it</button>
+      <button class="r-opt chosen" data-value="supersede">Supersede it</button>
       <button class="r-opt" data-value="both">Keep both nodes</button>
-    </p>
+      </p>
     <p class="r-dec-rat">A readout of zero of zero means the list never reached the reader; the off-by-one was the same defect seen through a fixture that did publish one. Two nodes against one cause would have one of them pass by accident.</p>
-</div>
+    </div>
 </section>
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-btc-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship back-to-the-canvas" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Scroll first, then the queue, then fidelity last</h4>
-    <div class="r-fu-body"><p>&#167;2 opens the chain because an unreadable view cannot be assessed for anything else. &#167;3 to &#167;5 run in sequence on the reader shell; &#167;6 and &#167;7 are file-disjoint from that chain and run alongside it. &#167;8 lands last, because it compares what the other six produce and is the node that stops the drift recurring.</p></div>
+    <div class="r-fu-body"><p>§2 opens the chain because an unreadable view cannot be assessed for anything else. §3 to §5 run in sequence on the reader shell; §6 and §7 are file-disjoint from that chain and run alongside it. §8 lands last, because it compares what the other six produce and is the node that stops the drift recurring.</p></div>
     <pre class="r-fu-prompt">/reckon-ship back-to-the-canvas</pre>
-</article>
+    </article>
 </section>
 
 <section data-reckon="research" id="research" class="r-research-list">
 <h2><span class="sec">§</span> Research</h2>
-<div class="r-research" data-id="r1" data-type="design" data-url="design/reckon-spa-handoff.dc.html">
-  <span class="r-research-title">The canvas, which is the authority for every correction here and the source the fidelity check reads its values from.</span>
-</div>
-<div class="r-research" data-id="r2" data-type="design" data-url="design/reckon-spa-handoff.md">
-  <span class="r-research-title">The designer's triage, whose paraphrases into plan prose are the mechanism by which these six surfaces drifted.</span>
+<div class="r-research" data-id="r1" data-type="design" data-source="" data-added-by="" data-when="" data-url="design/reckon-spa-handoff.dc.html">
+    <span class="r-research-title"><a href="design/reckon-spa-handoff.dc.html">The canvas, which is the authority for every correction here and the source the fidelity check reads its values from.</a></span></div>
+<div class="r-research" data-id="r2" data-type="design" data-source="" data-added-by="" data-when="" data-url="design/reckon-spa-handoff.md">
+    <span class="r-research-title"><a href="design/reckon-spa-handoff.md">The designer&#x27;s triage, whose paraphrases into plan prose are the mechanism by which these six surfaces drifted.</a></span></div>
+</section>
+<section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260904T120255587186-every-view-scrolls" data-who="s16-scroll" data-when="2026-09-04T12:14:27Z">
+    <div class="r-comment-body"><p>every routable view and reader kind now scrolls inside the viewport: graph.css gained the min-height rule it lacked entirely, the reader gained it for research, evidence and figures, and the test enumerates views from the route module's published list rather than a hardcoded set so a view added later is covered without editing it. This is the rule the shell plan stated and applied to Crew alone, which is why it recurred on four surfaces</p></div>
 </div>
 </section>
 </main>

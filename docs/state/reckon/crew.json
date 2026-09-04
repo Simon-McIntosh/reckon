@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T14:19:02",
+  "updated": "2026-09-04T14:23:28",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -694,6 +694,15 @@
         "created": "2026-09-02"
       },
       {
+        "id": "s15-attrib",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-04"
+      },
+      {
         "id": "s15-burn",
         "harness": "codex",
         "role": "implement",
@@ -702,6 +711,15 @@
         "sessions": {
           "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06bf7-7f00-7f93-acf6-fb0873235fde"
         },
+        "created": "2026-09-04"
+      },
+      {
+        "id": "s15-classifier",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
         "created": "2026-09-04"
       },
       {
@@ -724,6 +742,15 @@
         "sessions": {
           "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06c38-dfba-7f12-b3ed-b7bdac250577"
         },
+        "created": "2026-09-04"
+      },
+      {
+        "id": "s15-floor",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
         "created": "2026-09-04"
       },
       {
@@ -824,6 +851,15 @@
         "created": "2026-09-04"
       },
       {
+        "id": "s15-scope",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-04"
+      },
+      {
         "id": "s15-scout",
         "harness": "claude",
         "role": "investigate",
@@ -854,6 +890,15 @@
         "sessions": {
           "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06bf7-0453-78d3-bf82-6cd9145f63dc"
         },
+        "created": "2026-09-04"
+      },
+      {
+        "id": "s15-specfix",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
         "created": "2026-09-04"
       },
       {
@@ -57318,6 +57363,413 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T120228086544-the-loader-carries-what-the-server-sends",
+        "plan": "derived-state-parity",
+        "section": "\u00a73",
+        "node": "the-loader-carries-what-the-server-sends",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1157,
+                "cached_input_tokens": 920041,
+                "input_tokens": 921200,
+                "output_tokens": 725,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 921925,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "798e59ac-3d9b-497a-824a-44b7647c524e",
+            "session_id": "ship-s16"
+          },
+          "done_when": "uv run pytest tests/test_spa_state_boundary.py tests/test_spa_graph_authority.py tests/test_spa_sprint_surface.py -q passes: window.STATE carries endpoints and ready_set from the discovery payload, asserted by loading a fixture payload through the loader and reading both off the assembled state; the Graph tab renders its endpoint index rather than the no-dependency empty state for a project whose discovery payload carries endpoint rows, and still renders the empty state when the payload carries none; and a sprint row renders its derived state and drift flag from ready_set rather than nothing. A negative case asserts the empty state appears only when the payload itself has no endpoints",
+          "estimated_hours": 1.5,
+          "goal": "The state loader carries the endpoint rows and the ready set into window.STATE so the surfaces that read them render",
+          "id": "the-loader-carries-what-the-server-sends",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T120228086544-the-loader-carries-what-the-server-sends/manifest.md",
+          "plan": "derived-state-parity",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "exact",
+          "time_budget": "35m",
+          "write_paths": [
+            "docs/ui/state-loader.js",
+            "tests/test_spa_state_boundary.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s16-loader",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T12:02:35Z",
+        "completed_at": "2026-09-04T12:09:31Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 416,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 416,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "59d1d172a763b72c803d220bf1d14fceec1a5fe6",
+        "commits": [
+          "85844ecc946c16769f352f1360cededafb4f5289"
+        ],
+        "changed_lines": {
+          "added": 59,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_state_boundary.py tests/test_spa_graph_authority.py tests/test_spa_sprint_surface.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T120228086544-the-loader-carries-what-the-server-sends/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T120228086544-the-loader-carries-what-the-server-sends/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06c4c-9f49-7bc0-8da3-e163f456b495",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3217280,
+            "cached_input_tokens_cumulative": 3217280,
+            "input_tokens": 3320772,
+            "input_tokens_cumulative": 3320772,
+            "output_tokens": 16188,
+            "output_tokens_cumulative": 16188,
+            "reasoning_output_tokens": 6057,
+            "reasoning_output_tokens_cumulative": 6057
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 22245,
+          "peak_input_tokens": 6538052
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16/the-loader-carries-what-the-server-sends",
+          "session_id": "01a06c4c-9f49-7bc0-8da3-e163f456b495",
+          "session_source": "pointer",
+          "retained_at": "2026-09-04T12:09:31Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_spa_state_boundary.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260904T120255587186-every-view-scrolls",
+        "plan": "back-to-the-canvas",
+        "section": "\u00a72",
+        "node": "every-view-scrolls",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 997,
+                "cached_input_tokens": 922072,
+                "input_tokens": 923071,
+                "output_tokens": 1029,
+                "reasoning_output_tokens": 208,
+                "total_tokens": 924100,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "798e59ac-3d9b-497a-824a-44b7647c524e",
+            "session_id": "ship-s16"
+          },
+          "done_when": "uv run pytest tests/test_spa_vertical_scroll.py -q passes through the file-URL harness: for each routable view and each of the four reader kinds, at 1374x900 against a fixture whose content exceeds the viewport, the view's own element reports scrollHeight greater than clientHeight, document.documentElement.scrollHeight stays 900, and every flex ancestor between the app root and that element reports computed min-height 0px. The test enumerates views from the route module's published list rather than a hardcoded set, and a deliberately un-fixed view fails it",
+          "estimated_hours": 2.5,
+          "goal": "Every routable view and reader kind scrolls within the viewport instead of growing the page",
+          "id": "every-view-scrolls",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T120255587186-every-view-scrolls/manifest.md",
+          "plan": "back-to-the-canvas",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "docs/ui/graph.css",
+            "docs/ui/reader.css",
+            "docs/ui/styles.css",
+            "tests/test_spa_vertical_scroll.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-scroll",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T12:03:02Z",
+        "completed_at": "2026-09-04T12:14:27Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 685,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 685,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "59d1d172a763b72c803d220bf1d14fceec1a5fe6",
+        "commits": [
+          "8a87d077909b780bbf346287d2033e51ba1d6228"
+        ],
+        "changed_lines": {
+          "added": 219,
+          "removed": 1,
+          "files": 4
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_vertical_scroll.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T120255587186-every-view-scrolls/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T120255587186-every-view-scrolls/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06c4d-09ce-7bf1-b26c-b152fef83e23",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 8096896,
+            "cached_input_tokens_cumulative": 8096896,
+            "input_tokens": 8283874,
+            "input_tokens_cumulative": 8283874,
+            "output_tokens": 28380,
+            "output_tokens_cumulative": 28380,
+            "reasoning_output_tokens": 12269,
+            "reasoning_output_tokens_cumulative": 12269
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 40649,
+          "peak_input_tokens": 16380770
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16/every-view-scrolls",
+          "session_id": "01a06c4d-09ce-7bf1-b26c-b152fef83e23",
+          "session_source": "pointer",
+          "retained_at": "2026-09-04T12:14:27Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_spa_vertical_scroll.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260904T120015870760-cot-ledger-row-reaches-its-own-checkout",
+        "plan": "crew-observability-truth",
+        "section": "\u00a74",
+        "node": "cot-ledger-row-reaches-its-own-checkout",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1790,
+                "cached_input_tokens": 399095,
+                "input_tokens": 400887,
+                "output_tokens": 993,
+                "reasoning_output_tokens": 316,
+                "total_tokens": 401880,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "uv run --no-sync pytest tests/test_ledger.py -q passes with no failure count above the base revision, and new cases assert: promoting a run whose project is a registered mount writes the row to that project's own checkout even when the promoting process stands in a different repository, a project with no resolvable checkout is refused naming both paths rather than silently defaulting to the current directory, and a run promoted from within its own project's checkout is unaffected; the misrouted row r-20260903T151345329064-n-a-spend-hold-expires under docs/state/imas-codex/ in this working tree is used as the regression fixture rather than a synthesised one, and the test asserts it would now be written to the imas-codex checkout",
+          "estimated_hours": 2.0,
+          "goal": "Make a promoted row land in the ledger of the repository that owns its project rather than in the enclosing one",
+          "id": "cot-ledger-row-reaches-its-own-checkout",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T120015870760-cot-ledger-row-reaches-its-own-checkout/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/ledger.py",
+            "tests/test_ledger.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s15-ledgerrow",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T12:00:23Z",
+        "completed_at": "2026-09-04T12:21:46Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1283,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1283,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "0fde98584b006a1276e6d841ffa52d865f17dc4a",
+        "commits": [
+          "6303cf83b3d70d6f7e2836f8a532b0eba6e4bb27"
+        ],
+        "changed_lines": {
+          "added": 201,
+          "removed": 3,
+          "files": 2
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "uv run --no-sync pytest tests/test_ledger.py -q",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T120015870760-cot-ledger-row-reaches-its-own-checkout/after-test-ledger.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T120015870760-cot-ledger-row-reaches-its-own-checkout/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06c4a-9cec-70a0-a079-15b025223c7f",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 26226944,
+            "cached_input_tokens_cumulative": 26226944,
+            "input_tokens": 26475371,
+            "input_tokens_cumulative": 26475371,
+            "output_tokens": 46079,
+            "output_tokens_cumulative": 46079,
+            "reasoning_output_tokens": 16386,
+            "reasoning_output_tokens_cumulative": 16386
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 62465,
+          "peak_input_tokens": 52702315
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/cot-ledger-row-reaches-its-own-checkout",
+          "session_id": "01a06c4a-9cec-70a0-a079-15b025223c7f",
+          "session_source": "pointer",
+          "retained_at": "2026-09-04T12:21:46Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_ledger.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -57490,6 +57942,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 947
+    "_version": 955
   }
 }
