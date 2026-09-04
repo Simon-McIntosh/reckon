@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="version-derives-from-version-tags">
+  <meta name="plan-title" content="Only A Version Tag Sets The Version">
+  <meta name="plan-summary" content="A rescue tag whose name ends in a commit sha satisfies the default tag match, so any such tag breaks every wheel build in the repository.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="mid">
+  <meta name="plan-effort-hours" content="2.0">
+  <meta name="plan-wall-clock-hours" content="1.5">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="low">
+  <meta name="plan-sprint" content="S16">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling">
+  <meta name="plan-north-star" content="state-that-tells-the-truth">
+  <title>Only A Version Tag Sets The Version | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<header>
+  <p class="eyebrow">Build identity &middot; a tag that was never meant to name a release</p>
+  <h1>Only A Version Tag Sets The Version</h1>
+  <p class="lead">Five wheel-build tests fail in this repository, and have been failing at every revision measured today. The cause is not the build and not the tests: one recovery tag, created to preserve work during an incident, satisfies the pattern the version machinery uses to find release tags, because its name ends in the commit sha it rescued and that sha contains digits. Any future rescue tag will do the same. This plan constrains what may name a version so the class cannot recur, rather than deleting the tag that happens to be here now.</p>
+</header>
+
+<h2 id="s1">&#167;1 &mdash; Why this exists</h2>
+<p>Measured 2026-09-04 by a merged-head verification that ran the full suite at two revisions. Five of its failing ids are wheel-build failures present identically at base <code>85dc0f4</code> and at head <code>19c24fc1</code>, so they belong to neither the wave under test nor any work in it.</p>
+<p>The repository carries four tags. Three name releases &mdash; <code>v0.2.0</code>, <code>v0.2.0rc24</code>, <code>v0.2.0rc25</code>. The fourth is <code>rescue/spec-level-names-a-backend-957c042</code>, created to hold work during an earlier incident. Version is derived dynamically (<code>hatch-vcs</code> over <code>setuptools_scm</code>, <code>[tool.hatch.version]</code> with <code>source = "vcs"</code>), and the default describe pattern admits any tag containing a digit. The rescue tag's name ends in the short sha it rescued, <code>957c042</code>, which contains four. So it is offered to the version parser, which cannot read a version out of it, and the build fails.</p>
+<p><strong>Two facts decide the remedy.</strong> The tag is <em>on the remote</em>, so deleting it rewrites state every clone and CI checkout shares. And the commit it points at is already an ancestor of <code>main</code>, so it protects nothing that is not already safe &mdash; deleting it would lose no work but would also fix nothing durable, because the next incident that mints a rescue tag reproduces the failure exactly. The recovery convention is sound and worth keeping; what is wrong is that a name chosen to describe a rescue is being read as a release identity.</p>
+
+<h2 id="s2">&#167;2 &mdash; Constrain what may name a version</h2>
+<p>Version derivation reads only tags shaped like this project's releases. The three existing release tags must continue to resolve exactly as they do today, including the release-candidate forms, and any tag outside that shape must be invisible to the version machinery rather than an error from it. The mechanism is a matching constraint in <code>[tool.hatch.version.raw-options]</code> &mdash; a describe pattern, a tag regex, or both, whichever the installed resolver honours; the node establishes which by measuring rather than by assuming, since the two options are honoured at different layers.</p>
+<p>The measure is the part that matters: the malformed tag must be <strong>present</strong> in the repository while the build succeeds. A build that passes only once the tag is gone has tested the deletion, not the fix.</p>
+<p><strong>Gate for this plan, recorded when the measure runs: with <code>rescue/spec-level-names-a-backend-957c042</code> still present, the wheel builds and reports a version derived from the newest release tag, and the five previously failing wheel-build ids pass. Its evidence is the recorded version string before and after, the five ids named individually, and one build run against a synthesised tag of the same malformed shape to show the fix covers the class and not one string.</strong></p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>version-tag-matching</code></td>
+      <td>Only release-shaped tags are considered when deriving the version, so a rescue tag cannot break the build.</td>
+      <td><code>uv run pytest tests/test_build.py -q</code> passes with the malformed tag still present in the repository, and the five wheel-build ids the merged-head verification named are each reported passing. The derived version is recorded before and after and resolves from the newest release tag. A test asserts the class: with a second tag of the same shape created in a temporary clone, the build still derives a version, and with every release tag absent the failure is a readable one about a missing release tag rather than a parse error on a rescue name. <code>uv run pytest tests/test_pypi_release.py -q</code> stays green if that module exists.</td>
+      <td><code>pyproject.toml</code>, <code>tests/test_build.py</code></td>
+      <td>guided &middot; sonnet</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s3">&#167;3 &mdash; Out of scope</h2>
+<p>Deleting or renaming the rescue tag, which is repository-owner authority over shared remote state and which this plan deliberately makes unnecessary; if the lead removes it later for tidiness, the fix still holds and the class stays covered. The rescue-tag convention itself, which did its job and is not the defect. Release publishing, owned by a shipped plan. And the version scheme: the three existing release tags keep resolving exactly as they do now, because changing what a version means is a different decision from choosing which tags may express one.</p>
+
+<section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="remedy-shape" data-choice="constrain-the-pattern" data-by="reckon-ship (lead authorised fixing the wheel-build failures, 2026-09-04)" data-when="2026-09-04">
+    <p class="r-dec-q">Constrain the tag pattern, or delete the offending tag?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="constrain-the-pattern">Constrain which tags may name a version</button>
+      <button class="r-opt" data-value="delete-the-tag">Delete the rescue tag</button>
+      <button class="r-opt" data-value="rename-the-convention">Rename the rescue convention to avoid digits</button>
+    </p>
+    <p class="r-dec-rat">Deleting fixes today and nothing after it: the next rescue tag reproduces the failure, and the tag is on the remote so the deletion mutates state every clone shares. Renaming the convention makes a recovery mechanism carry a constraint belonging to the build. Constraining the pattern is a declared change in one project file that reaches every checkout and CI, and it covers the class.</p>
+</div>
+<div class="r-dec" data-key="measure-with-tag-present" data-choice="tag-present-during-the-measure" data-by="reckon-ship (deduced from what a passing build would prove)" data-when="2026-09-04">
+    <p class="r-dec-q">Is the malformed tag present while the fix is measured?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="tag-present-during-the-measure">Present — the build must succeed alongside it</button>
+      <button class="r-opt" data-value="remove-then-measure">Removed first, then measured</button>
+    </p>
+    <p class="r-dec-rat">A build that passes only once the tag is gone has measured the deletion rather than the fix, and would pass identically with no fix at all. The tag's presence is the condition under which the assertion means anything.</p>
+</div>
+</section>
+
+<section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-vdvt-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship version-derives-from-version-tags" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Constrain the version tag pattern with the rescue tag left in place</h4>
+    <div class="r-fu-body"><p>One node. The five wheel-build ids the merged-head verification named are the before-and-after list, and the malformed tag stays in the repository throughout so the passing build measures the fix rather than its absence.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship version-derives-from-version-tags</pre>
+</article>
+</section>
+</main>
+</body>
+</html>
