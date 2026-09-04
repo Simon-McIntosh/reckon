@@ -424,10 +424,10 @@ def classify_pointer(
     manifest_commits = list(manifest_data.get("commits") or [])
     manifest_blockers = list(manifest_data.get("blockers") or [])
     needs_help = manifest_data.get("needs_help")
-    # Observation writes this fact onto the pointer, and dispatch reads that
-    # same field when deciding whether the run still owns its process. Re-probing
-    # here would create a second liveness verdict that can disagree with the
-    # pointer whose scope refusal the coordinator just read.
+    # Fleet reads refresh this fact once while loading the pointer, so every
+    # consumer of the same record shares one liveness verdict. Direct callers
+    # may also classify an observation they already hold without silently
+    # replacing it with a second process-table reading.
     alive = record.get("process_alive")
     log = Path(str(record.get("log_path") or ""))
     age = None
@@ -673,6 +673,11 @@ def classify_pointer(
         # field, so returning the raw report here would call the run terminal
         # while the classification and ticker correctly call it live.
         "manifest_status": None if deferred_outcome else manifest_status or None,
+        # Keep the worker's raw spelling alongside the effective status. A
+        # live process defers terminal-looking placeholders, while the one-shot
+        # watcher still needs to recognise a fresh completion written by the
+        # resumed attempt it is waiting for.
+        "manifest_reported_status": manifest_status or None,
         "manifest_derived": manifest_derived,
         "manifest_commits": manifest_commits,
         # The refusal text when a present manifest could not be read, carried on

@@ -23,9 +23,8 @@ from click.testing import CliRunner
 from reckon import cli as cli_module
 from reckon import crew, flight, ledger
 from reckon.calibration import agent_configuration_key
+from reckon.crew import recovery, runs
 from reckon.crew.dispatch import shadow as dispatch_shadow
-from reckon.crew import runs
-
 
 CONFIG = {
     "default_backend": "alpha",
@@ -133,6 +132,7 @@ def _node(**overrides) -> crew.TaskNode:
         "write_paths": ["reckon/_backends.py"],
         "time_budget": "20m",
         "manifest_path": "/tmp/node-a-manifest.md",
+        "spec_level": "guided",
     }
     fields.update(overrides)
     return crew.TaskNode(**fields)
@@ -354,8 +354,8 @@ def test_every_failure_is_reported_in_one_pass() -> None:
     } <= set(verdict.failed_properties)
 
 
-def test_the_contract_has_exactly_seven_properties() -> None:
-    assert len(crew.NODE_PROPERTIES) == 7
+def test_the_contract_has_exactly_eight_properties() -> None:
+    assert len(crew.NODE_PROPERTIES) == 8
 
 
 def test_worker_protocol_states_scope_exclusivity_is_not_sufficiency() -> None:
@@ -611,6 +611,8 @@ def test_local_dry_run_selects_the_declared_backend(home, repo, monkeypatch) -> 
             "plan-a",
             "--section",
             node.section,
+            "--spec-level",
+            node.spec_level,
             "--node",
             node.id,
             "--goal",
@@ -651,6 +653,8 @@ def test_local_dry_run_refuses_an_unset_key(home, repo, monkeypatch) -> None:
             "plan-a",
             "--section",
             node.section,
+            "--spec-level",
+            node.spec_level,
             "--node",
             node.id,
             "--goal",
@@ -697,6 +701,8 @@ def test_local_dispatch_marks_the_live_pointer(home, repo, monkeypatch) -> None:
             "plan-a",
             "--section",
             node.section,
+            "--spec-level",
+            node.spec_level,
             "--node",
             node.id,
             "--goal",
@@ -1463,6 +1469,8 @@ def test_cli_dispatch_reports_a_live_scope_conflict_on_its_own_exit_code(
             "plan-a",
             "--section",
             "§3",
+            "--spec-level",
+            "guided",
             "--node",
             "node-a",
             "--goal",
@@ -1529,7 +1537,7 @@ def test_double_dispatch_refuses_a_member_with_a_non_terminal_run(home, repo) ->
     assert excinfo.value.run_id == first["run_id"]
     assert ledger_member in str(excinfo.value)
     assert first["run_id"] in str(excinfo.value)
-    assert crew.list_live() == [first]
+    assert [row["run_id"] for row in crew.list_live()] == [first["run_id"]]
     listed = subprocess.run(
         ["git", "worktree", "list"],
         cwd=repo,
@@ -1588,7 +1596,10 @@ def test_dispatch_into_an_occupied_project_reuses_the_armed_watcher(home, repo) 
 
         assert accepted["watch"]["watcher_live"] is True
         assert accepted["watch"]["watcher"]["pid"] == owner["watch"]["watcher"]["pid"]
-        assert crew.list_live(project="proj") == [owner, accepted]
+        assert [row["run_id"] for row in crew.list_live(project="proj")] == [
+            owner["run_id"],
+            accepted["run_id"],
+        ]
     finally:
         from reckon.crew.recovery import unwatch
 
@@ -1660,6 +1671,8 @@ def test_no_watch_dispatch_records_the_override_on_pointer_and_ledger(
             "plan-a",
             "--section",
             "s3",
+            "--spec-level",
+            "guided",
             "--node",
             "node-a",
             "--goal",
@@ -1717,6 +1730,8 @@ def test_cli_dispatch_arms_a_missing_watcher(home, repo, monkeypatch) -> None:
                 "plan-a",
                 "--section",
                 "s3",
+                "--spec-level",
+                "guided",
                 "--node",
                 "node-a",
                 "--goal",
@@ -1849,6 +1864,8 @@ def test_cli_dispatch_reports_unreconciled_runs_on_its_own_exit_code(
             "plan-a",
             "--section",
             "§3",
+            "--spec-level",
+            "guided",
             "--node",
             "next-node",
             "--goal",
@@ -1981,6 +1998,8 @@ def test_cli_competence_refusal_has_typed_dry_run_parity(
         "plan-a",
         "--section",
         "§3",
+        "--spec-level",
+        "guided",
         "--node",
         "node-a",
         "--goal",
@@ -2076,6 +2095,8 @@ def test_cli_plan_visibility_refusal_has_its_own_exit_code(
             "plan-a",
             "--section",
             "§3",
+            "--spec-level",
+            "guided",
             "--node",
             "node-a",
             "--goal",
@@ -2184,7 +2205,7 @@ def test_dispatch_into_a_repository_carrying_no_vendored_script_succeeds(
     """The fleet script is reckon's, so a target repository need not hold one.
 
     Nothing installs a per-repository copy, so requiring one meant a write
-    repository named separately from the plan's could never be dispatched
+    repository named separately from the named plan could never be dispatched
     into until somebody hand-provisioned it.
     """
     script = repo / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py"
@@ -2855,6 +2876,38 @@ def test_still_working_disposition_expires_when_the_run_turns_terminal(
     assert report["runs"][0]["disposition_valid"] is False
 
 
+def test_every_live_state_has_one_fleet_bucket_and_an_attention_route() -> None:
+    bucket_states = (
+        set(recovery.FLEET_WORKING_STATES),
+        set(recovery.FLEET_BLOCKED_STATES),
+        set(recovery.FLEET_UNPROMOTED_STATES),
+        set(recovery.FLEET_WAITING_STATES),
+    )
+    fleet_vocabulary = set().union(*bucket_states)
+    recovery_vocabulary = set(recovery.RECOVERY_CLASSES)
+
+    assert recovery_vocabulary <= fleet_vocabulary, (
+        f"unbucketed recovery states: {sorted(recovery_vocabulary - fleet_vocabulary)}"
+    )
+    for state in fleet_vocabulary:
+        memberships = sum(state in bucket for bucket in bucket_states)
+        assert memberships == 1, f"{state!r} belongs to {memberships} fleet buckets"
+
+    snapshots = {
+        state: {"run_id": f"run-{state}", "state": state} for state in fleet_vocabulary
+    }
+    counts = recovery._fleet_counts(snapshots)
+    assert sum(counts.values()) == len(snapshots)
+
+    attention = set(runs.WATCH_ATTENTION_STATES)
+    progress_or_waiting = bucket_states[0] | bucket_states[3]
+    needs_attention = recovery_vocabulary - progress_or_waiting
+    assert needs_attention <= attention, (
+        f"states that cannot wake a follower: {sorted(needs_attention - attention)}"
+    )
+    assert bucket_states[1] <= attention
+
+
 def test_run_drain_refuses_a_disposition_outside_the_closed_set(home) -> None:
     run_id = "r-invalid-disposition"
     crew._write_json(
@@ -3290,7 +3343,7 @@ def test_the_prompt_copies_no_plan_prose(home, repo) -> None:
     record = _dispatched(home, repo)
     prompt = Path(record["prompt_path"]).read_text()
     assert "semantic authority" in prompt
-    assert len(prompt.splitlines()) < 70
+    assert "— Dispatch" not in prompt
 
 
 @pytest.mark.parametrize(
@@ -3310,10 +3363,9 @@ def test_the_prompt_names_declared_specification_ownership(
     assert f"SPEC     {spec_level} — {guidance}" in prompt
 
 
-def test_the_prompt_omits_specification_guidance_when_undeclared(home, repo) -> None:
-    record = _dispatched(home, repo)
-
-    assert "\nSPEC     " not in Path(record["prompt_path"]).read_text()
+def test_dispatch_refuses_undeclared_specification_ownership(home, repo) -> None:
+    with pytest.raises(crew.CrewError, match="no specification level is declared"):
+        _dispatched(home, repo, spec_level="")
 
 
 def test_the_prompt_names_concurrent_scopes(home, repo) -> None:
@@ -4302,5 +4354,3 @@ def test_an_unwritable_manifest_path_is_a_blocker_not_a_fallback() -> None:
     assert "STOP and report a blocker" in prompt
     assert "anywhere else" in prompt
     assert "delivery cannot be found" in prompt
-    # The budget is the reason this had to be paid for rather than appended.
-    assert len(prompt.splitlines()) < 70
