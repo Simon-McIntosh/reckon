@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T14:38:59",
+  "updated": "2026-09-04T14:40:39",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -59090,6 +59090,143 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T122634656283-figure-caption-and-zoom",
+        "plan": "back-to-the-canvas",
+        "section": "\u00a76",
+        "node": "figure-caption-and-zoom",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 857,
+                "cached_input_tokens": 944930,
+                "input_tokens": 945789,
+                "output_tokens": 653,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 946442,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "798e59ac-3d9b-497a-824a-44b7647c524e",
+            "session_id": "ship-s16"
+          },
+          "done_when": "uv run pytest tests/test_serve_figure_rows.py tests/test_spa_figure_reader.py -q passes: a figure whose sibling capture index carries a description emits that text on its inventory row, and one whose index carries none emits an empty caption rather than a filename; the figures index row and the figure reader both render the caption where present and omit the element where absent. Through the file-URL harness at 1374: clicking the image raises its rendered width above the measure, a further zoom step raises it again, panning changes the visible region while the image stays within its container, and a reset returns it to the measure",
+          "estimated_hours": 3.0,
+          "goal": "A figure carries its caption to every surface that lists it, and can be zoomed and panned",
+          "id": "figure-caption-and-zoom",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T122634656283-figure-caption-and-zoom/manifest.md",
+          "plan": "back-to-the-canvas",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/figures.py",
+            "docs/ui/plan.jsx",
+            "docs/ui/reader.css",
+            "tests/test_spa_figure_reader.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-figview",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T12:26:46Z",
+        "completed_at": "2026-09-04T12:39:31Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 765,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 765,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "fee90bd65e02f65de47af865078fb0497f30b142",
+        "commits": [
+          "da30121250197349b8b4ef9bffcd60ef94f1f007"
+        ],
+        "changed_lines": {
+          "added": 356,
+          "removed": 16,
+          "files": 4
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_serve_figure_rows.py tests/test_spa_figure_reader.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T122634656283-figure-caption-and-zoom/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T122634656283-figure-caption-and-zoom/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06c62-c2dd-7d30-aea8-0cbcee74b2d8",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 7020032,
+            "cached_input_tokens_cumulative": 7020032,
+            "input_tokens": 7098648,
+            "input_tokens_cumulative": 7098648,
+            "output_tokens": 22002,
+            "output_tokens_cumulative": 22002,
+            "reasoning_output_tokens": 8712,
+            "reasoning_output_tokens_cumulative": 8712
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 30714,
+          "peak_input_tokens": 14118680
+        },
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16/figure-caption-and-zoom",
+          "session_id": "01a06c62-c2dd-7d30-aea8-0cbcee74b2d8",
+          "session_source": "pointer",
+          "retained_at": "2026-09-04T12:39:31Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_serve_figure_rows.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -59262,6 +59399,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 978
+    "_version": 979
   }
 }
