@@ -1,5 +1,8 @@
 import json
+import os
+import shlex
 import shutil
+import sys
 import time
 from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
@@ -1267,6 +1270,107 @@ def _sweep_lapsed_holds(project: str, *, dry_run: bool = False) -> dict[str, Any
     return sweep(project, dry_run=dry_run)
 
 
+_FOLLOWER_CHECKPOINT_ENV = "RECKON_FOLLOWER_CHECKPOINT"
+
+
+def _take_follower_checkpoint(project: str) -> dict[str, Any]:
+    """Consume the stream position handed across an in-place process reload."""
+    raw = os.environ.pop(_FOLLOWER_CHECKPOINT_ENV, "")
+    if not raw:
+        return {}
+    try:
+        payload = json.loads(raw)
+    except (TypeError, ValueError):
+        return {}
+    if not isinstance(payload, dict) or payload.get("project") != project:
+        return {}
+    checkpoint = payload.get("checkpoint")
+    return dict(checkpoint) if isinstance(checkpoint, dict) else {}
+
+
+def _import_root(module) -> Path:
+    """Return the sys.path entry that supplied an already-imported module."""
+    package_name = module.__name__.partition(".")[0]
+    package = sys.modules[package_name]
+    module_path = Path(module.__file__).resolve()
+    package_paths = [
+        Path(location).resolve()
+        for location in package.__path__
+        if module_path.is_relative_to(Path(location).resolve())
+    ]
+    for entry in sys.path:
+        root = Path(entry or os.getcwd()).resolve()
+        if any((root / package_name).resolve() == path for path in package_paths):
+            return root
+    raise RuntimeError(f"cannot identify the import root for {module.__name__}")
+
+
+class _FollowerReloader:
+    """Replace a stale follower only at a complete stream-record boundary."""
+
+    def __init__(self, project: str, registration, *, stream=None) -> None:
+        from reckon.crew import runs
+
+        self.project = project
+        self.registration = registration
+        self.stream = stream
+        self.code_stamp = runs.follower_code_stamp()
+        self.import_root = _import_root(runs)
+        self.checked_at: float | None = None
+        self.failed = False
+
+    def poll(self, checkpoint: Mapping[str, Any]) -> None:
+        """Check at a bounded cadence and re-exec with the reader checkpoint."""
+        from reckon.crew import runs
+
+        if self.failed:
+            return
+        moment = time.monotonic()
+        if (
+            self.checked_at is not None
+            and moment - self.checked_at < runs.FOLLOWER_FRESHNESS_SECONDS
+        ):
+            return
+        self.checked_at = moment
+        if runs.follower_code_stamp() == self.code_stamp:
+            return
+
+        os.environ[_FOLLOWER_CHECKPOINT_ENV] = json.dumps(
+            {"project": self.project, "checkpoint": dict(checkpoint)}
+        )
+        if self.registration is not None:
+            self.registration.prepare_reexec()
+        # A shell commonly supplies only a command name in argv[0], so an
+        # absolute console-script guess cannot identify the code now running.
+        # Lead with the sys.path root that supplied the imported package.
+        launcher = (
+            "import sys; "
+            f"sys.path.insert(0, {str(self.import_root)!r}); "
+            "from reckon.cli import main; main()"
+        )
+        try:
+            os.execv(  # noqa: S606 - replacement preserves descriptors and stdout
+                sys.executable,
+                [
+                    sys.executable,
+                    "-c",
+                    launcher,
+                    *sys.argv[1:],
+                ],
+            )
+        except OSError as exc:
+            os.environ.pop(_FOLLOWER_CHECKPOINT_ENV, None)
+            if self.registration is not None:
+                self.registration.cancel_reexec()
+            self.failed = True
+            command = shlex.join(["reckon", *sys.argv[1:]])
+            _echo_follow_line(
+                "reckon crew follow is stale and could not reload itself "
+                f"({exc}); cycle it with: {command}",
+                stream=self.stream,
+            )
+
+
 def _follow_watch_lines(
     project: str,
     *,
@@ -1280,6 +1384,7 @@ def _follow_watch_lines(
     sweep=_sweep_lapsed_holds,
     sweep_interval: float | None = None,
     clock=time.monotonic,
+    resume: Mapping[str, Any] | None = None,
 ):
     """Yield this follower's transitions for as long as its session lives.
 
@@ -1299,15 +1404,25 @@ def _follow_watch_lines(
     from reckon.crew import runs
 
     selected_runs = tuple(run_ids)
-    reported: dict[str, str] = {}
+    resume_state = dict(resume or {})
+    reported = {
+        str(run_id): str(state)
+        for run_id, state in dict(resume_state.get("reported") or {}).items()
+    }
 
     def _stopped() -> bool:
         return stop is not None and stop.is_set()
 
-    def _tick() -> None:
+    def _tick(*, stream_path: Path | None = None, offset: int = 0) -> None:
         """Run the caller's per-wait work — reclaiming a registration, say."""
         if on_poll is not None:
-            on_poll()
+            on_poll(
+                {
+                    "reported": dict(reported),
+                    "stream_path": str(stream_path) if stream_path else "",
+                    "offset": offset,
+                }
+            )
 
     def _emit(event: Mapping[str, Any]):
         """Return the event when it is both this follower's and news."""
@@ -1360,11 +1475,18 @@ def _follow_watch_lines(
         # ticker's own vocabulary. Nothing about the follower itself goes on this
         # stream — a reader wants worker transitions and the fleet posture, not
         # two streams interleaved into one pane.
-        for event in cursor["baseline"]:
-            selected = _emit(event)
-            if selected is not None:
-                yield selected
         stream_path = Path(cursor["stream_path"])
+        resume_matches = resume_state.get("stream_path") == str(
+            stream_path
+        ) and isinstance(resume_state.get("offset"), int)
+        if resume_matches:
+            cursor["offset"] = max(0, int(resume_state["offset"]))
+        else:
+            for event in cursor["baseline"]:
+                selected = _emit(event)
+                if selected is not None:
+                    yield selected
+        resume_state = {}
 
         while not stream_path.exists():
             if not runs.producer_live(project):
@@ -1385,6 +1507,7 @@ def _follow_watch_lines(
                     selected = None if event is None else _emit(event)
                     if selected is not None:
                         yield selected
+                    _tick(stream_path=stream_path, offset=stream.tell())
                     continue
                 # Stopping and losing what is already written would be the same
                 # defect at the other end of the pipe, so both endings drain
@@ -1393,7 +1516,7 @@ def _follow_watch_lines(
                     return
                 if not runs.producer_live(project):
                     break
-                _tick()
+                _tick(stream_path=stream_path, offset=stream.tell())
                 sleeper(poll_interval)
 
 
@@ -1532,9 +1655,12 @@ def crew_follow(
 
     delivery = runs_module.delivery_mode()
     grid = _ticker_grid(width, theme, no_color)
+    resume = _take_follower_checkpoint(project)
 
     def stream_events(registration):
-        def poll() -> None:
+        reloader = _FollowerReloader(project, registration)
+
+        def poll(checkpoint) -> None:
             """Take over a registration whose holder has gone, while streaming.
 
             Silently. A second follower streaming read-only, and its later
@@ -1542,9 +1668,9 @@ def crew_follow(
             The session that needs telling is one trying to dispatch, and the
             dispatch guard tells it there, with the remedy.
             """
-            if registration is None or registration.held:
-                return
-            registration.acquire()
+            if registration is not None and not registration.held:
+                registration.acquire()
+            reloader.poll(checkpoint)
 
         for event in _follow_watch_lines(
             project,
@@ -1552,6 +1678,7 @@ def crew_follow(
             run_ids=run_ids,
             attention=attention,
             on_poll=poll,
+            resume=resume,
         ):
             if json_output:
                 _emit({"ok": True, **event}, pretty)
