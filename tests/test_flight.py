@@ -634,6 +634,20 @@ def test_retired_backend_concurrency_is_ignored_with_a_runtime_warning(layers):
                 "uv run pytest tests/test_flight.py reports 0 failures and the "
                 "resolved warning names the retired declaration"
             ),
+            spec_level="exact",
+            write_paths=["reckon/flight.py"],
+        ),
+        config=resolved.config,
+    )
+    undeclared_resolution = crew.plan_dispatch(
+        node=crew.TaskNode(
+            id="undeclared-compatibility-reader",
+            goal="read a compatible host configuration",
+            plan="plan-a",
+            done_when=(
+                "uv run pytest tests/test_flight.py reports 0 failures and the "
+                "resolved warning names the retired declaration"
+            ),
             write_paths=["reckon/flight.py"],
         ),
         config=resolved.config,
@@ -646,6 +660,10 @@ def test_retired_backend_concurrency_is_ignored_with_a_runtime_warning(layers):
     assert "retired and was ignored" in resolved.warnings[0]
     assert resolution.validation.ok
     assert resolution.warnings == resolved.warnings
+    assert not undeclared_resolution.validation.ok
+    assert [
+        finding["property"] for finding in undeclared_resolution.validation.findings
+    ] == ["spec-level"]
 
 
 def test_malformed_time_budget_is_rejected(layers):
