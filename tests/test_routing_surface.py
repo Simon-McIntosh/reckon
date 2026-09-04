@@ -44,9 +44,20 @@ def _run(
     role: str = "implement",
     tool_steps: int = 1,
     input_tokens: int = 100,
+    cache_read_input_tokens: int | None = None,
+    cache_creation_input_tokens: int | None = None,
     coordinator_input_tokens: int | None = 10,
     attempt: int = 1,
+    changed_lines: int = 10,
 ) -> dict[str, Any]:
+    manifest_path = (
+        repository.parent / "config" / "crew" / "runs" / run_id / "manifest.md"
+    )
+    tokens = {"input_tokens": input_tokens}
+    if cache_read_input_tokens is not None:
+        tokens["cache_read_input_tokens"] = cache_read_input_tokens
+    if cache_creation_input_tokens is not None:
+        tokens["cache_creation_input_tokens"] = cache_creation_input_tokens
     record = ledger.build_record(
         run_id=run_id,
         plan=plan,
@@ -61,13 +72,80 @@ def _run(
         spec_level=spec_level,
         agent={"model": model, "effort": effort},
         completed_at_source="provided",
-        budget={"tokens": {"input_tokens": input_tokens}},
+        budget={"tokens": tokens},
+        changed_lines={"added": changed_lines, "removed": 0, "files": 1},
+        manifest_path=str(manifest_path),
     )
     record["tool_steps"] = tool_steps
     record["attempt"] = attempt
     record["attempt_kind"] = "redispatch" if attempt > 1 else "initial"
     ledger.append_run(repository.name, record, root=repository)
     return record
+
+
+def _write_orientation_stream(record: dict[str, Any]) -> Path:
+    stream = Path(record["manifest_path"]).parent / "stream.jsonl"
+    stream.parent.mkdir(parents=True)
+    events = [
+        {
+            "type": "assistant",
+            "message": {
+                "id": "inspect",
+                "content": [{"type": "text", "text": "reading"}],
+                "usage": {
+                    "input_tokens": 2,
+                    "cache_creation_input_tokens": 30,
+                    "cache_read_input_tokens": 68,
+                },
+            },
+        },
+        {
+            "type": "assistant",
+            "message": {
+                "id": "inspect",
+                "content": [{"type": "text", "text": "reading"}],
+                "usage": {
+                    "input_tokens": 2,
+                    "cache_creation_input_tokens": 30,
+                    "cache_read_input_tokens": 68,
+                },
+            },
+        },
+        {
+            "type": "assistant",
+            "message": {
+                "id": "first-write",
+                "content": [
+                    {
+                        "type": "tool_use",
+                        "name": "Write",
+                        "input": {"file_path": "src/shared.py"},
+                    }
+                ],
+                "usage": {
+                    "input_tokens": 2,
+                    "cache_creation_input_tokens": 20,
+                    "cache_read_input_tokens": 98,
+                },
+            },
+        },
+        {
+            "type": "assistant",
+            "message": {
+                "id": "after-write",
+                "content": [{"type": "text", "text": "testing"}],
+                "usage": {
+                    "input_tokens": 2,
+                    "cache_creation_input_tokens": 10,
+                    "cache_read_input_tokens": 150,
+                },
+            },
+        },
+    ]
+    stream.write_text(
+        "".join(json.dumps(event) + "\n" for event in events), encoding="utf-8"
+    )
+    return stream
 
 
 @pytest.fixture()
@@ -80,31 +158,40 @@ def routing_ledgers(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str
         name: _project(tmp_path, name, mounts) for name in ("alpha", "beta")
     }
 
-    _run(
+    first = _run(
         repositories["alpha"],
         "first",
         path="src/shared.py",
         tool_steps=2,
-        input_tokens=100,
+        input_tokens=2,
+        cache_read_input_tokens=98,
         coordinator_input_tokens=10,
+        changed_lines=10,
     )
+    orientation_stream = _write_orientation_stream(first)
     _run(
         repositories["alpha"],
         "second",
         path="src/shared.py",
         gate="failed",
         tool_steps=4,
-        input_tokens=200,
+        input_tokens=2,
+        cache_creation_input_tokens=20,
+        cache_read_input_tokens=178,
         coordinator_input_tokens=20,
         attempt=2,
+        changed_lines=30,
     )
     _run(
         repositories["beta"],
         "third",
         path="src/independent.py",
         tool_steps=8,
-        input_tokens=300,
+        input_tokens=2,
+        cache_creation_input_tokens=20,
+        cache_read_input_tokens=278,
         coordinator_input_tokens=30,
+        changed_lines=50,
     )
 
     for index, changes in enumerate(
@@ -132,6 +219,7 @@ def routing_ledgers(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str
         "mounts": mounts,
         "mounts_file": mounts_file,
         "repositories": repositories,
+        "orientation_stream": orientation_stream,
     }
 
 
@@ -205,6 +293,73 @@ def test_routing_charges_coordinator_spend_and_labels_back_loaded_cost(
         durable["worker_plus_coordinator_input_tokens"]
         != durable["worker_only_input_tokens"]
     )
+
+
+def test_routing_reports_orientation_floor_from_regression_and_its_stream(
+    routing_ledgers: dict[str, Any],
+) -> None:
+    report = capabilities.derive_routing(routing_ledgers["mounts"])
+    row = _primary_row(report["rows"])
+    floor = row["orientation_floor"]
+
+    assert floor["status"] == "measured"
+    assert floor["grouped_by"] == ["model", "role", "spec_level"]
+    assert floor["samples"] == 4
+    assert floor["intercept_input_tokens"] == pytest.approx(50)
+    assert floor["tokens_per_changed_line"] == pytest.approx(5)
+
+    events = [
+        json.loads(line)
+        for line in routing_ledgers["orientation_stream"].read_text().splitlines()
+    ]
+    unique_messages: dict[str, dict[str, Any]] = {}
+    for event in events:
+        message = event["message"]
+        unique_messages.setdefault(message["id"], message)
+        if any(
+            block.get("type") == "tool_use" and block.get("name") == "Write"
+            for block in message["content"]
+        ):
+            break
+    stream_total = sum(
+        sum(
+            message["usage"].get(name, 0)
+            for name in (
+                "input_tokens",
+                "cache_creation_input_tokens",
+                "cache_read_input_tokens",
+            )
+        )
+        for message in unique_messages.values()
+    )
+    assert floor["stream_samples"] == 1
+    assert floor["median_stream_input_tokens_before_first_write"] == stream_total
+
+    medium_row = next(
+        item
+        for item in report["rows"]
+        if (
+            item["model"],
+            item["effort"],
+            item["spec_level"],
+            item["role"],
+        )
+        == ("worker-model", "medium", "guided", "implement")
+    )
+    assert medium_row["orientation_floor"] == floor
+
+
+def test_routing_reports_an_unobserved_orientation_floor_as_unknown(
+    routing_ledgers: dict[str, Any],
+) -> None:
+    report = capabilities.derive_routing(routing_ledgers["mounts"])
+    row = next(item for item in report["rows"] if item["model"] == "alternate-model")
+    floor = row["orientation_floor"]
+
+    assert floor["samples"] == 1
+    assert floor["status"] == "unknown"
+    assert floor["intercept_input_tokens"] is None
+    assert floor["tokens_per_changed_line"] is None
 
 
 def test_routing_counts_tool_steps_from_a_durable_stream(

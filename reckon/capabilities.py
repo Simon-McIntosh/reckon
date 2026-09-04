@@ -17,6 +17,12 @@ from reckon import _plan_html, ledger
 from reckon._store import _config_home, _mounts_path
 from reckon.calibration import agent_configuration_key
 
+_ORIENTATION_MINIMUM_SAMPLES = 2
+_RESUMED_INPUT_OUTLIER_LIMIT = 60_000_000
+_WRITE_TOOL_NAMES = frozenset(
+    {"applypatch", "edit", "multiedit", "notebookedit", "write"}
+)
+
 
 def capabilities_path() -> Path:
     """Return the disposable cache path under reckon's config home."""
@@ -171,7 +177,7 @@ def _input_tokens(run: Mapping[str, Any]) -> float | None:
     tokens = budget.get("tokens")
     if not isinstance(tokens, Mapping):
         return None
-    return _measured_number(tokens.get("input_tokens"))
+    return _charged_input_from_usage(tokens)
 
 
 def _coordinator_input_tokens(run: Mapping[str, Any]) -> float | None:
@@ -207,6 +213,205 @@ def _stream_path(run: Mapping[str, Any]) -> Path | None:
     if run_id:
         candidates.append(_config_home() / "crew" / "runs" / run_id / "stream.jsonl")
     return next((path for path in candidates if path.is_file()), None)
+
+
+def _orientation_stream_paths(run: Mapping[str, Any]) -> tuple[Path, ...]:
+    """Return a node's initial and resumed streams in execution order."""
+
+    directories = []
+    manifest_path = str(run.get("manifest_path") or "").strip()
+    if manifest_path:
+        directories.append(Path(manifest_path).expanduser().resolve().parent)
+    run_id = str(run.get("run_id") or "").strip()
+    if run_id:
+        directories.append(_config_home() / "crew" / "runs" / run_id)
+
+    paths: list[Path] = []
+    seen: set[Path] = set()
+    for directory in directories:
+        candidates = [directory / "stream.jsonl"]
+        candidates.extend(
+            sorted(
+                directory.glob("resume-*.jsonl"),
+                key=lambda path: (
+                    int(path.stem.removeprefix("resume-"))
+                    if path.stem.removeprefix("resume-").isdigit()
+                    else math.inf
+                ),
+            )
+        )
+        for path in candidates:
+            if path.is_file() and path not in seen:
+                seen.add(path)
+                paths.append(path)
+    return tuple(paths)
+
+
+def _charged_input_from_usage(usage: Any) -> float | None:
+    """Read one request's full charged input, including cached context."""
+
+    if not isinstance(usage, Mapping):
+        return None
+    direct = _measured_number(usage.get("input_tokens"))
+    cache_parts = [
+        _measured_number(usage.get(name))
+        for name in ("cache_read_input_tokens", "cache_creation_input_tokens")
+    ]
+    measured_cache_parts = [value for value in cache_parts if value is not None]
+    if measured_cache_parts:
+        parts = ([direct] if direct is not None else []) + measured_cache_parts
+    else:
+        # Streams with ``cached_input_tokens`` report it as the subset of the
+        # already-total input count. Adding it again would double-charge cache
+        # hits. Streams with separate read/create fields report disjoint parts.
+        parts = [direct] if direct is not None else []
+    return sum(parts) if parts else None
+
+
+def _message_usage(event: Mapping[str, Any]) -> Any:
+    message = event.get("message")
+    return message.get("usage") if isinstance(message, Mapping) else None
+
+
+def _cumulative_event_input(event: Mapping[str, Any]) -> float | None:
+    """Read a cumulative usage snapshot when a stream publishes one."""
+
+    if event.get("type") == "token_count":
+        info = event.get("info")
+        usage = info.get("total_token_usage") if isinstance(info, Mapping) else None
+        return _charged_input_from_usage(usage)
+    if event.get("type") in {"turn.completed", "result"}:
+        return _charged_input_from_usage(event.get("usage"))
+    return None
+
+
+def _normalised_tool_name(value: Any) -> str:
+    return "".join(character for character in str(value).lower() if character.isalnum())
+
+
+def _tool_write_targets(block: Mapping[str, Any]) -> tuple[str, ...]:
+    name = _normalised_tool_name(block.get("name"))
+    if not any(name.endswith(candidate) for candidate in _WRITE_TOOL_NAMES):
+        return ()
+    arguments = block.get("input")
+    if not isinstance(arguments, Mapping):
+        arguments = block.get("arguments")
+    if not isinstance(arguments, Mapping):
+        return ()
+
+    targets = [
+        str(arguments[key])
+        for key in ("file_path", "notebook_path", "path")
+        if arguments.get(key)
+    ]
+    patch = arguments.get("patch")
+    if isinstance(patch, str):
+        prefixes = ("*** Add File: ", "*** Delete File: ", "*** Update File: ")
+        targets.extend(
+            line.removeprefix(prefix).strip()
+            for line in patch.splitlines()
+            for prefix in prefixes
+            if line.startswith(prefix)
+        )
+    return tuple(targets)
+
+
+def _event_write_targets(event: Mapping[str, Any]) -> tuple[str, ...]:
+    item = event.get("item")
+    if isinstance(item, Mapping) and item.get("type") == "file_change":
+        changes = item.get("changes")
+        if isinstance(changes, list):
+            return tuple(
+                str(change["path"])
+                for change in changes
+                if isinstance(change, Mapping) and change.get("path")
+            )
+
+    message = event.get("message")
+    content = message.get("content") if isinstance(message, Mapping) else None
+    if not isinstance(content, list):
+        return ()
+    return tuple(
+        target
+        for block in content
+        if isinstance(block, Mapping) and block.get("type") == "tool_use"
+        for target in _tool_write_targets(block)
+    )
+
+
+def _target_is_declared(target: str, scopes: Sequence[str]) -> bool:
+    normalised = posixpath.normpath(target.strip().replace("\\", "/"))
+    for scope in scopes:
+        declared = posixpath.normpath(scope)
+        if declared == ".":
+            if not normalised.startswith("/") and not normalised.startswith("../"):
+                return True
+            continue
+        if (
+            normalised == declared
+            or normalised.startswith(declared.rstrip("/") + "/")
+            or normalised.endswith("/" + declared)
+            or "/" + declared.rstrip("/") + "/" in normalised
+        ):
+            return True
+    return False
+
+
+def _orientation_input_tokens(run: Mapping[str, Any]) -> float | None:
+    """Measure charged input consumed before the first declared-path write."""
+
+    direct = _measured_number(run.get("orientation_input_tokens"))
+    if direct is not None:
+        return direct
+    scopes = _write_paths(run)
+    if not scopes:
+        return None
+
+    prompt_input = 0.0
+    prompt_input_measured = False
+    cumulative_input: float | None = None
+    seen_messages: set[str] = set()
+    anonymous_message = 0
+    for stream in _orientation_stream_paths(run):
+        try:
+            with stream.open(encoding="utf-8") as handle:
+                for line in handle:
+                    try:
+                        event = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    if not isinstance(event, Mapping):
+                        continue
+
+                    message = event.get("message")
+                    if event.get("type") == "assistant" and isinstance(
+                        message, Mapping
+                    ):
+                        message_id = str(message.get("id") or "").strip()
+                        if not message_id:
+                            anonymous_message += 1
+                            message_id = f"anonymous-{anonymous_message}"
+                        if message_id not in seen_messages:
+                            seen_messages.add(message_id)
+                            measured = _charged_input_from_usage(_message_usage(event))
+                            if measured is not None:
+                                prompt_input += measured
+                                prompt_input_measured = True
+
+                    measured_cumulative = _cumulative_event_input(event)
+                    if measured_cumulative is not None:
+                        cumulative_input = measured_cumulative
+
+                    if any(
+                        _target_is_declared(target, scopes)
+                        for target in _event_write_targets(event)
+                    ):
+                        if prompt_input_measured:
+                            return prompt_input
+                        return cumulative_input
+        except OSError:
+            continue
+    return None
 
 
 def _tool_steps(run: Mapping[str, Any]) -> float | None:
@@ -333,6 +538,80 @@ def _charged_cost(median_input: float | None, rework_rate: float) -> float | Non
     return round(median_input / (1.0 - rework_rate), 6)
 
 
+def _changed_line_count(run: Mapping[str, Any]) -> float | None:
+    changed = run.get("changed_lines")
+    if not isinstance(changed, Mapping):
+        return None
+    parts = [_measured_number(changed.get(name)) for name in ("added", "removed")]
+    measured = [value for value in parts if value is not None]
+    total = sum(measured) if measured else 0.0
+    return total if total > 0 else None
+
+
+def _orientation_floor(observations: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    pairs = [
+        (float(item["changed_lines"]), float(item["input_tokens"]))
+        for item in observations
+        if item["changed_lines"] is not None
+        and item["input_tokens"] is not None
+        and float(item["input_tokens"]) <= _RESUMED_INPUT_OUTLIER_LIMIT
+    ]
+    input_outliers = sum(
+        item["changed_lines"] is not None
+        and item["input_tokens"] is not None
+        and float(item["input_tokens"]) > _RESUMED_INPUT_OUTLIER_LIMIT
+        for item in observations
+    )
+    stream_measurements = [
+        float(item["orientation_input_tokens"])
+        for item in observations
+        if item["orientation_input_tokens"] is not None
+    ]
+    result: dict[str, Any] = {
+        "status": "unknown",
+        "grouped_by": ["model", "role", "spec_level"],
+        "formula": (
+            "input_tokens = intercept_input_tokens + "
+            "tokens_per_changed_line * changed_lines"
+        ),
+        "samples": len(pairs),
+        "minimum_samples": _ORIENTATION_MINIMUM_SAMPLES,
+        "input_outliers_excluded": input_outliers,
+        "intercept_input_tokens": None,
+        "tokens_per_changed_line": None,
+        "stream_samples": len(stream_measurements),
+        "median_stream_input_tokens_before_first_write": _median_or_none(
+            stream_measurements
+        ),
+    }
+    if len(pairs) < _ORIENTATION_MINIMUM_SAMPLES:
+        result["reason"] = "fewer_than_two_observations"
+        return result
+
+    mean_lines = fmean(lines for lines, _input in pairs)
+    mean_input = fmean(input_tokens for _lines, input_tokens in pairs)
+    denominator = sum((lines - mean_lines) ** 2 for lines, _input in pairs)
+    if denominator == 0:
+        result["reason"] = "no_changed_line_variation"
+        return result
+    slope = (
+        sum(
+            (lines - mean_lines) * (input_tokens - mean_input)
+            for lines, input_tokens in pairs
+        )
+        / denominator
+    )
+    intercept = mean_input - slope * mean_lines
+    result.update(
+        {
+            "status": "measured",
+            "intercept_input_tokens": round(intercept, 6),
+            "tokens_per_changed_line": round(slope, 6),
+        }
+    )
+    return result
+
+
 def derive_routing(
     mounted_docs: Mapping[str, str | Path],
 ) -> dict[str, Any]:
@@ -412,8 +691,20 @@ def derive_routing(
                 "tool_steps": _tool_steps(run),
                 "input_tokens": _input_tokens(run),
                 "coordinator_input_tokens": _coordinator_input_tokens(run),
+                "changed_lines": _changed_line_count(run),
+                "orientation_input_tokens": _orientation_input_tokens(run),
             }
         )
+
+    orientation_observations: dict[tuple[str, str, str], list[dict[str, Any]]] = (
+        defaultdict(list)
+    )
+    for (model, _effort, spec_level, role), observations in grouped.items():
+        orientation_observations[(model, role, spec_level)].extend(observations)
+    orientation_floors = {
+        key: _orientation_floor(observations)
+        for key, observations in orientation_observations.items()
+    }
 
     rows: list[dict[str, Any]] = []
     for (model, effort, spec_level, role), observations in sorted(grouped.items()):
@@ -466,6 +757,7 @@ def derive_routing(
                 "median_coordinator_input_tokens": _median_or_none(coordinator_inputs),
                 "worker_plus_coordinator_samples": len(combined_inputs),
                 "median_worker_plus_coordinator_input_tokens": median_combined_input,
+                "orientation_floor": orientation_floors[(model, role, spec_level)],
                 "per_run_cost": {
                     "label": "immediate spend; a short window can reflect this",
                     "short_window_can_reflect": True,
