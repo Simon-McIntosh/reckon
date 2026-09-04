@@ -84,7 +84,7 @@ from reckon.capability import (
 )
 import reckon.crew.resumption as resumption_module
 from reckon.crew.runs import project_watch_visibility
-from reckon.doccheck import audit_lifecycle, audit_links
+from reckon.doccheck import SEVERITIES, audit_file, audit_lifecycle, audit_links
 from reckon.mcp_views import (
     ResourceSelector,
     ViewRequestError,
@@ -2597,8 +2597,9 @@ def _roadmap(
     ready/blocked/deferred counts, and finding totals. ``view='detail'`` adds a
     cursor-paginated findings page; ``view='raw'`` returns the lossless report.
     A ``graph:<handle>`` project target returns the derived cross-project
-    dependency closure carried by its endpoint plan. Single-project calls
-    without ``view`` preserve the legacy raw response.
+    dependency closure carried by its endpoint plan. Direct internal calls
+    without ``view`` preserve the legacy raw response; the registered MCP
+    wrapper defaults single-project clients to the compact summary.
     ``checkout_path`` is accepted for a single project and follows the same
     worktree-routing contract as ``read_plan``.
     """
@@ -2680,15 +2681,17 @@ def _roadmap(
                 "detail": "select one project when using checkout_path",
             }
         listed = _list_projects()
-        reports = [
-            _roadmap(
+        reports = []
+        for item in listed.get("projects", []):
+            if not isinstance(item, dict) or not item.get("name"):
+                continue
+            report = _roadmap(
                 str(item["name"]),
                 sprint=sprint,
                 max_paths=max_paths,
+                view="raw",
             )
-            for item in listed.get("projects", [])
-            if isinstance(item, dict) and item.get("name")
-        ]
+            reports.append(report.get("data", report))
         valid = [report for report in reports if report.get("ok", True)]
         plan_count = sum(
             report.get("completion", {}).get("plans", 0) for report in valid
@@ -2781,8 +2784,38 @@ def _roadmap(
         }
 
 
-def _crew(
+def _roadmap_tool(
     project: str,
+    checkout_path: str | None = None,
+    sprint: str | None = None,
+    max_paths: int = 5,
+    view: Literal["summary", "detail", "raw"] | None = None,
+    cursor: str | None = None,
+    limit: int | None = None,
+) -> dict[str, Any]:
+    """Return a transport-bounded roadmap by default for one project.
+
+    Lossless single-project reports routinely exceed the MCP response ceiling,
+    so clients request ``view='raw'`` explicitly. Portfolio and graph targets
+    retain their existing defaults.
+    """
+
+    selected_view = view
+    if view is None and project != "*" and not project.startswith("graph:"):
+        selected_view = "summary"
+    return _roadmap(
+        project,
+        checkout_path=checkout_path,
+        sprint=sprint,
+        max_paths=max_paths,
+        view=selected_view,
+        cursor=cursor,
+        limit=limit,
+    )
+
+
+def _crew(
+    project: str | None = None,
     view: str = "summary",
     checkout_path: str | None = None,
     plan: str | None = None,
@@ -2790,10 +2823,17 @@ def _crew(
     limit: int | None = None,
     candidates: list[dict[str, Any]] | None = None,
     session: str | None = None,
+    action: Literal["resume", "session", "sweep"] | None = None,
+    run_id: str | None = None,
+    advice: str | None = None,
+    dry_run: bool = False,
 ) -> dict[str, Any]:
-    """Read crew state, including live scope claims and candidate lane plans.
+    """Read crew state or perform one recovery action through the crew surface.
 
-    Read-only, and deliberately one tool over eight views rather than eight tools.
+    Deliberately one tool over eight read views and three recovery actions rather
+    than eleven top-level tools. Set ``action`` to ``resume``, ``session`` or
+    ``sweep`` to reach the same implementation as the corresponding crew CLI
+    operation. Omit ``action`` for the read views below.
     ``ledger``, ``records`` and ``summary`` read the project's committed runs —
     ``<repo>/docs/state/<project>/crew.json``, the durable half; ``live`` reads
     the never-committed pointers of runs still in flight, each carrying the
@@ -2816,6 +2856,20 @@ def _crew(
     ``read_plan``: with it, the ledger and the routing project layer resolve
     inside that checkout instead of the registered main one.
     """
+    if action is not None:
+        return _crew_recover(
+            action,
+            project=project,
+            run_id=run_id,
+            advice=advice,
+            dry_run=dry_run,
+        )
+    if not project:
+        return {
+            "ok": False,
+            "error": "missing_project",
+            "detail": "crew read views need project",
+        }
     if view not in (
         "summary",
         "flight",
@@ -3139,12 +3193,67 @@ def _written_path(
 # ── audit — plan-schema conformance audit (warn half; never mutates) ────────
 
 
+def _audit_document(
+    path: str,
+    *,
+    project: str | None,
+    checkout_path: str | None,
+    check_links: bool,
+) -> dict[str, Any]:
+    """Return the CLI document audit findings without printing or mutating."""
+
+    document = Path(path).expanduser()
+    if not document.is_absolute():
+        base = (
+            Path(checkout_path).expanduser().resolve()
+            if checkout_path is not None
+            else Path.cwd()
+        )
+        document = base / document
+    document = document.resolve()
+    findings = audit_file(document, project=project)
+    if check_links:
+        findings += audit_links([document], document.parent, project=project).get(
+            document, []
+        )
+        findings.sort(key=lambda item: SEVERITIES.index(item.severity))
+    rows = [
+        {"severity": item.severity, "code": item.code, "message": item.message}
+        for item in findings
+    ]
+    counts = {
+        "total": len(rows),
+        "by_severity": _rollup_counts([item["severity"] for item in rows]),
+        "by_category": {},
+        "by_code": _rollup_counts([item["code"] for item in rows]),
+    }
+    errors = [item for item in rows if item["severity"] == "error"]
+    return {
+        "ok": not errors,
+        "project": project or "",
+        "path": str(document),
+        "checked": 1,
+        "conformant": 0 if errors else 1,
+        "violations": (
+            [{"slug": document.stem, "errors": [item["message"] for item in errors]}]
+            if errors
+            else []
+        ),
+        "findings": rows,
+        "finding_counts": counts,
+        "rollups_recomputed": False,
+        "reindexed": False,
+    }
+
+
 def _audit(
-    project: str,
+    project: str | None = None,
     checkout_path: str | None = None,
     view: str | None = None,
     cursor: str | None = None,
     limit: int | None = None,
+    path: str | None = None,
+    check_links: bool = False,
 ) -> dict[str, Any]:
     """Audit every plan in a project against the PlanState schema (the WARN half
     of reject-write-warn-doctor) and recompute the index rollups.
@@ -3155,6 +3264,9 @@ def _audit(
     Returns { project, checked, conformant, violations:[{slug, errors}],
     rollups_recomputed: True, reindexed: False }.
 
+    Pass ``path`` to validate one authored HTML document with the same checks as
+    ``reckon audit-doc``; ``check_links`` adds its corpus-aware link checks.
+
     WARN/report ONLY — this NEVER mutates a plan or writes index.json. (Distinct
     from the CLI `reckon doctor`, which checks infra/skills/mounts, not schema.)
     With ``checkout_path``, the audit runs against that checkout's docs/state
@@ -3163,6 +3275,31 @@ def _audit(
     for the exact legacy audit payload. Omitting ``view`` preserves the legacy
     response unchanged.
     """
+    if path is not None:
+        raw = _audit_document(
+            path,
+            project=project,
+            checkout_path=checkout_path,
+            check_links=check_links,
+        )
+        if view is None:
+            return raw
+        try:
+            return audit_view(
+                project or "document",
+                raw,
+                view=view,
+                cursor=cursor,
+                limit=limit,
+            )
+        except ViewRequestError as exc:
+            return error_response(exc.code, exc.message, hint=exc.hint)
+    if not project:
+        return {
+            "ok": False,
+            "error": "missing_project_or_path",
+            "detail": "audit needs project or path",
+        }
     if view is not None:
         raw = _audit(project, checkout_path)
         try:
@@ -3289,17 +3426,17 @@ def _audit(
                 path=second_path,
             )
         )
-    for path, message in invalid_resources:
+    for invalid_path, message in invalid_resources:
         findings.append(
             _finding(
                 "resources",
                 "invalid-resource-path",
                 "error",
                 message,
-                path=path,
+                path=invalid_path,
             )
         )
-    for slug, path, warning in compatibility_records:
+    for slug, compatibility_path, warning in compatibility_records:
         findings.append(
             _finding(
                 "compatibility",
@@ -3307,7 +3444,7 @@ def _audit(
                 "warn",
                 warning,
                 slug=slug,
-                path=path,
+                path=compatibility_path,
             )
         )
     for sprint_record in index_data.get("sprints", []):
@@ -3405,9 +3542,9 @@ def _audit(
         pass
     try:
         link_findings = audit_links(html_files, docs_dir, project=project)
-        for path, path_findings in link_findings.items():
-            rel = str(path.relative_to(docs_dir))
-            slug = path.stem
+        for linked_path, path_findings in link_findings.items():
+            rel = str(linked_path.relative_to(docs_dir))
+            slug = linked_path.stem
             for item in path_findings:
                 findings.append(
                     _finding(
@@ -3506,24 +3643,22 @@ def _audit(
 
 # ── Register tools with SDK ────────────────────────────────────────────────
 #
-# Agent-facing MCP surface = read_plan + edit_plan + roadmap + audit + crew +
-# crew_recover. The granular _funcs below remain for tests/internal use but are
+# Agent-facing MCP surface = read_plan + edit_plan + roadmap + audit + crew.
+# The granular _funcs below remain for tests/internal use but are
 # intentionally NOT registered (collapsed per the schema-and-tooling plan);
 # full removal is a later cleanup. read_plan folds the 5 legacy reads
 # (list_plans/list_projects/list_sprints/list_followups/list_questions) via
 # its discovery + with_schema modes; edit_plan folds the granular mutators via
 # its set/append/resolve/lock/move + create ops; crew reads run state over
-# several views and writes nothing; crew_recover is its write counterpart —
-# resume, session and sweep — for the one thing crew deliberately cannot do:
-# answer a provider refusal without a coordinator shelling out to the CLI.
+# several views plus the resume, session and sweep recovery actions, so a
+# coordinator can answer a provider refusal without shelling out to the CLI.
 
 if mcp is not None:
     read_plan_tool = mcp.tool()(_read_plan)
     edit_plan_tool = mcp.tool(name="_edit_plan")(_edit_plan_tool)
-    roadmap_tool = mcp.tool()(_roadmap)
+    roadmap_tool = mcp.tool(name="_roadmap")(_roadmap_tool)
     audit_tool = mcp.tool()(_audit)
     crew_tool = mcp.tool()(_crew)
-    crew_recover_tool = mcp.tool()(_crew_recover)
 
 
 # ── Entrypoint ────────────────────────────────────────────────────────────
