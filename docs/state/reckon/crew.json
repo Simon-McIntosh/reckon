@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T12:06:14",
+  "updated": "2026-09-04T12:28:25",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -692,6 +692,69 @@
           "gpt-5.6-sol": "01a06250-7e83-7000-a230-1928479a0e49"
         },
         "created": "2026-09-02"
+      },
+      {
+        "id": "s15-burn",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-04"
+      },
+      {
+        "id": "s15-coord",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-04"
+      },
+      {
+        "id": "s15-keying",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-04"
+      },
+      {
+        "id": "s15-nag",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-04"
+      },
+      {
+        "id": "s15-riq",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-04"
+      },
+      {
+        "id": "s15-scout",
+        "harness": "claude",
+        "role": "investigate",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-04"
+      },
+      {
+        "id": "s15-spec",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-04"
       },
       {
         "id": "s16-captures",
@@ -54436,6 +54499,354 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T095545087100-endpoint-rows-reach-the-graph-tab",
+        "plan": "derived-state-parity",
+        "section": "\u00a73",
+        "node": "endpoint-rows-reach-the-graph-tab",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_roadmap_endpoints.py tests/test_spa_graph_authority.py -q passes at this node's base, which already computes the endpoint rows in reckon/roadmap.py and teaches docs/ui/graph.jsx to consume them: ready_set_view carries the endpoints payload so _attach_ready_set places it in window.STATE, and the two rendered tests build state that includes it. The count and membership the Graph tab renders equal the roadmap rows, asserted by comparing the two rather than against a literal",
+          "estimated_hours": 2.0,
+          "goal": "The roadmap-owned endpoint rows reach window.STATE so the Graph tab renders from them",
+          "id": "endpoint-rows-reach-the-graph-tab",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T095545087100-endpoint-rows-reach-the-graph-tab/manifest.md",
+          "plan": "derived-state-parity",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/mcp_views.py",
+            "reckon/serve.py",
+            "tests/test_spa_graph_authority.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-eptransport",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T09:55:54Z",
+        "completed_at": "2026-09-04T10:08:38Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 764,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 764,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "8bff3e43903a5c974016e3edb5601eebc6aa7691",
+        "commits": [
+          "20754e511b3b0a081b1a12b23387821a70a2bc7b"
+        ],
+        "changed_lines": {
+          "added": 38,
+          "removed": 2,
+          "files": 3
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_roadmap_endpoints.py tests/test_spa_graph_authority.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T095545087100-endpoint-rows-reach-the-graph-tab/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T095545087100-endpoint-rows-reach-the-graph-tab/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06bd8-a1d0-7f90-bbbb-2a7201ff7317",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 8235392,
+            "cached_input_tokens_cumulative": 8235392,
+            "input_tokens": 8377525,
+            "input_tokens_cumulative": 8377525,
+            "output_tokens": 25837,
+            "output_tokens_cumulative": 25837,
+            "reasoning_output_tokens": 8983,
+            "reasoning_output_tokens_cumulative": 8983
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 34820,
+          "peak_input_tokens": 16612917
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_roadmap_endpoints.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260904T094130968040-endpoint-enumeration",
+        "plan": "derived-state-parity",
+        "section": "\u00a73",
+        "node": "endpoint-enumeration",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_roadmap_endpoints.py tests/test_spa_graph_authority.py -q passes with the cases \u00a73 names: a fixture with two named and three unnamed endpoints returns five rows with named first and each carrying handle or null; closure membership and depth for an unnamed endpoint equal those the named-handle read returns for the same plan once a handle is authored; a project where no plan has a prerequisite returns an empty list; and the count and membership the Graph tab renders equal the roadmap rows for this repository, asserted by comparing the two rather than against a literal. A graph read for an unknown handle still refuses",
+          "estimated_hours": 4.0,
+          "goal": "Roadmap enumerates every dependency endpoint with its closure metrics, named or not, and the Graph tab reads that list",
+          "id": "endpoint-enumeration",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T094130968040-endpoint-enumeration/manifest.md",
+          "plan": "derived-state-parity",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/roadmap.py",
+            "docs/ui/graph.jsx",
+            "tests/test_roadmap_endpoints.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-endpoints",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T09:41:37Z",
+        "completed_at": "2026-09-04T09:55:15Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 818,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 818,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "16e5c84e0e012ae5d98e698cbc1f4f45af32a67f",
+        "commits": [
+          "8bff3e43903a5c974016e3edb5601eebc6aa7691"
+        ],
+        "changed_lines": {
+          "added": 314,
+          "removed": 9,
+          "files": 3
+        },
+        "tests_added": 5,
+        "gate": "failed",
+        "gate_check": {
+          "command": "",
+          "exit_status": null,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T094130968040-endpoint-enumeration/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": "malformed-node",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T094130968040-endpoint-enumeration/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06bcb-909f-7cb2-8c38-fc584b7b0e4d",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 8912768,
+            "cached_input_tokens_cumulative": 8912768,
+            "input_tokens": 9081533,
+            "input_tokens_cumulative": 9081533,
+            "output_tokens": 27937,
+            "output_tokens_cumulative": 27937,
+            "reasoning_output_tokens": 12612,
+            "reasoning_output_tokens_cumulative": 12612
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 40549,
+          "peak_input_tokens": 17994301
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "resume_waiver": {
+          "session_id": "01a06bcb-909f-7cb2-8c38-fc584b7b0e4d",
+          "source": "stream",
+          "reason": "the node's remaining work was completed by r-20260904T095545087100-endpoint-rows-reach-the-graph-tab, based on this run's own commit 8bff3e4 and merged as 20754e5, so resuming this session would hand it a task with nothing left in it"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_roadmap_endpoints.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260904T090022334981-reader-chrome",
+        "plan": "artifact-feeds-and-reader",
+        "section": "\u00a74",
+        "node": "reader-chrome",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_spa_reader_provenance.py tests/test_spa_reading_mode.py tests/test_spa_reader_geometry.py -q passes with the cases \u00a74 names: the breadcrumb for a figure whose plan is in a sprint renders three segments of which the first two navigate, research renders the sprint and plan of its first informs target, a plan renders two; at 1374x900 pressing f yields a reader pane whose bounding rect is the viewport with an element at the topbar position belonging to the reader, and esc restores it; with the active status filter and created sort applied, stepping next from the second row lands on the third row of that filtered sorted order with the readout reading 3 of N; arrow keys do nothing while the palette input has focus; and a figure reader contains an img whose src is the served figure beside a text node with its docs/figures path",
+          "estimated_hours": 4.0,
+          "goal": "One reader for four kinds with a navigating source trail whole-shell full screen and prev-next bound to the rendered list",
+          "id": "reader-chrome",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T090022334981-reader-chrome/manifest.md",
+          "plan": "artifact-feeds-and-reader",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "docs/ui/shell-titlebar.jsx",
+            "docs/ui/plan.jsx",
+            "docs/ui/reader.css",
+            "tests/test_spa_reader_provenance.py",
+            "tests/test_spa_reading_mode.py",
+            "tests/test_spa_reader_geometry.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-reader",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T09:00:33Z",
+        "completed_at": "2026-09-04T10:12:22Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 4309,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 4309,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "c3a6c1d8ba31b3cec567da51e95fc13f567879b2",
+        "commits": [
+          "0fd85d3e0ddc3424a9477e98c14a0f21222c164d",
+          "4b1b303be135a8fd1d662faad3203c98885484d8",
+          "5b479facb09a20c736d3082ee7c6fe11c731b6e4"
+        ],
+        "changed_lines": {
+          "added": 874,
+          "removed": 348,
+          "files": 6
+        },
+        "tests_added": 6,
+        "gate": "failed",
+        "gate_check": {
+          "command": "",
+          "exit_status": null,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T090022334981-reader-chrome/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": "work-rejected",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T090022334981-reader-chrome/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06ba5-f73f-7fd0-92f1-f7a66154cbe9",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2123008,
+            "cached_input_tokens_cumulative": 2123008,
+            "input_tokens": 2173403,
+            "input_tokens_cumulative": 2173403,
+            "output_tokens": 13527,
+            "output_tokens_cumulative": 13527,
+            "reasoning_output_tokens": 4380,
+            "reasoning_output_tokens_cumulative": 4380
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 17907,
+          "peak_input_tokens": 4296411
+        },
+        "attempt": 3,
+        "attempt_kind": "resume",
+        "resume_waiver": {
+          "session_id": "01a06ba5-f73f-7fd0-92f1-f7a66154cbe9",
+          "source": "pointer",
+          "reason": "three attempts by this session failed the same single proposition, so the remaining defect is reshaped as its own node with the measured evidence rather than resumed against the same diagnosis"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_spa_reader_provenance.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -54608,6 +55019,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 892
+    "_version": 902
   }
 }

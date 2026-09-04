@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="10">
 <meta name="plan-commits" content="ba6ff35,ac57d8f,8ce0ca7,c6d25f9">
 <meta name="plan-impl" content="0.57">
 </head>
@@ -158,6 +158,23 @@
   </tbody>
 </table>
 
+<h2 id="s10">&#167;10 &mdash; The readout counts one behind its own position</h2>
+<p>&#167;4 landed 20 of its 21 propositions and left one measured failure: after navigating to the third item the reader's readout samples <code>2 / 3</code> rather than <code>3 / 3</code>. Stepping arrives at the right document &mdash; the position is correct and the content is correct &mdash; and only the printed numerator lags by one.</p>
+<p><strong>Three attempts did not move it, which is itself the most useful evidence here.</strong> The last of them applied the correction &#167;4 predicted, publishing the position from the rendered list rather than recomputing it, and the failure was unchanged. So the remaining fault is almost certainly not a second derivation of the list: it is more likely that the readout is sampled before the navigation it describes has committed, so it reports the position it was leaving rather than the one it arrived at. That is a different class of bug from the one &#167;4 warned about, and a node told to look for a duplicate derivation will keep not finding it.</p>
+<p>This is deliberately its own node rather than a resumption. The same diagnosis has been tried three times; what a fresh worker needs is the measurement and the corrected hypothesis, not the accumulated context of three attempts down one path. Note also that this proposition is only visible at all because &#167;4 moved to the file-URL browser harness: on the served path it was one of four skips, and a skip would have shipped this defect silently.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>readout-matches-the-arrived-position</code></td>
+      <td>The reader's position readout reports the item it arrived at rather than the one it left.</td>
+      <td><code>uv run pytest tests/test_spa_reader_geometry.py -q</code> passes through the file-URL harness with the &#167;4 case that currently fails: after stepping to the third item of a filtered, sorted list the readout reads <code>3 / 3</code>, and the same assertion holds stepping forward from the first to the second and backward from the third to the second, so the fix is not an off-by-one traded for another. The whole three-file reader gate reports 21 passed and 0 skipped, against the 20 passed and 1 failed recorded at this section's authoring.</td>
+      <td><code>docs/ui/shell-titlebar.jsx</code>, <code>docs/ui/plan.jsx</code>, <code>tests/test_spa_reader_geometry.py</code></td>
+      <td>exact &middot; sonnet</td>
+    </tr>
+  </tbody>
+</table>
+
 <h2 id="s8">&#167;8 &mdash; Out of scope</h2>
 <p>Whether the filtered list ghosts in on hover during full-screen reading is an open design question in the handoff; the canvas keeps it hidden until <code>esc</code> and so does this plan. No server change: figure rows and edited stamps come from <code>served-surface-data-contracts</code>, and the change stream is used as it exists. Comment authoring in the reader is unchanged.</p>
 
@@ -227,6 +244,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260904T094107200371-dependency-cone-toggle" data-who="s16-cone" data-when="2026-09-04T09:50:37Z">
     <div class="r-comment-body"><p>the reader's dependency strip is now an opt-in toggle showing plan edges only: closed on open, labelled with its up and down counts, dimmed and reading standalone for an isolated plan, and listing zero cards for a plan whose four attachments are evidence rather than prerequisites while the foot of the reader lists them. 4 cone tests plus 4 module-scope regressions pass</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260904T090022334981-reader-chrome" data-who="s16-reader" data-when="2026-09-04T10:12:22Z">
+    <div class="r-comment-body"><p>20 of 21 propositions measured and passing, 0 skipped: the source trail navigates for figures, research and plans, the f key drapes the reader over the whole shell with esc restoring it, arrow keys stay inert while the palette input holds focus, and a figure reader shows the served image with its docs/figures path. One measured failure remains — after reaching the third item the readout samples 2 / 3 rather than 3 / 3 — unchanged across three attempts including an authorised published-position correction. The harness switch this run performed is the reason it is a failure and not a skip: on the served path these four propositions were unmeasured, and moving to the file-URL harness turned 17 passed 4 skipped into 20 passed 1 failed</p></div>
 </div>
 </section>
 </main>
