@@ -9,6 +9,7 @@ takes its launcher, so a resume is observed as the invocation it would spawn.
 
 from __future__ import annotations
 
+import asyncio
 import importlib
 import json
 import subprocess
@@ -501,7 +502,7 @@ def _surface_answers(run_id: str, now) -> dict[str, dict]:
     command = json.loads(
         runner.invoke(
             cli_module.main,
-            ["crew", "resume-held", "--project", PROJECT, "--dry-run"],
+            ["crew", "resume-ready", "--project", PROJECT, "--dry-run"],
         ).output
     )
     commanded = (command["resumed"] or command["skipped"])[0]
@@ -518,6 +519,63 @@ def _surface_answers(run_id: str, now) -> dict[str, dict]:
         "list": row,
         "observe": observed,
     }
+
+
+def test_resume_ready_is_the_only_cli_spelling_and_matches_the_mcp_action(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The two caller-facing surfaces name the same recovery sweep."""
+    from click.testing import CliRunner
+
+    import reckon.mcp as mcp_module
+
+    reports = []
+
+    def _sweep(project: str, *, dry_run: bool = False) -> dict:
+        reports.append((project, dry_run))
+        return {"project": project, "dry_run": dry_run, "resumed": [], "skipped": []}
+
+    monkeypatch.setattr("reckon.crew.resumption.sweep", _sweep)
+    runner = CliRunner()
+    command = runner.invoke(
+        cli_module.main,
+        ["crew", "resume-ready", "--project", PROJECT, "--dry-run"],
+    )
+    removed_name = "resume-" + "held"
+    removed = runner.invoke(
+        cli_module.main,
+        ["crew", removed_name, "--project", PROJECT, "--dry-run"],
+    )
+    tool = next(
+        item
+        for item in mcp_module.mcp._tool_manager.list_tools()
+        if item.name == "_crew"
+    )
+    action = asyncio.run(
+        tool.run({"action": "resume-ready", "project": PROJECT, "dry_run": True})
+    )
+
+    assert command.exit_code == 0
+    assert json.loads(command.output)["ok"] is True
+    assert removed.exit_code == 2
+    assert f"No such command '{removed_name}'" in removed.output
+    assert action["ok"] is True
+    assert action["action"] == "resume-ready"
+    assert reports == [(PROJECT, True), (PROJECT, True)]
+
+
+def test_recovery_command_help_names_the_state_and_the_boundary() -> None:
+    """The first line prevents adjacent recovery verbs from being confused."""
+    from click.testing import CliRunner
+
+    runner = CliRunner()
+    ready = runner.invoke(cli_module.main, ["crew", "resume-ready", "--help"])
+    recover = runner.invoke(cli_module.main, ["crew", "recover", "--help"])
+    completion = runner.invoke(cli_module.main, ["crew", "repair-completion", "--help"])
+
+    assert "provider hold or declared external wait has ended" in ready.output
+    assert "never launch, resume, or promote work" in " ".join(recover.output.split())
+    assert "Repair historical completion measurements" in completion.output
 
 
 def test_every_surface_answers_the_same_session_from_the_same_source(

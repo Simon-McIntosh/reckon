@@ -1792,16 +1792,16 @@ def crew_watch(
     _emit({"ok": True, **result}, pretty)
 
 
-@crew.command(name="resume-held")
-@click.option("--project", required=True, help="Project whose held runs to sweep.")
+@crew.command(name="resume-ready")
+@click.option("--project", required=True, help="Project whose ready runs to resume.")
 @click.option(
     "--dry-run",
     is_flag=True,
     help="Report what would be resumed without resuming anything.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_resume_held(project, dry_run, pretty):
-    """Resume every run a lapsed provider refusal is still holding.
+def crew_resume_ready(project, dry_run, pretty):
+    """Resume runs whose provider hold or declared external wait has ended.
 
     Idempotent and cheap: eligibility is computed from records already on disk,
     so nothing is spent to discover it and a second pass over the same fleet
@@ -2338,7 +2338,7 @@ def crew_complete(
 @click.option("--project", default=None, help="Limit to one project's runs.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_recover(project, pretty):
-    """Classify every live pointer an interrupted orchestrator left behind.
+    """Classify pointers an interrupted orchestrator left; never launch, resume, or promote work.
 
     Reports running, completed-but-unpromoted (with its manifest path) and
     abandoned runs. It repairs the record only: no worktree is removed, no

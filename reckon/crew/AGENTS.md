@@ -26,9 +26,10 @@ delivery fences.
 | Stop | `reckon crew stop --run <run-id>` | Stops a CLI-spawned run's process group and records the stopped phase. Cancel an in-harness run through its attached host task; it has no Reckon-spawned process to signal. |
 | List | `reckon crew list` | Lists all live run pointers with node, plan, backend, phase, worktree and manifest path so a fresh orchestrator session can recover ownership. |
 | Complete | `reckon crew complete --run <run-id> --gate passed\|failed\|not-run --commit <sha> [--tests-added N] [--scope-changed]` | Promotes the finished run into the owning repository's committed ledger, then deletes the pointer — in that order, so an interruption is recoverable. Records the calibration inputs no later reader can reconstruct: dispatch and completion stamps, the agent configuration that ran the node, the scoped diff's changed lines, tests added, the gate verdict, and `--scope-changed` when the node's scope was widened mid-flight. |
-| Recover | `reckon crew recover [--project <project>]` | Classifies every live pointer as running, completed-but-unpromoted (reporting its manifest path), or abandoned, and names the next action for each. Repairs the record only — it never force-removes a worktree, signals a process, or promotes a run on its own initiative. |
+| Recover | `reckon crew recover [--project <project>]` | Classifies every live pointer an interrupted orchestrator left as running, completed-but-unpromoted (reporting its manifest path), or abandoned, and repairs the record only — it never launches or resumes work, promotes a run, force-removes a worktree, or signals a process. |
 | Roster | `reckon crew member add --project <project> --member <id> --harness <backend> [--session <id>]` · `reckon crew member list --project <project>` | The project's committed team. A member registered with no session captures one from its first run and reuses it for every later node and every escape-hatch resumption. |
 | Ledger | `reckon crew ledger --project <project> [--view summary\|records]` | Reads the committed record of how this project's plans were implemented: roster, gate outcomes, and measured worker-time per plan against its declared effort with the spread. |
+| Repair completion | `reckon crew repair-completion --project <project> [--write]` | Repairs completion measurements: it reports the re-derived values by default and persists them only with `--write`. Its name deliberately states the measurements it touches. |
 
 ### Recovering a run blocked by a provider refusal
 
@@ -57,16 +58,16 @@ manifest and never calls the provider, so it works identically before and
 during a refusal — there is no window where it must be run early or not at
 all.
 
-**The automatic path:** `reckon crew resume-held --project <project>` sweeps
-and resumes every run a lapsed refusal still holds; `reckon crew follow` runs
-it itself on a two-minute cadence. The sweep, hold state, lane probe and session
-resolver live together in `reckon/crew/resumption.py`. A `follow` process already
-running when this code changes keeps its pre-change code for its whole life and
-will never call the new version — cycle any long-lived follower whenever
-resumption-path code lands.
+**The automatic path:** `reckon crew resume-ready --project <project>` sweeps
+and resumes every run whose provider hold or declared external wait has ended;
+`reckon crew follow` runs it itself on a two-minute cadence. The sweep, hold
+state, lane probe and session resolver live together in
+`reckon/crew/resumption.py`. A long-lived follower reloads the installed code
+when it advances, preserving its process and session registration; a failed
+reload reports explicitly in the pane.
 
 Commands, verified with `--help`: `reckon crew observe`, `reckon crew resume
---advice`, `reckon crew resume-held`, `reckon crew complete`, `reckon crew
+--advice`, `reckon crew resume-ready`, `reckon crew complete`, `reckon crew
 recover` (a different capability — it classifies abandoned live pointers and
 repairs the record only, it does not resume or promote). Full operational
 detail: `~/.claude/skills/reckon-ship/references/outage-recovery.md`.
