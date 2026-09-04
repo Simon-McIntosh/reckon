@@ -90,6 +90,7 @@ class BudgetState:
     backend: str
     headroom: str = "unknown"
     utilisation_pct: float | None = None
+    burn_multiple: float | None = None
     rate_limit_type: str | None = None
     rate_limit_period_minutes: float | None = None
     resets_at: str | None = None
@@ -107,6 +108,7 @@ class BudgetState:
         """Return the state as sorted JSON-ready data."""
         return {
             "backend": self.backend,
+            "burn_multiple": self.burn_multiple,
             "availability": self.availability,
             "availability_cached": self.availability_cached,
             "availability_observed_at": self.availability_observed_at,
@@ -509,20 +511,23 @@ def _from_block(
         if isinstance(utilisation, (int, float)) and not isinstance(utilisation, bool)
         else None
     )
+    period = block.get("rate_limit_period_minutes")
+    numeric_period = float(period) if period is not None else None
     return BudgetState(
         backend=backend_name,
         headroom=headroom,
         utilisation_pct=numeric_utilisation,
+        burn_multiple=(
+            _burn_multiple(numeric_utilisation, numeric_period, remaining)
+            if headroom == "known"
+            else None
+        ),
         rate_limit_type=(
             str(block["rate_limit_type"])
             if block.get("rate_limit_type") is not None
             else None
         ),
-        rate_limit_period_minutes=(
-            float(block["rate_limit_period_minutes"])
-            if block.get("rate_limit_period_minutes") is not None
-            else None
-        ),
+        rate_limit_period_minutes=numeric_period,
         resets_at=resets_at,
         seconds_until_reset=remaining,
         threshold_status=block.get("threshold_status"),
@@ -545,6 +550,40 @@ def _is_known(block: Mapping[str, Any]) -> bool:
         and isinstance(utilisation, (int, float))
         and not isinstance(utilisation, bool)
     )
+
+
+def _burn_multiple(
+    utilisation_pct: float | None,
+    period_minutes: float | None,
+    seconds_until_reset: int | None,
+) -> float | None:
+    """Return quota consumption relative to elapsed window time.
+
+    The reset time locates the current point inside the declared window. A
+    missing or invalid period cannot be inferred from utilisation alone, and a
+    reading at or before the window start has no elapsed denominator yet.
+    """
+    if utilisation_pct is None or period_minutes is None or seconds_until_reset is None:
+        return None
+    period_seconds = period_minutes * 60.0
+    elapsed_seconds = period_seconds - seconds_until_reset
+    if period_seconds <= 0 or elapsed_seconds <= 0 or elapsed_seconds > period_seconds:
+        return None
+    elapsed_fraction = elapsed_seconds / period_seconds
+    return (utilisation_pct / 100.0) / elapsed_fraction
+
+
+def _position(state: BudgetState) -> str:
+    """Name utilisation and its report-only burn rate together."""
+    utilisation = (
+        f"{state.utilisation_pct:g}%"
+        if state.utilisation_pct is not None
+        else "unknown"
+    )
+    burn = (
+        f"{state.burn_multiple:.1f}x" if state.burn_multiple is not None else "unknown"
+    )
+    return f"utilisation {utilisation} with burn multiple {burn}"
 
 
 # ── The decision ────────────────────────────────────────────────────────────
@@ -647,7 +686,7 @@ def decide(
         verdict["held"] = True
         verdict["reason"] = (
             f"backend reports threshold status {state.threshold_status!r}, which "
-            "policy counts as exhausted regardless of utilisation"
+            f"policy counts as exhausted regardless of utilisation; {_position(state)}"
         )
         return verdict
 
@@ -662,11 +701,11 @@ def decide(
         verdict["held"] = True
         margin = "" if purpose == "resume" else f" (ceiling {ceiling}% less reserve)"
         verdict["reason"] = (
-            f"utilisation {utilisation}% is at or above the {limit}% ceiling for a "
+            f"{_position(state)} is at or above the {limit}% ceiling for a "
             f"{purpose}{margin}"
         )
         return verdict
-    verdict["reason"] = f"utilisation {utilisation}% is below the {limit}% ceiling"
+    verdict["reason"] = f"{_position(state)} is below the {limit}% ceiling"
     return verdict
 
 
@@ -840,7 +879,7 @@ def preflight(
         "resume_after_seconds": min(waits) if waits else None,
         "resume_at": _earliest_reset(held),
     }
-    report["summary"] = summary(report) if held else ""
+    report["summary"] = summary(report)
     return report
 
 
@@ -857,16 +896,19 @@ def _earliest_reset(held: Iterable[Mapping[str, Any]]) -> str | None:
 
 
 def summary(report: Mapping[str, Any]) -> str:
-    """Render a held wave as the four-axis summary a dispatched one gets.
+    """Render budget position as the four-axis summary a wave gets.
 
-    A hold is a decision the lead needs to see, so it reports on the same axes as
-    a dispatch: what is held, why, how it stays recoverable, and when it lifts.
-    Reporting it any other way, or not at all, makes a held wave look like a
-    crashed orchestrator.
+    A hold is a decision the lead needs to see, and a clear lane with an
+    unsustainable burn is an early warning the position-only fence cannot give.
+    Both report on the same axes as a dispatch: what the position is, why, how
+    the nodes remain recoverable, and when work may proceed.
     """
-    held = [verdict for verdict in report.get("backends", ()) if verdict.get("held")]
+    verdicts = list(report.get("backends", ()))
+    held = [verdict for verdict in verdicts if verdict.get("held")]
     clear = list(report.get("clear_backends") or ())
-    reasons = "; ".join(str(verdict.get("reason") or "") for verdict in held)
+    reasons = "; ".join(
+        f"{verdict.get('backend')}: {verdict.get('reason')}" for verdict in verdicts
+    )
     if clear:
         how = (
             "no worktree created and no node failed; ready nodes on "
@@ -876,7 +918,9 @@ def summary(report: Mapping[str, Any]) -> str:
         how = "no worktree created and no node failed; every node stays ready"
     wait = report.get("resume_after_seconds")
     resume_at = report.get("resume_at")
-    if resume_at and wait is not None:
+    if not held:
+        when = "the wave may open now; burn multiple is report-only and never holds"
+    elif resume_at and wait is not None:
         when = f"resets at {resume_at}, in {wait}s — resume the wave then"
     else:
         when = (
@@ -885,8 +929,10 @@ def summary(report: Mapping[str, Any]) -> str:
         )
     return "\n".join(
         [
-            f"WHAT   wave held before opening — {len(held)} backend(s) held, "
-            f"{len(clear)} clear",
+            (
+                f"WHAT   budget preflight — {len(held)} backend(s) held, "
+                f"{len(clear)} clear"
+            ),
             f"WHY    {reasons}",
             f"HOW    {how}",
             f"WHEN   {when}",
