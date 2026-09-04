@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="derived-state-parity">
+  <meta name="plan-title" content="One Derivation, Every Surface">
+  <meta name="plan-summary" content="Move the four derivations the surface invented into Python, so an agent reading MCP sees the sprint state, endpoints, rollup and schedule a human sees.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="13.0">
+  <meta name="plan-wall-clock-hours" content="7.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S16">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,spa">
+  <meta name="plan-north-star" content="state-that-tells-the-truth">
+  <meta name="plan-depends-on" content="graph-derived-schedule,fleet-home">
+  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html">
+  <title>One Derivation, Every Surface | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<header>
+  <p class="eyebrow">Surface parity &middot; the derivations that exist in only one language</p>
+  <h1>One Derivation, Every Surface</h1>
+  <p class="lead">The surface sprint taught four surfaces to derive state the stored files do not carry: a sprint's real completion, every dependency endpoint rather than only the named ones, a live cross-project rollup, and a schedule anchored at now. All four were implemented in JSX, so they are visible to a human with a browser and invisible to every agent, every CLI call and every MCP read. This plan moves each derivation into Python, makes the surface a consumer of it, and adds the check that fails when the two disagree.</p>
+</header>
+
+<h2 id="s1">&#167;1 &mdash; Why this exists</h2>
+<p>Measured against <code>main</code> on 2026-09-04, after the surface nodes landed. Each row is a question a human can answer from the SPA and an agent cannot answer at all.</p>
+<table>
+  <thead><tr><th>Derivation</th><th>Where it lives now</th><th>What an agent gets</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>A sprint's state from member completion, with a <code>was &lt;status&gt;</code> flag where the stored file disagrees</td>
+      <td><code>docs/ui/sprint.jsx</code></td>
+      <td><code>roadmap</code> reports the file's <code>status</code> and has no notion of derivation or drift. The SPA can read <em>shipped, was planned</em> for a sprint an agent is told is <code>planned</code>.</td>
+    </tr>
+    <tr>
+      <td>Every dependency endpoint, named or not, with its closure metrics</td>
+      <td><code>docs/ui/graph.jsx</code>, eight references to the unnamed case</td>
+      <td>Nothing. <code>roadmap(project="graph:&lt;handle&gt;")</code> resolves only an authored handle, and <code>roadmap.py</code> contains no notion of an unnamed endpoint. A human sees a graph an agent cannot enumerate.</td>
+    </tr>
+    <tr>
+      <td>The cross-project rollup: per-project counts, live runs, last edit, active sprint, thirty-day activity</td>
+      <td><code>reckon/fleet_index.py</code>, reachable only over HTTP as <code>/_projects/index.json</code></td>
+      <td>Nothing. Neither <code>reckon/mcp.py</code> nor <code>reckon/cli.py</code> references the module. The one cross-project view exists for browsers only.</td>
+    </tr>
+    <tr>
+      <td>The schedule: positions from dependency depth and wall-clock hours, best-fit lanes, the chain's far end</td>
+      <td><code>docs/ui/crew.jsx</code>, twenty-six references</td>
+      <td>Nothing comparable. <code>roadmap</code>'s <code>_schedule_horizon</code> is the deferral window, not a derived schedule. &ldquo;When does this finish&rdquo; is a browser-only question.</td>
+    </tr>
+  </tbody>
+</table>
+<p>The failure this produces is the one this repository keeps rediscovering: <strong>two implementations of one truth, and no check that they agree.</strong> It has already cost a session tonight in three unrelated places &mdash; a stale renderer drawing a wrong column, a stale follower recovering nothing, and a session field read from one of three possible sources. A derivation implemented twice is the same defect with a longer fuse, because nothing fails when the copies drift; the surface simply starts telling a different story from the tool, and whichever reader is wrong does not find out.</p>
+<figure>
+  <svg viewBox="0 0 640 200" role="img" aria-label="Today four derivations live in JSX and answer only the browser; the target is one Python derivation answering the browser, the CLI and MCP alike." style="max-width:100%;height:auto">
+    <text x="0" y="14" font-size="13" font-family="system-ui" fill="#1c1c1e" font-weight="600">Today</text>
+    <rect x="0" y="26" width="150" height="58" fill="none" stroke="#c9ccd4" stroke-width="1"/>
+    <text x="12" y="48" font-size="12" font-family="system-ui" fill="#1c1c1e">derivation in JSX</text>
+    <text x="12" y="66" font-size="11" font-family="system-ui" fill="#6e7282">four of them</text>
+    <line x1="150" y1="55" x2="228" y2="55" stroke="#1c1c1e" stroke-width="1"/>
+    <polygon points="228,55 221,51 221,59" fill="#1c1c1e"/>
+    <text x="234" y="59" font-size="12" font-family="system-ui" fill="#1c1c1e">browser only</text>
+    <text x="234" y="80" font-size="11" font-family="system-ui" fill="#b3261e">CLI and MCP answer differently, or not at all</text>
+
+    <text x="0" y="128" font-size="13" font-family="system-ui" fill="#1c1c1e" font-weight="600">Target</text>
+    <rect x="0" y="140" width="150" height="46" fill="none" stroke="#1c1c1e" stroke-width="1.5"/>
+    <text x="12" y="162" font-size="12" font-family="system-ui" fill="#1c1c1e">derivation in Python</text>
+    <text x="12" y="178" font-size="11" font-family="system-ui" fill="#6e7282">one authority</text>
+    <line x1="150" y1="150" x2="228" y2="150" stroke="#1c1c1e" stroke-width="1"/>
+    <polygon points="228,150 221,146 221,154" fill="#1c1c1e"/>
+    <text x="234" y="154" font-size="12" font-family="system-ui" fill="#1c1c1e">SPA</text>
+    <line x1="150" y1="163" x2="228" y2="163" stroke="#1c1c1e" stroke-width="1"/>
+    <polygon points="228,163 221,159 221,167" fill="#1c1c1e"/>
+    <text x="234" y="167" font-size="12" font-family="system-ui" fill="#1c1c1e">CLI</text>
+    <line x1="150" y1="176" x2="228" y2="176" stroke="#1c1c1e" stroke-width="1"/>
+    <polygon points="228,176 221,172 221,180" fill="#1c1c1e"/>
+    <text x="234" y="180" font-size="12" font-family="system-ui" fill="#1c1c1e">MCP</text>
+    <text x="300" y="167" font-size="11" font-family="system-ui" fill="#6e7282">&#167;6 fails when any two disagree</text>
+  </svg>
+  <figcaption>The move is not new capability; it is relocating four derivations to the one place every reader can consult, and binding a check to the agreement.</figcaption>
+</figure>
+
+<h2 id="s2">&#167;2 &mdash; Sprint state derives once, and drift is reported everywhere</h2>
+<p>The rule is the surface's, and it is right: a sprint's state comes from member completion, and where the stored file disagrees the disagreement is <em>reported</em> rather than silently resolved, because resolving it hides a real inconsistency the sprint skill should repair. That rule belongs in <code>roadmap</code>, which is what every agent already reads for sprint order and readiness. Each sprint row gains <code>derived_state</code> and, when it differs from the stored value, <code>state_drift</code> naming both. <code>docs/ui/sprint.jsx</code> then reads those fields instead of recomputing them, and its <code>was &lt;status&gt;</code> flag renders whatever the payload reports.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>sprint-state-derivation-in-roadmap</code></td>
+      <td>Roadmap reports each sprint's derived state and its drift from the stored value, and the surface consumes those fields.</td>
+      <td><code>uv run pytest tests/test_roadmap_sprint_derivation.py tests/test_spa_sprint_surface.py -q</code> passes. Cases: a sprint whose file says <code>planned</code> while every member is at 100% reports <code>derived_state: "shipped"</code> and <code>state_drift: {stored: "planned", derived: "shipped"}</code>; one whose file agrees reports no drift key; a sprint with no members reports <code>derived_state: "empty"</code>; a sprint with one member started reports <code>active</code>. The surface test asserts the rendered flag text comes from the payload by changing the payload and observing the flag change, with no derivation left in the module &mdash; <code>grep -c 'deriveSprintState\|derivedState' docs/ui/sprint.jsx</code> prints 0.</td>
+      <td><code>reckon/roadmap.py</code>, <code>docs/ui/sprint.jsx</code>, <code>tests/test_roadmap_sprint_derivation.py</code></td>
+      <td>guided &middot; sonnet</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s3">&#167;3 &mdash; An endpoint is enumerable without a handle</h2>
+<p>An endpoint is a plan with prerequisites that nothing depends on. The surface finds them structurally and renders named and unnamed alike; the graph read requires an authored handle, so the set an agent can address is a subset of the set a human can see, and the difference is invisible from either side. <code>roadmap(project)</code> gains an <code>endpoints</code> list &mdash; every endpoint with its closure membership, depth, shipped fraction, repositories spanned and open-decision count, each carrying its handle or <code>null</code>. The named-handle read keeps its exact current contract; this adds enumeration beside it, so <code>/reckon-ship graph:&lt;handle&gt;</code> still refuses an unnamed endpoint rather than inventing a target, and the surface's <code>needs plan-graph-handle</code> chip and an agent's refusal now name the same missing precondition.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>endpoint-enumeration</code></td>
+      <td>Roadmap enumerates every dependency endpoint with its closure metrics, named or not, and the Graph tab reads that list.</td>
+      <td><code>uv run pytest tests/test_roadmap_endpoints.py tests/test_spa_graph_authority.py -q</code> passes. Cases: a fixture with two named and three unnamed endpoints returns five rows, named first, each carrying <code>handle</code> or <code>null</code>; closure membership and depth for an unnamed endpoint equal those the named-handle read returns for the same plan once a handle is authored; a project where no plan has a prerequisite returns an empty list; the count and membership the Graph tab renders equal the roadmap rows for this repository, asserted by comparing the two rather than by a literal. <code>roadmap(project="graph:&lt;unknown&gt;")</code> still refuses.</td>
+      <td><code>reckon/roadmap.py</code>, <code>docs/ui/graph.jsx</code>, <code>tests/test_roadmap_endpoints.py</code></td>
+      <td>guided &middot; opus, after <code>sprint-state-derivation-in-roadmap</code> (same module)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s4">&#167;4 &mdash; The rollup is a read, not only an HTTP payload</h2>
+<p><code>reckon/fleet_index.py</code> computes the one cross-project view in the system and nothing outside the HTTP handler can call it. An agent asking &ldquo;which projects are moving, and how far along is each&rdquo; has no answer, while the fleet home answers it in a glance. The module gains a CLI reader (<code>reckon fleet</code>) and an MCP view, both returning the same rows <code>collect_projects</code> serves, so the three surfaces answer from one computation. It stays read-only and cross-project: it mutates nothing and it is the one place where a row from another repository is legitimate data rather than something to act on.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>rollup-on-cli-and-mcp</code></td>
+      <td>The fleet rollup is readable from the CLI and from MCP, returning the rows the served payload returns.</td>
+      <td><code>uv run pytest tests/test_fleet_rollup_surfaces.py -q</code> passes. Cases: against a synthesised two-project mount set, the CLI reader, the MCP view and <code>collect_projects</code> return identical rows field for field; a project with no commits in the window reports <code>activity30 == []</code> through all three; the CLI exits non-zero with a readable refusal when no project is mounted; the MCP view returns compact rows and no follower records. <code>uv run pytest tests/test_fleet_index.py -q</code> stays green.</td>
+      <td><code>reckon/fleet_index.py</code>, <code>reckon/cli.py</code>, <code>reckon/mcp.py</code>, <code>tests/test_fleet_rollup_surfaces.py</code></td>
+      <td>guided &middot; sonnet</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s5">&#167;5 &mdash; The schedule is computed once</h2>
+<p>The schedule is the most valuable of the four and the most thoroughly stranded: twenty-six references in one JSX module, answering &ldquo;when does this chain finish&rdquo; for a browser and nobody else. It is also the derivation an orchestrator most wants, because it is what turns a dependency graph into a wave plan. It moves to Python as a function over the same inputs the surface uses &mdash; plan wall-clock hours, <code>depends_on</code>, edited stamps for landed work, live run dispatch times &mdash; and returns bars, best-fit lanes and the chain's far end. <code>roadmap</code> reports the far end and the lane count; the full bar list is available through the schedule read for callers that want it, and <code>docs/ui/crew.jsx</code> renders the payload rather than recomputing it.</p>
+<p><strong>Gate for this plan, recorded when the measure runs: for this repository, the sprint state, endpoint set, rollup rows, lane count and chain far end that the SPA renders are equal to what <code>roadmap</code> and the new reads return, compared field for field by the &#167;6 check rather than by inspection. Its evidence is that check passing plus one recorded run of each new read against this checkout, with the endpoint count, the rollup row count, the lane count and the far-end figure written into the execution record.</strong></p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>schedule-derivation-in-python</code></td>
+      <td>The dependency-derived schedule is computed in Python and the Crew surface renders that payload.</td>
+      <td><code>uv run pytest tests/test_schedule_derivation.py tests/test_spa_derived_flow.py -q</code> passes. Cases: against the five-plan fixture the surface test already uses &mdash; two shipped with edited stamps 10 and 30 hours ago, one active with a live run dispatched 4 hours ago, two pending chained behind it &mdash; the Python schedule returns the same bar starts, the same lane count of 2, and the same axis bounds the JSX schedule returned, asserted against the JSX result rather than against literals; a plan whose prerequisite is unknown is placed at now rather than dropped; bars older than 60 hours are excluded. <code>grep -c 'function schedule\|_schedule(' docs/ui/crew.jsx</code> prints 0.</td>
+      <td><code>reckon/schedule.py</code>, <code>reckon/roadmap.py</code>, <code>docs/ui/crew.jsx</code>, <code>tests/test_schedule_derivation.py</code></td>
+      <td>guided &middot; opus, after <code>endpoint-enumeration</code> (same module)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s6">&#167;6 &mdash; The check that makes parity hold</h2>
+<p>Moving the four derivations is worth little on its own, because nothing would stop the next surface node from inventing a fifth. Parity needs a bound check, and the check has to compare the surfaces rather than assert about one of them: for a single fixture project, render the surface, call each read, and require the rendered values and the returned values to be equal. It is the only form that fails when a copy drifts, which is the failure mode this whole plan is about &mdash; and it is the reason the four nodes above each assert against the other surface's result rather than against a literal, because a literal in both places drifts silently in step.</p>
+<p>The check also names what parity does <em>not</em> mean: geometry stays in the surface. Card sizes, gaps, edge routing and lane heights are presentation and have no agent-side counterpart. What must agree is state and derived fact &mdash; a sprint's completion, an endpoint's membership, a project's counts, a chain's far end.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>surface-parity-check</code></td>
+      <td>One test fails when a rendered value and its corresponding read diverge.</td>
+      <td><code>uv run pytest tests/test_surface_parity.py -q</code> passes. Against one fixture project it asserts equality between rendered and returned values for: each sprint's derived state and drift; the endpoint set with each closure's membership count; each project's rollup counts and activity-series length; the lane count and the chain far end. Each assertion names the two sources it compared in its failure message. A deliberate mutation of any one derivation on either side makes the test fail, asserted by a companion case that patches one value and expects the failure.</td>
+      <td><code>tests/test_surface_parity.py</code>, <code>tests/spa_parity_harness.py</code></td>
+      <td>guided &middot; sonnet, after &#167;2&ndash;&#167;5</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s7">&#167;7 &mdash; Out of scope</h2>
+<p>Presentation stays in the surface: the DAG geometry helper, card and lane dimensions, edge routing, colour and the capture harness are not moved and have no agent-side counterpart. No new store and no caching layer &mdash; each read computes from the same discovery and ledger inputs the surface uses today, and a cache would be a fifth place for the truth to differ. The plan-state write path is unchanged; every read here is read-only. Whether the SPA should degrade when a derivation is unavailable is a surface question for a later plan, not a parity question.</p>
+
+<section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="derivation-home" data-choice="python-authority-surface-consumes" data-by="reckon-ship (lead direction, 2026-09-04)" data-when="2026-09-04">
+    <p class="r-dec-q">Where does a derivation live when both a surface and an agent need it?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="python-authority-surface-consumes">In Python, with the surface consuming the payload</button>
+      <button class="r-opt" data-value="jsx-with-a-python-mirror">In JSX, with a Python implementation mirroring it</button>
+      <button class="r-opt" data-value="leave-as-is">Leave each surface to derive its own</button>
+    </p>
+    <p class="r-dec-rat">A mirror is two implementations of one truth, which is the defect being fixed rather than a way of fixing it. Leaving it means an agent and a human reading the same project disagree with no way to notice. Python is where the CLI and MCP already read, and the surface already consumes payloads for everything else.</p>
+</div>
+<div class="r-dec" data-key="sprint-drift-handling" data-choice="report-both-never-resolve" data-by="reckon-ship (carried from the surface plan)" data-when="2026-09-04">
+    <p class="r-dec-q">When derived sprint state disagrees with the stored file, which wins?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="report-both-never-resolve">Report both and flag the drift</button>
+      <button class="r-opt" data-value="derived-wins-silently">Overwrite the stored value</button>
+      <button class="r-opt" data-value="stored-wins">Keep reporting the stored value</button>
+    </p>
+    <p class="r-dec-rat">Resolving it silently hides an inconsistency the sprint skill should repair, and the surface already made that choice deliberately. Keeping only the stored value is what leaves an agent reading <code>planned</code> for a finished sprint.</p>
+</div>
+<div class="r-dec" data-key="parity-assertion-form" data-choice="compare-the-two-surfaces" data-by="reckon-ship (deduced from the drift failure mode)" data-when="2026-09-04">
+    <p class="r-dec-q">What form does the parity check take?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="compare-the-two-surfaces">Render and read, then require equality between them</button>
+      <button class="r-opt" data-value="literals-on-both-sides">Assert each surface against expected literals</button>
+    </p>
+    <p class="r-dec-rat">Literals in two places drift silently in step and the test keeps passing, which is exactly the failure being guarded. Only a comparison between the surfaces fails when one copy changes.</p>
+</div>
+<div class="r-dec" data-key="geometry-parity" data-choice="presentation-stays-in-the-surface" data-by="reckon-ship (deduced from the consumer set)" data-when="2026-09-04">
+    <p class="r-dec-q">Does layout geometry move to Python as well?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="presentation-stays-in-the-surface">No &mdash; state and derived fact move, presentation stays</button>
+      <button class="r-opt" data-value="move-geometry-too">Move the layout helper too</button>
+    </p>
+    <p class="r-dec-rat">No agent reads a card width or an edge path, so moving geometry would add a payload nobody consumes and couple the surface's visual design to a server release. The line is whether a reader without a browser has a use for the value.</p>
+</div>
+</section>
+
+<section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-dsp-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship derived-state-parity" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Move the derivations in module order, then bind the check</h4>
+    <div class="r-fu-body"><p>&#167;2, &#167;3 and &#167;5 all write <code>reckon/roadmap.py</code>, so they are one serial lane in section order; &#167;4 touches different modules and runs alongside them. &#167;6 lands last, because it compares what the four produce and is the node that keeps parity from rotting.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship derived-state-parity</pre>
+</article>
+</section>
+
+<section data-reckon="research" id="research" class="r-research-list">
+<h2><span class="sec">§</span> Research</h2>
+<div class="r-research" data-id="r1" data-type="design" data-url="design/reckon-spa-handoff.dc.html">
+  <span class="r-research-title">The handoff canvas, whose four derivations this plan relocates: the member-derived sprint state, the endpoint index including unnamed endpoints, the fleet rollup, and the schedule anchored at now.</span>
+</div>
+</section>
+</main>
+</body>
+</html>
