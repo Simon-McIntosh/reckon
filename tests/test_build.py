@@ -3,10 +3,12 @@ from __future__ import annotations
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
 import threading
+import tomllib
 import zipfile
 from contextlib import contextmanager
 from http.client import HTTPConnection
@@ -163,6 +165,39 @@ def _authored_spa_source(module: str) -> Path:
     return jsx_source
 
 
+def _version_describe_command(repository: Path) -> list[str]:
+    configuration = tomllib.loads((repository / "pyproject.toml").read_text())
+    raw_options = configuration["tool"]["hatch"]["version"]["raw-options"]
+    return shlex.split(raw_options["git_describe_command"])
+
+
+def _clone_with_current_version_configuration(source: Path, destination: Path) -> None:
+    subprocess.run(
+        ["git", "clone", "--quiet", "--shared", str(source), str(destination)],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    shutil.copy2(source / "pyproject.toml", destination / "pyproject.toml")
+
+
+def _build_wheel(repository: Path, destination: Path) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["uv", "build", "--offline", "--wheel", "--out-dir", str(destination)],
+        cwd=repository,
+        check=False,
+        text=True,
+        capture_output=True,
+        timeout=120,
+    )
+
+
+def _wheel_version(wheel: Path) -> str:
+    match = re.fullmatch(r"reckon_plans-(.+)-py3-none-any\.whl", wheel.name)
+    assert match is not None
+    return match.group(1)
+
+
 def _assert_spa_module_lists_match(
     loaded: dict[str, tuple[str, ...]], expected: tuple[str, ...]
 ) -> None:
@@ -252,8 +287,7 @@ def test_build_copies_every_canonical_asset(built_source_site):
     docs_dir, _, _ = built_source_site
     expected_ui = {path.name for path in (REPO_ROOT / "docs" / "ui").iterdir()}
     compiled_ui = {
-        f"{path.stem}.js"
-        for path in (REPO_ROOT / "docs" / "ui").glob("*.jsx")
+        f"{path.stem}.js" for path in (REPO_ROOT / "docs" / "ui").glob("*.jsx")
     }
     expected_shared = {path.name for path in (REPO_ROOT / "docs" / "_shared").iterdir()}
 
@@ -936,6 +970,69 @@ def test_wheel_contains_canonical_frontend_assets(built_wheel):
     assert expected_shared <= names
     assert "reckon/_assets/index.html" in names
     assert "reckon/_assets/_shared/state.js" in names
+
+
+def test_wheel_version_ignores_non_release_tag(tmp_path, built_wheel):
+    repository = tmp_path / "repository"
+    _clone_with_current_version_configuration(REPO_ROOT, repository)
+    subprocess.run(
+        ["git", "tag", "rescue/build-recovery-deadbeef9"],
+        cwd=repository,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    describe = subprocess.run(
+        _version_describe_command(repository),
+        cwd=repository,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    selected_tag = describe.stdout.split("-", 1)[0]
+    wheel_dir = tmp_path / "wheel"
+    result = _build_wheel(repository, wheel_dir)
+
+    assert re.fullmatch(r"v\d+\.\d+\.\d+(?:rc\d+)?", selected_tag)
+    assert result.returncode == 0, result.stdout + result.stderr
+    wheels = list(wheel_dir.glob("reckon_plans-*.whl"))
+    assert len(wheels) == 1
+    assert _wheel_version(wheels[0]) == _wheel_version(built_wheel)
+
+
+def test_release_tag_match_reports_when_no_release_tags_exist(tmp_path):
+    repository = tmp_path / "repository"
+    _clone_with_current_version_configuration(REPO_ROOT, repository)
+    release_tags = subprocess.run(
+        ["git", "tag", "--list", "v*"],
+        cwd=repository,
+        check=True,
+        text=True,
+        capture_output=True,
+    ).stdout.splitlines()
+    assert release_tags
+    subprocess.run(
+        ["git", "tag", "--delete", *release_tags],
+        cwd=repository,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    describe_command = _version_describe_command(repository)
+    with pytest.raises(subprocess.CalledProcessError) as raised:
+        subprocess.run(
+            describe_command,
+            cwd=repository,
+            check=True,
+            text=True,
+            capture_output=True,
+        )
+
+    message = str(raised.value)
+    assert "v[0-9]*" in message
+    assert "rescue/spec-level-names-a-backend-957c042" not in message
 
 
 @pytest.fixture(scope="session")
