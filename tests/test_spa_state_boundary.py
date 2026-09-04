@@ -368,3 +368,50 @@ def test_discovery_load_preserves_receipt_sprints_status_and_attachments() -> No
         relation["relation"] not in {"depends_on", "blocks"}
         for relation in state["attachment_relations"]
     )
+
+
+def test_discovery_load_preserves_ready_set_and_endpoint_rows() -> None:
+    endpoint = {
+        "slug": "delivery",
+        "title": "Delivery",
+        "handle": None,
+        "members": [{"slug": "foundation"}, {"slug": "delivery"}],
+        "shipped_fraction": 0.5,
+    }
+    ready_set = {
+        "ready_now": [{"slug": "delivery"}],
+        "sprints": [
+            {
+                "id": "focus",
+                "derived_state": "active",
+                "state_drift": {"stored": "planned", "derived": "active"},
+            }
+        ],
+        "endpoints": [endpoint],
+    }
+    state = _load_discovery_state(
+        {
+            "inventory": [
+                {
+                    "slug": "foundation",
+                    "type": "plan",
+                    "status": "shipped",
+                },
+                {"slug": "delivery", "type": "plan", "status": "active"},
+            ],
+            "endpoints": [endpoint],
+            "ready_set": ready_set,
+        }
+    )
+    state_without_endpoints = _load_discovery_state(
+        {
+            "inventory": [{"slug": "standalone", "type": "plan", "status": "active"}],
+            "endpoints": [],
+            "ready_set": {"ready_now": [], "sprints": [], "endpoints": []},
+        }
+    )
+
+    assert state["endpoints"] == [endpoint]
+    assert state["ready_set"] == ready_set
+    assert state_without_endpoints["endpoints"] == []
+    assert state_without_endpoints["ready_set"]["endpoints"] == []

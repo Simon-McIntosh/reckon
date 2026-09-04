@@ -286,6 +286,16 @@ window.revalidateProjectState = async function () {
       : p);
   }
 
+  const surfaceState = disc ?? idx;
+  const readySet = (
+    surfaceState.ready_set &&
+    typeof surfaceState.ready_set === "object" &&
+    !Array.isArray(surfaceState.ready_set)
+  ) ? surfaceState.ready_set : {};
+  const endpoints = Array.isArray(surfaceState.endpoints)
+    ? surfaceState.endpoints
+    : (Array.isArray(readySet.endpoints) ? readySet.endpoints : []);
+
   window.STATE = {
     today:            new Date().toISOString().slice(0, 10),
     project:          PROJECT,
@@ -305,6 +315,8 @@ window.revalidateProjectState = async function () {
                       : (Array.isArray(idx.blockers) ? idx.blockers : []),
     timeline:         Array.isArray(disc?.timeline) ? disc.timeline
                       : (Array.isArray(idx.timeline) ? idx.timeline : []),
+    ready_set:        readySet,
+    endpoints,
     attachment_relations: attachmentRelations,
     plans,
   };
