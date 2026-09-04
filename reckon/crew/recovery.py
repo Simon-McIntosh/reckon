@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import fcntl
+import json
 import os
 import re
 import shlex
 import subprocess
 import time
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterator, Mapping
 
@@ -45,6 +46,7 @@ from reckon.crew.runs import (
 # delivered record (completed_unpromoted) nor an absence (abandoned).
 RECOVERY_CLASSES = (
     "running",
+    "waiting",
     "stopped",
     "completed_unpromoted",
     "blocked",
@@ -52,6 +54,9 @@ RECOVERY_CLASSES = (
     "unreadable",
     "abandoned",
 )
+
+WAITING_STATUS = "waiting"
+WAITING_STATES = frozenset({"waiting", "wait-aged"})
 
 
 def _budget_timing(
@@ -271,6 +276,111 @@ def _background_wait_signal(record: Mapping[str, Any]) -> str | None:
     return None
 
 
+def _wait_probe(value: Any) -> list[str]:
+    """Read a shell-free argument vector from a waiting manifest."""
+    if isinstance(value, list):
+        probe = value
+    else:
+        try:
+            probe = json.loads(str(value))
+        except (TypeError, json.JSONDecodeError):
+            return []
+    if not isinstance(probe, list) or not probe:
+        return []
+    if any(not isinstance(item, str) or not item.strip() for item in probe):
+        return []
+    return [item.strip() for item in probe]
+
+
+def _wait_terminal_values(value: Any) -> list[str]:
+    """Read the external states that mean a condition has terminated."""
+    values = value if isinstance(value, list) else str(value or "").split(",")
+    return [str(item).strip() for item in values if str(item).strip()]
+
+
+def _manifest_wait(
+    manifest_data: Mapping[str, Any],
+    manifest: Path,
+    *,
+    now_seconds: float,
+    stale_after_seconds: int,
+) -> dict[str, Any] | None:
+    """Return the complete external-wait declaration carried by a manifest."""
+    if str(manifest_data.get("status") or "").strip().lower() != WAITING_STATUS:
+        return None
+    condition = str(manifest_data.get("wait_condition") or "").strip()
+    probe = _wait_probe(manifest_data.get("wait_probe"))
+    terminal = _wait_terminal_values(manifest_data.get("wait_terminal"))
+    resume_brief = str(manifest_data.get("resume_brief") or "").strip()
+    missing = [
+        name
+        for name, value in (
+            ("wait_condition", condition),
+            ("wait_probe", probe),
+            ("wait_terminal", terminal),
+            ("resume_brief", resume_brief),
+        )
+        if not value
+    ]
+    started = None
+    started_value = str(manifest_data.get("wait_started_at") or "").strip()
+    if started_value:
+        try:
+            started = datetime.fromisoformat(started_value)
+        except ValueError:
+            missing.append("readable wait_started_at")
+        else:
+            if started.tzinfo is None:
+                started = started.replace(tzinfo=UTC)
+    if started is None:
+        try:
+            started_seconds = manifest.stat().st_mtime
+        except OSError:
+            started_seconds = now_seconds
+    else:
+        started_seconds = started.timestamp()
+    age_seconds = max(0, int(now_seconds - started_seconds))
+    return {
+        "condition": condition,
+        "probe": probe,
+        "terminal": terminal,
+        "resume_brief": resume_brief,
+        "started_at": started_value
+        or datetime.fromtimestamp(started_seconds, tz=UTC).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        ),
+        "age_seconds": age_seconds,
+        "overdue": age_seconds > stale_after_seconds,
+        "signature": f"condition:{manifest.stat().st_mtime_ns}",
+        "valid": not missing,
+        "error": "missing or invalid " + ", ".join(missing) if missing else "",
+    }
+
+
+def external_wait(
+    record: Mapping[str, Any],
+    *,
+    now_seconds: float | None = None,
+    stale_after_seconds: int = LOG_STALE_AFTER_SECONDS,
+) -> dict[str, Any] | None:
+    """Read a fresh external-wait declaration from one live pointer."""
+    manifest = Path(str(record.get("manifest_path") or ""))
+    _present, fresh = _manifest_freshness(record)
+    if not fresh:
+        return None
+    try:
+        data = parse_manifest(manifest.read_text(encoding="utf-8"))
+    except (OSError, ManifestParseError):
+        return None
+    moment = _utc_seconds() if now_seconds is None else float(now_seconds)
+    return _manifest_wait(
+        data,
+        manifest,
+        now_seconds=moment,
+        stale_after_seconds=stale_after_seconds,
+    )
+
+
 def classify_pointer(
     record: Mapping[str, Any],
     *,
@@ -355,11 +465,17 @@ def classify_pointer(
     # more specific of the two when both happen to be present.
     background_wait = None if refusal_block else _background_wait_signal(record)
     terminal = phase in ("complete", "failed")
+    moment = _utc_seconds() if now_seconds is None else float(now_seconds)
+    wait = _manifest_wait(
+        manifest_data,
+        manifest,
+        now_seconds=moment,
+        stale_after_seconds=stale_after_seconds,
+    )
     terminal_at = None
     terminal_age_seconds = None
     if manifest_status in {"complete", "blocked", "failed"}:
         terminal_seconds = manifest.stat().st_mtime
-        moment = _utc_seconds() if now_seconds is None else float(now_seconds)
         terminal_at = (
             datetime.fromtimestamp(terminal_seconds, tz=timezone.utc)
             .isoformat(timespec="seconds")
@@ -409,6 +525,24 @@ def classify_pointer(
             f"read {manifest} and launch log {record.get('stderr_path')}; "
             "repair or redispatch the run"
         )
+    elif wait is not None and wait["valid"]:
+        classification = WAITING_STATUS
+        detail = (
+            f"waiting {wait['age_seconds']}s on {wait['condition']}; "
+            f"terminal when the probe reports {', '.join(wait['terminal'])}"
+        )
+        action = (
+            f"the recovery sweep will resume run {run_id} when the condition "
+            "test reports a terminal state"
+        )
+    elif wait is not None:
+        classification = "unreadable"
+        manifest_error = str(wait["error"])
+        detail = (
+            f"the manifest at {manifest} declares an external wait but is "
+            f"incomplete: {manifest_error}"
+        )
+        action = f"repair the waiting declaration in {manifest} before resuming"
     elif phase == "stopped":
         classification = "stopped"
         detail = "the run was intentionally stopped"
@@ -553,6 +687,9 @@ def classify_pointer(
         # it travels too so the renderer derives the glyph instead of persisting it.
         "marker": marker,
         "needs_help_complete": needs_help_complete_value,
+        "external_wait": wait,
+        "wait_age_seconds": wait.get("age_seconds") if wait else None,
+        "wait_overdue": wait.get("overdue") if wait else None,
     }
 
 
@@ -808,14 +945,18 @@ def _pointer_role(pointer: Mapping[str, Any]) -> str:
 # The actionable states may keep the classifier's reason; an unreadable
 # manifest is one of them, because the refusal text naming the rejected format
 # is the one sentence a reader needs before repairing the file.
-EXPLAINED_STATES = frozenset(NEEDS_ACTION | {"unreadable"})
+EXPLAINED_STATES = frozenset(NEEDS_ACTION | WAITING_STATES | {"unreadable"})
 
 
 def _watch_snapshot(
     pointer: Mapping[str, Any], *, moment: float, stall_seconds: int
 ) -> dict[str, Any]:
     """Reduce one pointer to the state and reason a ticker compares."""
-    row = classify_pointer(pointer, now_seconds=moment)
+    row = classify_pointer(
+        pointer,
+        now_seconds=moment,
+        stale_after_seconds=stall_seconds,
+    )
     manifest_status = str(row.get("manifest_status") or "")
     phase = str(pointer.get("phase") or "")
     classification = str(row.get("classification") or "")
@@ -831,6 +972,8 @@ def _watch_snapshot(
     # terminal readings are arbitrated before any working state is chosen.
     if manifest_status in {"complete", "blocked", "failed"}:
         state = manifest_status
+    elif classification == WAITING_STATUS:
+        state = "wait-aged" if row.get("wait_overdue") else WAITING_STATUS
     elif classification == "blocked":
         # A provider refusal blocks even though no manifest reached a verdict:
         # the process is gone, but the stop is triageable and resumable once
@@ -914,35 +1057,41 @@ def _watch_snapshot(
         # carries a marker; a run entering any other state has nothing for the
         # reader to answer or read a manifest for.
         "needs_help_complete": row.get("needs_help_complete"),
+        "wait_overdue": row.get("wait_overdue"),
     }
 
 
-# The three buckets the ticker's summary reports, and every state a snapshot can
-# emit belongs to exactly one of them. A figure a reader adds up has to add up:
-# counting pointers as "live" put blocked and finished runs inside the number a
-# reader takes for work in progress, so `3 live · 0 blocked · 1 unpromoted`
-# described two workers working.
+# The ordinary three buckets remain unchanged when no external wait exists. A
+# waiting bucket appears while at least one declared condition is outstanding,
+# keeping healthy waits out of both work-in-progress and needs-action figures.
+# Every snapshot belongs to exactly one bucket, so the figures still add up.
 FLEET_WORKING_STATES = ("dispatched", "working", "running")
 FLEET_UNPROMOTED_STATES = ("complete", "completed_unpromoted")
+FLEET_WAITING_STATES = tuple(sorted(WAITING_STATES))
 # The same set again: what the counter calls blocked is what a reader must act
 # on, and a state in one and not the other is a number nobody can explain.
 FLEET_BLOCKED_STATES = tuple(sorted(NEEDS_ACTION))
 
 
 def _fleet_counts(snapshots: Mapping[str, Mapping[str, Any]]) -> dict[str, int]:
-    """Partition the fleet into work in progress, work needing you, and work done.
+    """Partition the fleet into working, blocked, delivered, and waiting work.
 
     ``working`` is what a reader means by a live worker. ``blocked`` is
     everything that has stopped progressing and needs the coordinator, a stall
     or a failure included. ``unpromoted`` is delivered work waiting on a gate.
+    ``waiting`` is a run whose declared external condition remains outstanding.
     A run that leaves the fleet is in none of them.
     """
     states = [str(snapshot.get("state") or "") for snapshot in snapshots.values()]
-    return {
+    counts = {
         "working": sum(state in FLEET_WORKING_STATES for state in states),
         "blocked": sum(state in FLEET_BLOCKED_STATES for state in states),
         "unpromoted": sum(state in FLEET_UNPROMOTED_STATES for state in states),
     }
+    waiting = sum(state in FLEET_WAITING_STATES for state in states)
+    if waiting:
+        counts["waiting"] = waiting
+    return counts
 
 
 def fleet_transitions(
@@ -1021,7 +1170,7 @@ def _watch_transition(
     no pre-claused reason and no display glyph are written here — the monitor
     derives those from these facts, so the log stays re-renderable.
     """
-    return {
+    event = {
         "project": project,
         "event": kind,
         "observed_at": _utc_now(),
@@ -1045,6 +1194,9 @@ def _watch_transition(
         "detail": str(snapshot.get("detail") or ""),
         "needs_help_complete": snapshot.get("needs_help_complete"),
     }
+    if "waiting" in counts or previous in WAITING_STATES or current in WAITING_STATES:
+        event["waiting"] = counts.get("waiting", 0)
+    return event
 
 
 # Rendering a transition is a layout concern with its own contract, so it lives
@@ -1268,7 +1420,7 @@ def recover(
         name: sum(1 for item in reports if item["classification"] == name)
         for name in ("running", "completed_unpromoted", "abandoned")
     }
-    for name in ("stopped", "blocked", "failed", "unreadable"):
+    for name in ("waiting", "stopped", "blocked", "failed", "unreadable"):
         count = sum(1 for item in reports if item["classification"] == name)
         if count:
             counts[name] = count

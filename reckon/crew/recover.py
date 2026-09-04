@@ -1,4 +1,4 @@
-"""Resume the runs a lapsed provider refusal is still holding.
+"""Resume runs after a provider hold or declared external wait ends.
 
 A per-request refusal stops a worker without breaking anything: the account is
 spent until a moment the refusal names, the session still holds every turn of
@@ -12,12 +12,17 @@ it; one naming none ages out of the shelf life declared in flight
 configuration. Both readings come from records already on disk, so the sweep
 costs nothing to run and can therefore run often.
 
+An external wait is explicit worker delivery rather than an inferred stop. Its
+manifest names the condition, a shell-free probe argument vector, the returned
+states that mean terminal, and the brief for the resumed turn. The same sweep
+checks that trigger on its cadence and leaves the run alone until it terminates.
+
 Four bounds keep the sweep from becoming its own hazard, and each is checked
 before anything is launched:
 
-* **At most one resume per hold.** A resumed run is stamped with the hold it
-  was resumed for. A lane that refuses again writes a new hold, and the sweep
-  waits for that hold's own expiry rather than retrying into a spent account.
+* **At most one resume per trigger.** A resumed run is stamped with the hold or
+  condition it was resumed for. A fresh refusal or rewritten waiting manifest
+  carries a new identity, so it can be judged independently.
 * **Never onto a lane still held.** The resume plan is built through the same
   budget verdict a hand-typed resume passes, so a lane whose hold is in force
   refuses here too and the sweep can never spend the last of a recovering quota.
@@ -54,7 +59,7 @@ from reckon.crew.dispatch import (
     resume_plan,
 )
 from reckon.crew.node import CrewError
-from reckon.crew.recovery import _stream_refusal_block, classify_pointer
+from reckon.crew.recovery import _stream_refusal_block, classify_pointer, external_wait
 from reckon.crew.runs import (
     _manifest_mtime_ns,
     _pointer_lock,
@@ -507,14 +512,15 @@ def _resume(
     *,
     config: Mapping[str, Any] | None,
     launcher: Callable[..., int],
+    advice: str = CONTINUE_ADVICE,
 ) -> dict[str, Any]:
     """Launch one resumption exactly the way a hand-typed resume does."""
-    plan = resume_plan(run_id, CONTINUE_ADVICE, config=config)
+    plan = resume_plan(run_id, advice, config=config)
     directory = run_dir(run_id)
     turn = len(list(directory.glob("resume-*.jsonl"))) + 1
     advice_path = directory / f"resume-{turn}-advice.txt"
     advice_path.parent.mkdir(parents=True, exist_ok=True)
-    advice_path.write_text(CONTINUE_ADVICE + "\n", encoding="utf-8")
+    advice_path.write_text(advice + "\n", encoding="utf-8")
     log_path = directory / f"resume-{turn}.jsonl"
     stderr_path = directory / f"resume-{turn}.stderr.log"
     attempt_started_at = _utc_now()
@@ -534,14 +540,70 @@ def _resume(
     return {"pid": pid, "turn": turn, "log_path": str(log_path)}
 
 
-def _stamp_hold(run_id: str, signature: str) -> None:
-    """Record which hold this run was resumed for, so it is resumed once."""
+def _run_condition_probe(
+    record: Mapping[str, Any], wait: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Run a waiting manifest's argument vector without invoking a shell."""
+    worktree = Path(str(record.get("worktree") or "."))
+    try:
+        completed = subprocess.run(
+            list(wait.get("probe") or ()),
+            cwd=worktree if worktree.is_dir() else None,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return {
+            "terminal": False,
+            "observed": "unavailable",
+            "detail": f"condition probe could not run: {exc}",
+        }
+    lines = [line.strip() for line in completed.stdout.splitlines() if line.strip()]
+    observed = lines[-1] if lines else f"exit:{completed.returncode}"
+    candidates = {observed.casefold()}
+    candidates.update(
+        line.split(maxsplit=1)[0].rstrip("+").casefold() for line in lines
+    )
+    terminal = {str(value).strip().casefold() for value in wait.get("terminal") or ()}
+    return {
+        "terminal": bool(candidates & terminal),
+        "observed": observed,
+        "detail": (
+            f"condition probe reported {observed!r} with exit {completed.returncode}"
+        ),
+    }
+
+
+def _condition_observation(value: Any) -> dict[str, Any]:
+    """Normalise an injected or subprocess-backed condition observation."""
+    if isinstance(value, bool):
+        return {
+            "terminal": value,
+            "observed": "terminal" if value else "pending",
+            "detail": "condition test returned a boolean verdict",
+        }
+    if not isinstance(value, Mapping):
+        raise TypeError("condition test must return a mapping or boolean")
+    terminal = value.get("terminal")
+    if not isinstance(terminal, bool):
+        raise TypeError("condition test result must carry a boolean terminal field")
+    return {
+        "terminal": terminal,
+        "observed": str(value.get("observed") or "unknown"),
+        "detail": str(value.get("detail") or "condition test returned a verdict"),
+    }
+
+
+def _stamp_resumption_trigger(run_id: str, signature: str) -> None:
+    """Record which hold or condition caused a resumption, so it happens once."""
     with _pointer_lock(run_id):
         try:
             current = read_pointer(run_id)
         except CrewError:
             return
-        current["auto_resume"] = {"hold": signature, "at": _utc_now()}
+        current["auto_resume"] = {"trigger": signature, "at": _utc_now()}
         _write_json(pointer_path(run_id), current)
 
 
@@ -592,14 +654,17 @@ def sweep(
     dry_run: bool = False,
     launcher: Callable[..., int] | None = None,
     now: datetime | None = None,
+    condition_test: Callable[[Mapping[str, Any], Mapping[str, Any]], Any] | None = None,
 ) -> dict[str, Any]:
-    """Resume every run this project holds on a refusal that has lapsed.
+    """Resume runs whose provider hold or declared external wait has ended.
 
-    Idempotent by construction: a resumed run carries the hold it was resumed
-    for, so a second pass over the same fleet reports nothing to do. That is
-    what makes it safe for something already running to call on a cadence.
+    Idempotent by construction: a resumed run carries the trigger it was
+    resumed for, so a second pass over the same fleet reports nothing to do.
+    That is what makes it safe for something already running to call on a
+    cadence.
     """
     launch = _spawn if launcher is None else launcher
+    test_condition = _run_condition_probe if condition_test is None else condition_test
     policy_block = budget_module.policy(config)
     resumed: list[dict[str, Any]] = []
     skipped: list[dict[str, Any]] = []
@@ -609,34 +674,90 @@ def sweep(
         run_id = str(pointer.get("run_id") or "")
         if not run_id:
             continue
+        moment = _now(now)
+        wait = external_wait(pointer, now_seconds=moment.timestamp())
         refusal = _stream_refusal_block(pointer)
-        if refusal is None:
-            continue
-        if str(classify_pointer(pointer).get("classification") or "") != "blocked":
+        if wait is None and refusal is None:
             continue
         considered += 1
-        entry = {"run_id": run_id, "backend": refusal.get("backend")}
-
-        hold = hold_state(pointer, refusal, policy_block=policy_block, now=now)
-        if hold["in_force"]:
-            skipped.append(
-                {**entry, "reason": "hold-in-force", "detail": hold["detail"]}
+        advice = CONTINUE_ADVICE
+        observation: dict[str, Any] = {}
+        if wait is not None:
+            entry = {
+                "run_id": run_id,
+                "backend": pointer.get("backend"),
+                "trigger": "external-condition",
+                "condition": wait.get("condition"),
+            }
+            if not wait.get("valid"):
+                skipped.append(
+                    {
+                        **entry,
+                        "reason": "condition-declaration-invalid",
+                        "detail": wait.get("error"),
+                    }
+                )
+                continue
+            try:
+                observation = _condition_observation(test_condition(pointer, wait))
+            except (OSError, subprocess.SubprocessError, TypeError, ValueError) as exc:
+                skipped.append(
+                    {
+                        **entry,
+                        "reason": "condition-check-failed",
+                        "detail": str(exc),
+                    }
+                )
+                continue
+            if not observation["terminal"]:
+                reason = (
+                    "condition-overdue" if wait.get("overdue") else "condition-pending"
+                )
+                skipped.append(
+                    {
+                        **entry,
+                        "reason": reason,
+                        "observed": observation["observed"],
+                        "detail": (
+                            f"waiting {wait['age_seconds']}s; {observation['detail']}"
+                        ),
+                    }
+                )
+                continue
+            signature = str(wait["signature"])
+            advice = str(wait["resume_brief"])
+            duplicate_reason = "already-resumed-for-this-condition"
+            duplicate_detail = (
+                "this run was already resumed after this external condition "
+                "terminated; a rewritten waiting manifest creates a new condition"
             )
-            continue
+        else:
+            if str(classify_pointer(pointer).get("classification") or "") != "blocked":
+                continue
+            entry = {"run_id": run_id, "backend": refusal.get("backend")}
+            hold = hold_state(pointer, refusal, policy_block=policy_block, now=now)
+            if hold["in_force"]:
+                skipped.append(
+                    {**entry, "reason": "hold-in-force", "detail": hold["detail"]}
+                )
+                continue
+            signature = str(hold["signature"])
+            duplicate_reason = "already-resumed-for-this-hold"
+            duplicate_detail = (
+                "this run was already resumed for the hold that lapsed; "
+                "a further refusal writes its own hold to wait on"
+            )
         previous = pointer.get("auto_resume")
         if (
             isinstance(previous, Mapping)
-            and hold["signature"]
-            and str(previous.get("hold") or "") == hold["signature"]
+            and signature
+            and str(previous.get("trigger") or previous.get("hold") or "") == signature
         ):
             skipped.append(
                 {
                     **entry,
-                    "reason": "already-resumed-for-this-hold",
-                    "detail": (
-                        "this run was already resumed for the hold that lapsed; "
-                        "a further refusal writes its own hold to wait on"
-                    ),
+                    "reason": duplicate_reason,
+                    "detail": duplicate_detail,
                 }
             )
             continue
@@ -684,13 +805,20 @@ def sweep(
                     "would_resume": True,
                     "session_id": session["session_id"],
                     "session_source": session["source"],
-                    "hold": hold["signature"],
-                    "advice": CONTINUE_ADVICE,
+                    "hold": signature,
+                    "advice": advice,
+                    **({"observed": observation["observed"]} if observation else {}),
                 }
             )
             continue
         try:
-            launched = _resume(run_id, pointer, config=config, launcher=launch)
+            launched = _resume(
+                run_id,
+                pointer,
+                config=config,
+                launcher=launch,
+                advice=advice,
+            )
         except BudgetHold as exc:
             skipped.append(
                 {
@@ -706,14 +834,15 @@ def sweep(
         except (CrewError, OSError) as exc:
             skipped.append({**entry, "reason": "resume-refused", "detail": str(exc)})
             continue
-        _stamp_hold(run_id, hold["signature"])
+        _stamp_resumption_trigger(run_id, signature)
         resumed.append(
             {
                 **entry,
                 "session_id": session["session_id"],
                 "session_source": session["source"],
-                "hold": hold["signature"],
-                "advice": CONTINUE_ADVICE,
+                "hold": signature,
+                "advice": advice,
+                **({"observed": observation["observed"]} if observation else {}),
                 **launched,
             }
         )

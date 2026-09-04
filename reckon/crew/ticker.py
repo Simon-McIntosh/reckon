@@ -83,6 +83,8 @@ STATE_HUE = {
         "dispatched": 241,
         "working": 26,
         "running": 26,
+        "waiting": 97,
+        "wait-aged": 130,
         "unknown": 124,
         "unreadable": 124,
         "unpromoted": 30,
@@ -98,6 +100,8 @@ STATE_HUE = {
         "dispatched": 245,
         "working": 75,
         "running": 75,
+        "waiting": 104,
+        "wait-aged": 179,
         "unknown": 203,
         "unreadable": 203,
         "unpromoted": 80,
@@ -161,17 +165,24 @@ SETTLED_STATES = frozenset(
 )
 
 _CELLS = ("working", "blocked", "unpromoted")
+_WAIT_CELL = "waiting"
 
 # The single-letter suffix each fleet counter renders as. The pane teaches the
 # mapping without a legend in the stream: the same words stand in the state
 # column on other rows, so a reader already knows b means blocked before they
 # reach the count column.
-STAT_LETTER = {"working": "w", "blocked": "b", "unpromoted": "u"}
+STAT_LETTER = {
+    "working": "w",
+    "blocked": "b",
+    "unpromoted": "u",
+    "waiting": "q",
+}
 
 # Two digits and a single-letter suffix per counter, joined by " · ". Two digits
 # cover any fleet the dispatcher opens; a wider count pushes its own label
 # rather than silently misaligning the column beside it.
-STATS = sum(2 + 1 for _ in _CELLS) + 3 * (len(_CELLS) - 1)
+_MAX_CELLS = (*_CELLS, _WAIT_CELL)
+STATS = sum(2 + 1 for _ in _MAX_CELLS) + 3 * (len(_MAX_CELLS) - 1)
 
 # The widest the fixed columns can be, plus the stats block and one gap. A width
 # below this cannot be honoured without wrapping, so it is raised to this.
@@ -575,12 +586,16 @@ class Ticker:
         entry carries a glyph saying whether a resume can answer it, derived from
         the persisted fact at render time rather than written into the record.
         """
-        if to_state not in NEEDS_ACTION or room < MIN_REASON:
+        explained = NEEDS_ACTION | {"waiting", "wait-aged"}
+        if to_state not in explained or room < MIN_REASON:
             return ""
         detail = event.get("detail")
         if detail is None:
             detail = event.get("reason")
-        marker = _display_marker(event) if to_state == "blocked" else ""
+        if to_state == "blocked":
+            marker = _display_marker(event)
+        else:
+            marker = "!" if to_state == "wait-aged" else ""
         reserve = len(marker) + (1 if marker else 0)
         clause = single_clause(detail, limit=max(0, room - reserve))
         if marker and clause:
@@ -596,7 +611,8 @@ class Ticker:
         drain needs to see the count reach zero, not see it disappear.
         """
         cells: list[tuple[str, Any]] = []
-        for index, label in enumerate(_CELLS):
+        labels = (*_CELLS, _WAIT_CELL) if _WAIT_CELL in event else _CELLS
+        for index, label in enumerate(labels):
             if index:
                 cells += [(" ", None), ("·", "dim"), (" ", None)]
             count = int(event.get(label) or 0)
