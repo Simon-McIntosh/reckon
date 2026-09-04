@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T10:07:28",
+  "updated": "2026-09-04T10:11:20",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -961,9 +961,11 @@
         "id": "s16-viol",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a06b74-d827-7182-b7d7-b9d4c265424b",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06b74-d827-7182-b7d7-b9d4c265424b"
+        },
         "created": "2026-09-04"
       },
       {
@@ -53012,6 +53014,110 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260904T080631248154-containment-violations",
+        "plan": "viewport-containment",
+        "section": "\u00a73",
+        "node": "containment-violations",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_spa_viewport_containment.py -q passes with an empty violation list, and the report at /home/ITER/mcintos/.config/reckon/crew/reports/s16-containment-violations.md carries the first verdict's surface count, element count and violation list beside the current run's, states the number of real-surface violations fixed, and where that number is zero records the walked surface and element counts as the negative result rather than omitting it",
+          "estimated_hours": 1.0,
+          "goal": "Every violation the guard reported other than the picker is fixed at its own surface, or the absence of any is recorded with the counts that were walked",
+          "id": "containment-violations",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T080631248154-containment-violations/manifest.md",
+          "plan": "viewport-containment",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/s16-containment-violations.md"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-viol",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T08:06:53Z",
+        "completed_at": "2026-09-04T08:10:36Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 223,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 223,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "5acfe36e3cbc5b302c7fbf4551e1b592cab8b9c1",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD RECKON_VIEWPORT_VERDICT=<run>/current-verdict.json .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_viewport_containment.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T080631248154-containment-violations/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T080631248154-containment-violations/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06b74-d827-7182-b7d7-b9d4c265424b",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 1416704,
+            "cached_input_tokens_cumulative": 1416704,
+            "input_tokens": 1508302,
+            "input_tokens_cumulative": 1508302,
+            "output_tokens": 7342,
+            "output_tokens_cumulative": 7342,
+            "reasoning_output_tokens": 1903,
+            "reasoning_output_tokens_cumulative": 1903
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 9245,
+          "peak_input_tokens": 2925006
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "a complete negative result: the guard found no real-surface violation to fix, so no product stylesheet changed and the disposition is the report at the coordinator-named path",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_spa_viewport_containment.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -53184,6 +53290,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 862
+    "_version": 864
   }
 }

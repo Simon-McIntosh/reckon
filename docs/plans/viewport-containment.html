@@ -25,10 +25,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="4">
 <meta name="plan-commits" content="6e717b0">
-<meta name="plan-artifacts" content="tests/test_spa_viewport_containment.py,tests/spa_containment_harness.py">
-<meta name="plan-impl" content="0.5">
+<meta name="plan-artifacts" content="tests/test_spa_viewport_containment.py,tests/spa_containment_harness.py,~/.config/reckon/crew/reports/s16-containment-violations.md">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
 <main class="plan-doc">
@@ -141,6 +141,9 @@
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260904T055135457991-containment-check" data-who="s16-contain" data-when="2026-09-04T06:18:12Z">
     <div class="r-comment-body"><p>the containment guard measures 22 of 24 surface-width rows across 11,892 elements at 1374 and 1920 and reports 0 real-surface violations, with the command palette explicitly not measured at either width. It is proven to work: the only 2 violations are the synthetic element the test shifts to exactly right_overflow_px=40 at both widths, the horizontally scrolling case is measured against its scroll owner and absent from violations, and the marked off-screen case appears as a declared exemption. First verdict recorded unadjusted, sha256 21df9990. Its diagnostic also found a product crash: opening the command palette raises ReferenceError paletteKindLabel and unmounts .r-app</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260904T080631248154-containment-violations" data-who="s16-viol" data-when="2026-09-04T08:10:36Z">
+    <div class="r-comment-body"><p>zero real-surface violations fixed, because there were none to fix. The first unbiased verdict walked 22 surface-width rows across 11,892 elements with 0 real violations; the current run walks 22 rows across 15,834 elements, also 0. Both runs' only violations are the deliberately shifted harness element proving the guard fails at 40px overflow. The current run measures the command palette at both widths, which the first could not because of the crash the guard itself discovered, and cockpit has left the routable inventory because its retirement landed</p></div>
 </div>
 </section>
 </main>
