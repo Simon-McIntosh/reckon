@@ -5,26 +5,39 @@ function parseHash() {
   const h = (window.location.hash || "").replace(/^#/, "");
   if (!h || h === "home") return { view: "home" };
   if (h === "cockpit") return { view: "home" };
-  if (h.startsWith("plan/")) return { view: "plan", slug: decodeURIComponent(h.slice(5)) };
+  for (const route of ARTIFACT_ROUTES) {
+    if (h === route.indexHash) return { view: route.key, slug: null };
+    const readerPrefix = `${route.readerHash}/`;
+    if (h.startsWith(readerPrefix) && h.length > readerPrefix.length) {
+      return { view: route.key, slug: decodeURIComponent(h.slice(readerPrefix.length)) };
+    }
+  }
   if (h.startsWith("sprint/")) return { view: "sprint", sprint: decodeURIComponent(h.slice(7)) };
   if (h === "graph") return { view: "graph" };
   if (h === "crew") return { view: "crew" };
-  if (h === "plans") return { view: "plan", slug: null };
   if (h === "sprints") return { view: "sprint", sprint: null };
   return { view: "home" };
 }
 
 function canvasViewForRoute(route) {
   const view = route?.view;
-  return ["home", "plan", "sprint", "graph", "crew"].includes(view)
+  return ["home", "plan", "research", "evidence", "figure", "sprint", "graph", "crew"].includes(view)
     ? view
     : "home";
 }
 
-// The tab groups a later plan can extend without touching the topbar itself.
-const ARTIFACT_TABS = [
-  { key: "plan", label: "Plans", index: { view: "plan", slug: null } },
+const ARTIFACT_ROUTES = [
+  { key: "plan", label: "Plans", indexHash: "plans", readerHash: "plan" },
+  { key: "research", label: "Research", indexHash: "research", readerHash: "research" },
+  { key: "evidence", label: "Evidence", indexHash: "evidence", readerHash: "evidence" },
+  { key: "figure", label: "Figures", indexHash: "figures", readerHash: "figure" },
 ];
+
+const ARTIFACT_TABS = ARTIFACT_ROUTES.map(route => ({
+  key: route.key,
+  label: route.label,
+  index: { view: route.key, slug: null },
+}));
 
 const WORK_TABS = [
   { key: "sprint", label: "Sprints", index: { view: "sprint", sprint: null } },
@@ -41,7 +54,12 @@ function useHashRoute() {
   }, []);
   const nav = useCallback((to) => {
     if (to.view === "home" || to.view === "cockpit") window.location.hash = "#home";
-    else if (to.view === "plan") window.location.hash = `#plan/${encodeURIComponent(to.slug)}`;
+    else if (ARTIFACT_ROUTES.some(route => route.key === to.view)) {
+      const route = ARTIFACT_ROUTES.find(candidate => candidate.key === to.view);
+      window.location.hash = to.slug
+        ? `#${route.readerHash}/${encodeURIComponent(to.slug)}`
+        : `#${route.indexHash}`;
+    }
     else if (to.view === "sprint") window.location.hash = `#sprint/${encodeURIComponent(to.sprint)}`;
     else if (to.view === "graph") window.location.hash = "#graph";
     else if (to.view === "crew") window.location.hash = "#crew";
@@ -53,4 +71,4 @@ function useHashRoute() {
 
 
 window.ReckonShell = window.ReckonShell || {};
-window.ReckonShell.route = { parseHash, canvasViewForRoute, useHashRoute, ARTIFACT_TABS, WORK_TABS };
+window.ReckonShell.route = { parseHash, canvasViewForRoute, useHashRoute, ARTIFACT_ROUTES, ARTIFACT_TABS, WORK_TABS };

@@ -5,6 +5,7 @@ import subprocess
 from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
+from urllib.parse import quote
 
 import pytest
 
@@ -368,3 +369,63 @@ def test_window_containment_fails_when_a_width_floor_returns(tmp_path: Path) -> 
     assert "composed container geometry mismatch" in conflicting.stderr
     assert "document scroll width: 1374, client width" in conflicting.stderr
     assert "elements past viewport:" in conflicting.stderr
+
+
+def test_artifact_tab_returns_an_open_reader_to_the_selected_index(
+    tmp_path: Path,
+) -> None:
+    browser = installed_browser()
+    if browser is None:
+        pytest.skip(
+            "SPA composition check requires an installed browser; tried "
+            + ", ".join(BROWSER_NAMES)
+        )
+
+    state = _composed_state()
+    research = next(
+        item for item in state["inventory"] if item.get("type") == "research"
+    )
+    slug = research.get("nav_key") or research["slug"]
+    selected = json.dumps(slug)
+    expression = """
+(async () => {
+  const before = document.querySelector('[data-artifact-kind="research"]')?.dataset.artifactSelection;
+  const evidenceTab = [...document.querySelectorAll('.r-tabs-artifact .r-tab')]
+    .find(button => button.textContent.trim() === 'Evidence');
+  evidenceTab.click();
+  await new Promise(resolve => setTimeout(resolve, 100));
+  const surface = document.querySelector('[data-artifact-kind="evidence"]');
+  return {
+    before,
+    hash: window.location.hash,
+    kind: surface?.dataset.artifactKind,
+    selected: surface?.dataset.artifactSelection,
+    readingMode: document.querySelector('.r-app')?.classList.contains('r-focus-mode'),
+  };
+})()
+"""
+    with (
+        file_spa(
+            tmp_path,
+            browser,
+            state,
+            route=f"#research/{quote(str(slug), safe='')}",
+        ) as context,
+        _skip_when_browser_is_unavailable(),
+    ):
+        result = context.run_probe(
+            expression,
+            ready_expression=(
+                "Boolean(document.querySelector("
+                f"'[data-artifact-kind=\"research\"][data-artifact-selection={selected}]'"
+                "))"
+            ),
+        )
+
+    assert result == {
+        "before": slug,
+        "hash": "#evidence",
+        "kind": "evidence",
+        "selected": "",
+        "readingMode": False,
+    }

@@ -1,9 +1,90 @@
 // Reckon shell composition root. Feature modules own the routed surfaces.
 const { useCallback, useEffect, useMemo, useRef, useState } = React;
 
+function ArtifactSurface({
+  kind,
+  route,
+  nav,
+  state,
+  items,
+  filters,
+  setFilters,
+  readingMode,
+  sortBy,
+  setSortBy,
+  sortDir,
+  toggleSortDir,
+  onSelect,
+  onOpenPrompt,
+  onPlanMutated,
+  attachmentGroups,
+  graphHidden,
+  setGraphHidden,
+  readPosition,
+  readQueue,
+  onToggleReadingMode,
+}) {
+  const label = window.ReckonShell.route.ARTIFACT_TABS.find(tab => tab.key === kind)?.label || kind;
+  const SharedIndex = window.ReckonShell.plans.ArtifactIndex;
+  const selected = route.slug || null;
+
+  return (
+    <div className={`r-canvas-view ${kind === "plan" ? "r-plans-view" : `r-${kind}-view`} ${readingMode ? "reading-mode" : ""}`} data-artifact-kind={kind} data-artifact-selection={selected || ""}>
+      {selected ? (
+        <div className="r-content" style={readingMode ? { height: "100vh", overflow: "auto" } : undefined}>
+          {!readingMode && kind === "plan" && <window.ReckonShell.title.TitleBar route={route} onNav={nav} onOpenPrompt={onOpenPrompt} onPlanMutated={onPlanMutated} />}
+          <div className="r-reader-with-attachments">
+            <div className="r-body">
+              {!readingMode && kind === "plan" && <window.ReckonShell.plans.PlanGraphStrip slug={selected} onNav={nav} hidden={graphHidden} setHidden={setGraphHidden} />}
+              <window.Plan
+                slug={selected}
+                onNav={nav}
+                attachmentGroups={attachmentGroups(state, selected)}
+                focusMode={readingMode}
+                onToggleFocus={onToggleReadingMode}
+                focusPosition={{ current: readPosition + 1, total: readQueue.length }}
+                onPage={(direction) => {
+                  const next = window.ReckonShell.plans.readingQueueStep(readQueue, selected, direction);
+                  if (next) nav({ view: kind, slug: next });
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="r-content">
+          {SharedIndex ? (
+            <SharedIndex
+              kind={kind}
+              route={route}
+              onNav={nav}
+              items={items}
+              filters={filters}
+              setFilters={setFilters}
+              sortBy={sortBy}
+              setSortBy={setSortBy}
+              sortDir={sortDir}
+              toggleSortDir={toggleSortDir}
+              onSelect={onSelect}
+            />
+          ) : (
+          <div className="r-page r-reader-empty-state">
+            <h2>{label}</h2>
+            <p>No {label.toLowerCase()} selected.</p>
+          </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function App() {
   const [route, nav] = window.ReckonShell.route.useHashRoute();
   const canvasView = window.ReckonShell.route.canvasViewForRoute(route);
+  const artifactKind = window.ReckonShell.route.ARTIFACT_ROUTES.some(candidate => candidate.key === route.view)
+    ? route.view
+    : null;
   const PROJECT_VISIBILITY_STORAGE = window.ReckonShell.topbar.PROJECT_VISIBILITY_STORAGE;
   const attachmentGroups = window.ReckonShell.plans.attachmentGroups;
   // Storage keys are project-scoped to prevent cross-project filter contamination.
@@ -194,13 +275,16 @@ function App() {
     if (isFromProject) {
       if (route.view === "graph") hash = "#graph";
       else if (route.view === "crew") hash = "#crew";
-      else if (route.view === "plan") hash = "#plans";
+      else if (artifactKind) {
+        const artifactRoute = window.ReckonShell.route.ARTIFACT_ROUTES.find(candidate => candidate.key === artifactKind);
+        hash = `#${artifactRoute.indexHash}`;
+      }
       else if (route.view === "sprint") hash = "#sprints";
       else if (route.view === "home") hash = "#home";
       else hash = "#home";
     }
     window.location.href = `/${destProject}/${hash}`;
-  }, [route]);
+  }, [artifactKind, route]);
 
   const toggleProject = useCallback((targetProject) => {
     const currentProject = window.STATE?.project || null;
@@ -245,9 +329,9 @@ function App() {
   const shownProjectNames = useMemo(() => shownProjects.map(project => project.project), [shownProjects]);
   const readPosition = Math.max(0, readQueue.indexOf(route.slug));
 
-  const onSelectPlan = useCallback((slug) => {
-    nav({ view: "plan", slug });
-  }, [nav]);
+  const onSelectArtifact = useCallback((slug) => {
+    if (artifactKind) nav({ view: artifactKind, slug });
+  }, [artifactKind, nav]);
 
   const onSetContext = useCallback((slug) => {
     setFilters(f => ({ ...f, context: slug }));
@@ -274,7 +358,7 @@ function App() {
         if (route.view === "plan") setFiltersHidden(c => !c); // Plans only — hides the plan list.
         return;
       }
-      const canRead = route.view === "plan" && !!route.slug;
+      const canRead = !!artifactKind && !!route.slug;
       if (e.key === "Escape" && readingMode) {
         e.preventDefault();
         setReadingMode(current => window.ReckonShell.plans.nextReadingMode(current, e.key, canRead));
@@ -289,16 +373,16 @@ function App() {
       if (readingMode && (e.key === "ArrowRight" || e.key === "ArrowLeft")) {
         e.preventDefault();
         const next = window.ReckonShell.plans.readingQueueStep(readQueue, route.slug, e.key === "ArrowRight" ? 1 : -1);
-        if (next) nav({ view: "plan", slug: next });
+        if (next) nav({ view: route.view, slug: next });
       }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [nav, readQueue, readingMode, route.slug, route.view]);
+  }, [artifactKind, nav, readQueue, readingMode, route.slug, route.view]);
 
   useEffect(() => {
-    if (route.view !== "plan" || !route.slug) setReadingMode(false);
-  }, [route.view, route.slug]);
+    if (!artifactKind || !route.slug) setReadingMode(false);
+  }, [artifactKind, route.slug]);
 
   return (
     <div className={`r-app ${readingMode ? "r-focus-mode" : ""}`}>
@@ -318,30 +402,30 @@ function App() {
           onToggleProject={toggleProject}
           onRefresh={refreshProjectState}
         />}
-      {canvasView === "plan" ? (
-        <div className={`r-canvas-view r-plans-view ${filtersHidden || readingMode ? "filters-collapsed" : ""} ${readingMode ? "reading-mode" : ""}`}>
-          {!readingMode && <window.ReckonShell.plans.ListCol route={route} onNav={nav} onSelectPlan={onSelectPlan} items={items} sortBy={groupBy} setSortBy={setGroupBy} sortDir={sortDir} toggleSortDir={toggleSortDir} filters={filters} setFilters={setFilters} onClearFilters={() => setFilters({})} onClearContext={() => setFilters(f => { const next = {...f}; delete next.context; return next; })} onSetContext={onSetContext} />}
-          <div className="r-content" style={readingMode ? { height: "100vh", overflow: "auto" } : undefined}>
-            {!readingMode && <window.ReckonShell.title.TitleBar route={route} onNav={nav} onOpenPrompt={() => setPromptOpen(true)} onPlanMutated={bumpInv} />}
-            <div className="r-reader-with-attachments" style={readingMode ? { display: "block" } : undefined}>
-              <div className="r-body">
-                {!readingMode && <window.ReckonShell.plans.PlanGraphStrip slug={route.slug} onNav={nav} hidden={graphHidden} setHidden={setGraphHidden} />}
-                <window.Plan
-                slug={route.slug}
-                onNav={nav}
-                attachmentGroups={attachmentGroups(M, route.slug)}
-                focusMode={readingMode}
-                onToggleFocus={() => setReadingMode(current => !current)}
-                focusPosition={{ current: readPosition + 1, total: readQueue.length }}
-                onPage={(direction) => {
-                  const next = window.ReckonShell.plans.readingQueueStep(readQueue, route.slug, direction);
-                  if (next) nav({ view: "plan", slug: next });
-                }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+      {artifactKind ? (
+        <ArtifactSurface
+          kind={artifactKind}
+          route={route}
+          nav={nav}
+          state={M}
+          items={items}
+          filters={filters}
+          setFilters={setFilters}
+          readingMode={readingMode}
+          sortBy={groupBy}
+          setSortBy={setGroupBy}
+          sortDir={sortDir}
+          toggleSortDir={toggleSortDir}
+          onSelect={onSelectArtifact}
+          onOpenPrompt={() => setPromptOpen(true)}
+          onPlanMutated={bumpInv}
+          attachmentGroups={attachmentGroups}
+          graphHidden={graphHidden}
+          setGraphHidden={setGraphHidden}
+          readPosition={readPosition}
+          readQueue={readQueue}
+          onToggleReadingMode={() => setReadingMode(current => !current)}
+        />
       ) : (
         <div className={`r-canvas-view r-${canvasView}-view`}>
           <div className="r-content">
