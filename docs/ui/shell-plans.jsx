@@ -465,62 +465,130 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
 
 // ─── Title bar ──────────────────────────────────────────────────────────
 
-// ─── Inline plan dependency graph (replaces both the Reading/Graph tabs
-//     and the legacy depends-on / blocks pill strip).
-// Shown above the report body. Collapsible — when hidden, only a thin header
-// strip remains so the report slides up. State persists per project.
+function dependencyRefSlug(reference) {
+  return String(reference || "").split("#", 1)[0].split(":").pop();
+}
 
-function PlanGraphStrip({ slug, onNav, hidden, setHidden }) {
-  const M = window.STATE;
-  const p = M?.inventory?.find(x => x.slug === slug);
-  if (!p) return null;
-  // Probe symmetric counts via the same reverse index the graph uses.
-  let counts = { dep: 0, blk: 0 };
-  if (window.RadialFan && window.STATE) {
-    // Cheap recount — avoids touching graph internals.
-    const inv = window.STATE.inventory || [];
-    const directDeps = new Set(p.depends_on || []);
-    const directBlocks = new Set(p.blocks || []);
-    const revBlk = new Set();  // who depends on me → I block them
-    const revDep = new Set();  // who blocks me   → I depend on them
-    for (const q of inv) {
-      if ((q.depends_on || []).includes(p.slug)) revBlk.add(q.slug);
-      if ((q.blocks     || []).includes(p.slug)) revDep.add(q.slug);
-    }
-    const depSet = new Set([...directDeps, ...revDep].filter(s => s !== p.slug));
-    const blkSet = new Set([...directBlocks, ...revBlk].filter(s => s !== p.slug));
-    counts = { dep: depSet.size, blk: blkSet.size };
+function dependencyConeRows(inventory, focalSlug) {
+  const plans = (inventory || []).filter(item => (item.type || "plan") === "plan");
+  const focalRef = dependencyRefSlug(focalSlug);
+  const focal = plans.find(item =>
+    (item.nav_key || item.slug) === focalSlug || item.slug === focalRef
+  );
+  if (!focal) return { focal: null, prerequisites: [], dependents: [] };
+
+  const bySlug = new Map();
+  plans.forEach(item => {
+    bySlug.set(item.slug, item);
+    bySlug.set(item.nav_key || item.slug, item);
+  });
+
+  const seenPrerequisites = new Set();
+  const prerequisites = (focal.depends_on || []).flatMap(reference => {
+    const slug = dependencyRefSlug(reference);
+    if (!slug || slug === focal.slug || seenPrerequisites.has(slug)) return [];
+    seenPrerequisites.add(slug);
+    return [bySlug.get(reference) || bySlug.get(slug) || {
+      slug,
+      nav_key: slug,
+      title: slug,
+      status: "unavailable",
+      impl: 0,
+    }];
+  });
+
+  const dependents = plans.filter(item =>
+    item !== focal && (item.depends_on || []).some(reference =>
+      dependencyRefSlug(reference) === focal.slug
+    )
+  );
+  return { focal, prerequisites, dependents };
+}
+
+function dependencyConeLabel(cone) {
+  if (cone.prerequisites.length === 0 && cone.dependents.length === 0) {
+    return "standalone";
   }
-  const empty = counts.dep === 0 && counts.blk === 0;
+  return `${cone.prerequisites.length} ↑ ${cone.dependents.length} ↓`;
+}
+
+function DependencyConeCard({ plan, direction, onNav }) {
+  const slug = plan.nav_key || plan.slug;
+  const status = plan.effective_status || plan.status || "pending";
+  const hours = plan.effort_hours;
+  const percent = Math.round(Number(plan.impl || 0) * 100);
+  const hoursLabel = hours !== null && hours !== undefined && hours !== ""
+    ? `${hours}h`
+    : "hours —";
   return (
-    <div className={`r-plan-graph ${hidden ? "is-hidden" : ""}`}>
-      <div className="r-plan-graph-h">
-        <button
-          type="button"
-          className="r-plan-graph-toggle"
-          onClick={() => setHidden(h => !h)}
-          aria-expanded={!hidden}
-          title={hidden ? "Show dependency graph" : "Hide dependency graph"}
-        >
-          <svg className="caret" width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M2 3l2.5 3L7 3"/>
-          </svg>
-          <span className="lbl">Dependencies</span>
-          {!empty && (
-            <span className="counts">
-              <span className="c-pair"><span className="n">{counts.dep}</span><span className="k">in</span></span>
-              <span className="c-pair"><span className="n">{counts.blk}</span><span className="k">out</span></span>
-            </span>
-          )}
-          {empty && <span className="counts muted">no edges</span>}
-        </button>
-      </div>
-      {!hidden && (
-        window.RadialFan
-          ? <window.RadialFan focalSlug={slug} onNav={onNav} compact={true} />
-          : <div style={{ padding: 16, color: "var(--muted)", fontSize: 12 }}>Graph view loading…</div>
+    <button
+      type="button"
+      className={`r-dependency-cone-card ${direction === "self" ? "is-focal" : "is-edge"}`}
+      data-cone-slug={plan.slug}
+      data-cone-edge-card={direction === "self" ? undefined : "true"}
+      onClick={() => onNav?.({ view: "plan", slug })}
+    >
+      <span className="r-dependency-cone-title">{plan.title || plan.slug}</span>
+      <code>{plan.slug}</code>
+      <span className="r-dependency-cone-meta">
+        <span className={`r-dependency-cone-status ${status}`}>{status}</span>
+        <span>{hoursLabel}</span>
+        <span>{percent}%</span>
+      </span>
+      <span className="r-dependency-cone-progress" aria-label={`${percent} percent complete`}>
+        <i style={{ width: `${percent}%` }}></i>
+      </span>
+    </button>
+  );
+}
+
+function PlanGraphStrip({ slug, onNav }) {
+  const [openState, setOpenState] = React.useState({ slug, open: false });
+  const cone = React.useMemo(
+    () => dependencyConeRows(window.STATE?.inventory || [], slug),
+    [window.STATE?.inventory, slug]
+  );
+  const open = openState.slug === slug && openState.open;
+  if (!cone.focal) return null;
+  const standalone = cone.prerequisites.length === 0 && cone.dependents.length === 0;
+
+  return (
+    <section className={`r-dependency-cone ${open ? "is-open" : "is-closed"} ${standalone ? "is-standalone" : ""}`}>
+      <button
+        type="button"
+        className="r-dependency-cone-toggle"
+        aria-expanded={open}
+        aria-controls={`dependency-cone-${slug}`}
+        onClick={() => setOpenState({ slug, open: !open })}
+        title={open ? "Close dependency cone" : "Open dependency cone"}
+      >
+        <svg className="r-dependency-cone-caret" width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M2 3l2.5 3L7 3"/>
+        </svg>
+        <span>Dependency cone</span>
+        <span className="r-dependency-cone-count">{dependencyConeLabel(cone)}</span>
+      </button>
+      {open && (
+        <div className="r-dependency-cone-columns" id={`dependency-cone-${slug}`}>
+          <div className="r-dependency-cone-column" data-cone-column="up">
+            <h3>Prerequisites <span>{cone.prerequisites.length}</span></h3>
+            {cone.prerequisites.map(plan => (
+              <DependencyConeCard key={plan.nav_key || plan.slug} plan={plan} direction="up" onNav={onNav} />
+            ))}
+          </div>
+          <div className="r-dependency-cone-column is-focal" data-cone-column="self">
+            <h3>This plan</h3>
+            <DependencyConeCard plan={cone.focal} direction="self" onNav={onNav} />
+          </div>
+          <div className="r-dependency-cone-column" data-cone-column="down">
+            <h3>Dependents <span>{cone.dependents.length}</span></h3>
+            {cone.dependents.map(plan => (
+              <DependencyConeCard key={plan.nav_key || plan.slug} plan={plan} direction="down" onNav={onNav} />
+            ))}
+          </div>
+        </div>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -528,4 +596,4 @@ function PlanGraphStrip({ slug, onNav, hidden, setHidden }) {
 // active set; the second group covers paused / completed / abandoned states.
 
 window.ReckonShell = window.ReckonShell || {};
-window.ReckonShell.plans = { readableFilterLabel, ListFilterControls, SORT_DIR_DEFAULTS, sortItems, SORT_OPTIONS, openGateCount, attachmentGroups, readingQueue, readingQueueStep, nextReadingMode, paletteItems, paletteKindLabel, artifactKindLabel, artifactStamp, artifactState, artifactIsDone, artifactIndexRows, ArtifactIndex, selectPlanSection, ListCol, PlanGraphStrip };
+window.ReckonShell.plans = { readableFilterLabel, ListFilterControls, SORT_DIR_DEFAULTS, sortItems, SORT_OPTIONS, openGateCount, attachmentGroups, readingQueue, readingQueueStep, nextReadingMode, paletteItems, paletteKindLabel, artifactKindLabel, artifactStamp, artifactState, artifactIsDone, artifactIndexRows, ArtifactIndex, selectPlanSection, ListCol, dependencyRefSlug, dependencyConeRows, dependencyConeLabel, DependencyConeCard, PlanGraphStrip };
