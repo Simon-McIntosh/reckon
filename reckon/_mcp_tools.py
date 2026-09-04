@@ -81,6 +81,18 @@ class CrewArgs(BaseModel):
     )
 
 
+class CrewRecoverArgs(BaseModel):
+    action: Literal["resume", "session", "sweep"]
+    project: str | None = Field(None, description="Project whose held runs to sweep")
+    run_id: str | None = Field(None, description="Run id for resume or session")
+    advice: str | None = Field(
+        None, description="The orchestrator's answer, for resume"
+    )
+    dry_run: bool = Field(
+        False, description="For sweep: report what would be resumed, resume nothing"
+    )
+
+
 class WriteResult(BaseModel):
     ok: bool = True
     project: str

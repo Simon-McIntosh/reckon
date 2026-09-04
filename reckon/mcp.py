@@ -82,6 +82,7 @@ from reckon.capability import (
     map_legacy_capabilities,
     validate_capability,
 )
+import reckon.crew.recover as recover_module
 from reckon.crew.runs import project_watch_visibility
 from reckon.doccheck import audit_lifecycle, audit_links
 from reckon.mcp_views import (
@@ -2958,6 +2959,161 @@ def _crew(
         }
 
 
+def _crew_recover(
+    action: str,
+    project: str | None = None,
+    run_id: str | None = None,
+    advice: str | None = None,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    """Recover a run a provider refusal stopped, through the CLI's own functions.
+
+    Three actions, so a coordinator meeting a refusal never has to shell out:
+
+    ``resume`` answers a stuck worker with ``advice`` in its own session,
+    exactly as ``crew resume`` does — same :func:`resume_plan`, same spawn,
+    same resumption record — and reports the session it reattached to plus the
+    source that supplied it (pointer, stream, or the promoted ledger row). A
+    run whose process is still alive is refused with the same message
+    ``crew resume`` gives; resuming a live run is the error that needs a stop
+    first.
+
+    ``session`` answers the same question ``crew observe`` now answers for
+    every run: the session id and its source, or — never a bare null — a
+    stated absence naming every source that was consulted. It calls the same
+    :func:`reckon.crew.recover.resolve_session` the CLI calls, so the two
+    surfaces cannot disagree about one run.
+
+    ``sweep`` is ``crew resume-held`` by another name: it resumes every run one
+    project holds on a lapsed provider refusal, one resume per run, and
+    ``dry_run`` reports what would be resumed without resuming anything.
+
+    Every refusal here is a readable dict carrying its reason, never a raised
+    exception — a coordinator reading a stack trace mid-outage is the state
+    this surface exists to prevent.
+    """
+    if action not in ("resume", "session", "sweep"):
+        return {
+            "ok": False,
+            "error": "invalid_action",
+            "detail": "action must be resume, session, or sweep",
+        }
+    if action == "sweep":
+        if not project:
+            return {
+                "ok": False,
+                "error": "missing_project",
+                "detail": "sweep needs project",
+            }
+        try:
+            report = recover_module.sweep(project, dry_run=dry_run)
+        except crew_module.CrewError as exc:
+            return {
+                "ok": False,
+                "error": "crew_error",
+                "project": project,
+                "detail": str(exc),
+            }
+        return {"ok": True, "action": action, **report}
+
+    if not run_id:
+        return {
+            "ok": False,
+            "error": "missing_run_id",
+            "detail": f"{action} needs run_id",
+        }
+
+    if action == "session":
+        return {
+            "ok": True,
+            "action": action,
+            **recover_module.resolve_session(run_id),
+        }
+
+    # action == "resume"
+    if not advice:
+        return {
+            "ok": False,
+            "error": "missing_advice",
+            "detail": "resume needs advice",
+        }
+    try:
+        record = crew_module.read_pointer(run_id)
+    except crew_module.CrewError as exc:
+        return {
+            "ok": False,
+            "error": "crew_error",
+            "run_id": run_id,
+            "detail": str(exc),
+        }
+    resolved = recover_module.resolve_session(run_id, record=record)
+    project_name = str(record.get("project") or "")
+    config = None
+    if project_name:
+        try:
+            config = flight_module.resolve(
+                project_name, checkout_path=record.get("repo")
+            ).config
+        except flight_module.FlightConfigError as exc:
+            return {
+                "ok": False,
+                "error": "flight_error",
+                "run_id": run_id,
+                "detail": str(exc),
+            }
+    try:
+        plan = crew_module.resume_plan(run_id, advice, config=config)
+    except crew_module.BudgetHold as exc:
+        return {
+            "ok": False,
+            "error": "budget-hold",
+            "run_id": run_id,
+            "detail": str(exc),
+            "hold": exc.verdict,
+        }
+    except crew_module.CrewError as exc:
+        return {
+            "ok": False,
+            "error": "crew_error",
+            "run_id": run_id,
+            "detail": str(exc),
+        }
+    directory = crew_module.run_dir(run_id)
+    turn = len(list(directory.glob("resume-*.jsonl"))) + 1
+    advice_path = directory / f"resume-{turn}-advice.txt"
+    advice_path.write_text(advice + "\n")
+    log_path = directory / f"resume-{turn}.jsonl"
+    stderr_path = directory / f"resume-{turn}.stderr.log"
+    current = crew_module.read_pointer(run_id)
+    manifest_baseline_mtime_ns = crew_module._manifest_mtime_ns(
+        current.get("manifest_path") or ""
+    )
+    attempt_started_at = crew_module._utc_now()
+    pid = crew_module._spawn(
+        plan, log_path=log_path, stderr_path=stderr_path, prompt_path=advice_path
+    )
+    crew_module.record_resumption(
+        run_id,
+        pid=pid,
+        turn=turn,
+        log_path=log_path,
+        stderr_path=stderr_path,
+        attempt_started_at=attempt_started_at,
+        manifest_baseline_mtime_ns=manifest_baseline_mtime_ns,
+    )
+    return {
+        "ok": True,
+        "action": action,
+        "run_id": run_id,
+        "pid": pid,
+        "log_path": str(log_path),
+        "resumed_turn": turn,
+        "session_id": resolved["session_id"],
+        "session_source": resolved["source"],
+        **plan.as_dict(),
+    }
+
+
 def _written_path(
     project: str,
     slug: str,
@@ -3350,13 +3506,16 @@ def _audit(
 
 # ── Register tools with SDK ────────────────────────────────────────────────
 #
-# Agent-facing MCP surface = read_plan + edit_plan + roadmap + audit + crew. The
-# granular _funcs below remain for tests/internal use but are intentionally NOT
-# registered (collapsed per the schema-and-tooling plan); full removal is a
-# later cleanup. read_plan folds the 5 legacy reads (list_plans/list_projects/
-# list_sprints/list_followups/list_questions) via its discovery + with_schema
-# modes; edit_plan folds the granular mutators via its set/append/resolve/lock/
-# move + create ops; crew folds run state over four views and writes nothing.
+# Agent-facing MCP surface = read_plan + edit_plan + roadmap + audit + crew +
+# crew_recover. The granular _funcs below remain for tests/internal use but are
+# intentionally NOT registered (collapsed per the schema-and-tooling plan);
+# full removal is a later cleanup. read_plan folds the 5 legacy reads
+# (list_plans/list_projects/list_sprints/list_followups/list_questions) via
+# its discovery + with_schema modes; edit_plan folds the granular mutators via
+# its set/append/resolve/lock/move + create ops; crew reads run state over
+# several views and writes nothing; crew_recover is its write counterpart —
+# resume, session and sweep — for the one thing crew deliberately cannot do:
+# answer a provider refusal without a coordinator shelling out to the CLI.
 
 if mcp is not None:
     read_plan_tool = mcp.tool()(_read_plan)
@@ -3364,6 +3523,7 @@ if mcp is not None:
     roadmap_tool = mcp.tool()(_roadmap)
     audit_tool = mcp.tool()(_audit)
     crew_tool = mcp.tool()(_crew)
+    crew_recover_tool = mcp.tool()(_crew_recover)
 
 
 # ── Entrypoint ────────────────────────────────────────────────────────────
