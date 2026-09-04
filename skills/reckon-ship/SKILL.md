@@ -215,14 +215,20 @@ finding counts and the critical path with its hours.
 - `read_plan(..., view="summary")` before `view="raw"`; raw is for editing, not
   for looking.
 
-**When a shell command genuinely is the right tool, pass the repository rather
-than changing into it: `git -C /path/to/repo log …`, never `cd /path/to/repo &&
-git log …`.** A `cd` inside a compound command leaves the working directory
-unresolvable to the safety classifier, so an allow rule that would otherwise
-match cannot, and the operator is prompted to approve an ordinary read. Measured
-2026-09-04: repeated approval prompts on `git show` and `git log` despite both
-being allow-listed, every one of them caused by the compound form. The remedy is
-the command form, never a wider permission.
+**When a shell command genuinely is the right tool, name its target.** A form
+that leaves the working directory or the traversal set unresolvable to the
+safety classifier turns an ordinary read into a prompt for the operator, because
+the classifier reasons about the command text and cannot rule out a denied path
+it cannot see excluded:
+
+- `git -C /path/to/repo log …` — never `cd /path/to/repo && git log …`
+- `grep -rn "<pat>" src/ tests/` — never `grep -rn "<pat>" .` from a repo root,
+  which walks `.env`. **`--include=*.py` does not help**: it constrains what is
+  reported, not what the classifier must prove about the walk.
+
+Naming subtrees also skips `.venv`, so it is faster as well as quieter. The
+remedy is always the command form, never a wider permission. Full rule and the
+measured instances: `~/.agents/AGENTS.md`, *Name The Target*.
 
 ## Hard rules
 
