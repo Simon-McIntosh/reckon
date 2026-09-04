@@ -436,10 +436,10 @@ def classify_pointer(
     # Superseded-by-newer-activity applies to any manifest that is not yet a
     # verdict. Complete and failed are preserved while a living worker keeps
     # producing output, but neither is rendered as its outcome until that
-    # worker exits. This defers the report without losing it. Blocked is a
-    # solicitation rather than a verdict: a worker that resumes and produces a
-    # newer log line has answered it, and discarding the stale manifest is how
-    # that answer becomes visible again.
+    # worker exits. Complete over a dead process is delivery and therefore a
+    # verdict; failed over a live process can still be a placeholder. Blocked
+    # is a solicitation: a newer log line from a live worker has answered it,
+    # so discarding that overtaken report makes the resumed work visible.
     if (
         manifest_status
         and manifest_status not in {"complete", "failed"}
@@ -669,9 +669,9 @@ def classify_pointer(
         "manifest_fresh": manifest_present,
         "manifest_path": str(manifest) if str(manifest) != "." else "",
         # A living worker's complete or failed report remains on disk but is
-        # not exposed as a terminal outcome. The single-event watcher consumes
-        # this field, so returning the raw report here would call the run
-        # terminal while the classification and ticker correctly call it live.
+        # not exposed as an outcome. The single-event watcher consumes this
+        # field, so returning the raw report here would call the run terminal
+        # while the classification and ticker correctly call it live.
         "manifest_status": None if deferred_outcome else manifest_status or None,
         "manifest_derived": manifest_derived,
         "manifest_commits": manifest_commits,

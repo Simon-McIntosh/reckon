@@ -944,6 +944,7 @@ def test_recovery_reports_all_three_classes_and_counts_them(home, repo) -> None:
         node_kwargs={"id": "node-done", "write_paths": ["reckon/delivered.py"]},
     )
     _deliver(delivered)
+    _kill(delivered)
     dead = _dispatch(
         repo,
         node_kwargs={"id": "node-dead", "write_paths": ["reckon/dead.py"]},
