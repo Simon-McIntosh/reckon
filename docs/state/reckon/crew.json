@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T11:30:11",
+  "updated": "2026-09-04T11:34:11",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -53956,6 +53956,120 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T085952220725-artifact-index-feeds",
+        "plan": "artifact-feeds-and-reader",
+        "section": "\u00a73",
+        "node": "artifact-index-feeds",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_spa_artifact_index.py tests/test_spa_plans_surface.py tests/test_spa_plans_geometry.py -q passes with the cases \u00a73 names: rows of every kind carry a created and an edited stamp, the first row changes when the Edited/Created toggle switches against a fixture whose two orders differ, status chips render for plans and for no other kind, hide-done removes a plan at 100% and keeps it when the shipped chip is active, a figure row carries a thumbnail element and its dimensions text, the empty state names the kind and the project, and palette results for a query matching one document of each kind return four rows with all four kind names in the placeholder",
+          "estimated_hours": 4.0,
+          "goal": "One index component renders all four artifact kinds as feeds with stamps sort toggle chips and hide-done, and the palette searches all four",
+          "id": "artifact-index-feeds",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T085952220725-artifact-index-feeds/manifest.md",
+          "plan": "artifact-feeds-and-reader",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "docs/ui/shell-plans.jsx",
+            "docs/ui/plans.css",
+            "docs/ui/shell-palette.jsx",
+            "tests/test_spa_artifact_index.py",
+            "tests/test_spa_plans_surface.py",
+            "tests/test_spa_plans_geometry.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-index2",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T09:00:02Z",
+        "completed_at": "2026-09-04T09:17:28Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1046,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1046,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "c3a6c1d8ba31b3cec567da51e95fc13f567879b2",
+        "commits": [
+          "8ce0ca733b0db4f64a425fd13a47537a1e066c11"
+        ],
+        "changed_lines": {
+          "added": 800,
+          "removed": 142,
+          "files": 6
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_artifact_index.py tests/test_spa_plans_surface.py tests/test_spa_plans_geometry.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T085952220725-artifact-index-feeds/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T085952220725-artifact-index-feeds/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06ba5-7f34-7990-9504-51812ac20fd7",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 11494400,
+            "cached_input_tokens_cumulative": 11494400,
+            "input_tokens": 11685502,
+            "input_tokens_cumulative": 11685502,
+            "output_tokens": 35467,
+            "output_tokens_cumulative": 35467,
+            "reasoning_output_tokens": 9459,
+            "reasoning_output_tokens_cumulative": 9459
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 44926,
+          "peak_input_tokens": 23179902
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_spa_artifact_index.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -54128,6 +54242,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 882
+    "_version": 883
   }
 }
