@@ -909,6 +909,17 @@ For each completed agent:
    return outcome data; they never write shared plan state. Dispatching an
    unrelated ready node is outside this freeze and may refill a free slot.
 
+**A `blocked` manifest from a provider refusal is not a worker failure and is
+never redispatched.** Its session usually still exists and its worktree is
+untouched; inspect the worktree, then resume the session, and reconcile
+(promote or discard) only once resume is impossible — promoting first
+deletes the pointer a resume depends on. `reckon crew resume-held` sweeps and
+resumes every run a lapsed refusal still holds, and `reckon crew follow` runs
+it on a cadence for you, but a `follow` already running when that code
+changes never picks it up. The full order, the two counter-instincts that
+have both been followed and were both wrong, and the verified commands are in
+`references/outage-recovery.md`.
+
 An agent that signals idle WITHOUT a report has probably not failed. Before
 redispatching: check the manifest path, then required test logs/artifacts, then
 ask it to write the deliverable to the named path. Redispatch is the last step —
