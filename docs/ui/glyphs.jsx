@@ -3,6 +3,16 @@
 // All use currentColor — accent colour is set by the container.
 
 window.GLYPHS = {
+  brand: (
+    <svg width="17" height="17" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="8" cy="8" r="6.6" stroke="#ffffff" strokeOpacity="0.34" strokeWidth="1"/>
+      <g transform="rotate(38 8 8)">
+        <polygon points="8,1.7 10.3,8 5.7,8" fill="#ffffff"/>
+        <polygon points="8,14.3 10.3,8 5.7,8" fill="#ffffff" fillOpacity="0.38"/>
+      </g>
+      <circle cx="8" cy="8" r="1.05" fill="var(--ink)"/>
+    </svg>
+  ),
   fleet: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M5 21 V5"/>

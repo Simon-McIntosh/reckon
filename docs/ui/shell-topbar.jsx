@@ -82,22 +82,43 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
     setVisibilitySheetOpen(true);
   };
 
-  const goPlans = () => {
-    const target = M?.inventory?.find(p => p.status === "active") || M?.inventory?.[0];
-    if (target) onNav({ view: "plan", slug: target.nav_key || target.slug });
-  };
-  const goSprints = () => {
-    const id = M?.active_sprint_id || M?.sprint?.id || M?.sprints?.[0]?.id;
-    if (id) onNav({ view: "sprint", sprint: id });
-  };
+  const ARTIFACT_TABS = window.ReckonShell.route.ARTIFACT_TABS;
+  const WORK_TABS = window.ReckonShell.route.WORK_TABS;
+  const tabIsActive = (tab) => tab.index.view === view;
 
   return (
     <>
     <div className="r-topbar">
-      <button className="r-topbar-brand" onClick={() => navProject(null)} title="All projects">
-        <span className="r-topbar-mark">r</span>
-        <span>reckon</span>
+      <button className="r-topbar-brand" onClick={() => onNav({ view: "cockpit" })} title="reckon · fleet" aria-label="reckon · fleet">
+        {window.GLYPHS?.brand}
       </button>
+      <button className="r-topbar-search" onClick={onOpenCmdK} title="Search everything · ⌘K">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+          <circle cx="7" cy="7" r="4.5"/>
+          <path d="M13 13l-2.5-2.5"/>
+        </svg>
+        <span>Search everything</span>
+        <span className="kbd">⌘K</span>
+      </button>
+      <div className="r-tabs-artifact">
+        {ARTIFACT_TABS.map(tab => (
+          <button key={tab.key} className={`r-tab ${tabIsActive(tab) ? "active" : ""}`} onClick={() => onNav(tab.index)}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      <div className="r-tabs-work">
+        {WORK_TABS.map(tab => (
+          <button key={tab.key} className={`r-tab ${tabIsActive(tab) ? "active" : ""}`} onClick={() => onNav(tab.index)}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      <div className="r-topbar-spacer"></div>
+      <span className="r-live-receipt" title="Live stream from the served state">
+        <span className="r-live-receipt-dot" aria-hidden="true"></span>
+        <span>live</span>
+      </span>
       <details className="r-project-manage">
         <summary>
           <span className={`r-live-dot ${current?.live ? "is-live" : ""}`} aria-hidden="true"></span>
@@ -127,71 +148,32 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
           >Configure visibility…</button>
         </div>
       </details>
-      <div className="r-glyph-tabs">
-        <button className={`r-glyph ${view === "plan" ? "active" : ""}`} onClick={goPlans} title="Plans">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-            <path d="M3 4h10M3 8h10M3 12h7"/>
+      {SM ? (
+        <SM
+          theme={theme}
+          setTheme={setTheme}
+          density={density}
+          setDensity={setDensity}
+          projects={manageableProjects.map(project => project)}
+          visibleProjects={visibleProjects}
+          onOpenVisibility={openVisibilitySheet}
+          snapshot={snapshot}
+          onRefresh={onRefresh}
+        />
+      ) : null}
+      {view === "plan" && (
+        <button
+          className="icon-btn"
+          onClick={onToggleFilters}
+          title={`${filtersHidden ? "Show" : "Hide"} plan list · ⌘B`}
+          aria-pressed={!filtersHidden}
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <rect x="2" y="3" width="12" height="10" rx="1.5"/>
+            <path d="M6 3v10"/>
           </svg>
-          Plans
         </button>
-        <button className={`r-glyph ${view === "sprint" ? "active" : ""}`} onClick={goSprints} title="Sprints">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <rect x="2.5" y="3" width="3" height="10" rx="0.6"/>
-            <rect x="6.5" y="3" width="3" height="10" rx="0.6"/>
-            <rect x="10.5" y="3" width="3" height="10" rx="0.6"/>
-          </svg>
-          Sprints
-        </button>
-        <button className={`r-glyph ${view === "graph" ? "active" : ""}`} onClick={() => onNav({ view: "graph" })} title="Graph">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <circle cx="3.5" cy="4" r="1.5"/>
-            <circle cx="3.5" cy="12" r="1.5"/>
-            <circle cx="12.5" cy="8" r="1.5"/>
-            <path d="M5 4l6 3.5M5 12l6-3.5"/>
-          </svg>
-          Graph
-        </button>
-        <button className={`r-glyph ${view === "crew" ? "active" : ""}`} onClick={() => onNav({ view: "crew" })} title="Crew">
-          {window.GLYPHS?.crew}
-          Crew
-        </button>
-      </div>
-      <div className="top-r">
-        <button className="r-cmdk-trigger" onClick={onOpenCmdK} title="Search plans · ⌘K">
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-            <circle cx="7" cy="7" r="4.5"/>
-            <path d="M13 13l-2.5-2.5"/>
-          </svg>
-          <span>Search</span>
-          <span className="kbd">⌘K</span>
-        </button>
-        {SM ? (
-          <SM
-            theme={theme}
-            setTheme={setTheme}
-            density={density}
-            setDensity={setDensity}
-            projects={manageableProjects.map(project => project)}
-            visibleProjects={visibleProjects}
-            onOpenVisibility={openVisibilitySheet}
-            snapshot={snapshot}
-            onRefresh={onRefresh}
-          />
-        ) : null}
-        {view === "plan" && (
-          <button
-            className="icon-btn"
-            onClick={onToggleFilters}
-            title={`${filtersHidden ? "Show" : "Hide"} plan list · ⌘B`}
-            aria-pressed={!filtersHidden}
-          >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-              <rect x="2" y="3" width="12" height="10" rx="1.5"/>
-              <path d="M6 3v10"/>
-            </svg>
-          </button>
-        )}
-      </div>
+      )}
     </div>
     {VS ? (
       <VS

@@ -20,41 +20,103 @@
   display: none;
 }
 
-.r-topbar > .r-glyph-tabs {
-  flex: none;
-}
-
-.r-topbar > .top-r {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: none;
-  margin-left: auto;
-}
-
 .r-topbar-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 8px 0 0;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 27px;
+  height: 27px;
+  padding: 0;
   border: 0;
-  background: transparent;
-  color: var(--ink);
-  font-size: 13px;
-  font-weight: 600;
+  border-radius: 7px;
+  background: var(--ink);
   cursor: pointer;
 }
 
-.r-topbar-mark {
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
+.r-topbar-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  width: 230px;
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg-2);
+  color: var(--muted);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.r-topbar-search span:first-of-type {
+  flex: 1;
+  text-align: left;
+}
+
+.r-topbar-search .kbd {
+  font: 10.5px var(--mono);
+  padding: 1px 5px;
+  border: 1px solid var(--line-2);
+  border-radius: 3px;
+  color: var(--muted);
+}
+
+.r-tabs-artifact,
+.r-tabs-work {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg-2);
+}
+
+.r-tab {
+  padding: 4px 10px;
+  border: 0;
   border-radius: 5px;
-  background: var(--ink);
-  color: var(--bg);
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.r-tab:hover {
+  color: var(--ink);
+}
+
+.r-tab.active {
+  background: var(--bg);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(12, 13, 16, .08);
+}
+
+.r-topbar-spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+.r-live-receipt {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
   font-family: var(--mono);
   font-size: 11px;
+}
+
+.r-live-receipt-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ok, var(--accent));
+  animation: livepulse 1.8s ease-in-out infinite;
 }
 
 .r-project-manage {
