@@ -228,3 +228,6 @@ def test_reader_steps_the_published_rendered_order_instead_of_rederiving_it() ->
     assert 'document.addEventListener("keydown", handleReaderKey, true)' in reader
     assert "matches?.(\"input, textarea, select, [contenteditable='true']\")" in reader
     assert "document.activeElement?.matches?." in reader
+    assert "focusPosition" not in reader
+    assert "onPage" not in reader
+    assert "setReaderSelectionKey(target.key)" in reader

@@ -284,7 +284,7 @@ function readerFigurePath(item) {
   return `docs/figures/${item?.slug || ""}`;
 }
 
-function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus, focusPosition, onPage }) {
+function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus }) {
   const M = window.STATE;
   if (!M) return null;
   if (!slug) {
@@ -343,6 +343,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
   const [stateRetry, setStateRetry] = useState(0);
   const [showPrompt, setShowPrompt] = useState(false);
   const [, setReaderListRevision] = useState(0);
+  const [readerSelectionKey, setReaderSelectionKey] = useState(null);
   const [composingAt, setComposingAt] = useState(null);
   const [reviewing, setReviewing] = useState(null); // { id, comment, x, y }
 
@@ -580,18 +581,15 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
 
   const selectedKey = PG.nav_key || (kind === "plan" ? PG.slug : `${kind}:${PG.slug}`);
   const publishedList = window.ReckonShell.title?.readerListFor?.(kind) || [];
-  const publishedPosition = readerListPosition(publishedList, selectedKey, PG.slug);
-  const readerPosition = publishedPosition.total > 0 ? publishedPosition : {
-    current: focusPosition?.current || 0,
-    total: focusPosition?.total || 0,
-  };
+  const displayedKey = readerSelectionKey || selectedKey;
+  const readerPosition = readerListPosition(publishedList, displayedKey, PG.slug);
+  useEffect(() => setReaderSelectionKey(selectedKey), [kind, selectedKey]);
   const stepReader = (direction) => {
-    const target = readerStepTarget(publishedList, selectedKey, PG.slug, direction);
+    const target = readerStepTarget(publishedList, displayedKey, PG.slug, direction);
     if (target) {
+      setReaderSelectionKey(target.key);
       onNav?.({ view: target.type || kind, slug: target.slug });
-      return;
     }
-    if (publishedList.length === 0) onPage?.(direction);
   };
 
   useEffect(() => {
@@ -608,7 +606,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus,
     };
     document.addEventListener("keydown", handleReaderKey, true);
     return () => document.removeEventListener("keydown", handleReaderKey, true);
-  }, [kind, selectedKey, PG.slug, publishedList]);
+  }, [kind, selectedKey, displayedKey, PG.slug, publishedList]);
 
   // Click-to-review: any click on an injected [data-cm] element opens
   // CommentReviewPopover anchored to that element's viewport rect.
