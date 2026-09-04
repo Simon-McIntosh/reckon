@@ -9,6 +9,7 @@ launched is asserted from the recorded call.
 
 from __future__ import annotations
 
+import asyncio
 import os
 from pathlib import Path
 
@@ -16,6 +17,7 @@ import pytest
 
 import reckon.mcp as mcp_module
 from reckon.crew.runs import _write_json, crew_home, pointer_path, run_dir
+from reckon.doccheck import audit_file
 
 PROJECT = "recover-proj"
 USAGE_LIMIT_STREAM = (
@@ -27,6 +29,22 @@ USAGE_LIMIT_STREAM = (
 # A pid guaranteed not to belong to a running process, so a resumed pointer
 # still reads as stopped rather than live.
 DEAD_PID = 4_194_303
+
+
+def _tool_entry(name: str):
+    """Return the tool registered on the client-facing MCP surface."""
+    return next(
+        item for item in mcp_module.mcp._tool_manager.list_tools() if item.name == name
+    )
+
+
+def _invoke_tool(name: str, **kwargs):
+    """Exercise FastMCP argument validation and dispatch like a client call."""
+    return asyncio.run(_tool_entry(name).run(kwargs))
+
+
+def _crew_entry(**kwargs):
+    return _invoke_tool("_crew", **kwargs)
 
 
 @pytest.fixture()
@@ -117,8 +135,8 @@ def test_resume_reattaches_a_session_already_on_the_pointer(
     spawn = _FakeSpawn()
     monkeypatch.setattr(mcp_module.crew_module, "_spawn", spawn)
 
-    result = mcp_module._crew_recover(
-        "resume", run_id=run_id, advice="the limit has reset; continue"
+    result = _crew_entry(
+        action="resume", run_id=run_id, advice="the limit has reset; continue"
     )
 
     assert result["ok"] is True
@@ -152,8 +170,8 @@ def test_resume_reattaches_a_session_only_the_stream_carries(
     spawn = _FakeSpawn()
     monkeypatch.setattr(mcp_module.crew_module, "_spawn", spawn)
 
-    result = mcp_module._crew_recover(
-        "resume", run_id=run_id, advice="the limit has reset; continue"
+    result = _crew_entry(
+        action="resume", run_id=run_id, advice="the limit has reset; continue"
     )
 
     assert result["ok"] is True
@@ -174,8 +192,8 @@ def test_resume_of_a_live_process_is_refused_like_the_cli(
     spawn = _FakeSpawn()
     monkeypatch.setattr(mcp_module.crew_module, "_spawn", spawn)
 
-    result = mcp_module._crew_recover(
-        "resume", run_id=run_id, advice="the limit has reset; continue"
+    result = _crew_entry(
+        action="resume", run_id=run_id, advice="the limit has reset; continue"
     )
 
     assert result["ok"] is False
@@ -186,11 +204,11 @@ def test_resume_of_a_live_process_is_refused_like_the_cli(
 
 
 def test_resume_needs_advice_and_a_run_id(home: Path) -> None:
-    missing_advice = mcp_module._crew_recover("resume", run_id="r-x")
+    missing_advice = _crew_entry(action="resume", run_id="r-x")
     assert missing_advice["ok"] is False
     assert missing_advice["error"] == "missing_advice"
 
-    missing_run = mcp_module._crew_recover("resume", advice="continue")
+    missing_run = _crew_entry(action="resume", advice="continue")
     assert missing_run["ok"] is False
     assert missing_run["error"] == "missing_run_id"
 
@@ -201,7 +219,7 @@ def test_session_answers_the_source_when_only_the_pointer_carries_it(
     run_id = "r-20260903T093000000000-node-a"
     _stopped_run(tmp_path, run_id, session_on_pointer=True)
 
-    result = mcp_module._crew_recover("session", run_id=run_id)
+    result = _crew_entry(action="session", run_id=run_id)
 
     assert result["ok"] is True
     assert result["resolved"] is True
@@ -215,7 +233,7 @@ def test_session_answers_the_source_when_only_the_stream_carries_it(
     run_id = "r-20260903T094000000000-node-a"
     _stopped_run(tmp_path, run_id, session_on_pointer=False)
 
-    result = mcp_module._crew_recover("session", run_id=run_id)
+    result = _crew_entry(action="session", run_id=run_id)
 
     assert result["ok"] is True
     assert result["resolved"] is True
@@ -244,7 +262,7 @@ def test_session_states_the_absence_rather_than_a_bare_null(
     }
     _write_json(pointer_path(run_id), record)
 
-    result = mcp_module._crew_recover("session", run_id=run_id)
+    result = _crew_entry(action="session", run_id=run_id)
 
     assert result["ok"] is True
     assert result["resolved"] is False
@@ -256,7 +274,7 @@ def test_session_states_the_absence_rather_than_a_bare_null(
 
 
 def test_session_needs_a_run_id(home: Path) -> None:
-    result = mcp_module._crew_recover("session")
+    result = _crew_entry(action="session")
     assert result["ok"] is False
     assert result["error"] == "missing_run_id"
 
@@ -292,7 +310,7 @@ def test_sweep_dry_run_reports_what_it_would_resume(
     monkeypatch.setattr(mcp_module.crew_module, "_spawn", spawn)
     monkeypatch.setattr(resumption_module, "_spawn", spawn)
 
-    result = mcp_module._crew_recover("sweep", project=PROJECT, dry_run=True)
+    result = _crew_entry(action="sweep", project=PROJECT, dry_run=True)
 
     assert result["ok"] is True
     assert result["dry_run"] is True
@@ -303,7 +321,7 @@ def test_sweep_dry_run_reports_what_it_would_resume(
 
 
 def test_sweep_needs_a_project(home: Path) -> None:
-    result = mcp_module._crew_recover("sweep")
+    result = _crew_entry(action="sweep")
     assert result["ok"] is False
     assert result["error"] == "missing_project"
 
@@ -315,9 +333,7 @@ def test_invalid_action_is_a_readable_refusal(home: Path) -> None:
 
 
 def test_resume_of_an_unknown_run_is_a_readable_refusal(home: Path) -> None:
-    result = mcp_module._crew_recover(
-        "resume", run_id="r-does-not-exist", advice="continue"
-    )
+    result = _crew_entry(action="resume", run_id="r-does-not-exist", advice="continue")
     assert result["ok"] is False
     assert result["error"] == "crew_error"
     assert "r-does-not-exist" in result["detail"]
@@ -343,9 +359,78 @@ def test_real_config_home_is_untouched(
     _stopped_run(tmp_path, run_id, session_on_pointer=True)
     spawn = _FakeSpawn()
     monkeypatch.setattr(mcp_module.crew_module, "_spawn", spawn)
-    mcp_module._crew_recover("resume", run_id=run_id, advice="continue")
-    mcp_module._crew_recover("session", run_id=run_id)
-    mcp_module._crew_recover("sweep", project=PROJECT, dry_run=True)
+    _crew_entry(action="resume", run_id=run_id, advice="continue")
+    _crew_entry(action="session", run_id=run_id)
+    _crew_entry(action="sweep", project=PROJECT, dry_run=True)
 
     assert not real_pointer.exists()
     assert not real_run_dir.exists()
+
+
+def test_single_project_roadmap_defaults_to_summary_and_raw_is_explicit(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    raw = {
+        "project": PROJECT,
+        "completion": {
+            "plans": 3,
+            "completed": 1,
+            "pending": 2,
+            "lifecycle_completion_pct": 33.3,
+            "implementation_pct": 50.0,
+        },
+        "ready_now": [{"slug": "ready"}],
+        "blocked": [{"slug": "blocked"}],
+        "deferred": [],
+        "wiring_findings": [{"severity": "warn", "code": "sample"}],
+        "critical_path": {"plans": ["ready", "blocked"], "hours": 2.0},
+        "schedule": {},
+    }
+    monkeypatch.setattr(
+        mcp_module, "_discover_project", lambda *args: {"inventory": [], "sprints": []}
+    )
+    monkeypatch.setattr(
+        mcp_module,
+        "read_plan",
+        lambda *args: ({"projects": [], "active_sprint_id": None}, 0),
+    )
+    monkeypatch.setattr(mcp_module, "list_followups_across", lambda *args, **kwargs: [])
+    monkeypatch.setattr(mcp_module, "build_roadmap", lambda *args, **kwargs: raw)
+
+    summary = _invoke_tool("_roadmap", project=PROJECT)
+    lossless = _invoke_tool("_roadmap", project=PROJECT, view="raw")
+
+    assert summary["view"] == "summary"
+    assert summary["ready"] == 1
+    assert summary["blocked"] == 1
+    assert summary["finding_counts"]["total"] == 1
+    assert summary["critical_path"] == raw["critical_path"]
+    assert lossless == {"project": PROJECT, "view": "raw", "data": raw}
+
+
+def test_audit_tool_validates_one_document_like_the_cli(
+    home: Path, tmp_path: Path
+) -> None:
+    document = tmp_path / "docs" / "authored.html"
+    document.parent.mkdir()
+    document.write_text(
+        "<!doctype html><html><head>"
+        '<meta name="docs-project" content="recover-proj">'
+        '<meta name="reckon-type" content="plan">'
+        '<meta name="plan-slug" content="authored">'
+        '<meta name="plan-title" content="Authored">'
+        "<title>Authored</title></head>"
+        '<body><main class="plan-doc"><p>**markdown**</p></main></body></html>',
+        encoding="utf-8",
+    )
+    expected = [
+        {"severity": item.severity, "code": item.code, "message": item.message}
+        for item in audit_file(document, project=PROJECT)
+    ]
+
+    result = _invoke_tool("_audit", project=PROJECT, path=str(document))
+
+    assert result["path"] == str(document)
+    assert result["findings"] == expected
+    assert result["finding_counts"]["total"] == len(expected)
+    assert result["ok"] is False
