@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T06:53:57",
+  "updated": "2026-09-04T07:00:59",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -87,7 +87,8 @@
         "session_id": "019ff69f-0f05-71a0-8655-e4b59fd6a838",
         "created": "2026-08-12",
         "sessions": {
-          "gpt-5.6-sol": "01a038e7-fa6e-7333-af51-50f8a42a3220"
+          "gpt-5.6-sol": "01a038e7-fa6e-7333-af51-50f8a42a3220",
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06abe-eb18-74a0-b754-946566fe747b"
         }
       },
       {
@@ -49579,6 +49580,160 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260904T045108064925-a-promotion-accepts-a-named-companion-path",
+        "plan": "every-state-has-a-verb",
+        "section": "\u00a75",
+        "node": "a-promotion-accepts-a-named-companion-path",
+        "node_definition": {
+          "done_when": "A producer regenerated a declared JSON artifact and, in the same call, its companion image; the image was not in the write scope, so crew complete refused the promotion for changed paths outside the declared scope - and neither --scope-changed nor --waive-boundary-refusal lifts that particular refusal. The run's commit was already merged to the primary branch, so there was no way to record it. Both available exits are wrong: discarding throws away the account of work already in the tree, leaving a commit no ledger row explains, and leaving the pointer strands it as an unreconciled remainder that also blocks its member from further dispatch - a refusal this coordinator had to waive twice tonight to dispatch at all. A third exit exists, is undocumented and is unsafe by construction: hand-editing the live pointer's declared paths, which makes the fence agree by rewriting the thing it checks against, and which this coordinator has done. The fence is right to refuse by default, since an undeclared write is how one worker silently overwrites another; what is missing is the deliberate recorded exception every other fence here already has. Done when a promotion accepts a named path outside the declared scope together with a stated reason; when the accepted paths and their reasons land on the promoted ledger row so the exception is auditable afterwards; when accepting a path that another live run claims is still refused, because that is a collision rather than a companion; and when a promotion carrying undeclared paths and no acceptance is refused exactly as today, asserted as a negative. ASSERT THROUGH THE COMPLETION ENTRY POINT a coordinator invokes, over a run whose commit touches one declared and one undeclared path, built the way dispatch writes it under a temporary config home with the real config home asserted untouched. At least one added assertion must fail against base 417166e. Measured over tests/test_crew_promotion_scope.py plus tests/test_crew_promotion.py in ONE invocation: zero failures against their combined count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 2.5,
+          "goal": "A promotion can record a companion path the node did not declare, with its reason on the ledger row.",
+          "id": "a-promotion-accepts-a-named-companion-path",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/companion-path-manifest.md",
+          "plan": "every-state-has-a-verb",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "tests/test_crew_promotion_scope.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-d",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T04:51:31Z",
+        "completed_at": "2026-09-04T04:59:27Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 476,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 476,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "417166e031a9e55c884241c4ddd1dcdf86032ed9",
+        "commits": [
+          "295bf7b35067363ae8f460280ecef6b6b2361e7f"
+        ],
+        "changed_lines": {
+          "added": 230,
+          "removed": 6,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_promotion_scope.py tests/test_crew_promotion.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vcp.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/companion-path-manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06ac1-fabf-7f40-af18-a88c769fb7ba",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3625984,
+            "cached_input_tokens_cumulative": 3625984,
+            "input_tokens": 3768386,
+            "input_tokens_cumulative": 3768386,
+            "output_tokens": 20268,
+            "output_tokens_cumulative": 20268,
+            "reasoning_output_tokens": 6699,
+            "reasoning_output_tokens_cumulative": 6699
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3000,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 1477,
+              "log_age_seconds": 473,
+              "log_fresh": true,
+              "manifest_commits": [
+                "[64810268d32e89978d366ce37893677a7d165275]; changed_paths: [\"docs/ui/home.jsx\"",
+                "\"docs/ui/home.css\"",
+                "\"docs/index.html\"",
+                "\"docs/ui/shell-route.jsx\"",
+                "\"docs/ui/shell.jsx\"",
+                "\"tests/test_spa_home_surface.py\"",
+                "\"tests/test_spa_home_geometry.py\"]"
+              ],
+              "manifest_derived": false,
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T042633367705-home-view/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260904T042633367705-home-view --gate <verdict> --commit [64810268d32e89978d366ce37893677a7d165275]; changed_paths: [\"docs/ui/home.jsx\" --commit \"docs/ui/home.css\" --commit \"docs/index.html\" --commit \"docs/ui/shell-route.jsx\" --commit \"docs/ui/shell.jsx\" --commit \"tests/test_spa_home_surface.py\" --commit \"tests/test_spa_home_geometry.py\"]",
+              "node": "home-view",
+              "phase": "working",
+              "plan": "fleet-home",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260904T042633367705-home-view",
+              "session": "ship-s16",
+              "terminal_age_seconds": 494,
+              "terminal_at": "2026-09-04T04:43:12Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16/home-view"
+            }
+          ]
+        },
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 26967,
+          "peak_input_tokens": 7394370
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -49751,6 +49906,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 813
+    "_version": 815
   }
 }
