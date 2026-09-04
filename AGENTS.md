@@ -124,6 +124,41 @@ The docs/ directory is the canonical planning SPA template:
 - JSX components: docs/ui/ (shell.jsx is the root)
 - Plan state is loaded at runtime from the plan's semantic HTML elements (parsed by the server via `GET /plan/<project>/<slug>`); project config from `state/<project>/index.json`
 
+### The SPA renders; it does not derive (binding)
+
+**One functional source of truth.** Any derived fact — a sprint's real
+completion, an endpoint's closure, a project's rollup, a schedule, a blocker, a
+readiness verdict — is computed in Python and consumed by the surface. The SPA
+renders the payload. It never computes a fact a reader without a browser would
+also want.
+
+The test is one question: **would an agent, a CLI caller, or an MCP read have
+any use for this value?** If yes, it belongs in Python and the SPA reads it. If
+the value is presentation — a card width, an edge path, a lane height, a colour
+— it belongs in the surface and has no agent-side counterpart.
+
+Why it is binding rather than advisory. A derivation written in JSX is invisible
+to every non-browser reader, so a human and an agent reading the same project
+disagree and neither finds out. Measured 2026-09-04, immediately after the
+surface work landed: `roadmap` had no notion of derived sprint state or of an
+unnamed dependency endpoint, and nothing outside the HTTP handler could call the
+fleet rollup, while the SPA answered all three. A mirror implementation is not
+the fix — that is two implementations of one truth, which is the same defect
+with a longer fuse, because nothing fails when the copies drift.
+
+Two consequences worth knowing before you choose:
+
+- **Verification gets cheaper.** Logic in Python is asserted by pytest. Logic in
+  JSX needs a headless browser or a module eval, which is the heaviest and least
+  reliable test path in this repository.
+- **Deployment gets slower.** A JSX change is live on the next page load; a
+  Python change needs the served process restarted and the MCP reconnected
+  before any reader sees it. That is the real cost of centralising, and it is
+  worth paying for a fact, not for a pixel.
+
+Parity is held by a check that compares the surfaces rather than asserting
+about either one, because literals on both sides drift silently in step.
+
 ## Repo-agnostic principle
 
 Never hardcode a project name (imas-ambix, imas-efit, etc.) in reckon itself.
