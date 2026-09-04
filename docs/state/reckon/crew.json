@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T13:30:58",
+  "updated": "2026-09-04T13:46:53",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -716,6 +716,17 @@
         "created": "2026-09-04"
       },
       {
+        "id": "s15-ctxfit",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": "01a06c38-dfba-7f12-b3ed-b7bdac250577",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06c38-dfba-7f12-b3ed-b7bdac250577"
+        },
+        "created": "2026-09-04"
+      },
+      {
         "id": "s15-keying",
         "harness": "codex",
         "role": "implement",
@@ -736,6 +747,15 @@
         "created": "2026-09-04"
       },
       {
+        "id": "s15-promo",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-04"
+      },
+      {
         "id": "s15-riq",
         "harness": "codex",
         "role": "implement",
@@ -744,6 +764,24 @@
         "sessions": {
           "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06bf6-94c3-78e0-81eb-47fffe6b0595"
         },
+        "created": "2026-09-04"
+      },
+      {
+        "id": "s15-routing",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-04"
+      },
+      {
+        "id": "s15-runstate",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
         "created": "2026-09-04"
       },
       {
@@ -55663,6 +55701,118 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T113659922680-riq-session-provenance",
+        "plan": "run-identity-query",
+        "section": "\u00a73",
+        "node": "riq-session-provenance",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 3498,
+                "cached_input_tokens": 292996,
+                "input_tokens": 296496,
+                "output_tokens": 1599,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 298095,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "uv run pytest tests/test_crew_run_identity.py -q passes and tests/test_crew_recover.py -q stays green: a pointer with no session field yields the stream id with session_id_source stream, a promoted row with no pointer yields ledger, a pointer carrying one yields pointer without reading the stream, a run with none anywhere yields a stated absence naming all three sources and never a bare null, the view's session for a run equals what resolve_session returns for it asserted by calling both, and resumable is false naming the released worktree when the directory is absent, false naming the live process when one is alive, and true when a session resolves against an existing tree with a dead process",
+          "estimated_hours": 2.0,
+          "goal": "Give every runs-view row its session with the source that answered and a computed resumability verdict carrying its reason",
+          "id": "riq-session-provenance",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T113659922680-riq-session-provenance/manifest.md",
+          "plan": "run-identity-query",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/query.py",
+            "tests/test_crew_run_identity.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s15-riq",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T11:37:10Z",
+        "completed_at": "2026-09-04T11:45:57Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 527,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 527,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "49ba338b080809f6e9148cff062b2f373edbbb98",
+        "commits": [
+          "148d1ccc0966db0d7e3433382b4798efc540f8da"
+        ],
+        "changed_lines": {
+          "added": 264,
+          "removed": 24,
+          "files": 2
+        },
+        "tests_added": 7,
+        "gate": "passed",
+        "gate_check": {
+          "command": "uv run --no-sync pytest tests/test_crew_run_identity.py tests/test_crew_recover.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T113659922680-riq-session-provenance/test-crew-run-identity.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T113659922680-riq-session-provenance/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06bf6-94c3-78e0-81eb-47fffe6b0595",
+        "budget": {
+          "cost_usd": null,
+          "detail": "",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_crew_run_identity.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -55835,6 +55985,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 915
+    "_version": 921
   }
 }
