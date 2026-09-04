@@ -24,6 +24,11 @@
   <title>Nothing Leaves the Window | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-04">
+<meta name="plan-version" content="2">
+<meta name="plan-commits" content="6e717b0">
+<meta name="plan-artifacts" content="tests/test_spa_viewport_containment.py,tests/spa_containment_harness.py">
+<meta name="plan-impl" content="0.5">
 </head>
 <body>
 <main class="plan-doc">
@@ -88,50 +93,54 @@
 <div class="r-dec" data-key="guard-scope" data-choice="class-not-instance" data-by="reckon-ship (lead authorised absorbing this into the sprint, 2026-09-04)" data-when="2026-09-04">
     <p class="r-dec-q">Does the fix target the picker or the class?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="class-not-instance">A containment check over every surface</button>
+      <button class="r-opt chosen" data-value="class-not-instance">A containment check over every surface</button>
       <button class="r-opt" data-value="one-more-assertion">One assertion on the picker</button>
-    </p>
-    <p class="r-dec-rat">The picker is already fixed under its own plan's section. An assertion there would leave every other surface unmeasured against a dimension no existing gate can express, and the next overflow would again be found by a screenshot or by a reader.</p>
-</div>
+      </p>
+    <p class="r-dec-rat">The picker is already fixed under its own plan&#x27;s section. An assertion there would leave every other surface unmeasured against a dimension no existing gate can express, and the next overflow would again be found by a screenshot or by a reader.</p>
+    </div>
 <div class="r-dec" data-key="overflow-axis" data-choice="horizontal-only" data-by="reckon-ship (deduced from the existing container tests)" data-when="2026-09-04">
     <p class="r-dec-q">Which axis does the check measure?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="horizontal-only">Horizontal only</button>
+      <button class="r-opt chosen" data-value="horizontal-only">Horizontal only</button>
       <button class="r-opt" data-value="both-axes">Both axes</button>
-    </p>
+      </p>
     <p class="r-dec-rat">Vertical overflow is scrolling, which the surfaces are built to do and the container tests already hold; asserting it would fail on every correct page. Horizontal overflow has no legitimate whole-page form here.</p>
-</div>
+    </div>
 <div class="r-dec" data-key="exemption-representation" data-choice="declared-marker" data-by="reckon-ship (deduced from the silent-tolerance failure mode)" data-when="2026-09-04">
     <p class="r-dec-q">How is a deliberately off-screen element handled?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="declared-marker">An explicit marker, reported as an exemption</button>
+      <button class="r-opt chosen" data-value="declared-marker">An explicit marker, reported as an exemption</button>
       <button class="r-opt" data-value="heuristic-skip">Skipped by a heuristic on class or style</button>
-    </p>
+      </p>
     <p class="r-dec-rat">A heuristic exemption grows until it covers the defect it was meant to permit around, and nobody can tell which elements it swallowed. A declared marker appearing in the verdict makes every exemption a readable choice.</p>
-</div>
+    </div>
 <div class="r-dec" data-key="authoring-order" data-choice="guard-before-fixes" data-by="reckon-ship (deduced from the measurement-integrity rule)" data-when="2026-09-04">
     <p class="r-dec-q">Is the check written before or after the surfaces are adjusted?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="guard-before-fixes">Before, and its first verdict is recorded whatever it says</button>
+      <button class="r-opt chosen" data-value="guard-before-fixes">Before, and its first verdict is recorded whatever it says</button>
       <button class="r-opt" data-value="after-fixes-so-it-lands-green">After, so it lands green</button>
-    </p>
+      </p>
     <p class="r-dec-rat">A guard authored to pass measures the adjustment rather than the surfaces, and its first verdict is the only unbiased inventory anyone will get. Recording it whatever it says is also what makes a low count a finding instead of an assumption.</p>
-</div>
+    </div>
 </section>
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-vc-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship viewport-containment" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Build the guard, record its first verdict, then fix what it names</h4>
-    <div class="r-fu-body"><p>&#167;2 runs first and alone, and its verdict is recorded before any surface is touched. &#167;3 then fixes the remainder at each surface's own stylesheet, or records that there was none. The two nodes write disjoint paths, so only the ordering couples them.</p></div>
+    <div class="r-fu-body"><p>§2 runs first and alone, and its verdict is recorded before any surface is touched. §3 then fixes the remainder at each surface's own stylesheet, or records that there was none. The two nodes write disjoint paths, so only the ordering couples them.</p></div>
     <pre class="r-fu-prompt">/reckon-ship viewport-containment</pre>
-</article>
+    </article>
 </section>
 
 <section data-reckon="research" id="research" class="r-research-list">
 <h2><span class="sec">§</span> Research</h2>
-<div class="r-research" data-id="r1" data-type="evidence" data-url="spa-shell-scope-and-visibility">
-  <span class="r-research-title">The captures that found the defect: the shell's rendered evidence at 1374 and 1920, where the picker's clipped border and missing plan counts are visible in both.</span>
+<div class="r-research" data-id="r1" data-type="evidence" data-source="" data-added-by="" data-when="" data-url="spa-shell-scope-and-visibility">
+    <span class="r-research-title"><a href="spa-shell-scope-and-visibility">The captures that found the defect: the shell&#x27;s rendered evidence at 1374 and 1920, where the picker&#x27;s clipped border and missing plan counts are visible in both.</a></span></div>
+</section>
+<section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260904T055135457991-containment-check" data-who="s16-contain" data-when="2026-09-04T06:18:12Z">
+    <div class="r-comment-body"><p>the containment guard measures 22 of 24 surface-width rows across 11,892 elements at 1374 and 1920 and reports 0 real-surface violations, with the command palette explicitly not measured at either width. It is proven to work: the only 2 violations are the synthetic element the test shifts to exactly right_overflow_px=40 at both widths, the horizontally scrolling case is measured against its scroll owner and absent from violations, and the marked off-screen case appears as a declared exemption. First verdict recorded unadjusted, sha256 21df9990. Its diagnostic also found a product crash: opening the command palette raises ReferenceError paletteKindLabel and unmounts .r-app</p></div>
 </div>
 </section>
 </main>

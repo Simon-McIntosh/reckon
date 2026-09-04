@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T08:01:34",
+  "updated": "2026-09-04T08:24:29",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -754,6 +754,15 @@
           "{\"alias\":\"opus 5\",\"backend\":\"claude-opus\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"claude-opus-5\",\"sandbox\":\"worktree-full\"}": "9f16b547-e517-4ba7-bf5f-481baee2a469"
         },
         "created": "2026-09-03"
+      },
+      {
+        "id": "s16-harness",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-04"
       },
       {
         "id": "s16-home",
@@ -50688,6 +50697,164 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260904T055135457991-containment-check",
+        "plan": "viewport-containment",
+        "section": "\u00a72",
+        "node": "containment-check",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_spa_viewport_containment.py -q runs to completion and writes a verdict record naming every surface walked, the element count, and each violation with its selector and pixel overflow, with the cases \u00a72 names: an element the test itself shifts 40px past innerWidth is reported, an element inside a deliberately horizontally scrolling container is measured against that container and does not report, and an element carrying the off-screen marker appears in the verdict as an exemption",
+          "estimated_hours": 2.5,
+          "goal": "One test asserts horizontal viewport containment across every routable surface and overlay at both widths and records its full verdict",
+          "id": "containment-check",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T055135457991-containment-check/manifest.md",
+          "plan": "viewport-containment",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "tests/test_spa_viewport_containment.py",
+            "tests/spa_containment_harness.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-contain",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T05:51:45Z",
+        "completed_at": "2026-09-04T06:18:12Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1587,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1587,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "97ddab560ea03ed14ecea28d6c6383a5336097ce",
+        "commits": [
+          "6e717b0f4798b6300b9343a0f454b1792fbe142d"
+        ],
+        "changed_lines": {
+          "added": 619,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "RECKON_VIEWPORT_VERDICT=<run>/spa-viewport-containment-verdict.json PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_viewport_containment.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T055135457991-containment-check/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T055135457991-containment-check/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06af9-1da9-72d3-94ea-c7f7f993a428",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 4109568,
+            "cached_input_tokens_cumulative": 4109568,
+            "input_tokens": 4187141,
+            "input_tokens_cumulative": 4187141,
+            "output_tokens": 19937,
+            "output_tokens_cumulative": 19937,
+            "reasoning_output_tokens": 4489,
+            "reasoning_output_tokens_cumulative": 4489
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2100,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 938,
+              "external_wait": null,
+              "log_age_seconds": 290,
+              "log_fresh": true,
+              "manifest_commits": [
+                "[\"de489da3d03f3878c1975a4018d0ab66cb48cbd9\"]; changed_paths: [\"reckon/budget.py\"",
+                "\"reckon/cli.py\"",
+                "\"reckon/crew/AGENTS.md\"",
+                "\"reckon/crew/recover.py -> reckon/crew/resumption.py\"",
+                "\"reckon/mcp.py\"",
+                "\"tests/test_crew_recover.py\"",
+                "\"tests/test_external_wait.py\"",
+                "\"tests/test_mcp_recovery.py\"]"
+              ],
+              "manifest_derived": false,
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/module-shadow-manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260904T053214447443-the-new-module-does-not-shadow-a-sibling --gate <verdict> --commit [\"de489da3d03f3878c1975a4018d0ab66cb48cbd9\"]; changed_paths: [\"reckon/budget.py\" --commit \"reckon/cli.py\" --commit \"reckon/crew/AGENTS.md\" --commit \"reckon/crew/recover.py -> reckon/crew/resumption.py\" --commit \"reckon/mcp.py\" --commit \"tests/test_crew_recover.py\" --commit \"tests/test_external_wait.py\" --commit \"tests/test_mcp_recovery.py\"]",
+              "node": "the-new-module-does-not-shadow-a-sibling",
+              "phase": "working",
+              "plan": "every-state-has-a-verb",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260904T053214447443-the-new-module-does-not-shadow-a-sibling",
+              "session": "ship-s15-0903",
+              "terminal_age_seconds": 355,
+              "terminal_at": "2026-09-04T05:45:47Z",
+              "wait_age_seconds": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-0903/the-new-module-does-not-shadow-a-sibling"
+            }
+          ]
+        },
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 24426,
+          "peak_input_tokens": 8296709
+        },
+        "attempt": 3,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_spa_viewport_containment.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -50860,6 +51027,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 828
+    "_version": 830
   }
 }
