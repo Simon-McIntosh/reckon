@@ -39,7 +39,7 @@ function CmdKPalette({ items, onClose, onPick }) {
             <button key={`${p.repository}:${p.nav_key}`} className={`item ${i === idx ? "on" : ""}`} onMouseEnter={() => setIdx(i)} onClick={() => onPick(p)}>
               <span className={`dot ${p.status}`}></span>
               <span><strong>{p.label}</strong> <span className="meta" style={{ marginLeft: 6 }}>/{p.nav_key}</span></span>
-              <span className="meta">{paletteKindLabel(p.kind)} · {p.repository} · {p.status}</span>
+              <span className="meta">{window.ReckonShell.plans.paletteKindLabel(p.kind)} · {p.repository} · {p.status}</span>
             </button>
           ))}
           {filtered.length === 0 && <div style={{ padding: 24, textAlign: "center", color: "var(--muted)", fontSize: 13 }}>No resources match.</div>}
