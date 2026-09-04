@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Route dispatch on rework-charged cost per durable node, and fence node size and burn rate so the metered lane stays sustainable">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="13.0">
+  <meta name="plan-effort-hours" content="16.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="8">
 </head>
 <body>
   <main class="plan-doc">
@@ -474,16 +474,54 @@
     it reports today, with one test asserting the two differ on a node whose
     coordinator spend is non-zero.</p>
 
+    <h2 id="s10">&sect;10 &mdash; Execution order</h2>
+
+    <p>Two orderings are forced by what each section measures, and the rest is
+    free. Recorded here because a coordinator picking this plan up cannot derive
+    them from the section numbers.</p>
+
+    <table>
+      <caption>Execution order. Only the two dependencies stated in the last
+        column are binding; sections with none may run in any wave.</caption>
+      <thead><tr><th>Order</th><th>Section</th><th>Node</th><th>Must follow</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>&sect;9</td><td>Coordinator spend recorded against dispatched nodes</td><td>&mdash;</td></tr>
+        <tr><td>2</td><td>&sect;3</td><td>Derived routing surface, carrying the coordinator column</td><td>&sect;9</td></tr>
+        <tr><td>3</td><td>&sect;7</td><td>Candidate-lane qualification on the repaired metric</td><td>&sect;3</td></tr>
+        <tr><td>any</td><td>&sect;4</td><td>Orientation floor measured and reported</td><td>&mdash;</td></tr>
+        <tr><td>any</td><td>&sect;5</td><td>Specification level required at dispatch</td><td>&mdash;</td></tr>
+        <tr><td>any</td><td>&sect;6</td><td>Burn multiple reported, and the fence moved to an input-token budget</td><td>&mdash;</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>&sect;9 precedes &sect;3</strong>, which reverses the order the
+    sections were written in. A routing surface shipped without a coordinator
+    column will be read, cited and used to justify moving reasoning from worker to
+    coordinator before the column arrives, and every such transfer scores as a
+    saving on a worker-only measure. Shipping the incomplete surface first is
+    therefore not a neutral sequencing choice: it actively produces wrong
+    decisions during the interval, and those decisions are the expensive kind
+    because they look measured.</p>
+
+    <p><strong>&sect;3 precedes &sect;7</strong> for the reason &sect;7 already
+    gives: the qualification ladder's present bar is met by every configuration
+    ever run, so qualifying a lane before the metric is repaired selects nothing.</p>
+
+    <p>&sect;4, &sect;5 and &sect;6 touch different surfaces from each other and
+    from the chain, so they carry no ordering constraint and can fill a wave
+    alongside it. &sect;6's two halves are one node: the burn multiple and the
+    token-budget fence read the same window figures.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="node-size-bound" data-choice="1h" data-by="Simon McIntosh" data-when="2026-09-04T07:41:35+00:00">
+<div class="r-dec" data-key="node-size-bound" data-choice="warn-only" data-by="Simon McIntosh" data-when="2026-09-04T08:10:20+00:00">
     <p class="r-dec-q">What node-estimate bound should dispatch refuse above (§4)?</p>
     <p class="r-dec-opts">
-      <button class="r-opt chosen" data-value="1h">1h</button>
+      <button class="r-opt" data-value="1h">1h</button>
       <button class="r-opt" data-value="2h">2h</button>
-      <button class="r-opt" data-value="warn-only">warn-only</button>
+      <button class="r-opt chosen" data-value="warn-only">warn-only</button>
       </p>
-    <p class="r-dec-rat">Locked to the measurement. Median input per node rises 8.9x from a 1-hour to a 4-hour declared estimate, and the cliff is between 1h and 2h: 1,232,983 tokens at &lt;=1h against 5,858,234 at &lt;=2h, a factor of 4.8. A 2h bound would therefore concede most of the available saving while still improving on 4h, and a warn-only bound would concede all of it, because the failure this fences is an authoring habit rather than an accident. At 1h the sustainable ceiling is roughly 1,792 durable nodes per week against 287 at today&#x27;s node sizes, which covers the observed 1,204-run peak at a burn of about 0.67 - so this one bound is what brings the metered lane inside capacity without cutting throughput, changing effort, or paying for a second provider. Accepted cost: more decomposition work for the coordinator at authoring time, and a refusal that fires on nodes an author believed were single deliverables.</p>
+    <p class="r-dec-rat">Relocked to warn-only after reopening. The measured cost argument for refusing ran backwards: cost is 8,732,597 + 51 x changed_lines, so splitting fixed work into k nodes multiplies it by k (2.00x, 3.99x, 7.97x measured) and the larger bands are five times more efficient per line, 6,221 against 51,319. A refusal at one hour would therefore have raised burn while appearing to control it. The quality argument for a length fence is also unsupported here: binned by measured tool steps, rework is flat at 0.37 from 0-19 through 80-99 and the gate holds 0.87-0.91, so a ninety-step run comes back no more often than a ten-step one; the earlier signal was keyed on declared hours, which track task messiness rather than run length. But rework and gate outcome are the only quality signals available and both are coarse, and the lead&#x27;s judgement that these workers drift on long autonomous runs is not contradicted by any instrument we have. So the fence reports an oversized node without refusing it: warning costs nothing, keeps the hook if a sharper signal later shows what neither captures, and avoids encoding a refusal whose own evidence points the other way. Prior lock frozen at docs/plans/archive/dispatch-cost-per-durable-node-node-size-bound-locked.html.</p>
     </div>
 <div class="r-dec" data-key="frontier-lane" data-choice="define-not-route" data-by="Simon McIntosh" data-when="2026-09-04">
     <p class="r-dec-q">How should the API-key-only frontier model be treated?</p>
@@ -557,10 +595,11 @@
     <div class="r-fu-body">The measurements are recorded and the decisions are locked except the node-size bound. Execution order is forced: §3's derived surface (rework, steps, input, cost per durable node) must exist before §7 can qualify anything, because the ladder's current bar — pass at or above 0.8 — is met by every configuration ever run and therefore selects nothing. §4, §5 and §6 are independent of that ordering and of each other. The §4 bound is the one open decision.</div>
     <pre class="r-fu-prompt">/reckon-ship dispatch-cost-per-durable-node</pre>
     </article>
-<article class="r-fu" data-id="f-dcdn-002" data-status="open" data-written-by="reckon-edit" data-written-at="2026-09-04" data-recommends-skill="/reckon-edit dispatch-cost-per-durable-node --reopen node-size-bound" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-dcdn-002" data-status="resolved" data-written-by="reckon-edit" data-written-at="2026-09-04" data-recommends-skill="/reckon-edit dispatch-cost-per-durable-node --reopen node-size-bound" data-resolved-at="2026-09-04T08:10:20+00:00" data-resolved-by="Simon McIntosh">
     <h4 class="r-fu-title">Reopen the node-size bound — normalising by delivered work reverses it</h4>
     <div class="r-fu-body"><p><strong>Locked choice:</strong> <code>node-size-bound = 1h</code>, on the reasoning that median input rises 8.9x from a 1-hour to a 4-hour node with the cliff between 1h and 2h.</p><p><strong>What changed:</strong> that comparison never normalised for delivered work, and the bands do not deliver the same amount — the 1-hour band a median 133 changed lines, the 4-hour band 868. Regressing input on delivered lines over 1,738 usable runs gives <code>input = 8,732,597 + 51 x changed_lines</code>: the marginal cost of a line is 51 tokens and every node pays a fixed 8.7M floor first. So splitting fixed work into k nodes multiplies its cost by k (2.00x, 3.99x, 7.97x measured), and larger nodes are five times more efficient per line. The 0.24-against-0.49 rework advantage of small nodes does not come close to covering that. An independent check agrees: 564 nodes/week at the floor is a burn of 1.89 against 1.97 measured from recorded tokens.</p><p><strong>Proposal:</strong> reopen the key and lock <code>warn-only</code>, or retire it, and replace the fence with the two levers the fit names — consolidation, for which the existing per-configuration competence horizon is already the right shape, and reducing the orientation floor, which is 158% of a median run's whole input and which nothing has ever measured. Section 4 is rewritten to the corrected measurement; only the locked key still records the superseded reading.</p><p><strong>Also raised by the lead and not yet in the plan:</strong> a node's fence should bound model-active time, not wall clock. <code>time_budget</code> is wall-clock (25m resolved for the default backend), so a node waiting on a batch job or running a suite can hit the fence without spending tokens while another burns the 8.7M floor well inside it. The split already exists in code — <code>throughput_block</code> separates generation seconds from machine seconds — but reaches the ledger on 132 of 2,567 runs, and <code>worker_seconds</code> is wall-clock fallback on 77.1%, so agent time is largely unlogged. That belongs here as its own section.</p></div>
     <pre class="r-fu-prompt">/reckon-ship dispatch-cost-per-durable-node</pre>
+    <p class="r-fu-outcome">Reopened and relocked to warn-only, with the prior lock frozen at docs/plans/archive/dispatch-cost-per-durable-node-node-size-bound-locked.html. The model-active-time point the dissent also raised is now §6's fence axis, locked to an input-token budget: at a flat ~175k input per tool step a token budget is a step budget, and it is the quantity the meter charges, while wall clock remains the liveness timeout it is genuinely good for. The coordinator-accounting gap the dissent exposed became §9 and is sequenced ahead of §3.</p>
     </article>
 </section>
 

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="dispatch-cost-per-durable-node-node-size-bound-locked">
+  <meta name="plan-title" content="Node-size bound — prior lock">
+  <meta name="plan-summary" content="Frozen record of the superseded one-hour node-size bound and the measurement that refuted it.">
+  <meta name="plan-status" content="historical">
+  <meta name="plan-archived" content="1">
+  <meta name="plan-recorded-at" content="2026-09-04">
+  <title>Node-size bound — prior lock | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Node-size bound &mdash; prior lock</h1>
+    <p class="plan-summary">This frozen record preserves the superseded choice on
+      <code>node-size-bound</code> for the
+      <a href="/reckon/dispatch-cost-per-durable-node">dispatch-cost-per-durable-node</a>
+      plan, so a later reader can see what was decided, on what evidence, and why
+      it was reopened within the same session.</p>
+  </header>
+
+  <h2 id="s1">&sect;1 &mdash; What was locked</h2>
+
+  <p><code>node-size-bound = 1h</code>, locked 2026-09-04 by Simon McIntosh.
+  Dispatch was to refuse a node whose declared estimate exceeded one hour,
+  naming the bound and the split.</p>
+
+  <p>The rationale recorded at the time: median input per node rose 8.9&times;
+  from a one-hour to a four-hour declared estimate, with the cliff between one
+  and two hours &mdash; 1,232,983 tokens at &le;1&nbsp;h against 5,858,234 at
+  &le;2&nbsp;h, a factor of 4.8. A two-hour bound would therefore concede most
+  of the available saving. At one hour the sustainable ceiling was calculated at
+  roughly 1,792 durable nodes per week against 287 at then-current node sizes,
+  covering an observed 1,204-run peak at a burn of about 0.67.</p>
+
+  <h2 id="s2">&sect;2 &mdash; What refuted it</h2>
+
+  <p>The comparison never normalised for delivered work, and the bands do not
+  deliver the same amount: the one-hour band delivers a median 133 changed lines
+  and the four-hour band 868. Regressing input tokens on delivered lines over
+  1,738 usable runs gives</p>
+
+  <p><code>input_tokens = 8,732,597 + 51 &times; changed_lines</code></p>
+
+  <p>so the marginal cost of a delivered line is 51 tokens and every node pays a
+  fixed floor first. Splitting fixed work into <em>k</em> nodes multiplies its
+  cost by <em>k</em> &mdash; 2.00&times;, 3.99&times; and 7.97&times; measured for
+  two, four and eight &mdash; and the larger bands are five times more efficient
+  per line, 6,221 against 51,319 input tokens per line. An independent check
+  agrees from the other direction: 564 nodes per week at the floor is 4.93&nbsp;B
+  input, a burn of 1.89, against 1.97 measured from recorded tokens over the same
+  period.</p>
+
+  <p>A separate measurement removed the quality argument for a length fence.
+  Binned by measured tool steps rather than declared hours, rework is flat at
+  0.37 from the 0&ndash;19 band through 80&ndash;99 and the gate holds between
+  0.87 and 0.91, so a ninety-step run comes back no more often than a ten-step
+  one. The earlier signal that larger nodes rework more was keyed on declared
+  hours, which track how messy a task is rather than how long its run went.</p>
+
+  <h2 id="s3">&sect;3 &mdash; What replaced it</h2>
+
+  <p>The key was reopened and relocked to <code>warn-only</code>: the fence
+  reports an oversized node without refusing it, because the measured cost
+  argument for refusing ran backwards while the judgement that very long
+  autonomous runs carry unmeasured risk is not contradicted by any signal
+  available here &mdash; rework and gate outcome are the only two, and both are
+  coarse. Warning costs nothing and preserves the hook should a sharper quality
+  signal later show what neither captures.</p>
+
+  <p>The cost levers named in its place are those that are not transfers between
+  budgets: reducing what every tool step re-reads, consolidating work so fewer
+  nodes each pay the floor, and explicit lane routing. See
+  <a href="/reckon/dispatch-cost-per-durable-node#s4">&sect;4</a> and
+  <a href="/reckon/dispatch-cost-per-durable-node#s9">&sect;9</a> of the live plan.</p>
+</main>
+</body>
+</html>
