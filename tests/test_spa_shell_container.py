@@ -52,22 +52,19 @@ def _declarations(selector: str) -> dict[str, str]:
 
 
 def test_each_route_selects_exactly_one_canvas_view() -> None:
-    views = ["cockpit", "plan", "sprint", "graph", "crew"]
+    route_views = ["home", "cockpit", "plan", "sprint", "graph", "crew"]
     selected = _evaluate(
         ["canvasViewForRoute"],
-        f"{json.dumps(views)}.map(view => canvasViewForRoute({{view}}))",
+        f"{json.dumps(route_views)}.map(view => canvasViewForRoute({{view}}))",
     )
 
-    assert selected == views
-    assert all(
-        sum(candidate == selected_view for candidate in views) == 1
-        for selected_view in selected
-    )
+    assert selected == ["home", "home", "plan", "sprint", "graph", "crew"]
+    assert set(selected) == {"home", "plan", "sprint", "graph", "crew"}
 
     app = _function_source("App")
     assert "r-3col" not in app
     assert '{canvasView === "plan" ? (' in app
-    for view in ("cockpit", "sprint", "graph", "crew"):
+    for view in ("home", "sprint", "graph", "crew"):
         assert f'canvasView === "{view}" &&' in app
     assert ".r-3col.plans-mode" not in (ROOT / "docs/ui/plans.css").read_text()
 
@@ -113,8 +110,13 @@ def test_topbar_contains_tabs_in_its_single_row() -> None:
     topbar = _function_source("TopBar")
     declarations = _declarations(".r-topbar")
 
-    assert '<div className="r-glyph-tabs">' in topbar
-    assert topbar.index('<div className="r-glyph-tabs">') < topbar.rindex("</div>")
+    artifact_tabs = '<div className="r-tabs-artifact">'
+    work_tabs = '<div className="r-tabs-work">'
+    assert artifact_tabs in topbar
+    assert work_tabs in topbar
+    assert (
+        topbar.index(artifact_tabs) < topbar.index(work_tabs) < topbar.rindex("</div>")
+    )
     assert declarations["display"] == "flex"
     assert declarations["gap"] == "18px"
     assert declarations["padding"] == "9px 18px"

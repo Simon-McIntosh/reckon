@@ -39,7 +39,6 @@ _SPA_STYLESHEETS = (
     "ui/topbar.css",
     "ui/plans.css",
     "ui/reader.css",
-    "ui/overview.css",
     "ui/sprints.css",
     "ui/crew.css",
     "ui/graph.css",

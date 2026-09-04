@@ -18,7 +18,7 @@ agents working anywhere on the filesystem can read and write the same
 JSON the browser is interacting with.
 
 Routes:
-  GET /                         → home.html (cross-project rollup)
+  GET /                         → first mounted project's #home route
   GET /_shared/<file>           → docs/_shared/<file> in the reckon repo
                                   (falls back to ~/.claude/skills/html-docs/assets/)
   GET /_projects/index.json     → cross-project rollup
@@ -82,7 +82,6 @@ LOGGER = logging.getLogger(__name__)
 
 _MOUNTS_FILE: Path | None = None
 _STATE_ROOT: Path | None = None
-_HOME_HTML: Path | None = None
 _SHARED_ROOT: Path | None = None
 
 _INOTIFY_EVENT = struct.Struct("iIII")
@@ -164,16 +163,9 @@ class _ProjectChangeWatch:
 
 
 def _resolve_paths(mounts_file: Path | None = None) -> None:
-    global _MOUNTS_FILE, _STATE_ROOT, _HOME_HTML, _SHARED_ROOT
-    # Config home: RECKON_HOME env → ~/.config/reckon (if present) → ~/docs-server.
-    config_root = _config_home()
+    global _MOUNTS_FILE, _STATE_ROOT, _SHARED_ROOT
     _MOUNTS_FILE = mounts_file or _mounts_path()
     _STATE_ROOT = _state_root()
-    # Prefer the home page bundled in the reckon docs/ directory; fall back to
-    # the config-home home.html from dotfiles if it doesn't exist yet.
-    reckon_home = Path(__file__).parent.parent / "docs" / "home.html"
-    legacy_home = config_root / "home.html"
-    _HOME_HTML = reckon_home if reckon_home.is_file() else legacy_home
     # Shared assets: prefer reckon repo's own docs/_shared, fall back to dotfiles.
     repo_shared = Path(__file__).parent.parent / "docs" / "_shared"
     dotfiles_shared = HOME / ".claude" / "skills" / "html-docs" / "assets"
@@ -544,41 +536,6 @@ def _finished_crew_rows(
         return datetime.min.replace(tzinfo=timezone.utc)
 
     return sorted(records, key=completion_key, reverse=True)
-
-
-def render_index_fallback(mounts: dict[str, Path], host: str, port: int) -> bytes:
-    rows = []
-    for name, path in sorted(mounts.items()):
-        rows.append(
-            f'<tr><td><a href="/{name}/">{name}</a></td>'
-            f"<td><code>{path}</code></td></tr>"
-        )
-    body = (
-        "<!doctype html><html><head><meta charset=utf-8>"
-        "<title>reckon server</title>"
-        "<style>"
-        "body{font:14px/1.5 system-ui,sans-serif;max-width:780px;"
-        "margin:3rem auto;padding:0 1rem;color:#222}"
-        "h1{font-size:1.4rem;margin-bottom:.2rem}"
-        ".meta{color:#666;margin-bottom:2rem}"
-        "table{width:100%;border-collapse:collapse}"
-        "td{padding:.5rem .75rem;border-bottom:1px solid #eee}"
-        "td:first-child{font-weight:600}"
-        "code{background:#f5f5f5;padding:.1rem .3rem;border-radius:3px;font-size:.85em}"
-        "</style></head><body>"
-        "<h1>reckon</h1>"
-        f'<div class="meta">{host}:{port} &middot; '
-        f"{len(mounts)} project(s) mounted &middot; "
-        f"{datetime.now().strftime('%Y-%m-%d %H:%M')} &middot; "
-        "<em>home.html missing — install reckon to get the rollup view</em>"
-        "</div>"
-        "<table><thead><tr><th align=left>Project</th>"
-        "<th align=left>Path</th></tr></thead><tbody>"
-        + "".join(rows)
-        + "</tbody></table>"
-        "</body></html>"
-    )
-    return body.encode()
 
 
 def collect_projects(mounts: dict[str, Path]) -> dict:
@@ -1739,8 +1696,10 @@ class Handler(BaseHTTPRequestHandler):
     def _send_json(self, status: int, obj) -> None:
         self._send(status, json.dumps(obj, indent=2).encode(), "application/json")
 
-    def _send_redirect(self, location: str) -> None:
-        self.send_response(HTTPStatus.PERMANENT_REDIRECT)
+    def _send_redirect(
+        self, location: str, status: HTTPStatus = HTTPStatus.PERMANENT_REDIRECT
+    ) -> None:
+        self.send_response(status)
         self.send_header("Location", location)
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
@@ -1793,19 +1752,11 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path in ("/", ""):
-            if _HOME_HTML and _HOME_HTML.is_file():
-                ctype, _ = mimetypes.guess_type(str(_HOME_HTML))
-                try:
-                    self._send(
-                        HTTPStatus.OK, _HOME_HTML.read_bytes(), ctype or "text/html"
-                    )
-                except OSError as e:
-                    self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(e).encode())
-            else:
-                self._send(
-                    HTTPStatus.OK,
-                    render_index_fallback(load_mounts(), self._host, self._port),
-                )
+            first_project = next(iter(load_mounts()), None)
+            if first_project is None:
+                self._send(HTTPStatus.NOT_FOUND, b"no projects mounted", "text/plain")
+                return
+            self._send_redirect(f"/{first_project}/#home", HTTPStatus.FOUND)
             return
 
         if path.startswith("/_shared/"):
