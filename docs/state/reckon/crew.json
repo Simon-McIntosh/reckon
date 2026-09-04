@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T14:59:18",
+  "updated": "2026-09-04T15:10:25",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -59986,6 +59986,147 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T124141993199-wspo-remedy-in-the-record",
+        "plan": "work-survives-a-provider-outage",
+        "section": "\u00a75",
+        "node": "wspo-remedy-in-the-record",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1584,
+                "cached_input_tokens": 563991,
+                "input_tokens": 565577,
+                "output_tokens": 974,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 566551,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "uv run --no-sync pytest tests/test_crew_recovery.py -q passes with no failure count above the base revision, asserted through the classifier entry point and the promotion path from a stream carrying a real per-request refusal rather than a synthesised one: a run blocked by a provider refusal carries its remedy in the record as the resume command with the recovered session id, that remedy survives into the promoted ledger row so a later reader of a discarded run can see what was available at the time, and a blocked run whose session is not recoverable carries no resume remedy but states which evidence was absent so the two operational states are distinguishable rather than rendered identically",
+          "estimated_hours": 1.5,
+          "goal": "Carry a refusal-killed run's recovery order in its own record so the remedy is read rather than recalled",
+          "id": "wspo-remedy-in-the-record",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T124141993199-wspo-remedy-in-the-record/manifest.md",
+          "plan": "work-survives-a-provider-outage",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_crew_recovery.py",
+            "reckon/crew/promotion.py",
+            "reckon/ledger.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s15-classifier",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T12:41:49Z",
+        "completed_at": "2026-09-04T13:08:15Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1586,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1586,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "648f4ec394917d7aa51b22f4f5430a5b9378efb8",
+        "commits": [
+          "a88e833ce5d8a3ef06ade721a47d5fd5fd504c1f"
+        ],
+        "changed_lines": {
+          "added": 202,
+          "removed": 8,
+          "files": 4
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "uv run --no-sync pytest tests/test_crew_recovery.py -q",
+          "exit_status": 0,
+          "log_path": null,
+          "log_digest": "64 passed, 0 failed in 0.64s; base 62 passed"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T124141993199-wspo-remedy-in-the-record/manifest.md",
+        "scope_changed": true,
+        "session_id": "01a06c5f-07d5-7d91-bb80-818031a41a25",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3963776,
+            "cached_input_tokens_cumulative": 17811712,
+            "input_tokens": 3872577,
+            "input_tokens_cumulative": 17920362,
+            "output_tokens": 13574,
+            "output_tokens_cumulative": 35678,
+            "reasoning_output_tokens": 8043,
+            "reasoning_output_tokens_cumulative": 15513
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 51191,
+          "peak_input_tokens": 35732074
+        },
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/wspo-remedy-in-the-record",
+          "session_id": "01a06c5f-07d5-7d91-bb80-818031a41a25",
+          "session_source": "pointer",
+          "retained_at": "2026-09-04T13:08:15Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_crew_recovery.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -60158,6 +60299,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 991
+    "_version": 992
   }
 }

@@ -9,12 +9,12 @@
   <meta name="plan-title" content="Work survives a provider outage — landed evidence">
   <meta name="plan-summary" content="A refusal-killed run is resumed rather than reconciled: promotion refuses to destroy a recoverable session, the worktree outlives the promotion while that session lives, and observe answers recoverability instead of handing back a field the caller must interpret.">
   <meta name="plan-evidence-for" content="reckon:work-survives-a-provider-outage">
-  <meta name="plan-verifies" content="reckon:work-survives-a-provider-outage#s2,reckon:work-survives-a-provider-outage#s3,reckon:work-survives-a-provider-outage#s4">
+  <meta name="plan-verifies" content="reckon:work-survives-a-provider-outage#s2,reckon:work-survives-a-provider-outage#s3,reckon:work-survives-a-provider-outage#s4,reckon:work-survives-a-provider-outage#s5">
   <meta name="plan-recorded-at" content="2026-09-04">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; detached git worktrees; assertions run through the crew complete and observe entry points and through the worktree audit, never through the release helper">
-  <meta name="plan-commits" content="a1bf7da70ca2f93d83ae92726ba03ccbe62a75c1,e4dacc2921057ceea0e231b1d61c4b67181e94f4">
-  <meta name="plan-artifacts" content="reckon/crew/promotion.py,reckon/crew/dispatch.py,tests/test_crew_promotion.py,tests/test_crew_recover.py">
+  <meta name="plan-commits" content="a1bf7da70ca2f93d83ae92726ba03ccbe62a75c1,e4dacc2921057ceea0e231b1d61c4b67181e94f4,a88e833ce5d8a3ef06ade721a47d5fd5fd504c1f">
+  <meta name="plan-artifacts" content="reckon/crew/promotion.py,reckon/crew/dispatch.py,reckon/crew/recovery.py,reckon/ledger.py,tests/test_crew_promotion.py,tests/test_crew_recover.py,tests/test_crew_recovery.py">
   <title>Work survives a provider outage — landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -23,10 +23,11 @@
 <main class="plan-doc">
   <header class="plan-header">
     <h1>Work survives a provider outage — landed evidence</h1>
-    <p class="plan-summary">One incident cost five resumable sessions. Three of the plan's
-    four executable sections now close the routes it took: a promotion that would destroy a
-    resume path is refused, the worktree outlives the promotion while its session lives, and
-    a missing session id is no longer evidence of an unresumable run.</p>
+    <p class="plan-summary">One incident cost five resumable sessions. All four executable
+    sections now close the routes it took: a promotion that would destroy a resume path is
+    refused, the worktree outlives the promotion while its session lives, a missing session id
+    is no longer evidence of an unresumable run, and the recovery order is carried in the
+    record rather than recalled from guidance.</p>
   </header>
 
   <section id="overview">
@@ -39,9 +40,10 @@
     operation that destroyed the resume path. Only the working directories were actually
     lost.</p>
     <p>&sect;2 and &sect;3 stop the loss recurring; &sect;4 removes the reasoning error that
-    started it. &sect;5 is dispatched separately. &sect;6, recovering the five runs
-    themselves, is owned by the coordinator holding the S16 write scope and is recorded on
-    the plan rather than here.</p>
+    started it; &sect;5 stops the recovery order depending on anyone remembering it.
+    &sect;6, recovering the five runs themselves, is owned by the coordinator holding the S16
+    write scope and is recorded on the plan rather than here &mdash; it is a recovery task
+    against specific runs, not a change to this repository.</p>
   </section>
 
   <section id="s2-promotion-refuses">
@@ -115,6 +117,45 @@
     measurement and an absent one sends its reader elsewhere.</p>
   </section>
 
+
+  <section id="s5-remedy-in-the-record">
+    <h2>&sect;5 &mdash; The recovery order is carried by the tool, not by memory</h2>
+    <p>Commit <code>a88e833</code>. Gate
+    <code>uv run --no-sync pytest tests/test_crew_recovery.py -q</code> &mdash;
+    <strong>64 passed</strong> against a base of 62, with
+    <code>tests/test_crew_promotion.py</code> at 23 passed and
+    <code>tests/test_ledger.py</code> at 77 passed as supplementary gates, and zero added
+    ruff findings.</p>
+    <p>The correct order after a per-request refusal &mdash; inspect the worktree, resume the
+    session, reconcile only once resume is impossible &mdash; had been written in this
+    workstation's guidance since the first instance and was not applied at the second, four
+    hours later, by a different session. Guidance recalled at the moment of an incident is a
+    compensation, and compensations fail. So the ordering is now carried by the record: the
+    classifier returns <code>resume_remedy</code> with the resume command, the recovered
+    session id and the source that answered, and <code>crew complete</code> passes that
+    mapping once into <code>ledger.build_record</code> so it survives into the promoted row.
+    A post-hoc reader of a discarded run can see what was available at the time.</p>
+    <p><strong>Two design properties were held deliberately rather than by accident.</strong>
+    The remedy is a <em>distinct</em> field from <code>resume_waiver</code>: the waiver
+    records a deliberate discard and the remedy records an available recovery, and collapsing
+    them would make a discarded run and a recoverable one indistinguishable &mdash; the exact
+    defect this plan exists to remove. And <code>classify_pointer</code> stayed pure and
+    read-only, with the persistence decided in one place rather than promotion reaching back
+    into the classifier for a second opinion.</p>
+    <p>The negative half is asserted, which for this section is the half that matters: a
+    folded real refusal with no pointer session, no readable stream and no ledger row omits
+    the remedy, names all three absent evidence sources in its detail, and emits no resume
+    action. A remedy that always appears would be a suggestion, not a finding.</p>
+    <p>Two notes on how it ran. The evidence came from
+    <code>tests/fixtures/backends/codex-usage-limit.jsonl</code> &mdash; a recorded refusal
+    rather than a synthesised one, as the section required. And the worker proved the
+    <em>combined</em> state rather than its own half: it built a virtual merge tree against
+    the test-role promotion refusals that had landed hours earlier and confirmed both those
+    refusals and the remedy pass-through survive together. The node also blocked once,
+    correctly, because the fence I gave it excluded the two files that persist a promoted row;
+    the scope was granted on the live pointer and the session resumed, and the run is recorded
+    <code>--scope-changed</code>.</p>
+  </section>
 </main>
 </body>
 </html>

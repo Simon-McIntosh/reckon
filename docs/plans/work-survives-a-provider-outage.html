@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="work-survives-a-provider-outage">
   <meta name="plan-title" content="Work Survives A Provider Outage">
   <meta name="plan-summary" content="A refusal-killed run is resumed, not reconciled: promotion cannot silently destroy a recoverable session, and the worktree outlives it.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="7.0">
   <meta name="plan-capability-version" content="1.0">
@@ -24,10 +24,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="21">
-<meta name="plan-impl" content="0.75">
-<meta name="plan-commits" content="a1bf7da70ca2f93d83ae92726ba03ccbe62a75c1,e4dacc2921057ceea0e231b1d61c4b67181e94f4">
-<meta name="plan-artifacts" content="reckon/crew/promotion.py,reckon/crew/dispatch.py,tests/test_crew_promotion.py,tests/test_crew_recover.py">
+<meta name="plan-version" content="23">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-commits" content="a1bf7da70ca2f93d83ae92726ba03ccbe62a75c1,e4dacc2921057ceea0e231b1d61c4b67181e94f4,a88e833ce5d8a3ef06ade721a47d5fd5fd504c1f">
+<meta name="plan-artifacts" content="reckon/crew/promotion.py,reckon/crew/dispatch.py,reckon/crew/recovery.py,reckon/ledger.py,tests/test_crew_promotion.py,tests/test_crew_recover.py,tests/test_crew_recovery.py,docs/evidence/archive/work-survives-a-provider-outage-landed.html">
 </head>
 <body>
   <main class="plan-doc">
@@ -147,33 +147,23 @@
         (commit <code>e4dacc2</code>).</p>
     </section>
 
-    <h2 id="s5">§5 — The recovery order is carried by the tool, not by memory</h2>
-    <p>
-      The correct order after a per-request refusal is: inspect the worktree for
-      committed and uncommitted work, resume the session, and reconcile only
-      once resume is impossible. That ordering has been recorded in this
-      workstation's guidance since the first instance and was not applied at the
-      second, four hours later, by a different session. Guidance that must be
-      recalled at the moment of an incident is a compensation, and this plan's
-      §2 through §4 exist because compensations fail.
-    </p>
-    <p>
-      What the tool can carry is the ordering itself. A refusal-killed run is
-      already classified <code>blocked</code>; that classification can name its
-      own remedy, so the operator reads the recovery rather than deducing it.
-      The same applies to the display: a blocked row whose session is
-      recoverable is a different operational state from one that is not, and the
-      pane currently renders them identically.
-    </p>
-    <p>
-      Done when a run blocked by a provider refusal carries its remedy in the
-      record — the resume command, with the recovered session id — so the
-      recovery is read rather than recalled; and when that remedy survives into
-      the promoted ledger row, so a post-hoc reader of a discarded run can see
-      what was available at the time. Asserted through the classifier entry
-      point and the promotion path, from a stream carrying a real per-request
-      refusal rather than a synthesised one.
-    </p>
+    <section id="s5" class="section-landed">
+      <header><span class="badge badge-shipped">&#10003; landed 2026-09-04</span>
+        <h2>&#167;5 &mdash; The recovery order is carried by the tool, not by memory</h2></header>
+      <p class="landed-summary">The classifier now returns <code>resume_remedy</code> carrying
+        the resume command, the recovered session id and its source, derived from a real
+        recorded refusal fixture rather than a synthesised one; <code>crew complete</code>
+        passes it once to <code>ledger.build_record</code>, so a promoted row retains it
+        beside a <em>distinct</em> <code>resume_waiver</code> holding the deliberate discard
+        reason &mdash; keeping an available recovery and a discarded one distinguishable,
+        which is the whole point. The negative is asserted: a refusal with no pointer session,
+        no readable stream and no ledger row omits the remedy, names all three absent evidence
+        sources, and emits no resume action. The classifier stayed pure and read-only.
+        64 passed against 62, with promotion at 23 and the ledger at 77 as supplementary
+        gates. Full record:
+        <a href="/reckon/evidence/archive/work-survives-a-provider-outage-landed#s5-remedy-in-the-record">§5 landed</a>
+        (commit <code>a88e833</code>).</p>
+    </section>
 
     <h2 id="s6">§6 — Recovering the five runs already lost</h2>
     <p>
@@ -285,7 +275,7 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-wspo-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-09-03" data-recommends-skill="/reckon-ship work-survives-a-provider-outage §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-wspo-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-09-03" data-recommends-skill="/reckon-ship work-survives-a-provider-outage §2" data-resolved-at="2026-09-04T13:12:14+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Refuse the promotion first, then keep the tree, then make recoverability legible</h4>
     <div class="r-fu-body"><p>
             §2 goes first and alone, because it is the only section that stops
@@ -312,6 +302,7 @@
             green suites over dead features.
           </p></div>
     <pre class="r-fu-prompt">/reckon-ship work-survives-a-provider-outage §2</pre>
+    <p class="r-fu-outcome">done - no followup. All four executable sections landed in the order this followup set, and its two structural insistences were both vindicated. Section 2, the promotion refusal, was found already in the tree and was then measured in the field the same afternoon when it stopped the S16 coordinator promoting exactly this state on its own run and required a written reason - a guard measured by the operator it obstructs. Section 3 (a1bf7da) conditions the worktree release on the session being unrecoverable and gives a retained tree its own third category in the audit; keeping it out of section 2 was right, because refusing a promotion and conditioning a release have different negatives and one node would have let either pass on the other's evidence. Section 4 (e4dacc2) makes observe answer recoverability, and its sharpest finding is that resume_plan already re-read the stream for exactly this case - the capability existed and its existence was invisible at the moment of the decision. Section 5 (a88e833) carries the remedy in the record so the recovery order is read rather than recalled. impl 1.0, status shipped, cumulative record at docs/evidence/archive/work-survives-a-provider-outage-landed.html, and 177 passed across the four affected files at the merged head. Section 6, recovering the five lost runs, is explicitly not this session's: it is owned by the coordinator holding the S16 write scope for those nodes and is a recovery task against specific runs rather than a change to this repository. It stays recorded on the plan, which is what this plan asked for so the recovery survives that session ending.</p>
     </article>
 </section>
 
@@ -363,6 +354,12 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260904T035302267329-the-recovery-is-written-where-a-coordinator-reads" data-who="doc-evidence" data-when="2026-09-04T04:19:05.749Z">
     <div class="r-comment-body"><p>The cause, the trap, the order, the two counter-instincts, hold safety, the automatic path and its stale-follower caveat are in reckon/crew/AGENTS.md and a ship-skill reference linked from the skill; all five commands verified with --help.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260904T124141993199-wspo-remedy-in-the-record" data-who="s15-classifier" data-when="2026-09-04T13:08:15Z">
+    <div class="r-comment-body"><p>64 passed against a base of 62, with test_crew_promotion.py 23 passed and test_ledger.py 77 passed as supplementary gates and zero added ruff findings. The classifier returns resume_remedy carrying the resume command, the recovered session id and its source, from a real recorded refusal fixture rather than a synthesised one; crew.complete passes that mapping once to ledger.build_record so the promoted row retains it beside a DISTINCT resume_waiver holding the deliberate discard reason, keeping an available recovery and a discarded one distinguishable; the classifier stayed pure and read-only; and the negative is asserted - a refusal with no pointer session, no readable stream and no ledger row omits resume_remedy, names all three absent evidence sources, and emits no resume action. The worker proved the combined state rather than its own half, building a virtual merge tree against the landed test-role promotion refusals and confirming both survive with the remedy pass-through</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-wspo-remedy-landed" data-who="reckon-ship" data-when="2026-09-04T15:10:25Z">
+    <div class="r-comment-body">The recovery order is carried by the record - commit a88e833; gate uv run --no-sync pytest tests/test_crew_recovery.py -q passed, 64 passed against a base of 62, with test_crew_promotion.py at 23 and test_ledger.py at 77 as supplementary gates and zero added ruff findings; measure: the classifier returns resume_remedy carrying the resume command, the recovered session id and the source that answered, derived from tests/fixtures/backends/codex-usage-limit.jsonl - a real recorded refusal rather than a synthesised one, as the section required - and crew.complete passes that mapping once to ledger.build_record so the promoted row retains it. The negative is asserted and is the half that matters: a refusal with no pointer session, no readable stream and no ledger row omits the remedy, names all three absent evidence sources, and emits no resume action, because a remedy that always appears is a suggestion rather than a finding. Two design properties held deliberately: resume_remedy is distinct from resume_waiver, since the waiver records a deliberate discard and the remedy an available recovery and collapsing them would make a discarded run and a recoverable one indistinguishable; and classify_pointer stayed pure and read-only, with what persists decided in one place rather than promotion reaching back into the classifier. The worker proved the combined state rather than its own half, building a virtual merge tree against the test-role promotion refusals that landed hours earlier and confirming both survive with the pass-through. It blocked once, correctly, because my fence excluded the two files that persist a promoted row; scope was granted on the live pointer and the session resumed, recorded --scope-changed.</div>
 </div>
 </section>
 </main>
