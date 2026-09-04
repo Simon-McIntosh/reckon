@@ -23,6 +23,8 @@
   <title>Only A Version Tag Sets The Version | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-04">
+<meta name="plan-version" content="1">
 </head>
 <body>
 <main class="plan-doc">
@@ -47,7 +49,7 @@
     <tr>
       <td><code>version-tag-matching</code></td>
       <td>Only release-shaped tags are considered when deriving the version, so a rescue tag cannot break the build.</td>
-      <td><code>uv run pytest tests/test_build.py -q</code> passes with the malformed tag still present in the repository, and the five wheel-build ids the merged-head verification named are each reported passing. The derived version is recorded before and after and resolves from the newest release tag. A test asserts the class: with a second tag of the same shape created in a temporary clone, the build still derives a version, and with every release tag absent the failure is a readable one about a missing release tag rather than a parse error on a rescue name. <code>uv run pytest tests/test_pypi_release.py -q</code> stays green if that module exists.</td>
+      <td><code>uv run pytest tests/test_build.py -q</code> passes with the malformed tag still present in the repository, and the five wheel-build ids the merged-head verification named are each reported passing. The derived version is recorded before and after and resolves from the newest release tag. A test asserts the class: with a second tag of the same shape created in a temporary clone, the build still derives a version, and with every release tag absent the raised message names the release-tag pattern and does not contain the rescue tag's name, so the diagnostic points at the missing release rather than at the rescue. <code>uv run pytest tests/test_pypi_release.py -q</code> stays green if that module exists.</td>
       <td><code>pyproject.toml</code>, <code>tests/test_build.py</code></td>
       <td>guided &middot; sonnet</td>
     </tr>
@@ -62,20 +64,20 @@
 <div class="r-dec" data-key="remedy-shape" data-choice="constrain-the-pattern" data-by="reckon-ship (lead authorised fixing the wheel-build failures, 2026-09-04)" data-when="2026-09-04">
     <p class="r-dec-q">Constrain the tag pattern, or delete the offending tag?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="constrain-the-pattern">Constrain which tags may name a version</button>
+      <button class="r-opt chosen" data-value="constrain-the-pattern">Constrain which tags may name a version</button>
       <button class="r-opt" data-value="delete-the-tag">Delete the rescue tag</button>
       <button class="r-opt" data-value="rename-the-convention">Rename the rescue convention to avoid digits</button>
-    </p>
+      </p>
     <p class="r-dec-rat">Deleting fixes today and nothing after it: the next rescue tag reproduces the failure, and the tag is on the remote so the deletion mutates state every clone shares. Renaming the convention makes a recovery mechanism carry a constraint belonging to the build. Constraining the pattern is a declared change in one project file that reaches every checkout and CI, and it covers the class.</p>
-</div>
+    </div>
 <div class="r-dec" data-key="measure-with-tag-present" data-choice="tag-present-during-the-measure" data-by="reckon-ship (deduced from what a passing build would prove)" data-when="2026-09-04">
     <p class="r-dec-q">Is the malformed tag present while the fix is measured?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="tag-present-during-the-measure">Present — the build must succeed alongside it</button>
+      <button class="r-opt chosen" data-value="tag-present-during-the-measure">Present — the build must succeed alongside it</button>
       <button class="r-opt" data-value="remove-then-measure">Removed first, then measured</button>
-    </p>
-    <p class="r-dec-rat">A build that passes only once the tag is gone has measured the deletion rather than the fix, and would pass identically with no fix at all. The tag's presence is the condition under which the assertion means anything.</p>
-</div>
+      </p>
+    <p class="r-dec-rat">A build that passes only once the tag is gone has measured the deletion rather than the fix, and would pass identically with no fix at all. The tag&#x27;s presence is the condition under which the assertion means anything.</p>
+    </div>
 </section>
 
 <section data-reckon="followups" id="followups" class="r-followups">
@@ -84,7 +86,7 @@
     <h4 class="r-fu-title">Constrain the version tag pattern with the rescue tag left in place</h4>
     <div class="r-fu-body"><p>One node. The five wheel-build ids the merged-head verification named are the before-and-after list, and the malformed tag stays in the repository throughout so the passing build measures the fix rather than its absence.</p></div>
     <pre class="r-fu-prompt">/reckon-ship version-derives-from-version-tags</pre>
-</article>
+    </article>
 </section>
 </main>
 </body>
