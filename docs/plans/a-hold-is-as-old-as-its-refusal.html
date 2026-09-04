@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 </head>
 <body>
   <main class="plan-doc">
@@ -236,7 +236,10 @@
     <div class="r-comment-body"><p>The evidence shelf life is declared in the LinkML source and regenerated into both artifacts, so --set reaches it and zero restores the indefinite hold; the shipped default is unchanged.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260903T215106400228-a-hold-ages-from-its-refusal" data-who="sonnet-a" data-when="2026-09-03T22:01:03.945Z">
-    <div class="r-comment-body"><p>The hold ages from the run&#x27;s immutable created_at rather than the pointer&#x27;s rewritable observed_at, so observing a refused run no longer renews the fence it was meant to expire.</p></div>
+    <div class="r-comment-body"><p>The hold ages from the run's immutable created_at rather than the pointer's rewritable observed_at, so observing a refused run no longer renews the fence it was meant to expire.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260904T042406291751-a-lane-is-probed-not-timed" data-who="codex-a" data-when="2026-09-04T04:40:05Z">
+    <div class="r-comment-body"><p>A hold whose refusal names no reset is probed rather than timed: a served probe opens the lane and records the observation, a refused probe re-arms it, probes are once per backend and cached, and a reset-bearing hold or an unreported backend is never probed.</p></div>
 </div>
 </section>
 </main>

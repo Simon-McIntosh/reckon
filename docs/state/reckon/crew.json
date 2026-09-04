@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T07:05:09",
+  "updated": "2026-09-04T07:31:10",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -49845,6 +49845,316 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260904T044950561949-a-worker-waiting-on-a-job-has-a-state",
+        "plan": "every-state-has-a-verb",
+        "section": "\u00a73",
+        "node": "a-worker-waiting-on-a-job-has-a-state",
+        "node_definition": {
+          "done_when": "A worker that submits a cluster job and outlives its own turn has nowhere to record that fact: the manifest vocabulary has no state for waiting on an external condition, so it parks as blocked with prose naming the job. The follower counts it in the blocked bucket beside genuine failures, a coordinator resumes it by hand when a separate watch fires, and the recovery sweep cannot help because nothing refused it. Measured on four runs in one night: two parked on jobs running forty-two minutes and three hours, each needing a hand resume; two more lost their turn while backgrounding a poll and were indistinguishable from crashes - a wait ending in silence and a crash ending in silence produce the same record. Done when a worker can declare in its manifest that it is waiting on a named external condition, carrying what it waits on, how to test whether that has finished, what finished means, and the brief to hand back on resumption; when the follower renders that as its own bucket distinct from blocked and from working, so a fleet with four healthy waits does not read as four failures; when the recovery sweep resumes such a run once the named condition reaches a terminal state and leaves it alone until then, being the same actor with a second trigger because the shape is identical - a run that stopped for a reason that has since gone away; when a run waiting on a condition that never terminates is surfaced by age rather than waiting forever; and when a crashed worker is still distinguishable from a waiting one, asserted as a negative so that distinction cannot regress. ASSERT THROUGH THE FOLLOWER'S OWN RENDERING and the sweep's entry point rather than a helper, with the condition test injected so no test submits a job. At least one added assertion must fail against base 417166e. Measured over tests/test_external_wait.py plus tests/test_crew_recovery.py in ONE invocation: zero failures against their combined count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 2.5,
+          "goal": "A worker waiting on an external job declares that state, renders in its own bucket, and is resumed when the job finishes.",
+          "id": "a-worker-waiting-on-a-job-has-a-state",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/external-wait-manifest.md",
+          "plan": "every-state-has-a-verb",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "reckon/crew/recover.py",
+            "reckon/crew/ticker.py",
+            "tests/test_external_wait.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-c",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T04:50:16Z",
+        "completed_at": "2026-09-04T05:09:42Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1166,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1166,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "417166e031a9e55c884241c4ddd1dcdf86032ed9",
+        "commits": [
+          "2e4eee8911f1a88b49a431e5f295072150df63a4"
+        ],
+        "changed_lines": {
+          "added": 564,
+          "removed": 55,
+          "files": 4
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_external_wait.py tests/test_crew_recovery.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vew.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/external-wait-manifest.md",
+        "scope_changed": true,
+        "session_id": "01a06ac0-de47-7892-9221-31a80c58206d",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 1645568,
+            "cached_input_tokens_cumulative": 1645568,
+            "input_tokens": 1758721,
+            "input_tokens_cumulative": 1758721,
+            "output_tokens": 6972,
+            "output_tokens_cumulative": 6972,
+            "reasoning_output_tokens": 2295,
+            "reasoning_output_tokens_cumulative": 2295
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3000,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 1398,
+              "log_age_seconds": 395,
+              "log_fresh": true,
+              "manifest_commits": [
+                "[64810268d32e89978d366ce37893677a7d165275]; changed_paths: [\"docs/ui/home.jsx\"",
+                "\"docs/ui/home.css\"",
+                "\"docs/index.html\"",
+                "\"docs/ui/shell-route.jsx\"",
+                "\"docs/ui/shell.jsx\"",
+                "\"tests/test_spa_home_surface.py\"",
+                "\"tests/test_spa_home_geometry.py\"]"
+              ],
+              "manifest_derived": false,
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T042633367705-home-view/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260904T042633367705-home-view --gate <verdict> --commit [64810268d32e89978d366ce37893677a7d165275]; changed_paths: [\"docs/ui/home.jsx\" --commit \"docs/ui/home.css\" --commit \"docs/index.html\" --commit \"docs/ui/shell-route.jsx\" --commit \"docs/ui/shell.jsx\" --commit \"tests/test_spa_home_surface.py\" --commit \"tests/test_spa_home_geometry.py\"]",
+              "node": "home-view",
+              "phase": "working",
+              "plan": "fleet-home",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260904T042633367705-home-view",
+              "session": "ship-s16",
+              "terminal_age_seconds": 415,
+              "terminal_at": "2026-09-04T04:43:12Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16/home-view"
+            }
+          ]
+        },
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 9267,
+          "peak_input_tokens": 3404289
+        },
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260904T050618191349-the-accepted-path-reaches-the-command",
+        "plan": "every-state-has-a-verb",
+        "section": "\u00a76",
+        "node": "the-accepted-path-reaches-the-command",
+        "node_definition": {
+          "done_when": "reckon/crew/promotion.py carries an accepted_paths parameter, landed at 295bf7b with four green assertions, and NO command passes it - a grep for accept_path and accept-path across reckon/cli.py returns nothing and crew complete --help lists no such flag. The capability exists, no operator can reach it, and the stranded producer run it was written for still cannot be promoted. That node's fence was promotion.py and its tests; cli.py was omitted by the coordinator who wrote the brief, which is the ninth instance in this repository of a capability landing in the module holding the mechanism while the call site sat outside the fence. Done when crew complete accepts a repeatable option naming a path with its reason and passes both to the existing accepted_paths parameter without reimplementing any of its logic; when crew complete --help describes the option by the state it resolves, a promotion refused for a path the node did not declare, rather than only what it does; when the refusal naming undeclared paths also names this option, so a coordinator meeting the wall is told the verb at the moment of refusal rather than having to go looking; and when an acceptance carrying no reason is refused by the command as it is by the function. Do not change the acceptance semantics - they are landed and asserted, and this node wires them. ASSERT THROUGH THE COMMAND as a coordinator invokes it, over a run whose commit touches one declared and one undeclared path under a temporary config home with the real config home asserted untouched: the promotion succeeds, the ledger row carries the accepted path and its reason, and the same promotion without the option is refused with a message naming the option. At least one added assertion must fail against base f219e05. Measured over tests/test_crew_promotion_scope.py plus tests/test_crew_promotion.py in ONE invocation: zero failures against their combined count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 1.0,
+          "goal": "A coordinator can accept a companion path from the command line, so the mechanism that landed is reachable.",
+          "id": "the-accepted-path-reaches-the-command",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/accept-path-cli-manifest.md",
+          "plan": "every-state-has-a-verb",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/cli.py",
+            "tests/test_crew_promotion_scope.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "codex-e",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T05:06:32Z",
+        "completed_at": "2026-09-04T05:12:00Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 328,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 328,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "f219e050925eae7f153c945a946f6483e41602de",
+        "commits": [
+          "520de087ae769afd3a04e9c8b3e4a43f8f20183c"
+        ],
+        "changed_lines": {
+          "added": 92,
+          "removed": 16,
+          "files": 2
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_promotion_scope.py tests/test_crew_promotion.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vap.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/accept-path-cli-manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06acf-b936-7023-a56c-db92764a52c8",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2710272,
+            "cached_input_tokens_cumulative": 2710272,
+            "input_tokens": 2831531,
+            "input_tokens_cumulative": 2831531,
+            "output_tokens": 14126,
+            "output_tokens_cumulative": 14126,
+            "reasoning_output_tokens": 4267,
+            "reasoning_output_tokens_cumulative": 4267
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3000,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 2377,
+              "log_age_seconds": 1374,
+              "log_fresh": false,
+              "manifest_commits": [
+                "[64810268d32e89978d366ce37893677a7d165275]; changed_paths: [\"docs/ui/home.jsx\"",
+                "\"docs/ui/home.css\"",
+                "\"docs/index.html\"",
+                "\"docs/ui/shell-route.jsx\"",
+                "\"docs/ui/shell.jsx\"",
+                "\"tests/test_spa_home_surface.py\"",
+                "\"tests/test_spa_home_geometry.py\"]"
+              ],
+              "manifest_derived": false,
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T042633367705-home-view/manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260904T042633367705-home-view --gate <verdict> --commit [64810268d32e89978d366ce37893677a7d165275]; changed_paths: [\"docs/ui/home.jsx\" --commit \"docs/ui/home.css\" --commit \"docs/index.html\" --commit \"docs/ui/shell-route.jsx\" --commit \"docs/ui/shell.jsx\" --commit \"tests/test_spa_home_surface.py\" --commit \"tests/test_spa_home_geometry.py\"]",
+              "node": "home-view",
+              "phase": "working",
+              "plan": "fleet-home",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260904T042633367705-home-view",
+              "session": "ship-s16",
+              "terminal_age_seconds": 1395,
+              "terminal_at": "2026-09-04T04:43:12Z",
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16/home-view"
+            }
+          ]
+        },
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 18393,
+          "peak_input_tokens": 5541803
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -50017,6 +50327,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 816
+    "_version": 818
   }
 }
