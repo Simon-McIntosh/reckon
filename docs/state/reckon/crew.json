@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T14:03:18",
+  "updated": "2026-09-04T14:04:41",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -803,9 +803,11 @@
         "id": "s15-runstate",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a06c36-47ab-73d3-9c44-ba1064101a18",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06c36-47ab-73d3-9c44-ba1064101a18"
+        },
         "created": "2026-09-04"
       },
       {
@@ -56662,6 +56664,126 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T113759131075-cot-run-state-buckets",
+        "plan": "crew-observability-truth",
+        "section": "\u00a74",
+        "node": "cot-run-state-buckets",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2838,
+                "cached_input_tokens": 296494,
+                "input_tokens": 299334,
+                "output_tokens": 891,
+                "reasoning_output_tokens": 223,
+                "total_tokens": 300225,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "uv run pytest tests/test_crew.py -q passes with no failure count above the base revision: test_live_view_rechecks_a_killed_worker_without_observation green, test_still_working_disposition_expires_when_the_run_turns_terminal green, test_resumed_attempt_owns_its_stream_phase_and_manifest completing rather than busy-looping in crew.watch so the file finishes well under the 1007 seconds it took before interruption, with an added case summing the fleet buckets against the row count and enumerating the state vocabulary against the attention set so a state present in one and absent from the other fails",
+          "estimated_hours": 2.0,
+          "goal": "Repair the three run-state failures the two-file gate exposed, so the fleet buckets partition honestly over live pointers",
+          "id": "cot-run-state-buckets",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T113759131075-cot-run-state-buckets/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "reckon/crew/runs.py",
+            "tests/test_crew.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s15-runstate",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T11:38:11Z",
+        "completed_at": "2026-09-04T12:04:21Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1570,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1570,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "49ba338b080809f6e9148cff062b2f373edbbb98",
+        "commits": [
+          "6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b"
+        ],
+        "changed_lines": {
+          "added": 118,
+          "removed": 23,
+          "files": 3
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "uv run --no-sync pytest tests/test_crew.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T113759131075-cot-run-state-buckets/after-suite-committed.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T113759131075-cot-run-state-buckets/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06c36-47ab-73d3-9c44-ba1064101a18",
+        "budget": {
+          "cost_usd": null,
+          "detail": "",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/cot-run-state-buckets",
+          "session_id": "01a06c36-47ab-73d3-9c44-ba1064101a18",
+          "session_source": "pointer",
+          "retained_at": "2026-09-04T12:04:21Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_crew.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -56834,6 +56956,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 937
+    "_version": 939
   }
 }
