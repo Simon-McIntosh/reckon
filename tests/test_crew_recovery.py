@@ -16,7 +16,7 @@ from typing import Any
 import pytest
 from click.testing import CliRunner
 
-from reckon import _backends, crew
+from reckon import _backends, _plan_html, crew, ledger
 from reckon import cli as cli_module
 from reckon.crew import recovery, reports, runs
 from reckon.crew import ticker as ticker_module
@@ -568,6 +568,37 @@ def _cli_pointer(
     return record
 
 
+def _promotion_repository(home: Path, tmp_path: Path) -> Path:
+    """Create the durable plan and ledger roots exercised by crew completion."""
+    repository = tmp_path / "repository"
+    (repository / "docs" / "state" / "proj").mkdir(parents=True)
+    plan = repository / "docs" / "plans" / "plan-a.html"
+    plan.parent.mkdir(parents=True)
+    bare = (
+        '<!doctype html><html><head><meta name="docs-project" content="proj">'
+        "<title>Plan A</title></head><body>"
+        '<main class="plan-doc"></main></body></html>\n'
+    )
+    plan.write_text(
+        _plan_html.write_state(
+            bare,
+            {
+                "type": "plan",
+                "slug": "plan-a",
+                "title": "Plan A",
+                "status": "active",
+                "version": 0,
+                "comments": {},
+            },
+        ),
+        encoding="utf-8",
+    )
+    (home / "mounts.json").write_text(
+        json.dumps({"proj": str(repository / "docs")}), encoding="utf-8"
+    )
+    return repository
+
+
 def test_refusal_stream_classifies_blocked_not_abandoned(home) -> None:
     # A pointer whose stream records a provider refusal must block, never read
     # as abandoned (a state implying nothing can be done) and never complete.
@@ -578,6 +609,84 @@ def test_refusal_stream_classifies_blocked_not_abandoned(home) -> None:
     assert "codex" in row["detail"]
     assert "refused the turn on a usage-limit" in row["detail"]
     assert "resume" in row["next_action"]
+
+
+def test_refusal_recovery_remedy_survives_promotion(home, tmp_path: Path) -> None:
+    repository = _promotion_repository(home, tmp_path)
+    run_id = "r-refused-remedy"
+    pointer = _cli_pointer(
+        home,
+        run_id,
+        "codex-usage-limit.jsonl",
+        repo=str(repository),
+        role="implement",
+        member="worker-a",
+        created_at="2026-09-04T10:00:00Z",
+    )
+    crew._write_json(crew.pointer_path(run_id), pointer)
+
+    classified = recovery.classify_pointer(pointer, now_seconds=time.time())
+    observation = _backends.observe_log(
+        backend_name="codex",
+        backend={"command": "codex"},
+        log_path=str(BACKEND_FIXTURES / "codex-usage-limit.jsonl"),
+    )
+    remedy = classified["resume_remedy"]
+    assert remedy == {
+        "command": f"reckon crew resume --run {run_id} --advice continue",
+        "session_id": observation.session_id,
+        "source": "stream",
+    }
+
+    discard_reason = "the replacement run already recovered the useful context"
+    promoted = crew.complete(
+        run_id,
+        gate="not-run",
+        outcome="the provider refused the turn",
+        root=repository,
+        resume_waiver=discard_reason,
+    )
+
+    assert promoted["record"]["resume_remedy"] == remedy
+    assert promoted["record"]["resume_waiver"] == {
+        "session_id": observation.session_id,
+        "source": "stream",
+        "reason": discard_reason,
+    }
+    stored = next(
+        row for row in ledger.runs("proj", root=repository) if row["run_id"] == run_id
+    )
+    assert stored["resume_remedy"] == remedy
+    assert stored["resume_waiver"] == promoted["record"]["resume_waiver"]
+
+
+def test_refusal_without_a_session_states_why_no_remedy_exists(
+    home, tmp_path: Path
+) -> None:
+    observation = _backends.observe_log(
+        backend_name="codex",
+        backend={"command": "codex"},
+        log_path=str(BACKEND_FIXTURES / "codex-usage-limit.jsonl"),
+    )
+    pointer = _cli_pointer(
+        home,
+        "r-refused-without-session",
+        "codex-usage-limit.jsonl",
+        launch="in-harness",
+        argv=[],
+        log_path="",
+        repo=str(tmp_path / "repository-without-a-ledger"),
+        budget=observation.as_dict()["budget"],
+    )
+
+    classified = recovery.classify_pointer(pointer, now_seconds=time.time())
+
+    assert classified["classification"] == "blocked"
+    assert "resume_remedy" not in classified
+    assert "no resume remedy" in classified["detail"]
+    for absent_source in ("live pointer", "run's own stream", "promoted ledger row"):
+        assert absent_source in classified["detail"]
+    assert "reckon crew resume" not in classified["next_action"]
 
 
 def test_refusal_block_matches_the_phase_observe_reports(home) -> None:

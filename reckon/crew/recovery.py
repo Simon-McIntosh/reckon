@@ -196,6 +196,38 @@ def _stream_refusal_block(record: Mapping[str, Any]) -> dict[str, Any] | None:
     return None
 
 
+def _blocked_session_resolution(
+    record: Mapping[str, Any], run_id: str
+) -> dict[str, Any]:
+    """Resolve a blocked run's session without changing its evidence.
+
+    Session resolution already has one ordered authority spanning the live
+    pointer, the run's stream, and its promoted ledger row. Importing it only
+    when a block needs a session answer avoids making routine classification consult
+    durable history, while keeping this read pure: neither the pointer nor any
+    of its evidence is rewritten here.
+    """
+    from reckon.crew.resumption import resolve_session
+
+    return resolve_session(
+        run_id,
+        record=record,
+        project=str(record.get("project") or ""),
+        root=record.get("repo"),
+    )
+
+
+def _resume_remedy(resolution: Mapping[str, Any], run_id: str) -> dict[str, str] | None:
+    """Return an executable recovery command when session evidence exists."""
+    if not resolution.get("resolved"):
+        return None
+    return {
+        "command": (f"reckon crew resume --run {run_id} --advice continue"),
+        "session_id": str(resolution["session_id"]),
+        "source": str(resolution["source"]),
+    }
+
+
 # A print-mode invocation makes exactly one turn and exits when it ends, so a
 # worker still waiting on a background task at that moment leaves one of two
 # traces rather than a clean result. The ceiling message is the harness's own
@@ -652,8 +684,26 @@ def classify_pointer(
         )
         action = f"reckon crew observe --run {run_id}"
 
+    session_resolution = None
+    resume_remedy = None
+    if classification == "blocked":
+        session_resolution = _blocked_session_resolution(record, run_id)
+    if session_resolution is not None and refusal_block is not None:
+        resume_remedy = _resume_remedy(session_resolution, run_id)
+        if resume_remedy is None:
+            absent_evidence = str(
+                session_resolution.get("detail")
+                or "no session id was found in the available run evidence"
+            )
+            detail = f"{detail}; no resume remedy: {absent_evidence}"
+            if action.startswith("reckon crew resume"):
+                action = (
+                    f"inspect the worktree at {record.get('worktree')} and launch "
+                    "log; no session id is available to resume"
+                )
+
     timing = _budget_timing(record, now_seconds=now_seconds)
-    return {
+    classified = {
         "run_id": run_id,
         "project": record.get("project"),
         # Several coordinator sessions share one project, so every read of a
@@ -703,6 +753,11 @@ def classify_pointer(
         "wait_age_seconds": wait.get("age_seconds") if wait else None,
         "wait_overdue": wait.get("overdue") if wait else None,
     }
+    if session_resolution is not None:
+        classified["session_resolution"] = session_resolution
+    if resume_remedy is not None:
+        classified["resume_remedy"] = resume_remedy
+    return classified
 
 
 def _worktree_diff_paths(record: Mapping[str, Any]) -> list[str]:

@@ -894,10 +894,10 @@ def _recoverable_session(record: Mapping[str, Any]) -> dict[str, str] | None:
 
 def _require_resume_waiver(
     run_id: str,
-    record: Mapping[str, Any],
     *,
     verdict: str,
     waiver_reason: str,
+    classification: str,
     recoverable_session: Mapping[str, str] | None,
 ) -> dict[str, str] | None:
     """Refuse a promotion that would delete a resume path, unless it is stated.
@@ -917,9 +917,7 @@ def _require_resume_waiver(
     """
     if verdict == "passed":
         return None
-    from reckon.crew.recovery import classify_pointer
-
-    if str(classify_pointer(record).get("classification") or "") != "blocked":
+    if classification != "blocked":
         return None
     found = recoverable_session
     if found is None:
@@ -993,12 +991,38 @@ def complete(
             commits=commit_list,
             no_commit_reason=no_commit,
         )
-        recoverable_session = _recoverable_session(record)
+        from reckon.crew.recovery import classify_pointer
+
+        classified = classify_pointer(record)
+        classification_name = str(classified.get("classification") or "")
+        candidate_remedy = classified.get("resume_remedy")
+        resume_remedy = (
+            dict(candidate_remedy) if isinstance(candidate_remedy, Mapping) else None
+        )
+        candidate_resolution = classified.get("session_resolution")
+        if classification_name == "blocked" and isinstance(
+            candidate_resolution, Mapping
+        ):
+            recoverable_session = (
+                {
+                    "session_id": str(candidate_resolution["session_id"]),
+                    "source": str(candidate_resolution["source"]),
+                }
+                if candidate_resolution.get("resolved")
+                else None
+            )
+        elif resume_remedy is not None:
+            recoverable_session = {
+                "session_id": str(resume_remedy["session_id"]),
+                "source": str(resume_remedy["source"]),
+            }
+        else:
+            recoverable_session = _recoverable_session(record)
         resume_waived = _require_resume_waiver(
             run_id,
-            record,
             verdict=verdict,
             waiver_reason=resume_waiver,
+            classification=classification_name,
             recoverable_session=recoverable_session,
         )
         if discard_resume_worktree and resume_waived is None:
@@ -1027,6 +1051,7 @@ def complete(
             require_gate_check=require_gate_check,
             suite_delta=suite_delta,
             boundary_waiver=boundary_waiver,
+            resume_remedy=resume_remedy,
             resume_waived=resume_waived,
             recoverable_session=recoverable_session,
             discard_resume_worktree=discard_resume_worktree,
@@ -1363,6 +1388,7 @@ def _complete_locked(
     require_gate_check: bool = False,
     suite_delta: Mapping[str, Any] | None = None,
     boundary_waiver: str = "",
+    resume_remedy: Mapping[str, str] | None = None,
     resume_waived: Mapping[str, str] | None = None,
     recoverable_session: Mapping[str, str] | None = None,
     discard_resume_worktree: bool = False,
@@ -1583,6 +1609,7 @@ def _complete_locked(
         gate_check=gate_check,
         require_gate_check=require_gate_check,
         suite_delta=suite_delta,
+        resume_remedy=resume_remedy,
     )
     run["attempt"] = int(record.get("attempt") or 1)
     run["attempt_kind"] = str(record.get("attempt_kind") or "dispatch")
