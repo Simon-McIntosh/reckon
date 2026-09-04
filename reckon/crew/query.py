@@ -10,6 +10,7 @@ from reckon import ledger
 from reckon.crew.node import normalize_section
 from reckon.crew.recovery import classify_pointer
 from reckon.crew.resumption import resolve_session
+from reckon.crew.routing import mounted_repository_projects
 from reckon.crew.runs import list_live
 
 DEFAULT_RUN_FIELDS = (
@@ -39,6 +40,8 @@ OPTIONAL_RUN_FIELDS = (
 )
 
 RUN_SOURCES = frozenset({"all", "ledger", "live"})
+RUN_SCOPES = frozenset({"project", "workstation"})
+WORKSTATION_RUN_FIELDS = ("project", "repo", "repo_exists")
 
 
 class RunQueryError(ValueError):
@@ -102,6 +105,7 @@ def _compact_row(
     source: str,
     project: str,
     checkout_path: str | None,
+    repository: Path | None,
     selected_fields: tuple[str, ...],
 ) -> dict[str, Any]:
     """Project one source record into the stable compact row shape."""
@@ -160,6 +164,9 @@ def _compact_row(
         ),
         "resumable": resumable,
         "resumable_reason": resumable_reason,
+        "project": project,
+        "repo": str(repository) if repository is not None else "",
+        "repo_exists": repository.is_dir() if repository is not None else False,
         "member": str(record.get("member") or ""),
         "agent": (
             dict(record["agent"]) if isinstance(record.get("agent"), Mapping) else {}
@@ -169,6 +176,25 @@ def _compact_row(
         "commits": [str(commit) for commit in commits],
     }
     return {field: complete[field] for field in selected_fields}
+
+
+def _mounted_projects() -> dict[str, Path]:
+    """Return the repository owning every project registered on this workstation."""
+    return {
+        project: repository
+        for repository, projects in mounted_repository_projects().items()
+        for project in projects
+    }
+
+
+def _record_repository(
+    record: Mapping[str, Any], mounted_projects: Mapping[str, Path]
+) -> Path | None:
+    """Return a live run's recorded repository, falling back to its mount."""
+    value = str(record.get("repo") or "").strip()
+    if value:
+        return Path(value).expanduser().resolve()
+    return mounted_projects.get(str(record.get("project") or ""))
 
 
 def _matches(
@@ -207,6 +233,7 @@ def runs_view(
     *,
     checkout_path: str | None = None,
     source: str = "all",
+    scope: str = "project",
     node: str | None = None,
     plan: str | None = None,
     section: str | None = None,
@@ -224,6 +251,11 @@ def runs_view(
         raise RunQueryError(
             f"runs source must be one of {', '.join(sorted(RUN_SOURCES))}"
         )
+    selected_scope = str(scope or "project").strip().lower()
+    if selected_scope not in RUN_SCOPES:
+        raise RunQueryError(
+            f"runs scope must be one of {', '.join(sorted(RUN_SCOPES))}"
+        )
     if resumable is not None and not isinstance(resumable, bool):
         raise RunQueryError("resumable must be true, false or omitted")
     if not isinstance(newest_per_node, bool):
@@ -234,31 +266,57 @@ def runs_view(
         raise RunQueryError("runs limit must be a positive integer")
 
     selected_fields = _selected_fields(fields)
+    if selected_scope == "workstation":
+        selected_fields = (*selected_fields, *WORKSTATION_RUN_FIELDS)
     row_fields = tuple(dict.fromkeys((*selected_fields, "member")))
+    mounted_projects = _mounted_projects() if selected_scope == "workstation" else {}
     rows: list[dict[str, Any]] = []
     if selected_source in {"all", "live"}:
-        rows.extend(
-            _compact_row(
-                record,
-                source="live",
-                project=project,
-                checkout_path=checkout_path,
-                selected_fields=row_fields,
+        live_records = list_live()
+        if selected_scope == "project":
+            live_records = [
+                record
+                for record in live_records
+                if str(record.get("project") or "") == project
+            ]
+        for record in live_records:
+            row_project = str(record.get("project") or "")
+            repository = _record_repository(record, mounted_projects)
+            rows.append(
+                _compact_row(
+                    record,
+                    source="live",
+                    project=row_project,
+                    checkout_path=(
+                        str(repository)
+                        if selected_scope == "workstation" and repository is not None
+                        else checkout_path
+                    ),
+                    repository=repository,
+                    selected_fields=row_fields,
+                )
             )
-            for record in list_live()
-            if str(record.get("project") or "") == project
-        )
     if selected_source in {"all", "ledger"}:
-        rows.extend(
-            _compact_row(
-                record,
-                source="ledger",
-                project=project,
-                checkout_path=checkout_path,
-                selected_fields=row_fields,
-            )
-            for record in ledger.runs(project, checkout_path)
+        ledger_projects = (
+            mounted_projects.items()
+            if selected_scope == "workstation"
+            else ((project, Path(checkout_path).expanduser().resolve()),)
+            if checkout_path is not None
+            else ((project, None),)
         )
+        for row_project, repository in ledger_projects:
+            ledger_root = str(repository) if repository is not None else None
+            rows.extend(
+                _compact_row(
+                    record,
+                    source="ledger",
+                    project=row_project,
+                    checkout_path=ledger_root,
+                    repository=repository,
+                    selected_fields=row_fields,
+                )
+                for record in ledger.runs(row_project, ledger_root)
+            )
 
     rows = [
         row
@@ -295,6 +353,7 @@ def runs_view(
         "project": project,
         "view": "runs",
         "source": selected_source,
+        "scope": selected_scope,
         "count": len(rows),
         "rows": rows,
     }
