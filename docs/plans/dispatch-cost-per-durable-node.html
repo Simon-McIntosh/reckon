@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="26">
+<meta name="plan-version" content="27">
 <meta name="plan-commits" content="d5811b204966f31db83bab190b6440a6eb7b9842,db329f84e6eecc232e8cf41f35e828f84365dee8,b99ccdf829c50659c34efdd354642b5a9cba6827,0b146679a6585b480b35fed528801a1bd4acedf8">
 <meta name="plan-impl" content="0.833">
 <meta name="plan-artifacts" content="reckon/crew/node.py,reckon/budget.py,reckon/crew/dispatch.py,reckon/capabilities.py,reckon/mcp.py,reckon/serve.py,tests/test_crew_node.py,tests/test_budget.py,tests/test_crew_coordinator_spend.py,tests/test_routing_surface.py,skills/reckon-ship/SKILL.md,skills/reckon-ship/references/effort-routing.md">
@@ -688,6 +688,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-dcdn-burn-reachable" data-who="reckon-ship" data-when="2026-09-04T13:32:00Z">
     <div class="r-comment-body">Verified at the entry point rather than in the module: reckon crew preflight --project reckon --role implement now answers WHY codex: utilisation 32% with burn multiple 7.6x is below the 95.0% ceiling, carries burn_multiple 7.55 in the backend state block, and states in its WHEN axis that the burn multiple is report-only and never holds. The lane also moved from 28% to 32% utilisation during this session's own dispatches against a 7-day window, which is the reading the section exists to make visible.</div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-dcdn-burn-governed-this-session" data-who="reckon-ship" data-when="2026-09-04T15:06:00Z">
+    <div class="r-comment-body">The burn multiple governed a real decision within hours of landing, which is the only test of a reporting fence that matters. Readings taken from reckon crew preflight across this session: 28 percent utilisation at dispatch of the first wave, 32 percent midway, 46 percent at the point of deciding whether to open another - burn multiple 9.0x against sustainable, over about four and a half hours and 28 promoted nodes on a seven-day window. Roughly eighteen points of a weekly window in an afternoon. Six further nodes were foldable at that moment and the fleet was free, so nothing except the figure argued for stopping. I stopped, and section 9's own conclusion is why: the aggregate dispatch rate is the spend decision, and a coordinator reasoning in worker-hours rather than in node count times the floor is making exactly the error that section names. Two properties of the fence behaved as the locked decision intended. It reported and did not hold, so the choice stayed mine and no worker was stopped by a rate calibrated on little data. And the figure was legible at the moment of choosing rather than in a document - the preflight summary states it in its WHY axis and says in its WHEN axis that it is report-only and never holds, so there was no ambiguity about whether I was being fenced or informed. Worth recording against the section's own caution: a rate fence wrong in the holding direction would have stopped every worker on the machine at 46 percent utilisation, while the provider was serving normally and 6.5 days of window remained.</div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260904T102948115654-dcdn-coordinator-spend" data-who="s15-coord" data-when="2026-09-04T10:46:38Z">
     <div class="r-comment-body"><p>5 passed in 1.15s; a live run pointer now carries coordinator.session_id, runtime_session_id, harness and authoring_turn, an absent transcript usage records status unknown with tokens null and never zero, and promotion preserves the identical block at node_definition.coordinator</p></div>
