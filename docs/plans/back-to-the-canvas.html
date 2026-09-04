@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="back-to-the-canvas">
+  <meta name="plan-title" content="Read It Against The Canvas">
+  <meta name="plan-summary" content="Six surfaces drifted from the handoff because every node read the plan's prose and nothing read the canvas. Correct them, and make the canvas a measure.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="18.0">
+  <meta name="plan-wall-clock-hours" content="9.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S16">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,spa">
+  <meta name="plan-north-star" content="legible-to-human-and-agent">
+  <meta name="plan-informs" content="artifact-feeds-and-reader,graph-derived-schedule,viewport-containment">
+  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,design/reckon-spa-handoff.md">
+  <title>Read It Against The Canvas | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<header>
+  <p class="eyebrow">Design fidelity &middot; the drift and the check that would have caught it</p>
+  <h1>Read It Against The Canvas</h1>
+  <p class="lead">The lead read the landed surface and found six faults in one sitting: three views that cannot scroll, prev-and-next dead across every artifact kind, a reader whose panels are saturated where the canvas is light, a full-screen mode that changes the measure and does not fill the screen, a figure viewer with no caption and no zoom, and a sprint diagram whose cards carry less than the layout already computes. Each is a small correction. What they share is the reason: every node implemented from its plan's prose, the prose paraphrased the canvas, and nothing ever compared the result to the canvas itself.</p>
+</header>
+
+<h2 id="s1">&#167;1 &mdash; What drifted, and what did not</h2>
+<p>Two of the six reports were already closed by commits the reading predates, and separating them matters because it tells us the difference between drift and staleness.</p>
+<table>
+  <thead><tr><th>Report</th><th>Verdict</th></tr></thead>
+  <tbody>
+    <tr><td>The Graph tab says no plan in this project depends on another, for a project whose sprint diagram visibly draws edges</td><td><strong>Already fixed.</strong> The freshly restarted server returns 23 endpoint rows for that project, whose 42 plans carry <code>plan-depends-on</code>. The reading came through a server that predated the projection carrying those rows.</td></tr>
+    <tr><td>Plan DAGs draw research and evidence alongside prerequisites</td><td><strong>Already fixed.</strong> The cone became <code>depends_on</code>-only and opt-in; the reading predates that merge by about an hour.</td></tr>
+    <tr><td>Research, evidence, figure and graph views do not scroll</td><td>Real. &#167;2.</td></tr>
+    <tr><td>Prev and next do nothing on plans, research, evidence and figures; the readout reads <code>0 / 0</code></td><td>Real. &#167;3.</td></tr>
+    <tr><td>The dependency toggle is a full-width labelled bar, and reader panels are saturated blue</td><td>Real, and the clearest drift. &#167;4.</td></tr>
+    <tr><td>Full screen changes the measure and does not fill the screen; a figure has no caption and cannot be zoomed; sprint cards carry too little</td><td>Real. &#167;5, &#167;6, &#167;7.</td></tr>
+  </tbody>
+</table>
+<p><strong>The drift has one mechanism and it is worth stating before the fixes.</strong> The canvas at <code>design/reckon-spa-handoff.dc.html</code> is executable: it carries its own values, and they are readable. It sets the reader measure at <code>760px</code> and <code>820px</code> in full screen. It renders the dependency toggle as a compact inline control in the reader header, mono at 11.5px, five by ten padding, labelled <code>2 &uarr; 1 &darr;</code> or a dimmed <code>standalone</code> at 55% opacity. Its cards sit on <code>var(--bg)</code> behind a one-pixel <code>var(--line)</code> border, turning <code>var(--bad)</code> only when blocked. Every one of those is a number or a token someone could have compared against, and nobody did &mdash; because each node was measured against a sentence its plan had written <em>about</em> the canvas rather than against the canvas.</p>
+<p>That is this repository's recurring failure in a new place: a rule with no bound check. The remedy is &#167;8, and the other sections are the backlog it should have prevented.</p>
+
+<h2 id="s2">&#167;2 &mdash; Every routable view scrolls</h2>
+<p>One defect in four places. <code>docs/ui/graph.css</code> declares <code>.r-graph { flex: 1; overflow: auto }</code> and carries no <code>min-height</code> rule at all; a flex child with <code>overflow:auto</code> and no <code>min-height:0</code> grows to its content instead of scrolling, so the view runs off the bottom of the window. <code>crew.css</code> has the two <code>min-height: 0</code> declarations that fixed exactly this for the Crew surface, and <code>graph.css</code> is now the only stylesheet in the tree with the flex-and-overflow pair and no <code>min-height</code>. The reader shares the fault for research, evidence and figures.</p>
+<p>The fix is the rule the shell plan already stated and applied too narrowly: every flex ancestor between the app root and a routable view carries <code>min-height: 0</code>. The measure is the one that generalises, because a per-view assertion is what let this recur.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>every-view-scrolls</code></td>
+      <td>Every routable view and reader kind scrolls within the viewport instead of growing the page.</td>
+      <td><code>uv run pytest tests/test_spa_vertical_scroll.py -q</code> passes through the file-URL harness. For each routable view and each of the four reader kinds, at 1374&times;900 against a fixture whose content exceeds the viewport: the view's own element reports <code>scrollHeight &gt; clientHeight</code>, <code>document.documentElement.scrollHeight</code> stays 900, and every flex ancestor between the app root and that element reports computed <code>min-height: 0px</code>. The test enumerates views from the route module's published list rather than a hardcoded set, so a view added later is covered without editing the test, and a deliberately un-fixed view fails it.</td>
+      <td><code>docs/ui/graph.css</code>, <code>docs/ui/reader.css</code>, <code>docs/ui/styles.css</code>, <code>tests/test_spa_vertical_scroll.py</code></td>
+      <td>guided &middot; sonnet</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s3">&#167;3 &mdash; Prev and next work for every kind</h2>
+<p>The readout reads <code>0 / 0</code> on a plan that is one of many, and the arrows do nothing, on all four kinds. That is a stronger fault than the off-by-one recorded against the reader chrome: a <code>0 / 0</code> means the ordered list the index rendered never reaches the reader at all, rather than reaching it and being counted wrongly. The earlier symptom &mdash; a readout of <code>2 / 3</code> while standing on the third item &mdash; is the same defect seen through a fixture that did publish a list, and this section supersedes that node rather than sitting beside it.</p>
+<p>The canvas is unambiguous about the contract: prev, next and the readout all read <strong>one</strong> list, published by the index at render time, including its status filter and its sort. Deriving it again inside the step handler is named in the plan as the way it silently breaks. So the fix is a single published queue, keyed by kind, and the measure must exercise a populated list of each kind rather than only plans &mdash; the kinds are exactly where it was not exercised.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>one-published-queue-for-four-kinds</code></td>
+      <td>Prev, next and the readout read one published list for every artifact kind.</td>
+      <td><code>uv run pytest tests/test_spa_reader_queue.py -q</code> passes through the file-URL harness. For each of plans, research, evidence and figures, against an index rendering at least three items: the readout on the first reads <code>1 / 3</code>; next reaches the second and reads <code>2 / 3</code>; next again reaches the third and reads <code>3 / 3</code>; prev from the third reaches the second and reads <code>2 / 3</code>; the arrow is disabled at each end rather than inert-looking; and with a status filter and a created sort applied the order stepped is that filtered sorted order. A negative case asserts the readout is never <code>0 / 0</code> while the index rendered any row.</td>
+      <td><code>docs/ui/shell-titlebar.jsx</code>, <code>docs/ui/shell-plans.jsx</code>, <code>tests/test_spa_reader_queue.py</code></td>
+      <td>guided &middot; sonnet, after <code>every-view-scrolls</code> (both touch the reader shell)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s4">&#167;4 &mdash; The reader chrome returns to the canvas</h2>
+<p>Two corrections, both with the canvas value written down. <strong>The dependency toggle is a compact inline control in the reader header</strong>, not a full-width section bar with a heading: mono at 11.5px, padding five by ten, a one-pixel border that takes <code>var(--accent)</code> when open and <code>var(--line-2)</code> when closed, labelled with the counts as <code>2 &uarr; 1 &darr;</code> and reading <code>standalone</code> at 55% opacity when the plan is isolated. It is one control among the header's controls and reads as one. <strong>And the reader's panels are light.</strong> The canvas puts cards on <code>var(--bg)</code> behind a one-pixel <code>var(--line)</code>, with colour carried as a thin border, a header rule or a small swatch; the landed surface fills the this-plan card and the in-flight panel with saturated accent, which is the opposite of the ground the canvas establishes and makes the text on them the least readable thing on the page.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>reader-chrome-matches-the-canvas</code></td>
+      <td>The dependency toggle is the canvas's inline control and the reader's panels sit on the canvas's ground.</td>
+      <td><code>uv run pytest tests/test_spa_reader_fidelity.py -q</code> passes: the toggle's rendered width is under a quarter of the reader measure and it sits inside the header row beside the other controls, asserted by bounding rectangles rather than by class name; it carries no heading text; its label reads the up and down counts for a connected plan and <code>standalone</code> with opacity at or below 0.6 for an isolated one; and no element inside the reader region has a computed background whose saturation exceeds the canvas's card ground, asserted against the token value rather than a literal colour, with the accent permitted only on borders, header rules and elements under 24px tall.</td>
+      <td><code>docs/ui/shell-titlebar.jsx</code>, <code>docs/ui/plan.jsx</code>, <code>docs/ui/reader.css</code>, <code>tests/test_spa_reader_fidelity.py</code></td>
+      <td>guided &middot; sonnet, after <code>one-published-queue-for-four-kinds</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s5">&#167;5 &mdash; Full screen fills the screen, and the measure stops moving</h2>
+<p>Two things, one of which departs from the canvas on the lead's instruction and is recorded as such. The canvas grows the measure from <code>760px</code> to <code>820px</code> on entering full screen; <strong>the lead's direction is that the measure stays constant at the larger of the two</strong>, so a document does not reflow when the chrome disappears. Reflowing text is the most disorienting thing a reading mode can do at the moment it is entered, and the canvas's own reason for growing the measure &mdash; that full screen buys width &mdash; is satisfied by simply using the wider measure throughout.</p>
+<p>The second is not a deviation but an unmet requirement: full screen must show <strong>only</strong> the document. The canvas drapes a fixed inset-zero pane over the entire shell, topbar included, because every control in that bar navigates away from what is being read. The landed surface leaves chrome visible, so the mode buys neither width nor quiet.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>full-screen-is-full-and-stops-reflowing</code></td>
+      <td>Entering and leaving full screen changes what is visible and never the measure.</td>
+      <td><code>uv run pytest tests/test_spa_reading_mode.py -q</code> passes with these cases at 1374&times;900 and 1920&times;900: the document's measure is the same number of pixels before and after pressing <code>f</code>, and equals the larger of the canvas's two values; in full screen the reader pane's bounding rectangle equals the viewport, no element belonging to the topbar or either tab group is visible by bounding rectangle, and the element at the topbar's former position belongs to the reader; <code>esc</code> restores every one of those. Asserted for a plan and for a figure, since the two enter the mode from different surfaces.</td>
+      <td><code>docs/ui/shell-titlebar.jsx</code>, <code>docs/ui/reader.css</code>, <code>docs/ui/styles.css</code>, <code>tests/test_spa_reading_mode.py</code></td>
+      <td>exact &middot; sonnet, after <code>reader-chrome-matches-the-canvas</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s6">&#167;6 &mdash; A figure is readable: caption, and zoom</h2>
+<p>A figure page today shows an image at whatever size the measure allows, with its dimensions in the metadata row and nothing saying what the figure shows. Two additions. <strong>The caption travels with the figure.</strong> The capture indexes this sprint produced already carry per-capture description alongside the recorded width, and the canvas's own figure fixtures carry a note reading like one; discovery reads that note into the figure row so the reader and the figures index can both print it. A figure whose index carries no note prints nothing rather than its filename, because a filename dressed as a caption is worse than an absent one. <strong>And a figure can be examined.</strong> Clicking the image zooms it to its natural size and allows further zoom and pan, since a 1920-wide capture rendered into an 820-pixel measure is legible for layout and useless for reading text inside it &mdash; which is precisely what these captures exist to let someone do.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>figure-caption-and-zoom</code></td>
+      <td>A figure carries its caption to every surface that lists it, and can be zoomed and panned.</td>
+      <td><code>uv run pytest tests/test_serve_figure_rows.py tests/test_spa_figure_reader.py -q</code> passes: a figure whose sibling capture index carries a description emits that text on its inventory row, and one whose index carries none emits an empty caption rather than a filename; the figures index row and the figure reader both render the caption where present and omit the element where absent. Through the file-URL harness at 1374: clicking the image raises its rendered width above the measure, a further zoom step raises it again, panning changes the visible region while the image stays within its container, and a reset returns it to the measure.</td>
+      <td><code>reckon/figures.py</code>, <code>docs/ui/plan.jsx</code>, <code>docs/ui/reader.css</code>, <code>tests/test_spa_figure_reader.py</code></td>
+      <td>guided &middot; sonnet</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s7">&#167;7 &mdash; The sprint diagram says what it knows</h2>
+<p>The sprint detail's cards print a truncated title and a status word on a large empty tile, while the layout helper that positions them already returns <code>hours</code> and <code>percent</code> for every node and the Graph tab's own detail draws its columns under labels. So the diagram is discarding computed information and then reading as sparse. Three corrections, all of them things the surface already has in hand: <strong>each card carries its hours and its completion</strong> as the canvas's cone card does, on the canvas's light ground with a thin border that turns <code>var(--bad)</code> only when the plan is blocked; <strong>the depth columns carry their labels</strong>, reading <code>no prerequisites</code> at depth zero and <code>depth N</code> beyond it, exactly as the Graph detail already renders them; and <strong>the title is not truncated to a third of its card</strong> &mdash; a card wide enough for two lines should use two.</p>
+<p><strong>Gate for this plan, recorded when the measure runs: on the rendered surface every routable view scrolls inside a 900px viewport, prev and next step correctly through all four kinds, the dependency toggle is the canvas's inline control, full screen fills the viewport without changing the measure, a figure shows its caption and zooms, and a sprint card carries its hours and completion under a labelled column. Its evidence is the named tests of &#167;2 to &#167;7 passing plus captures of the reader, the figure viewer and the sprint detail at both widths, with the fidelity comparison of &#167;8 recorded beside them.</strong></p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>sprint-cards-carry-what-is-known</code></td>
+      <td>Sprint diagram cards print the hours and completion the layout already computes, under labelled depth columns.</td>
+      <td><code>uv run pytest tests/test_spa_sprint_surface.py tests/test_spa_sprints_geometry.py -q</code> passes with these cases: every rendered card carries its hours text and a completion bar whose width tracks the node's percent, asserted against the layout helper's own returned values rather than literals; each depth column renders a label reading <code>no prerequisites</code> at depth zero and <code>depth N</code> otherwise; a blocked plan's card border takes the bad token and no other card does; and a card whose title exceeds one line renders two lines rather than an ellipsis, asserted by rendered height against a single-line card.</td>
+      <td><code>docs/ui/sprint.jsx</code>, <code>docs/ui/sprints.css</code>, <code>tests/test_spa_sprints_geometry.py</code></td>
+      <td>guided &middot; sonnet</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s8">&#167;8 &mdash; The canvas becomes a measure</h2>
+<p>The six corrections above are worth little on their own, because nothing would stop the next surface node from paraphrasing the canvas again. The canvas is an executable document that carries its own values &mdash; measures in pixels, token names, padding, opacity, the fields a card prints &mdash; so a test can read them out of it and compare them against the implementation. That turns &ldquo;truthful to the handoff&rdquo; from an intention into a check that fails.</p>
+<p>It cannot compare everything, and pretending otherwise would produce a brittle test nobody trusts. It compares what the canvas states numerically or by token: the reader measures, the toggle's font size and padding and opacity, the card ground and border tokens, the fields each card and metadata row prints, and the presence of the column labels. Where the implementation deviates <strong>deliberately</strong> &mdash; as the constant measure of &#167;5 does, on the lead's instruction &mdash; the deviation is declared in one place with its reason, and the check asserts the declared set matches the actual set. An undeclared deviation fails; a declared one is visible to the next reader instead of being rediscovered by them.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>fidelity-to-the-canvas</code></td>
+      <td>One check compares the implementation against the canvas's own declared values, with deliberate deviations declared.</td>
+      <td><code>uv run pytest tests/test_spa_canvas_fidelity.py -q</code> passes. It extracts from <code>design/reckon-spa-handoff.dc.html</code> the reader measures, the dependency toggle's font size, padding and standalone opacity, the card background and border tokens, and the field lists each metadata row prints, then asserts the rendered surface matches each. A declared-deviation table in the test names the constant measure of &#167;5 with its reason, and the check fails both when an undeclared value differs and when a declared deviation no longer applies, so the declaration cannot outlive its cause. A companion case mutates one canvas value and requires the check to fail, since a fidelity check that has never failed has not been shown to compare anything.</td>
+      <td><code>tests/test_spa_canvas_fidelity.py</code>, <code>tests/spa_canvas_values.py</code></td>
+      <td>guided &middot; opus, after &#167;2&ndash;&#167;7</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s9">&#167;9 &mdash; Out of scope</h2>
+<p>The two reports already closed: the endpoint enumeration reaching the Graph tab, and the cone drawing plan edges only. Both are merged and the readings that found them came through a stale server, so re-fixing them would be work against a problem that no longer exists. The served-HTTP browser harness fault stays foreign-owned under its own plan; every measure here uses the file-URL harness, which works on this host. The horizontal containment guard is not extended to the vertical axis &mdash; &#167;2 asserts that a view <em>does</em> scroll, which is a different proposition from nothing escaping the window sideways, and collapsing them would weaken both. And no new capability: every section restores something the canvas already specifies or surfaces something the code already computes.</p>
+
+<section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="constant-reader-measure" data-choice="constant-at-the-larger" data-by="reckon-ship (lead instruction, 2026-09-04)" data-when="2026-09-04">
+    <p class="r-dec-q">Does the reader measure grow when full screen is entered, as the canvas has it?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="constant-at-the-larger">No &mdash; constant at the larger of the two values</button>
+      <button class="r-opt" data-value="canvas-760-to-820">Yes, 760px growing to 820px as the canvas draws it</button>
+    </p>
+    <p class="r-dec-rat">The lead's direction, and a deliberate deviation from the canvas recorded as one. Reflowing the text at the moment a reading mode is entered is the most disorienting thing that mode can do, and the canvas's stated reason for the growth — that full screen buys width — is served by using the wider measure throughout.</p>
+</div>
+<div class="r-dec" data-key="drift-remedy" data-choice="extract-canvas-values-into-a-check" data-by="reckon-ship (deduced from the drift's mechanism)" data-when="2026-09-04">
+    <p class="r-dec-q">How is fidelity to the handoff held?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="extract-canvas-values-into-a-check">A check that reads the canvas's own values and compares them</button>
+      <button class="r-opt" data-value="restate-values-in-each-plan">Restate the canvas's values in each plan's prose</button>
+      <button class="r-opt" data-value="review-by-reading">A reviewer compares the surface to the canvas by eye</button>
+    </p>
+    <p class="r-dec-rat">Restating in prose is what produced the drift: six nodes each measured against a sentence about the canvas rather than the canvas. Review by eye is what caught it, four surfaces late, and depends on someone looking. The canvas carries its values in a machine-readable form, so a check can compare them and fail.</p>
+</div>
+<div class="r-dec" data-key="figure-caption-source" data-choice="capture-index-description-or-nothing" data-by="reckon-ship (deduced from what the indexes already carry)" data-when="2026-09-04">
+    <p class="r-dec-q">Where does a figure's caption come from?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="capture-index-description-or-nothing">The sibling capture index's description, and nothing when absent</button>
+      <button class="r-opt" data-value="filename-fallback">The filename, prettified, when no description exists</button>
+    </p>
+    <p class="r-dec-rat">The capture indexes this sprint produced already record a description beside each recorded width, so the text exists. A filename dressed as a caption is worse than an absent one: it looks like a description and carries no information, which is the same defect as a flat line standing in for an empty series.</p>
+</div>
+<div class="r-dec" data-key="queue-supersedes-readout-node" data-choice="supersede" data-by="reckon-ship (deduced from the stronger symptom)" data-when="2026-09-04">
+    <p class="r-dec-q">Does the published-queue work supersede the readout off-by-one node, or sit beside it?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="supersede">Supersede it</button>
+      <button class="r-opt" data-value="both">Keep both nodes</button>
+    </p>
+    <p class="r-dec-rat">A readout of zero of zero means the list never reached the reader; the off-by-one was the same defect seen through a fixture that did publish one. Two nodes against one cause would have one of them pass by accident.</p>
+</div>
+</section>
+
+<section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-btc-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship back-to-the-canvas" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Scroll first, then the queue, then fidelity last</h4>
+    <div class="r-fu-body"><p>&#167;2 opens the chain because an unreadable view cannot be assessed for anything else. &#167;3 to &#167;5 run in sequence on the reader shell; &#167;6 and &#167;7 are file-disjoint from that chain and run alongside it. &#167;8 lands last, because it compares what the other six produce and is the node that stops the drift recurring.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship back-to-the-canvas</pre>
+</article>
+</section>
+
+<section data-reckon="research" id="research" class="r-research-list">
+<h2><span class="sec">§</span> Research</h2>
+<div class="r-research" data-id="r1" data-type="design" data-url="design/reckon-spa-handoff.dc.html">
+  <span class="r-research-title">The canvas, which is the authority for every correction here and the source the fidelity check reads its values from.</span>
+</div>
+<div class="r-research" data-id="r2" data-type="design" data-url="design/reckon-spa-handoff.md">
+  <span class="r-research-title">The designer's triage, whose paraphrases into plan prose are the mechanism by which these six surfaces drifted.</span>
+</div>
+</section>
+</main>
+</body>
+</html>
