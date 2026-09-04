@@ -22,10 +22,14 @@
   <meta name="plan-tags" content="reckon-tooling,spa">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-depends-on" content="graph-derived-schedule,fleet-home">
-  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html">
+  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,reckon/fleet_index.py,tests/test_fleet_rollup_surfaces.py">
   <title>One Derivation, Every Surface | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-04">
+<meta name="plan-version" content="2">
+<meta name="plan-commits" content="42104d3">
+<meta name="plan-impl" content="0.2">
 </head>
 <body>
 <main class="plan-doc">
@@ -177,52 +181,56 @@
 <div class="r-dec" data-key="derivation-home" data-choice="python-authority-surface-consumes" data-by="reckon-ship (lead direction, 2026-09-04)" data-when="2026-09-04">
     <p class="r-dec-q">Where does a derivation live when both a surface and an agent need it?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="python-authority-surface-consumes">In Python, with the surface consuming the payload</button>
+      <button class="r-opt chosen" data-value="python-authority-surface-consumes">In Python, with the surface consuming the payload</button>
       <button class="r-opt" data-value="jsx-with-a-python-mirror">In JSX, with a Python implementation mirroring it</button>
       <button class="r-opt" data-value="leave-as-is">Leave each surface to derive its own</button>
-    </p>
+      </p>
     <p class="r-dec-rat">A mirror is two implementations of one truth, which is the defect being fixed rather than a way of fixing it. Leaving it means an agent and a human reading the same project disagree with no way to notice. Python is where the CLI and MCP already read, and the surface already consumes payloads for everything else.</p>
-</div>
+    </div>
 <div class="r-dec" data-key="sprint-drift-handling" data-choice="report-both-never-resolve" data-by="reckon-ship (carried from the surface plan)" data-when="2026-09-04">
     <p class="r-dec-q">When derived sprint state disagrees with the stored file, which wins?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="report-both-never-resolve">Report both and flag the drift</button>
+      <button class="r-opt chosen" data-value="report-both-never-resolve">Report both and flag the drift</button>
       <button class="r-opt" data-value="derived-wins-silently">Overwrite the stored value</button>
       <button class="r-opt" data-value="stored-wins">Keep reporting the stored value</button>
-    </p>
-    <p class="r-dec-rat">Resolving it silently hides an inconsistency the sprint skill should repair, and the surface already made that choice deliberately. Keeping only the stored value is what leaves an agent reading <code>planned</code> for a finished sprint.</p>
-</div>
+      </p>
+    <p class="r-dec-rat">Resolving it silently hides an inconsistency the sprint skill should repair, and the surface already made that choice deliberately. Keeping only the stored value is what leaves an agent reading planned for a finished sprint.</p>
+    </div>
 <div class="r-dec" data-key="parity-assertion-form" data-choice="compare-the-two-surfaces" data-by="reckon-ship (deduced from the drift failure mode)" data-when="2026-09-04">
     <p class="r-dec-q">What form does the parity check take?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="compare-the-two-surfaces">Render and read, then require equality between them</button>
+      <button class="r-opt chosen" data-value="compare-the-two-surfaces">Render and read, then require equality between them</button>
       <button class="r-opt" data-value="literals-on-both-sides">Assert each surface against expected literals</button>
-    </p>
+      </p>
     <p class="r-dec-rat">Literals in two places drift silently in step and the test keeps passing, which is exactly the failure being guarded. Only a comparison between the surfaces fails when one copy changes.</p>
-</div>
+    </div>
 <div class="r-dec" data-key="geometry-parity" data-choice="presentation-stays-in-the-surface" data-by="reckon-ship (deduced from the consumer set)" data-when="2026-09-04">
     <p class="r-dec-q">Does layout geometry move to Python as well?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="presentation-stays-in-the-surface">No &mdash; state and derived fact move, presentation stays</button>
+      <button class="r-opt chosen" data-value="presentation-stays-in-the-surface">No — state and derived fact move, presentation stays</button>
       <button class="r-opt" data-value="move-geometry-too">Move the layout helper too</button>
-    </p>
-    <p class="r-dec-rat">No agent reads a card width or an edge path, so moving geometry would add a payload nobody consumes and couple the surface's visual design to a server release. The line is whether a reader without a browser has a use for the value.</p>
-</div>
+      </p>
+    <p class="r-dec-rat">No agent reads a card width or an edge path, so moving geometry would add a payload nobody consumes and couple the surface&#x27;s visual design to a server release. The line is whether a reader without a browser has a use for the value.</p>
+    </div>
 </section>
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-dsp-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship derived-state-parity" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Move the derivations in module order, then bind the check</h4>
-    <div class="r-fu-body"><p>&#167;2, &#167;3 and &#167;5 all write <code>reckon/roadmap.py</code>, so they are one serial lane in section order; &#167;4 touches different modules and runs alongside them. &#167;6 lands last, because it compares what the four produce and is the node that keeps parity from rotting.</p></div>
+    <div class="r-fu-body"><p>§2, §3 and §5 all write <code>reckon/roadmap.py</code>, so they are one serial lane in section order; §4 touches different modules and runs alongside them. §6 lands last, because it compares what the four produce and is the node that keeps parity from rotting.</p></div>
     <pre class="r-fu-prompt">/reckon-ship derived-state-parity</pre>
-</article>
+    </article>
 </section>
 
 <section data-reckon="research" id="research" class="r-research-list">
 <h2><span class="sec">§</span> Research</h2>
-<div class="r-research" data-id="r1" data-type="design" data-url="design/reckon-spa-handoff.dc.html">
-  <span class="r-research-title">The handoff canvas, whose four derivations this plan relocates: the member-derived sprint state, the endpoint index including unnamed endpoints, the fleet rollup, and the schedule anchored at now.</span>
+<div class="r-research" data-id="r1" data-type="design" data-source="" data-added-by="" data-when="" data-url="design/reckon-spa-handoff.dc.html">
+    <span class="r-research-title"><a href="design/reckon-spa-handoff.dc.html">The handoff canvas, whose four derivations this plan relocates: the member-derived sprint state, the endpoint index including unnamed endpoints, the fleet rollup, and the schedule anchored at now.</a></span></div>
+</section>
+<section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260904T090245992691-rollup-on-cli-and-mcp" data-who="s16-rollup" data-when="2026-09-04T09:14:09Z">
+    <div class="r-comment-body"><p>the cross-project rollup is now readable from the CLI as reckon fleet and from the crew tool, not only over HTTP: 3 rollup-surface tests plus 8 fleet-index regressions pass, and the five-tool invariant test passes because the rollup is a view on the existing crew tool rather than a sixth tool. Scoped ruff delta is zero on every touched file. The capability that had exactly one caller now has three answering from one computation</p></div>
 </div>
 </section>
 </main>

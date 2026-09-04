@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T11:03:30",
+  "updated": "2026-09-04T11:30:11",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -845,9 +845,11 @@
         "id": "s16-reader",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a06ba5-f73f-7fd0-92f1-f7a66154cbe9",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06ba5-f73f-7fd0-92f1-f7a66154cbe9"
+        },
         "created": "2026-09-03"
       },
       {
@@ -979,6 +981,17 @@
           "{\"alias\":\"sonnet 5\",\"backend\":\"claude\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "25a7517b-9a8e-4370-a295-694b35cab7ba"
         },
         "created": "2026-09-03"
+      },
+      {
+        "id": "s16-transport",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": "01a06bbd-628f-7590-aa56-81bb9412b853",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06bbd-628f-7590-aa56-81bb9412b853"
+        },
+        "created": "2026-09-04"
       },
       {
         "id": "s16-verify",
@@ -53714,6 +53727,235 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260904T082947486750-the-open-work-is-rehomed-and-the-stale-sprints-close",
+        "plan": "concurrency-and-schedule-visibility",
+        "section": "\u00a78",
+        "node": "the-open-work-is-rehomed-and-the-stale-sprints-close",
+        "node_definition": {
+          "done_when": "Four sprints hold open work with no coordinator and no recent activity: S6 with execution-orchestration-hardening at impl 0.6 and plan-lifecycle-hygiene at 0.33; S8 with derived-gate-state at 0.98; S12 with blank-project-surface at 0.33, dependency-edge-semantics at 0.33 and registered-repo-state-migration at 0.6; S13 with binding-rules-need-bound-checks at 0.5, landed-record-at-closure at 0.5 and rendered-evidence-on-this-host at 0.9. Their existence holds a gate on another plan requiring a horizon depth of two or fewer sprints against an actual depth of six. THE LEAD'S INSTRUCTION IS NOT SIMPLY TO CLOSE THEM: read each plan, triage it, re-home the open work to sprints that reflect reality, wire the relationships accordingly, and ensure no stale instruction is carried forward. THE ARITHMETIC IS EXPLICIT SO NOBODY REDISCOVERS IT: consolidating all nine into one new sprint takes the depth from six to three, since S15 and S16 also hold open work - it does NOT reach two, and the remaining step is closing S15, which is not this node's to take. State the resulting depth in the manifest rather than implying the gate is cleared. FOR EACH OF THE NINE, record a verdict in its own plan: whether the remaining work is still wanted, whether any instruction in it has been overtaken by what has since shipped, and where it now belongs. A plan at 0.98 or 0.9 is a candidate for closing outright rather than re-homing, and one at 0.33 whose last edit predates a fortnight of change is a candidate for superseding - decide per plan on what the plan says, never on the impl figure alone, and say which. WHERE AN INSTRUCTION IS STALE, correct or remove it rather than carrying it: this repository has already shipped a plan section marked landed with no implementing commit, and a reference telling a reader to cycle a follower that reloads itself. A stale instruction in a re-homed plan is worse than one in a dormant sprint, because re-homing makes it look current. Done when every one of the nine carries its triage verdict and its new home or its closure; when the four sprints are closed with their membership empty; when the project index and each plan's sprint metadata agree, since a plan naming a sprint the index does not is the drift this system exists to prevent; when roadmap reports no new error-level wiring findings; and when the manifest states the resulting horizon depth as measured rather than intended. Do NOT set any plan to shipped or done whose open followups are unresolved. Verify with reckon audit-doc on every file staged and with a roadmap read afterwards. Report the naming-check result over the staged paths.",
+          "estimated_hours": 4.0,
+          "goal": "The nine open plans in four stale sprints are triaged, re-homed to sprints that reflect reality, and those sprints closed.",
+          "id": "the-open-work-is-rehomed-and-the-stale-sprints-close",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/sprint-triage-manifest.md",
+          "plan": "concurrency-and-schedule-visibility",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "write_paths": [
+            "docs/state/reckon/index.json",
+            "docs/plans/execution-orchestration-hardening.html",
+            "docs/plans/plan-lifecycle-hygiene.html",
+            "docs/plans/derived-gate-state.html",
+            "docs/plans/blank-project-surface.html",
+            "docs/plans/dependency-edge-semantics.html",
+            "docs/plans/registered-repo-state-migration.html",
+            "docs/plans/binding-rules-need-bound-checks.html",
+            "docs/plans/landed-record-at-closure.html",
+            "docs/plans/rendered-evidence-on-this-host.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-q",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T08:30:07Z",
+        "completed_at": "2026-09-04T08:58:51Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1724,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1724,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "60d7d4dc4b3b32eff5b86d77f622d64ccfee2470",
+        "commits": [
+          "ee3d75d80349e8ec0a7dab0e7ea54a599817fa5d"
+        ],
+        "changed_lines": {
+          "added": 246,
+          "removed": 69,
+          "files": 10
+        },
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "malformed-node",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/sprint-triage-manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06b8a-1e43-7df3-8133-6c78495bfb9d",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 5195392,
+            "cached_input_tokens_cumulative": 5195392,
+            "input_tokens": 5543100,
+            "input_tokens_cumulative": 5543100,
+            "output_tokens": 27610,
+            "output_tokens_cumulative": 27610,
+            "reasoning_output_tokens": 10312,
+            "reasoning_output_tokens_cumulative": 10312
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 37922,
+          "peak_input_tokens": 10738492
+        },
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260904T090245992691-rollup-on-cli-and-mcp",
+        "plan": "derived-state-parity",
+        "section": "\u00a74",
+        "node": "rollup-on-cli-and-mcp",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_fleet_rollup_surfaces.py -q passes with the cases \u00a74 names: against a synthesised two-project mount set the CLI reader, the MCP view and collect_projects return identical rows field for field; a project with no commits in the window reports activity30 as an empty list through all three; the CLI exits non-zero with a stated refusal when no project is mounted; the MCP view returns compact rows and no follower records. uv run pytest tests/test_fleet_index.py -q stays green, and the MCP surface remains five tools because the rollup is a view on the existing crew tool rather than a sixth tool, asserted by the existing five-tool test staying green",
+          "estimated_hours": 3.0,
+          "goal": "The fleet rollup is readable from the CLI and from MCP, returning the rows the served payload returns",
+          "id": "rollup-on-cli-and-mcp",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T090245992691-rollup-on-cli-and-mcp/manifest.md",
+          "plan": "derived-state-parity",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/fleet_index.py",
+            "reckon/cli.py",
+            "reckon/mcp.py",
+            "tests/test_fleet_rollup_surfaces.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-rollup",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T09:02:58Z",
+        "completed_at": "2026-09-04T09:14:09Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 671,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 671,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "ee8017387e1a3a3300698cbbbaec2cb3546187e3",
+        "commits": [
+          "42104d3bb4af74d2422eb4f008b1bb59ee0f67f9"
+        ],
+        "changed_lines": {
+          "added": 189,
+          "removed": 5,
+          "files": 4
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_rollup_surfaces.py tests/test_fleet_index.py tests/test_ledger.py::test_the_mcp_surface_holds_at_five_tools",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T090245992691-rollup-on-cli-and-mcp/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T090245992691-rollup-on-cli-and-mcp/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06ba8-2c76-7b01-9d41-f450e91064d2",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 5382912,
+            "cached_input_tokens_cumulative": 5382912,
+            "input_tokens": 5537538,
+            "input_tokens_cumulative": 5537538,
+            "output_tokens": 29222,
+            "output_tokens_cumulative": 29222,
+            "reasoning_output_tokens": 10345,
+            "reasoning_output_tokens_cumulative": 10345
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 39567,
+          "peak_input_tokens": 10920450
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_fleet_rollup_surfaces.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -53886,6 +54128,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 877
+    "_version": 882
   }
 }
