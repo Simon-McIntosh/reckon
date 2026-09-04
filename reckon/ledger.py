@@ -423,12 +423,7 @@ def _run_ledger_root(project: str, root: str | Path | None) -> Path | None:
 
     mounts_path = _store._mounts_path()
     if not mounts_path.is_file():
-        requested_ledger = ledger_path(project, requested)
-        raise LedgerError(
-            f"cannot resolve the ledger checkout for project {project!r}: "
-            f"the promoting checkout would write {requested_ledger}, but mount "
-            f"registry {mounts_path} does not exist"
-        )
+        return requested
 
     from reckon import flight
 
