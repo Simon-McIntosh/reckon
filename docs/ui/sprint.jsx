@@ -86,6 +86,11 @@ function sprintHoursSummary(members) {
   return { total, left };
 }
 
+function derivedFlowChainHours(inventory, runs, project, now = new Date()) {
+  if (!window.ReckonCrewSchedule) return 0;
+  return window.ReckonCrewSchedule.farEnd(inventory, runs, project, now);
+}
+
 // State is derived from members, never read from the sprint's own status
 // field, because the field can silently drift from what actually landed.
 function derivedSprintState(sprint, inventory) {
@@ -353,6 +358,10 @@ function Sprint({ sprintId, onNav }) {
   const foldedCount = stateRows.filter(row => row.closed).length;
   const activeConflict = activeSprintConflict(M.active_sprints, M.active_sprint_id);
   const detailSprint = detailSprintId ? allSprints.find(candidate => candidate.id === detailSprintId) : null;
+  const projectPlans = M.inventory.filter(plan => (plan.type || "plan") === "plan");
+  const projectHours = sprintHoursSummary(projectPlans);
+  const chainHours = derivedFlowChainHours(projectPlans, M.runs || M.crew_runs || [], project);
+  const heldPlans = projectPlans.filter(plan => plan.status === "blocked").length;
 
   if (detailSprint) {
     return (
@@ -371,6 +380,11 @@ function Sprint({ sprintId, onNav }) {
     <div className="r-page wide r-sprint-surface">
       <header className="r-sp-head">
         <div><div className="r-eyebrow">Sprints</div><h1>All sprints</h1></div>
+        <div className="r-sprint-state-summary r-sprint-flow-summary" aria-label="Derived project figures">
+          <span>left <strong>{Math.round(projectHours.left)}h</strong></span>
+          <span>chain <strong>{Math.round(chainHours)}h</strong></span>
+          <span>held <strong>{heldPlans}</strong></span>
+        </div>
         <div className="r-sprint-tabs" role="tablist" aria-label="Sprint views">
           <button role="tab" aria-selected={surface === "overview"} onClick={() => setSurface("overview")}>Overview</button>
           <button role="tab" aria-selected={surface === "ready"} onClick={() => setSurface("ready")}>Ready lanes</button>
