@@ -2506,6 +2506,313 @@ def resume_plan(
     )
 
 
+def _recorded_task_node(record: Mapping[str, Any]) -> TaskNode:
+    """Rebuild the immutable dispatch request stored on a live run."""
+    data = record.get("node")
+    if not isinstance(data, Mapping):
+        raise CrewError(f"run {record.get('run_id')!r} records no node definition")
+    return TaskNode(
+        id=str(data.get("id") or ""),
+        goal=str(data.get("goal") or ""),
+        plan=str(data.get("plan") or ""),
+        section=str(data.get("section") or ""),
+        role=str(data.get("role") or record.get("role") or "implement"),
+        spec_level=str(data.get("spec_level") or ""),
+        done_when=str(data.get("done_when") or ""),
+        write_paths=[str(path) for path in data.get("write_paths") or ()],
+        time_budget=str(data.get("time_budget") or ""),
+        manifest_path=str(
+            data.get("manifest_path") or record.get("manifest_path") or ""
+        ),
+        estimated_hours=data.get("estimated_hours"),
+        requires_decisions=[str(key) for key in data.get("requires_decisions") or ()],
+    )
+
+
+def _lane_prompt(
+    record: Mapping[str, Any], advice: str, reason: str, *, continued: bool
+) -> str:
+    """Return either same-session advice or a complete fresh-start prompt."""
+    if continued:
+        return advice or f"Continue on the selected backend. Reason: {reason}"
+    prompt_path = Path(str(record.get("prompt_path") or ""))
+    if not prompt_path.is_file():
+        raise CrewError(
+            f"run {record.get('run_id')!r} needs a fresh session but its original "
+            "prompt is unavailable"
+        )
+    original = prompt_path.read_text(encoding="utf-8")
+    continuation = advice or "Continue the assigned work from its retained worktree."
+    return (
+        f"{original.rstrip()}\n\n"
+        "EXECUTION BACKEND CHANGED\n"
+        f"Reason: {reason}\n{continuation}\n"
+    )
+
+
+def change_lane(
+    run_id: str,
+    backend_name: str,
+    reason: str,
+    *,
+    config: Mapping[str, Any],
+    advice: str = "",
+    launch: bool = True,
+    launcher=None,
+) -> dict[str, Any]:
+    """Relaunch one live run elsewhere without replacing its identity.
+
+    A blocked resumption and a working-run redispatch deliberately meet here.
+    The destination is fully resolved and budget-checked before the current
+    process is stopped. The existing run id, node and worktree stay in place;
+    only the execution attempt changes.
+    """
+    destination = str(backend_name).strip()
+    explanation = str(reason).strip()
+    if not destination:
+        raise CrewError("changing a run's backend requires a destination backend")
+    if not explanation:
+        raise CrewError("changing a run's backend requires a reason")
+
+    record = read_pointer(run_id)
+    source = str(record.get("backend") or "")
+    if destination == source:
+        raise CrewError(
+            f"run {run_id!r} already uses backend {destination!r}; resume it without "
+            "a backend override"
+        )
+    repository = Path(str(record.get("repo") or ".")).resolve()
+    node = _recorded_task_node(record)
+    resolution = plan_dispatch(
+        node=node,
+        config=config,
+        locked_decisions=node.requires_decisions,
+        run_id=run_id,
+        project=str(record.get("project") or ""),
+        repo=repository,
+        base=str(record.get("base_sha") or record.get("base") or "HEAD"),
+        execution_override=bool(
+            (record.get("execution_fit") or {}).get("override")
+            if isinstance(record.get("execution_fit"), Mapping)
+            else False
+        ),
+        backend_override=destination,
+    )
+    if not resolution.validation.ok:
+        raise CrewError(
+            f"run {run_id!r} cannot move to backend {destination!r} — "
+            + "; ".join(
+                f"{finding['property']}: {finding['detail']}"
+                for finding in resolution.validation.findings
+            )
+        )
+    competence = resolution.competence or _competence_verdict(
+        resolution=resolution,
+        project=str(record.get("project") or ""),
+        repo=repository,
+    )
+    if not competence["allowed"]:
+        raise CompetenceLimit(competence)
+    backend = resolution.backend_settings
+    verdict = _budget_verdict(
+        project=str(record.get("project") or ""),
+        root=resolve_dispatch_ledger_root(
+            resolution.authority
+            or resolve_dispatch_authority(str(record.get("project") or ""), repository)
+        ),
+        config=config,
+        backend_name=resolution.backend,
+        backend=backend,
+        purpose="dispatch",
+    )
+    if verdict["held"]:
+        raise BudgetHold(verdict)
+
+    source_launch = str(record.get("launch") or "")
+    target_launch = resolution.launch
+    source_harness = source_launch
+    if source_launch == "cli":
+        source_harness = str(record.get("dialect") or "")
+        if not source_harness:
+            source_harness = _backends.dialect_for(
+                _backend_settings(record, config)
+            ).name
+    target_harness = target_launch
+    if target_launch == "cli":
+        target_harness = _backends.dialect_for(backend).name
+    session_id = str(record.get("session_id") or "")
+    continued = bool(
+        session_id
+        and source_launch == target_launch == "cli"
+        and source_harness == target_harness
+    )
+    prompt = _lane_prompt(record, advice, explanation, continued=continued)
+    attempt = int(record.get("attempt") or 1) + 1
+    directory = run_dir(run_id)
+    prompt_path = directory / f"lane-change-{attempt}-prompt.txt"
+    log_path = directory / f"lane-change-{attempt}.jsonl"
+    stderr_path = directory / f"lane-change-{attempt}.stderr.log"
+    final_path = directory / f"lane-change-{attempt}-final.txt"
+    lane_change = {
+        "from_backend": source,
+        "to_backend": resolution.backend,
+        "reason": explanation,
+        "changed_at": _utc_now(),
+        "from_harness": source_harness,
+        "to_harness": target_harness,
+        "session": "continued" if continued else "fresh",
+        "detail": (
+            f"continued session {session_id!r} on harness {target_harness!r}"
+            if continued
+            else (
+                "starting fresh because the session cannot follow the move from "
+                f"harness {source_harness!r} to {target_harness!r}"
+            )
+        ),
+    }
+    target_plan: _backends.LaunchPlan | None = None
+    if target_launch == "cli":
+        target_plan = _backends.launch_plan(
+            backend_name=resolution.backend,
+            backend=backend,
+            prompt=prompt,
+            worktree=str(record.get("worktree") or "."),
+            manifest_path=str(record.get("manifest_path") or ""),
+            writable_directories=resolution.sandbox_write_roots or (),
+            final_message_path=str(final_path),
+            resume_session=session_id if continued else None,
+        )
+    preview: dict[str, Any] = {
+        "run_id": run_id,
+        "node": record.get("node"),
+        "worktree": record.get("worktree"),
+        "backend": resolution.backend,
+        "launch": target_launch,
+        "lane_change": lane_change,
+    }
+    if target_plan is not None:
+        preview.update(target_plan.as_dict())
+    else:
+        preview["directive"] = {
+            "attach_with": f"reckon crew attach --run {run_id} --task <task-id>",
+            "prompt_path": str(prompt_path),
+            "worktree": str(record.get("worktree") or ""),
+        }
+    if not launch:
+        return preview
+
+    if (
+        source_launch == "in-harness"
+        and record.get("task")
+        and str(record.get("phase") or "") not in _TERMINAL_RUN_PHASES
+    ):
+        raise CrewError(
+            f"run {run_id!r} is attached to live harness task {record['task']!r}; "
+            "cancel it in that harness before changing backend"
+        )
+    if source_launch == "cli" and process_alive(record.get("pid")) is True:
+        _signal_process_group(int(record["pid"]), record.get("pid_start_time"))
+
+    directory.mkdir(parents=True, exist_ok=True)
+    prompt_path.write_text(prompt, encoding="utf-8")
+    spawned_pid: int | None = None
+    if target_plan is not None:
+        spawn = launcher or _spawn
+        spawned_pid = spawn(
+            target_plan,
+            log_path=log_path,
+            stderr_path=stderr_path,
+            prompt_path=prompt_path,
+        )
+
+    def move(current: dict[str, Any]) -> dict[str, Any]:
+        if str(current.get("worktree") or "") != str(record.get("worktree") or ""):
+            raise CrewError(f"run {run_id!r} changed worktree during its lane change")
+        history = [dict(item) for item in current.get("lane_changes") or ()]
+        history.append(lane_change)
+        lineage = {
+            "kind": "lane-change",
+            "attempt": attempt,
+            "root_run_id": run_id,
+            "lanes": history,
+        }
+        current.update(
+            {
+                "backend": resolution.backend,
+                "launch": target_launch,
+                "sandbox": backend.get("sandbox"),
+                "sandbox_write_roots": (
+                    None
+                    if resolution.sandbox_write_roots is None
+                    else [str(path) for path in resolution.sandbox_write_roots]
+                ),
+                "session_reuse": bool(backend.get("session_reuse")),
+                "agent": _stamp_agent_display(
+                    _agent_configuration(resolution.backend, target_launch, backend),
+                    backend,
+                ),
+                "attempt": attempt,
+                "attempt_kind": "lane-change",
+                "attempt_started_at": lane_change["changed_at"],
+                "phase": "working" if target_plan is not None else "starting",
+                "session_id": session_id if continued else None,
+                "pid": spawned_pid,
+                "pid_start_time": (
+                    _process_start_time(spawned_pid)
+                    if spawned_pid is not None
+                    else None
+                ),
+                "task": None,
+                "prompt_path": str(prompt_path),
+                "log_path": str(log_path),
+                "stderr_path": str(stderr_path),
+                "final_message_path": str(final_path),
+                "manifest_baseline_mtime_ns": _manifest_mtime_ns(
+                    current.get("manifest_path") or ""
+                ),
+                "budget": _backends.unknown_budget("no events yet on the new lane"),
+                "lane_change": lane_change,
+                "lane_changes": history,
+                "lineage": lineage,
+            }
+        )
+        if target_plan is not None:
+            current.update(
+                {
+                    "argv": list(target_plan.argv),
+                    "dialect": target_plan.dialect,
+                }
+            )
+            current.pop("directive", None)
+        else:
+            current.update(
+                {
+                    "argv": None,
+                    "dialect": None,
+                    "directive": {
+                        "attach_with": (
+                            f"reckon crew attach --run {run_id} --task <task-id>"
+                        ),
+                        "fences": {
+                            "delivery": str(current.get("manifest_path") or ""),
+                            "evidence": node.done_when,
+                            "scope": list(node.write_paths),
+                            "time": node.time_budget,
+                        },
+                        "prompt_path": str(prompt_path),
+                        "sandbox": {
+                            "tier": backend.get("sandbox"),
+                            "write_roots": current["sandbox_write_roots"],
+                        },
+                        "worktree": str(current.get("worktree") or ""),
+                    },
+                }
+            )
+        return current
+
+    return _mutate_pointer(run_id, move)
+
+
 def terminate(run_id: str) -> dict[str, Any]:
     """Signal a spawned run's process group to stop, and record that."""
 
