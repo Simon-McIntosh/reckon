@@ -71,6 +71,30 @@ recover` (a different capability — it classifies abandoned live pointers and
 repairs the record only, it does not resume or promote). Full operational
 detail: `~/.claude/skills/reckon-ship/references/outage-recovery.md`.
 
+### Editing this package: two invariants a gate will not always catch
+
+**The MCP surface is five tools.** `docs/AGENTS.md` states it and `_crew`'s own
+docstring restates it — *deliberately one tool over eight views rather than
+eight tools*. A new capability is a **view or an action on an existing tool**,
+never a sixth tool. Measured 2026-09-04: a recovery surface was added as a sixth
+top-level tool and `tests/test_ledger.py::test_the_mcp_surface_holds_at_five_tools`
+went red on main and stayed red, because the assertion lives in a module that
+sat outside the adding node's gate. The invariant was stated twice and its guard
+was scoped away, so **put that test in the gate of any node touching
+`reckon/mcp.py`.**
+
+**Never name a new module after a callable this package already exports.**
+`reckon/crew/` re-exports functions on the package, so a module created beside a
+same-named callable makes `reckon.crew.<name>` resolve to the callable until the
+submodule is explicitly imported and to the module afterwards — import-order
+dependent identity. Measured 2026-09-04: a new `recover.py` beside the
+long-standing `recover` callable turned six tests red at the merged head, and
+every one had passed inside the worktree that produced them. It is now
+`resumption.py`, and a test requires every submodule name outside
+`_MODULE_EXPORTS` to resolve to a module, so the next collision of this shape
+fails a test instead of turning main red. Check `_MODULE_EXPORTS` before adding
+a module here.
+
 ### Fan-out boundary
 
 In a crew-managed repository, investigation and review fan-out is `reckon crew dispatch` work under the investigate and review roles; harness-native background agents bypass the run ledger, manifests and calibration and are refused by the guard.

@@ -196,6 +196,34 @@ structured state (decisions, followups). Do not implement items marked
 2. `edit_plan(…, ops=[set status/impl + resolve driving followup + append next followup], expected_version=…)`.
 3. On 412 conflict: re-read + retry.
 
+## Reading state: ask the tool, and ask it for a view
+
+**Every routine question about plans, runs, sprints or budgets is an MCP read.
+Reaching for bash is almost always a sign the call was made wrongly, not that
+the surface is missing.** Measured 2026-09-04 across two coordinators: five
+`roadmap` calls omitted `view`, all five exceeded the response ceiling and
+spilled to a file answered with `jq`, and the identical sprint-scoped call with
+`view="summary"` returned about 900 characters against 99,329 — a hundred and
+ten times smaller, carrying completion, the ready and blocked counts, the
+finding counts and the critical path with its hours.
+
+- **Always pass `view`.** A single-project `roadmap` without one returns the
+  lossless legacy report, which at a real project's size cannot be returned at
+  all. `summary` answers nearly every question; ask for `raw` deliberately.
+- `crew(view="flight"|"budget"|"drain"|"live")` answers what `reckon crew
+  flight`/`preflight`/`drain`/`list` answer. Prefer the tool.
+- `read_plan(..., view="summary")` before `view="raw"`; raw is for editing, not
+  for looking.
+
+**When a shell command genuinely is the right tool, pass the repository rather
+than changing into it: `git -C /path/to/repo log …`, never `cd /path/to/repo &&
+git log …`.** A `cd` inside a compound command leaves the working directory
+unresolvable to the safety classifier, so an allow rule that would otherwise
+match cannot, and the operator is prompted to approve an ordinary read. Measured
+2026-09-04: repeated approval prompts on `git show` and `git log` despite both
+being allow-listed, every one of them caused by the compound form. The remedy is
+the command form, never a wider permission.
+
 ## Hard rules
 
 1. **Read the FULL selected scope before ANY dispatch.** On a single-plan target, read the complete plan. On a sprint target, read the sprint index, every member plan, transitive dependency, linked research document, and prior evidence record before dispatch. On a graph target, read every plan in the returned derived closure and its linked evidence.
