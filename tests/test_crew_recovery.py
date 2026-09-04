@@ -554,9 +554,8 @@ def _claude_stream_pointer(
 def test_stderr_wait_ceiling_classifies_blocked_not_abandoned(home) -> None:
     # First measured signal: the process is gone, no manifest was ever
     # written, and the only trace is the harness's own ceiling line on
-    # stderr. The previous behaviour read this as abandoned — true and
-    # useless, since the session is intact and a resume would collect the
-    # manifest — so it must now block and name the wait instead.
+    # stderr. The intact session makes the stop triageable: blocking and naming
+    # the wait directs a resume that can collect the manifest.
     pointer = _claude_stream_pointer(home, "r-ceiling", [])
     (Path(pointer["stderr_path"])).write_text(_BACKGROUND_WAIT_CEILING_STDERR)
     row = recovery.classify_pointer(pointer, now_seconds=time.time())
