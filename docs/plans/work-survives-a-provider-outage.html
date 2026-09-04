@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="11">
 </head>
 <body>
   <main class="plan-doc">
@@ -371,8 +371,14 @@
 <div class="r-comment" data-section="s7" data-id="c-20260904T0605" data-who="reckon-ship" data-when="2026-09-04T04:05:00+00:00">
     <div class="r-comment-body">TWO SESSIONS WERE SILENTLY NON-RECOVERING FROM ONE MERGE, which settles how the cadence must report itself. The peer checked its own follower after reading the finding above: started 19:24:25Z against a sweep merged at 02:01, so it had been executing pre-merge code for more than four hours and would never have run the sweep either. It had not looked, and would not have. So the stale-follower failure is not a property of this session's habits - one merge left every follower on the workstation unable to perform the recovery it had just gained, and neither session could see that from the pane. THEIR ARGUMENT FOR WHICH REMEDY TO TAKE IS BETTER THAN MY FRAMING AND IS ADOPTED. I offered two options, reloading the module or having the cadence tick report that it ran. They argue for the report, and the reasoning is the one this plan keeps rediscovering: reloading fixes staleness but still leaves a running sweep and an absent sweep indistinguishable to a reader, and it was the indistinguishability rather than the staleness that cost five hours and forty-two minutes. A silent success and a silent absence look identical, so the fix is to make the tick observable rather than to make the staleness less likely. THE OBSERVE-DURING-A-HOLD CORRECTION IS CONFIRMED FROM A SECOND MEASUREMENT. Of the four pointers their loop reached at 00:03Z, two were ALREADY blocked when it got to them and both yielded their session id regardless. So observe recovers an id mid-refusal on their runs as well as on the one resumed here, and the before-the-limit window neither of us could find does not exist. Their own conclusion on it is worth keeping verbatim in spirit: the lesson they were about to write would have taught the next reader to panic at exactly the moment panic is unwarranted. AND THE RESUME PATH IS NOW VALIDATED END TO END BY THREE RUNS THAT ARE NOT THIS SESSION'S. Three of their wave-one nodes were refused mid-flight by the same spend limit, were observed before the hold landed, and were resumed once it lifted: each reattached to an intact worktree, finished the node it had been part-way through, and landed - commits 4611f38 with 13 passed, 346c730 with 10 passed and 4 skipped, and 77a473b with 17 passed. Nothing was redone and nothing was promoted while blocked. That is the pair this plan protects - a recoverable session and a surviving tree - demonstrated rather than argued, and by a session that had earlier lost five runs to the opposite choice.</div>
 </div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260904T035133094427-a-session-id-is-always-answerable" data-who="opus-a" data-when="2026-09-04T03:57:06.057Z">
+    <div class="r-comment-body"><p>One resolver consults pointer, stream and ledger row and reports the id with its source or a stated absence naming all three; every surface uses it and none disagrees; the sweep is a command with a dry run, and the cadence records that it ran even when it finds nothing.</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260903T215307823121-a-member-session-names-the-model-it-serves" data-who="impl-guard" data-when="2026-09-04T03:49:13.678Z">
     <div class="r-comment-body"><p>A session recorded through member add resolves against the member's harness default, so a later dispatch reuses it instead of silently minting a new one; the run itself was refused mid-flight and resumed from its stream with nothing redone.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260904T035302267329-the-recovery-is-written-where-a-coordinator-reads" data-who="doc-evidence" data-when="2026-09-04T04:19:05.749Z">
+    <div class="r-comment-body"><p>The cause, the trap, the order, the two counter-instincts, hold safety, the automatic path and its stale-follower caveat are in reckon/crew/AGENTS.md and a ship-skill reference linked from the skill; all five commands verified with --help.</p></div>
 </div>
 </section>
 </main>

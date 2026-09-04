@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T06:19:14",
+  "updated": "2026-09-04T06:22:13",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -48742,6 +48742,372 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T035040670936-fleet-index-live-counts",
+        "plan": "served-surface-data-contracts",
+        "section": "\u00a73",
+        "node": "fleet-index-live-counts",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_fleet_index.py -q passes with every case \u00a73 names and uv run pytest tests/test_project_state.py -q stays green",
+          "estimated_hours": 3.0,
+          "goal": "The fleet index row for every mounted project is computed from that repository including a thirty-day plan-edit series",
+          "id": "fleet-index-live-counts",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T035040670936-fleet-index-live-counts/manifest.md",
+          "plan": "served-surface-data-contracts",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/fleet_index.py",
+            "reckon/serve.py",
+            "tests/test_fleet_index.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-serve",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "alias": "sonnet 5",
+          "backend": "claude",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T03:50:46Z",
+        "completed_at": "2026-09-04T04:19:52.051Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1736,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1746,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "43e82b3f198752754fec1713ae1f7942098e8fe9",
+        "commits": [
+          "ec16a7a1802653349db98b1dcf0eb00707975e49"
+        ],
+        "changed_lines": {
+          "added": 392,
+          "removed": 14,
+          "files": 3
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_index.py tests/test_project_state.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T035040670936-fleet-index-live-counts/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T035040670936-fleet-index-live-counts/manifest.md",
+        "scope_changed": false,
+        "session_id": "2e3d207a-9598-4cf9-8246-27918a0fdf06",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 1.21,
+          "rate_limit_type": "overage",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-10-01T00:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 1,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 291615,
+            "cache_read_input_tokens": 3461751,
+            "cache_read_input_tokens_cumulative": 9832870,
+            "inference_geo": "not_available",
+            "input_tokens": 2,
+            "input_tokens_cumulative": 68,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 12301,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 0.3913722000000006,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 3.25618
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 240.057,
+          "generated_tokens": 12301,
+          "generation_seconds": 186.59,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 31.1,
+          "machine_seconds": 53.467,
+          "peak_input_tokens": 310846,
+          "tokens_per_second": 65.93,
+          "wall_tokens_per_second": 51.24
+        },
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_fleet_index.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260904T034948675116-graph-index-and-detail",
+        "plan": "graph-derived-schedule",
+        "section": "\u00a73",
+        "node": "graph-index-and-detail",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_spa_graph_authority.py tests/test_spa_graph_geometry.py -q passes with every case \u00a73 names, including a non-null view for an unnamed live endpoint whose closure metrics equal the named case, the needs plan-graph-handle chip replacing the ship control, and the sprint-federation detail showing one card per closure member at the roadmap count",
+          "estimated_hours": 4.0,
+          "goal": "The Graph tab renders an index of every endpoint and a populated detail for named and unnamed endpoints alike",
+          "id": "graph-index-and-detail",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T034948675116-graph-index-and-detail/manifest.md",
+          "plan": "graph-derived-schedule",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "write_paths": [
+            "docs/ui/graph.jsx",
+            "docs/ui/graph.css",
+            "tests/test_spa_graph_authority.py",
+            "tests/test_spa_graph_geometry.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-graph",
+        "backend": "claude-opus",
+        "local": false,
+        "agent": {
+          "alias": "opus 5",
+          "backend": "claude-opus",
+          "effort": "high",
+          "launch": "cli",
+          "model": "claude-opus-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T03:49:55Z",
+        "completed_at": "2026-09-04T04:21:11.523Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1867,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1876,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "43e82b3f198752754fec1713ae1f7942098e8fe9",
+        "commits": [
+          "da169d2f26876f672504464471c205527545b8c1"
+        ],
+        "changed_lines": {
+          "added": 591,
+          "removed": 343,
+          "files": 4
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_graph_authority.py tests/test_spa_graph_geometry.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T034948675116-graph-index-and-detail/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T034948675116-graph-index-and-detail/manifest.md",
+        "scope_changed": false,
+        "session_id": "9f16b547-e517-4ba7-bf5f-481baee2a469",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 1.21,
+          "rate_limit_type": "overage",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-10-01T00:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 1,
+          "tokens": {
+            "cache_creation_input_tokens": 100243,
+            "cache_creation_input_tokens_cumulative": 198047,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 2380392,
+            "inference_geo": "not_available",
+            "input_tokens": 0,
+            "input_tokens_cumulative": 26,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 14187,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 0.046160999999999675,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 3.525471
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 333.932,
+          "generated_tokens": 14187,
+          "generation_seconds": 189.389,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 20.9,
+          "machine_seconds": 144.543,
+          "peak_input_tokens": 208749,
+          "tokens_per_second": 74.91,
+          "wall_tokens_per_second": 42.48
+        },
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_spa_graph_authority.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260904T035302267329-the-recovery-is-written-where-a-coordinator-reads",
+        "plan": "work-survives-a-provider-outage",
+        "section": "\u00a75",
+        "node": "the-recovery-is-written-where-a-coordinator-reads",
+        "node_definition": {
+          "done_when": "The recovery order has been recorded in this workstation's guidance since the first incident and was not applied at the second, four hours later, by a different session - so guidance that must be recalled at the moment of an incident has already failed twice. It is now written where a coordinator is already reading. TWO FILES, AND THE LEAD DIRECTED BOTH. reckon/crew/AGENTS.md is the narrowest scope owning crew dispatch and the command surface, and gains a recovery section. A new reference under the ship skill's references directory carries the operational detail, linked from the skill's own text in the same beat so it is reachable rather than orphaned - read that SKILL.md before writing, and follow how its existing references are introduced. WHAT BOTH MUST STATE, and each claim below is measured rather than asserted, so reproduce the figures. THE CAUSE: a per-request provider refusal kills the turn without killing the session; the run classifies blocked, its worktree survives, and its session remains on disk. THE TRAP: session_id null on a live pointer means only that observe has not run, never that a run is unresumable - resume_plan recovers it from the stream by itself. Two coordinators read that null as a verdict on the same day; the first promoted five runs, the second left one blocked for five hours and forty-two minutes. THE ORDER: inspect the worktree for committed and uncommitted work, resume the session, and reconcile only once resume is impossible - because promotion deletes the pointer and takes the resume path with it. THE COUNTER-INSTINCTS, both of which are wrong and both of which were followed: promoting first to tidy the fleet destroys what you were about to recover; and re-observing a refused run to investigate a hold used to renew it, which is fixed but explains the habit. WHAT IS SAFE DURING A HOLD: observe reads the local stream and never calls the provider, so it works mid-refusal - confirmed on two sessions' runs tonight, and the opposite belief would teach a reader to panic when panic is unwarranted. THE AUTOMATIC PATH: a sweep resumes lapsed holds on a cadence from the follow loop, and a follower started before that code landed will never run it, so a follower is cycled when recovery code lands. THE COMMANDS as they exist when this lands, verified by running each with --help rather than copied from this brief, since two of them are being added by concurrent nodes and one existing crew recover does something else entirely. Do not restate the plan; link it. Done when both files carry the cause, the trap, the order, the two counter-instincts, what is safe during a hold, the automatic path and its stale-follower caveat, and the verified commands; when the skill reference is linked from the ship skill's own text; when every command shown has been run with --help and matches; and when no figure appears that is not reproduced from a record. Report the naming-check result over both staged paths.",
+          "estimated_hours": 2.0,
+          "goal": "A coordinator meeting a provider refusal reads what to do, in the two places it will already be looking, instead of deducing it.",
+          "id": "the-recovery-is-written-where-a-coordinator-reads",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/recovery-docs-manifest.md",
+          "plan": "work-survives-a-provider-outage",
+          "requires_decisions": [],
+          "role": "documentation",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/AGENTS.md",
+            "/home/ITER/mcintos/.claude/skills/reckon-ship/references/outage-recovery.md"
+          ]
+        },
+        "role": "documentation",
+        "spec_level": "guided",
+        "member": "doc-evidence",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "alias": "sonnet 5",
+          "backend": "claude",
+          "effort": "high",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T03:53:10Z",
+        "completed_at": "2026-09-04T04:19:05.749Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1548,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1555,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "6b1670c64e0f23e3a3b403bf428f5cb44b0e67c3",
+        "commits": [
+          "e2960824c98e957fc5895d76e6870f7b513928fa"
+        ],
+        "changed_lines": {
+          "added": 40,
+          "removed": 0,
+          "files": 1
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "every documented command run with --help and diffed against the prose: crew observe, crew resume, crew resume-held, crew complete, crew recover",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/recovery-docs-manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/recovery-docs-manifest.md",
+        "scope_changed": false,
+        "session_id": "9897d715-5f3c-41c4-80c9-e75dc9baa084",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 1.21,
+          "rate_limit_type": "overage",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-10-01T00:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 1,
+          "tokens": {
+            "cache_creation_input_tokens": 129317,
+            "cache_creation_input_tokens_cumulative": 129317,
+            "cache_read_input_tokens": 1941424,
+            "cache_read_input_tokens_cumulative": 1941424,
+            "inference_geo": "not_available",
+            "input_tokens": 28,
+            "input_tokens_cumulative": 28,
+            "output_tokens": 6975,
+            "output_tokens_cumulative": 6975,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 0.9753587999999999,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 0.9753587999999999
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 93.165,
+          "generated_tokens": 6975,
+          "generation_seconds": 88.622,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 15.4,
+          "machine_seconds": 4.543,
+          "peak_input_tokens": 153738,
+          "tokens_per_second": 78.71,
+          "wall_tokens_per_second": 74.87
+        },
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "boundary_waiver": {
+          "reason": "The skill reference resolves into the main checkout rather than outside the repository: ~/.claude/skills/reckon-ship symlinks to Code/reckon/skills/reckon-ship, so a write path declared as an absolute home-directory path landed in the shared checkout and bypassed worktree isolation. The fence was right and the fault is the path I declared. Content audited before committing: the seven required subjects are present, all five commands verified with --help, and the skill link sits inside its existing recovery guidance. Committed separately from the main checkout as 9babe49, which is deliberately NOT recorded as this run's commit - a main-checkout commit diffed against the run's base sweeps in every peer commit landed since, which is how the scope validator first read this as delivering two of a peer's plan files.",
+          "waived_paths": [
+            "reckon/crew/AGENTS.md in peer worktree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16/graph-index-and-detail"
+          ]
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "documentation",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -48914,6 +49280,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 799
+    "_version": 802
   }
 }
