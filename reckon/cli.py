@@ -2051,17 +2051,29 @@ def crew_gc(
 @click.option("--run", "run_id", required=True, help="Run id to answer.")
 @click.option("--advice", required=True, help="The orchestrator's answer.")
 @click.option(
+    "--backend",
+    default="",
+    help="Move the blocked run to this backend while retaining its identity.",
+)
+@click.option(
+    "--reason",
+    default="",
+    help="Why a backend move is required; recorded in the run's lane history.",
+)
+@click.option(
     "--print-only",
     is_flag=True,
     help="Show the resume invocation without running it.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_resume(run_id, advice, print_only, pretty):
-    """Answer a stuck worker in the SAME session it got stuck in.
+def crew_resume(run_id, advice, backend, reason, print_only, pretty):
+    """Continue a blocked run, retaining its session when the backend can.
 
-    Advice only makes sense to a worker that still remembers what it tried, so
-    the resumed turn carries the prior context rather than restating it.
+    Without a backend override, the resumed turn carries the prior context.
+    A cross-harness move reports that it must start a fresh session.
     """
+    if reason and not backend:
+        raise click.UsageError("--reason requires --backend")
     crew_module, flight_module = _crew_modules()
     try:
         record = crew_module.read_pointer(run_id)
@@ -2071,6 +2083,19 @@ def crew_resume(run_id, advice, print_only, pretty):
             if project
             else None
         )
+        if backend:
+            from reckon.crew.dispatch import change_lane
+
+            moved = change_lane(
+                run_id,
+                backend,
+                reason,
+                config=config or {},
+                advice=advice,
+                launch=not print_only,
+            )
+            _emit({"ok": True, **moved}, pretty)
+            return
         plan = crew_module.resume_plan(run_id, advice, config=config)
     except crew_module.BudgetHold as exc:
         _emit(
@@ -2114,6 +2139,62 @@ def crew_resume(run_id, advice, print_only, pretty):
     )
     payload.update({"pid": pid, "log_path": str(log_path), "resumed_turn": turn})
     _emit(payload, pretty)
+
+
+@crew.command(name="redispatch")
+@click.option("--run", "run_id", required=True, help="Run id to move.")
+@click.option("--backend", required=True, help="Destination backend.")
+@click.option(
+    "--reason",
+    required=True,
+    help="Why the run must change backend; recorded in its lane history.",
+)
+@click.option(
+    "--advice",
+    default="",
+    help="Continuation advice for a reusable session or fresh worker.",
+)
+@click.option(
+    "--print-only",
+    is_flag=True,
+    help="Show the lane-change launch without stopping or starting a worker.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_redispatch(run_id, backend, reason, advice, print_only, pretty):
+    """Move a working run to another backend without replacing its identity."""
+    crew_module, flight_module = _crew_modules()
+    try:
+        record = crew_module.read_pointer(run_id)
+        project = str(record.get("project") or "")
+        config = (
+            _resolved_flight(flight_module, project, record.get("repo"), ())
+            if project
+            else {}
+        )
+        from reckon.crew.dispatch import change_lane
+
+        moved = change_lane(
+            run_id,
+            backend,
+            reason,
+            config=config,
+            advice=advice,
+            launch=not print_only,
+        )
+    except crew_module.BudgetHold as exc:
+        _emit(
+            {
+                "ok": False,
+                "error": "budget-hold",
+                "detail": str(exc),
+                "hold": exc.verdict,
+            },
+            pretty,
+        )
+        raise click.exceptions.Exit(3) from exc
+    except crew_module.CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit({"ok": True, **moved}, pretty)
 
 
 @crew.command(name="stop")
