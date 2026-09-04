@@ -22,12 +22,14 @@
   <meta name="plan-tags" content="reckon-tooling,spa">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-informs" content="artifact-feeds-and-reader,graph-derived-schedule,viewport-containment">
-  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,design/reckon-spa-handoff.md">
+  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,docs/ui/state-loader.js,docs/ui/graph.css,docs/ui/reader.css,docs/ui/sprint.jsx,tests/test_spa_vertical_scroll.py,tests/test_spa_sprints_geometry.py">
   <title>Read It Against The Canvas | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="4">
+<meta name="plan-commits" content="85844ec,8a87d07,f967b11">
+<meta name="plan-impl" content="0.38">
 </head>
 <body>
 <main class="plan-doc">
@@ -222,6 +224,9 @@
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260904T120255587186-every-view-scrolls" data-who="s16-scroll" data-when="2026-09-04T12:14:27Z">
     <div class="r-comment-body"><p>every routable view and reader kind now scrolls inside the viewport: graph.css gained the min-height rule it lacked entirely, the reader gained it for research, evidence and figures, and the test enumerates views from the route module's published list rather than a hardcoded set so a view added later is covered without editing it. This is the rule the shell plan stated and applied to Crew alone, which is why it recurred on four surfaces</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260904T122646955986-sprint-cards-carry-what-is-known" data-who="s16-sprintcards" data-when="2026-09-04T12:34:26Z">
+    <div class="r-comment-body"><p>sprint cards now print the hours and completion the layout already computed and the renderer was discarding, and the depth columns carry their labels: 21 passed. The labels are rendered from the layout's own returned column.label rather than a literal restated in the sprint module, so the sprint diagram and the Graph detail cannot disagree about what a depth column is called — one authority rather than two copies</p></div>
 </div>
 </section>
 </main>
