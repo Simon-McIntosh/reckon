@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="125">
+<meta name="plan-version" content="127">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,~/.config/reckon/crew/reports/local-effort-probe.md,~/.config/reckon/crew/reports/read-only-tier-delivery-discriminator.md,~/.config/reckon/crew/reports/test-attribution-reuse-map.md,~/.config/reckon/crew/reports/context-fit-reuse-map.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md,docs/evidence/archive/clive-local-workers-landed.html,docs/figures/clive-local-workers/local-lane-model-outcomes.svg">
-<meta name="plan-impl" content="0.96">
+<meta name="plan-impl" content="0.98">
 <meta name="plan-commits" content="a91abe9,a56eae9,42a339f,a2e488b,ca6288d,0226835,e099fc5,5dc92ce,8b80bdc,8abc064,6f99ac2,7f41635,1908947,da054f7,1a77ce8,3ff87b2,5717d69,1badb66,1b7e72e,9b609d9,34e1d10,73ed06d,31d4e8d">
 </head>
 <body>
@@ -186,44 +186,25 @@
       </tbody>
     </table>
 
-    <h2 id="s11">&#167;11 &mdash; The dispatch grade the fleet is missing is context fit, and it is derivable</h2>
-    <p><strong>The fleet now spans eight backends</strong> &mdash; two local releases, four
-    codex models, sonnet and opus &mdash; against one declared dial with three values,
-    <code>--spec-level exact|guided|open</code>, designed when there were effectively two
-    lanes. The obvious response is a finer declared grade. That is the wrong move, and this
-    session is the evidence: I mis-sized nodes for GLM's window <em>twice</em>, while
-    actively working on the context problem, with the numbers in front of me. An
-    orchestrator will not hold eight models' windows in mind, and a dial that depends on it
-    doing so fails silently and expensively.</p>
-    <p><strong>A finer grade already exists, and it is learned rather than declared.</strong>
-    The capability cache derives a <code>competence_horizon_hours</code> per configuration
-    from measured outcomes &mdash; the largest node size that configuration has actually
-    passed &mdash; alongside a success curve and a speed distribution, and
-    <code>_competence_verdict</code> already refuses a dispatch that exceeds it with the
-    typed capability refusal at exit 5. That is the right shape: measured, per
-    configuration, refusing before a worktree exists. It needs the shadow programme to
-    populate it, not a new vocabulary.</p>
-    <p><strong>What is missing is one dimension nothing models at all.</strong> The flight
-    schema has no notion of a backend's usable context window, and nothing estimates a
-    node's context need, so the constraint that actually killed work tonight is invisible to
-    the dispatcher. The wrapper already knows the number and prints it &mdash; 73,728 usable
-    input tokens for GLM against 492,288 for flash. The node's need is equally computable:
-    standing instruction load, plus the declared write paths, plus the files the node names.
-    Both sides are knowable at dispatch, which makes this a refusal rather than a judgement.</p>
-    <p>So the answer to a wider fleet is not more dials. Keep <code>--spec-level</code> as
-    the single declared signal, because who owns the design is genuinely not derivable from
-    the node; let the ledger grade capability, which it already does; and <strong>compute
-    context fit and refuse a backend that cannot hold the work</strong>, which turns two
-    silent runtime deaths into one refusal naming the shortfall.</p>
-    <table>
-      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
-      <tbody>
-        <tr><td>The window is declared</td><td>Each backend carries its usable input budget in flight config, validated through the layered schema with leaf provenance and regenerated into both derived artifacts; a backend that declares none is treated as unbounded rather than as zero.</td></tr>
-        <tr><td>The need is estimated</td><td>A dispatch computes the node's context need from the standing instruction load plus the declared write paths and named files, and records the estimate and its inputs on the run so a later reader can check the arithmetic against what actually happened.</td></tr>
-        <tr><td>A misfit is refused, not discovered</td><td>A node whose estimated need exceeds the resolved backend's window is refused before worktree creation through the existing capability envelope at exit 5, naming the estimate, the window and the shortfall. Asserted by test, including the negative: a node that fits is dispatched unchanged, and an unbounded backend never refuses.</td></tr>
-        <tr><td>Checked against the two real failures</td><td>Replaying the two GLM nodes stopped tonight against their recorded write paths produces a refusal, and the flash runs that succeeded on the same repository do not.</td></tr>
-      </tbody>
-    </table>
+    <section id="s11" class="section-landed">
+      <header><span class="badge badge-shipped">&#10003; landed 2026-09-04</span>
+        <h2>&#167;11 &mdash; The dispatch grade the fleet was missing is context fit</h2></header>
+      <p class="landed-summary">All four measures hold. Each backend declares a usable input
+        budget in flight config, validated through the layered schema with leaf provenance and
+        regenerated into both derived artifacts; a backend declaring none is treated as
+        <em>unbounded</em> rather than as zero and never refuses. A dispatch computes the
+        node's need from the standing instruction load plus its declared write paths and named
+        files, and records the estimate with its inputs on the run so a later reader can check
+        the arithmetic. A node whose need exceeds the resolved window is refused
+        <strong>before worktree creation</strong> through the existing capability envelope at
+        exit 5, naming the estimate, the window and the shortfall &mdash; and the negative is
+        asserted, so a node that fits dispatches unchanged. 78 passed and 1 failed against a
+        base of 71 passed and the identical single failure, so zero added; the generated pair
+        was verified current by re-running <code>scripts/regen_flight_schema.py</code> and
+        getting no diff. Full record:
+        <a href="/reckon/evidence/archive/clive-local-workers-landed#s11-context-fit">§11 landed</a>
+        (commit <code>9479569</code>).</p>
+    </section>
 
     <h2 id="s10">&#167;10 &mdash; An effort scan on real nodes, because the trivial probe was the wrong instrument</h2>
     <p><strong>&#167;8 concluded too much from too little, and this section is the correction.</strong>
@@ -1101,6 +1082,12 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-20260903T1455" data-who="reckon-ship" data-when="2026-09-03T12:55:00+00:00">
     <div class="r-comment-body">THE DECLARED CEILING COUNTS THE INSTRUCTION FLOOR BUT RESERVES NOTHING FOR IT, AND THAT IS WHY GLM DIES. Asked by the lead: does the budget account for the prompt and skills. Measured from per-turn usage records. It counts them — the fixed overhead lands inside input_tokens — and the ceiling was computed without regard to them. Turn one of a completed flash run reports 50,392 input tokens before any work: the harness system prompt, the tool definitions, fourteen loaded skills including several no implement worker needs, and the composed node prompt. That floor is identical whichever model runs. THE ARITHMETIC IS THE FINDING. The wrapper computes an output reservation of window over four, capped at 32,000, and exports window minus reservation as the input ceiling. For flash that is 492,288 minus 32,000, so 460,288, against which a 50,392 floor is 11 percent and irrelevant. For GLM it is 98,304 minus 24,576, so 73,728, against which the same floor is 68 percent — leaving about 23,336 tokens of actual working room. At roughly 2,118 thinking records per turn, five turns exhausts that, which is exactly the observed death, and the last accounted request before the refusal reported 47,758 input, consistent with a floor near 50,000 and almost nothing else. So nothing in the chain is misconfigured: the model flag is passed, the catalog window is read, the reservation is subtracted, the ceiling is exported, and the deployed wrapper is generated from the committed fix. The ceiling is simply the wrong quantity to compare a node against, because two thirds of it is spent before the node begins. THREE CONSEQUENCES. This section's estimate must compare a node's need against window minus output reservation MINUS the measured instruction floor, not against the exported ceiling — the standing instruction load it already names IS this floor, and nobody had measured it. The floor is reducible and that is the cheapest lever available: fourteen skills are loaded into every worker and an implement node needs a small subset, so trimming the skill set for a small-window backend buys working room directly. And the floor should be measured per backend rather than assumed, since it varies with the skills and tools a launch actually loads.</div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20260904T114050960009-clw-context-fit-refusal" data-who="s15-ctxfit" data-when="2026-09-04T12:09:51Z">
+    <div class="r-comment-body"><p>78 passed and 1 failed against a base of 71 passed and 1 failed with the identical pre-existing failure, so zero added and all 7 new cases pass; each backend now declares a usable input budget validated through the layered schema and regenerated into both derived artifacts, a backend declaring none is unbounded and never refuses, a dispatch computes the node's need from the standing instruction load plus its declared write paths and named files and records the estimate with its inputs, and a node exceeding the window is refused at exit 5 naming the estimate, the window and the shortfall - verified independently by re-running scripts/regen_flight_schema.py, which produced no diff</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-clw-context-fit-landed" data-who="reckon-ship" data-when="2026-09-04T14:19:03Z">
+    <div class="r-comment-body">Context fit is now a refusal rather than a discovery - commit 9479569, 590 insertions across six paths; gate uv run pytest tests/test_flight.py tests/test_crew_routes.py -q gave 78 passed and 1 failed against a base of 71 passed and the identical single failure, so zero added and all seven new cases pass; measure: each backend declares a usable input budget through the layered schema with leaf provenance and regenerated into both derived artifacts, a backend declaring none is unbounded and never refuses, a dispatch computes the need from the standing instruction load plus declared write paths and named files and records the estimate with its inputs on the run, and a node exceeding the window is refused before worktree creation at exit 5 naming the estimate, the window and the shortfall, with the negative asserted so a fitting node dispatches unchanged. I verified the generated pair independently rather than trusting the manifest: re-running scripts/regen_flight_schema.py produced no diff. Two things about how this node ran are worth keeping. It refused correctly on its first attempt because my write scope named reckon/schema/flight-defaults.yaml, which the regeneration script does not write, and omitted docs/_shared/flight.schema.json, which it does and which the test gate asserts byte-identically - so the fence made exact evidence impossible and the worker edited nothing rather than reaching outside it. I granted the path on the live pointer and resumed the session, correcting both halves of the brief in the advice; it is recorded --scope-changed so it measures neither the estimate nor the worker. The remaining pre-existing failure is tests/test_flight.py::test_retired_backend_concurrency_is_ignored_with_a_runtime_warning, whose compatibility fixture omits the now-required spec_level - the third file this session where that change surfaced, and folded as its own repair.</div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-20260903-test-role-designed" data-who="reckon-ship" data-when="2026-09-03T05:20:00Z">
     <div class="r-comment-body">§12 added on the lead's design, and the investigation behind it exonerates the framework and indicts me. gates.suite_command is undeclared and the worker protocol makes baseline_suite and after_suite required only when it is armed, so the harness never asked any worker for a full suite. Every full-suite run this session came from text I wrote into done-whens. reckon's test rules are not too strict; the orchestrator was. The real gap is structural and the lead named it exactly: an implementation worker fenced to a few paths cannot open the files a suite-wide failure lives in, so asking it to triage asks it to reason about what it is blind to by construction, and the best it can produce is an absolute count that measures the fleet rather than its change. Nothing pushes back either — the EVIDENCE fence states the done-when and never states the division of labour. And the test role already exists as a label rather than a contract: execution_capable and a sandbox tier, no time budget for a suite that takes 700 to 900 seconds, no distinct prompt, no different deliverable. Nineteen runs have gone through it, each receiving the implementation prompt with ROLE test printed as a word. The section gives it the contract the work actually has — read the whole repository because triage requires opening the failing file, write only its report because a verifier that fixes is an implementation worker under the wrong name and its verdict stops being independent, deliver an attribution rather than a verdict, and receive the base, the head and the merged commits because attribution needs the candidate set. Denominator grows to 21; impl 16 of 21.</div>
