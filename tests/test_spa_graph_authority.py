@@ -13,7 +13,7 @@ from unittest import SkipTest
 
 from reckon._plan_html import parse_meta
 from reckon.mcp import _roadmap
-from reckon.serve import discover_plans, load_mounts
+from reckon.serve import _attach_ready_set, discover_plans, load_mounts
 from tests.spa_browser_harness import (
     file_spa,
     installed_browser_or_skip,
@@ -72,6 +72,15 @@ def _authority_state(
     authored_handle = (
         parse_meta(docs / "plans" / f"{endpoint_slug}.html").get("graph_handle") or ""
     )
+    endpoints = [
+        deepcopy(row)
+        for row in discovered.get("endpoints", [])
+        if row.get("slug") == endpoint_slug
+    ]
+    if len(endpoints) != 1:
+        raise AssertionError(
+            f"composed state has {len(endpoints)} endpoint rows for {endpoint_slug}"
+        )
     next(item for item in inventory if item["slug"] == endpoint_slug)[
         "graph_handle"
     ] = authored_handle
@@ -92,6 +101,7 @@ def _authority_state(
         "sprint": None,
         "blockers": discovered.get("blockers", []),
         "timeline": discovered.get("timeline", []),
+        "endpoints": endpoints,
         "attachment_relations": [],
         "plans": {item["slug"]: item for item in inventory},
     }
@@ -223,6 +233,8 @@ def _capture_authority(
     without_handle = deepcopy(state)
     for item in without_handle["inventory"]:
         item.pop("graph_handle", None)
+    for endpoint in without_handle["endpoints"]:
+        endpoint["handle"] = None
     without_handle["plans"] = {
         item["slug"]: item for item in without_handle["inventory"]
     }
@@ -363,6 +375,8 @@ def _sprint_federation_state() -> tuple[dict, int]:
 
 def test_the_detail_draws_one_card_per_closure_member_at_both_widths() -> None:
     state, member_count = _sprint_federation_state()
+    endpoint_row = state["endpoints"][0]
+    expected_titles = {member["title"] for member in endpoint_row["members"]}
     for width in PUBLICATION_WIDTHS:
         measured = _rendered_graph(state, width)
         assert measured["viewport"]["width"] == width
@@ -373,7 +387,8 @@ def test_the_detail_draws_one_card_per_closure_member_at_both_widths() -> None:
             f"{width}px rendered {measured['nodeCardCount']} cards "
             f"for {member_count} roadmap members"
         )
-        assert measured["indexRowCount"] >= 1
+        assert measured["indexRowCount"] == len(state["endpoints"])
+        assert {node["title"] for node in measured["nodeCards"]} == expected_titles
         assert measured["shipControl"] == "/reckon-ship graph:sprint-federation"
         assert measured["needsHandle"] == ""
         assert measured["canvas"]["width"] > 0
@@ -384,6 +399,8 @@ def test_an_unnamed_endpoint_renders_the_same_detail_without_a_ship_target() -> 
     unnamed = deepcopy(state)
     for item in unnamed["inventory"]:
         item.pop("graph_handle", None)
+    for endpoint in unnamed["endpoints"]:
+        endpoint["handle"] = None
     unnamed["plans"] = {item["slug"]: item for item in unnamed["inventory"]}
 
     measured = _rendered_graph(unnamed, PUBLICATION_WIDTHS[0])
@@ -391,6 +408,9 @@ def test_an_unnamed_endpoint_renders_the_same_detail_without_a_ship_target() -> 
     assert measured["emptyMessage"] == ""
     assert measured["handleToken"] == "unnamed"
     assert measured["nodeCardCount"] == member_count
+    assert {node["title"] for node in measured["nodeCards"]} == {
+        member["title"] for member in unnamed["endpoints"][0]["members"]
+    }
     # No invented command; the chip names the authoring act instead.
     assert measured["shipControl"] == ""
     assert measured["needsHandle"] == "needs plan-graph-handle"
@@ -474,6 +494,19 @@ UNNAMED_INVENTORY = [
         "decisions": [],
     },
 ]
+
+
+def test_http_roadmap_projection_places_endpoint_rows_in_graph_state() -> None:
+    state = {
+        "inventory": deepcopy(UNNAMED_INVENTORY),
+        "sprints": [],
+        "active_sprint_id": None,
+    }
+
+    _attach_ready_set(state, "alpha")
+
+    assert state["endpoints"] == state["ready_set"]["endpoints"]
+    assert state["endpoints"]
 
 
 def test_an_unnamed_endpoint_derives_the_same_closure_as_a_named_one() -> None:
