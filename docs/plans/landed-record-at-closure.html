@@ -16,14 +16,14 @@
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-capability-risk" content="moderate">
-  <meta name="plan-sprint" content="S13">
+  <meta name="plan-sprint" content="S17">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,evidence">
   <title>A Landed Record Should Mean Landed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-08-24">
-<meta name="plan-version" content="3">
+<meta name="plan-modified" content="2026-09-04">
+<meta name="plan-version" content="4">
 <meta name="plan-impl" content="0.5">
 </head>
 <body>
@@ -143,9 +143,15 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-lrc-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship landed-record-at-closure" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-lrc-001" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship landed-record-at-closure" data-resolved-at="2026-09-04T08:50:41+00:00" data-resolved-by="agent">
     <h4 class="r-fu-title">Stop writing the third record, then make closure require the synthesis</h4>
     <div class="r-fu-body"><p>The order matters because the second step is what makes the first safe. Collapse the per-node write to one — the section-anchored plan comment — and leave the run ledger to carry the measurements it already carries. Then make the write boundary refuse a plan-terminal status with no <code>plan-evidence-for</code> record, so deferring the synthesis cannot turn into omitting it; the existing continuation refusal is the working precedent. Then reconcile the records already written in the accreted shape, which is a placement question rather than a content one: a record whose plan is terminal is already what it claims to be, and one whose plan is still active does not belong under an archive path.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship landed-record-at-closure</pre>
+    <p class="r-fu-outcome">The per-landing record collapse, terminal evidence refusal, evidence synthesis machinery and archive-path repair landed; only this plan's closure synthesis remains.</p>
+    </article>
+<article class="r-fu" data-id="f-lrc-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="agent" data-written-at="2026-09-04 10:00" data-recommends-skill="/reckon-ship landed-record-at-closure" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Write the closure synthesis and close the plan</h4>
+    <div class="r-fu-body">Create this plan's plan-evidence-for synthesis from its section comments and committed run ledger, then close only after the terminal evidence guard accepts it. Do not mark the plan shipped or done while that evidence resource is absent.</div>
     <pre class="r-fu-prompt">/reckon-ship landed-record-at-closure</pre>
     </article>
 </section>
@@ -159,6 +165,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260824T203835009265-evidence-synthesis-at-closure" data-who="codex-m" data-when="2026-08-24T20:48:47Z">
     <div class="r-comment-body"><p>The landed record is composed once at closure from plan comments and the run ledger, reproducibly, rather than accreted per node.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260904T085041432430" data-who="agent" data-when="2026-09-04">
+    <div class="r-comment-body">TRIAGE VERDICT — the mechanism work landed, but closure is still wanted. Re-homed to S17 for one bounded synthesis-and-close continuation because the required plan-evidence-for resource is absent; terminal status is intentionally withheld.</div>
 </div>
 </section>
 </main>

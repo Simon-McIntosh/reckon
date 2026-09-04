@@ -16,14 +16,14 @@
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-capability-risk" content="moderate">
-  <meta name="plan-sprint" content="S12">
+  <meta name="plan-sprint" content="S17">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling">
   <title>Blank Project Surface | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-02">
-<meta name="plan-version" content="8">
+<meta name="plan-modified" content="2026-09-04">
+<meta name="plan-version" content="9">
 <meta name="plan-commits" content="edd448891e6ab661fecc7cd9a3a7c42bd4c64837">
 <meta name="plan-artifacts" content="docs/research/spa-project-render-fault.html,docs/evidence/archive/blank-project-surface-landed.html">
 <meta name="plan-impl" content="0.33">
@@ -260,12 +260,18 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-bps-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-02" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-bps-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-02" data-recommends-skill="" data-resolved-at="2026-09-04T08:50:40+00:00" data-resolved-by="agent">
     <h4 class="r-fu-title">Find the render fault behind the blank nova surface</h4>
     <div class="r-fu-body"><p>Authoring complete. §2 is the entry point: name the module, the
           expression and the value that stops the render, and explain why this
           project reaches it and another does not. §3 and §4 follow that finding.</p></div>
     <pre class="r-fu-prompt">/reckon-ship blank-project-surface §2</pre>
+    <p class="r-fu-outcome">The render-fault diagnosis in §2 landed in edd4488; starting from root-cause discovery is stale.</p>
+    </article>
+<article class="r-fu" data-id="f-bps-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="agent" data-written-at="2026-09-04 10:00" data-recommends-skill="/reckon-ship blank-project-surface §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land the legible fallback and browser-free regression</h4>
+    <div class="r-fu-body">The root cause is already established. Continue with the user-visible fallback in §3 and the browser-free regression in §4.</div>
+    <pre class="r-fu-prompt">/reckon-ship blank-project-surface §3</pre>
     </article>
 </section>
 
@@ -274,7 +280,10 @@
     <div class="r-comment-body"><p>Root cause: the managed service predated commit 737340f, so every mount served 12 of 20 /_ui modules and the shell fell back silently to zero children. Independently verified; restart repaired all mounts. Payload scale and distributed state format excluded.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260902T180750863915-shell-fallback-is-legible" data-who="spa-render-fault" data-when="2026-09-02T18:14:34Z">
-    <div class="r-comment-body"><p>Backend budget exhaustion, not a work defect: stream.jsonl records turn.failed &#x27;You&#x27;ve hit your usage limit&#x27;, reset 2026-09-08 07:38. Died during baseline suite capture, no commits, clean tree.</p></div>
+    <div class="r-comment-body"><p>Backend budget exhaustion, not a work defect: stream.jsonl records turn.failed 'You've hit your usage limit', reset 2026-09-08 07:38. Died during baseline suite capture, no commits, clean tree.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260904T085040922989" data-who="agent" data-when="2026-09-04">
+    <div class="r-comment-body">TRIAGE VERDICT — still wanted. Re-homed to S17. Root-cause discovery already landed, so the old §2 instruction is resolved; the remaining home is the fallback and regression work beginning at §3.</div>
 </div>
 </section>
 </main>
