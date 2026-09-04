@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 <meta name="plan-impl" content="0.6">
 </head>
 <body>
@@ -333,14 +333,14 @@
       </p>
     <p class="r-dec-rat"></p>
     </div>
-<div class="r-dec" data-key="lane-change-verb" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="lane-change-verb" data-choice="both" data-by="reckon-ship" data-when="2026-09-04T07:33:35+00:00">
     <p class="r-dec-q">What shape moves a run between lanes?</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="resume-backend">A backend override on resume</button>
       <button class="r-opt" data-value="redispatch-verb">A redispatch verb keeping node id and worktree</button>
-      <button class="r-opt" data-value="both">Both, sharing one implementation</button>
+      <button class="r-opt chosen" data-value="both">Both, sharing one implementation</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">One implementation behind two entry points, because the entry points answer different questions while the operation underneath is identical. A backend override on resume is the verb when a run is BLOCKED and its lane is spent - the live case being a run held by a usage limit resetting four days out, where resume never becomes available and a lane change is the only lawful move. A redispatch keeping the node id is the verb when a run is WORKING and the coordinator wants it elsewhere, which is how the gap was first reported. Underneath both are one act: relaunch this node&#x27;s worker on a different backend, keeping its node id, its worktree and its ledger identity. Two implementations of that would be two code paths able to disagree about one run, which is this session&#x27;s most repeated defect - a pointer and a stream disagreeing about a session, a CLI and an MCP surface disagreeing about a verb, a package attribute resolving to two objects by import order. Choosing a single entry point was rejected because each covers a state the other cannot: an override on resume cannot move a run that is still working, and a redispatch cannot answer a NEEDS-HELP brief inside the session that raised it.</p>
     </div>
 </section>
 
