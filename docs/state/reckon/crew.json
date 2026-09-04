@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T10:38:42",
+  "updated": "2026-09-04T10:44:09",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -53566,6 +53566,120 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T082813071312-the-spawn-guard-is-wired-where-it-fires",
+        "plan": "native-agent-dispatch-guard",
+        "section": "\u00a73",
+        "node": "the-spawn-guard-is-wired-where-it-fires",
+        "node_definition": {
+          "done_when": "reckon/hooks/native_agent_guard.py exists, is executable at 6,952 bytes, and is wired to NOTHING - verified four ways, all negative: zero occurrences of PreToolUse anywhere in the working tree, no hooks key in any of the four settings files, no reference to the hooks package from reckon or reckon/crew, and no hook logic in the sync command the plan named as its owner. So a working guard sits on disk while the rule it enforces - that a crew-managed repository never fans out through native harness agents - is carried by prose alone, which is the exact failure the plan's rule-locality section exists to fix, and which has already been bypassed once. The lead has authorised writing to harness settings for this node specifically. Done when a command registers the guard as a PreToolUse hook in the user's harness settings at ~/.claude/settings.json, idempotently - running it twice leaves the file byte-identical, asserted - and with a removal path that leaves the file as found, also asserted. THE FILE IS THE OPERATOR'S AND MUST BE TREATED AS SUCH: preserve every existing key including permissions, autoMode, enabledPlugins and modelSettings; never reorder unrelated fields; never touch the deny list; and write through a read-modify-write that fails loudly rather than truncating if the file cannot be parsed. A backup exists at the coordinator's scratchpad but the node must not rely on it. The guard script itself stays in reckon so a fix reaches every synced repository, and the registration references it by absolute path resolved from the installed package rather than a copied duplicate. Report what the settings file contained before and after, key by key, so the diff is auditable in the manifest. ASSERT AGAINST A TEMPORARY SETTINGS FILE, never the real one: the tests point the target path at a temp file, and the real ~/.claude/settings.json must be asserted byte-identical after the suite runs. At least one added assertion must fail against base beae3d8. Measured over tests/test_guard_install.py in one invocation: zero failures against its count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 2.0,
+          "goal": "The spawn guard is registered in harness settings by a command, so the rule it enforces is mechanical rather than prose.",
+          "id": "the-spawn-guard-is-wired-where-it-fires",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/guard-install-manifest.md",
+          "plan": "native-agent-dispatch-guard",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/cli.py",
+            "tests/test_guard_install.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-p",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T08:28:30Z",
+        "completed_at": "2026-09-04T08:42:49Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 859,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 859,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "cb8591ea1b92de6b549e6f264ad0da452892dc7b",
+        "commits": [
+          "e196e009b37e34636143fb0f0001ef99578f2866"
+        ],
+        "changed_lines": {
+          "added": 345,
+          "removed": 1,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_guard_install.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vgi.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/guard-install-manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06b88-a113-70e2-9f89-378f00502284",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 6250752,
+            "cached_input_tokens_cumulative": 6250752,
+            "input_tokens": 6384417,
+            "input_tokens_cumulative": 6384417,
+            "output_tokens": 36652,
+            "output_tokens_cumulative": 36652,
+            "reasoning_output_tokens": 15413,
+            "reasoning_output_tokens_cumulative": 15413
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 52065,
+          "peak_input_tokens": 12635169
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -53738,6 +53852,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 868
+    "_version": 869
   }
 }
