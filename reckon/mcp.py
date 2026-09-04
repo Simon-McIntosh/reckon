@@ -435,6 +435,56 @@ def _read_plan(
     return result
 
 
+def _read_plan_tool(
+    project: str | None = None,
+    slug: str | None = None,
+    with_schema: bool = False,
+    checkout_path: str | None = None,
+    status: str | None = None,
+    doc_type: str | None = None,
+    sprint: str | None = None,
+    milestone: str | None = None,
+    owner: str | None = None,
+    search: str | None = None,
+    limit: int | None = None,
+    include_followups: bool = True,
+    include_questions: bool = True,
+    resource: dict[str, Any] | None = None,
+    view: str | None = None,
+    cursor: str | None = None,
+    include_prompts: bool = False,
+) -> dict[str, Any]:
+    """Return a transport-bounded plan or project read by default.
+
+    Typed ``summary`` is the default for a selected project or resource. Request
+    ``view='raw'`` explicitly for the lossless storage response. The explicit
+    legacy schema injector remains unchanged for callers using ``with_schema``.
+    """
+
+    selected_view = view
+    if view is None and not with_schema and project not in (None, "*"):
+        selected_view = "summary"
+    return _read_plan(
+        project=project,
+        slug=slug,
+        with_schema=with_schema,
+        checkout_path=checkout_path,
+        status=status,
+        doc_type=doc_type,
+        sprint=sprint,
+        milestone=milestone,
+        owner=owner,
+        search=search,
+        limit=limit,
+        include_followups=include_followups,
+        include_questions=include_questions,
+        resource=resource,
+        view=selected_view,
+        cursor=cursor,
+        include_prompts=include_prompts,
+    )
+
+
 def _read_archived_resource(
     project: str,
     slug: str,
@@ -3657,6 +3707,72 @@ def _audit(
     }
 
 
+def _audit_tool(
+    project: str | None = None,
+    checkout_path: str | None = None,
+    view: str | None = None,
+    cursor: str | None = None,
+    limit: int | None = None,
+    path: str | None = None,
+    check_links: bool = False,
+) -> dict[str, Any]:
+    """Return a compact project audit by default and preserve document reads.
+
+    Project audits default to ``summary`` because their lossless finding lists
+    routinely exceed the MCP transport. Request ``view='raw'`` explicitly for
+    those lists. A path without a view still returns that document's own exact
+    findings, matching the command-line document audit.
+    """
+
+    selected_view = view
+    if view is None and path is None and project is not None:
+        selected_view = "summary"
+    return _audit(
+        project=project,
+        checkout_path=checkout_path,
+        view=selected_view,
+        cursor=cursor,
+        limit=limit,
+        path=path,
+        check_links=check_links,
+    )
+
+
+def _reject_unknown_tool_arguments(tool_name: str) -> None:
+    """Make one FastMCP entry refuse misspelled parameters before dispatch."""
+
+    from pydantic import ConfigDict, model_validator
+
+    tool = next(
+        item for item in mcp._tool_manager.list_tools() if item.name == tool_name
+    )
+    argument_model = tool.fn_metadata.arg_model
+    accepted = tuple(argument_model.model_fields)
+    accepted_text = ", ".join(accepted)
+
+    class StrictArguments(argument_model):
+        model_config = ConfigDict(
+            **dict(argument_model.model_config),
+            extra="forbid",
+        )
+
+        @model_validator(mode="before")
+        @classmethod
+        def reject_unknown(cls, value: Any) -> Any:
+            if isinstance(value, dict):
+                unknown = sorted(set(value) - set(accepted))
+                if unknown:
+                    names = ", ".join(unknown)
+                    raise ValueError(
+                        f"Unknown parameters: {names}. "
+                        f"Accepted parameters: {accepted_text}."
+                    )
+            return value
+
+    tool.fn_metadata.arg_model = StrictArguments
+    tool.parameters = StrictArguments.model_json_schema(by_alias=True)
+
+
 # ── Register tools with SDK ────────────────────────────────────────────────
 #
 # Agent-facing MCP surface = read_plan + edit_plan + roadmap + audit + crew.
@@ -3670,11 +3786,13 @@ def _audit(
 # coordinator can answer a provider refusal without shelling out to the CLI.
 
 if mcp is not None:
-    read_plan_tool = mcp.tool()(_read_plan)
+    read_plan_tool = mcp.tool(name="_read_plan")(_read_plan_tool)
     edit_plan_tool = mcp.tool(name="_edit_plan")(_edit_plan_tool)
     roadmap_tool = mcp.tool(name="_roadmap")(_roadmap_tool)
-    audit_tool = mcp.tool()(_audit)
-    crew_tool = mcp.tool()(_crew)
+    audit_tool = mcp.tool(name="_audit")(_audit_tool)
+    crew_tool = mcp.tool(name="_crew")(_crew)
+    for read_tool_name in ("_read_plan", "_roadmap", "_audit", "_crew"):
+        _reject_unknown_tool_arguments(read_tool_name)
 
 
 # ── Entrypoint ────────────────────────────────────────────────────────────
