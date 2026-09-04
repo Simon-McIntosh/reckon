@@ -261,6 +261,15 @@ function SprintDetail({ sprint, inventory, onBack, onNav }) {
       {layout ? (
         <div className="r-sprint-dag-scroll">
           <div className="r-sprint-dag-stage" style={{ width: layout.width, height: layout.height }}>
+            {layout.columns.map(column => (
+              <span
+                key={column.depth}
+                className="r-sprint-dag-column-label"
+                style={{ left: column.x, width: column.width }}
+              >
+                {column.label}
+              </span>
+            ))}
             <svg width={layout.width} height={layout.height} aria-hidden="true">
               {layout.edges.map(edge => (
                 <g key={edge.key}>
@@ -273,6 +282,7 @@ function SprintDetail({ sprint, inventory, onBack, onNav }) {
               <a
                 key={node.key}
                 className={`r-sprint-dag-card ${node.ghost ? "ghost" : ""} ${node.blocked ? "blocked" : ""}`}
+                data-plan-slug={node.slug}
                 href={node.ghost ? undefined : `#plan/${node.slug}`}
                 style={{
                   left: node.x,
@@ -290,7 +300,20 @@ function SprintDetail({ sprint, inventory, onBack, onNav }) {
                 }}
               >
                 <strong>{node.title}</strong>
-                <span>{node.statusText}</span>
+                <i
+                  className="r-sprint-dag-progress"
+                  role="progressbar"
+                  aria-label={`${node.title}: ${node.percent}% complete`}
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  aria-valuenow={node.percent}
+                >
+                  <b style={{ width: `${node.percent}%` }} />
+                </i>
+                <span className="r-sprint-dag-meta">
+                  <span>{node.statusText}</span>
+                  <span>{node.hours}</span>
+                </span>
               </a>
             ))}
           </div>
