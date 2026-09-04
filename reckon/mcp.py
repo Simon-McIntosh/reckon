@@ -2887,6 +2887,7 @@ def _crew(
     resumable: bool | None = None,
     newest_per_node: bool = False,
     source: str = "all",
+    scope: str = "project",
     fields: list[str] | None = None,
 ) -> dict[str, Any]:
     """Read crew state or perform one recovery action through the crew surface.
@@ -2905,6 +2906,8 @@ def _crew(
     ``scopes`` reads live path claims and partitions the optional ordered
     ``candidates`` wave manifest into mutually independent serial lanes;
     ``runs`` joins compact, filterable rows from live pointers and the ledger;
+    its default project scope reads one repository, while workstation scope
+    labels rows from every configured project with their owning repository;
     ``routing`` derives configuration cost and durability across every mounted
     ledger; ``fleet`` reads compact rows for every mounted project's cross-project rollup;
     ``flight`` reports the resolved routing config with the layer that supplied every value; and
@@ -2996,6 +2999,7 @@ def _crew(
                 project,
                 checkout_path=checkout_path,
                 source=source,
+                scope=scope,
                 node=node,
                 plan=plan,
                 section=section,
