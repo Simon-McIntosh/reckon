@@ -49,6 +49,7 @@ def _run(
     changed_lines: dict | None = None,
     completed_at_source: str = "stream_mtime",
     spec_level: str | None = None,
+    role: str = "",
     lineage: dict | None = None,
     failure_classification: str = "",
 ) -> None:
@@ -65,6 +66,7 @@ def _run(
             worker_seconds=int(actual_hours * 3600),
             completed_at_source=completed_at_source,
             changed_lines=changed_lines,
+            role=role,
             lineage=lineage,
             failure_classification=failure_classification,
             **build_record_kwargs,
@@ -256,33 +258,77 @@ def test_changed_lines_are_descriptive_and_never_enter_selection(tmp_path) -> No
     _plan(root, "work", 2.0)
     _run(
         root,
-        "one",
+        "large",
         "work",
         1.0,
         changed_lines={"added": 8000, "removed": 3000, "files": 99},
+        spec_level="exact",
+        role="implement",
     )
+    _run(
+        root,
+        "zero",
+        "work",
+        1.0,
+        changed_lines={"added": 0, "removed": 0, "files": 0},
+        spec_level="exact",
+        role="implement",
+    )
+    _run(root, "absent", "work", 1.0, spec_level="exact", role="implement")
     record = _derive(root)
 
-    observation = record["configurations"][0]["observations"][0]
-    assert observation["changed_lines"] == {"added": 8000, "removed": 3000, "files": 99}
+    observations = {
+        item["run_id"]: item for item in record["configurations"][0]["observations"]
+    }
+    assert set(observations) == {"large", "zero", "absent"}
+    assert observations["large"]["changed_lines"] == {
+        "added": 8000,
+        "removed": 3000,
+        "files": 99,
+    }
+    assert observations["zero"]["changed_lines"] == {
+        "added": 0,
+        "removed": 0,
+        "files": 0,
+    }
+    assert observations["absent"]["changed_lines"] is None
+    routing = capabilities.derive_routing({root.name: root / "docs"})
+    assert routing["rows"][0]["samples"] == 3
+
     source = Path(capabilities.__file__).read_text()
     tree = ast.parse(source)
-    consumers = {
-        node.name
-        for node in ast.walk(tree)
-        if isinstance(node, ast.FunctionDef)
-        and "changed_lines" in ast.get_source_segment(source, node)
+    functions = {
+        node.name: node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)
     }
-    assert consumers == {"_descriptive_changed_lines", "derive_capabilities"}
-    derive_source = ast.get_source_segment(
-        source,
-        next(
-            node
-            for node in ast.walk(tree)
-            if isinstance(node, ast.FunctionDef) and node.name == "derive_capabilities"
-        ),
-    )
-    assert derive_source.count("_descriptive_changed_lines(run)") == 1
+    consumers = {
+        name
+        for name, function in functions.items()
+        if "changed_lines" in ast.get_source_segment(source, function)
+    }
+    assert consumers == {
+        "_changed_line_count",
+        "_descriptive_changed_lines",
+        "_orientation_floor",
+        "derive_capabilities",
+        "derive_routing",
+    }
+
+    for name in ("derive_capabilities", "derive_routing"):
+        selectors = []
+        for node in ast.walk(functions[name]):
+            if isinstance(node, (ast.If, ast.IfExp, ast.While)):
+                selectors.append(node.test)
+            elif isinstance(node, ast.comprehension):
+                selectors.extend(node.ifs)
+        selection_source = "\n".join(
+            ast.get_source_segment(source, selector) or "" for selector in selectors
+        )
+        assert "changed_lines" not in selection_source
+
+    capability_source = ast.get_source_segment(source, functions["derive_capabilities"])
+    routing_source = ast.get_source_segment(source, functions["derive_routing"])
+    assert capability_source.count("_descriptive_changed_lines(run)") == 1
+    assert routing_source.count('"changed_lines": _changed_line_count(run)') == 1
 
 
 def test_spec_level_is_captured_in_observations(tmp_path) -> None:
