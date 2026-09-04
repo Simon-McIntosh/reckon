@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T05:47:01",
+  "updated": "2026-09-04T05:49:48",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -48281,6 +48281,125 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260903T215307823121-a-member-session-names-the-model-it-serves",
+        "plan": "work-survives-a-provider-outage",
+        "section": "\u00a74",
+        "node": "a-member-session-names-the-model-it-serves",
+        "node_definition": {
+          "done_when": "A session id set through the supported CLI surface is inert, so an operator recovering from an outage cannot route a resume back through crew and must reconstruct the backend argv by hand - which a peer session did tonight for five recovered runs. crew member add --project P --member M --harness claude --session SID writes session_id and leaves session_model null with an empty sessions map. _session_for_configuration at reckon/crew/dispatch.py accepts a session only through a configuration-keyed sessions entry, or through the legacy branch which requires sessions[model] or session_model equal to the model. With session_model null neither branch fires, so the id is never reused. member add has no model flag, and the configuration key is a sorted-JSON agent blob no caller can reasonably hand-write. Every roster entry that does work today was written by _capture_member_session during promotion. THIS IS A SETTABLE FIELD THE READER IGNORES, which is the same silent-success shape as a promotion that reports ok while discarding a session. Done when a session recorded through member add is reused by a later dispatch to that member on the matching model: either member add accepts the model alongside the session, or it resolves the member's harness default and records that, and the choice is stated in the code with its reason. A member whose recorded model does not match the dispatched model still gets a fresh session rather than the wrong one, asserted as a negative. A member with no recorded session is unaffected. Setting a session for a model the backend does not serve is refused at the point of writing rather than accepted and ignored, so the failure is loud where it is caused. ASSERT THROUGH BOTH ENTRY POINTS a coordinator uses - the member add command and the dispatch that consumes it - in one test that writes a session and then dispatches, never through _session_for_configuration alone, since a helper-level assertion is how this defect stayed invisible. Use a dry-run dispatch so no worker is launched, under a temporary config home, and assert the real roster is untouched afterwards. At least one added assertion must fail against base 5958f48. Measured over tests/test_crew_members.py plus any existing module asserting on the roster, in ONE invocation: zero failures against their combined count at base. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 1.5,
+          "goal": "A session id recorded through member add is reusable by a later dispatch, because it records the model it belongs to.",
+          "id": "a-member-session-names-the-model-it-serves",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/member-session-model-manifest.md",
+          "plan": "work-survives-a-provider-outage",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "tests/test_crew_members.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "impl-guard",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "alias": "sonnet 5",
+          "backend": "claude",
+          "effort": "high",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-03T21:53:17Z",
+        "completed_at": "2026-09-04T03:49:13.678Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 21349,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 21356,
+        "stalled": true,
+        "time_budget": "30m",
+        "base_sha": "5958f485d571735925883e55c2ee63ee1cc92917",
+        "commits": [
+          "068dd558f8f8bd788cdd61300075623ffd0178b1"
+        ],
+        "changed_lines": {
+          "added": 246,
+          "removed": 5,
+          "files": 2
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_members.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vm.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/member-session-model-manifest.md",
+        "scope_changed": false,
+        "session_id": "17d1dc38-d28e-4bd5-a988-a8575eac14c1",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 0.86,
+          "rate_limit_type": "seven_day",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-09-07T20:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 0.75,
+          "tokens": {
+            "cache_creation_input_tokens": 154567,
+            "cache_creation_input_tokens_cumulative": 154567,
+            "cache_read_input_tokens": 2340682,
+            "cache_read_input_tokens_cumulative": 2340682,
+            "inference_geo": "not_available",
+            "input_tokens": 30,
+            "input_tokens_cumulative": 30,
+            "output_tokens": 7662,
+            "output_tokens_cumulative": 7662,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 1.1630843999999996,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 1.1630843999999996
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 129.974,
+          "generated_tokens": 7662,
+          "generation_seconds": 101.689,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 17.4,
+          "machine_seconds": 28.285,
+          "peak_input_tokens": 173798,
+          "tokens_per_second": 75.35,
+          "wall_tokens_per_second": 58.95
+        },
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -48439,6 +48558,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 790
+    "_version": 791
   }
 }
