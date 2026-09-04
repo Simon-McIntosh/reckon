@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="dispatch-cost-per-durable-node">
+  <meta name="plan-title" content="Dispatch Cost Per Durable Node">
+  <meta name="plan-summary" content="Route dispatch on rework-charged cost per durable node, and fence node size and burn rate so the metered lane stays sustainable">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="13.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S15">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-depends-on" content="crew-effort-routing,effort-calibration,budget-aware-dispatch,crew-run-ledger">
+  <title>Dispatch Cost Per Durable Node | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-04">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">&sect;1 &mdash; What the meter actually charges</h2>
+
+    <p>The metered lane carrying the default backend was running at
+    <strong>7.6&times; its sustainable rate</strong> when this plan was written:
+    13.0% of a 168-hour window consumed with 1.7% of the window elapsed, measured
+    from the backend's own account surface at 2026-09-04T07:17:34Z. The account had
+    already been exhausted once, on 2026-09-03, with a reset eight days out.</p>
+
+    <p>Three measurements taken together explain the burn, and they rule out the
+    two remedies a reader would reach for first.</p>
+
+    <p><strong>The meter charges total context read, including cached tokens.</strong>
+    Two disjoint intervals bracket the charging formula. From window start to
+    07:04:04Z the meter moved 12 points against 376&nbsp;M total input tokens and
+    roughly 15&nbsp;M fresh ones; from 07:04:04Z to 07:17:34Z it moved one point
+    against 21.5&nbsp;M total and 0.52&nbsp;M fresh. The total-input hypothesis is
+    consistent across both intervals at a weekly capacity of 2.1&ndash;3.1&nbsp;B
+    tokens; the fresh-input hypothesis disagrees with itself by a factor of 2.4 and
+    is refused. So <em>the prompt cache cannot buy headroom</em>: measured hit rate
+    is already 96.0% median across 1,970 runs, with only 5.1% of runs below 0.90,
+    and 23.0&nbsp;B of the 23.6&nbsp;B input tokens consumed were cached re-reads
+    that the meter charged anyway. Caching buys latency and money. It does not buy
+    quota, and no amount of further cache work will.</p>
+
+    <p><strong>Burn is steps multiplied by context, and effort buys steps.</strong>
+    Median turn count per run is 1, so cost accrues over tool steps inside a single
+    agentic turn. At the same declared specification level the high-effort
+    configuration takes 23&ndash;32% more tool steps than medium and consumes
+    21&ndash;34% more input, and input tracks steps almost linearly at roughly
+    203&nbsp;k tokens per step. That per-step figure is a property of our fences,
+    plan text and worktrees rather than of the model, which is what makes it
+    transferable in &sect;7.</p>
+
+    <table>
+      <caption>Tool steps and input by specification level, default backend
+        (<code>gpt-5.6-sol</code>). Streams read from disk; spec level declared.</caption>
+      <thead><tr><th>Spec level</th><th>Effort</th><th>Runs</th><th>Median tool steps</th><th>Median input tokens</th></tr></thead>
+      <tbody>
+        <tr><td>exact</td><td>high</td><td>213</td><td>26</td><td>4,196,045</td></tr>
+        <tr><td>exact</td><td>medium</td><td>182</td><td>20</td><td>3,321,550</td></tr>
+        <tr><td>guided</td><td>high</td><td>330</td><td>38</td><td>7,695,717</td></tr>
+        <tr><td>guided</td><td>medium</td><td>518</td><td>26</td><td>5,063,453</td></tr>
+        <tr><td>open</td><td>high</td><td>69</td><td>39</td><td>5,801,711</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Yet cutting effort makes the lane more expensive, not less.</strong>
+    That is the finding that inverts the obvious remedy, and &sect;2 is why it was
+    invisible until now.</p>
+
+    <h2 id="s2">&sect;2 &mdash; The routing instrument is saturated</h2>
+
+    <p>Gate pass rate cannot rank a worker configuration, because every
+    configuration passes. Stratified by declared specification level <em>and</em>
+    declared difficulty, restricted to usable runs, the two effort tiers are
+    indistinguishable: high passes 0.939 over 115 runs against medium's 0.930 over
+    172. Across the whole ledger no configuration with a meaningful sample falls
+    below 0.93. An instrument whose readings span 0.93 to 1.00 has no discriminating
+    power, and the reason is structural rather than statistical: <em>the gate is a
+    check the implementing worker wrote and then ran against its own diff.</em></p>
+
+    <p>An unpaid-for signal already sits in the ledger. A node whose declared write
+    paths are re-touched by a later run in the same plan did not stay done. That
+    <strong>rework rate</strong> discriminates by a factor of eight where pass rate
+    discriminated by nothing, and it reverses the cost ordering once charged:</p>
+
+    <table>
+      <caption>Cost per durable node = median input &divide; (1 &minus; rework).
+        Rework measured over 948 runs carrying declared write paths;
+        the redispatch column is the orchestrator's own independent judgement.</caption>
+      <thead><tr><th>Spec level</th><th>Effort</th><th>Pass</th><th>Rework</th><th>Redispatch or attempt&gt;1</th><th>Cost per durable node</th></tr></thead>
+      <tbody>
+        <tr><td>exact</td><td><strong>high</strong></td><td>0.97</td><td><strong>0.07</strong></td><td>0.115</td><td><strong>4,511,876</strong></td></tr>
+        <tr><td>exact</td><td>medium</td><td>1.00</td><td>0.39</td><td>0.265</td><td>5,445,164</td></tr>
+        <tr><td>guided</td><td><strong>high</strong></td><td>0.85</td><td><strong>0.15</strong></td><td>0.131</td><td><strong>9,053,785</strong></td></tr>
+        <tr><td>guided</td><td>medium</td><td>0.98</td><td>0.54</td><td>0.174</td><td>11,007,507</td></tr>
+        <tr><td>open</td><td>high</td><td>0.83</td><td>0.35</td><td>0.257</td><td>8,925,709</td></tr>
+      </tbody>
+    </table>
+
+    <p>Medium looks 34% cheaper per run and is 22% more expensive per node that
+    stays done. High effort wins at every specification level, so the pinned
+    <code>effort: high</code> in the host routing layer is already correct and
+    <strong>effort is not the lever this plan pulls</strong>. Two independent
+    proxies agree on the direction &mdash; path rework, and the orchestrator's own
+    redispatch decisions &mdash; which is why the conclusion is drawn from them
+    rather than from the saturated gate.</p>
+
+    <p>Rework carries one honest confound: a node in a heavily churned file
+    accumulates re-touches for reasons unrelated to its quality. The redispatch
+    column is the check on that, being an explicit judgement about the same node
+    rather than a coincidence of paths. Where the two disagree in magnitude they
+    agree in sign, and &sect;3 records both rather than blending them.</p>
+
+    <p>Two fields designed for exactly this measurement are unpopulated:
+    <code>suite_delta</code> on 0 of 2,563 runs, and
+    <code>gate_check.log_digest</code> on 32 of 876. Populating
+    <code>suite_delta</code> makes the gate measure the suite against the node's
+    base revision rather than the worker's own new test, which is an independent
+    check obtained without a second dispatch.</p>
+
+    <h2 id="s3">&sect;3 &mdash; A derived routing surface, and no numbers in prose</h2>
+
+    <p>Deliverable: extend <code>reckon capabilities</code> with rework, tool
+    steps, input tokens and cost per durable node, and expose
+    <code>crew(project, view="routing")</code> returning, per
+    (model, effort, spec level, role) across every mounted ledger: sample count,
+    pass rate, rework rate, redispatch rate, median tool steps, median input, and
+    cost per durable node with the sample count that earned it.</p>
+
+    <p>This is derived state and therefore Python, per the binding rule that the
+    surface renders and does not derive: a CLI caller, an MCP read and the SPA must
+    all get the same figure. Done-when is a numeric assertion against a synthesised
+    ledger fixture, plus a parity check that the served surface and the tool return
+    identical rows.</p>
+
+    <p><strong>The reference document keeps the procedure and loses the numbers.</strong>
+    <code>skills/reckon-ship/references/effort-routing.md</code> currently carries
+    hand-written pass-rate priors that this plan's measurements contradict, which is
+    the documented failure mode of a recorded absolute that moves on its own. It
+    keeps the specification-ownership table and the decision procedure, and cites
+    the call in place of every figure. An orchestrator then reads current routing
+    from a live surface rather than from a table whose last edit it cannot see.</p>
+
+    <h2 id="s4">&sect;4 &mdash; Node size is the lever, and nothing fences it</h2>
+
+    <p>Cost per node rises nine-fold across the declared-effort range, and the
+    cliff sits between one and two hours:</p>
+
+    <table>
+      <caption>Median input by declared node estimate, guided specification at high
+        effort. The step from 1&nbsp;h to 2&nbsp;h is a factor of 4.8.</caption>
+      <thead><tr><th>Declared estimate</th><th>Median input tokens</th><th>Relative</th></tr></thead>
+      <tbody>
+        <tr><td>&le; 0.5 h</td><td>1,813,366</td><td>1.5&times;</td></tr>
+        <tr><td>&le; 1.0 h</td><td>1,232,983</td><td>1.0&times;</td></tr>
+        <tr><td>&le; 2.0 h</td><td>5,858,234</td><td>4.8&times;</td></tr>
+        <tr><td>&le; 4.0 h</td><td>11,008,551</td><td>8.9&times;</td></tr>
+      </tbody>
+    </table>
+
+    <p>One four-hour node costs 11.0&nbsp;M input; four one-hour nodes covering the
+    same ground cost 4.9&nbsp;M, a 2.2&times; saving at unchanged effort and
+    unchanged quality. <strong>That is a larger reduction than any model substitution
+    available in &sect;7</strong>, and it is available today without a new backend or
+    a credit card. The mechanism is the per-step context growth of &sect;1: a long
+    run re-reads an ever-larger transcript at every step, so cost grows faster than
+    step count and splitting the work resets the accumulation.</p>
+
+    <p>Deliverable: make the <em>Bounded</em> property of the pre-dispatch contract
+    quantitative. Dispatch reads the node's declared estimate against a configured
+    bound and refuses an over-large node as not-dispatchable, naming the bound and
+    the split. Done-when: a node declaring an estimate above the bound exits 2 with
+    the bound in its validation payload, and one declaring at or below it dispatches
+    unchanged.</p>
+
+    <p>The bound itself is an open decision below. The measurement recommends one
+    hour, because that is where the 4.8&times; step sits.</p>
+
+    <h2 id="s5">&sect;5 &mdash; An undeclared specification level is not a well-formed node</h2>
+
+    <p>965 of 1,586 high-effort runs on the default backend carry no declared
+    specification level. They fell through to the backend default, so the routing
+    map could not see them and the calibration slices they belong in do not exist.
+    Declaration has since reached 98.3% over the last eight days by convention
+    alone, which is exactly the state that regresses silently.</p>
+
+    <p>Deliverable: <code>--spec-level</code> becomes a required property of the
+    pre-dispatch contract, refused with exit 2 naming the missing property, on the
+    same footing as the seven properties already checked. The purpose is
+    calibration visibility, not a cheaper effort tier &mdash; &sect;2 settled that
+    the cheaper tier costs more. Done-when: a dispatch omitting the flag exits 2
+    naming <code>spec-level</code>, and the ship skill's checklist carries it as an
+    eighth box.</p>
+
+    <h2 id="s6">&sect;6 &mdash; A burn fence, from figures the fence already holds</h2>
+
+    <p>The existing budget fence holds a wave when utilisation crosses a ceiling,
+    which is a fence on <em>position</em>. It cannot see <em>rate</em>, so a lane
+    burning a week's quota in a day reads clear until the moment it reads spent.
+    That is what happened on 2026-09-03.</p>
+
+    <p><code>BudgetState</code> already carries
+    <code>rate_limit_period_minutes</code> and <code>resets_at</code>, so
+    utilisation divided by window-elapsed needs no new probe and spends nothing.
+    Deliverable: <code>preflight</code> and <code>crew(view="budget")</code> report
+    the burn multiple beside the utilisation, and the pre-flight summary names it.
+    At the reading above the fence would have shown 7.6&times; on the first day of
+    the window rather than a clear lane at 13%.</p>
+
+    <p>Reporting only, not holding, until a week of measured burn exists: a rate
+    fence calibrated on one reading and wrong in the holding direction stops every
+    worker on the machine while the provider is serving, which is the asymmetry the
+    shelf-life setting in the host layer already exists to avoid.</p>
+
+    <h2 id="s7">&sect;7 &mdash; Candidate lanes, screened before they are run</h2>
+
+    <p>A published benchmark reports pass@1, dollar cost, output tokens and
+    <em>steps</em> per model and effort. Only the steps column bears on our
+    constraint, and it turns out to be predictive: the benchmark records 37 steps
+    for the default backend at high effort on goal-only work, and our own
+    open-specification runs at the same configuration measure 39 &mdash; agreement
+    to 5%. <strong>Steps transfer, so the benchmark screens candidate lanes against
+    our meter for free</strong>, and multiplying a candidate's step count by the
+    203&nbsp;k per-step figure of &sect;1 predicts its burn before anything is
+    dispatched.</p>
+
+    <p>The dollar column is actively misleading on a subscription lane, and the
+    figure below is what that misleading looks like. Each family traces a curve as
+    effort rises; better is up and to the left.</p>
+
+    <figure>
+      <svg viewBox="0 0 720 400" width="100%" role="img"
+           aria-label="Benchmark pass rate against tool steps for four model families. The astra family sits up and left of the incumbent; the luna family sits far right at equal or lower pass.">
+        <g stroke="#e8e8e8" stroke-width="1">
+          <line x1="70" y1="360" x2="690" y2="360"/>
+          <line x1="70" y1="280" x2="690" y2="280"/>
+          <line x1="70" y1="200" x2="690" y2="200"/>
+          <line x1="70" y1="120" x2="690" y2="120"/>
+          <line x1="70" y1="40"  x2="690" y2="40"/>
+        </g>
+        <g fill="#222" font-family="system-ui,sans-serif" font-size="13" text-anchor="end">
+          <text x="60" y="365">0</text><text x="60" y="285">20</text>
+          <text x="60" y="205">40</text><text x="60" y="125">60</text>
+          <text x="60" y="45">80</text>
+        </g>
+        <g fill="#222" font-family="system-ui,sans-serif" font-size="13" text-anchor="middle">
+          <text x="70"  y="382">0</text><text x="188" y="382">20</text>
+          <text x="306" y="382">40</text><text x="424" y="382">60</text>
+          <text x="542" y="382">80</text><text x="661" y="382">100</text>
+        </g>
+        <line x1="70" y1="360" x2="70" y2="34" stroke="#222" stroke-width="1"/>
+        <line x1="70" y1="360" x2="695" y2="360" stroke="#222" stroke-width="1"/>
+        <text x="380" y="399" fill="#222" font-family="system-ui,sans-serif" font-size="13"
+              text-anchor="middle">tool steps per task &mdash; what the meter charges</text>
+        <text x="18" y="200" fill="#222" font-family="system-ui,sans-serif" font-size="13"
+              text-anchor="middle" transform="rotate(-90 18 200)">benchmark pass@1 (%)</text>
+
+        <line x1="288" y1="360" x2="288" y2="52" stroke="#1f4e79" stroke-width="1" stroke-dasharray="4 3"/>
+        <text x="284" y="48" fill="#1f4e79" font-family="system-ui,sans-serif" font-size="13"
+              text-anchor="end">incumbent burn: 37 steps</text>
+
+        <polyline points="188,92 224,68 229,68 235,68 241,64" fill="none" stroke="#1a6b54" stroke-width="1.8"/>
+        <g fill="#1a6b54"><circle cx="188" cy="92" r="3"/><circle cx="224" cy="68" r="3"/><circle cx="229" cy="68" r="3"/><circle cx="235" cy="68" r="3"/><circle cx="241" cy="64" r="3"/></g>
+        <text x="180" y="62" fill="#1a6b54" font-family="system-ui,sans-serif" font-size="13"
+              font-weight="600" text-anchor="end">gpt-6-astra</text>
+
+        <polyline points="206,180 253,116 288,84 330,76 430,68" fill="none" stroke="#1f4e79" stroke-width="1.8"/>
+        <g fill="#1f4e79"><circle cx="206" cy="180" r="3"/><circle cx="253" cy="116" r="3"/><circle cx="288" cy="84" r="4.5"/><circle cx="330" cy="76" r="3"/><circle cx="430" cy="68" r="3"/></g>
+        <text x="440" y="66" fill="#1f4e79" font-family="system-ui,sans-serif" font-size="13"
+              font-weight="600">gpt-5.6-sol (incumbent)</text>
+
+        <polyline points="194,264 218,220 271,144 324,120 519,80" fill="none" stroke="#8a5a10" stroke-width="1.8"/>
+        <g fill="#8a5a10"><circle cx="194" cy="264" r="3"/><circle cx="218" cy="220" r="3"/><circle cx="271" cy="144" r="3"/><circle cx="324" cy="120" r="3"/><circle cx="519" cy="80" r="3"/></g>
+        <text x="528" y="90" fill="#8a5a10" font-family="system-ui,sans-serif" font-size="13"
+              font-weight="600">gpt-5.6-terra</text>
+
+        <polyline points="141,352 212,316 359,184 489,132 672,92" fill="none" stroke="#8a2020" stroke-width="1.8"/>
+        <g fill="#8a2020"><circle cx="141" cy="352" r="3"/><circle cx="212" cy="316" r="3"/><circle cx="359" cy="184" r="3"/><circle cx="489" cy="132" r="3"/><circle cx="672" cy="92" r="3"/></g>
+        <text x="664" y="78" fill="#8a2020" font-family="system-ui,sans-serif" font-size="13"
+              font-weight="600" text-anchor="end">gpt-5.6-luna</text>
+
+        <text x="96" y="112" fill="#555" font-family="system-ui,sans-serif" font-size="13">better</text>
+        <path d="M 128 108 L 150 96" stroke="#555" stroke-width="1" fill="none"/>
+        <path d="M 150 96 l -6 1 l 4 4 z" fill="#555"/>
+      </svg>
+      <figcaption>Each family traces one curve as reasoning effort rises from low to
+        max. The luna family is the cheapest in dollars and the most expensive in
+        steps, reaching the incumbent's pass rate only at 102 steps &mdash; 2.7&times;
+        the incumbent's burn. Points are benchmark figures; the incumbent marker is
+        the configuration our own runs measure at 39 steps.</figcaption>
+    </figure>
+
+    <p>The screen therefore disposes of the two subscription-eligible candidates
+    before either is dispatched. <strong>The luna family is disqualified
+    outright</strong>: at 49 to 102 steps it burns 1.3 to 2.7&times; the incumbent,
+    so even at zero rework it cannot beat the incumbent's cost per durable node. Its
+    dollar cost of one to sixty-one cents per task is irrelevant to a metered lane
+    and is precisely the reading that would have selected it. <strong>The terra
+    family is marginal</strong>: only its high tier at 34 steps and its medium tier
+    at 25 undercut the incumbent's step count, and both score 15 to 34 points lower
+    on the benchmark, so terra at high effort must hold rework at or below 0.24 to
+    break even. That is a narrow enough margin to be worth one qualification slice
+    and not worth a pilot on faith.</p>
+
+    <p>The frontier model is the only genuine improvement on both axes &mdash; 73%
+    at 26 steps against the incumbent's 69% at 37 &mdash; and it is
+    <strong>refused on this account</strong>: a probe returns HTTP 400,
+    <em>"not supported when using Codex with a ChatGPT account"</em>, while the
+    incumbent identifier answers on the same probe. It is API-key billed, so it
+    would not reduce account burn at all; it would move spend onto a card. It is
+    therefore defined and not routed: a backend in the host layer with a spend
+    ceiling, reachable only by an explicit override or a shadow run. The
+    configuration schema already carries <code>environment</code> and
+    <code>auth_check</code>, so this needs no schema work.</p>
+
+    <p><strong>Qualification is days, not weeks, and the reason is measurable.</strong>
+    Rework was the obvious candidate for a slow lagging indicator, and it is not:
+    across 493 observed instances its median lag is 1.1 hours, 81.7% has surfaced
+    within 6 hours and 96.1% within 24. So a live gated pilot yields a trustworthy
+    rework figure inside two days. A shadow slice cannot contribute one at all,
+    because a shadow is never merged and nothing can later re-touch its paths;
+    what a shadow measures immediately is steps, input, and controlled agreement
+    with the incumbent's own named check on the same node at the same base
+    revision.</p>
+
+    <table>
+      <caption>Qualification ladder, with what each step can and cannot establish.</caption>
+      <thead><tr><th>Step</th><th>Elapsed</th><th>Meter cost</th><th>Establishes</th></tr></thead>
+      <tbody>
+        <tr><td>Benchmark step screen</td><td>none &mdash; done in &sect;7</td><td>zero</td><td>Burn, to 5%. Disqualifies luna.</td></tr>
+        <tr><td>10 shadow pairs</td><td>~2 h</td><td>2.0&ndash;2.7% of one window</td><td>Measured steps and input on our nodes; controlled gate agreement. Not rework.</td></tr>
+        <tr><td>20&ndash;40 run gated pilot</td><td>~2 days</td><td>pilot's own live cost</td><td>Rework, hence cost per durable node. Full-diff audited for the first twenty.</td></tr>
+        <tr><td>Slice lock</td><td>at the next checkpoint</td><td>zero</td><td>Routing, on the &sect;3 surface.</td></tr>
+      </tbody>
+    </table>
+
+    <p>Sample size sets the confidence. Discriminating a 0.07 rework rate from the
+    0.24 break-even needs roughly 20 runs for a two-standard-error separation and
+    about 40 to be comfortable, so the pilot band is 20 to 40 rather than the
+    ladder's current ten. <strong>The ladder's existing bar &mdash; pass at or above
+    0.8 over ten runs &mdash; must be replaced by cost per durable node before any
+    candidate is qualified</strong>, because &sect;2 showed that bar is met by every
+    configuration we have ever run and therefore selects nothing. That ordering is
+    the reason &sect;3 precedes &sect;7 in execution.</p>
+
+    <h2 id="s8">&sect;8 &mdash; What this plan does not do</h2>
+
+    <p>It does not change the pinned effort, which &sect;2 shows is already right.
+    It does not add a finer effort dial: the two existing tiers differ by 23&ndash;32%
+    in steps and are indistinguishable in quality, so a finer dial would add
+    configuration surface with no measured axis to tune, while the axis that moves
+    cost nine-fold is node size and is already continuous.</p>
+
+    <p>It does not split test authorship from implementation by default. That
+    pattern answers the real defect of &sect;2 &mdash; a self-graded gate &mdash;
+    but it doubles dispatches and context on a lane that is already over capacity,
+    and the test author needs the same interface specification as the implementer,
+    so it only applies at exact and guided levels, which is where rework is already
+    lowest at 0.07 and 0.15. Populating <code>suite_delta</code> obtains an
+    independent check for one field rather than one extra dispatch per node.
+    Reserve the split for nodes whose risk is declared elevated or critical.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="node-size-bound" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">What node-estimate bound should dispatch refuse above (§4)?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="1h">1h</button>
+      <button class="r-opt" data-value="2h">2h</button>
+      <button class="r-opt" data-value="warn-only">warn-only</button>
+      </p>
+    <p class="r-dec-rat">Recommendation: 1h. The measured cost step from
+          ≤1 h to ≤2 h is 4.8× (1.23 M to 5.86 M
+          median input), so a 2 h bound concedes most of the available saving
+          while still improving on 4 h. A 1 h bound puts the sustainable
+          ceiling at roughly 1,792 durable nodes per week against 287 today, which
+          covers the observed 1,204-run peak at a burn of about 0.67. The cost of
+          the bound is more decomposition work for the coordinator at authoring
+          time.</p>
+    </div>
+<div class="r-dec" data-key="frontier-lane" data-choice="define-not-route" data-by="Simon McIntosh" data-when="2026-09-04">
+    <p class="r-dec-q">How should the API-key-only frontier model be treated?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="define-not-route">define-not-route</button>
+      <button class="r-opt" data-value="route-open-work">route-open-work</button>
+      <button class="r-opt" data-value="omit">omit</button>
+      </p>
+    <p class="r-dec-rat">Defined in the host layer with a spend ceiling and
+          reachable only by explicit override or shadow run. It is the only
+          candidate better on both axes, but it is billed per token rather than
+          metered, so routing to it converts a quota problem into a spend problem.
+          Defining it costs nothing until used and provides a lane that survives
+          window exhaustion.</p>
+    </div>
+<div class="r-dec" data-key="undeclared-spec-level" data-choice="refuse" data-by="Simon McIntosh" data-when="2026-09-04">
+    <p class="r-dec-q">What should dispatch do when no specification level is declared?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="refuse">refuse</button>
+      <button class="r-opt" data-value="default-medium">default-medium</button>
+      <button class="r-opt" data-value="enforce-dependent">enforce-dependent</button>
+      </p>
+    <p class="r-dec-rat">Refuse as not-dispatchable, naming the missing
+          property. A silent default reproduces the failure mode where 965 runs
+          became invisible to calibration, and silence is the failure that costs
+          most here because it looks like success.</p>
+    </div>
+<div class="r-dec" data-key="local-lane-routing" data-choice="qualify-first" data-by="Simon McIntosh" data-when="2026-09-04">
+    <p class="r-dec-q">Should the locally served lane take exact-level work before qualification?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="qualify-first">qualify-first</button>
+      <button class="r-opt" data-value="route-now">route-now</button>
+      <button class="r-opt" data-value="leave-as-is">leave-as-is</button>
+      </p>
+    <p class="r-dec-rat">It measures 0.95 gate pass over 19 exact-level runs on
+          free hardware, which is attractive but rests on the saturated instrument
+          of §2 and on one specification level. It goes through the same ladder
+          as every other candidate, on the repaired metric.</p>
+    </div>
+<div class="r-dec" data-key="routing-figures-home" data-choice="derived-surface" data-by="Simon McIntosh" data-when="2026-09-04">
+    <p class="r-dec-q">Where do current routing figures live?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="derived-surface">derived-surface</button>
+      <button class="r-opt" data-value="gate-dispatch">gate-dispatch</button>
+      <button class="r-opt" data-value="regenerate-doc">regenerate-doc</button>
+      </p>
+    <p class="r-dec-rat">A derived Python surface read through the crew tool,
+          with the reference document keeping only the ownership table and the
+          decision procedure. Gating dispatch on the slice was rejected for now
+          because it would refuse on thin samples; regenerating the document was
+          rejected because a written figure is a snapshot with a fuse and only
+          helps readers of that one file.</p>
+    </div>
+<div class="r-dec" data-key="burn-fence-strictness" data-choice="report-first" data-by="Simon McIntosh" data-when="2026-09-04">
+    <p class="r-dec-q">Should the burn-rate fence hold a wave or report only?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="report-first">report-first</button>
+      <button class="r-opt" data-value="hold">hold</button>
+      </p>
+    <p class="r-dec-rat">Report until a week of measured burn exists. The
+          asymmetry favours reporting: a rate fence wrong in the holding direction
+          stops every worker on the machine while the provider is serving, and a
+          fence that is merely late announces itself when the position fence fires.</p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-dcdn-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship dispatch-cost-per-durable-node" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Repair the routing instrument before any lane is qualified — §2 and §3</h4>
+    <div class="r-fu-body">The measurements are recorded and the decisions are locked except the node-size bound. Execution order is forced: §3's derived surface (rework, steps, input, cost per durable node) must exist before §7 can qualify anything, because the ladder's current bar — pass at or above 0.8 — is met by every configuration ever run and therefore selects nothing. §4, §5 and §6 are independent of that ordering and of each other. The §4 bound is the one open decision.</div>
+    <pre class="r-fu-prompt">/reckon-ship dispatch-cost-per-durable-node</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>
