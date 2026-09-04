@@ -40,9 +40,10 @@ const inventory = {json.dumps(inventory)};
 const measure = _dependencyChainMeasure(inventory);
 const closure = _dependencyClosure({json.dumps(endpoint)}, measure.bySlug);
 const members = [...closure].map(slug => measure.bySlug[slug]);
-const view = _graphHandleView(measure.bySlug[{json.dumps(endpoint)}], members,
+const view = _graphEndpointView(measure.bySlug[{json.dumps(endpoint)}], members,
   measure.pathLen[{json.dumps(endpoint)}], "alpha");
-console.log(JSON.stringify({{view, chains: _allDependencyChains(inventory)}}));
+const rows = _graphEndpointRows(inventory, "alpha");
+console.log(JSON.stringify({{view, rows}}));
 """
     result = subprocess.run(
         ["node", "-e", script], check=True, capture_output=True, text=True
@@ -50,9 +51,11 @@ console.log(JSON.stringify({{view, chains: _allDependencyChains(inventory)}}));
     return json.loads(result.stdout)
 
 
-def _authority_state(report: dict, captured_at: str) -> tuple[dict, str]:
+def _authority_state(
+    report: dict, captured_at: str, docs: Path | None = None
+) -> tuple[dict, str]:
     project = report["endpoint"]["project"]
-    docs = load_mounts()[project]
+    docs = docs if docs is not None else load_mounts()[project]
     discovered = discover_plans(docs, project, None)
     member_slugs = {member["slug"] for member in report["members"]}
     inventory = [
@@ -104,7 +107,10 @@ MEASUREMENT_EXPRESSION = """(() => {
   const nodes = [...document.querySelectorAll('.r-graph-node-card')];
   return {
     nodeCardCount: nodes.length,
-    handleToken: document.querySelector('.r-graph-handle-token')?.textContent || '',
+    handleToken: document.querySelector('.r-graph-detail .r-graph-handle-token')?.textContent || '',
+    indexRowCount: document.querySelectorAll('.r-graph-index-row').length,
+    shipControl: document.querySelector('.r-graph-detail .r-graph-ship')?.textContent || '',
+    needsHandle: document.querySelector('.r-graph-needs-handle')?.textContent || '',
     emptyMessage: document.querySelector('.r-graph-empty')?.textContent || '',
     viewport: {width: innerWidth, height: innerHeight},
     document: {clientWidth: document.documentElement.clientWidth,
@@ -288,6 +294,108 @@ def build_capture_index() -> dict:
     }
 
 
+def _rendered_graph(state: dict, width: int) -> dict:
+    """Measure the Graph tab in a browser at one viewport width."""
+
+    browser = installed_browser_or_skip()
+    with tempfile.TemporaryDirectory(prefix="graph-detail-") as temporary:
+        scratch = Path(temporary)
+        with file_spa(
+            scratch, browser, state, project="reckon", route="#graph"
+        ) as context:
+            return context.run_probe(
+                MEASUREMENT_EXPRESSION,
+                viewport=(width, VIEWPORT_HEIGHT),
+                ready_expression=("Boolean(document.querySelector('.r-graph-detail'))"),
+            )
+
+
+def _authored_endpoint(project: str, handle: str) -> str:
+    """The plan carrying an authored graph handle, read from the served docs."""
+
+    docs = ROOT / "docs"
+    for page in sorted((docs / "plans").glob("*.html")):
+        if (parse_meta(page).get("graph_handle") or "") == handle:
+            return page.stem
+    raise AssertionError(f"no plan in {project} authors the handle {handle}")
+
+
+def _closure_state(project: str, handle: str) -> tuple[dict, int]:
+    """Compose SPA state for one handle's closure, and the member count.
+
+    The count is walked here in Python from `depends_on` alone — the same
+    transitive closure the roadmap reports and the surface derives — so the
+    assertion compares two independent computations rather than the rendering
+    against itself. It also survives the endpoint shipping, which makes the
+    roadmap refuse the target while the closure is still perfectly drawable.
+    """
+
+    endpoint_slug = _authored_endpoint(project, handle)
+    # This repository's own docs tree, never a mount: a test reads the
+    # repository under test, and a mounted sibling can be legitimately removed.
+    docs = ROOT / "docs"
+    discovered = discover_plans(docs, project, None)
+    by_slug = {item["slug"]: item for item in discovered["inventory"]}
+
+    members: set[str] = set()
+
+    def walk(slug: str) -> None:
+        if slug in members or slug not in by_slug:
+            return
+        members.add(slug)
+        for reference in by_slug[slug].get("depends_on") or []:
+            walk(str(reference).split("#", 1)[0].split(":")[-1])
+
+    walk(endpoint_slug)
+    report = {
+        "endpoint": {"project": project, "slug": endpoint_slug},
+        "members": [{"slug": slug} for slug in sorted(members)],
+    }
+    captured_at = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    state, authored_handle = _authority_state(report, captured_at, docs)
+    assert authored_handle == handle
+    return state, len(members)
+
+
+def _sprint_federation_state() -> tuple[dict, int]:
+    return _closure_state("reckon", "sprint-federation")
+
+
+def test_the_detail_draws_one_card_per_closure_member_at_both_widths() -> None:
+    state, member_count = _sprint_federation_state()
+    for width in PUBLICATION_WIDTHS:
+        measured = _rendered_graph(state, width)
+        assert measured["viewport"]["width"] == width
+        assert measured["emptyMessage"] == ""
+        assert measured["handleToken"] == "sprint-federation"
+        # One card per closure member, at the count the roadmap reports.
+        assert measured["nodeCardCount"] == member_count, (
+            f"{width}px rendered {measured['nodeCardCount']} cards "
+            f"for {member_count} roadmap members"
+        )
+        assert measured["indexRowCount"] >= 1
+        assert measured["shipControl"] == "/reckon-ship graph:sprint-federation"
+        assert measured["needsHandle"] == ""
+        assert measured["canvas"]["width"] > 0
+
+
+def test_an_unnamed_endpoint_renders_the_same_detail_without_a_ship_target() -> None:
+    state, member_count = _sprint_federation_state()
+    unnamed = deepcopy(state)
+    for item in unnamed["inventory"]:
+        item.pop("graph_handle", None)
+    unnamed["plans"] = {item["slug"]: item for item in unnamed["inventory"]}
+
+    measured = _rendered_graph(unnamed, PUBLICATION_WIDTHS[0])
+    # The empty state is gone: an endpoint without a handle still renders.
+    assert measured["emptyMessage"] == ""
+    assert measured["handleToken"] == "unnamed"
+    assert measured["nodeCardCount"] == member_count
+    # No invented command; the chip names the authoring act instead.
+    assert measured["shipControl"] == ""
+    assert measured["needsHandle"] == "needs plan-graph-handle"
+
+
 def test_graph_handle_derives_membership_authority_and_ship_hold() -> None:
     result = _evaluate_graph_helpers(
         [
@@ -318,8 +426,9 @@ def test_graph_handle_derives_membership_authority_and_ship_hold() -> None:
         "endpoint",
     )
     view = result["view"]
+    assert view["named"] is True
     assert view["handle"] == "release"
-    assert view["shipLine"] == "/reckon-ship release"
+    assert view["shipLine"] == "/reckon-ship graph:release"
     assert {member["slug"] for member in view["members"]} == {
         "source",
         "middle",
@@ -332,11 +441,138 @@ def test_graph_handle_derives_membership_authority_and_ship_hold() -> None:
     assert view["openDecisions"] == 1
     assert view["structuralDepth"] == 3
     assert view["averageWidth"] == "1.00"
-    assert result["chains"][0][-1] == "endpoint"
+    assert [row["slug"] for row in result["rows"]] == ["endpoint"]
     source = GRAPH.read_text(encoding="utf-8")
-    assert "disabled={graphHandle.openDecisions > 0}" in source
+    assert "disabled={view.openDecisions > 0}" in source
     assert "Derived closure membership" in source
     assert "repositories enter scope only through closure membership" in source
+
+
+UNNAMED_INVENTORY = [
+    {
+        "slug": "source",
+        "project": "alpha",
+        "title": "Source",
+        "status": "shipped",
+        "depends_on": [],
+        "decisions": [],
+    },
+    {
+        "slug": "middle",
+        "project": "alpha",
+        "title": "Middle",
+        "status": "blocked",
+        "depends_on": ["source"],
+        "decisions": [],
+    },
+    {
+        "slug": "endpoint",
+        "project": "alpha",
+        "title": "Live endpoint",
+        "status": "active",
+        "depends_on": ["middle"],
+        "decisions": [],
+    },
+]
+
+
+def test_an_unnamed_endpoint_derives_the_same_closure_as_a_named_one() -> None:
+    unnamed = _evaluate_graph_helpers(UNNAMED_INVENTORY, "endpoint")["view"]
+    named_inventory = deepcopy(UNNAMED_INVENTORY)
+    named_inventory[-1]["graph_handle"] = "release"
+    named = _evaluate_graph_helpers(named_inventory, "endpoint")["view"]
+
+    # The view exists for an endpoint with no authored handle at all.
+    assert unnamed is not None
+    assert unnamed["named"] is False
+    assert unnamed["handle"] == "unnamed"
+
+    # Membership and every derived metric are identical: a handle names a
+    # closure, it does not create one.
+    assert {member["slug"] for member in unnamed["members"]} == {
+        member["slug"] for member in named["members"]
+    }
+    for metric in (
+        "total",
+        "shipped",
+        "shippedPercent",
+        "held",
+        "openDecisions",
+        "structuralDepth",
+        "averageWidth",
+        "repositories",
+    ):
+        assert unnamed[metric] == named[metric], metric
+
+    # The only difference is the ship target.
+    assert unnamed["shipLine"] is None
+    assert named["shipLine"] == "/reckon-ship graph:release"
+
+
+def test_the_ship_control_is_replaced_by_the_missing_precondition_chip() -> None:
+    source = GRAPH.read_text(encoding="utf-8")
+    # Named: a copyable command. Unnamed: a chip naming the authoring act, and
+    # no invented target anywhere.
+    assert "{view.shipLine}" in source
+    assert "needs plan-graph-handle" in source
+    assert 'title="Author a graph handle on this plan' in source
+    assert "view.named ? (" in source
+    assert "/reckon-ship graph:${handle}" in source
+
+
+def test_index_rows_list_named_endpoints_before_unnamed() -> None:
+    inventory = deepcopy(UNNAMED_INVENTORY)
+    inventory.append(
+        {
+            "slug": "named-endpoint",
+            "project": "alpha",
+            "title": "Named endpoint",
+            "status": "pending",
+            "graph_handle": "release",
+            "depends_on": ["source"],
+            "decisions": [],
+        }
+    )
+    rows = _evaluate_graph_helpers(inventory, "endpoint")["rows"]
+    assert [row["slug"] for row in rows] == ["named-endpoint", "endpoint"]
+    assert [row["named"] for row in rows] == [True, False]
+    # A row carries the same shape figures the detail shows.
+    unnamed_row = rows[1]
+    assert unnamed_row["total"] == 3
+    assert unnamed_row["structuralDepth"] == 3
+    assert unnamed_row["shippedPercent"] == 33
+    # One blocked member, no open decisions.
+    assert unnamed_row["flag"] == "1 held"
+    assert rows[0]["flag"] == "ready"
+
+
+def test_the_flag_reads_open_decisions_before_held_members() -> None:
+    inventory = deepcopy(UNNAMED_INVENTORY)
+    inventory[1]["decisions"] = [{"key": "scope", "choice": "", "chosen": ""}]
+    rows = _evaluate_graph_helpers(inventory, "endpoint")["rows"]
+    assert rows[0]["flag"] == "1 open"
+    assert rows[0]["flagKind"] == "open"
+
+
+def test_the_empty_state_renders_only_when_nothing_depends_on_anything() -> None:
+    standalone = [
+        {"slug": "one", "project": "alpha", "status": "active", "depends_on": []},
+        {"slug": "two", "project": "alpha", "status": "shipped", "depends_on": []},
+    ]
+    assert _evaluate_graph_helpers(standalone, "one")["rows"] == []
+
+    # One dependency is enough for an endpoint to exist, even with nothing
+    # live and no handle authored anywhere.
+    shipped_chain = [
+        {"slug": "one", "project": "alpha", "status": "shipped", "depends_on": []},
+        {"slug": "two", "project": "alpha", "status": "shipped", "depends_on": ["one"]},
+    ]
+    rows = _evaluate_graph_helpers(shipped_chain, "two")["rows"]
+    assert [row["slug"] for row in rows] == ["two"]
+    assert rows[0]["done"] is True
+    source = GRAPH.read_text(encoding="utf-8")
+    assert "No plan in this project depends on another" in source
+    assert "rows.length === 0" in source
 
 
 def test_hop_count_is_labelled_as_structural_not_execution_ordering() -> None:
