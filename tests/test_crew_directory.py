@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 from click.testing import CliRunner
@@ -101,7 +102,7 @@ def test_one_read_names_every_coordinator_across_repositories(
     result = mcp._crew(view="directory")
 
     assert result["coordinator_count"] == 3
-    assert result["live_node_count"] == 3
+    assert result["live_node_count"] == 2
     assert result["unowned_run_count"] == 0
     assert [(row["project"], row["session"]) for row in result["coordinators"]] == [
         ("names", "catalog-coordinator"),
@@ -111,6 +112,7 @@ def test_one_read_names_every_coordinator_across_repositories(
     nova = [row for row in result["coordinators"] if row["project"] == "nova"]
     assert [row["repository"] for row in nova] == ["/repos/nova", "/repos/nova"]
     assert [row["plans"] for row in nova] == [["equilibrium"], ["geometry"]]
+    assert [row["live_node_count"] for row in nova] == [1, 0]
     assert _directory_snapshot(real_live) == before
 
 
@@ -147,6 +149,81 @@ def test_activity_and_transport_are_reported_only_from_observation(
     )
     assert "transports" not in rows["render-coordinator"]
     assert "transport" not in rows["render-coordinator"]["runs"][0]
+
+
+def test_directory_probes_dispatch_pids_before_classifying_runs(
+    tmp_path, monkeypatch
+) -> None:
+    real_home = _store._config_home()
+    real_live = real_home / "crew" / "live"
+    before = _directory_snapshot(real_live)
+    home = tmp_path / "isolated-config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+
+    live_dir = home / "crew" / "runs" / "run-live"
+    live_dir.mkdir(parents=True)
+    manifest = live_dir / "manifest.md"
+    manifest.write_text("node: run-live\nstatus: blocked\nblockers: still working\n")
+    log = live_dir / "stream.jsonl"
+    log.write_text('{"type":"assistant","message":"working"}\n')
+    older = log.stat().st_mtime_ns - 1_000_000
+    os.utime(manifest, ns=(older, older))
+    crew._write_json(
+        crew.pointer_path("run-live"),
+        {
+            "run_id": "run-live",
+            "session": "mixed-coordinator",
+            "project": "nova",
+            "repo": "/repos/nova",
+            "worktree": "/repos/nova/.reckon-worktrees/mixed/run-live",
+            "node": {"id": "live-node", "plan": "equilibrium"},
+            "phase": "working",
+            "pid": os.getpid(),
+            "process_alive": None,
+            "log_path": str(log),
+            "manifest_path": str(manifest),
+        },
+    )
+    crew._write_json(
+        crew.pointer_path("run-dead"),
+        {
+            "run_id": "run-dead",
+            "session": "mixed-coordinator",
+            "project": "nova",
+            "repo": "/repos/nova",
+            "worktree": "/repos/nova/.reckon-worktrees/mixed/run-dead",
+            "node": {"id": "dead-node", "plan": "equilibrium"},
+            "phase": "working",
+            "pid": 2_147_483_647,
+            "process_alive": True,
+            "log_path": str(home / "crew" / "runs" / "run-dead" / "stream.jsonl"),
+            "manifest_path": str(home / "crew" / "runs" / "run-dead" / "manifest.md"),
+        },
+    )
+
+    result = mcp._crew("nova", view="directory")
+    coordinator = result["coordinators"][0]
+    rows = {row["run_id"]: row for row in coordinator["runs"]}
+
+    assert rows["run-live"]["process_alive"] is True
+    assert rows["run-live"]["classification"] == "running"
+    assert rows["run-dead"]["process_alive"] is False
+    assert rows["run-dead"]["classification"] == "abandoned"
+    assert coordinator["state"] == "dispatching"
+    assert coordinator["live_node_count"] == 1
+    assert result["live_node_count"] == 1
+
+    crew.observe("run-live")
+    crew.observe("run-dead")
+    live_rows = {row["run_id"]: row for row in mcp._crew("nova", view="live")["runs"]}
+    assert {
+        run_id: (row["classification"], row["process_alive"])
+        for run_id, row in rows.items()
+    } == {
+        run_id: (row["classification"], row["process_alive"])
+        for run_id, row in live_rows.items()
+    }
+    assert _directory_snapshot(real_live) == before
 
 
 def test_directory_is_a_cli_verb_and_an_existing_mcp_view(
