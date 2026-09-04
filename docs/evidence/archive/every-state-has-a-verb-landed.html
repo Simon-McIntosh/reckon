@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-state-has-a-verb-landed">
+  <meta name="plan-title" content="Every state has a verb — landed evidence">
+  <meta name="plan-summary" content="A follower now reloads itself when the crew code beneath it advances, keeping its pid, its session registration and its stdout — measured on a running follower rather than on the existence of a re-exec function, as the section demanded.">
+  <meta name="plan-evidence-for" content="reckon:every-state-has-a-verb">
+  <meta name="plan-verifies" content="reckon:every-state-has-a-verb#s2">
+  <meta name="plan-recorded-at" content="2026-09-04">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; editable install; measured against two live crew follow processes on one machine, one started before the mechanism landed and one after">
+  <meta name="plan-commits" content="e5f4ef4">
+  <meta name="plan-artifacts" content="reckon/crew/runs.py,reckon/cli.py">
+  <title>Every state has a verb — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Every state has a verb — landed evidence</h1>
+    <p class="plan-summary">One section closed so far, and it is the one the plan said had to
+    go first: a follower no longer runs code older than the fleet it watches. Recorded here
+    with the live measurement, and with the limitation that measurement exposed.</p>
+  </header>
+
+  <section id="overview">
+    <h2>Record scope</h2>
+    <p>&sect;2 was ordered first for a mechanical reason rather than a preference: every
+    other section in the plan changes behaviour a follower executes, so landing them under
+    stale followers would ship capabilities the running fleet cannot reach. That had already
+    happened once, with a recovery sweep no follower on the workstation ever called.</p>
+    <p>This record covers &sect;2 only. &sect;3 through &sect;7 remain open, and the plan
+    stayed blocked on <code>work-survives-a-provider-outage</code> for its dependency
+    throughout.</p>
+  </section>
+
+  <section id="s2-follower-reload">
+    <h2>&sect;2 &mdash; A follower never runs code older than the fleet it watches</h2>
+    <p>Commit <code>e5f4ef4</code> at 07:02 on 2026-09-04 &mdash; <em>fix(crew): reload
+    followers from imported code</em>. The first of the section's three candidate shapes:
+    the follower compares <code>follower_code_stamp()</code>, a SHA-256 over
+    <code>cli.py</code> and <code>crew/*.py</code> mtimes and sizes, against the stamp it
+    started with at a one-second cadence, and re-execs itself through the
+    <code>sys.path</code> root that supplied the imported package, carrying a reader
+    checkpoint across the replacement so no transition is lost. The third shape is the
+    failure path rather than an alternative: when <code>os.execv</code> itself fails, the
+    follower prints that it is stale and the exact command to cycle it, then stops trying.</p>
+
+    <h3>Measured on a running follower, which is what the done-when required</h3>
+    <p>The section is explicit that this must be asserted "by landing a change to the swept
+    behaviour under a running follower and requiring the new behaviour, not by asserting that
+    a re-exec function exists". This session supplied that incidentally:</p>
+    <ul>
+      <li>The follower was started from the console script
+        (<code>.venv/bin/reckon crew follow --project reckon --session …</code>) at
+        <strong>14:15:24</strong>.</li>
+      <li>Five crew modules then landed beneath it &mdash;
+        <code>promotion.py</code>, <code>prompts.py</code>, <code>query.py</code>,
+        <code>recovery.py</code> and <code>ledger.py</code>.</li>
+      <li>Its argv is now the launcher form,
+        <code>python3 -c "import sys; sys.path.insert(0, …); from reckon.cli import main;
+        main()" crew follow …</code>, which only the re-exec produces.</li>
+      <li>Its pid (4176213), its start time, its session registration and its stdout are all
+        unchanged, and the watching pane received transitions continuously across the whole
+        period.</li>
+    </ul>
+    <p>So the reload costs no gap in the pane and no lost registration, which were the second
+    and third clauses of the done-when. The fourth &mdash; that no skill text instructs a
+    reader to restart a follower after a merge &mdash; holds: the ship skill states that a
+    long-lived follower reloads the installed code when it advances and reports explicitly
+    when a reload fails.</p>
+
+    <h3>A reading trap, recorded because it caught the author</h3>
+    <p><code>os.execv</code> replaces the process image <strong>in place</strong>, so both
+    pid and start time survive a reload. An unchanged pid is therefore <em>consistent with</em>
+    reloading rather than evidence against it, and the argv is the only tell. The first
+    reading taken here was that the follower had <em>not</em> reloaded, on exactly that
+    mistaken inference.</p>
+
+    <h3>The limitation is a property of the shape, not a bug in it</h3>
+    <p>The mechanism cannot retrofit itself into a process that predates it, because the code
+    that would re-exec was never in that image. Measured the same afternoon on the peer
+    coordinator's follower for the same project: started <strong>05:48:52</strong>, seventy-four
+    minutes before <code>e5f4ef4</code>, still carrying the plain console-script argv nine
+    hours later.</p>
+    <p>That follower was therefore missing every crew behaviour landed that day &mdash;
+    including <code>6af7656</code>, <em>refresh live run classifications</em>, which is the
+    fix for the exact failure that session had independently reported: terminal rows sitting
+    unnoticed while it believed it was waiting for a completion event. So the section's own
+    motivating failure was still live in a second session, with the fix merged, for the one
+    reason the fix cannot address.</p>
+    <p>The operational consequence is small and worth stating rather than rediscovering: a
+    fleet adopting this needs <strong>one</strong> cycling pass at adoption, once, and never
+    again. Neither the stamp-driven nor the announce-only shape would have avoided this —
+    both also require the running process to hold code that knows to check.</p>
+  </section>
+
+</main>
+</body>
+</html>

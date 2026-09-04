@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-survives-a-provider-outage-landed">
+  <meta name="plan-title" content="Work survives a provider outage — landed evidence">
+  <meta name="plan-summary" content="A refusal-killed run is resumed rather than reconciled: promotion refuses to destroy a recoverable session, the worktree outlives the promotion while that session lives, and observe answers recoverability instead of handing back a field the caller must interpret.">
+  <meta name="plan-evidence-for" content="reckon:work-survives-a-provider-outage">
+  <meta name="plan-verifies" content="reckon:work-survives-a-provider-outage#s2,reckon:work-survives-a-provider-outage#s3,reckon:work-survives-a-provider-outage#s4">
+  <meta name="plan-recorded-at" content="2026-09-04">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; detached git worktrees; assertions run through the crew complete and observe entry points and through the worktree audit, never through the release helper">
+  <meta name="plan-commits" content="a1bf7da70ca2f93d83ae92726ba03ccbe62a75c1,e4dacc2921057ceea0e231b1d61c4b67181e94f4">
+  <meta name="plan-artifacts" content="reckon/crew/promotion.py,reckon/crew/dispatch.py,tests/test_crew_promotion.py,tests/test_crew_recover.py">
+  <title>Work survives a provider outage — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Work survives a provider outage — landed evidence</h1>
+    <p class="plan-summary">One incident cost five resumable sessions. Three of the plan's
+    four executable sections now close the routes it took: a promotion that would destroy a
+    resume path is refused, the worktree outlives the promotion while its session lives, and
+    a missing session id is no longer evidence of an unresumable run.</p>
+  </header>
+
+  <section id="overview">
+    <h2>Record scope</h2>
+    <p>The incident is worth restating because every measure here points at one of its
+    steps. Five runs were killed by per-request provider refusals, read as unresumable
+    because their live pointers said <code>session_id: null</code>, promoted as
+    infrastructure failures, and had their worktrees released. The session ids were in the
+    runs' own streams the whole time and were written into the permanent record by the very
+    operation that destroyed the resume path. Only the working directories were actually
+    lost.</p>
+    <p>&sect;2 and &sect;3 stop the loss recurring; &sect;4 removes the reasoning error that
+    started it. &sect;5 is dispatched separately. &sect;6, recovering the five runs
+    themselves, is owned by the coordinator holding the S16 write scope and is recorded on
+    the plan rather than here.</p>
+  </section>
+
+  <section id="s2-promotion-refuses">
+    <h2>&sect;2 &mdash; A promotion that would destroy a resume path is refused</h2>
+    <p>Found already landed by a currency audit rather than dispatched.
+    <code>_require_resume_waiver</code> in <code>reckon/crew/promotion.py</code> refuses a
+    promotion that would delete a resume path, naming both
+    <code>reckon crew resume --run &lt;id&gt; --advice &lt;answer&gt;</code> and the explicit
+    <code>--waive-resume-path REASON</code> override. The discarded path survives on the
+    ledger row as <code>resume_waiver</code> beside the session it discarded, so a deliberate
+    discard is distinguishable afterwards from an accidental one &mdash; precisely the
+    distinction the incident could not make. A waiver carrying no stated reason is itself
+    refused. Covered by the accepted and unreasoned cases in
+    <code>tests/test_crew_promotion.py</code>.</p>
+    <p><strong>The evidence that matters here arrived unsolicited, from the operator it
+    inconvenienced.</strong> At about 13:20 on 2026-09-04 this guard stopped the peer
+    coordinator shipping S16 from promoting exactly this state on its own run, and required
+    it to state in writing why the session was safe to discard. That session had destroyed
+    five resumable sessions the same morning by promoting this state and reading
+    <code>session_id: null</code> as a verdict; it reported the interruption as the behaviour
+    it had asked for. A guard measured by the person it obstructs is the only measurement of
+    a refusal that means anything.</p>
+  </section>
+
+  <section id="s3-tree-outlives-promotion">
+    <h2>&sect;3 &mdash; The worktree outlives the promotion while the session lives</h2>
+    <p>Commit <code>a1bf7da</code>, 340 insertions. Gate
+    <code>uv run --no-sync pytest tests/test_crew_promotion.py -q</code> &mdash;
+    <strong>19 passed in 1.50&nbsp;s</strong>, ruff findings delta zero against a baseline of
+    10.</p>
+    <p>Releasing the worktree is what converted a recoverable outage into a loss: the
+    transcripts survived and the directory they had been oriented against did not, and a
+    resume has no working directory. So the release is now conditioned on the session being
+    <em>unrecoverable</em> rather than on the run reaching a terminal state. A retained tree
+    records its retention on the ledger row, and reads as its own <strong>third
+    category</strong> in the worktree audit &mdash; never as clean-and-reachable, never as
+    holding unintegrated work &mdash; so a deliberately held tree is not mistaken for
+    residue. A waived promotion still retains the tree unless the waiver explicitly discards
+    it.</p>
+    <p>Asserted through the <code>crew complete</code> entry point and through the audit that
+    enumerates worktrees, not through the release helper. The plan's insistence that this not
+    be folded into &sect;2 as one node was right: refusing a promotion and conditioning a
+    release are different behaviours with different negatives, and one node would have let
+    either pass on the other's evidence.</p>
+    <p>The node was also killed once mid-flight by an infrastructure fault &mdash; codex
+    reported <code>apply_patch verification failed: invalid patch: multiple operations target
+    …/manifest.md</code> &mdash; and was <em>resumed</em> rather than redispatched, after its
+    worktree was confirmed clean and carrying nothing beyond base. It kept its context and
+    cost one turn.</p>
+  </section>
+
+  <section id="s4-observe-answers-recoverability">
+    <h2>&sect;4 &mdash; A missing session id is not evidence of an unresumable run</h2>
+    <p>Commit <code>e4dacc2</code>. Gate
+    <code>uv run --no-sync pytest tests/test_crew_recover.py -q</code> &mdash;
+    <strong>18 passed in 1.99&nbsp;s</strong>, zero failures.</p>
+    <p><code>observe</code> now answers recoverability as a derived fact rather than handing
+    back a field whose meaning the caller must know the internals to read. A dead run whose
+    pointer carries no session id but whose stream does reports <em>resumable</em> and names
+    the recovered id. A run with neither reports not resumable and states which evidence was
+    absent. Neither answer requires reading <code>session_id</code> directly, and the
+    negative is asserted so the not-resumable answer stays reachable rather than becoming an
+    unreached branch.</p>
+    <p><strong>The sharpest part of this section is that the capability already
+    existed.</strong> <code>resume_plan</code> had recovered exactly this case for some time
+    &mdash; where the record lacks a session id it calls <code>observe</code> and re-reads.
+    So the coordinator's reasoning was sound given what it was shown, and what it was shown
+    omitted the one fact that would have changed the decision. That is the same defect family
+    as a display discarding a value the record holds: not a wrong answer, but an unanswerable
+    question, which is more expensive because a wrong answer can be contradicted by a
+    measurement and an absent one sends its reader elsewhere.</p>
+  </section>
+
+</main>
+</body>
+</html>

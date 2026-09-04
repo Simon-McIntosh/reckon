@@ -478,6 +478,61 @@
     <code>worktree_released</code> true, <code>process_signalled</code> false with the reason
     "process is not alive".</p>
   </section>
+
+  <section id="s11-context-fit">
+    <h2>&sect;11 &mdash; Context fit is a refusal, not a discovery</h2>
+    <p>Landed 2026-09-04, commit <code>9479569</code>, 590 insertions across six paths. Gate
+    <code>uv run pytest tests/test_flight.py tests/test_crew_routes.py -q</code> &mdash;
+    <strong>78 passed, 1 failed</strong> against a base of 71 passed and the identical single
+    pre-existing failure, so zero added, with all seven new cases passing.</p>
+    <p>All four measures hold. Each backend declares a usable input budget in flight config,
+    validated through the layered schema with leaf provenance and regenerated into
+    <code>reckon/_flight_schema.py</code> and <code>docs/_shared/flight.schema.json</code>;
+    a backend declaring none is <em>unbounded</em> rather than zero and never refuses. A
+    dispatch computes the node's need from the standing instruction load plus its declared
+    write paths and named files, and records the estimate with its inputs on the run so a
+    later reader can check the arithmetic against what happened. A node whose need exceeds the
+    resolved window is refused <strong>before worktree creation</strong> through the existing
+    capability envelope at exit 5, naming the estimate, the window and the shortfall &mdash;
+    and a node that fits dispatches unchanged.</p>
+    <p>The generated pair was verified independently rather than taken from the manifest:
+    re-running <code>scripts/regen_flight_schema.py</code> at the merged head produced no
+    diff.</p>
+    <p><strong>How the node ran is part of the record.</strong> Its first attempt refused
+    outright and edited nothing, because the fence named
+    <code>reckon/schema/flight-defaults.yaml</code> &mdash; which the regenerator does not
+    write &mdash; and omitted <code>docs/_shared/flight.schema.json</code>, which it does and
+    which the gate asserts byte-identically. So exact evidence was impossible inside the
+    fence and the worker said so rather than reaching outside it. The path was granted on the
+    live pointer and the session resumed with both halves of the brief corrected; the run is
+    recorded <code>--scope-changed</code> so it measures neither the estimate nor the worker.</p>
+  </section>
+
+  <section id="s12-attribution">
+    <h2>&sect;12 &mdash; A verifier reports an attribution, and cannot edit what it grades</h2>
+    <p>Landed 2026-09-04, commit <code>1a103b6</code>. Gate
+    <code>uv run --no-sync pytest tests/test_crew_test_role.py -q</code> &mdash;
+    <strong>12 passed</strong> against a base of 10, zero added failures.</p>
+    <p>Three of this section's four measures were already in place: the test role's own
+    sandbox, budget and scope defaults, its prompt stating the division of labour, and the
+    refusal of a verifier whose commit touches source. The missing one was the deliverable
+    itself, and it is now there: a test node's prompt requires <code>baseline_suite</code>,
+    <code>after_suite</code> and a complete <code>failure_attribution</code> while declaring
+    the repository read-only, and its manifest separates new failure ids from pre-existing
+    ones against a stated base, naming for each new one the merged commit that introduced
+    it.</p>
+    <p>Two properties are worth naming because they close the ways the check would otherwise
+    be talked past. An armed test-role promotion refuses an added failure carrying no
+    candidate commit <strong>even when suite-delta waiver text is supplied</strong> &mdash; a
+    waiver being exactly the instrument that would otherwise wave the attribution through.
+    And every repository-changing commit a test-role run cites is refused <em>before</em> the
+    ledger append, <strong>regardless of a widened declared source scope</strong>, so a
+    verifier cannot edit what it grades even when scope has been granted to it.</p>
+    <p>The integration case is end-to-end rather than unit: it promotes report-only evidence,
+    deletes its manifest, reloads the committed ledger through <code>ledger.runs</code>, and
+    recovers the pre-existing failure set, the one added failure, and its exact broken
+    candidate commit among several clean merges.</p>
+  </section>
 </main>
 </body>
 </html>
