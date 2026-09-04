@@ -156,6 +156,48 @@
     the scope was granted on the live pointer and the session resumed, and the run is recorded
     <code>--scope-changed</code>.</p>
   </section>
+
+  <section id="s3-audit-scan-regression">
+    <h2>&sect;3 postscript &mdash; the retention audit was O(worktrees), and a peer paid for it</h2>
+    <p>Recorded because a plan that ships a regression and then quietly fixes it has told
+    nobody anything. <code>a1bf7da</code> ended <code>_release_after_promotion</code> with a
+    <code>_worktree_audit</code> that enumerated <strong>every worktree in the
+    repository</strong>, running a git status and a reachability check on each. Every
+    <code>crew complete</code> therefore paid O(worktrees) sequential git subprocesses
+    &mdash; after the ledger append and pointer delete had already succeeded.</p>
+    <p><strong>Measured, on the reporter's project rather than mine.</strong> nova carries 63
+    to 81 registered worktrees and one <code>git status --porcelain</code> there costs
+    0.49&nbsp;s, so a promotion cost roughly <strong>40 to 120 seconds</strong>. The nova
+    coordinator lost two promotions to a 120&nbsp;s Bash timeout and caught a third with a
+    <code>timeout 90</code> guard, across three runs whose gate logs were 369 markdown lines,
+    22,809 JSON lines, and an ordinary pytest log &mdash; which is how they correctly ruled
+    out log size before reporting it. <code>imas-codex</code> carries 110 worktrees and was
+    worse affected than the reporter. <strong>reckon carries 20</strong>, so this session's
+    own 29 completions cost about ten seconds each and read as merely sluggish. The defect was
+    invisible from the repository that introduced it, for no reason other than having four
+    times fewer worktrees.</p>
+    <p>The reporter attributed it to the follower re-exec (<code>e5f4ef4</code>, 07:02), which
+    was reasonable and wrong: their own earlier completions ran fine for five hours after that
+    landed, while <code>a1bf7da</code> merged at about 11:57&nbsp;UTC, half an hour before
+    their first hang. Two changes went live the same day and only one of them was announced.</p>
+    <p><strong>Fixed in <code>f707348</code>, and the fix is what the section always
+    needed.</strong> The audit exists to say that a tree retained for a recoverable session is
+    its own third category rather than reclaimable-or-unintegrated &mdash; a claim about
+    <em>the promoted run's own tree</em>, as its docstring says. The snapshot is now scoped
+    with <code>roots=(worktree,)</code>. 24 passed against a base of 23, and
+    <code>test_promotion_audits_only_its_own_worktree</code> synthesises 22 registered
+    worktrees and holds a six-invocation bound that repository-wide enumeration fails.
+    Verified against the real defect rather than only the fixture: the audit against nova now
+    costs <strong>1.28&nbsp;s and returns exactly one row</strong>. Retained-for-resume remains
+    the operative classification with the artifact classification carried separately, and an
+    unrecoverable session still releases its worktree.</p>
+    <p>One property of the original code deserves credit, because it is why this cost nothing
+    but time: the ledger append and the pointer delete both <em>precede</em> the audit, and the
+    release step is documented as strictly additional cleanup whose exceptions must never read
+    as a failed promotion. So every timed-out promotion had in fact fully promoted, and the
+    timeout was cosmetic. A cleanup step ordered after the writes it must not endanger is the
+    reason a performance defect here was an annoyance rather than a data-loss incident.</p>
+  </section>
 </main>
 </body>
 </html>

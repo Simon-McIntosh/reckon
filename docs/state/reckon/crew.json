@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T15:10:25",
+  "updated": "2026-09-04T15:30:22",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -701,6 +701,17 @@
         "session_model": "gpt-5.6-sol",
         "sessions": {
           "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06c65-90d2-76a1-8747-9c27e7b47082"
+        },
+        "created": "2026-09-04"
+      },
+      {
+        "id": "s15-auditscope",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": "01a06c94-e819-78d2-9f8a-2688ce69ab25",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06c94-e819-78d2-9f8a-2688ce69ab25"
         },
         "created": "2026-09-04"
       },
@@ -60127,6 +60138,141 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T132119352167-wspo-audit-scopes-to-its-own-tree",
+        "plan": "work-survives-a-provider-outage",
+        "section": "\u00a73",
+        "node": "wspo-audit-scopes-to-its-own-tree",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1313,
+                "cached_input_tokens": 704409,
+                "input_tokens": 705724,
+                "output_tokens": 1094,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 706818,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "uv run --no-sync pytest tests/test_crew_promotion.py -q passes with no failure count above the base revision and every existing retention assertion still green, and a new case asserts the audit issues at most a constant number of git invocations regardless of how many worktrees the repository holds - assert it by counting invocations against a synthesised repository carrying at least twenty registered worktrees, so the test fails if the enumeration returns; the retained tree must still report its retention as the operative classification with the artifact classification carried separately, and a promotion whose tree is reclaimable must still be released",
+          "estimated_hours": 1.25,
+          "goal": "Scope the promotion worktree audit to the promoted run's own tree so a completion stops paying a repository-wide git scan",
+          "id": "wspo-audit-scopes-to-its-own-tree",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T132119352167-wspo-audit-scopes-to-its-own-tree/manifest.md",
+          "plan": "work-survives-a-provider-outage",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "tests/test_crew_promotion.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s15-auditscope",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T13:21:32Z",
+        "completed_at": "2026-09-04T13:29:23Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 471,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 471,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "6a4c1968fa66d33ac344793cc8682d63d5d261ca",
+        "commits": [
+          "f707348278c9604581c2dcb8631b9451c81bdab4"
+        ],
+        "changed_lines": {
+          "added": 61,
+          "removed": 5,
+          "files": 2
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "uv run --no-sync pytest tests/test_crew_promotion.py -q",
+          "exit_status": 0,
+          "log_path": null,
+          "log_digest": "24 passed in 2.18s; base 23 passed; delta 0"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T132119352167-wspo-audit-scopes-to-its-own-tree/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06c94-e819-78d2-9f8a-2688ce69ab25",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 7184384,
+            "cached_input_tokens_cumulative": 7184384,
+            "input_tokens": 7330311,
+            "input_tokens_cumulative": 7330311,
+            "output_tokens": 17391,
+            "output_tokens_cumulative": 17391,
+            "reasoning_output_tokens": 5537,
+            "reasoning_output_tokens_cumulative": 5537
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 22928,
+          "peak_input_tokens": 14514695
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/wspo-audit-scopes-to-its-own-tree",
+          "session_id": "01a06c94-e819-78d2-9f8a-2688ce69ab25",
+          "session_source": "pointer",
+          "retained_at": "2026-09-04T13:29:23Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_crew_promotion.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -60299,6 +60445,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 992
+    "_version": 995
   }
 }
