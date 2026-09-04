@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 <meta name="plan-impl" content="0.9">
 </head>
 <body>
@@ -304,14 +304,14 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="waiver-strictness" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="waiver-strictness" data-choice="refuse-with-waiver" data-by="reckon-ship (deduced from the landed implementation)" data-when="2026-09-04T10:32:32+00:00">
     <p class="r-dec-q">How strict is the refusal on promoting a recoverable blocked run?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="refuse-with-waiver">Refuse, with a recorded waiver flag</button>
+      <button class="r-opt chosen" data-value="refuse-with-waiver">Refuse, with a recorded waiver flag</button>
       <button class="r-opt" data-value="warn-and-proceed">Warn on stdout and proceed</button>
       <button class="r-opt" data-value="refuse-absolutely">Refuse with no override</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Deduced from the code rather than chosen: the promotion path already refuses a recoverable blocked run and names --waive-resume-path REASON as the single override (reckon/crew/promotion.py, wired through reckon/cli.py), and the refusal was observed working in the field on 2026-09-04 when a peer coordinator was stopped from promoting exactly this state and had to state in writing why the session was safe to discard. Warn-and-proceed is refused by the incident that motivated the plan: five resumable sessions were destroyed by a promotion that read session_id null as a verdict, and a warning is the same prose rule wearing a checkmark. Refuse-absolutely is refused because a genuinely unrecoverable session must still be promotable, and an override that must be stated in writing is one visible deliberate step rather than a default. The accepted cost is that a waiver exists at all, recorded on the promoted ledger row.</p>
     </div>
 <div class="r-dec" data-key="retained-tree-lifetime" data-choice="" data-by="" data-when="">
     <p class="r-dec-q">What ends the life of a worktree retained for a resume that never comes?</p>

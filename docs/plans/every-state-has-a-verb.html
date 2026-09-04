@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="22">
 <meta name="plan-impl" content="0.6">
 </head>
 <body>
@@ -324,14 +324,14 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="follower-freshness-mechanism" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="follower-freshness-mechanism" data-choice="self-reexec" data-by="reckon-ship (deduced from the landed implementation)" data-when="2026-09-04T10:32:40+00:00">
     <p class="r-dec-q">How does a follower stop running stale code?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="self-reexec">It re-execs itself when the package on disk is newer</button>
+      <button class="r-opt chosen" data-value="self-reexec">It re-execs itself when the package on disk is newer</button>
       <button class="r-opt" data-value="stamp-driven">The watch seat publishes a stamp and a stale follower re-execs</button>
       <button class="r-opt" data-value="announce-only">It announces staleness and leaves cycling to the operator</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Deduced from the code rather than chosen: the follower already compares follower_code_stamp() against the stamp it started with at a bounded cadence (FOLLOWER_FRESHNESS_SECONDS) and re-execs itself through the sys.path root that supplied the imported package, carrying a reader checkpoint across the replacement so no transition is lost and its registration survives. Stamp-driven was rejected because the watch seat&#x27;s reckon_version answers a different question, which producer a project&#x27;s seat belongs to, and coupling follower freshness to it would make a follower&#x27;s correctness depend on the producer having been re-armed. Announce-only is the fallback and is already the failure path rather than the mechanism: when os.execv itself fails the follower states that it is stale and prints the exact command to cycle it. The accepted cost is that a re-exec replaces the process, so anything holding the old pid loses it.</p>
     </div>
 <div class="r-dec" data-key="lane-change-verb" data-choice="both" data-by="reckon-ship" data-when="2026-09-04T07:33:35+00:00">
     <p class="r-dec-q">What shape moves a run between lanes?</p>
