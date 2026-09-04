@@ -57,7 +57,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 from urllib.request import urlopen
 
-from reckon import _backends, _plan_html, crew, ledger
+from reckon import _backends, _plan_html, crew, fleet_index, ledger
 from reckon._store import _config_home, _mounts_path, _state_root
 from reckon.figures import figure_rows
 from reckon.lifecycle import (
@@ -582,22 +582,16 @@ def render_index_fallback(mounts: dict[str, Path], host: str, port: int) -> byte
 
 
 def collect_projects(mounts: dict[str, Path]) -> dict:
+    from reckon.project_state import ProjectStateError
+
     out: list[dict] = []
     for name, path in sorted(mounts.items()):
-        state_file = path / "state" / name / "index.json"
         proj: dict = {"project": name, "path": str(path)}
-        if state_file.is_file():
-            try:
-                envelope = json.loads(state_file.read_text())
-                proj["data"] = (
-                    envelope.get("data", envelope) if isinstance(envelope, dict) else {}
-                )
-                if isinstance(envelope, dict) and "updated" in envelope:
-                    proj["updated"] = envelope["updated"]
-            except (OSError, json.JSONDecodeError) as e:
-                proj["error"] = str(e)
-                proj["data"] = {}
-        else:
+        try:
+            row = fleet_index.compute_project_row(path, name, state_root=_STATE_ROOT)
+            proj["data"] = {"projects": [row]}
+        except (OSError, ProjectStateError) as e:
+            proj["error"] = str(e)
             proj["data"] = {}
         out.append(proj)
     return {
