@@ -656,6 +656,7 @@ def build_record(
     gate_check: Mapping[str, Any] | None = None,
     require_gate_check: bool = False,
     suite_delta: Mapping[str, Any] | None = None,
+    resume_remedy: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     """Assemble one completed-run record, refusing an unknown gate verdict.
 
@@ -755,6 +756,8 @@ def build_record(
     stored_fallback = promoted_budget_fallback(budget_fallback)
     if stored_fallback is not None:
         record["budget_fallback"] = stored_fallback
+    if resume_remedy is not None:
+        record["resume_remedy"] = dict(resume_remedy)
     return record
 
 
