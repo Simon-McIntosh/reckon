@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T11:41:50",
+  "updated": "2026-09-04T12:06:14",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -743,6 +743,17 @@
         "session_model": "gpt-5.6-sol",
         "sessions": {
           "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06bcb-909f-7cb2-8c38-fc584b7b0e4d"
+        },
+        "created": "2026-09-04"
+      },
+      {
+        "id": "s16-eptransport",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": "01a06bd8-a1d0-7f90-bbbb-2a7201ff7317",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06bd8-a1d0-7f90-bbbb-2a7201ff7317"
         },
         "created": "2026-09-04"
       },
@@ -54314,6 +54325,117 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T094107200371-dependency-cone-toggle",
+        "plan": "artifact-feeds-and-reader",
+        "section": "\u00a75",
+        "node": "dependency-cone-toggle",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_spa_dependency_cone.py -q passes with the cases \u00a75 names: the cone is closed on open; the toggle reads two-up one-down for a plan with two prerequisites and one dependent, and reads standalone with reduced opacity for an isolated plan; for a plan with three evidence documents and no prerequisites the open cone lists zero cards while the foot of the reader lists three; and the up column lists exactly the depends_on slugs with the down column listing exactly the plans naming it",
+          "estimated_hours": 2.0,
+          "goal": "The reader's dependency cone is a labelled toggle showing plan edges only",
+          "id": "dependency-cone-toggle",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T094107200371-dependency-cone-toggle/manifest.md",
+          "plan": "artifact-feeds-and-reader",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "docs/ui/shell-plans.jsx",
+            "docs/ui/plans.css",
+            "tests/test_spa_dependency_cone.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s16-cone",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T09:41:16Z",
+        "completed_at": "2026-09-04T09:50:37Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 561,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 561,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "16e5c84e0e012ae5d98e698cbc1f4f45af32a67f",
+        "commits": [
+          "c6d25f9106afbf558252e6e56893abc7b7d93781"
+        ],
+        "changed_lines": {
+          "added": 491,
+          "removed": 53,
+          "files": 3
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_dependency_cone.py tests/test_spa_module_scope.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T094107200371-dependency-cone-toggle/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T094107200371-dependency-cone-toggle/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06bcb-3bf0-7523-ab22-5e98c2d42256",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 5878784,
+            "cached_input_tokens_cumulative": 5878784,
+            "input_tokens": 6019240,
+            "input_tokens_cumulative": 6019240,
+            "output_tokens": 23338,
+            "output_tokens_cumulative": 23338,
+            "reasoning_output_tokens": 8341,
+            "reasoning_output_tokens_cumulative": 8341
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 31679,
+          "peak_input_tokens": 11898024
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_spa_dependency_cone.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -54486,6 +54608,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 889
+    "_version": 892
   }
 }
