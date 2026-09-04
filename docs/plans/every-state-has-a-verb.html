@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -313,6 +313,11 @@
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s3" data-id="c-20260904T0700" data-who="reckon-ship" data-when="2026-09-04T05:00:00+00:00">
+    <div class="r-comment-body">THREE MEASUREMENTS FROM THE NOVA COORDINATOR THAT SHARPEN THIS SECTION, and the third gives it a number. FIRST, THE CONTROL PAIR IS AS CLEAN AS THIS KIND OF EVIDENCE GETS. A worker that wrote its manifest before starting a FOREGROUND poll survived a three-hour job and was resumable in one command. A worker that BACKGROUNDED the same poll ended its turn within a minute and left a manifest still reading in-progress, and its job later completed with nobody listening until a separate cluster watch fired. Same job, same coordinator, same night; the only difference is whether the wait was backgrounded, and the outcome is the difference between one command and an unattended completion. That is the manifest-before-the-wait rule from the outage plan holding under a three-hour test rather than a five-minute one, and it is worth stating in this section because the external-wait state must be declared BEFORE the wait begins for exactly the same reason - a worker's process ends with its turn, so a state it means to write afterwards is a state nobody will ever read. SECOND, A MANIFEST LEFT READING IN-PROGRESS IS THE SILENT FORM OF THIS DEFECT. The backgrounded worker did not park as blocked; it left a record asserting it was still working while its process was gone. So the two failure shapes this section addresses are not one - a wait mislabelled as blocked is visible and wrong, while a wait mislabelled as in-progress is invisible and wrong, and the second is the one that ran to completion with nobody listening. The state must therefore be distinguishable from in-progress as well as from blocked. THIRD, AND THIS IS THE FIGURE THE BUCKET REQUIREMENT NEEDED: the follower rendered that producer run as blocked for the entire hour its job was running. Sixty minutes of healthy work sat in the failure bucket, on a pane a coordinator was reading. This section already asks for a bucket distinct from blocked and from working; the measurement says what the current behaviour costs, which is that a coordinator scanning for failures finds healthy long jobs among them for as long as those jobs run. It also means the bucket cannot be cosmetic - a fleet of four healthy waits currently reads as four failures, and the longer the job the longer the lie stands.</div>
+</div>
+</section>
+</main>
 </body>
 </html>
