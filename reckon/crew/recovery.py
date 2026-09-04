@@ -32,7 +32,6 @@ from reckon.crew.runs import (
     _utc_now,
     _write_watch_record,
     list_live,
-    process_alive,
     watch_lock_path,
 )
 
@@ -425,21 +424,22 @@ def classify_pointer(
     manifest_commits = list(manifest_data.get("commits") or [])
     manifest_blockers = list(manifest_data.get("blockers") or [])
     needs_help = manifest_data.get("needs_help")
-    alive = (
-        process_alive(record.get("pid"))
-        if record.get("pid")
-        else record.get("process_alive")
-    )
+    # Observation writes this fact onto the pointer, and dispatch reads that
+    # same field when deciding whether the run still owns its process. Re-probing
+    # here would create a second liveness verdict that can disagree with the
+    # pointer whose scope refusal the coordinator just read.
+    alive = record.get("process_alive")
     log = Path(str(record.get("log_path") or ""))
     age = None
     if log.is_file():
         age = max(0, int(_utc_seconds() - log.stat().st_mtime))
     # Superseded-by-newer-activity applies to any manifest that is not yet a
-    # verdict. Complete and failed are facts a later log line cannot undo, so
-    # they stay protected from this staleness path. Blocked is a solicitation
-    # rather than a verdict: a worker that resumes and produces a newer log
-    # line has answered it, and discarding the stale manifest is how that
-    # answer becomes visible again.
+    # verdict. Complete and failed are preserved while a living worker keeps
+    # producing output, but neither is rendered as its outcome until that
+    # worker exits. This defers the report without losing it. Blocked is a
+    # solicitation rather than a verdict: a worker that resumes and produces a
+    # newer log line has answered it, and discarding the stale manifest is how
+    # that answer becomes visible again.
     if (
         manifest_status
         and manifest_status not in {"complete", "failed"}
@@ -474,7 +474,8 @@ def classify_pointer(
     )
     terminal_at = None
     terminal_age_seconds = None
-    if manifest_status in {"complete", "blocked", "failed"}:
+    deferred_outcome = alive is True and manifest_status in {"complete", "failed"}
+    if manifest_status in {"complete", "blocked", "failed"} and not deferred_outcome:
         terminal_seconds = manifest.stat().st_mtime
         terminal_at = (
             datetime.fromtimestamp(terminal_seconds, tz=timezone.utc)
@@ -485,7 +486,7 @@ def classify_pointer(
 
     marker = None
     needs_help_complete_value = None
-    if manifest_status == "complete":
+    if manifest_status == "complete" and alive is not True:
         classification = "completed_unpromoted"
         detail = (
             "the worker manifest reports completion and the run is still a "
@@ -517,7 +518,7 @@ def classify_pointer(
         else:
             marker = "!"
             action = f"read {manifest}; resolve the blocker before resuming the run"
-    elif manifest_status == "failed":
+    elif manifest_status == "failed" and alive is not True:
         classification = "failed"
         failure = "; ".join(manifest_blockers) or "the worker manifest reports failure"
         detail = f"the worker manifest reports failed: {failure}"
@@ -667,7 +668,11 @@ def classify_pointer(
         "manifest_file_present": manifest_file_present,
         "manifest_fresh": manifest_present,
         "manifest_path": str(manifest) if str(manifest) != "." else "",
-        "manifest_status": manifest_status or None,
+        # A living worker's complete or failed report remains on disk but is
+        # not exposed as a terminal outcome. The single-event watcher consumes
+        # this field, so returning the raw report here would call the run
+        # terminal while the classification and ticker correctly call it live.
+        "manifest_status": None if deferred_outcome else manifest_status or None,
         "manifest_derived": manifest_derived,
         "manifest_commits": manifest_commits,
         # The refusal text when a present manifest could not be read, carried on
@@ -957,7 +962,6 @@ def _watch_snapshot(
         now_seconds=moment,
         stale_after_seconds=stall_seconds,
     )
-    manifest_status = str(row.get("manifest_status") or "")
     phase = str(pointer.get("phase") or "")
     classification = str(row.get("classification") or "")
     alive = row.get("process_alive")
@@ -969,16 +973,19 @@ def _watch_snapshot(
     # the process table, so a dead process falls through to the abandoned state
     # a coordinator must act on instead of the stale working label. A manifest
     # that has reached a verdict likewise cannot keep a run in working, so the
-    # terminal readings are arbitrated before any working state is chosen.
-    if manifest_status in {"complete", "blocked", "failed"}:
-        state = manifest_status
+    # terminal readings are arbitrated before any working state is chosen. The
+    # classifier also defers complete and failed reports while the pointer says
+    # their process is alive, so this reducer consumes that decision instead of
+    # deriving a second verdict from the manifest.
+    if classification == "completed_unpromoted":
+        state = "complete"
     elif classification == WAITING_STATUS:
         state = "wait-aged" if row.get("wait_overdue") else WAITING_STATUS
-    elif classification == "blocked":
+    elif classification in {"blocked", "failed"}:
         # A provider refusal blocks even though no manifest reached a verdict:
         # the process is gone, but the stop is triageable and resumable once
         # the limit lifts, so it reads as a block rather than an abandonment.
-        state = "blocked"
+        state = classification
     elif classification == "unreadable":
         # A manifest that is present but unreadable is neither a delivery nor
         # an absence, so the run reads as unreadable rather than falling into
