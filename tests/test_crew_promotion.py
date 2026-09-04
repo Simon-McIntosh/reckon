@@ -7,8 +7,10 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
 
 from reckon import _plan_html, _store, crew, ledger
+from reckon.cli import main as cli_main
 from reckon.crew.runs import _write_json, pointer_path
 
 
@@ -421,6 +423,131 @@ def test_a_stated_waiver_promotes_and_lands_on_the_ledger_row(
     assert row["resume_waiver"] == waiver
     assert promoted["pointer_removed"] is True
     assert not (_real_crew_home(monkeypatch) / "live" / f"{run_id}.json").exists()
+
+
+def test_complete_command_accepts_a_reasoned_resume_path_waiver(
+    repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The public command reaches the promotion guard and its recorded waiver."""
+    run_id = "r-20260903T102500000000-node-a"
+    _blocked_pointer(
+        repository,
+        run_id,
+        manifest=tmp_path / "manifests" / f"{run_id}.md",
+        stream=tmp_path / "runs" / run_id / "stream.jsonl",
+    )
+    real_pointer = _real_crew_home(monkeypatch) / "live" / f"{run_id}.json"
+    assert not real_pointer.exists()
+    arguments = [
+        "crew",
+        "complete",
+        "--run",
+        run_id,
+        "--gate",
+        "not-run",
+        "--outcome",
+        "the provider refused the turn",
+    ]
+
+    refused = CliRunner().invoke(cli_main, arguments)
+
+    assert refused.exit_code == 1
+    assert "--waive-resume-path REASON" in refused.output
+    assert pointer_path(run_id).is_file()
+    assert ledger.runs(PROJECT, root=repository) == []
+
+    reason = "the replacement run has already recovered the useful context"
+    accepted = CliRunner().invoke(
+        cli_main,
+        [*arguments, "--waive-resume-path", reason],
+    )
+
+    assert accepted.exit_code == 0, accepted.output
+    waiver = json.loads(accepted.output)["record"]["resume_waiver"]
+    assert waiver == {
+        "session_id": _stream_session_id(),
+        "source": "stream",
+        "reason": reason,
+    }
+    row = next(
+        item
+        for item in ledger.runs(PROJECT, root=repository)
+        if item["run_id"] == run_id
+    )
+    assert row["resume_waiver"] == waiver
+    assert not pointer_path(run_id).exists()
+    assert not real_pointer.exists()
+
+
+def test_complete_command_refuses_a_resume_path_waiver_without_a_reason(
+    repository: Path, tmp_path: Path
+) -> None:
+    run_id = "r-20260903T102600000000-node-a"
+    _blocked_pointer(
+        repository,
+        run_id,
+        manifest=tmp_path / "manifests" / f"{run_id}.md",
+        session_id="sess-live-command",
+    )
+
+    result = CliRunner().invoke(
+        cli_main,
+        [
+            "crew",
+            "complete",
+            "--run",
+            run_id,
+            "--gate",
+            "not-run",
+            "--outcome",
+            "the provider refused the turn",
+            "--waive-resume-path",
+            "  ",
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert "--waive-resume-path REASON" in result.output
+    assert pointer_path(run_id).is_file()
+    assert ledger.runs(PROJECT, root=repository) == []
+
+
+def test_complete_command_promotes_a_blocked_run_without_a_recoverable_session(
+    repository: Path, tmp_path: Path
+) -> None:
+    run_id = "r-20260903T102700000000-node-a"
+    _blocked_pointer(
+        repository,
+        run_id,
+        manifest=tmp_path / "manifests" / f"{run_id}.md",
+    )
+
+    result = CliRunner().invoke(
+        cli_main,
+        [
+            "crew",
+            "complete",
+            "--run",
+            run_id,
+            "--gate",
+            "not-run",
+            "--outcome",
+            "the provider refused the turn",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "resume_waiver" not in json.loads(result.output)["record"]
+    assert not pointer_path(run_id).exists()
+
+
+def test_complete_help_describes_the_recoverable_session_refusal() -> None:
+    result = CliRunner().invoke(cli_main, ["crew", "complete", "--help"])
+
+    assert result.exit_code == 0
+    assert "--waive-resume-path REASON" in result.output
+    assert "promotion refused because" in result.output
+    assert "session is still recoverable" in result.output
 
 
 def test_a_blocked_run_with_no_recoverable_session_promotes_unchanged(

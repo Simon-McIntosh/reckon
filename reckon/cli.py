@@ -2230,6 +2230,16 @@ def _ledger_module():
     ),
 )
 @click.option(
+    "--waive-resume-path",
+    default="",
+    metavar="REASON",
+    help=(
+        "Resolve a promotion refused because the run's session is still "
+        "recoverable. State why its resume path may be discarded; the reason "
+        "is recorded on the promoted ledger row."
+    ),
+)
+@click.option(
     "--accept-path",
     "accepted_paths",
     type=(str, str),
@@ -2259,6 +2269,7 @@ def crew_complete(
     gate_log_digest,
     waive_suite_delta,
     waive_boundary_refusal,
+    waive_resume_path,
     accepted_paths,
     pretty,
 ):
@@ -2295,6 +2306,7 @@ def crew_complete(
             require_gate_check=True,
             suite_delta_waiver=waive_suite_delta,
             boundary_waiver=waive_boundary_refusal,
+            resume_waiver=waive_resume_path,
             accepted_paths=dict(accepted_paths),
         )
     except ledger_module.SuiteDeltaError as exc:
