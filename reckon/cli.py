@@ -1180,6 +1180,24 @@ def crew_attach(run_id, task, pretty):
     _emit({"ok": True, **record}, pretty)
 
 
+def _resolved_session(run_id, record=None) -> dict[str, Any]:
+    """The session answer every surface reports, in one shape.
+
+    Three keys rather than one, because a bare id cannot say whether an absence
+    means nobody has looked yet: the id, the source that supplied it, and the
+    resolution naming every source consulted. Each surface reports the same
+    three, so two of them asked about the same run cannot disagree.
+    """
+    from reckon.crew.recover import resolve_session
+
+    answer = resolve_session(run_id, record=record)
+    return {
+        "session_id": answer["session_id"],
+        "session_source": answer["source"],
+        "session_resolution": answer,
+    }
+
+
 @crew.command(name="observe")
 @click.option("--run", "run_id", required=True, help="Run id to read from disk.")
 @click.option("--project", default=None, help="Project whose flight layer applies.")
@@ -1187,19 +1205,25 @@ def crew_attach(run_id, task, pretty):
 def crew_observe(run_id, project, pretty):
     """Fold a run's stream, manifest and liveness back into its record.
 
-    Reports the phase, the captured session id and whatever budget signal the
+    Reports the phase, the resolved session id and whatever budget signal the
     backend emitted — which may legitimately read ``unknown``. Absence of a
-    signal is never reported as exhaustion.
+    signal is never reported as exhaustion, and absence of a session is
+    reported as a stated absence naming what was consulted rather than as a
+    bare null a reader has to interpret.
     """
     crew_module, flight_module = _crew_modules()
     config = None
     if project:
         config = _resolved_flight(flight_module, project, None, ())
+    # Resolved before the fold, not after: this reports where the id was found,
+    # and folding it into the pointer first would make every observation
+    # answer "pointer" and hide which source actually held it.
+    resolved = _resolved_session(run_id)
     try:
         record = crew_module.observe(run_id, config=config)
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
-    _emit({"ok": True, **record}, pretty)
+    _emit({"ok": True, **record, **resolved}, pretty)
 
 
 def _follow_selects(
@@ -1723,6 +1747,11 @@ def crew_list(project, phase, session, mine, pretty):
                 "project": record.get("project"),
                 "plan": (record.get("node") or {}).get("plan"),
                 "session": owner,
+                # The worker's own session, resolved rather than passed
+                # through: a listing is exactly where a reader decides a run is
+                # unresumable, and the pointer field is null until something
+                # folds the stream in.
+                **_resolved_session(str(record.get("run_id") or ""), record),
                 "member": record.get("member"),
                 "agent": agent_label(record) or None,
                 "mine": None if session is None else owner == session,
