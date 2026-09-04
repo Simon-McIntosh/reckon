@@ -27,8 +27,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="17">
-<meta name="plan-commits" content="98ff44c,346c730,77a473b,9539a96,7c04841,225f60f">
+<meta name="plan-version" content="19">
+<meta name="plan-commits" content="98ff44c,346c730,77a473b,9539a96,7c04841,225f60f,599d70d">
 <meta name="plan-impl" content="1.0">
 </head>
 <body>
@@ -217,6 +217,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260903T215329577802-visibility-mount-and-sheet" data-who="s16-topbar" data-when="2026-09-03T23:52:33.745Z">
     <div class="r-comment-body"><p>mountedProjectRows now returns every registered project rather than filtering on a stale plans_count, the picker renders visibleProjectRows only, the last visible project reports {changed:false, locked:true} and renders as a disabled locked row, and the configurator is the canvas sheet: 10 passed, 4 skipped (pre-existing browser probes needing a Chrome binary)</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260904T080527172471-stale-visibility-panel-references" data-who="s16-panelref" data-when="2026-09-04T08:10:43Z">
+    <div class="r-comment-body"><p>both export assertions now name ProjectVisibilitySheet, the component _shared.jsx actually assigns to the window, so the rename in 346c730 no longer leaves two tests asserting a name that does not exist: 5 passed, ProjectVisibilityPanel greps to 0 in both files and ProjectVisibilitySheet to 1. Scoped ruff introduced no finding</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260903T193522859587-crew-scope-and-scroll" data-who="s16-crew" data-when="2026-09-03T19:37:32.665Z">
     <div class="r-comment-body"><p>denied by the claude lane spend limit at 19:37Z with no session captured, so resume was impossible; the refusal named a reset of 1:50am Europe/Paris but the operator re-authenticated the lane at 19:40Z; no commit, no uncommitted work, no manifest</p></div>

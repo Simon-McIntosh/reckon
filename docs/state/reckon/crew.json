@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T10:11:20",
+  "updated": "2026-09-04T10:27:09",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -53118,6 +53118,233 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260904T080214281035-a-delivered-run-is-not-abandoned",
+        "plan": "crew-observability-truth",
+        "section": "\u00a76",
+        "node": "a-delivered-run-is-not-abandoned",
+        "node_definition": {
+          "done_when": "tests/test_ledger.py::test_recovery_reports_all_three_classes_and_counts_them fails on main with counts abandoned 2 and completed_unpromoted 0 where its fixture expects 1 and 1. Bisected: it passes at b06b68b^ and fails at b06b68b, the manifest-is-not-a-verdict change - so a run whose manifest reads complete and whose process has exited now classifies as ABANDONED rather than completed-unpromoted. THAT IS THE MOST EXPENSIVE MISCLASSIFICATION THIS SURFACE CAN PRODUCE and it is the inverse of the defect b06b68b was written to fix. Abandoned invites a coordinator to discard; completed-unpromoted invites them to promote; and such a run has finished work in its worktree that nobody has landed - so the label routes a reader toward destroying delivered work, which three separate guards were built this week to prevent. The live fleet is currently unaffected, measured at completed_unpromoted 1 and abandoned 0 across eleven real pointers, so the fixture reaches a manifest-and-liveness combination production does not - a latent regression rather than an active one, and not a reason to relax the fix. THE FIX MUST NOT UNDO b06b68b: a placeholder failed or blocked manifest must still render as running while the pid is alive, which is what that change bought and what a peer confirmed from two independent cases. Done when a run whose manifest status is complete and whose process has exited classifies as completed-unpromoted; when a placeholder failed manifest over a LIVE process still classifies as running, asserted so the earlier fix cannot be reverted by this one; when a run with no manifest and a dead process still classifies as abandoned, so that label stays reachable; and when the three-class fixture counts one of each. State in the code why complete over a dead process is a verdict while failed over a live process is not, because the asymmetry is the point and a later reader will otherwise flatten it. Record in reckon/crew/AGENTS.md that a node touching reckon/crew/recovery.py or reckon/mcp.py carries tests/test_ledger.py in its gate, since that module holds cross-cutting contracts - this classification count and the five-tool surface assertion - and has now caught two changes fenced away from it. Measured over tests/test_ledger.py plus tests/test_crew_recovery.py in ONE invocation: zero failures against a base of one. Report ruff findings on the staged paths against the count at base.",
+          "estimated_hours": 1.5,
+          "goal": "A delivered run whose process has exited classifies as completed-unpromoted rather than abandoned.",
+          "id": "a-delivered-run-is-not-abandoned",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/delivered-not-abandoned-manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "exact",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_ledger.py",
+            "tests/test_crew_recovery.py",
+            "reckon/crew/AGENTS.md"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "codex-o",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T08:02:33Z",
+        "completed_at": "2026-09-04T08:24:37Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1324,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1324,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "89a7fee1dd1cce03620bdb3afbb24eec4c627760",
+        "commits": [
+          "60c3b6357a786aa6b6e5d3fcdf18cae71acce59f",
+          "23b128f190e3029857af7c1ef7b53d709ee222cd"
+        ],
+        "changed_lines": {
+          "added": 60,
+          "removed": 20,
+          "files": 4
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_ledger.py::test_recovery_reports_all_three_classes_and_counts_them tests/test_crew_recovery.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/1ec61363-4797-4ba8-8828-0db470553924/scratchpad/vdn.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/delivered-not-abandoned-manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06b70-dfb7-7b92-9066-590e6cff0f5a",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 16901888,
+            "cached_input_tokens_cumulative": 16901888,
+            "input_tokens": 17101125,
+            "input_tokens_cumulative": 17101125,
+            "output_tokens": 29104,
+            "output_tokens_cumulative": 29104,
+            "reasoning_output_tokens": 8206,
+            "reasoning_output_tokens_cumulative": 8206
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 37310,
+          "peak_input_tokens": 34003013
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260904T080527172471-stale-visibility-panel-references",
+        "plan": "spa-shell-scope-and-visibility",
+        "section": "\u00a72",
+        "node": "stale-visibility-panel-references",
+        "node_definition": {
+          "done_when": "uv run pytest tests/test_spa_module_scope.py tests/test_build.py::test_compiled_spa_modules_isolate_scope_and_preserve_window_exports -q passes: both expected-export lists name ProjectVisibilitySheet, which docs/ui/_shared.jsx assigns to the window at line 220, and grep -c ProjectVisibilityPanel over tests/test_spa_module_scope.py and tests/test_build.py prints 0 for both",
+          "estimated_hours": 0.75,
+          "goal": "The two export assertions left naming the renamed visibility component name the component that exists",
+          "id": "stale-visibility-panel-references",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T080527172471-stale-visibility-panel-references/manifest.md",
+          "plan": "spa-shell-scope-and-visibility",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "exact",
+          "time_budget": "25m",
+          "write_paths": [
+            "tests/test_spa_module_scope.py",
+            "tests/test_build.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s16-panelref",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T08:05:44Z",
+        "completed_at": "2026-09-04T08:10:43Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 299,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 299,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "dfedd74b4dc7a9c9265805b06c657a716ff1e470",
+        "commits": [
+          "599d70de23223b5c001be2f4feffb360785be3b7"
+        ],
+        "changed_lines": {
+          "added": 2,
+          "removed": 2,
+          "files": 2
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_module_scope.py tests/test_build.py::test_compiled_spa_modules_isolate_scope_and_preserve_window_exports; grep -c ProjectVisibilityPanel over both files",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T080527172471-stale-visibility-panel-references/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T080527172471-stale-visibility-panel-references/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06b73-c847-72e0-92c3-05fc8da5dcfc",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3044608,
+            "cached_input_tokens_cumulative": 3044608,
+            "input_tokens": 3138614,
+            "input_tokens_cumulative": 3138614,
+            "output_tokens": 9296,
+            "output_tokens_cumulative": 9296,
+            "reasoning_output_tokens": 2388,
+            "reasoning_output_tokens_cumulative": 2388
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 11684,
+          "peak_input_tokens": 6183222
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_spa_module_scope.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -53290,6 +53517,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 864
+    "_version": 866
   }
 }
