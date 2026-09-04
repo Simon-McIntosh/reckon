@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T09:03:24",
+  "updated": "2026-09-04T09:13:10",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -880,6 +880,15 @@
         "created": "2026-09-03"
       },
       {
+        "id": "s16-stale",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-04"
+      },
+      {
         "id": "s16-tokens",
         "harness": "claude",
         "role": "implement",
@@ -905,9 +914,11 @@
         "id": "s16-verify",
         "harness": "codex",
         "role": "test",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a06b20-2e06-7802-a2cd-8eb9e7ea8642",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06b20-2e06-7802-a2cd-8eb9e7ea8642"
+        },
         "created": "2026-09-04"
       },
       {
@@ -52050,6 +52061,138 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260904T063359494663-merged-head-verification",
+        "plan": "fleet-home",
+        "section": "\u00a73",
+        "node": "merged-head-verification",
+        "node_definition": {
+          "done_when": "The report at /home/ITER/mcintos/.config/reckon/crew/reports/s16-merged-head-suite.md records the full suite run at the merged head and at the stated base revision 85dc0f4, lists every failing test id at each, and states the added-failure count as a number; a browser-driven test is among those that executed rather than all of them skipping, since the point is to prove the rewired harness still builds the file-backed SPA",
+          "estimated_hours": 1.5,
+          "goal": "One suite result at the merged head that says whether this wave's deletions and shared-harness rewiring added any failure",
+          "id": "merged-head-verification",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T063359494663-merged-head-verification/manifest.md",
+          "plan": "fleet-home",
+          "requires_decisions": [],
+          "role": "test",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/s16-merged-head-suite.md"
+          ]
+        },
+        "role": "test",
+        "spec_level": "guided",
+        "member": "s16-verify",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-04T06:34:25Z",
+        "completed_at": "2026-09-04T07:12:28Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 2283,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 2283,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "19c24fc1b5072f15e33ffada28e237604d58b37d",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "full suite at base 85dc0f4 and at merged head 19c24fc1, failing ids diffed",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T063359494663-merged-head-verification/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260904T063359494663-merged-head-verification/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a06b20-2e06-7802-a2cd-8eb9e7ea8642",
+        "budget": {
+          "cost_usd": null,
+          "detail": "",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 956,
+              "budget_seconds": 2100,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 3056,
+              "external_wait": null,
+              "log_age_seconds": 2332,
+              "log_fresh": false,
+              "manifest_commits": [
+                "[263b92a",
+                "764865b",
+                "c3268d6]; changed_paths: [\"reckon/crew/recovery.py\"",
+                "\"tests/test_crew_recovery.py\"]"
+              ],
+              "manifest_derived": false,
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/reports/manifest-verdict-manifest.md",
+              "manifest_present": true,
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260904T054309199355-a-manifest-is-not-a-verdict-while-the-process-lives --gate <verdict> --commit [263b92a --commit 764865b --commit c3268d6]; changed_paths: [\"reckon/crew/recovery.py\" --commit \"tests/test_crew_recovery.py\"]",
+              "node": "a-manifest-is-not-a-verdict-while-the-process-lives",
+              "phase": "starting",
+              "plan": "crew-observability-truth",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260904T054309199355-a-manifest-is-not-a-verdict-while-the-process-lives",
+              "session": "ship-s15-0903",
+              "terminal_age_seconds": 2355,
+              "terminal_at": "2026-09-04T05:55:01Z",
+              "wait_age_seconds": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-0903/a-manifest-is-not-a-verdict-while-the-process-lives"
+            }
+          ]
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "a verification node delivers a report at the coordinator-named path, which was its declared exclusive write scope",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "test",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -52222,6 +52365,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 842
+    "_version": 845
   }
 }

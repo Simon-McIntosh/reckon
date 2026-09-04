@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 <meta name="plan-commits" content="6481026,2b3b276,2125e17">
 <meta name="plan-impl" content="0.75">
 </head>
@@ -160,6 +160,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260904T062106775026-harness-drops-the-retired-stylesheet" data-who="s16-harness" data-when="2026-09-04T06:31:32Z">
     <div class="r-comment-body"><p>the shared browser harness stops requiring the retired cockpit stylesheet, which would otherwise have raised FileNotFoundError for every browser gate in the repository once overview.css was deleted: overview.css greps to 0 in the harness, the file-backed SPA builds at 642,043 bytes, and the container test asserts the cockpit hash aliases to home rather than requiring a distinct canvas. 6 passed</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260904T063359494663-merged-head-verification" data-who="s16-verify" data-when="2026-09-04T07:12:28Z">
+    <div class="r-comment-body"><p>base 85dc0f4 had 37 failing ids with 3106 passed; merged head 19c24fc1 has 43 with 3092. Of 8 raw added ids only 3 are attributable to this wave, all nearest 2b3b276: two stale project-visibility assertions referencing deleted cockpit helpers, and the real-browser containment case waiting on the retired .r-overview-project-row selector. The remaining 5 are wheel-build failures from a malformed local rescue tag whose commit is an ancestor of both revisions, so they predate the wave</p></div>
 </div>
 </section>
 </main>
