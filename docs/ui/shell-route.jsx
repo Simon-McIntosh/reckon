@@ -20,6 +20,17 @@ function canvasViewForRoute(route) {
     : "cockpit";
 }
 
+// The tab groups a later plan can extend without touching the topbar itself.
+const ARTIFACT_TABS = [
+  { key: "plan", label: "Plans", index: { view: "plan", slug: null } },
+];
+
+const WORK_TABS = [
+  { key: "sprint", label: "Sprints", index: { view: "sprint", sprint: null } },
+  { key: "graph", label: "Graph", index: { view: "graph" } },
+  { key: "crew", label: "Crew", index: { view: "crew" } },
+];
+
 function useHashRoute() {
   const [route, setRoute] = useState(parseHash());
   useEffect(() => {
@@ -41,4 +52,4 @@ function useHashRoute() {
 
 
 window.ReckonShell = window.ReckonShell || {};
-window.ReckonShell.route = { parseHash, canvasViewForRoute, useHashRoute };
+window.ReckonShell.route = { parseHash, canvasViewForRoute, useHashRoute, ARTIFACT_TABS, WORK_TABS };
