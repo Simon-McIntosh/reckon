@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 <meta name="plan-impl" content="0.9">
 </head>
 <body>
@@ -313,14 +313,14 @@
       </p>
     <p class="r-dec-rat">Deduced from the code rather than chosen: the promotion path already refuses a recoverable blocked run and names --waive-resume-path REASON as the single override (reckon/crew/promotion.py, wired through reckon/cli.py), and the refusal was observed working in the field on 2026-09-04 when a peer coordinator was stopped from promoting exactly this state and had to state in writing why the session was safe to discard. Warn-and-proceed is refused by the incident that motivated the plan: five resumable sessions were destroyed by a promotion that read session_id null as a verdict, and a warning is the same prose rule wearing a checkmark. Refuse-absolutely is refused because a genuinely unrecoverable session must still be promotable, and an override that must be stated in writing is one visible deliberate step rather than a default. The accepted cost is that a waiver exists at all, recorded on the promoted ledger row.</p>
     </div>
-<div class="r-dec" data-key="retained-tree-lifetime" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="retained-tree-lifetime" data-choice="age-plus-audit" data-by="lead" data-when="2026-09-04T11:25:55+00:00">
     <p class="r-dec-q">What ends the life of a worktree retained for a resume that never comes?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="age-plus-audit">An age bound, surfaced by the existing worktree audit</button>
+      <button class="r-opt chosen" data-value="age-plus-audit">An age bound, surfaced by the existing worktree audit</button>
       <button class="r-opt" data-value="explicit-only">Only an explicit release command</button>
       <button class="r-opt" data-value="session-absence">The session transcript no longer being on disk</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Locked 2026-09-04 by the lead. A retained tree becomes reclaimable after a declared age and the existing worktree audit is what surfaces it, rather than a second cleanup path. The safety argument is that the audit already refuses to remove a dirty or unintegrated tree, so an age bound can only reclaim trees whose work has already landed - which is the property that makes a bound acceptable at all, since reclaiming a tree holding uncommitted work destroys it outright with nothing to recover from. Unbounded retention was rejected on measured cost: one sibling project carried 124 reclaimable trees, a fleet produced a 180,186-file storage alert in a single day, and three of nine live pointers were once held by terminal runs the oldest of which was a day old, because the explicit disposal never came. Keying the lifetime to the session transcript leaving disk was rejected because it hands the bound to the harness&#x27;s own pruning, which reckon neither controls nor sees change. The accepted cost is that a resume wanted after the bound finds no working directory.</p>
     </div>
 </section>
 

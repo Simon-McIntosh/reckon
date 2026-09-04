@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-impl" content="0.75">
 </head>
 <body>
@@ -189,14 +189,14 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="refusal-time-source" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="refusal-time-source" data-choice="rate-limit-event" data-by="lead" data-when="2026-09-04T11:26:07+00:00">
     <p class="r-dec-q">Which immutable stamp dates a refusal?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="rate-limit-event">The rate-limit event&#x27;s own position in the stream</button>
+      <button class="r-opt chosen" data-value="rate-limit-event">The rate-limit event&#x27;s own position in the stream</button>
       <button class="r-opt" data-value="run-created-at">The run&#x27;s created_at, as a lower bound</button>
       <button class="r-opt" data-value="first-write">The first write of the budget record, never rewritten</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Locked 2026-09-04 by the lead. The rate-limit event&#x27;s own position in the run&#x27;s stream, read with the surrounding records&#x27; timestamps, is the only candidate that is the refusal itself rather than a bound on it, and it is immutable under re-reading - the sole property the renewal defect turns on. The run&#x27;s created_at was rejected because it dates the run: a long run refused near its end reads far older than its refusal, which ages a hold out early and so under-holds a lane that is genuinely spent, the wrong direction to be wrong in. A first write of the budget record was rejected because it dates when we noticed rather than when we were refused, and every record already written carries no such stamp, so existing holds would have no age until something rewrote them. The accepted cost is that the decide path reads the stream, and a stream carrying no parseable rate-limit event needs a stated fallback rather than a silent zero - name created_at as that fallback explicitly, so an unparseable stream reads as a lower bound and never as a fresh refusal.</p>
     </div>
 </section>
 
