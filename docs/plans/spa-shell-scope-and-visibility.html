@@ -22,14 +22,14 @@
   <meta name="plan-tags" content="reckon-tooling,spa">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-blocks" content="artifact-feeds-and-reader,fleet-home">
-  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,design/reckon-spa-handoff.md,docs/ui/shell-topbar.jsx,docs/ui/shell-route.jsx,docs/ui/glyphs.jsx,docs/ui/_shared.jsx,docs/ui/topbar.css,docs/ui/crew.jsx,docs/ui/crew.css,docs/ui/shell.jsx,tests/test_spa_project_visibility.py,tests/test_spa_topbar_snapshot.py">
+  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,design/reckon-spa-handoff.md,docs/ui/shell-topbar.jsx,docs/ui/shell-route.jsx,docs/ui/glyphs.jsx,docs/ui/_shared.jsx,docs/ui/topbar.css,docs/ui/crew.jsx,docs/ui/crew.css,docs/ui/shell.jsx,docs/figures/spa-shell-scope-and-visibility/after/capture-index.json">
   <title>The Project Selector Scopes the Page | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="12">
-<meta name="plan-commits" content="98ff44c,346c730,77a473b,9539a96">
-<meta name="plan-impl" content="0.8">
+<meta name="plan-version" content="15">
+<meta name="plan-commits" content="98ff44c,346c730,77a473b,9539a96,7c04841">
+<meta name="plan-impl" content="0.83">
 </head>
 <body>
 <main class="plan-doc">
@@ -127,6 +127,22 @@
   </tbody>
 </table>
 
+<h2 id="s8">&#167;8 &mdash; The picker overflows the viewport, and only a capture saw it</h2>
+<p>Found by &#167;6's captures at both widths, and by nothing else: the project picker's dropdown is anchored to the selector's left edge and extends rightwards past the viewport, so its right border and each row's plan count are clipped off-screen. At 1374 and again at 1920 the panel runs flush to the last pixel with no border drawn. Every gate in &#167;2 and &#167;3 passed while this was true, because they assert DOM order, rendered row sets and computed properties &mdash; none of which can see a box escaping the viewport. This is the section &#167;6 exists to produce.</p>
+<p>The fix is a right-aligned dropdown: the panel's right edge aligns with the selector's right edge rather than its left, which keeps it inside the viewport at every width because the selector itself is inside. The gear sits to the selector's right, so the panel may extend under the gear's column without colliding with anything. The measure is the one the earlier gates could not express: at 1374 and 1920 the panel's bounding rectangle lies entirely within the viewport, and its right edge is not the viewport's right edge.</p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>picker-within-viewport</code></td>
+      <td>The project picker's dropdown renders entirely inside the viewport at every width.</td>
+      <td><code>uv run pytest tests/test_spa_topbar_snapshot.py tests/test_spa_shell_geometry.py -q</code> passes with a case added at 1374 and 1920: with the picker open, its panel's bounding rectangle satisfies <code>left &gt;= 0</code> and <code>right &lt;= innerWidth</code>, its right edge is strictly less than <code>innerWidth</code>, and the rightmost text node in each row is fully within the panel. Re-captured <code>topbar-1374.png</code> and <code>topbar-1920.png</code> show the panel bordered on all four sides.</td>
+      <td><code>docs/ui/shell-topbar.jsx</code>, <code>docs/ui/topbar.css</code>, <code>tests/test_spa_shell_geometry.py</code>, <code>docs/figures/spa-shell-scope-and-visibility/</code></td>
+      <td>exact &middot; sonnet</td>
+    </tr>
+  </tbody>
+</table>
+
 <h2 id="s7">&#167;7 &mdash; Out of scope</h2>
 <p>The artifact tabs and their routes (<code>artifact-feeds-and-reader</code>), the fleet home and the retirement of the cockpit (<code>fleet-home</code>), and the derived-flow lanes on Crew (<code>graph-derived-schedule</code>). Settings beyond visibility (theme, density, snapshot receipt) are undesigned in the handoff and keep their current place behind the gear. Server payloads are unchanged by this plan; the stale <code>plans_count</code> the picker labels rows with is corrected by <code>served-surface-data-contracts</code>, and this plan stops depending on it rather than waiting for it.</p>
 
@@ -216,6 +232,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260904T035023026445-topbar-order-tabs-and-brand" data-who="s16-topbar" data-when="2026-09-04T03:58:44.586Z">
     <div class="r-comment-body"><p>the topbar renders brand, search, artifact group, work group, live receipt, project selector then gear, with the tab groups published by the route module and the compass mark as a textless SVG home button: 14 passed 1 skipped (the browser DOM-order test needs a Chrome binary; the source-order assertions cover it), and Overview greps to 0 in docs/ui/shell-topbar.jsx</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20260904T042707879700-shell-captures" data-who="s16-shots" data-when="2026-09-04T04:33:50Z">
+    <div class="r-comment-body"><p>six populated captures of the landed shell at 1374 and 1920 with an index: the sheet shows 3 hidden rows and 1 locked disabled row, Crew shows 14 cards all from the selected project with scrollHeight 2162 against clientHeight 853 while the document stays at 900, and the topbar picker lists only reckon on a #ffffff ground. The captures also surfaced a defect no DOM gate caught: the project picker dropdown overflows the right viewport edge at both widths</p></div>
 </div>
 </section>
 </main>
