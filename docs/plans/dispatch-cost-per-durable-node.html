@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 </head>
 <body>
   <main class="plan-doc">
@@ -403,6 +403,76 @@
     lowest at 0.07 and 0.15. Populating <code>suite_delta</code> obtains an
     independent check for one field rather than one extra dispatch per node.
     Reserve the split for nodes whose risk is declared elevated or critical.</p>
+
+    <h2 id="s9">&sect;9 &mdash; The ledger sees one half of the system</h2>
+
+    <p>The floor of &sect;4 decomposes cleanly, and it is linear rather than
+    quadratic: input per tool step is flat at 170&ndash;230&nbsp;k from the
+    shortest runs to the longest, so cost is <strong>tool steps &times; roughly
+    175&nbsp;k</strong> and a step is the unit worth reducing.</p>
+
+    <table>
+      <caption>What every tool step re-sends. The system-prompt figure is a
+        direct probe: a one-word reply on this account costs 33,787 input
+        tokens before any repository is involved.</caption>
+      <thead><tr><th>Component of a step's context</th><th>Tokens</th><th>Ours to change</th></tr></thead>
+      <tbody>
+        <tr><td>Harness system prompt and tool definitions</td><td>~34,000</td><td>no</td></tr>
+        <tr><td>Repository agent documents on the path</td><td>4,800 + 4,400 + 7,500</td><td>yes</td></tr>
+        <tr><td>Reckon's own dispatch prompt</td><td>~2,000</td><td>yes, already lean</td></tr>
+        <tr><td>Accumulated tool output and reasoning</td><td><strong>~120,000</strong></td><td><strong>yes</strong></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Run length does not degrade quality in this data.</strong> Binned
+    by measured tool steps, rework is flat at 0.37 from the 0&ndash;19 band through
+    80&ndash;99, and the gate holds between 0.87 and 0.91. A ninety-step run comes
+    back no more often than a ten-step one. The earlier reading that larger nodes
+    rework more was keyed on <em>declared hours</em>, which tracks how messy a task
+    is rather than how long its run went. Both signals are coarse, so this bounds
+    the claim rather than settling it: a length fence would buy no <em>measured</em>
+    quality, which is a reason to warn rather than refuse.</p>
+
+    <p><strong>The lever this plan reached for next is partly an accounting
+    illusion, and the ledger cannot tell.</strong> Nodes declared <code>exact</code>
+    run 26 tool steps against <code>guided</code>'s 37, which reads as a 1.9&nbsp;M
+    saving per node. Two measurements undercut it. First, the specification text a
+    coordinator actually writes does not grow with the declared level: median
+    <code>done_when</code> is 585 characters at <code>exact</code> against 729 at
+    <code>guided</code>, so the visible specification is no larger and the step
+    difference cannot be attributed to specification completeness &mdash; it may be
+    that simpler tasks attract the <code>exact</code> label, the same selection
+    effect that made pass rate useless in &sect;2. Second, and structurally,
+    <strong>no run record carries any coordinator field at all</strong>: a search
+    of every key across 2,567 records finds nothing naming a coordinator,
+    orchestrator or author, because coordinator sessions are not crew runs. So the
+    coordinator's spend in producing a tighter specification is not merely
+    unmeasured, it is unrepresentable.</p>
+
+    <p>That asymmetry biases every routing decision in one direction. A change
+    that moves reasoning from worker to coordinator always looks like a saving,
+    because the ledger only meters the half that got cheaper &mdash; and the
+    coordinator is spending a budget of its own, on a lane with its own ceiling.
+    The routing reference already states the principle, that an exact specification
+    written for a high-effort worker is the same reasoning paid for twice; what is
+    missing is the instrument that would let anyone check it.</p>
+
+    <p>Two consequences for this plan. The levers that survive are the ones that
+    are not transfers: <strong>reducing what every step re-reads</strong>, where
+    the 120&nbsp;k of accumulated context and the 16.7&nbsp;k of agent documents
+    are both ours and both multiply by every step; consolidating work so fewer
+    nodes each pay the floor, tempered by the drift caution above; and moving work
+    to another lane, which is at least an explicit transfer rather than a hidden
+    one. And the routing surface of &sect;3 must carry a coordinator column, or it
+    will keep recommending transfers and scoring them as savings.</p>
+
+    <p>Deliverable: record coordinator spend against the nodes it dispatches, so
+    a specification-tightening change can be judged on total cost. Done-when: a
+    dispatched node's record carries the coordinator session's identity and its
+    token spend for the authoring turn, and the &sect;3 surface reports
+    worker-plus-coordinator cost per durable node alongside the worker-only figure
+    it reports today, with one test asserting the two differ on a node whose
+    coordinator spend is non-zero.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
