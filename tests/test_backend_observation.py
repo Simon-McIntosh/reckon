@@ -277,6 +277,79 @@ def test_a_context_overflow_is_not_a_quota_refusal():
     )
 
 
+# ── Rate-limit windows ───────────────────────────────────────────────────────
+
+
+def _claude_rate_limit_info(fixture: str) -> dict:
+    """The first ``rate_limit_event``'s payload from a recorded stream."""
+    for line in (FIXTURES / fixture).read_text().splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        event = json.loads(line)
+        if event.get("type") == "rate_limit_event":
+            return event["rate_limit_info"]
+    raise AssertionError(f"no rate_limit_event in {fixture}")
+
+
+def test_a_metered_window_yields_its_own_utilisation_and_reset():
+    """The gating figure is the window's, not the account's calendar position."""
+    info = _claude_rate_limit_info("claude-worked-turn.jsonl")
+    dialect = _backends.dialect_for(CLAUDE)
+
+    block = dialect._budget(info)
+
+    assert block["headroom"] == "known"
+    assert block["utilisation_pct"] == 61.0
+    assert block["rate_limit_type"] == "five_hour"
+    assert block["resets_at"] == _backends._epoch_to_iso(
+        info["unifiedWindows"]["five_hour"]["resetsAt"]
+    )
+
+
+def test_the_account_overage_figure_never_reaches_utilisation_pct():
+    """A month-scale spend counter must never be read as a rate-limit percent.
+
+    Measured on a serving lane: the account figure read utilization 1.21
+    (121%) while the five-hour window it was 54 turns into read 0.05 (5%).
+    Reading the account figure as a percentage would report a lane at 121%
+    utilisation that was in fact five percent through its actual window, and
+    the account figure's own reset sits on a calendar-month boundary rather
+    than the window's much nearer one.
+    """
+    info = {
+        "status": "allowed_warning",
+        "rateLimitType": "overage",
+        "resetsAt": 1790812800,
+        "surpassedThreshold": 1,
+        "utilization": 1.21,
+        "unifiedWindows": {
+            "five_hour": {"utilization": 0.05, "resetsAt": 1788447600},
+        },
+    }
+    dialect = _backends.dialect_for(CLAUDE)
+
+    block = dialect._budget(info)
+
+    assert block["utilisation_pct"] == 5.0
+    assert block["utilisation_pct"] != 1.21
+    assert block["rate_limit_type"] == "five_hour"
+    assert block["resets_at"] == _backends._epoch_to_iso(1788447600)
+    assert block["resets_at"] != _backends._epoch_to_iso(1790812800)
+
+
+def test_an_event_with_no_unified_windows_reports_unknown_headroom():
+    """The account fraction is never a fallback when the window figure is absent."""
+    info = _claude_rate_limit_info("claude-turn.jsonl")
+    assert "unifiedWindows" not in info
+    dialect = _backends.dialect_for(CLAUDE)
+
+    block = dialect._budget(info)
+
+    assert block["headroom"] == "unknown"
+    assert block["utilisation_pct"] is None
+
+
 # ── The record ──────────────────────────────────────────────────────────────
 
 
