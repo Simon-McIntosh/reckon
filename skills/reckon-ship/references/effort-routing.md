@@ -56,18 +56,35 @@ not matured, or the candidate has not yet produced live rework evidence. A node
 the mapping routes somewhere its gate forbids is a config bug, regardless of
 the cost ordering.
 
-## The small-model lane — defined, unrouted eligibility gate
+## The small-model lane — qualified, live-mapped, still gated
 
-The small-model backend remains defined for shadow qualification, but no live
-mapping selects it. A candidate lane earns routing through at least ten usable
-shadow pairs showing a gain on the same nodes, then a gated pilot, then a slice
-lock. During that pilot, routing a node to the lane is permitted only when
-**all** conditions below hold. The lane buys speed and budget on work whose
-correctness is already pinned — never a way to write uncertain code quickly.
+The small-model backend now has a live mapping of its own; the local lane
+routes on a measured record instead of waiting unused. It earned the mapping
+the ordinary way — shadow pairs, a gated pilot, a slice lock — and the mapping
+outlives the pilot. Measured 2026-09-05 on the mounted committed ledgers, the
+mapping behind `roles.<role>.by_spec_level` for a `--local` dispatch:
+
+| Declared level | Routing decision | Measured record |
+|---|---|---|
+| `exact` | `deepseek-v4-flash` — qualified | 42 passed of 44 runs |
+| `guided` | `deepseek-v4-flash` — permitted only with the measurement handed over | 30 passed of 38 runs |
+| `open` | never routed — the lane takes no open design | zero runs |
+
+`glm-5.3` is explicitly NOT routed — 0 passed of 9 runs, every one a
+window-overflow death on nodes that did not fit its 73,728-token budget, so
+its ledger record indicts the node-to-lane pairing, not the model. It stays
+defined on the host layer for shadow qualification only.
+
+The lane buys speed and budget on work whose correctness is already pinned —
+never a way to write uncertain code quickly. Routing a node to it is permitted
+only when **all** conditions below hold; a candidate that has not yet earned
+the mapping still climbs the ladder by the same gate.
 
 1. Declared level is `exact`, and the plan section actually prescribes the
-   change with a named check. A declaration the section does not support is a
-   specification bug to fix before dispatch.
+   change with a named check — or `guided` with the measurement handed over
+   as a numeric bound or named check the worker can verify against its own
+   work. A declaration the section does not support is a specification bug to
+   fix before dispatch.
 2. The done-when is a runnable named check — a test command, a compared
    command output, or a numeric bound. Prose measures disqualify.
 3. Node estimate ≤ 0.5 worker-hours until the lane's configuration has its
