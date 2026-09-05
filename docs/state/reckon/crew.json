@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-05T18:43:47",
+  "updated": "2026-09-05T18:47:59",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -981,9 +981,11 @@
         "id": "s15-skillroute",
         "harness": "clive",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "a4f41947-420e-4df1-80a9-e1aa91698bcb",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":492288}": "a4f41947-420e-4df1-80a9-e1aa91698bcb"
+        },
         "created": "2026-09-05"
       },
       {
@@ -60892,6 +60894,153 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260905T161752686669-skill-effort-routing-records-the-trial",
+        "plan": "clive-local-workers",
+        "section": "\u00a75",
+        "node": "skill-effort-routing-records-the-trial",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1210,
+                "cached_input_tokens": 854009,
+                "input_tokens": 855221,
+                "output_tokens": 759,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 855980,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "uv run --no-sync pytest tests/test_effort_routing_contract.py -q passes with a new test file asserting, by reading skills/reckon-ship/references/effort-routing.md verbatim, that: the deepseek-v4-flash lane is described as qualified at spec level exact citing 42 passed of 44 runs; that guided is permitted only with the measurement handed over, citing 30 passed of 38; that open is never routed, citing zero runs; that glm-5.3 is explicitly NOT routed, citing 0 passed of 9; and that the section no longer claims no live mapping selects the small-model backend. Every figure must appear in the file as a number beside its sample size, never as an adjective",
+          "estimated_hours": 0.5,
+          "goal": "Record the local lane's measured routing mapping in the effort-routing reference, which currently does not mention it at all",
+          "id": "skill-effort-routing-records-the-trial",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T161752686669-skill-effort-routing-records-the-trial/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "write_paths": [
+            "skills/reckon-ship/references/effort-routing.md",
+            "tests/test_effort_routing_contract.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s15-skillroute",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 492288
+        },
+        "dispatched_at": "2026-09-05T16:18:02Z",
+        "completed_at": "2026-09-05T16:43:35.200Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1517,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1533,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "de5ba1000d9cb0766623b8a6011f90467d7a8b38",
+        "commits": [
+          "4831fb724d9ee29cb720fbc8142de20ec998a8d1"
+        ],
+        "changed_lines": {
+          "added": 80,
+          "removed": 9,
+          "files": 2
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "uv run --no-sync pytest tests/test_effort_routing_contract.py -q",
+          "exit_status": 0,
+          "log_path": null,
+          "log_digest": "5 passed"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T161752686669-skill-effort-routing-records-the-trial/manifest.md",
+        "scope_changed": false,
+        "session_id": "a4f41947-420e-4df1-80a9-e1aa91698bcb",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 4729360,
+            "input_tokens_cumulative": 4729360,
+            "output_tokens": 45951,
+            "output_tokens_cumulative": 45951,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 1529.054,
+          "generated_tokens": 45951,
+          "generation_seconds": 1440.483,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 13.0,
+          "machine_seconds": 88.571,
+          "peak_input_tokens": 132124,
+          "tokens_per_second": 31.9,
+          "wall_tokens_per_second": 30.05
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/skill-effort-routing-records-the-trial",
+          "session_id": "a4f41947-420e-4df1-80a9-e1aa91698bcb",
+          "session_source": "pointer",
+          "retained_at": "2026-09-05T16:43:35.200Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_effort_routing_contract.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -61078,6 +61227,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1010
+    "_version": 1012
   }
 }
