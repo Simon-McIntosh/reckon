@@ -435,6 +435,70 @@ def _epoch_to_iso(value: Any) -> str | None:
         return None
 
 
+def _is_rate_limit_retry(event: Mapping[str, Any]) -> bool:
+    """Whether a ``system/api_retry`` record names rate limiting as its cause.
+
+    The local lane reports a spent consumer on retry records rather than on
+    ``rate_limit_event``: each carries ``error: "rate_limit"`` beside
+    ``error_status: 429``. A retry for another cause (a 529 server overload) is
+    capacity, not a spent lane, and must not count toward exhaustion.
+    """
+    return (
+        event.get("type") == "system"
+        and event.get("subtype") == "api_retry"
+        and (
+            str(event.get("error") or "").casefold() == "rate_limit"
+            or event.get("error_status") == 429
+        )
+    )
+
+
+def _retry_refusal_budget(budget: Mapping[str, Any], retries: int) -> dict[str, Any]:
+    """Record the rate-limit exhaustion shape as a refusal block.
+
+    The retries are the magnitude and the terminal error result is the verdict.
+    No retry record carries a reset moment, so the block states the limit and
+    the observed count and leaves the reset unset — the same honest absence a
+    spend-limit refusal with no reset records.
+    """
+    block = dict(budget)
+    block.update(
+        {
+            "headroom": "known",
+            "utilisation_pct": 100.0,
+            "rate_limit_type": "rate-limit",
+            "resets_at": None,
+            "threshold_status": "exhausted",
+            "surpassed_threshold": True,
+            "refusal": True,
+            "detail": (
+                f"the run died after {retries} rate-limit retries "
+                "(api_retry 429); the lane is exhausted"
+            ),
+        }
+    )
+    return block
+
+
+def _retry_prose(retries: int, *, terminal: bool) -> str:
+    """Prose for a retry-bearing stream whose terminal shape is no verdict.
+
+    Retrying is not refusing: busy lanes carry rate-limit retries and complete,
+    so the count alone must never hold a wave. The count is surfaced anyway,
+    because a stream that recorded it must not report that it carries no
+    rate-limit signal at all.
+    """
+    if terminal:
+        return (
+            f"run completed after {retries} rate-limit retries; "
+            "retries alone are not a refusal"
+        )
+    return (
+        f"run in flight after {retries} rate-limit retries; "
+        "no terminal result yet, and retries alone are not a refusal"
+    )
+
+
 # ── Dialects ────────────────────────────────────────────────────────────────
 
 
@@ -844,11 +908,19 @@ class _ClaudeDialect(Dialect):
         budget = unknown_budget("no rate-limit event in the stream yet")
         throughput = unknown_throughput("no completed result to measure yet")
         peak_input = 0
+        rate_limit_retries = 0
         for event in events:
             obs.events += 1
             kind = event.get("type")
-            if kind == "system" and event.get("subtype") == "init":
-                obs.session_id = event.get("session_id") or obs.session_id
+            if kind == "system":
+                subtype = event.get("subtype")
+                if subtype == "init":
+                    obs.session_id = event.get("session_id") or obs.session_id
+                elif _is_rate_limit_retry(event):
+                    # The local lane reports a spent consumer on retry records
+                    # rather than on rate_limit_event. The count is the
+                    # magnitude; the terminal result below is the verdict.
+                    rate_limit_retries += 1
             elif kind == "rate_limit_event":
                 budget = self._budget(event.get("rate_limit_info"))
             elif kind == "assistant":
@@ -881,6 +953,22 @@ class _ClaudeDialect(Dialect):
                 # Every event of this stream carries the session id, including
                 # the hook events a host configuration may emit before init.
                 obs.session_id = event.get("session_id") or obs.session_id
+        if rate_limit_retries:
+            # Exhaustion is the terminal shape, never the count: busy lanes
+            # carry rate-limit retries and complete, so retrying alone is not
+            # refusing. Only a stream whose retries end in an error result
+            # records a refusal; one still in flight or one that completed
+            # reports the count as a magnitude and no verdict.
+            if (
+                obs.terminal
+                and obs.exit_status == "error"
+                and not budget.get("refusal")
+            ):
+                budget = _retry_refusal_budget(budget, rate_limit_retries)
+            elif budget.get("headroom") != "known":
+                budget = unknown_budget(
+                    _retry_prose(rate_limit_retries, terminal=obs.terminal)
+                )
         obs.budget = budget
         obs.final_message = message
         obs.throughput = throughput
