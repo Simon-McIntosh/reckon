@@ -945,20 +945,40 @@ class _ClaudeDialect(Dialect):
         This dialect declares no probe because it needs none: headroom arrives on
         the run stream every worker already writes, so a pre-flight reading past
         runs learns it for free and a separate process would add nothing.
+
+        The event carries two figures that answer different questions. The
+        top-level ``utilization`` is the account's calendar-window position —
+        for an overage record its own ``resetsAt`` lands on a month boundary —
+        and it reads as a bare fraction that can exceed 1. ``unifiedWindows``
+        carries the rate-limit windows a dispatch actually runs into, each with
+        its own fractional ``utilization`` and its own ``resetsAt``. Only the
+        latter is read; the former is never consulted, so it can never leak
+        into ``utilisation_pct`` as a percentage a hundred times too large. The
+        binding window is whichever is furthest through, exactly as
+        :meth:`_CodexDialect.read_probe` picks the binding account window from
+        several reported at once.
         """
         if not isinstance(info, Mapping):
             return unknown_budget("rate-limit event carried no information")
-        utilisation = info.get("utilization")
-        if not isinstance(utilisation, (int, float)) or isinstance(utilisation, bool):
-            return unknown_budget("rate-limit event carried no numeric utilisation")
+        windows = info.get("unifiedWindows")
+        candidates = [
+            (period, window)
+            for period, window in (windows.items() if isinstance(windows, Mapping) else ())
+            if isinstance(window, Mapping)
+            and isinstance(window.get("utilization"), (int, float))
+            and not isinstance(window.get("utilization"), bool)
+        ]
+        if not candidates:
+            return unknown_budget("rate-limit event carried no unifiedWindows")
+        period, binding = max(candidates, key=lambda item: float(item[1]["utilization"]))
         budget = unknown_budget("")
         budget.update(
             {
                 "headroom": "known",
-                "utilisation_pct": float(utilisation),
-                "rate_limit_type": info.get("rateLimitType"),
-                "rate_limit_period_minutes": info.get("windowDurationMins"),
-                "resets_at": _epoch_to_iso(info.get("resetsAt")),
+                "utilisation_pct": float(binding["utilization"]) * 100.0,
+                "rate_limit_type": period,
+                "rate_limit_period_minutes": binding.get("windowDurationMins"),
+                "resets_at": _epoch_to_iso(binding.get("resetsAt")),
                 "threshold_status": info.get("status"),
                 "surpassed_threshold": info.get("surpassedThreshold"),
                 "detail": "backend reports utilisation and reset time",

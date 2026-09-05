@@ -191,7 +191,7 @@ def test_a_recorded_run_stream_yields_utilisation_and_reset_time() -> None:
     observation = _backends.observe_log(
         backend_name="beta",
         backend={"launch": "cli", "command": "claude"},
-        log_path=FIXTURES / "claude-turn.jsonl",
+        log_path=FIXTURES / "claude-worked-turn.jsonl",
     )
     block = observation.budget
     assert block["headroom"] == "known"
@@ -440,13 +440,23 @@ def test_promotion_preserves_backend_when_the_agent_block_is_absent(home, repo) 
     assert state["utilisation_pct"] == 71.0
 
 
-def test_stream_evidence_recovers_two_known_readings(home, repo) -> None:
-    """Two durable measurements remain useful without rewriting their records."""
+def test_stream_evidence_recovery_stays_unattributed_rather_than_silent(
+    home, repo
+) -> None:
+    """A dialect that only reports headroom from a structured window field
+    never matches the zero-utilisation probe this recovery keys on, so a
+    genuinely known reading from it now surfaces as unattributed rather than
+    being recovered — the one signature-recovery could still match on a bare
+    top-level ``utilization`` no longer parses to ``known`` at all, per
+    :func:`_backends._ClaudeDialect._budget`. Surfacing as unattributed, not a
+    silent drop, is what still matters here: both readings remain visible.
+    """
     stream_budget = _backends.observe_log(
         backend_name="beta",
         backend=CONFIG["backends"]["beta"],
-        log_path=FIXTURES / "claude-turn.jsonl",
+        log_path=FIXTURES / "claude-worked-turn.jsonl",
     ).budget
+    assert stream_budget["headroom"] == "known"
     for position, utilisation in enumerate((41.0, 42.0), start=1):
         reading = {**stream_budget, "utilisation_pct": utilisation}
         record = ledger.build_record(
@@ -463,17 +473,16 @@ def test_stream_evidence_recovers_two_known_readings(home, repo) -> None:
     all_readings = budget._readings("proj", root=repo, config=CONFIG)
     best = budget.latest_recorded("proj", root=repo, config=CONFIG)
 
-    recovered = [reading for reading in all_readings if reading.backend == "beta"]
-    assert len(recovered) == 2
-    assert {reading.attribution for reading in recovered} == {"budget-evidence"}
-    assert best["beta"].budget["utilisation_pct"] == 42.0
+    assert all(reading.backend is None for reading in all_readings)
+    assert "beta" not in best
+    assert len(best.unattributed) == 2
 
 
-def test_stream_evidence_attribution_uses_the_numeric_signature(home, repo) -> None:
+def test_stream_evidence_carries_the_binding_window_type(home, repo) -> None:
     stream_budget = _backends.observe_log(
         backend_name="beta",
         backend=CONFIG["backends"]["beta"],
-        log_path=FIXTURES / "claude-turn.jsonl",
+        log_path=FIXTURES / "claude-worked-turn.jsonl",
     ).budget
     record = ledger.build_record(
         run_id="r-unlabelled-stream",
@@ -485,19 +494,26 @@ def test_stream_evidence_attribution_uses_the_numeric_signature(home, repo) -> N
     )
     ledger.append_run("proj", record, root=repo)
 
-    reading = budget.latest_recorded("proj", root=repo, config=CONFIG)["beta"]
+    readings = budget.latest_recorded("proj", root=repo, config=CONFIG)
 
-    assert reading.attribution == "budget-evidence"
-    assert reading.budget["rate_limit_type"] == "overage"
+    assert "beta" not in readings
+    assert stream_budget["rate_limit_type"] == "five_hour"
+    assert len(readings.unattributed) == 1
+    assert readings.unattributed[0].budget["rate_limit_type"] == "five_hour"
 
 
 def test_delivery_path_naming_another_harness_cannot_change_the_producer(
     home, repo
 ) -> None:
+    """A misleading path substring must never leak into attribution, even
+    while recovery-by-signature itself is inert (see the stream-evidence test
+    above): the record must stay unattributed to either name, not fall to the
+    backend its path happens to mention.
+    """
     stream_budget = _backends.observe_log(
         backend_name="beta",
         backend=CONFIG["backends"]["beta"],
-        log_path=FIXTURES / "claude-turn.jsonl",
+        log_path=FIXTURES / "claude-worked-turn.jsonl",
     ).budget
     record = ledger.build_record(
         run_id="r-misleading-path",
@@ -510,10 +526,12 @@ def test_delivery_path_naming_another_harness_cannot_change_the_producer(
     )
     ledger.append_run("proj", record, root=repo)
 
-    reading = budget.latest_recorded("proj", root=repo, config=CONFIG)["beta"]
+    readings = budget.latest_recorded("proj", root=repo, config=CONFIG)
 
-    assert reading.record_id == "r-misleading-path"
-    assert reading.attribution == "budget-evidence"
+    assert "alpha" not in readings
+    assert "beta" not in readings
+    assert len(readings.unattributed) == 1
+    assert readings.unattributed[0].record_id == "r-misleading-path"
 
 
 def test_duplicate_stream_interpreters_leave_the_producer_unattributed(
@@ -522,7 +540,7 @@ def test_duplicate_stream_interpreters_leave_the_producer_unattributed(
     stream_budget = _backends.observe_log(
         backend_name="beta",
         backend=CONFIG["backends"]["beta"],
-        log_path=FIXTURES / "claude-turn.jsonl",
+        log_path=FIXTURES / "claude-worked-turn.jsonl",
     ).budget
     record = ledger.build_record(
         run_id="r-ambiguous-producer",
@@ -699,6 +717,52 @@ def test_a_window_that_has_already_reset_stops_holding(home, repo) -> None:
     assert state["state"]["expired"] is True
     assert state["state"]["headroom"] == "unknown"
     assert report["held"] is False
+
+
+def test_a_binding_window_at_the_ceiling_holds_through_preflight(home, repo) -> None:
+    """The parsed window figure is what preflight itself decides on, proved
+    through the same :func:`budget.decide` call preflight makes rather than
+    assumed from the parse alone.
+    """
+    config = {**CONFIG, "budget": {**CONFIG["budget"], "utilisation_ceiling_pct": 95}}
+    reset_epoch = int((datetime.now(tz=UTC) + timedelta(hours=2)).timestamp())
+    info = {
+        "status": "allowed",
+        "rateLimitType": "five_hour",
+        "resetsAt": reset_epoch,
+        "unifiedWindows": {
+            "five_hour": {"utilization": 0.97, "resetsAt": reset_epoch},
+            "seven_day": {"utilization": 0.40, "resetsAt": reset_epoch + 604800},
+        },
+    }
+    held_budget = _backends.dialect_for(CONFIG["backends"]["beta"])._budget(info)
+    _record("proj", repo, backend="beta", budget_block=held_budget, run_id="r-window-hold")
+
+    report = budget.preflight("proj", config, root=repo, backends=["beta"])
+
+    assert report["held_backends"] == ["beta"]
+    assert report["backends"][0]["state"]["utilisation_pct"] == 97.0
+
+
+def test_a_binding_window_below_the_ceiling_does_not_hold(home, repo) -> None:
+    """The negative half of the same check: below the ceiling stays clear."""
+    config = {**CONFIG, "budget": {**CONFIG["budget"], "utilisation_ceiling_pct": 95}}
+    reset_epoch = int((datetime.now(tz=UTC) + timedelta(hours=2)).timestamp())
+    info = {
+        "status": "allowed",
+        "rateLimitType": "five_hour",
+        "resetsAt": reset_epoch,
+        "unifiedWindows": {
+            "five_hour": {"utilization": 0.40, "resetsAt": reset_epoch},
+        },
+    }
+    clear_budget = _backends.dialect_for(CONFIG["backends"]["beta"])._budget(info)
+    _record("proj", repo, backend="beta", budget_block=clear_budget, run_id="r-window-clear")
+
+    report = budget.preflight("proj", config, root=repo, backends=["beta"])
+
+    assert report["held_backends"] == []
+    assert report["backends"][0]["state"]["utilisation_pct"] == 40.0
 
 
 # ── A held lane hands over to its declared fallback ─────────────────────────
