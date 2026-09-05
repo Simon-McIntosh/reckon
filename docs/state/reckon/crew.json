@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-05T22:46:11",
+  "updated": "2026-09-05T23:04:48",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -344,6 +344,15 @@
       },
       {
         "id": "crew-budget-instrument",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-05"
+      },
+      {
+        "id": "crew-drain-fence",
         "harness": "clive",
         "role": "implement",
         "session_id": null,
@@ -62282,6 +62291,139 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260905T201150568422-budget-reads-the-retry-record-the-lane-writes",
+        "plan": "crew-observability-truth",
+        "section": "\u00a75",
+        "node": "budget-reads-the-retry-record-the-lane-writes",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 794,
+                "cached_input_tokens": 282550,
+                "input_tokens": 283346,
+                "output_tokens": 1420,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 284766,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_local_lane_refusal_signal.py -q passes, and a stream that died of rate limiting no longer reports that it carries no rate-limit event. THE DEFECT, measured tonight across four dead runs in two projects: reckon/_backends.py line 852 reads exactly one record kind for budget, \"elif kind == rate_limit_event\", and nothing in that module reads api_retry or error_status. The clive local backend never emits rate_limit_event. It emits api_retry records carrying error_status 429 and error rate_limit. So a run that died of rate limiting is recorded with budget detail \"no rate-limit event in the stream yet\", refusal false, headroom unknown. The documented rule is that unknown headroom never holds a wave, and correctly so, which means the fence cannot fire at any level of local exhaustion and the next wave dispatches into the lane that just shed workers. This is a guard that cannot fire, which outranks a guard that fires wrongly: a stale hold announces itself while a blind one is indistinguishable from a clear lane. THE SHAPES, measured rather than assumed. Exhaustion: many api_retry records then a terminal result record carrying subtype success together with is_error true. Mid-flight death: api_retry records and no terminal result record at all. DO NOT key on a retry count of ten. Ten is the retry budget for a single API call, not for a run; two dead runs here carry 15 and 18 api_retry records and two in another project carry 10 and 5, so any constant matches some exhaustions and misses others, which is the worst behaviour available to a fence. Read the count as a magnitude and the terminal shape as the verdict. THE FALSIFIER, and it is the assertion that matters most: retrying is not refusing. Two runs that completed normally tonight each carried SEVEN api_retry records and finished with real work committed. A change that treats any api_retry as a refusal would mark every busy lane spent and hold the whole fleet, and it would pass any test that only checks the dead runs. Assert both directions: a stream with retries that ends in a genuine success reports no refusal and does not hold; a stream whose retries end in the exhaustion shape reports a refusal with a stated reason naming rate limiting; a stream with no retries at all is unchanged; and the existing rate_limit_event path for other backends keeps working exactly as it does now. Measure base and head over tests/test_local_lane_refusal_signal.py plus every test importing reckon._backends; report failure ids either side and require none added.",
+          "estimated_hours": 1.0,
+          "goal": "Teach the budget observer to see the exhaustion signal the local lane actually writes, so a spent local lane can be known before the next wave enters it",
+          "id": "budget-reads-the-retry-record-the-lane-writes",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T201150568422-budget-reads-the-retry-record-the-lane-writes/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/_backends.py",
+            "tests/test_local_lane_refusal_signal.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-budget-instrument",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-05T20:12:16Z",
+        "completed_at": "2026-09-05T21:03:24.638Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3055,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3068,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "108163865026816d059b5f135876fd02237bbf31",
+        "commits": [
+          "9e681aad95ee439fcc50a417baaeae09afe6f49f"
+        ],
+        "changed_lines": {
+          "added": 312,
+          "removed": 2,
+          "files": 2
+        },
+        "tests_added": 8,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_local_lane_refusal_signal.py -q",
+          "exit_status": 0,
+          "log_path": "/tmp/head_new.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T201150568422-budget-reads-the-retry-record-the-lane-writes/manifest.md",
+        "scope_changed": false,
+        "session_id": "27eb2417-c73a-47f5-a0c7-e11b35c6cc67",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": null,
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "run completed after 1 rate-limit retries; retries alone are not a refusal"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 3063.576,
+          "generated_tokens": 65379,
+          "generation_seconds": 2557.414,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 17.1,
+          "machine_seconds": 506.162,
+          "peak_input_tokens": 173924,
+          "tokens_per_second": 25.56,
+          "wall_tokens_per_second": 21.34
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/budget-reads-the-retry-record-the-lane-writes",
+          "session_id": "27eb2417-c73a-47f5-a0c7-e11b35c6cc67",
+          "session_source": "stream",
+          "retained_at": "2026-09-05T21:03:24.638Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_local_lane_refusal_signal.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -62510,6 +62652,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1031
+    "_version": 1033
   }
 }
