@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-05">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 <meta name="plan-impl" content="0.7">
 <meta name="plan-commits" content="e5f4ef4">
 </head>
@@ -391,6 +391,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260904T072018748329-no-read-has-a-file-as-its-only-answer" data-who="codex-l" data-when="2026-09-04T07:56:26Z">
     <div class="r-comment-body"><p>Every read tool refuses an unknown keyword naming its own vocabulary, every read view returns without spilling and large defaults are compact, and a per-document audit keeps its own findings by default.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-esv-follow-heartbeat-proposal" data-who="reckon-ship" data-when="2026-09-05T18:35:00Z">
+    <div class="r-comment-body">DESIGN PROPOSAL FOR crew follow, relayed by the imas-ambix session from two coordinators who hit the same gap independently today, and recorded here rather than acted on because both metered lanes are constrained. THE GAP: the follower reports transitions and nothing reports their ABSENCE, so a drained fleet is indistinguishable from a working one. Two measured failures on 2026-09-05: one coordinator sat with three terminal pointers unpromoted for hours because quiet read as done; another had two runs end with work outstanding and manifests still reading in_progress, discovered four hours later only when its lead asked what was in flight - a process that ends without emitting a terminal event produces no transition at all, so the follower is structurally blind to it. THE DISAGREEMENT IS THE USEFUL PART and the union is the design. One proposed firing when the alive-process count reaches zero, which closes the non-terminal pointer whose process is dead - the row no transition will ever announce. The other proposed firing when WORKING reaches zero rather than when all three counts do, and that is the sharper trigger: the ambiguity that costs is not finished versus still working, it is finished versus waiting on something I forgot. With blocked and unpromoted non-zero all afternoon, an all-three-zero trigger would never have fired for the coordinator who needed it most. Take working-hits-zero as the primary trigger and the alive-count payload with it: always carry all three counts, and where a non-terminal pointer has no live process, NAME it. ON NOISE, which was the lead's actual question: both coordinators independently proposed hysteresis rather than a timer, which is a good sign. Fire when working hits zero and do not re-arm until working has been non-zero again. One line per quiescence rather than per transition, no debounce interval to tune, and a fleet that drains, refills and drains again has genuinely reached the state twice, so both lines are wanted. A level with hysteresis, not an edge on every poll. This belongs to this plan because it is a state with no verb: the fleet reaches quiescence and nothing says so.</div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260904T044732847265-a-follower-never-runs-stale-code" data-who="codex-b" data-when="2026-09-04T05:04:22Z">
     <div class="r-comment-body"><p>A running follower reloads from the imported installation when its source advances and emits the new behaviour - asserted by patching the formatter and requiring the live process to render the changed output it did not render before - with no event lost or duplicated, the same pid and its registration intact; a re-exec that cannot proceed reports once and keeps delivering.</p></div>
