@@ -405,6 +405,59 @@ def parse_duration(value: str) -> int:
     return int(match.group(1)) * _DURATION_SECONDS[match.group(2)]
 
 
+# A role that may not write repository source is refused the moment it declares
+# a path that resolves inside a repository — at dispatch, before any worktree
+# exists — rather than at promotion where the worker time is already spent. The
+# role's own dispatched default is its run directory, which lies outside the
+# repository, so only a scope that reaches into source is refused.
+REPOSITORY_WRITE_RESTRICTED_ROLES = frozenset({"test"})
+
+
+def role_may_write_repository_paths(role: str) -> bool:
+    """Return whether a single role may alter paths inside the repository.
+
+    A verifier reads the repository it grades but writes only its own run
+    directory — manifest, report and logs — which live outside it, so a role
+    that cannot write source is refused when its declared scope reaches into
+    the repository. Every other role dispatches into the repository and is
+    never refused here. One spelling serves both the dispatch validation and
+    the promotion refusal, so a run that predates the earlier gate is caught
+    later by the same rule rather than by a copy that has drifted from it.
+    """
+    return str(role or "").strip() not in REPOSITORY_WRITE_RESTRICTED_ROLES
+
+
+def _declared_repository_paths(
+    paths: Iterable[str], *, manifest_path: str = ""
+) -> list[str]:
+    """Return declared paths that resolve inside a repository.
+
+    A node's own delivery — its run directory, the manifest it documents, and
+    the shared reports root — are the only absolute paths that are provably
+    outside every repository, so those escape the reach of the worker's
+    checkout. A relative path has nowhere to resolve but inside the checkout,
+    which is the repository, and an absolute path outside the delivery paths
+    is refused rather than guessed at.
+    """
+    from reckon.crew.runs import reports_dir, runs_dir
+
+    delivery_paths: list[Path] = [runs_dir(), reports_dir()]
+    manifest = Path(str(manifest_path or "")).expanduser()
+    if manifest.is_absolute():
+        delivery_paths.append(manifest)
+    delivery_roots = tuple(root.resolve() for root in delivery_paths)
+    repository_paths: list[str] = []
+    for raw in paths:
+        path = Path(str(raw)).expanduser()
+        if not path.is_absolute():
+            repository_paths.append(str(raw))
+            continue
+        if any(path.resolve().is_relative_to(root) for root in delivery_roots):
+            continue
+        repository_paths.append(str(raw))
+    return repository_paths
+
+
 def validate_node(
     node: TaskNode,
     *,
@@ -491,6 +544,19 @@ def validate_node(
                     "scoped",
                     f"shares {', '.join(shared)} with concurrent node {peer}; "
                     "serialise the nodes or split the file",
+                )
+        if not role_may_write_repository_paths(node.role):
+            repository_paths = _declared_repository_paths(
+                node.write_paths, manifest_path=node.manifest_path
+            )
+            if repository_paths:
+                fail(
+                    "scoped",
+                    f"role {node.role!r} may not write repository paths, but "
+                    f"{', '.join(repository_paths)} resolve inside the "
+                    "repository; a verifier writes only its manifest, report "
+                    "and logs, which live outside it — dispatch an implement "
+                    "node for source edits",
                 )
 
     if not node.time_budget:
