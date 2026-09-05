@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-05T22:29:14",
+  "updated": "2026-09-05T22:46:11",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -62134,6 +62134,154 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260905T194624650496-role-scope-refused-before-the-worktree-exists",
+        "plan": "binding-rules-need-bound-checks",
+        "section": "\u00a72",
+        "node": "role-scope-refused-before-the-worktree-exists",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2761,
+                "cached_input_tokens": 215123,
+                "input_tokens": 217886,
+                "output_tokens": 1658,
+                "reasoning_output_tokens": 178,
+                "total_tokens": 219544,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_role_write_scope.py -q passes, and a test-role node declaring repository write paths is refused by validate_node before a worktree exists. THE DEFECT, measured by an imas-codex fleet today on run r-20260905T120506861337-n-sli-the-timestamp-work-did-not-add-failures, which declared write paths imas_codex/standard_names/graph_ops.py and imas_codex/schemas/standard_name.yaml under --role test: dispatch accepted it, validated all eight properties, created the worktree, launched the worker, and the worker did the job and committed 1ea93df8a with a genuinely passing gate. Only crew complete then refused, at reckon/crew/promotion.py line 1524, saying the run has role test but its cited commit changes repository paths and an implement node should be dispatched for source edits. No waiver covers that refusal and --no-commit would record a falsehood, so the ledger row is permanently unwritable and the worker time is unrecoverable. That fleet hit this shape three times. Everything the check needs is known at dispatch: TaskNode carries role at reckon/crew/node.py line 348 and validate_node already receives the node, so the declared write_paths and the role are both in hand. The gap is visible in the property list itself \u2014 scoped asks whether paths are enumerated and unshared, never whether the role may write them. Implement ONE predicate that both callers use: validate_node adds the refusal as a property finding so dispatch exits 2 not-dispatchable naming it, and the promotion check calls that same predicate instead of keeping its own copy, because two spellings of one rule is the defect this plan is about. THE OVER-REFUSAL CHECK IS THE ONE THAT MATTERS AND MUST BE ASSERTED: a test-role node whose write paths all lie outside the repository (its manifest, report and logs) must still dispatch; an implement-role node writing repository source must still dispatch; and a run that slipped through before this change must still be refused at promotion, so the later guard is narrowed to agree with the earlier one and never removed. A change that refuses too widely would stop every verifier node on this workstation and would pass any test that only checks the violating case. Measure base and head over tests/test_role_write_scope.py plus every test importing reckon.crew.node or reckon.crew.promotion; report failure ids either side and require none added.",
+          "estimated_hours": 1.0,
+          "goal": "Refuse a role that may not write its declared paths at dispatch, where the node can still be reshaped, instead of at promotion where the work is already spent",
+          "id": "role-scope-refused-before-the-worktree-exists",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T194624650496-role-scope-refused-before-the-worktree-exists/manifest.md",
+          "plan": "binding-rules-need-bound-checks",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/node.py",
+            "reckon/crew/promotion.py",
+            "tests/test_role_write_scope.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-role-scope",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-05T19:46:50Z",
+        "completed_at": "2026-09-05T20:44:28.627Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3402,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3458,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "e119290045422725f35af436d4512ac37989af37",
+        "commits": [
+          "04a5ac3643d7d336f201efcd0f3ea5dd312788c3"
+        ],
+        "changed_lines": {
+          "added": 366,
+          "removed": 2,
+          "files": 3
+        },
+        "tests_added": 8,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_role_write_scope.py -q",
+          "exit_status": 0,
+          "log_path": "/tmp/head_gate_final.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T194624650496-role-scope-refused-before-the-worktree-exists/manifest.md",
+        "scope_changed": false,
+        "session_id": "25c87155-9394-443c-8e38-f8911ef47240",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 13686609,
+            "input_tokens_cumulative": 13686609,
+            "output_tokens": 66752,
+            "output_tokens_cumulative": 66752,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 3453.789,
+          "generated_tokens": 66752,
+          "generation_seconds": 3241.814,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 19.6,
+          "machine_seconds": 211.975,
+          "peak_input_tokens": 199570,
+          "tokens_per_second": 20.59,
+          "wall_tokens_per_second": 19.33
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/role-scope-refused-before-the-worktree-exists",
+          "session_id": "25c87155-9394-443c-8e38-f8911ef47240",
+          "session_source": "stream",
+          "retained_at": "2026-09-05T20:44:28.627Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_role_write_scope.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -62362,6 +62510,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1030
+    "_version": 1031
   }
 }
