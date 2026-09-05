@@ -346,6 +346,38 @@ def _write_json_envelope(
 # ── HTML-state helpers ────────────────────────────────────────────────────
 
 
+def _unparsed_section_warnings(html_text: str, state: dict[str, Any]) -> list[str]:
+    """Warn about data-reckon sections holding authored children the parser
+    did not recognise.
+
+    The parser reports such a section as an empty collection — written exactly
+    like "nothing was authored" — and a read-modify-write then splices that
+    empty collection over the section, silently deleting the authored items.
+    The write path refuses the splice; this read-time warning is its partner,
+    so a caller that reads the version before an edit sees the hazard in the
+    state it already gets back instead of meeting it only as a write refusal.
+    Sections absent from ``state`` are covered too: an absent section has no
+    authored children either, so nothing is warned about.
+    """
+    from reckon import _plan_html
+
+    out: list[str] = []
+    for reckon_id in _plan_html.SECTION_IDS:
+        if state.get(reckon_id):
+            continue  # parsed content is present — nothing unrecognised
+        count = _plan_html._authored_child_count(html_text, reckon_id)
+        if count == 0:
+            continue  # missing or genuinely empty section — nothing at risk
+        spelling = _plan_html._SECTION_RECOGNISED_SPELLING.get(reckon_id)
+        expected = f" Expected spelling: {spelling}" if spelling else ""
+        out.append(
+            f'plan read: section data-reckon="{reckon_id}" holds {count} '
+            "authored child element(s) the parser did not recognise — the "
+            f"parsed collection is empty.{expected}"
+        )
+    return out
+
+
 def _read_state(
     project: str,
     slug: str,
@@ -369,6 +401,11 @@ def _read_state(
     text = html_file.read_text(encoding="utf-8", errors="replace")
     state = _plan_html.read_state(text)
     _add_north_star_diagnostic(project, state, root)
+    for warning in _unparsed_section_warnings(text, state):
+        compat = list(state.get("compatibility_warnings") or [])
+        if warning not in compat:
+            compat.append(warning)
+            state["compatibility_warnings"] = compat
     if state.get("type", "plan") == "plan" and state.get("status") == "blocked":
         warning = (
             "status: persisted 'blocked' is legacy compatibility input; "
