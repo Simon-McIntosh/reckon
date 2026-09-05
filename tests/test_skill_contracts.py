@@ -4,6 +4,7 @@ from typing import get_args
 
 from reckon._mcp_tools import CrewArgs
 from reckon.cli import main
+from reckon.crew.node import NODE_PROPERTIES
 from reckon.crew.runs import _watch_attach_line
 
 
@@ -329,6 +330,97 @@ def test_worker_protocol_owns_the_backend_independent_contract() -> None:
         assert f"| {fence} |" in protocol
     assert "follow_ons" in protocol
     assert "reckon crew resume" in protocol
+
+
+# The small-cardinal words the reference prose counts in. The count itself is
+# always len(NODE_PROPERTIES); this map is only the presentation conversion to
+# the word form the documents use ("all eight hold", not "all 8 hold").
+_CARDINAL_WORDS = {
+    1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six",
+    7: "seven", 8: "eight", 9: "nine", 10: "ten", 11: "eleven", 12: "twelve",
+}
+
+
+def _count_word(n: int) -> str:
+    try:
+        return _CARDINAL_WORDS[n]
+    except KeyError:  # a contract with this many properties needs a new word
+        raise AssertionError(
+            f"NODE_PROPERTIES has {n} entries, beyond the count vocabulary; "
+            "extend _CARDINAL_WORDS of tests/test_skill_contracts.py"
+        ) from None
+
+
+def _property_table_title(property_name: str) -> str:
+    """The worker-protocol table's row label that property_name must carry.
+
+    Every row label is this derivation of the property key it stands for — the
+    first hyphen-separated word capitalised, the remainder joined with spaces —
+    so the row a property requires is mechanical and a hand-mapped alias can
+    never drift from the tuple.
+    """
+    words = property_name.split("-")
+    return " ".join((words[0].capitalize(), *words[1:]))
+
+
+def test_worker_protocol_property_table_tracks_the_node_authority() -> None:
+    """The task-definition table is one row per entry of NODE_PROPERTIES.
+
+    The defect this guards is a number written down beside a set that grew: the
+    table carried seven rows while NODE_PROPERTIES held eight — spec-level was
+    missing entirely — and the counts in prose agreed with the stale table
+    rather than with the authority. Every count below is derived from
+    NODE_PROPERTIES at assertion time, never a literal, so the next time the
+    tuple grows this test fails and forces the references to move with it.
+    """
+    protocol = (
+        ROOT / "skills" / "reckon-ship" / "references" / "worker-protocol.md"
+    ).read_text()
+    orchestration = (
+        ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+    ).read_text()
+
+    # Section 1 only: the rows between the "## 1." heading and the next "## "
+    # heading, minus the header and separator rows.
+    section = protocol.split("## 1.", 1)[1].split("\n## ", 1)[0]
+    rows = [
+        row
+        for row in section.splitlines()
+        if row.startswith("|") and "| Property |" not in row and "---" not in row
+    ]
+    expected = [_property_table_title(name) for name in NODE_PROPERTIES]
+    labels = [row.split("|")[1].strip() for row in rows]
+    disagreements: list[str] = []
+    for index, label in enumerate(labels):
+        authority = expected[index] if index < len(expected) else "<no row>"
+        if authority != label:
+            disagreements.append(f"  table {label!r} vs authority {authority!r}")
+    assert labels == expected, (
+        "the task-definition table must carry exactly one row per "
+        "NODE_PROPERTIES entry, matched by name and in the same order (order is "
+        "part of the contract):\n"
+        + "\n".join(disagreements)
+        + f"\n  table has {len(labels)} rows, authority has {len(expected)}"
+    )
+
+    # No prose count in either reference may disagree with the authority's size.
+    count = _count_word(len(NODE_PROPERTIES))
+    assert f"all {count} hold:" in protocol
+    assert f"enforces the same {count}" in protocol
+    assert f"{count}-property task contract" in orchestration
+
+    # The spec-level row states what dispatch actually tests: the declaration
+    # is mandatory and the level is one of the three accepted values.
+    spec_row = next(
+        row
+        for row in rows
+        if row.split("|")[1].strip() == _property_table_title("spec-level")
+    )
+    for fragment in ("exact", "guided", "open", "calibration", "refused"):
+        assert fragment in spec_row, (
+            "the spec-level row does not state what dispatch tests; missing "
+            f"{fragment!r}: {spec_row}"
+        )
 
 
 def test_worker_backends_reference_stays_about_mechanics() -> None:

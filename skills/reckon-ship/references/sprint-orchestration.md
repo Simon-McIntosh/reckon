@@ -7,7 +7,7 @@ exactly as it binds a sprint one; only target resolution and sprint writeback ar
 sprint-specific. Where the text says "sprint coordinator", read "coordinator".
 
 `worker-protocol.md` is its companion and is not repeated here: it owns the
-seven-property task contract, the four fences, the manifest shape, the recovery
+eight-property task contract, the four fences, the manifest shape, the recovery
 ladder and the escape hatch — everything true of a worker regardless of which
 backend runs it. This file owns what the *orchestrator* does around that.
 
