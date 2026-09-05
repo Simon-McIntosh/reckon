@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-05T21:16:59",
+  "updated": "2026-09-05T22:06:03",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -341,6 +341,42 @@
         "sessions": {
           "gpt-5.6-sol": "01a038e1-4bd7-7260-8a43-207a7c9ab134"
         }
+      },
+      {
+        "id": "crew-manifest-keys",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-05"
+      },
+      {
+        "id": "crew-resume-refusal",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-05"
+      },
+      {
+        "id": "crew-role-scope",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-05"
+      },
+      {
+        "id": "crew-terminal-budget",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-05"
       },
       {
         "id": "dispatch-repair",
@@ -1503,6 +1539,24 @@
           "{\"backend\":\"clive\",\"effort\":\"medium\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\"}": "3c03edc0-2541-4530-b218-3ad2f9c0871d"
         },
         "created": "2026-09-03"
+      },
+      {
+        "id": "skill-contract-count",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-05"
+      },
+      {
+        "id": "skill-routing-figures",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-05"
       },
       {
         "id": "sonnet-a",
@@ -61355,6 +61409,153 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260905T192847087966-routing-figures-name-their-derivation",
+        "plan": "clive-local-workers",
+        "section": "\u00a75",
+        "node": "routing-figures-name-their-derivation",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 11051,
+                "cached_input_tokens": 158268,
+                "input_tokens": 169321,
+                "output_tokens": 1273,
+                "reasoning_output_tokens": 169,
+                "total_tokens": 170594,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_effort_routing_contract.py -q passes after three changes. (a) The routing table in skills/reckon-ship/references/effort-routing.md states, beside its figures, the exact derivation that produces them: which ledger (docs/state/reckon/crew.json), which filter (backend clive, the spec level, the gate outcome), and above all the DEDUPLICATION RULE deciding whether repeated attempts on one node count once or each time \u2014 without that rule the exact figure admits several defensible readings and a reader cannot reproduce it. (b) Each figure is labelled a snapshot carrying its date and sample size, not stated as a standing fact. (c) tests/test_effort_routing_contract.py stops asserting the literal counts. It currently asserts the exact string \"42 passed of 44 runs\" while the committed ledger already holds more clive runs than that, so the test pins a number that moves and will keep passing while the doc drifts further from reality \u2014 the fuse this repository has been burned by before. Replace those with assertions that the derivation is stated, that each snapshot carries a date and a sample size, and that the documented filter actually runs against the committed ledger and returns a pass count and a run count \u2014 WITHOUT requiring those to equal the snapshot, since a test that re-derives and compares to a literal is the same fuse wearing different clothes. Report in your manifest what the documented filter yields today beside what the doc says; if they differ, say so and do not edit either to match \u2014 the coordinator decides.",
+          "estimated_hours": 0.5,
+          "goal": "Make the local-lane routing figures re-derivable and dated, so neither the reference nor its test pins a number that moves",
+          "id": "routing-figures-name-their-derivation",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T192847087966-routing-figures-name-their-derivation/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "write_paths": [
+            "skills/reckon-ship/references/effort-routing.md",
+            "tests/test_effort_routing_contract.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "skill-routing-figures",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-05T19:28:58Z",
+        "completed_at": "2026-09-05T20:04:19.448Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2082,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2121,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "68f97dd1c9e3a7b9ec94f55d8764f939990f4ffb",
+        "commits": [
+          "b41f9dd281680b9413775b7836b1dd4706bf752c"
+        ],
+        "changed_lines": {
+          "added": 99,
+          "removed": 18,
+          "files": 2
+        },
+        "tests_added": 7,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_effort_routing_contract.py -q",
+          "exit_status": 0,
+          "log_path": "/tmp/rountest2.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T192847087966-routing-figures-name-their-derivation/manifest.md",
+        "scope_changed": false,
+        "session_id": "74d3b007-7171-4c2b-bbdf-9dba2fb6a193",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 3808232,
+            "input_tokens_cumulative": 3808232,
+            "output_tokens": 36534,
+            "output_tokens_cumulative": 36534,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 2115.588,
+          "generated_tokens": 36534,
+          "generation_seconds": 2048.997,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 11.1,
+          "machine_seconds": 66.591,
+          "peak_input_tokens": 113243,
+          "tokens_per_second": 17.83,
+          "wall_tokens_per_second": 17.27
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/routing-figures-name-their-derivation",
+          "session_id": "74d3b007-7171-4c2b-bbdf-9dba2fb6a193",
+          "session_source": "stream",
+          "retained_at": "2026-09-05T20:04:19.448Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_effort_routing_contract.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -61539,8 +61740,50 @@
         "reason": "utilisation 95% with burn multiple 4.5x is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
         "closed_by_purpose": null,
         "resumption_fired": false
+      },
+      {
+        "hold_id": "hold-codex-luna-20260905192358",
+        "backend": "codex-luna",
+        "purpose": "dispatch",
+        "opened_at": "2026-09-05T19:23:58Z",
+        "closed_at": null,
+        "held_seconds": null,
+        "utilisation_pct": 95.0,
+        "resets_at": "2026-09-11T04:24:27Z",
+        "effective_ceiling_pct": 95.0,
+        "reason": "utilisation 95% with burn multiple 4.1x is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
+        "closed_by_purpose": null,
+        "resumption_fired": false
+      },
+      {
+        "hold_id": "hold-codex-spark-20260905192358",
+        "backend": "codex-spark",
+        "purpose": "dispatch",
+        "opened_at": "2026-09-05T19:23:58Z",
+        "closed_at": null,
+        "held_seconds": null,
+        "utilisation_pct": 95.0,
+        "resets_at": "2026-09-11T04:24:27Z",
+        "effective_ceiling_pct": 95.0,
+        "reason": "utilisation 95% with burn multiple 4.1x is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
+        "closed_by_purpose": null,
+        "resumption_fired": false
+      },
+      {
+        "hold_id": "hold-codex-terra-20260905192358",
+        "backend": "codex-terra",
+        "purpose": "dispatch",
+        "opened_at": "2026-09-05T19:23:58Z",
+        "closed_at": null,
+        "held_seconds": null,
+        "utilisation_pct": 95.0,
+        "resets_at": "2026-09-11T04:24:27Z",
+        "effective_ceiling_pct": 95.0,
+        "reason": "utilisation 95% with burn multiple 4.1x is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
+        "closed_by_purpose": null,
+        "resumption_fired": false
       }
     ],
-    "_version": 1017
+    "_version": 1025
   }
 }
