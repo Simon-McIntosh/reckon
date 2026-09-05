@@ -798,7 +798,7 @@ def record_run_disposition(
 
 
 def drain(project: str) -> dict[str, Any]:
-    from reckon.crew.recovery import classify_pointer
+    from reckon.crew.recovery import classify_pointer, closure_disposition_valid
 
     """Return the closure drain derived from one project's live pointers.
 
@@ -820,9 +820,7 @@ def drain(project: str) -> dict[str, Any]:
         disposition = (
             str(recorded.get("kind") or "") if isinstance(recorded, Mapping) else ""
         )
-        valid = disposition == "handed-off" or (
-            disposition == "still-working" and row["classification"] == "running"
-        )
+        valid = closure_disposition_valid(disposition, row["classification"])
         rows.append(
             {
                 **row,
