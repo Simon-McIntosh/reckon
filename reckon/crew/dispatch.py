@@ -3134,6 +3134,15 @@ def record_resumption(
                     str(log_path) if current_attempt else record.get("log_path")
                 ),
                 "stderr_path": str(stderr_path),
+                # A new attempt has made no observations, so it must not inherit
+                # the previous attempt's folded budget observation: a refusal
+                # folded from the superseded stream would otherwise short-circuit
+                # the refusal classifier before it reads the live resume stream.
+                # The honest unknown-headroom state keeps the reader on the
+                # stream that is actually running.
+                "budget": _backends.unknown_budget(
+                    "no events yet on the resumed attempt"
+                ),
             }
         )
         return record
