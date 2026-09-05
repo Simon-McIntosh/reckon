@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-04T15:30:22",
+  "updated": "2026-09-05T15:49:12",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -771,6 +771,17 @@
         "created": "2026-09-04"
       },
       {
+        "id": "s15-fence",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": "74061b36-f3a3-4f37-9340-654f914a628f",
+        "session_model": "claude-sonnet-5",
+        "sessions": {
+          "{\"alias\":\"sonnet 5\",\"backend\":\"claude\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "74061b36-f3a3-4f37-9340-654f914a628f"
+        },
+        "created": "2026-09-05"
+      },
+      {
         "id": "s15-floor",
         "harness": "codex",
         "role": "implement",
@@ -780,6 +791,17 @@
           "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06c5e-1ce6-7750-a904-2e9db452fb51"
         },
         "created": "2026-09-04"
+      },
+      {
+        "id": "s15-imputed",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": "de7fae55-04b1-4e4e-ac72-8eb201d6d52f",
+        "session_model": "claude-sonnet-5",
+        "sessions": {
+          "{\"alias\":\"sonnet 5\",\"backend\":\"claude\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "de7fae55-04b1-4e4e-ac72-8eb201d6d52f"
+        },
+        "created": "2026-09-05"
       },
       {
         "id": "s15-keying",
@@ -1427,15 +1449,6 @@
           "{\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"read-only\"}": "286babeb-5dc5-4f73-861a-c417d470eb5a",
           "{\"backend\":\"clive\",\"effort\":\"medium\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\"}": "3c03edc0-2541-4530-b218-3ad2f9c0871d"
         },
-        "created": "2026-09-03"
-      },
-      {
-        "id": "session-5847658970b3694c317c",
-        "harness": "clive",
-        "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
         "created": "2026-09-03"
       },
       {
@@ -60273,6 +60286,297 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260905T132827490610-dcdn-unmetered-cost-is-not-imputed",
+        "plan": "dispatch-cost-per-durable-node",
+        "section": "\u00a73",
+        "node": "dcdn-unmetered-cost-is-not-imputed",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1245,
+                "cached_input_tokens": 733859,
+                "input_tokens": 735106,
+                "output_tokens": 737,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 735843,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "uv run --no-sync pytest tests/test_ledger.py tests/test_routing_surface.py -q passes with no failure count above the base revision, and new cases assert: a run on a backend with no metered price records cost as an explicit absence or zero carrying an imputed flag, never a silent imputed dollar figure; crew(view='routing') either omits such a lane from any cost ordering or labels its cost as imputed so a consumer can refuse to rank on it; and a metered backend's recorded cost is unchanged. Use this repository's own ledger figures as the regression case rather than synthesised ones - clive records a median 21.59 dollars per node against claude's 1.61, so assert that after the change the free lane no longer sorts as more expensive than the metered one",
+          "estimated_hours": 1.75,
+          "goal": "Stop the ledger imputing a dollar cost for a backend that has no metered price, so the routing surface cannot rank the free lane dearest",
+          "id": "dcdn-unmetered-cost-is-not-imputed",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T132827490610-dcdn-unmetered-cost-is-not-imputed/manifest.md",
+          "plan": "dispatch-cost-per-durable-node",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/ledger.py",
+            "reckon/capabilities.py",
+            "tests/test_ledger.py",
+            "tests/test_routing_surface.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s15-imputed",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "alias": "sonnet 5",
+          "backend": "claude",
+          "effort": "high",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-05T13:28:56Z",
+        "completed_at": "2026-09-05T13:41:51.945Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 768,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 775,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "7b46b7b56f52d92a324888b1207af7833b425c58",
+        "commits": [
+          "196112a697d968becf5bd3df6c44d573bf081e2e"
+        ],
+        "changed_lines": {
+          "added": 200,
+          "removed": 1,
+          "files": 4
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "uv run --no-sync pytest tests/test_ledger.py tests/test_routing_surface.py -q",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/imputed-gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T132827490610-dcdn-unmetered-cost-is-not-imputed/manifest.md",
+        "scope_changed": false,
+        "session_id": "de7fae55-04b1-4e4e-ac72-8eb201d6d52f",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 1.21,
+          "rate_limit_type": "overage",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-10-01T00:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 1,
+          "tokens": {
+            "cache_creation_input_tokens": 143921,
+            "cache_creation_input_tokens_cumulative": 143921,
+            "cache_read_input_tokens": 8692150,
+            "cache_read_input_tokens_cumulative": 8692150,
+            "inference_geo": "not_available",
+            "input_tokens": 144,
+            "input_tokens_cumulative": 144,
+            "output_tokens": 43134,
+            "output_tokens_cumulative": 43134,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 2.745742,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 2.745742
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 771.985,
+          "generated_tokens": 43134,
+          "generation_seconds": 548.856,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 16.8,
+          "machine_seconds": 223.129,
+          "peak_input_tokens": 168342,
+          "tokens_per_second": 78.59,
+          "wall_tokens_per_second": 55.87
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/dcdn-unmetered-cost-is-not-imputed",
+          "session_id": "de7fae55-04b1-4e4e-ac72-8eb201d6d52f",
+          "session_source": "pointer",
+          "retained_at": "2026-09-05T13:41:51.945Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_ledger.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260905T132731247555-cot-fence-reads-the-window",
+        "plan": "crew-observability-truth",
+        "section": "\u00a75",
+        "node": "cot-fence-reads-the-window",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 625,
+                "cached_input_tokens": 733234,
+                "input_tokens": 733861,
+                "output_tokens": 811,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 734672,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "uv run --no-sync pytest tests/test_backend_observation.py tests/test_budget.py -q passes with no failure count above the base revision, and new cases assert against the recorded fixture tests/fixtures/backends/claude-worked-turn.jsonl that already carries unifiedWindows: a rate-limit event's unifiedWindows five_hour utilization 0.61 yields utilisation_pct 61.0 and resets_at from that window's own resetsAt rather than the account resetsAt; the top-level overage utilization 1.21 is never the gating figure and must not produce utilisation_pct 1.21; a window at or above the ceiling HOLDS, asserted through the same decide call preflight makes so the negative half is proved rather than assumed; an event carrying no unifiedWindows reports headroom unknown rather than falling back to the account fraction; and the codex usedPercent path is untouched, asserted by its existing cases staying green since that field is a true percent",
+          "estimated_hours": 2.0,
+          "goal": "Make the claude budget fence read the gating window in its true unit so it can fire at all",
+          "id": "cot-fence-reads-the-window",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T132731247555-cot-fence-reads-the-window/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/_backends.py",
+            "tests/test_backend_observation.py",
+            "tests/test_budget.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s15-fence",
+        "backend": "claude",
+        "local": false,
+        "agent": {
+          "alias": "sonnet 5",
+          "backend": "claude",
+          "effort": "high",
+          "launch": "cli",
+          "model": "claude-sonnet-5",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-05T13:27:52Z",
+        "completed_at": "2026-09-05T13:47:04.744Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1144,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1152,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "7b46b7b56f52d92a324888b1207af7833b425c58",
+        "commits": [
+          "b9562693fdf804b4e3fff18a1e36e533e5f5f19d"
+        ],
+        "changed_lines": {
+          "added": 182,
+          "removed": 25,
+          "files": 3
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_backend_observation.py tests/test_budget.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T132731247555-cot-fence-reads-the-window/after-test.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T132731247555-cot-fence-reads-the-window/manifest.md",
+        "scope_changed": false,
+        "session_id": "74061b36-f3a3-4f37-9340-654f914a628f",
+        "budget": {
+          "headroom": "known",
+          "utilisation_pct": 83.0,
+          "rate_limit_type": "five_hour",
+          "rate_limit_period_minutes": null,
+          "resets_at": "2026-09-05T17:00:00Z",
+          "threshold_status": "allowed_warning",
+          "surpassed_threshold": 1,
+          "tokens": {
+            "cache_creation_input_tokens": 185858,
+            "cache_creation_input_tokens_cumulative": 185858,
+            "cache_read_input_tokens": 9054442,
+            "cache_read_input_tokens_cumulative": 9054442,
+            "inference_geo": "not_available",
+            "input_tokens": 128,
+            "input_tokens_cumulative": 128,
+            "output_tokens": 70601,
+            "output_tokens_cumulative": 70601,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": 3.260586399999999,
+          "refusal": false,
+          "detail": "backend reports utilisation and reset time",
+          "cost_usd_cumulative": 3.260586399999999
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 1148.969,
+          "generated_tokens": 70601,
+          "generation_seconds": 784.725,
+          "input_budget_tokens": 1000000,
+          "input_utilisation_pct": 20.5,
+          "machine_seconds": 364.244,
+          "peak_input_tokens": 205089,
+          "tokens_per_second": 89.97,
+          "wall_tokens_per_second": 61.45
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/cot-fence-reads-the-window",
+          "session_id": "74061b36-f3a3-4f37-9340-654f914a628f",
+          "session_source": "pointer",
+          "retained_at": "2026-09-05T13:47:04.744Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_backend_observation.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -60445,6 +60749,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 995
+    "_version": 1002
   }
 }
