@@ -160,6 +160,26 @@
         (commit <code>1a103b6</code>).</p>
     </section>
 
+    <section id="s11" class="section-landed">
+      <header><span class="badge badge-shipped">&#10003; landed 2026-09-04</span>
+        <h2>&#167;11 &mdash; The dispatch grade the fleet was missing is context fit</h2></header>
+      <p class="landed-summary">All four measures hold. Each backend declares a usable input
+        budget in flight config, validated through the layered schema with leaf provenance and
+        regenerated into both derived artifacts; a backend declaring none is treated as
+        <em>unbounded</em> rather than as zero and never refuses. A dispatch computes the
+        node's need from the standing instruction load plus its declared write paths and named
+        files, and records the estimate with its inputs on the run so a later reader can check
+        the arithmetic. A node whose need exceeds the resolved window is refused
+        <strong>before worktree creation</strong> through the existing capability envelope at
+        exit 5, naming the estimate, the window and the shortfall &mdash; and the negative is
+        asserted, so a node that fits dispatches unchanged. 78 passed and 1 failed against a
+        base of 71 passed and the identical single failure, so zero added; the generated pair
+        was verified current by re-running <code>scripts/regen_flight_schema.py</code> and
+        getting no diff. Full record:
+        <a href="/reckon/evidence/archive/clive-local-workers-landed#s11-context-fit">§11 landed</a>
+        (commit <code>9479569</code>).</p>
+    </section>
+
     <h2 id="s10">&#167;10 &mdash; An effort scan on real nodes, because the trivial probe was the wrong instrument</h2>
     <p><strong>&#167;8 concluded too much from too little, and this section is the correction.</strong>
     That probe asked each model <em>what is 17 times 23</em> at four thinking budgets, saw
