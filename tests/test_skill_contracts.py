@@ -227,6 +227,43 @@ def test_ship_skill_routes_local_requests_through_the_declared_flag() -> None:
     assert "refuses when it is unset" in normalized(ship)
 
 
+def test_ship_skill_presents_the_local_lane_as_a_routing_choice() -> None:
+    """The local lane is a choice a coordinator may make unprompted, not only a flag.
+
+    The flag contract above pins how a *request* to use local workers is
+    honoured. This test pins the routing-choice side — when a coordinator may
+    select the local lane on its own authority — so the skill cannot regress
+    to presenting local as only an obeyable flag. The request-phrase contract
+    is asserted again here so it survives a rewrite that only touches one side.
+    """
+    ship = (ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text()
+    norm = normalized(ship)
+
+    # Presented as a routing choice, not only a flag.
+    assert "routing choice, not only a flag" in norm
+    assert "select it unprompted" in norm
+
+    # The conditions a coordinator may act on unprompted: an exact declared
+    # level, constrained metered lanes, and a node needing no decision.
+    assert "the node's declared level is `exact`" in norm
+    assert "metered lanes are constrained" in norm
+    assert "the node needs no decision" in norm
+
+    # It costs no metered quota.
+    assert "costs no metered quota" in norm
+
+    # Context-fit refusal rejects a node exceeding the lane's window before a
+    # worktree exists rather than the node dying mid-run.
+    assert "context-fit refusal" in norm.lower()
+    assert "exceeding the lane's window" in norm
+    assert "before a worktree exists" in norm
+    assert "rather than the node dying mid-run" in norm
+
+    # The request-phrase contract survives unchanged, asserted by this same test.
+    assert "the coordinator adds `--local` to every" in ship
+    assert "refuses when it is unset" in norm
+
+
 def test_ship_skill_owns_the_pre_dispatch_checklist() -> None:
     ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
     for prop in (

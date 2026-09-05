@@ -544,6 +544,15 @@ When the invoking phrase includes "use local workers", "use local agents", or
 `reckon crew dispatch` call. The flag resolves `local_backend` as that
 dispatch's default and refuses when it is unset; role overlays still apply.
 
+**The local lane is a routing choice, not only a flag.** A coordinator may
+select it unprompted when the node's declared level is `exact`, when the
+metered lanes are constrained, or when the node needs no decision. It costs
+no metered quota. Context-fit refusal now rejects a node exceeding the lane's
+window before a worktree exists, naming the estimate, the window and the
+shortfall, rather than the node dying mid-run. The flag contract above is
+unchanged: a request to use local workers still selects that same configured
+backend.
+
 The wrapper supplies the base URL, model tiers, and credential for the locally
 served endpoint. Its backend alias reuses the existing pass-through dialect
 because the wrapper forwards its arguments unchanged.
