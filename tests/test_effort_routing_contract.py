@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).parents[1]
@@ -52,11 +53,13 @@ def test_local_lane_stays_qualified_with_the_measurement_handed_over() -> None:
 
 
 def test_figures_are_a_dated_snapshot_with_sample_sizes() -> None:
-    """Each figure is labelled a snapshot carrying its date and its sample
+    """Each figure is labelled a snapshot carrying an ISO date and its sample
     size, not a standing fact that pins a number."""
     text = reference()
-    assert "Snapshot (dated 2026-09-05)" in text
+    assert "Snapshot (dated" in text
+    assert re.search(r"Snapshot \(dated \d{4}-\d{2}-\d{2}\)", text)
     assert "not a standing fact" in text
+    assert re.search(r"passed of \d+ runs", text)
     assert "sample size" in text
 
 
@@ -82,9 +85,11 @@ def test_open_is_never_routed_to_the_lane() -> None:
 
 def test_the_other_local_identifier_is_explicitly_not_routed() -> None:
     text = reference()
-    assert "0 passed of 9 runs" in text
     assert "glm-5.3" in text
     assert "explicitly NOT routed" in text
+    # the exclusion figure carries the same dated-snapshot framing as the
+    # routed rows: its count reads "<passed> of <sample> runs", not a pin
+    assert re.search(r"glm-5\.3.*?its snapshot reads \d+ passed of \d+ runs", text)
 
 
 def test_reference_no_longer_denies_a_live_mapping() -> None:
