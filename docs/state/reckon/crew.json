@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-05T23:04:48",
+  "updated": "2026-09-05T23:07:37",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -62424,6 +62424,153 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260905T204848102159-routing-test-pins-neither-count-nor-date",
+        "plan": "clive-local-workers",
+        "section": "\u00a75",
+        "node": "routing-test-pins-neither-count-nor-date",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2623,
+                "cached_input_tokens": 310097,
+                "input_tokens": 312722,
+                "output_tokens": 1261,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 313983,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_effort_routing_contract.py -q passes with neither a pinned count nor a pinned date remaining. This continues your own commit b41f9dd, which removed the two moving figures and stated the derivation. Two pins of the same class survived it, and your manifest asserted the opposite about one of them. FIRST, line 85 still asserts the literal string \"0 passed of 9 runs\" for glm-5.3. That denominator moves the moment anything shadow-qualifies on that model, which the reference explicitly keeps it defined for, so it is the same fuse as the counts you removed. Assert instead what is actually contractual: that glm-5.3 is stated as not routed, and that its figure is presented with the same dated-snapshot framing as the others. SECOND, line 58 asserts the literal \"Snapshot (dated 2026-09-05)\". That pins the date the snapshot was taken, so updating the snapshot breaks the test \u2014 and your manifest follow-on states the opposite, that updating the snapshot would not break the contract test because it no longer asserts literals. It does. This repository has a written rule that a test must not encode a date derived from today, for exactly this reason: it passes when written and turns the branch red later with nobody touching the code. Assert the SHAPE instead: that a snapshot label is present, that it carries an ISO date matched by pattern rather than by value, and that a sample size accompanies each figure. THE FALSIFIER: after your change, editing the reference to record a NEWER snapshot \u2014 a different date and different counts \u2014 must leave the test passing, and you must demonstrate that rather than assert it, by making that edit in your worktree, running the test, showing it green, and reverting the edit before you commit. State in the manifest that you performed that demonstration and what the test reported. Removing an assertion is not the goal; the goal is a check that still fails when the reference stops stating its derivation. Verify that too: with the derivation recipe deleted from the reference, the test must fail. Measure base and head over tests/test_effort_routing_contract.py; report failure ids either side and require none added.",
+          "estimated_hours": 0.4,
+          "goal": "Remove the two pinned literals that survived the derivation fix, so the contract test stops encoding values that move",
+          "id": "routing-test-pins-neither-count-nor-date",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T204848102159-routing-test-pins-neither-count-nor-date/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "25m",
+          "write_paths": [
+            "skills/reckon-ship/references/effort-routing.md",
+            "tests/test_effort_routing_contract.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "skill-routing-figures",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-05T20:48:56Z",
+        "completed_at": "2026-09-05T21:05:58.845Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1010,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1022,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "034c594a2964000bdb2aa091a75b6d1957337065",
+        "commits": [
+          "536831e321725bcd35493b7dec59e95365e292df"
+        ],
+        "changed_lines": {
+          "added": 8,
+          "removed": 3,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_effort_routing_contract.py -q",
+          "exit_status": 0,
+          "log_path": "/tmp/node-gate-head-final.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T204848102159-routing-test-pins-neither-count-nor-date/manifest.md",
+        "scope_changed": false,
+        "session_id": "64ae3717-2955-4166-a6b4-a76c92adc46c",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 2106211,
+            "input_tokens_cumulative": 2106211,
+            "output_tokens": 26222,
+            "output_tokens_cumulative": 26222,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 1019.491,
+          "generated_tokens": 26222,
+          "generation_seconds": 996.707,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 9.4,
+          "machine_seconds": 22.784,
+          "peak_input_tokens": 95842,
+          "tokens_per_second": 26.31,
+          "wall_tokens_per_second": 25.72
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/routing-test-pins-neither-count-nor-date",
+          "session_id": "64ae3717-2955-4166-a6b4-a76c92adc46c",
+          "session_source": "stream",
+          "retained_at": "2026-09-05T21:05:58.845Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "running the test",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -62652,6 +62799,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1033
+    "_version": 1034
   }
 }
