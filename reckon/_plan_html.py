@@ -702,6 +702,63 @@ def _remove_meta(html_text: str, name: str) -> str:
     return pat.sub("", html_text)
 
 
+# A section the parser selects nothing from can still hold authored content in
+# a spelling the parser does not recognise. read_state reports that as an empty
+# collection — indistinguishable on its own from "nothing was authored" — and a
+# read-modify-write then splices the empty collection over the section, silently
+# deleting the authored items on the first structured write. Refuse instead: a
+# rewrite must never delete what the model never contained, whatever the cause.
+# Only element children the renderers would not regenerate count as authored
+# items; structural section headings are scaffolding and never trigger refusal.
+_STRUCTURAL_SECTION_CHILDREN = frozenset({"h1", "h2", "h3", "h4", "h5", "h6", "header"})
+
+_SECTION_RECOGNISED_SPELLING = {
+    "gates": '<div class="r-gate" data-id="...">',
+    "decisions": '<div class="r-dec" data-key="...">',
+    "followups": '<article class="r-fu" data-id="...">',
+    "questions": '<div class="r-q" data-id="...">',
+    "research": '<div class="r-research" data-id="...">',
+    "comments": '<div class="r-comment" data-section="...">',
+}
+
+
+class UnparsedSectionWriteError(ValueError):
+    """Raised when a write would delete authored section content the parser
+    never recognised — the parsed collection is empty but the section is not."""
+
+
+def _authored_child_count(html_text: str, reckon_id: str) -> int:
+    """Count direct element children of section[data-reckon=ID] the renderers
+    do not regenerate — the authored items a splice would remove."""
+    soup = BeautifulSoup(html_text, "html.parser")
+    section = soup.select_one(f'section[data-reckon="{reckon_id}"]')
+    if section is None:
+        return 0
+    return sum(
+        1
+        for child in section.children
+        if getattr(child, "name", None)
+        and child.name not in _STRUCTURAL_SECTION_CHILDREN
+    )
+
+
+def _reject_emptying_unparsed_section(out: str, reckon_id: str, parsed: object) -> None:
+    """Raise if splicing `parsed` over section `reckon_id` would delete
+    authored children the parser never recognised."""
+    if parsed:
+        return
+    count = _authored_child_count(out, reckon_id)
+    if count == 0:
+        return
+    spelling = _SECTION_RECOGNISED_SPELLING.get(reckon_id)
+    expected = f" Expected spelling: {spelling}" if spelling else ""
+    raise UnparsedSectionWriteError(
+        f'refusing plan write: re-rendering section data-reckon="{reckon_id}" '
+        f"would empty it — it holds {count} authored child element(s) the "
+        f"parser did not recognise (the parsed collection is empty).{expected}"
+    )
+
+
 def _splice_section(html_text: str, reckon_id: str, rendered: str) -> str:
     """Replace <section data-reckon="ID">…</section> with `rendered`
     (removes it when `rendered` is empty); inserts before </main> otherwise."""
@@ -776,6 +833,7 @@ def write_state(html_text: str, state: dict) -> str:
         out = _set_meta(out, "plan-version", int(state.get("version") or 0))
     for sid in SECTION_IDS:
         if sid in state:
+            _reject_emptying_unparsed_section(out, sid, state[sid])
             out = _splice_section(out, sid, _RENDERERS[sid](state[sid]))
     return out
 
