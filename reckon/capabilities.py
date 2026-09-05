@@ -200,6 +200,20 @@ def _coordinator_input_tokens(run: Mapping[str, Any]) -> float | None:
     return _measured_number(tokens.get("input_tokens"))
 
 
+def _cost_usd(run: Mapping[str, Any]) -> float | None:
+    """Read a run's recorded dollar cost, excluding one already flagged imputed."""
+    budget = run.get("budget")
+    if not isinstance(budget, Mapping) or budget.get("cost_usd_imputed"):
+        return None
+    return _measured_number(budget.get("cost_usd"))
+
+
+def _cost_usd_imputed(run: Mapping[str, Any]) -> bool:
+    """Whether a run's reported dollar cost was suppressed as unmetered."""
+    budget = run.get("budget")
+    return bool(isinstance(budget, Mapping) and budget.get("cost_usd_imputed"))
+
+
 def _stream_path(run: Mapping[str, Any]) -> Path | None:
     """Resolve the durable worker stream named by a committed run."""
 
@@ -693,6 +707,8 @@ def derive_routing(
                 "coordinator_input_tokens": _coordinator_input_tokens(run),
                 "changed_lines": _changed_line_count(run),
                 "orientation_input_tokens": _orientation_input_tokens(run),
+                "cost_usd": _cost_usd(run),
+                "cost_usd_imputed": _cost_usd_imputed(run),
             }
         )
 
@@ -736,6 +752,14 @@ def derive_routing(
         ]
         median_worker_input = _median_or_none(worker_inputs)
         median_combined_input = _median_or_none(combined_inputs)
+        dollar_costs = [
+            float(item["cost_usd"])
+            for item in observations
+            if item["cost_usd"] is not None
+        ]
+        imputed_cost_samples = sum(
+            bool(item["cost_usd_imputed"]) for item in observations
+        )
         rows.append(
             {
                 "model": model,
@@ -758,6 +782,19 @@ def derive_routing(
                 "worker_plus_coordinator_samples": len(combined_inputs),
                 "median_worker_plus_coordinator_input_tokens": median_combined_input,
                 "orientation_floor": orientation_floors[(model, role, spec_level)],
+                "median_cost_usd": {
+                    "label": (
+                        "dollar cost is omitted here, not zero, whenever every "
+                        "sample in the configuration ran on hardware with no "
+                        "metered price - never rank a configuration on this "
+                        "figure while cost_usd_imputed_samples covers it"
+                    ),
+                    "cost_usd_samples": len(dollar_costs),
+                    "value": _median_or_none(dollar_costs),
+                    "cost_usd_imputed_samples": imputed_cost_samples,
+                    "cost_usd_imputed": imputed_cost_samples > 0
+                    and not dollar_costs,
+                },
                 "per_run_cost": {
                     "label": "immediate spend; a short window can reflect this",
                     "short_window_can_reflect": True,

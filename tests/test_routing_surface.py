@@ -393,6 +393,75 @@ def test_routing_counts_tool_steps_from_a_durable_stream(
     assert row["median_tool_steps"] == 2
 
 
+def test_routing_never_ranks_an_unmetered_lane_ahead_of_a_metered_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Regression for the routing surface reporting an invented dollar figure.
+
+    Measured on this repository's own ledger: clive, an unmetered backend
+    wired against hardware this operation owns, recorded a median $21.59 per
+    node against claude's $1.61 - the free lane sorted as roughly thirteen
+    times the metered one's cost. Those two figures are this test's fixture
+    values, not synthesised ones.
+    """
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    mounts: dict[str, str] = {}
+    repository = _project(tmp_path, "gamma", mounts)
+
+    def _cost_run(run_id: str, *, backend: str, model: str, cost_usd: float) -> None:
+        record = ledger.build_record(
+            run_id=run_id,
+            plan="delivery",
+            gate="passed",
+            node_definition={"id": run_id, "write_paths": [f"src/{run_id}.py"]},
+            role="implement",
+            spec_level="guided",
+            backend=backend,
+            agent={"model": model, "effort": "high"},
+            completed_at_source="provided",
+            budget={"cost_usd": cost_usd, "cost_usd_cumulative": cost_usd},
+        )
+        ledger.append_run(repository.name, record, root=repository)
+
+    _cost_run("clive-a", backend="clive", model="deepseek-v4-flash", cost_usd=21.59)
+    _cost_run("clive-b", backend="clive", model="deepseek-v4-flash", cost_usd=19.28)
+    _cost_run("claude-a", backend="claude", model="worker-model", cost_usd=1.61)
+    _cost_run("claude-b", backend="claude", model="worker-model", cost_usd=1.5)
+
+    report = capabilities.derive_routing(mounts)
+    rows = {row["model"]: row for row in report["rows"]}
+    free_row = rows["deepseek-v4-flash"]
+    metered_row = rows["worker-model"]
+
+    # The free lane's cost is omitted from ranking and its suppression named,
+    # never a silent dollar figure.
+    assert free_row["median_cost_usd"]["value"] is None
+    assert free_row["median_cost_usd"]["cost_usd_samples"] == 0
+    assert free_row["median_cost_usd"]["cost_usd_imputed_samples"] == 2
+    assert free_row["median_cost_usd"]["cost_usd_imputed"] is True
+
+    # The metered lane's own recorded cost is unchanged by the fix.
+    assert metered_row["median_cost_usd"]["value"] == pytest.approx(1.555)
+    assert metered_row["median_cost_usd"]["cost_usd_samples"] == 2
+    assert metered_row["median_cost_usd"]["cost_usd_imputed_samples"] == 0
+    assert metered_row["median_cost_usd"]["cost_usd_imputed"] is False
+
+    # A consumer sorting on the reported value alone no longer ranks the
+    # unmetered lane as costlier than the metered one - it sorts last, as
+    # unknown, rather than first as an invented $21.59.
+    ranked = sorted(
+        report["rows"],
+        key=lambda row: (
+            row["median_cost_usd"]["value"] is None,
+            row["median_cost_usd"]["value"] or 0.0,
+        ),
+    )
+    assert ranked[0]["model"] == "worker-model"
+    assert ranked[-1]["model"] == "deepseek-v4-flash"
+
+
 def _get(port: int, path: str) -> tuple[int, dict[str, Any]]:
     connection = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
     try:

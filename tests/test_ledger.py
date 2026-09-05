@@ -496,6 +496,62 @@ def test_session_cumulative_cost_is_labelled_and_differenced() -> None:
     assert second == {"cost_usd": 0.75, "cost_usd_cumulative": 2.0}
 
 
+def test_unmetered_backend_is_named_and_metered_ones_are_not() -> None:
+    assert ledger.is_unmetered_backend("clive") is True
+    assert ledger.is_unmetered_backend("clive-glm") is True
+    assert ledger.is_unmetered_backend("claude") is False
+    assert ledger.is_unmetered_backend("claude-opus") is False
+    assert ledger.is_unmetered_backend("") is False
+
+
+def test_unmetered_backend_cost_is_recorded_as_an_explicit_flagged_absence() -> None:
+    """A locally served backend's harness-reported dollar figure is not spend.
+
+    Measured on this repository's own ledger: clive, wired against hardware
+    this operation owns, recorded a median $21.59 per node against claude's
+    $1.61 — the free lane read as roughly thirteen times the metered one's
+    cost. 21.59 is that measured figure, not a synthesised round number.
+    """
+    record = ledger.build_record(
+        run_id="r-clive",
+        plan="plan-a",
+        gate="passed",
+        backend="clive",
+        budget={"cost_usd": 21.59, "cost_usd_cumulative": 21.59},
+    )
+
+    assert record["budget"]["cost_usd"] is None
+    assert record["budget"]["cost_usd_cumulative"] is None
+    assert record["budget"]["cost_usd_imputed"] is True
+
+
+def test_metered_backend_cost_is_unchanged() -> None:
+    record = ledger.build_record(
+        run_id="r-claude",
+        plan="plan-a",
+        gate="passed",
+        backend="claude",
+        budget={"cost_usd": 1.61, "cost_usd_cumulative": 1.61},
+    )
+
+    assert record["budget"]["cost_usd"] == 1.61
+    assert record["budget"]["cost_usd_cumulative"] == 1.61
+    assert "cost_usd_imputed" not in record["budget"]
+
+
+def test_unmetered_backend_with_no_reported_cost_gains_no_new_keys() -> None:
+    record = ledger.build_record(
+        run_id="r-clive-quiet",
+        plan="plan-a",
+        gate="passed",
+        backend="clive",
+        budget={"tokens": {"input_tokens": 5}},
+    )
+
+    assert "cost_usd" not in record["budget"]
+    assert "cost_usd_imputed" not in record["budget"]
+
+
 def test_promotion_uses_stream_mtime_for_untimestamped_stream(
     home, repo, monkeypatch
 ) -> None:

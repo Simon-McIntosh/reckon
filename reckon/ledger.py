@@ -78,6 +78,14 @@ _SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 _MAX_RETRY_DELAY_SECONDS = 0.05
 
+# Backends launched against hardware this operation owns outright rather than
+# a metered API. The harness still emits a total_cost_usd figure computed for
+# whatever model name it was told to speak, but no per-token price was ever
+# charged for it, so recording that figure as spend inverts any comparison
+# that ranks lanes by cost — the free lane reads as the dearest one. See
+# flight.yaml's local_backend documentation for the concrete host mapping.
+UNMETERED_BACKENDS = frozenset({"clive", "clive-glm"})
+
 # Fields every completed record carries. Named here so a test can assert the
 # calibration inputs exist rather than trusting each writer to remember them.
 RECORD_FIELDS = (
@@ -617,6 +625,35 @@ def promoted_budget_fallback(
     return dict(fallback)
 
 
+def is_unmetered_backend(backend: str) -> bool:
+    """Whether a named backend has no metered per-token price."""
+    return str(backend or "").strip() in UNMETERED_BACKENDS
+
+
+def _label_unmetered_cost(budget: Mapping[str, Any], backend: str) -> dict[str, Any]:
+    """Replace an invented dollar figure with an explicit, flagged absence.
+
+    ``cost_usd`` is not missing from an unmetered run's stream — the harness
+    still reports it, priced for a model name that was never the one billed.
+    Recording it verbatim would make a free lane look like the dearest one
+    on any surface that ranks by cost, silently. Nulling it and flagging the
+    null keeps the absence visible instead.
+    """
+    result = dict(budget)
+    if not is_unmetered_backend(backend):
+        return result
+    reported = (result.get("cost_usd"), result.get("cost_usd_cumulative"))
+    if not any(
+        isinstance(value, (int, float)) and not isinstance(value, bool)
+        for value in reported
+    ):
+        return result
+    result["cost_usd"] = None
+    result["cost_usd_cumulative"] = None
+    result["cost_usd_imputed"] = True
+    return result
+
+
 def build_record(
     *,
     run_id: str,
@@ -737,7 +774,7 @@ def build_record(
         # Carried here because the pointer that held it is deleted on promotion,
         # and a pre-flight that has to make a call to learn headroom spends the
         # very resource it is measuring — most often when it is scarcest.
-        "budget": dict(budget or {}),
+        "budget": _label_unmetered_cost(budget or {}, backend),
         "lineage": stored_lineage,
         "shadow_controlled": stored_shadow_controlled,
         "shadow_patch": str(shadow_patch),
