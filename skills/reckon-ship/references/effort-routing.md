@@ -61,19 +61,44 @@ the cost ordering.
 The small-model backend now has a live mapping of its own; the local lane
 routes on a measured record instead of waiting unused. It earned the mapping
 the ordinary way — shadow pairs, a gated pilot, a slice lock — and the mapping
-outlives the pilot. Measured 2026-09-05 on the mounted committed ledgers, the
-mapping behind `roles.<role>.by_spec_level` for a `--local` dispatch:
+outlives the pilot. The mapping behind `roles.<role>.by_spec_level` for a `--local` dispatch,
+read as a dated snapshot:
 
-| Declared level | Routing decision | Measured record |
+| Declared level | Routing decision | Snapshot (dated 2026-09-05) |
 |---|---|---|
 | `exact` | `deepseek-v4-flash` — qualified | 42 passed of 44 runs |
 | `guided` | `deepseek-v4-flash` — permitted only with the measurement handed over | 30 passed of 38 runs |
 | `open` | never routed — the lane takes no open design | zero runs |
 
-`glm-5.3` is explicitly NOT routed — 0 passed of 9 runs, every one a
-window-overflow death on nodes that did not fit its 73,728-token budget, so
-its ledger record indicts the node-to-lane pairing, not the model. It stays
-defined on the host layer for shadow qualification only.
+`glm-5.3` is explicitly NOT routed — its snapshot reads 0 passed of 9 runs,
+every one a window-overflow death on nodes that did not fit its 73,728-token
+budget, so its ledger record indicts the node-to-lane pairing, not the model.
+It stays defined on the host layer for shadow qualification only.
+
+**Every figure above is a snapshot, not a standing fact.** The pass count and
+the sample size both move as dispatch volume accumulates — later local-lane
+runs land in the same ledgers and change each. Re-derive the rows at a
+calibration checkpoint; do not read them as current. The recipe, so a reader
+can reproduce or update the figures without a guess:
+
+- **Ledger.** The mounted committed run ledgers — `docs/state/<project>/crew.json`
+  under every mounted project's `docs/` directory, the same source
+  `crew(project, view="routing")` reads (the mounted set comes from
+  mounts.json). The lane's runs appear across every mounted project, not only
+  in the repo that owns the lane, so reading one repo's ledger alone
+  understates the sample.
+- **Filter.** Keep runs whose `agent.model` is the lane's backend identifier
+  (`deepseek-v4-flash` for the routed rows, `glm-5.3` for the exclusion row)
+  AND whose `spec_level` equals the declared level of the row. A run passes
+  iff its `gate` is exactly `"passed"`; the run count is every run the filter
+  keeps, whatever the gate outcome.
+- **Deduplication.** Each committed ledger run counts once. The ledger keys
+  runs by `run_id` and a re-dispatch appends a new run record under a new
+  `run_id` rather than overwriting the earlier attempt, so repeated attempts
+  on one node each count — in the 2026-09-05 snapshot the 44 exact-tier runs
+  trace to 43 distinct nodes because exactly one node was re-dispatched as a
+  second run. Without this rule a twice-attempted node reads as one node or
+  as two runs at the reader's choice.
 
 The lane buys speed and budget on work whose correctness is already pinned —
 never a way to write uncertain code quickly. Routing a node to it is permitted
