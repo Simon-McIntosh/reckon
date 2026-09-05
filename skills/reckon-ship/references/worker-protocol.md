@@ -19,7 +19,7 @@ handling only the genuine residual. Run this checklist over every node; a node
 that fails is reshaped or split, never dispatched in the hope that the worker
 will work it out.
 
-A node is dispatchable only when all seven hold:
+A node is dispatchable only when all eight hold:
 
 | Property | Test |
 |---|---|
@@ -30,8 +30,9 @@ A node is dispatchable only when all seven hold:
 | Scoped | Exclusive write paths are enumerated and no concurrent node shares a path. This checks exclusivity, not sufficiency: it does not prove the named paths can carry the goal. |
 | Bounded | The work fits the resolved time budget. If it cannot, split it — a budget is not a target to overrun. |
 | Independently verifiable | The orchestrator can audit completion from the manifest, `git show --stat` and the gate evidence, without reading the implementation. |
+| Spec level | The node declares one of `exact`, `guided` or `open`; a run without one cannot enter a calibration slice, so an undeclared node is refused, and a level outside that set is refused at dispatch too. |
 
-`reckon crew dispatch` enforces the same seven and refuses a node that fails,
+`reckon crew dispatch` enforces the same eight and refuses a node that fails,
 naming every failing property in one pass so the node can be reshaped in one
 edit. `--dry-run` runs the identical resolution and validation without creating
 a worktree or a process. Its payload reports the resolved write paths explicitly,
