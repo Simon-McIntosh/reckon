@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-05T18:31:32",
+  "updated": "2026-09-05T18:32:01",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -60606,6 +60606,143 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260905T162010207950-skill-worker-protocol-counts-eight",
+        "plan": "clive-local-workers",
+        "section": "\u00a711",
+        "node": "skill-worker-protocol-counts-eight",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 531,
+                "cached_input_tokens": 862360,
+                "input_tokens": 862893,
+                "output_tokens": 720,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 863613,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "uv run --no-sync pytest tests/test_worker_protocol_contract.py -q passes with a new test file asserting: skills/reckon-ship/references/worker-protocol.md no longer claims a node is dispatchable when seven properties hold and states eight, naming the declared specification level as the eighth; that the file records context-fit refusal, so a node whose estimated need exceeds the resolved backend's window is refused at exit 5 naming the estimate, the window and the shortfall before a worktree exists; and a guard case asserting the property count stated in worker-protocol.md equals the count stated in skills/reckon-ship/SKILL.md, read from both files at runtime, so the two cannot drift apart again without failing",
+          "estimated_hours": 0.5,
+          "goal": "Bring the worker protocol reference into agreement with the dispatch contract it describes, which now checks eight properties rather than seven",
+          "id": "skill-worker-protocol-counts-eight",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T162010207950-skill-worker-protocol-counts-eight/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a711",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "write_paths": [
+            "skills/reckon-ship/references/worker-protocol.md",
+            "tests/test_worker_protocol_contract.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s15-skillproto",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 492288
+        },
+        "dispatched_at": "2026-09-05T16:20:19Z",
+        "completed_at": "2026-09-05T16:29:09.527Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 505,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 530,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "0d14dc7138703074b86ccc2abedd72b64d2e91b4",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "not-run",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T162010207950-skill-worker-protocol-counts-eight/manifest.md",
+        "scope_changed": false,
+        "session_id": "6871d3cb-bf31-4184-94b6-e3ace055e5f4",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 913432,
+            "input_tokens_cumulative": 913432,
+            "output_tokens": 3975,
+            "output_tokens_cumulative": 3975,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 526.852,
+          "generated_tokens": 3975,
+          "generation_seconds": 520.735,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 7.6,
+          "machine_seconds": 6.117,
+          "peak_input_tokens": 77518,
+          "tokens_per_second": 7.63,
+          "wall_tokens_per_second": 7.54
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "the launcher rejected the model before any work began; worktree clean, nothing beyond base",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/skill-worker-protocol-counts-eight",
+          "session_id": "6871d3cb-bf31-4184-94b6-e3ace055e5f4",
+          "session_source": "pointer",
+          "retained_at": "2026-09-05T16:29:09.527Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_worker_protocol_contract.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -60792,6 +60929,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1007
+    "_version": 1008
   }
 }
