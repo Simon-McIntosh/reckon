@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-05T22:06:03",
+  "updated": "2026-09-05T22:08:22",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -61556,6 +61556,154 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260905T192706246876-worker-protocol-carries-the-eighth-property",
+        "plan": "clive-local-workers",
+        "section": "\u00a711",
+        "node": "worker-protocol-carries-the-eighth-property",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 692,
+                "cached_input_tokens": 157576,
+                "input_tokens": 158270,
+                "output_tokens": 896,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 159166,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_skill_contracts.py -q passes with new assertions that: the property table in skills/reckon-ship/references/worker-protocol.md section 1 carries exactly one row per entry of reckon.crew.node.NODE_PROPERTIES, matched by property name and in the same order (order is part of the contract, per the comment above that tuple); that no property count stated in prose in worker-protocol.md or sprint-orchestration.md disagrees with len(NODE_PROPERTIES); and that the spec-level row states what dispatch actually tests. The test must DERIVE the count from NODE_PROPERTIES and never write 8 as a literal, because the defect being fixed is exactly a number written down beside a set that later grew. Doc edits required: worker-protocol.md is missing the spec-level row from its table entirely and says \"all seven hold\" and \"enforces the same seven\"; sprint-orchestration.md says \"seven-property task contract\". reckon/crew/node.py NODE_PROPERTIES is the authority and lists eight, ending in spec-level. Measure the base at your base sha and your head over tests/test_skill_contracts.py plus any test importing reckon.crew.node; report failure ids either side and require none added.",
+          "estimated_hours": 0.5,
+          "goal": "Bring the worker-protocol reference into agreement with the dispatch contract it describes, which checks eight properties rather than seven, and bind the two together so they cannot drift again",
+          "id": "worker-protocol-carries-the-eighth-property",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T192706246876-worker-protocol-carries-the-eighth-property/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a711",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "write_paths": [
+            "skills/reckon-ship/references/worker-protocol.md",
+            "skills/reckon-ship/references/sprint-orchestration.md",
+            "tests/test_skill_contracts.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "skill-contract-count",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-05T19:27:40Z",
+        "completed_at": "2026-09-05T20:06:02.863Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2269,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2302,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "68f97dd1c9e3a7b9ec94f55d8764f939990f4ffb",
+        "commits": [
+          "5e19adb86779ad03eef162830520f6ee2177165a"
+        ],
+        "changed_lines": {
+          "added": 96,
+          "removed": 3,
+          "files": 3
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_skill_contracts.py -q",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T192706246876-worker-protocol-carries-the-eighth-property/after_skill_contracts.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T192706246876-worker-protocol-carries-the-eighth-property/manifest.md",
+        "scope_changed": false,
+        "session_id": "ae521941-9407-4eb5-ab7e-cff8228d79cb",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 4465668,
+            "input_tokens_cumulative": 4465668,
+            "output_tokens": 45518,
+            "output_tokens_cumulative": 45518,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 2287.794,
+          "generated_tokens": 45518,
+          "generation_seconds": 2112.487,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 13.6,
+          "machine_seconds": 175.307,
+          "peak_input_tokens": 138435,
+          "tokens_per_second": 21.55,
+          "wall_tokens_per_second": 19.9
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/worker-protocol-carries-the-eighth-property",
+          "session_id": "ae521941-9407-4eb5-ab7e-cff8228d79cb",
+          "session_source": "stream",
+          "retained_at": "2026-09-05T20:06:02.863Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_skill_contracts.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -61784,6 +61932,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1025
+    "_version": 1026
   }
 }
