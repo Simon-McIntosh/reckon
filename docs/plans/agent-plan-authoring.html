@@ -16,10 +16,10 @@
 <meta name="plan-effort" content="M">
 <meta name="plan-milestone" content="">
 <meta name="plan-owner" content="Simon McIntosh">
-<meta name="plan-modified" content="2026-09-04">
+<meta name="plan-modified" content="2026-09-05">
 <meta name="plan-depends-on" content="">
 <meta name="plan-blocks" content="">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-capability-version" content="1.0">
 <meta name="plan-capability-class" content="orchestrator">
 <meta name="plan-sprint" content="S17">
@@ -332,6 +332,11 @@ Done-when
     </article>
 </section>
 
+<section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s3" data-id="c-apa-silent-decision-drop" data-who="reckon-ship" data-when="2026-09-05T19:05:00Z">
+    <div class="r-comment-body">LIVE SILENT DATA LOSS: THE MACHINE-READABLE CONTRACT IS ENFORCED BY DELETION RATHER THAN BY REFUSAL. Reported from production by the nova-dd session and verified end to end in reckon's own code here. WHAT HAPPENED THERE: nova/docs/plans/playable-forward-solve.html authored two locked lead decisions as article.r-decision elements carrying data-id and data-status inside section[data-reckon=decisions]. read_plan parsed them as an empty collection, and the first structured edit_plan write - three appended comments, version 0 to 1 - rewrote the file without the section. Nothing warned. They restored both as r-dec divs at version 2. THE MECHANISM, confirmed in reckon/_plan_html.py rather than inferred. The parser at line 369 selects section[data-reckon=decisions] .r-dec[data-key], so an article.r-decision[data-id] matches neither the class nor the attribute and is skipped. Reproduced here on a synthetic plan: decisions parsed as an empty list while both authored ids were present in the file. The writer then does for sid in SECTION_IDS: if sid in state: splice(_RENDERERS[sid](state[sid])) - a section is re-rendered whenever its key is PRESENT IN STATE, not when it was edited. So a read-modify-write of anything at all carries decisions as present-and-empty, splices an empty section over the authored one, and deletes it. Any structured write to a plan whose markup the parser does not recognise destroys that section, silently, on the first write. THE SHAPE IS THE ONE THIS REPOSITORY KEEPS PAYING FOR: absence reported as data, then acted on. The parser cannot distinguish no decisions were authored from I did not recognise what was authored, and the writer treats the first reading as authoritative. It is the same defect as a manifest reader returning eight keys and no status, and as a client cache field reading zero because the lane populates a different name. TWO FIXES, and the second is the load-bearing one. Warning on unrecognised children of a data-reckon section makes the misparse visible. But the guard that matters is refusing a write that would REMOVE authored content the writer never parsed: a rewrite-from-model must never delete what the model never contained, whatever the cause. The first fix addresses this spelling; the second addresses the class.</div>
+</div>
+</section>
 </main>
 </body>
 </html>
