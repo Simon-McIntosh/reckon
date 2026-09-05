@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-05T18:47:59",
+  "updated": "2026-09-05T20:12:03",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -866,6 +866,17 @@
           "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06c43-f98a-7d01-82df-9b8a0107b75a"
         },
         "created": "2026-09-04"
+      },
+      {
+        "id": "s15-plandrop",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": "3d3e745d-d0ac-4c6c-aae0-a051325bacfc",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "3d3e745d-d0ac-4c6c-aae0-a051325bacfc"
+        },
+        "created": "2026-09-05"
       },
       {
         "id": "s15-promo",
@@ -61041,6 +61052,153 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260905T173520684380-apa-write-never-deletes-unparsed",
+        "plan": "agent-plan-authoring",
+        "section": "\u00a73",
+        "node": "apa-write-never-deletes-unparsed",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2124,
+                "cached_input_tokens": 935212,
+                "input_tokens": 937338,
+                "output_tokens": 1184,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 938522,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "uv run --no-sync pytest tests/test_plan_write_preserves_unparsed.py -q passes with a new test file asserting: a plan whose decisions are authored as article.r-decision with data-id inside section[data-reckon=decisions] parses to an empty collection today, and a structured write that touches only comments is REFUSED naming the section it would have emptied and the count of authored child elements it did not parse, rather than splicing an empty section; that the same write succeeds unchanged on a plan whose decisions use the canonical div.r-dec with data-key; that a plan with a genuinely empty decisions section is not refused, since nothing would be lost; and that the refusal message names the recognised spelling so an author can correct it. Use reckon/_plan_html.py's own parse and write path, not a reimplementation",
+          "estimated_hours": 1.0,
+          "goal": "Refuse a structured plan write that would remove authored content the writer never parsed",
+          "id": "apa-write-never-deletes-unparsed",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T173520684380-apa-write-never-deletes-unparsed/manifest.md",
+          "plan": "agent-plan-authoring",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/_plan_html.py",
+            "tests/test_plan_write_preserves_unparsed.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s15-plandrop",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-05T17:35:39Z",
+        "completed_at": "2026-09-05T18:10:04.832Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2053,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2065,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "df4a8008477587c7ac7e50212f15e18ed2debc39",
+        "commits": [
+          "1c4ae4c97667d2d0547fa0e81a1bba267b4465fb"
+        ],
+        "changed_lines": {
+          "added": 270,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 7,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_plan_write_preserves_unparsed.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T173520684380-apa-write-never-deletes-unparsed/adjacent-suite.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T173520684380-apa-write-never-deletes-unparsed/manifest.md",
+        "scope_changed": false,
+        "session_id": "3d3e745d-d0ac-4c6c-aae0-a051325bacfc",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 9678685,
+            "input_tokens_cumulative": 9678685,
+            "output_tokens": 65573,
+            "output_tokens_cumulative": 65573,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 2061.873,
+          "generated_tokens": 65573,
+          "generation_seconds": 1920.896,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 16.5,
+          "machine_seconds": 140.977,
+          "peak_input_tokens": 168188,
+          "tokens_per_second": 34.14,
+          "wall_tokens_per_second": 31.8
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/apa-write-never-deletes-unparsed",
+          "session_id": "3d3e745d-d0ac-4c6c-aae0-a051325bacfc",
+          "session_source": "pointer",
+          "retained_at": "2026-09-05T18:10:04.832Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_plan_write_preserves_unparsed.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -61227,6 +61385,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1012
+    "_version": 1015
   }
 }
