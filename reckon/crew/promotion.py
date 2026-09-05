@@ -12,7 +12,12 @@ from typing import Any, Iterable, Mapping
 
 from reckon import _backends, _store, ledger
 from reckon.crew.dispatch import _backend_settings, _capture_member_session
-from reckon.crew.node import STALL_BUDGET_MULTIPLE, CrewError, parse_duration
+from reckon.crew.node import (
+    STALL_BUDGET_MULTIPLE,
+    CrewError,
+    parse_duration,
+    role_may_write_repository_paths,
+)
 from reckon.crew.reports import parse_manifest
 from reckon.crew.routing import (
     RECLAIMABLE_CLASSES,
@@ -1520,7 +1525,10 @@ def _complete_locked(
             head=commit_list[-1],
         )
         if cumulative.changed_lines.get("available", True):
-            if str(record.get("role") or "").strip() == "test" and cumulative.paths:
+            if (
+                not role_may_write_repository_paths(str(record.get("role") or ""))
+                and cumulative.paths
+            ):
                 raise CrewError(
                     f"run {run_id!r} has role 'test', but its cited commit "
                     "changes repository paths: "
