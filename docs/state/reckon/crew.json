@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-05T20:12:03",
+  "updated": "2026-09-05T21:16:59",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -876,6 +876,15 @@
         "sessions": {
           "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "3d3e745d-d0ac-4c6c-aae0-a051325bacfc"
         },
+        "created": "2026-09-05"
+      },
+      {
+        "id": "s15-planwarn",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
         "created": "2026-09-05"
       },
       {
@@ -61199,6 +61208,153 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260905T181359207739-apa-read-warns-on-unparsed",
+        "plan": "agent-plan-authoring",
+        "section": "\u00a73",
+        "node": "apa-read-warns-on-unparsed",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1290,
+                "cached_input_tokens": 960491,
+                "input_tokens": 961783,
+                "output_tokens": 786,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 962569,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "uv run --no-sync pytest tests/test_plan_read_warns_unparsed.py -q passes with a new test file asserting: reading a plan whose decisions are authored as article.r-decision with data-id inside section[data-reckon=decisions] returns a warning naming the section, the count of authored child elements the parser did not recognise, and the expected spelling; that the warning reaches the same warnings channel read_plan already returns, so a caller taking a plan's version before an edit sees it without asking for anything extra; that a canonical plan returns no such warning and all 69 plans under docs/plans return none, asserted by iterating them; that a genuinely empty section returns none; and that every data-reckon section type is covered rather than decisions alone, since the same splice loop reaches gates, followups, questions, research and comments. The warning must not change the parsed value or raise",
+          "estimated_hours": 1.0,
+          "goal": "Report unrecognised children of a data-reckon section as a read-time warning instead of silently as an empty collection",
+          "id": "apa-read-warns-on-unparsed",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T181359207739-apa-read-warns-on-unparsed/manifest.md",
+          "plan": "agent-plan-authoring",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/_store.py",
+            "tests/test_plan_read_warns_unparsed.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s15-planwarn",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-05T18:14:11Z",
+        "completed_at": "2026-09-05T18:48:49.945Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2072,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2078,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "7351b63ca76b317931d43afaf7cdf96fc4446db2",
+        "commits": [
+          "d587c38886857d71b817e4e23b8a219b3cb6f4aa"
+        ],
+        "changed_lines": {
+          "added": 247,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 11,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_plan_read_warns_unparsed.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T181359207739-apa-read-warns-on-unparsed/apa-test-run.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T181359207739-apa-read-warns-on-unparsed/manifest.md",
+        "scope_changed": false,
+        "session_id": "e80467bf-3877-4f6b-b9a7-d82cab045833",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6745613,
+            "input_tokens_cumulative": 6745613,
+            "output_tokens": 53657,
+            "output_tokens_cumulative": 53657,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 2075.554,
+          "generated_tokens": 53657,
+          "generation_seconds": 1769.364,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 14.6,
+          "machine_seconds": 306.19,
+          "peak_input_tokens": 148655,
+          "tokens_per_second": 30.33,
+          "wall_tokens_per_second": 25.85
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/apa-read-warns-on-unparsed",
+          "session_id": "e80467bf-3877-4f6b-b9a7-d82cab045833",
+          "session_source": "stream",
+          "retained_at": "2026-09-05T18:48:49.945Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_plan_read_warns_unparsed.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -61385,6 +61541,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1015
+    "_version": 1017
   }
 }

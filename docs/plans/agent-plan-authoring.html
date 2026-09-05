@@ -19,7 +19,7 @@
 <meta name="plan-modified" content="2026-09-05">
 <meta name="plan-depends-on" content="">
 <meta name="plan-blocks" content="">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="9">
 <meta name="plan-capability-version" content="1.0">
 <meta name="plan-capability-class" content="orchestrator">
 <meta name="plan-sprint" content="S17">
@@ -330,6 +330,12 @@ Done-when
   2. imas-ambix M0–M3/PS milestones repopulated as a test case.
   3. This followup resolved.</pre>
     </article>
+<article class="r-fu" data-id="f-apa-section-guard-pair" data-status="resolved" data-written-by="agent/opus" data-written-at="2026-09-05" data-recommends-skill="/reckon-ship agent-plan-authoring" data-resolved-at="2026-09-05T18:52:00+00:00" data-resolved-by="agent/opus">
+    <h4 class="r-fu-title">The unrecognised-section guard pair is complete: the write refuses, the read warns</h4>
+    <div class="r-fu-body">§3 fixes the canonical spelling of every data-reckon section (div.r-dec[data-key], article.r-fu[data-id], …). Nothing enforced it: a section authored in another spelling parsed as an empty collection, indistinguishable from 'nothing was authored', and the next structured write spliced that emptiness over the authored content. Both halves now exist and share one mechanism — _authored_child_count and _SECTION_RECOGNISED_SPELLING serve the write refusal and the read warning alike, so the two surfaces cannot drift apart.</div>
+    <pre class="r-fu-prompt">/reckon-ship agent-plan-authoring §3</pre>
+    <p class="r-fu-outcome">WRITE: 1c4ae4c — UnparsedSectionWriteError refuses a rewrite that would empty a section holding unrecognised authored children, naming the section, the count and the expected spelling. READ: d587c38 — read_plan carries the same fact as a warning in the compatibility_warnings channel it already returns, so a caller taking a plan's version before an edit sees the hazard before spending a write instead of meeting it as a refusal. Gate 11 passed exit 0 (tests/test_plan_read_warns_unparsed.py, 11 tests added); two suite gates over the same 15-file set byte-identical to base 7351b63 (4 and 3 failures, all pre-existing, none added). Verified independently at the merged head against the shape that exposes the defect rather than the one that hosts it: an article.r-decision[data-id] plan warns naming the section, the count and the canonical spelling; empty and absent sections stay silent; all six SECTION_IDS are covered, not decisions alone; the parsed value is unchanged. The over-warning check is the one that mattered, as it was for the refusal — 88 real docs carrying data-reckon sections scanned, zero warnings and zero raises, because a warning on every legitimate plan would be noise indistinguishable from the silence it replaced. Four nova plans holding sixteen exposed decisions can now be converted deliberately.</p>
+    </article>
 </section>
 
 <section data-reckon="comments" id="comments" class="r-comments">
@@ -344,6 +350,9 @@ Done-when
 </div>
 <div class="r-comment" data-section="s3" data-id="c-apa-guard-landed" data-who="reckon-ship" data-when="2026-09-05T20:12:00Z">
     <div class="r-comment-body">THE GUARD LANDED - commit 1c4ae4c. A structured write is refused when re-rendering a data-reckon section would empty it while that section holds authored children the parser did not recognise; UnparsedSectionWriteError names the section, the unparsed child count and the expected spelling, so an author can correct the markup rather than guess. Gate 7 passed. The worker went beyond the brief in the way that mattered: it measured an adjacent nine-file write-path suite and the MCP tests at BOTH base and head, plus an order-dependence isolation check, reporting three identical pre-existing failures either side with zero added and ruff unchanged at 16. VERIFIED INDEPENDENTLY AGAINST THE SHAPE THAT EXPOSES IT, which is the discipline the entry above says this class demands - a fix measured only against a template-authored plan would have proved nothing. Three directions. A non-canonical article.r-decision plan is refused and its content survives, seven elements to seven. All 69 real reckon plans still write cleanly, zero refusals. A genuinely empty section is allowed, because nothing would be lost. THE MIDDLE CHECK WAS THE ONE WORTH DOING HARDEST: a guard that refused legitimate writes would have broken every plan operation in every project on this workstation, a worse failure than the one it fixes, and it would have looked like success in every test the fix itself carries. The remaining half is the companion diagnostic - read_plan reporting unrecognised children of a data-reckon section as a warning rather than silently as an empty collection. The refusal prevents the loss; the warning would let an author see the misparse before meeting the refusal, and it is the cheaper of the two to add. Four nova plans hold sixteen exposed decisions and their coordinator froze writes pending this landing; they can now convert deliberately through append plus lock, and a write that would have destroyed them refuses instead.</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260905T181359207739-apa-read-warns-on-unparsed" data-who="s15-planwarn" data-when="2026-09-05T18:48:49.945Z">
+    <div class="r-comment-body"><p>read-time partner to the write guard. Worker gate: pytest tests/test_plan_read_warns_unparsed.py -q -&gt; 11 passed. Two suite gates over the same 15-file set: failure sets byte-identical to base 7351b63 (4 and 3), none added. Coordinator verification at the merged head, against the shape that exposes the defect rather than the one that hosts it: article.r-decision[data-id] warns naming section, count 2, and canonical spelling; empty and absent sections stay silent; all six SECTION_IDS covered, not decisions alone; parsed value unchanged; 88 real docs carrying data-reckon sections scanned -&gt; zero warnings, zero raises (the over-warning check). Reuses _authored_child_count and _SECTION_RECOGNISED_SPELLING from the write guard, so one mechanism serves both surfaces.</p></div>
 </div>
 </section>
 </main>
