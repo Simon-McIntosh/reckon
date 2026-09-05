@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-05T18:32:01",
+  "updated": "2026-09-05T18:43:47",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -990,9 +990,11 @@
         "id": "s15-skillship",
         "harness": "clive",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "ca9033f3-d31b-4ce5-8042-c65ac057092c",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":492288}": "ca9033f3-d31b-4ce5-8042-c65ac057092c"
+        },
         "created": "2026-09-05"
       },
       {
@@ -60743,6 +60745,153 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260905T161834095323-skill-ship-chooses-the-local-lane",
+        "plan": "clive-local-workers",
+        "section": "\u00a73",
+        "node": "skill-ship-chooses-the-local-lane",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1212,
+                "cached_input_tokens": 855219,
+                "input_tokens": 856433,
+                "output_tokens": 1288,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 857721,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "uv run --no-sync pytest tests/test_skill_contracts.py -q passes with no failure count above the base revision and a new case asserting, by reading skills/reckon-ship/SKILL.md verbatim, that the local lane is presented as a routing choice and not only as a flag: that a coordinator may select it unprompted when the node's declared level is exact, when the metered lanes are constrained, and when the node needs no decision; that it costs no metered quota; and that context-fit refusal now rejects a node exceeding the lane's window before a worktree exists rather than the node dying mid-run. The existing text stating that the phrase use local workers adds --local must survive unchanged, asserted by the same test, since that is a separate contract",
+          "estimated_hours": 0.5,
+          "goal": "Make the ship skill say when a coordinator should choose the local lane unprompted, where it currently only says how to obey a request for it",
+          "id": "skill-ship-chooses-the-local-lane",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T161834095323-skill-ship-chooses-the-local-lane/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "write_paths": [
+            "skills/reckon-ship/SKILL.md",
+            "tests/test_skill_contracts.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "s15-skillship",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 492288
+        },
+        "dispatched_at": "2026-09-05T16:18:39Z",
+        "completed_at": "2026-09-05T16:41:43.791Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1379,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1384,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "de5ba1000d9cb0766623b8a6011f90467d7a8b38",
+        "commits": [
+          "36910e57837798e5cdfb08b0bbbdff550a779094"
+        ],
+        "changed_lines": {
+          "added": 46,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_skill_contracts.py -q",
+          "exit_status": 1,
+          "log_path": null,
+          "log_digest": "3 failed / 47 passed; baseline 3 failed / 46 passed; zero added"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T161834095323-skill-ship-chooses-the-local-lane/manifest.md",
+        "scope_changed": false,
+        "session_id": "ca9033f3-d31b-4ce5-8042-c65ac057092c",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 7184466,
+            "input_tokens_cumulative": 7184466,
+            "output_tokens": 45637,
+            "output_tokens_cumulative": 45637,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 1381.889,
+          "generated_tokens": 45637,
+          "generation_seconds": 1349.623,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 16.7,
+          "machine_seconds": 32.266,
+          "peak_input_tokens": 169661,
+          "tokens_per_second": 33.81,
+          "wall_tokens_per_second": 33.03
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/skill-ship-chooses-the-local-lane",
+          "session_id": "ca9033f3-d31b-4ce5-8042-c65ac057092c",
+          "session_source": "pointer",
+          "retained_at": "2026-09-05T16:41:43.791Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_skill_contracts.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -60929,6 +61078,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1008
+    "_version": 1010
   }
 }
