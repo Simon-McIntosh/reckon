@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-05T22:11:04",
+  "updated": "2026-09-05T22:29:14",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -61987,6 +61987,153 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260905T194801561111-manifest-keys-are-read-at-the-top-level",
+        "plan": "crew-observability-truth",
+        "section": "\u00a78",
+        "node": "manifest-keys-are-read-at-the-top-level",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1587,
+                "cached_input_tokens": 219991,
+                "input_tokens": 221580,
+                "output_tokens": 1615,
+                "reasoning_output_tokens": 50,
+                "total_tokens": 223195,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_manifest_nested_keys.py -q passes, and a manifest carrying a top-level commits key plus a nested one under failure_attribution reports the top-level value. THE DEFECT, reproduced here at this head against reckon/crew/reports.py _parse_text_manifest: line 98 does line = raw.strip() BEFORE applying the key regex, so an indented two-space commits key matches exactly like a column-0 key and overwrites it. _is_block_indicator called on an empty string returns False, so a parent key such as failure_attribution with an empty value never opens a block and every nested key under it is parsed as top level. Reproduced in three manifest shapes, all overwriting. An imas-codex fleet measured the cost today on run r-20260905T120506861337-n-sli-the-timestamp-work-did-not-add-failures: its manifest carried commits [\"1ea93df8a\"] at column 0 on line 7 and a nested commits [\"94d31af9f\", \"57155c6e6\"] on line 72 under failure_attribution, naming the commits the node was INVESTIGATING. crew live and crew drain both reported that nested pair as manifest_commits, and the rendered next action offered --commit [\"94d31af9f\" --commit \"57155c6e6\"]. A coordinator followed that instruction and committed ledger row 87db3c86c citing two wrong SHAs. So the bug is worse than a misparse: the surface renders a wrong value into a command it presents as runnable, and it bites precisely the manifests that do failure attribution properly. A second sub-defect is visible in that same rendering \u2014 a JSON list value is split on commas without stripping brackets or quotes, so the elements retain a leading bracket and quote characters, which is how the bracket reached the command. Fix both: match a key only when it begins at column 0, and parse a bracketed list value into clean elements. THE REGRESSION THIS MUST NOT CAUSE, and the reason a naive column-0 anchor is wrong on its own: real manifests carry INDENTED continuation items, for example a test_logs key followed by lines of two spaces, a hyphen, a space and an absolute path. Those are handled today by the branch matching a stripped line that starts with a hyphen or asterisk, and they must keep working. So distinguish an indented list ITEM, which continues the current key, from an indented KEY line, which must not become a top-level key. Assert all of it: the top-level value wins over a nested one; an indented list item still appends to its key; a bracketed list parses to bare SHAs with no bracket or quote character left in any element; and the next action string built from those commits contains no bracket character. Measure base and head over tests/test_manifest_nested_keys.py plus every test importing reckon.crew.reports; report failure ids either side and require none added.",
+          "estimated_hours": 0.75,
+          "goal": "Read a manifest key at the top level only, so a nested key cannot silently replace the node fact a coordinator acts on",
+          "id": "manifest-keys-are-read-at-the-top-level",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T194801561111-manifest-keys-are-read-at-the-top-level/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/reports.py",
+            "tests/test_manifest_nested_keys.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-manifest-keys",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-05T19:48:24Z",
+        "completed_at": "2026-09-05T20:27:57.445Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2293,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2373,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "e119290045422725f35af436d4512ac37989af37",
+        "commits": [
+          "cde933c81e2b747eb54fa0abb0f3d4ea06b8f2df"
+        ],
+        "changed_lines": {
+          "added": 115,
+          "removed": 1,
+          "files": 2
+        },
+        "tests_added": 7,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_manifest_nested_keys.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T194801561111-manifest-keys-are-read-at-the-top-level/after.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T194801561111-manifest-keys-are-read-at-the-top-level/manifest.md",
+        "scope_changed": false,
+        "session_id": "50fa9835-0e1d-4443-bf9e-7d5840db13f6",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 4444557,
+            "input_tokens_cumulative": 4444557,
+            "output_tokens": 50083,
+            "output_tokens_cumulative": 50083,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 2369.197,
+          "generated_tokens": 50083,
+          "generation_seconds": 1704.399,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 12.6,
+          "machine_seconds": 664.798,
+          "peak_input_tokens": 127849,
+          "tokens_per_second": 29.38,
+          "wall_tokens_per_second": 21.14
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/manifest-keys-are-read-at-the-top-level",
+          "session_id": "50fa9835-0e1d-4443-bf9e-7d5840db13f6",
+          "session_source": "stream",
+          "retained_at": "2026-09-05T20:27:57.445Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_manifest_nested_keys.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -62215,6 +62362,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1029
+    "_version": 1030
   }
 }
