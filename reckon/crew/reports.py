@@ -104,6 +104,15 @@ def _parse_text_manifest(text: str) -> dict[str, Any]:
                 block_lines.append(line)
                 continue
             flush_block()
+        if raw[:1] in (" ", "\t"):
+            # Indented content continues the current key only as a list item;
+            # an indented key line is nested data and must not be read at the
+            # top level, where it silently replaces the node fact the surfaces
+            # present as runnable.
+            if key and line.startswith(("-", "*")):
+                addition = line.lstrip("-* ").strip()
+                fields[key] = f"{fields[key]}, {addition}" if fields[key] else addition
+            continue
         match = re.match(r"^([a-z][a-z0-9_-]*)\s*:\s*(.*)$", line, re.IGNORECASE)
         if match:
             key = match.group(1).lower().replace("-", "_")
@@ -267,8 +276,26 @@ def _as_list(value: Any) -> list[str]:
     if isinstance(value, list):
         items = [str(item).strip() for item in value]
     else:
-        items = [part.strip() for part in re.split(r"[,\n]", str(value))]
+        text = str(value).strip()
+        if text.startswith("[") and text.endswith("]"):
+            # A bracketed list decodes to its elements; splitting a bracketed
+            # value on commas leaves the bracket and quote characters in the
+            # items, which then travel verbatim into rendered commands.
+            items = _decode_bracketed_list(text)
+        else:
+            items = [part.strip() for part in re.split(r"[,\n]", str(value))]
     return [item for item in items if item and item.lower() not in _NONE_VALUES]
+
+
+def _decode_bracketed_list(text: str) -> list[str]:
+    """Decode a bracketed list value into clean, unquoted elements."""
+    try:
+        raw = json.loads(text)
+    except (TypeError, json.JSONDecodeError):
+        raw = None
+    if isinstance(raw, list):
+        return [str(item).strip() for item in raw]
+    return [part.strip().strip("\"'") for part in text[1:-1].split(",") if part.strip()]
 
 
 def parse_needs_help(text: str) -> dict[str, Any]:
