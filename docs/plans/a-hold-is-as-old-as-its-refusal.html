@@ -23,8 +23,8 @@
   <title>A Hold Is As Old As Its Refusal | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="12">
+<meta name="plan-modified" content="2026-09-06">
+<meta name="plan-version" content="13">
 <meta name="plan-impl" content="1.0">
 <meta name="plan-commits" content="30a4460,8d6e4fc5ea0bcc4b2fe4de4d95f16812a1d656e6,c684a42a0eb73ebd4fc6689357498ef7c12c175a,9fc4d5d957f15bc3d55c01b315af4015ae4cb01d">
 <meta name="plan-artifacts" content="reckon/budget.py,reckon/crew/dispatch.py,reckon/schema/flight.yaml,tests/test_budget.py,tests/test_crew_refusal_visibility.py,docs/evidence/archive/a-hold-is-as-old-as-its-refusal-landed.html">
@@ -220,6 +220,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-haor-refusal-message" data-who="reckon-ship" data-when="2026-09-04T13:50:11Z">
     <div class="r-comment-body">The refusal names the instrument that would inform it landed - commit 9fc4d5d; gate uv run --no-sync pytest tests/test_crew_refusal_visibility.py -q passed, 8 passed in 0.68s; measure: the emitted refusal names the backend it governs, states a 20.0-minute evidence age against the 60-minute bound in force with the computed time at which ageing lifts it, names a served turn on that same backend as the refreshing observation, names a stated reset instead of an age where one exists, and suggests re-reading the refused run nowhere; both new assertions consume the JSON detail a CliRunner invocation of crew dispatch emits rather than calling the message helper. Section 2 removed the harm from the natural wrong theory; this section removes the mistake.</div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260906T104255456057-a-resume-judges-the-lane-by-the-freshest-evidence" data-who="crew-resume-evidence" data-when="2026-09-06T11:48:08.389Z">
+    <div class="r-comment-body"><p>A resume no longer yields to a stale ledger refusal when a fresher account reading says the lane is open. All four falsifiers hold and are named as tests: a stale refusal with NO fresher reading still holds; a current reading at or above the ceiling holds whatever the ledger says; a backend without an account surface behaves as today and keeps its ageing rule. The refusal and the clearance now name the operative reading and its observation time, so the next operator can see which evidence decided it. 7 passed, 115 across the importer set. THE MUTATION CHECK IS THE PART THAT MAKES THIS TRUSTWORTHY: at the base revision exactly four of the seven fail, including a verbatim reproduction of the incident refusal text, while the other three pass at BOTH revisions — and the worker said so rather than presenting seven new passing tests as seven new proofs. Three of them are guards on behaviour that was already correct; four are regression catchers. That distinction is usually elided. THE DIAGNOSIS IS PRECISE: state_for keys on the backend&#x27;s budget_check opt-in, and the resume path&#x27;s recovered backend settings carry only argv, so the opt-in never arrived and the account surface was never consulted. It now honours the opt-in when it arrives on the recorded reading. Dispatch behaviour is unchanged and the 108 importer tests pass either side. It also explains why only budget.py needed to change: every resume path, the manual command and the sweep alike, funnels through resume_plan into that one choke point. THE HARM THIS ENDS, measured by a peer during a live trial: a two-day-old refusal carrying a superseded reset was refusing resumes on a lane the account surface read as open, with three points of headroom available. It blocked the single operation the spend reserve is withheld to permit, so the reserve was doing its job and a stale record ate what it was saving.</p></div>
 </div>
 </section>
 </main>

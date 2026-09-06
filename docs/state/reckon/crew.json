@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T13:22:40",
+  "updated": "2026-09-06T13:49:16",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -64606,6 +64606,154 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T104255456057-a-resume-judges-the-lane-by-the-freshest-evidence",
+        "plan": "a-hold-is-as-old-as-its-refusal",
+        "section": "\u00a71",
+        "node": "a-resume-judges-the-lane-by-the-freshest-evidence",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1889,
+                "cached_input_tokens": 612230,
+                "input_tokens": 614121,
+                "output_tokens": 2260,
+                "reasoning_output_tokens": 508,
+                "total_tokens": 616381,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_resume_evidence_freshness.py -q passes, and a resume is not held by a ledger refusal that a fresher account-surface reading has superseded. MEASURED TODAY, AND IT BLOCKED THE EXACT CASE THE RESERVE EXISTS FOR. A peer ran crew resume on a live codex run and was refused with: \"wave held on budget for backend codex \u2014 utilisation 100% with burn multiple unknown is at or above the 100.0% ceiling for a resume; the stream had no parseable rejected rate-limit event, so created_at is only a lower bound on the refusal time, never a fresh refusal; the stated reset at 2026-09-08T07:38:00+02:00 lifts this hold\". That reset string comes from a refusal recorded on 2026-09-02. I verified it in nova docs/state/nova/crew.json: eight codex holds with purpose resume, all utilisation 100.0, all carrying resets_at 2026-09-08T07:38:00+02:00, opened on 2026-09-04. AT THE SAME MINUTE the codex account surface read 97 percent with a reset of 2026-09-11, a served codex run was alive on that lane, and crew observe on it did not refresh the resume evidence. So the dispatch path reads the account surface and the resume path reads a two-day-old ledger refusal, and they disagree. THIS IS THE SELF-SUSTAINING HOLD IN ITS WORST FORM: only a served run refreshes the record, a hold blocks the run that would serve, and here it blocked a RESUME, which is the one operation the reserve is held back to permit. THE FIX: when a backend exposes an account surface, the resume gate resolves it exactly as the dispatch gate does, and a ledger refusal that is older than its own stated window, or that a fresher account reading supersedes, does not hold. Prefer the freshest evidence by its OBSERVATION time, not by which store it came from, and say in the refusal or the clearance which reading was used and when it was observed, so the next operator can see why. WHAT MUST NOT BE LOST: a genuinely current refusal must still hold a resume \u2014 a lane that is truly spent should not be hammered \u2014 and a backend that exposes NO account surface must keep todays behaviour, including the existing ageing rule, since absence of a signal is never read as clearance. Assert all four: a stale ledger refusal plus a fresher account reading below the ceiling permits the resume; a stale ledger refusal with NO fresher reading still holds; a current account reading at or above the resume ceiling holds, whatever the ledger says; and a backend with no account surface behaves exactly as it does today. Measure base and head over tests/test_resume_evidence_freshness.py plus every test importing reckon.budget or reckon.crew.resumption; report failure ids either side and require none added.",
+          "estimated_hours": 1.0,
+          "goal": "Stop a superseded ledger refusal from holding a resume when a fresher account reading says the lane is open",
+          "id": "a-resume-judges-the-lane-by-the-freshest-evidence",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T104255456057-a-resume-judges-the-lane-by-the-freshest-evidence/manifest.md",
+          "plan": "a-hold-is-as-old-as-its-refusal",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/budget.py",
+            "reckon/crew/resumption.py",
+            "tests/test_resume_evidence_freshness.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-resume-evidence",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T10:43:03Z",
+        "completed_at": "2026-09-06T11:48:08.389Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3866,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3905,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "a55e1c6fffe203a2b324cc2f5e271f401e5b0113",
+        "commits": [
+          "5061515f02cd108877139c40d5347a3c4b68b204"
+        ],
+        "changed_lines": {
+          "added": 450,
+          "removed": 7,
+          "files": 2
+        },
+        "tests_added": 7,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_resume_evidence_freshness.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T104255456057-a-resume-judges-the-lane-by-the-freshest-evidence/head-gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T104255456057-a-resume-judges-the-lane-by-the-freshest-evidence/manifest.md",
+        "scope_changed": false,
+        "session_id": "7bdd2c0a-8225-434d-a1b0-4e3061f93928",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 16968831,
+            "input_tokens_cumulative": 16968831,
+            "output_tokens": 96763,
+            "output_tokens_cumulative": 96763,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 3902.012,
+          "generated_tokens": 96763,
+          "generation_seconds": 3841.048,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 21.3,
+          "machine_seconds": 60.964,
+          "peak_input_tokens": 216733,
+          "tokens_per_second": 25.19,
+          "wall_tokens_per_second": 24.8
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-resume-judges-the-lane-by-the-freshest-evidence",
+          "session_id": "7bdd2c0a-8225-434d-a1b0-4e3061f93928",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T11:48:08.389Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_resume_evidence_freshness.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -64834,6 +64982,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1060
+    "_version": 1061
   }
 }
