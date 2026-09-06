@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T09:35:28",
+  "updated": "2026-09-06T09:56:05",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -63850,6 +63850,154 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T070950128327-one-monitor-to-a-session",
+        "plan": "crew-observability-truth",
+        "section": "\u00a74",
+        "node": "one-monitor-to-a-session",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2513,
+                "cached_input_tokens": 481677,
+                "input_tokens": 484192,
+                "output_tokens": 1705,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 485897,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_skill_contracts.py -q reports zero failures, with a new assertion that the skill states the one-monitor-per-session rule, and the read-set budget test still passes. THE RULE, requested by the repository owner: a session arms and attaches exactly ONE monitor. Say what a reader needs to act: one follower per session, that a second follower on the same session is a defect rather than redundancy, and what to do instead when a coordinator wants to watch more than its own runs \u2014 which is to attach additional sessions to the one monitor, not to arm a second. Cross-check the existing follower and watcher guidance in the skill and its references and make sure nothing already there contradicts the new sentence; if something does, reconcile it and say so in your manifest rather than leaving two rules standing. THE CONSTRAINT THAT MAKES THIS NON-TRIVIAL: skills/reckon-ship/SKILL.md currently has about 44 estimated tokens of headroom against the 16000-token FIXED_READ_SET_TOKEN_BUDGET asserted by test_engine_generated_dispatch_keeps_fixed_read_set_bounded, measured as (words*4+2)//3. Your sentence will breach it. DO NOT RAISE THE CONSTANT: the budget test carries its own guidance naming relocation into references/ as the remedy, and raising a bound to fit new text is the defect this repository has spent the night removing from other files. Relocate enough reference material into skills/reckon-ship/references/sprint-orchestration.md to fit, choosing material that a coordinator does not need in the first read \u2014 mechanics and worked detail rather than rules and refusals \u2014 and leave a pointer where it was. VERIFY THE RELOCATION LOSES NOTHING, and demonstrate it rather than asserting it: report the word count of SKILL.md and of the reference file before and after, show the net is not negative, and confirm that any heading you moved is reachable from the pointer you left. A previous relocation in this repository silently swallowed an adjacent section, so this check is not ceremony. Measure base and head over tests/test_skill_contracts.py plus every test reading the skill files; report failure ids either side and require none added.",
+          "estimated_hours": 0.5,
+          "goal": "State in the ship skill that a session runs exactly one monitor, and bind that rule to a check so it cannot quietly disappear",
+          "id": "one-monitor-to-a-session",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T070950128327-one-monitor-to-a-session/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "exact",
+          "time_budget": "35m",
+          "write_paths": [
+            "skills/reckon-ship/SKILL.md",
+            "skills/reckon-ship/references/sprint-orchestration.md",
+            "tests/test_skill_contracts.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "skill-monitor-rule",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T07:09:57Z",
+        "completed_at": "2026-09-06T07:54:30.852Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2642,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2673,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "0d8197017172a05d170ac7e8aae5fcaf2478a4f4",
+        "commits": [
+          "804473225cf4dab411ff38d4c3f0ef25c3604d35"
+        ],
+        "changed_lines": {
+          "added": 82,
+          "removed": 24,
+          "files": 3
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_skill_contracts.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T070950128327-one-monitor-to-a-session/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T070950128327-one-monitor-to-a-session/manifest.md",
+        "scope_changed": false,
+        "session_id": "187d4e00-8d18-41cd-8951-683287906876",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 9952249,
+            "input_tokens_cumulative": 9952249,
+            "output_tokens": 56977,
+            "output_tokens_cumulative": 56977,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 2669.99,
+          "generated_tokens": 56977,
+          "generation_seconds": 2551.321,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 18.2,
+          "machine_seconds": 118.669,
+          "peak_input_tokens": 185463,
+          "tokens_per_second": 22.33,
+          "wall_tokens_per_second": 21.34
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/one-monitor-to-a-session",
+          "session_id": "187d4e00-8d18-41cd-8951-683287906876",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T07:54:30.852Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_skill_contracts.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -64078,6 +64226,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1049
+    "_version": 1050
   }
 }
