@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T20:24:18",
+  "updated": "2026-09-06T20:34:53",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -67778,6 +67778,157 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T181638916049-the-sweep-record-names-each-writer",
+        "plan": "crew-observability-truth",
+        "section": "\u00a76",
+        "node": "the-sweep-record-names-each-writer",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1893,
+                "cached_input_tokens": 356102,
+                "input_tokens": 357997,
+                "output_tokens": 2525,
+                "reasoning_output_tokens": 724,
+                "total_tokens": 360522,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_sweep_status_is_per_writer.py -q passes, and a reader can establish when a NAMED follower last swept, separately from every other writer of that project's sweep record. WHY THIS EXISTS. The sweep status file carries one slot per project, holding swept_at and swept_by_pid for whichever writer wrote last. Its own comment states the purpose it was built for: a sweep that ran and found nothing and a sweep that never ran are otherwise indistinguishable. It achieves that for the project. It cannot answer the question a reader actually asks, which is whether THEIR follower is sweeping. MEASURED 2026-09-06, across two projects. On one, a stamp read at 16:17Z showed a pid and a time 69 minutes old, and was used as evidence that a specific follower had stopped sweeping; the file is written by every follower on the project, by availability probes, and by hand-run sweeps from the command line and from the MCP surface, so the stamp was only the last write by any writer. On the second project a reader found a stamp written by a HAND-RUN sweep and would have taken it for follower cadence had its author not recognised the pid. Two followers were then observed alternating in one file, 120 seconds apart each, so neither one's cadence could be read from it. A wrong conclusion was published to two sessions on the strength of that file and had to be retracted. WHAT TO CHANGE. Record one entry per writer rather than one per project, keyed so that a reader can ask for a specific writer and get that writer's last sweep. Carry on each entry what the writer was: a follower sweeping on its cadence, a hand-run sweep from the command line or the MCP surface, or any other caller, since a reader distinguishing follower health from their own manual pass needs that distinction and cannot infer it from a pid. Keep a project-level view for the existing readers so nothing that reads the current shape loses its answer. Bound the file: a writer that no longer exists must not accumulate forever, and state in a comment which bound you chose and why. WHAT NOT TO CHANGE. Do not alter the cadence, what a sweep does, when it runs, or the append-only recovery log beside it. Do not make a reader's question require a process lookup: the record must answer from its own contents, because a pid on a shared filesystem is meaningless on another host, and this project's crew home is shared across login nodes. FALSIFIERS, asserted in tests/test_sweep_status_is_per_writer.py against a temporary configuration directory, with an assertion that the real configuration directory gains no file. Two writers writing in sequence both remain readable afterwards, and neither entry is overwritten by the other. A reader asking for one writer gets that writer's last sweep and not another's. A reader asking for a writer that never wrote gets an answer meaning unknown, distinguishable from an answer meaning that writer swept and found nothing. A hand-run sweep and a follower cadence sweep are distinguishable in the record without consulting any process. The project-level view still answers what it answers today for a single-writer file. The bound removes entries by its stated rule and by nothing else, asserted by writing past the bound and checking which entries survive. Measure base and head over the new file and every test importing reckon.crew.resumption; report failure ids either side and require none added.",
+          "estimated_hours": 1.0,
+          "goal": "Let a reader establish when their own follower last swept, separately from probes, hand-run sweeps and other followers writing the same project record",
+          "id": "the-sweep-record-names-each-writer",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T181638916049-the-sweep-record-names-each-writer/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/resumption.py",
+            "tests/test_sweep_status_is_per_writer.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-sweep-cadence",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T18:16:45Z",
+        "completed_at": "2026-09-06T18:33:23.232Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 988,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 998,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "5057ab1be36f03833dc59add2130e7afff8d45ef",
+        "commits": [
+          "374d0a4be94b64a19339e9bf2e9841394c79db53"
+        ],
+        "changed_lines": {
+          "added": 401,
+          "removed": 27,
+          "files": 2
+        },
+        "tests_added": 7,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_sweep_status_is_per_writer.py tests/test_external_wait.py tests/test_crew_recovery.py tests/test_follow_sweep_cadence.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate50.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T181638916049-the-sweep-record-names-each-writer/manifest.md",
+        "scope_changed": false,
+        "session_id": "23e42af5-1bf8-4921-809e-d984dc28b1d6",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 8611552,
+            "input_tokens_cumulative": 8611552,
+            "output_tokens": 70436,
+            "output_tokens_cumulative": 70436,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 994.933,
+          "generated_tokens": 70436,
+          "generation_seconds": 965.816,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 16.9,
+          "machine_seconds": 29.117,
+          "peak_input_tokens": 172236,
+          "tokens_per_second": 72.93,
+          "wall_tokens_per_second": 70.79
+        },
+        "follow_on_paths": [
+          "command/report"
+        ],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-sweep-record-names-each-writer",
+          "session_id": "23e42af5-1bf8-4921-809e-d984dc28b1d6",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T18:33:23.232Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_sweep_status_is_per_writer.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -68006,6 +68157,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1096
+    "_version": 1097
   }
 }
