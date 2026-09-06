@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T13:49:16",
+  "updated": "2026-09-06T13:59:36",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -1668,6 +1668,15 @@
       },
       {
         "id": "skill-verb-surface",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-06"
+      },
+      {
+        "id": "skill-wait-contract",
         "harness": "clive",
         "role": "implement",
         "session_id": null,
@@ -64754,6 +64763,141 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T091333737054-a-lane-at-its-ceiling-refuses-new-work",
+        "plan": "crew-observability-truth",
+        "section": "\u00a75",
+        "node": "a-lane-at-its-ceiling-refuses-new-work",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1428,
+                "cached_input_tokens": 540379,
+                "input_tokens": 541809,
+                "output_tokens": 1509,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 543318,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_lane_concurrency_ceiling.py -q passes, and a dispatch to a backend already carrying its ceiling of live runs is refused with a named, actionable reason instead of launching. WHY THIS IS THE PREVENTION AND NOT A NICETY, measured tonight: a peer dispatched a sixth concurrent worker to the local lane at 05:10 and within a minute TWO ALREADY-RUNNING runs died \u2014 each after ten 429 retries at up to 40 second spacing, one of them mid-gate with two commits in its worktree. Adding work destroyed work. The mechanism is not ours to fix downstream: the harness retry budget is fixed at max_retries 10 with 5 to 39 second backoff, reckon passes no retry configuration and cannot extend it, so once a lane refuses long enough the turn errors and a print-mode process exits. A 429 is a pause at the protocol; the finite retry budget is what converts it into a death. Therefore the only reliable remedy is not to create the overload. ADD A PER-BACKEND max_concurrent_runs to the flight backend entry, declared beside the existing per-backend keys (alias, command, effort, launch, model, sandbox, session_reuse, time_budget, usable_input_window) and validated in the schema. Absent or null means unlimited, which must remain the default for every backend that does not declare one, so this changes nothing for a lane nobody has measured. Count the backend live runs from the live pointers, count only non-terminal ones, and refuse when a new dispatch would exceed the ceiling. THE REFUSAL MUST BE ACTIONABLE, not a bare error: name the backend, the ceiling, the current count, and the run ids occupying the slots, so a coordinator can see what to wait for. Use the existing not-dispatchable exit convention rather than inventing a new one, and do not create a worktree or a process before refusing. FALSIFIERS, all required: a backend with no ceiling declared dispatches exactly as today, unlimited; a backend under its ceiling dispatches normally; a backend at its ceiling whose occupying runs are TERMINAL does not refuse, because a finished run holds no slot; and the refusal never touches a run already in flight. THAT LAST ONE IS THE POINT OF THE NODE: a fence that stopped an existing run in order to admit a new one would reproduce the harm it exists to prevent. Do not add a wait or retry loop inside dispatch; refusing is the whole behaviour, and the caller decides. Measure base and head over tests/test_lane_concurrency_ceiling.py plus every test importing reckon.crew.dispatch or reckon.flight; report failure ids either side and require none added.",
+          "estimated_hours": 1.25,
+          "goal": "Refuse to dispatch into a backend already at its declared concurrency ceiling, so adding work cannot kill work that is already running",
+          "id": "a-lane-at-its-ceiling-refuses-new-work",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T091333737054-a-lane-at-its-ceiling-refuses-new-work/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "reckon/_flight_schema.py",
+            "reckon/flight.py",
+            "tests/test_lane_concurrency_ceiling.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-admission",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T09:13:44Z",
+        "completed_at": "2026-09-06T11:58:04.265Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 9786,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 9860,
+        "stalled": true,
+        "time_budget": "50m",
+        "base_sha": "13185ffba268a8ddfbad234b1c147ebc7d1cb186",
+        "commits": [
+          "c9c1fc9afc9a693fcb4030a554fbda48d21ede6d"
+        ],
+        "changed_lines": {
+          "added": 353,
+          "removed": 0,
+          "files": 3
+        },
+        "tests_added": 7,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_lane_concurrency_ceiling.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T091333737054-a-lane-at-its-ceiling-refuses-new-work/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T091333737054-a-lane-at-its-ceiling-refuses-new-work/manifest.md",
+        "scope_changed": false,
+        "session_id": "70f411f8-01b9-4759-a2a7-93205578e5f8",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": null,
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "run completed after 12 rate-limit retries; retries alone are not a refusal"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 9856.588,
+          "generated_tokens": 99386,
+          "generation_seconds": 7586.27,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 24.6,
+          "machine_seconds": 2270.318,
+          "peak_input_tokens": 250372,
+          "tokens_per_second": 13.1,
+          "wall_tokens_per_second": 10.08
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-lane-at-its-ceiling-refuses-new-work",
+          "session_id": "70f411f8-01b9-4759-a2a7-93205578e5f8",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T11:58:04.265Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_lane_concurrency_ceiling.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -64982,6 +65126,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1061
+    "_version": 1063
   }
 }
