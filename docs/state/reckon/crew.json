@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T14:38:53",
+  "updated": "2026-09-06T15:25:21",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -444,6 +444,15 @@
         "created": "2026-09-06"
       },
       {
+        "id": "crew-monitor-invocation",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-06"
+      },
+      {
         "id": "crew-paused",
         "harness": "clive",
         "role": "implement",
@@ -498,6 +507,15 @@
           "gpt-5.6-sol": "01a03e92-f086-7f52-a6ac-c3ed7f1079c1"
         },
         "created": "2026-08-26"
+      },
+      {
+        "id": "doc-deploy-matrix",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-06"
       },
       {
         "id": "doc-evidence",
@@ -65368,6 +65386,153 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T115124981876-a-worker-declares-a-wait-instead-of-polling-it",
+        "plan": "clive-local-workers",
+        "section": "\u00a714",
+        "node": "a-worker-declares-a-wait-instead-of-polling-it",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2192,
+                "cached_input_tokens": 681811,
+                "input_tokens": 684005,
+                "output_tokens": 2358,
+                "reasoning_output_tokens": 513,
+                "total_tokens": 686363,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_worker_wait_contract.py -q passes, asserting that skills/reckon-ship/references/worker-protocol.md documents the declared external wait with its four manifest fields and states when to use it. THE MACHINERY HAS EXISTED ALL ALONG AND THE FILE THAT TELLS WORKERS HOW TO BEHAVE NEVER MENTIONS IT. reckon/crew/recovery.py reads wait_condition, wait_probe, wait_terminal and resume_brief from a manifest and classifies such a run as waiting; reckon crew resume-ready is documented as resuming runs whose provider hold or declared external wait has ended. worker-protocol.md is 297 lines and contains ZERO occurrences of wait_condition, external wait, sbatch, squeue or poll. So a worker that submits a compute job has no instruction to declare the wait, and polls inside its turn instead. WHY THAT IS EXPENSIVE, measured on two real durable nodes this week rather than reasoned: a model round-trip on this fleet re-sends the whole context, and the observed cost is 178,000 tokens per command execution on a compute-free node (64 commands, 11.4M input) and 282,000 on a node containing external waits (164 commands, 46.3M input in that turn). On a metered subscription lane the meter charges TOTAL input including cached, and that node measured 98.5 percent cached and paid for all of it. So each poll of a running job costs roughly a quarter of a million charged tokens, a declared wait costs zero model round-trips for the whole wait, and the run that waited about an hour and a half billed 46M of its 51M tokens in the turn that did the waiting. WHAT TO WRITE. A short section in worker-protocol.md, in the voice of the surrounding file, stating: when your work submits a job you do not control \u2014 a batch job, a queued build, anything whose completion you would otherwise sit and check \u2014 write the wait into your manifest and EXIT rather than polling. Name the four fields and what each carries: the condition being waited on, the probe that answers it, the terminal values that mean it is done, and the brief that tells your resumed self what to do next. Say that the run then reads as waiting rather than as working or stalled, and that resume-ready wakes it when the probe reports a terminal value. Say plainly why: polling costs a full context re-send per check, and on a metered lane cached input is charged, so a long poll loop is the most expensive way to do nothing. State the boundary too \u2014 a short bounded wait inside a turn is fine and simpler; this is for waits long enough that polling them costs more than a resume. CONSTRAINTS: no attribution, state the mechanism and the measurement rather than who found it; and treat the token figures as a dated illustration of the mechanism, not as a standing rate, since they move with context size and model. Read the existing wait-handling code before writing so the field names and semantics you document are the ones the parser actually reads \u2014 a documented field the code ignores is worse than none. Measure base and head over tests/test_worker_wait_contract.py plus every test reading the skill reference files; report failure ids either side and require none added.",
+          "estimated_hours": 1.0,
+          "goal": "Tell a worker in its own reference to declare an external wait and exit rather than polling a job from inside its turn, and bind the instruction to a check",
+          "id": "a-worker-declares-a-wait-instead-of-polling-it",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T115124981876-a-worker-declares-a-wait-instead-of-polling-it/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a714",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "skills/reckon-ship/references/worker-protocol.md",
+            "tests/test_worker_wait_contract.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "skill-wait-contract",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T11:51:34Z",
+        "completed_at": "2026-09-06T13:23:39.045Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 5468,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 5525,
+        "stalled": true,
+        "time_budget": "45m",
+        "base_sha": "d3ec15ec5896ec4ccb9a0e6fea4820263cfcaee4",
+        "commits": [
+          "f1571ae2d8c0c7a1ada9c327434f185f829fecf3"
+        ],
+        "changed_lines": {
+          "added": 128,
+          "removed": 1,
+          "files": 2
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_worker_wait_contract.py -q",
+          "exit_status": 0,
+          "log_path": "/tmp/wait_gate_head.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T115124981876-a-worker-declares-a-wait-instead-of-polling-it/manifest.md",
+        "scope_changed": false,
+        "session_id": "c965294d-254a-4f73-8396-89390a547eb2",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6199728,
+            "input_tokens_cumulative": 6199728,
+            "output_tokens": 46382,
+            "output_tokens_cumulative": 46382,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 5520.282,
+          "generated_tokens": 46382,
+          "generation_seconds": 3483.607,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 14.1,
+          "machine_seconds": 2036.675,
+          "peak_input_tokens": 143563,
+          "tokens_per_second": 13.31,
+          "wall_tokens_per_second": 8.4
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-worker-declares-a-wait-instead-of-polling-it",
+          "session_id": "c965294d-254a-4f73-8396-89390a547eb2",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T13:23:39.045Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_worker_wait_contract.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -65596,6 +65761,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1069
+    "_version": 1072
   }
 }
