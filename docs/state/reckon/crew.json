@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T18:42:38",
+  "updated": "2026-09-06T18:47:40",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -393,9 +393,11 @@
         "id": "crew-burn-admission",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a0779b-0175-7f02-811d-33703f8b13fe",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a0779b-0175-7f02-811d-33703f8b13fe"
+        },
         "created": "2026-09-06"
       },
       {
@@ -66748,6 +66750,154 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T135853178572-a-woken-run-leaves-no-corpse",
+        "plan": "crew-observability-truth",
+        "section": "\u00a76",
+        "node": "a-woken-run-leaves-no-corpse",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1105,
+                "cached_input_tokens": 890040,
+                "input_tokens": 891147,
+                "output_tokens": 2423,
+                "reasoning_output_tokens": 697,
+                "total_tokens": 893570,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_resume_reaps_its_child.py -q passes, and a worker launched by the resume-ready sweep leaves no defunct child behind when it finishes. MEASURED ON A LIVE FLEET AND RECURRING, NOT A ONE-OFF. A peer session runs crew follow, whose loop performs the resume-ready sweep on a cadence. Every run that sweep wakes ends as a Z child of the follower when its turn finishes, and the NEXT crew resume on that run is then refused with \"still has a live process; observe or stop it before resuming\". Observed twice on the same run, at 13:33Z and again at 13:57Z. Their workaround is to stop the follower, resume, and re-arm \u2014 dropping their live view each time. So the declared-wait recovery path works and then poisons the next recovery of the same run. THE MECHANISM: reckon/crew/dispatch.py around line 2404 launches the worker with subprocess.Popen and start_new_session=True. start_new_session detaches the child into its own session and process group but does NOT reparent it \u2014 the spawning process still owes a wait. For an ordinary crew dispatch the CLI exits moments later, the child reparents to init and is reaped, and nobody notices. For a LONG-LIVED parent \u2014 a follower whose sweep launches resumes for the life of the session \u2014 the child has no reaper and becomes a zombie that outlives its work. THE FIX IS THE SPAWNING SIDE, not the liveness check. A separate defect, already recorded, is that the liveness test reads a zombie as alive because os.kill against a zombie succeeds; that is a real bug and is queued behind another node, but it is a workaround for a corpse that should not exist. Make the launch leave no corpse: reap finished children in the long-lived loop, or double-fork so the child reparents immediately, or install an auto-reap disposition in the process that owns the loop. Choose one, say which and why in your manifest, and do not rely on the caller remembering to reap. FALSIFIERS, all required: a worker launched by an ordinary short-lived dispatch still runs and still survives the parent exiting, since detaching it is the point of start_new_session; a worker launched by the sweep still runs to completion and its stream and manifest are unaffected; after that worker finishes, no defunct child remains under the launching process; and a second resume of the same run is accepted rather than refused. Assert the last two by inspecting process state rather than by asserting the code path was taken. Measure base and head over tests/test_resume_reaps_its_child.py plus every test importing reckon.crew.resumption or reckon.crew.dispatch; report failure ids either side and require none added.",
+          "estimated_hours": 1.0,
+          "goal": "Stop a sweep-woken run from leaving a zombie under the long-lived process that woke it, so the next resume of that run is not refused",
+          "id": "a-woken-run-leaves-no-corpse",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T135853178572-a-woken-run-leaves-no-corpse/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/resumption.py",
+            "reckon/crew/dispatch.py",
+            "tests/test_resume_reaps_its_child.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-no-zombies",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T13:59:02Z",
+        "completed_at": "2026-09-06T16:44:00.973Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 9884,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 9898,
+        "stalled": true,
+        "time_budget": "45m",
+        "base_sha": "cd4000ffe9e1a1ef7b26bfc7526269bce7d4bb8f",
+        "commits": [
+          "07634a6f0e988a93c0adfcaec6aa2fad0abb810f"
+        ],
+        "changed_lines": {
+          "added": 296,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_resume_reaps_its_child.py tests/test_crew_dispatch_arming.py tests/test_crew_dispatch_guard.py tests/test_crew_recover.py tests/test_crew_recovery.py",
+          "exit_status": 1,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate42.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T135853178572-a-woken-run-leaves-no-corpse/manifest.md",
+        "scope_changed": false,
+        "session_id": "2b079dbd-5ce6-4ef2-855b-a40738a3daa4",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 11355659,
+            "input_tokens_cumulative": 11355659,
+            "output_tokens": 88961,
+            "output_tokens_cumulative": 88961,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 9895.193,
+          "generated_tokens": 88961,
+          "generation_seconds": 9549.975,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 18.6,
+          "machine_seconds": 345.218,
+          "peak_input_tokens": 188781,
+          "tokens_per_second": 9.32,
+          "wall_tokens_per_second": 8.99
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-woken-run-leaves-no-corpse",
+          "session_id": "2b079dbd-5ce6-4ef2-855b-a40738a3daa4",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T16:44:00.973Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_resume_reaps_its_child.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -66976,6 +67126,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1088
+    "_version": 1090
   }
 }
