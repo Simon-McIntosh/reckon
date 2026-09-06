@@ -771,7 +771,11 @@ def classify_pointer(
             f"{manifest} cannot be read — repair or replace it before judging "
             "the run"
         )
-    elif terminal:
+    elif terminal and alive is False:
+        # Abandoned requires positive proof of death: the process table says
+        # the worker is gone AND nothing eligible for promotion was delivered.
+        # The stored phase alone is the last writer's label, not evidence, so
+        # it only participates when the process verdict confirms it.
         classification = "abandoned"
         if manifest_derived:
             delivery = "only a recovery-derived manifest exists"
@@ -795,6 +799,24 @@ def classify_pointer(
                 f"{record.get('worktree')} and redispatch if needed"
             )
         )
+    elif terminal:
+        # A terminal stored phase is not a dead run while the process table
+        # has not confirmed death. An alive process outranks the stored phase,
+        # and a pid whose liveness cannot be checked is no proof of death
+        # either, so the run is never called abandoned here and its action
+        # never advises redispatch — duplicating a live worker is the cost
+        # this arm exists to stop.
+        if alive is True:
+            classification = "running"
+            detail = "the process is alive despite the terminal stored phase"
+        else:
+            classification = "running"
+            detail = (
+                "the stored phase is terminal but process liveness could not be "
+                "proven; the pointer is left in place pending a manifest or "
+                "evidence of death"
+            )
+        action = f"reckon crew observe --run {run_id}"
     elif alive is True:
         classification = "running"
         detail = "the process is alive"
