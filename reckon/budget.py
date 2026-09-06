@@ -215,6 +215,7 @@ class _Reading:
     age_source: str
     record_id: str = ""
     attribution: str = ""
+    surface_opt_in: bool = False
 
 
 class _RecordedReadings(dict[str, _Reading]):
@@ -349,6 +350,21 @@ def _refusal_event_stamp(pointer: Mapping[str, Any]) -> str | None:
     return None
 
 
+def _surface_opt_in(backend_name: str | None, config: Mapping[str, Any] | None) -> bool:
+    """Whether the configured backend opts its account surface into a read.
+
+    The opt-in is a config fact, not a property of any one record, but it must
+    travel on the reading for the resume path: that path recovers a run's
+    backend from the run's own argv, which carries the command but not the
+    configuration's ``budget_check`` flag, so the surface read would otherwise
+    never fire when the run is the only witness of its own backend.
+    """
+    if not backend_name:
+        return False
+    settings = ((config or {}).get("backends") or {}).get(backend_name)
+    return bool(isinstance(settings, Mapping) and settings.get("budget_check"))
+
+
 def _readings(
     project: str,
     *,
@@ -388,9 +404,10 @@ def _readings(
         else:
             refusal_stamp = fresh_stamp
             age_source = "observed-at"
+        backend_name = str(pointer.get("backend") or "")
         found.append(
             _Reading(
-                backend=str(pointer.get("backend") or ""),
+                backend=backend_name,
                 budget=dict(budget),
                 observed_at=str(refusal_stamp),
                 when=when,
@@ -398,6 +415,7 @@ def _readings(
                 age_source=age_source,
                 record_id=str(pointer.get("run_id") or ""),
                 attribution="record",
+                surface_opt_in=_surface_opt_in(backend_name, config),
             )
         )
     try:
@@ -433,6 +451,7 @@ def _readings(
                 age_source="completed-at",
                 record_id=str(record.get("run_id") or ""),
                 attribution=attribution,
+                surface_opt_in=_surface_opt_in(backend, config),
             )
         )
     return found
@@ -493,6 +512,12 @@ def state_for(
     there wins because it describes now rather than whenever the last run ended.
     An unreadable probe changes nothing but the reported detail — an instrument
     that fails must not become a hold.
+
+    The opt-in is also honoured when it arrives on the recorded reading, because
+    a resumption recovers its backend from the run's own argv and so cannot pass
+    the configured flag itself: a backend that opts its surface into a read on
+    dispatch must resolve it the same way on the resume that dispatch
+    deliberately spared headroom for.
     """
     moment = _now(now)
     state = BudgetState(backend=backend_name)
@@ -517,7 +542,9 @@ def state_for(
             f"{count} known headroom {noun} were recorded but could not be "
             f"attributed to a backend{identity}"
         )
-    if (backend or {}).get("budget_check"):
+    if (backend or {}).get("budget_check") or (
+        recorded is not None and recorded.surface_opt_in
+    ):
         block = _backends.probe_budget(
             backend_name=backend_name,
             backend=backend or {},
@@ -663,6 +690,22 @@ def _age_basis(state: BudgetState) -> str:
     )
 
 
+def _evidence_note(state: BudgetState) -> str:
+    """Name which reading a verdict acted on and when it was observed.
+
+    A verdict's reason has to be arguable, and an operator reading a held lane
+    needs to see whether the standing figure is a fresh account-surface read or
+    a record of some earlier refusal. The surface reading names its observation
+    time because that is the fact that makes it supersede an older record.
+    """
+    if state.source == "account-surface" and state.observed_at:
+        return (
+            f"; the account surface was read at {state.observed_at} and is the "
+            "operative reading"
+        )
+    return _age_basis(state)
+
+
 # ── The decision ────────────────────────────────────────────────────────────
 
 
@@ -748,7 +791,7 @@ def decide(
             detail=(
                 f"the reading is {minutes} minutes old, past the {bound:g} minute "
                 "shelf life, and states no reset time to decay through"
-                f"{_age_basis(state)}"
+                f"{_evidence_note(state)}"
             ),
         )
         verdict["state"] = stale.as_dict()
@@ -756,7 +799,7 @@ def decide(
             f"the only evidence is {minutes} minutes old against a {bound:g} minute "
             "shelf life and names no reset, so it describes the past rather than "
             "now — headroom is unknown until a run records a fresh reading"
-            f"{_age_basis(state)}"
+            f"{_evidence_note(state)}"
         )
         return verdict
 
@@ -766,7 +809,7 @@ def decide(
         verdict["reason"] = (
             f"backend reports threshold status {state.threshold_status!r}, which "
             f"policy counts as exhausted regardless of utilisation; {_position(state)}"
-            f"{_age_basis(state)}"
+            f"{_evidence_note(state)}"
         )
         return verdict
 
@@ -782,10 +825,12 @@ def decide(
         margin = "" if purpose == "resume" else f" (ceiling {ceiling}% less reserve)"
         verdict["reason"] = (
             f"{_position(state)} is at or above the {limit}% ceiling for a "
-            f"{purpose}{margin}{_age_basis(state)}"
+            f"{purpose}{margin}{_evidence_note(state)}"
         )
         return verdict
-    verdict["reason"] = f"{_position(state)} is below the {limit}% ceiling"
+    verdict["reason"] = (
+        f"{_position(state)} is below the {limit}% ceiling{_evidence_note(state)}"
+    )
     return verdict
 
 
