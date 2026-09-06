@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T09:12:57",
+  "updated": "2026-09-06T09:35:28",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -63718,6 +63718,138 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T071328186134-lane-refusal-tests-follow-the-meteredness-split",
+        "plan": "crew-observability-truth",
+        "section": "\u00a75",
+        "node": "lane-refusal-tests-follow-the-meteredness-split",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1451,
+                "cached_input_tokens": 494303,
+                "input_tokens": 495756,
+                "output_tokens": 1635,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 497391,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_local_lane_refusal_signal.py -q reports zero failures, from two at the current head, WITHOUT weakening what the file checks. MAIN IS RED RIGHT NOW ON EXACTLY THESE TWO AND THIS NODE CLOSES THAT WINDOW. You are correcting my sequencing, not a worker error. Commit 9e681aa taught the budget observer to read a spent local lane from its api_retry records and I wrote these tests with it. Commit df1c7ae then split that by backend meteredness, because a consumer-queue-full 429 is server backpressure rather than a spent budget, and recording it as exhaustion held a peer session resume for six minutes. So the two tests assert behaviour the code deliberately no longer has: test_rate_limit_retries_ending_in_an_error_result_report_a_refusal drives clive and asserts refusal is True with phase blocked, and test_claude_retries_speak_the_same_wire_language_as_the_local_lane asserts clive refusal is True. Both were correct when written and both are now wrong. THE POINT OF EACH TEST MUST SURVIVE THE EDIT, so decide per test rather than deleting. The first exists to prove retry exhaustion is DETECTED at all, which is still true and now lands as backpressure on an unmetered lane: re-point its assertions at the backpressure shape, refusal False with a lane_backpressure marker and a detail naming the retry count, and keep it exercising clive. The second exists to prove the claude dialect reads the same wire records regardless of backend, which is also still true and is the MORE interesting claim after the split, because the wire shape is now identical while the verdict differs by meteredness: assert exactly that, same records in, backpressure out on clive and a budget refusal out on the metered backend. That is a stronger test than the one it replaces. Do not delete either test, do not mark either xfail, and do not restate coverage that tests/test_unmetered_lane_backpressure.py already carries; read that file first and make these two complement it. Say in your manifest, per test, what claim it made before and what claim it makes now. Measure base and head over tests/test_local_lane_refusal_signal.py plus every test importing reckon._backends; report failure ids either side and require none added.",
+          "estimated_hours": 0.4,
+          "goal": "Bring the lane-refusal tests onto the meteredness split, so the suite asserts the behaviour the code now has and main stops being red",
+          "id": "lane-refusal-tests-follow-the-meteredness-split",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T071328186134-lane-refusal-tests-follow-the-meteredness-split/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "write_paths": [
+            "tests/test_local_lane_refusal_signal.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-backpressure",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T07:13:36Z",
+        "completed_at": "2026-09-06T07:34:36.513Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1232,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1260,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "dc69af9e702e594c8707cb1f33267c31338087c6",
+        "commits": [
+          "e426a8a338589a5af8ac8e97fc5c539c900b9900"
+        ],
+        "changed_lines": {
+          "added": 37,
+          "removed": 16,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_local_lane_refusal_signal.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T071328186134-lane-refusal-tests-follow-the-meteredness-split/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T071328186134-lane-refusal-tests-follow-the-meteredness-split/manifest.md",
+        "scope_changed": false,
+        "session_id": "aaa182d0-d018-49fc-83df-46ff735cb3bb",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": null,
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "run completed after 6 rate-limit retries; retries alone are not a refusal"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 1257.306,
+          "generated_tokens": 29817,
+          "generation_seconds": 1217.706,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 10.5,
+          "machine_seconds": 39.6,
+          "peak_input_tokens": 106594,
+          "tokens_per_second": 24.49,
+          "wall_tokens_per_second": 23.71
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/lane-refusal-tests-follow-the-meteredness-split",
+          "session_id": "aaa182d0-d018-49fc-83df-46ff735cb3bb",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T07:34:36.513Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_local_lane_refusal_signal.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -63946,6 +64078,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1048
+    "_version": 1049
   }
 }
