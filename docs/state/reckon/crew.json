@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T18:11:15",
+  "updated": "2026-09-06T18:24:05",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -535,6 +535,15 @@
       },
       {
         "id": "crew-surface-consistent",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-06"
+      },
+      {
+        "id": "crew-sweep-cadence",
         "harness": "clive",
         "role": "implement",
         "session_id": null,
@@ -66309,6 +66318,153 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T144043945062-gc-sees-every-tree-the-scan-pays-for",
+        "plan": "crew-observability-truth",
+        "section": "\u00a77",
+        "node": "gc-sees-every-tree-the-scan-pays-for",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 3061,
+                "cached_input_tokens": 920949,
+                "input_tokens": 924012,
+                "output_tokens": 2098,
+                "reasoning_output_tokens": 473,
+                "total_tokens": 926110,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_gc_covers_run_directory_trees.py -q passes, and a git tree created inside a run directory appears in the gc report with a classification rather than being invisible to it. MEASURED ASYMMETRY, and the asymmetry is the defect rather than the disk usage. On this workstation 16 checkouts exist under the crew runs directory, in paths ending checkouts, one of them 318 MB, alongside further trees a worker creates to measure a base revision under names beginning base-source, base-tree and base-wt. A gc report here scanned 38 worktrees and ZERO of them sat under a run directory. Meanwhile the promotion boundary snapshot DOES walk them: earlier dispatch records list two such run-directory trees among those it inspected. So every promotion pays to walk trees that gc cannot reclaim, and they accumulate for the life of the config home. A peer fleet measured the same gap independently at 14 trees and 4 GiB, and timed its promotion at 88.6 seconds real against 1.7 seconds user and 11.6 sys with 91 trees present, which is filesystem walking rather than computation. WHAT TO CHANGE: gc enumerates managed worktrees; extend that enumeration to include git trees under the run-directory root so they are classified and reported by the same rules as any other tree. Do not write a second policy for them. KEEP EVERY EXISTING GUARANTEE, because these trees are where a careless removal costs most. A tree may be removed only when git status reports no modified and no untracked files in it AND its head commit is contained in the primary branch; a tree with either condition unmet is held and the reason named; a tree referenced by a live run is held. Reachability alone must never authorise removal, because a tree sitting at its base revision reports as reachable \u2014 the base always is \u2014 and that reading once put 267 uncommitted insertions across six trees at risk here. Report before removing, exactly as now. TWO SHAPES EXIST AND BOTH MUST BE HANDLED HONESTLY: some are real git worktrees registered with the repository, and some are plain extractions a worker made with git archive, which carry no git directory and are not worktrees at all. The second kind has no commit, so it cannot be judged by containment and must be reported as its own kind rather than forced through the worktree rules. Say which kind each is in the report. Assert: a registered worktree under a run directory is classified and reported; an extraction with no git directory under a run directory is reported as its own kind rather than mislabelled; a tree under a run directory with modified files is held with a reason; an ordinary managed worktree is classified exactly as it is today; and nothing is removed unless both conditions hold. Measure base and head over tests/test_gc_covers_run_directory_trees.py plus every test importing reckon.crew.routing; report failure ids either side and require none added.",
+          "estimated_hours": 1.0,
+          "goal": "Bring the trees that live inside run directories into gc's view, so the cleanup can reclaim what the promotion scan already pays to walk",
+          "id": "gc-sees-every-tree-the-scan-pays-for",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T144043945062-gc-sees-every-tree-the-scan-pays-for/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/routing.py",
+            "tests/test_gc_covers_run_directory_trees.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-gc-coverage",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T14:41:16Z",
+        "completed_at": "2026-09-06T16:21:31.622Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 5992,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 6015,
+        "stalled": true,
+        "time_budget": "45m",
+        "base_sha": "61d8cec78422d8f5f25015c9219c5ce71b7f9929",
+        "commits": [
+          "e0fcac58ee39320fd93463695b3ad0c10908c111"
+        ],
+        "changed_lines": {
+          "added": 262,
+          "removed": 5,
+          "files": 2
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_gc_covers_run_directory_trees.py tests/test_crew_gc.py tests/test_crew_promotion_scope.py tests/test_resume_evidence_freshness.py tests/test_crew_shadow_paths.py tests/test_crew_boundary_waiver.py tests/test_crew_routes.py -q",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate39.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T144043945062-gc-sees-every-tree-the-scan-pays-for/manifest.md",
+        "scope_changed": false,
+        "session_id": "7ea98016-8b5e-48a2-8b64-07505523b2ee",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 9117892,
+            "input_tokens_cumulative": 9117892,
+            "output_tokens": 57303,
+            "output_tokens_cumulative": 57303,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 6011.482,
+          "generated_tokens": 57303,
+          "generation_seconds": 5741.646,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 17.6,
+          "machine_seconds": 269.836,
+          "peak_input_tokens": 179236,
+          "tokens_per_second": 9.98,
+          "wall_tokens_per_second": 9.53
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/gc-sees-every-tree-the-scan-pays-for",
+          "session_id": "7ea98016-8b5e-48a2-8b64-07505523b2ee",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T16:21:31.622Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_gc_covers_run_directory_trees.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -66537,6 +66693,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1084
+    "_version": 1086
   }
 }
