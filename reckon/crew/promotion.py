@@ -929,7 +929,36 @@ def _wait_out_stream_tail(paths: Iterable[Path]) -> None:
             stable_since = time.monotonic()
 
 
-def _promotion_terminal_observation(record: Mapping[str, Any]) -> StreamMeasures:
+def _end_live_writer_for_settle(record: Mapping[str, Any]) -> bool:
+    """End a still-writing run before the fold, so its terminal tail is readable.
+
+    A prompt promotion that finds the run's process alive is about to end that
+    same process in the release step after the fold; it ends it here instead,
+    before the observation, so the bounded settle can fold the terminal record
+    the writer flushes on shutdown rather than a file mtime. Gated exactly like
+    the release's own signal — a fresh terminal manifest and a live process —
+    so a promotion that would not have signalled it (a run with no manifest, or
+    a launch this settle never applies to) leaves the writer untouched and the
+    observation takes its pre-existing live-process shape. Returns whether the
+    writer was ended and the observation should therefore settle regardless.
+    """
+    if str(record.get("launch") or "") != "cli":
+        return False
+    if not _release_terminal_manifest(record):
+        return False
+    pid = record.get("pid")
+    if process_alive(pid) is not True:
+        return False
+    try:
+        _signal_process_group(int(pid), record.get("pid_start_time"))
+    except (ProcessLookupError, PermissionError, OSError, CrewError):
+        return False
+    return True
+
+
+def _promotion_terminal_observation(
+    record: Mapping[str, Any], *, settle_even_if_alive: bool = False
+) -> StreamMeasures:
     """Read a finished run's stream after a bounded settle for its terminal tail.
 
     A worker writes its manifest before the harness reaches its terminal turn
@@ -937,14 +966,17 @@ def _promotion_terminal_observation(record: Mapping[str, Any]) -> StreamMeasures
     completion taken from a file mtime — losing the run's own timing and token
     figures from the ledger. Once the run's process has exited the writer can
     only be flushing, so promotion waits out a short quiescence of the stream
-    and re-reads it. A process still alive is never waited on: its stream is
-    legitimately mid-write, and its behaviour here is unchanged. A stream that
-    never receives a terminal record still folds the mtime fallback, and the
-    bounded wait guarantees a truncated stream cannot hang a promotion.
+    and re-reads it. A process still alive is normally never waited on: its
+    stream is legitimately mid-write, and its behaviour here is unchanged. The
+    exception is a writer this promotion has already ended (settle_even_if_alive)
+    — signalling it means its tail is on its way, so waiting is both safe and
+    bounded. A stream that never receives a terminal record still folds the
+    mtime fallback, and the bounded wait guarantees a truncated stream cannot
+    hang a promotion.
     """
     if str(record.get("launch") or "") != "cli":
         return _terminal_stream_data(record)
-    if process_alive(record.get("pid")) is True:
+    if process_alive(record.get("pid")) is True and not settle_even_if_alive:
         return _terminal_stream_data(record)
     path = Path(str(record.get("log_path") or ""))
     _wait_out_stream_tail(_run_streams(path))
@@ -1382,6 +1414,8 @@ def _worktree_audit(
 def _release_run_workspace(
     record: Mapping[str, Any],
     retention: Mapping[str, str] | None = None,
+    *,
+    process_already_ended: bool = False,
 ) -> dict[str, Any]:
     """Release a promoted run's own worktree and, if still alive, its process.
 
@@ -1445,7 +1479,14 @@ def _release_run_workspace(
     if not _release_terminal_manifest(record):
         result["process_withheld"] = "no terminal manifest was delivered"
     elif process_alive(pid) is not True:
-        result["process_withheld"] = "process is not alive"
+        if process_already_ended:
+            # The promotion ended this writer before the fold so its stream
+            # could settle; the release reports that it signalled, and when,
+            # rather than that the process is now merely absent.
+            result["process_signalled"] = True
+            result["process_withheld"] = "process ended by promotion before the fold"
+        else:
+            result["process_withheld"] = "process is not alive"
     else:
         try:
             _signal_process_group(int(pid), record.get("pid_start_time"))
@@ -1462,16 +1503,22 @@ def _release_after_promotion(
     run_id: str,
     record: Mapping[str, Any],
     retention: Mapping[str, str] | None = None,
+    *,
+    process_already_ended: bool = False,
 ) -> dict[str, Any]:
     """Release what promotion made transient, never at the cost of the ledger.
 
     A failure here — a git command that raises, a permission error signalling
     a process — must never read as a failed promotion: the ledger row and the
     pointer deletion that precede this call have already succeeded, and this
-    step is strictly additional cleanup on top of them.
+    step is strictly additional cleanup on top of them. process_already_ended
+    records a writer the promotion ended before the fold, so the release can
+    report that outcome instead of a process that is merely absent.
     """
     try:
-        return _release_run_workspace(record, retention)
+        return _release_run_workspace(
+            record, retention, process_already_ended=process_already_ended
+        )
     except Exception as exc:  # noqa: BLE001 - cleanup must never mask promotion
         return {
             "worktree_released": False,
@@ -1510,12 +1557,15 @@ def _complete_locked(
     interruption cannot duplicate the narrative.
 
     Worker-time spans the first and last timestamped stream events. The stream
-    is read after a bounded settle once the run's process has exited, so the
-    terminal record the worker's harness writes after the manifest is not
-    missed; a live process is never waited on. A healthy timestamp-less stream
-    falls back to wall duration with an explicit source; a stalled run keeps
-    that duration absent. Promotion time remains an explicit completion
-    fallback when no stream survives.
+    is read after a bounded settle, so the terminal record the worker's harness
+    writes after the manifest is not missed. A live process is normally never
+    waited on — but when promotion is about to end that process in its release
+    step anyway, it ends it first and then settles the tail the shutdown writes,
+    folding the run's own record instead of a file mtime; a promotion that will
+    not end the process keeps the live-process behaviour. A healthy
+    timestamp-less stream falls back to wall duration with an explicit source;
+    a stalled run keeps that duration absent. Promotion time remains an
+    explicit completion fallback when no stream survives.
     """
     record = read_pointer(run_id)
     project = str(record.get("project") or "")
@@ -1568,7 +1618,14 @@ def _complete_locked(
             "release": release,
         }
 
-    stream = _promotion_terminal_observation(record)
+    # A writer still alive when a prompt promotion arrives is about to be ended
+    # by this promotion's own release step; end it before the observation so the
+    # bounded settle can fold the terminal record its shutdown writes. A run the
+    # release would not signal — no terminal manifest, or a non-cli launch —
+    # keeps the existing live-process behaviour, and nothing waits on a process
+    # this promotion is not going to end.
+    ended_writer = _end_live_writer_for_settle(record)
+    stream = _promotion_terminal_observation(record, settle_even_if_alive=ended_writer)
     if completed_at:
         finished = _assume_utc_if_naive(completed_at)
         completion_source = "provided"
@@ -1789,7 +1846,12 @@ def _complete_locked(
     # it has to be captured before the pointer goes.
     capture = _capture_member_session(record)
     pointer_path(run_id).unlink(missing_ok=True)
-    release = _release_after_promotion(run_id, record, worktree_retention)
+    release = _release_after_promotion(
+        run_id,
+        record,
+        worktree_retention,
+        process_already_ended=ended_writer,
+    )
     return {
         "run_id": run_id,
         "project": project,
