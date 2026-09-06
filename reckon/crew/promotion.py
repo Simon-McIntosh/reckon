@@ -1527,6 +1527,24 @@ def _release_after_promotion(
         }
 
 
+def _coordinator_supplied_predecessor(
+    record: Mapping[str, Any],
+) -> str | None:
+    """Return the predecessor run id a coordinator attached to the record.
+
+    The node definition is the coordinator-authored surface, so its
+    ``predecessor`` value is read first; a top-level pointer field is the
+    fallback a dispatch call could populate directly. Absent either, promotion
+    derives the link from the repository base instead of asking a later reader
+    to guess.
+    """
+    node = record.get("node")
+    authored = node.get("predecessor") if isinstance(node, Mapping) else None
+    value = authored if str(authored or "").strip() else record.get("predecessor")
+    clean = str(value or "").strip()
+    return clean or None
+
+
 def _complete_locked(
     run_id: str,
     *,
@@ -1750,6 +1768,38 @@ def _complete_locked(
             root=ledger_root,
         )
     )
+    # Routing evidence is read from the delivered manifest at promotion, so a
+    # later measure can separate a followup touch from a defect on the row
+    # alone; the run directory is deleted after this. An unreadable manifest
+    # leaves follow-on paths unmeasured (key absent) and the dispute count
+    # "unknown" — a node never measured is not one that measured zero.
+    manifest_text: str | None = None
+    manifest: Mapping[str, Any] | None = None
+    manifest_path = str(record.get("manifest_path") or "")
+    if manifest_path:
+        try:
+            manifest_text = Path(manifest_path).read_text(encoding="utf-8")
+        except OSError:
+            manifest_text = None
+    if manifest_text is not None:
+        try:
+            manifest = parse_manifest(manifest_text)
+        except (KeyError, ValueError, OSError):
+            manifest = None
+    follow_on_paths = (
+        None if manifest is None else ledger.follow_on_paths(manifest.get("follow_ons"))
+    )
+    predecessor = ledger.predecessor_run_id(
+        supplied=_coordinator_supplied_predecessor(record),
+        base_sha=str(record.get("base_sha") or record.get("base") or ""),
+        runs=ledger_data["runs"],
+        exclude_run_id=run_id,
+    )
+    dispute_count = (
+        "unknown"
+        if manifest_text is None
+        else ledger.stated_correction_count(manifest_text)
+    )
     run = ledger.build_record(
         run_id=run_id,
         plan=str(node.get("plan") or ""),
@@ -1791,6 +1841,9 @@ def _complete_locked(
         require_gate_check=require_gate_check,
         suite_delta=suite_delta,
         resume_remedy=resume_remedy,
+        follow_on_paths=follow_on_paths,
+        predecessor_run=predecessor,
+        dispute_count=dispute_count,
     )
     run["attempt"] = int(record.get("attempt") or 1)
     run["attempt_kind"] = str(record.get("attempt_kind") or "dispatch")
