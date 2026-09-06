@@ -11,6 +11,7 @@ import select
 import shutil
 import subprocess
 import sys
+import threading
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -2381,6 +2382,83 @@ if __name__ == "__main__":
     raise SystemExit(_peer_command())
 
 
+# Every worker this process has launched but not yet waited on. The waiting is
+# the reaper's, not the caller's: an ordinary dispatch CLI is gone before its
+# worker finishes, and a long-lived follower that sweeps on a cadence only
+# looks again at the next tick, so between a worker finishing and someone
+# observing it, it would sit unreaped. A defunct child is still a live pid to
+# a zero-signal liveness probe, which is exactly how a finished resume reads
+# as running and refuses the next one. The follower reaps what it launched, so
+# no corpse exists for that probe to misread. Owned by the process that called
+# :func:`_spawn`, because only the parent may wait on a child.
+_LAUNCHED_WORKERS: set[int] = set()
+_LAUNCHED_WORKERS_LOCK = threading.Lock()
+_LAUNCHED_WORKERS_WAKE = threading.Event()
+# The reaper thread, once started, behind the same lock as the set it guards.
+# A mutable holder rather than a rebound global so the start-once guard can
+# record it without a module-level reassignment.
+_LAUNCHED_WORKER_REAPER: dict[str, threading.Thread | None] = {"thread": None}
+
+
+def _reap_launched_workers() -> None:
+    """Wait on every finished worker this process launched, without blocking.
+
+    Only the pids written here are touched. A child a caller manages
+    synchronously — a condition probe, a lane probe — is never a member, so
+    this cannot reap it out from under its own ``wait``. A pid that no longer
+    names a child has already been reaped or never was one; it is dropped so
+    the loop does not probe a reused identifier forever.
+    """
+    with _LAUNCHED_WORKERS_LOCK:
+        pending = list(_LAUNCHED_WORKERS)
+    for pid in pending:
+        try:
+            got, _status = os.waitpid(pid, os.WNOHANG)
+        except ChildProcessError:
+            with _LAUNCHED_WORKERS_LOCK:
+                _LAUNCHED_WORKERS.discard(pid)
+            continue
+        except OSError:
+            continue
+        if got:
+            with _LAUNCHED_WORKERS_LOCK:
+                _LAUNCHED_WORKERS.discard(pid)
+
+
+def _worker_reaper_loop() -> None:
+    """Poll the launched-worker set until the process dies.
+
+    A daemon thread so it lives exactly as long as the process that owns the
+    sweep — a short-lived dispatch CLI exits and takes it with it, a long-lived
+    follower keeps it for the life of the session. It wakes promptly while work
+    is outstanding and slows to a heartbeat when there is nothing to wait on.
+    """
+    while True:
+        _LAUNCHED_WORKERS_WAKE.clear()
+        with _LAUNCHED_WORKERS_LOCK:
+            outstanding = bool(_LAUNCHED_WORKERS)
+        _reap_launched_workers()
+        # A registration then wakes this loop immediately, so a worker that
+        # finishes seconds after launch is reaped seconds after registration
+        # rather than on the next idle heartbeat. The slow branch only runs
+        # when nothing is outstanding, and only decides how long to nap.
+        _LAUNCHED_WORKERS_WAKE.wait(0.1 if outstanding else 2.0)
+
+
+def _ensure_launched_worker_reaper() -> None:
+    """Start the process's reaper once, on the first worker it launches."""
+    with _LAUNCHED_WORKERS_LOCK:
+        if _LAUNCHED_WORKER_REAPER["thread"] is not None:
+            return
+        thread = threading.Thread(
+            target=_worker_reaper_loop,
+            name="reckon-worker-reaper",
+            daemon=True,
+        )
+        thread.start()
+        _LAUNCHED_WORKER_REAPER["thread"] = thread
+
+
 def _spawn(
     plan: _backends.LaunchPlan,
     *,
@@ -2395,6 +2473,11 @@ def _spawn(
     stream it produced. ``start_new_session`` detaches the worker from the
     caller's process group: a dispatching agent that ends its turn must not take
     its workers down with it.
+
+    Every launched pid is registered with the reaper, which owns the wait the
+    caller will never get around to making. The worker is still the caller's
+    child — it has to be, for the pid to mean anything — but it is a child the
+    caller does not owe a wait on.
     """
     with (
         open(prompt_path, "rb") as stdin,
@@ -2410,6 +2493,10 @@ def _spawn(
             stderr=stderr,
             start_new_session=True,
         )
+    with _LAUNCHED_WORKERS_LOCK:
+        _LAUNCHED_WORKERS.add(process.pid)
+    _LAUNCHED_WORKERS_WAKE.set()
+    _ensure_launched_worker_reaper()
     return process.pid
 
 
