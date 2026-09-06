@@ -226,6 +226,13 @@ class _Reading:
     record_id: str = ""
     attribution: str = ""
     surface_opt_in: bool = False
+    covered_backends: tuple[str, ...] = ()
+
+    def applies_to(self, backend_name: str) -> bool:
+        """Return whether this reading explicitly describes ``backend_name``."""
+        if self.backend == backend_name:
+            return True
+        return backend_name in self.covered_backends
 
 
 class _RecordedReadings(dict[str, _Reading]):
@@ -239,6 +246,29 @@ class _RecordedReadings(dict[str, _Reading]):
     ) -> None:
         super().__init__(best)
         self.unattributed = tuple(unattributed)
+
+    def for_backend(self, backend_name: str) -> _Reading | None:
+        """Resolve one backend to its own reading or one declared coverage."""
+        direct = self.get(backend_name)
+        if direct is not None and direct.backend == backend_name:
+            return direct
+        covering: list[_Reading] = []
+        seen: set[int] = set()
+        for reading in self.values():
+            identity = id(reading)
+            if identity in seen or not reading.applies_to(backend_name):
+                continue
+            seen.add(identity)
+            covering.append(reading)
+        return covering[0] if len(covering) == 1 else None
+
+
+def _declared_coverage(budget_block: Mapping[str, Any]) -> tuple[str, ...]:
+    """Read an explicit multi-backend coverage declaration from a budget block."""
+    declared = budget_block.get("covered_backends")
+    if not isinstance(declared, Iterable) or isinstance(declared, (str, bytes)):
+        return ()
+    return tuple(dict.fromkeys(str(name) for name in declared if str(name)))
 
 
 def _stream_evidence_backend(
@@ -426,6 +456,7 @@ def _readings(
                 record_id=str(pointer.get("run_id") or ""),
                 attribution="record",
                 surface_opt_in=_surface_opt_in(backend_name, config),
+                covered_backends=_declared_coverage(budget),
             )
         )
     try:
@@ -462,6 +493,7 @@ def _readings(
                 record_id=str(record.get("run_id") or ""),
                 attribution=attribution,
                 surface_opt_in=_surface_opt_in(backend, config),
+                covered_backends=_declared_coverage(budget),
             )
         )
     return found
@@ -531,13 +563,16 @@ def state_for(
     """
     moment = _now(now)
     state = BudgetState(backend=backend_name)
-    if recorded is not None:
+    applicable_recorded = (
+        recorded if recorded is not None and recorded.applies_to(backend_name) else None
+    )
+    if applicable_recorded is not None:
         state = _from_block(
             backend_name,
-            recorded.budget,
-            observed_at=recorded.observed_at,
-            source=recorded.source,
-            age_source=recorded.age_source,
+            applicable_recorded.budget,
+            observed_at=applicable_recorded.observed_at,
+            source=applicable_recorded.source,
+            age_source=applicable_recorded.age_source,
             now=moment,
         )
     elif unmatched := sorted(unattributed, key=lambda item: item.when):
@@ -553,7 +588,7 @@ def state_for(
             f"attributed to a backend{identity}"
         )
     if (backend or {}).get("budget_check") or (
-        recorded is not None and recorded.surface_opt_in
+        applicable_recorded is not None and applicable_recorded.surface_opt_in
     ):
         block = _backends.probe_budget(
             backend_name=backend_name,
@@ -1019,7 +1054,7 @@ def preflight(
         state = state_for(
             name,
             settings if isinstance(settings, Mapping) else {},
-            recorded=recorded.get(name),
+            recorded=recorded.for_backend(name),
             unattributed=recorded.unattributed,
             now=moment,
             probe_runner=probe_runner,
