@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T17:00:35",
+  "updated": "2026-09-06T17:09:16",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -66000,6 +66000,153 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260906T123353111134-a-removed-flag-does-not-kill-a-live-follower",
+        "plan": "crew-observability-truth",
+        "section": "\u00a74",
+        "node": "a-removed-flag-does-not-kill-a-live-follower",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2115,
+                "cached_input_tokens": 736625,
+                "input_tokens": 738742,
+                "output_tokens": 2909,
+                "reasoning_output_tokens": 1182,
+                "total_tokens": 741651,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_removed_flag_migration.py -q passes, and crew follow invoked with --attention starts and delivers instead of exiting 2. MEASURED CONSEQUENCE OF A CHANGE THAT LANDED AN HOUR AGO. Removing the follower attention filter removed the --attention option from crew follow. A long-lived follower reconnects by re-invoking the command with the argv it was armed with, so every follower armed before the removal dies at its next reconnect with \"Error: No such option --attention. Did you mean --session?\" and exit 2. A peer session lost a follower to this within the hour. The operator sees a failed monitor rather than a removed flag, which is the least useful thing the surface could tell them. THIS IS NOT A REINSTATEMENT AND MUST NOT BECOME ONE. Accept --attention as a DEPRECATED NO-OP: the flag parses, changes nothing about what is delivered, and writes one clear line to stderr saying it no longer filters and that the follower now delivers every transition. Every row must still be delivered \u2014 a follower that passes the flag sees exactly what a follower that omits it sees. Do NOT restore the filtering parameter, the routing it fed, or any private seam that could narrow delivery again; the point of the removal was that a filter carrying blocked but not working shows the alarm and hides the all-clear. FALSIFIERS: a follower passing --attention delivers the same rows as one that does not, asserted by comparing both against the same transitions rather than by asserting the flag is accepted; the deprecation line goes to stderr and never into the delivered stream, so a machine reader parsing rows is unaffected; and no other command gains the flag. State the removal horizon in the deprecation text so the shim has an end rather than becoming permanent. Measure base and head over tests/test_removed_flag_migration.py plus every test importing reckon.cli; report failure ids either side and require none added.",
+          "estimated_hours": 0.75,
+          "goal": "Let a follower armed with the removed attention flag reconnect and keep delivering, telling its operator the flag is gone instead of exiting",
+          "id": "a-removed-flag-does-not-kill-a-live-follower",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T123353111134-a-removed-flag-does-not-kill-a-live-follower/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/cli.py",
+            "tests/test_removed_flag_migration.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-flag-migration",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T12:34:02Z",
+        "completed_at": "2026-09-06T15:08:03.756Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 9221,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 9241,
+        "stalled": true,
+        "time_budget": "40m",
+        "base_sha": "367fd7ed334cc14965b1e6b3190d25804730725e",
+        "commits": [
+          "bd0cc4e3378628f557097931d77e8b9cc99cc43d"
+        ],
+        "changed_lines": {
+          "added": 429,
+          "removed": 1,
+          "files": 2
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_removed_flag_migration.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T123353111134-a-removed-flag-does-not-kill-a-live-follower/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T123353111134-a-removed-flag-does-not-kill-a-live-follower/manifest.md",
+        "scope_changed": false,
+        "session_id": "742d1647-84ca-4f73-866d-68be0cf060b4",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 18012188,
+            "input_tokens_cumulative": 18012188,
+            "output_tokens": 85495,
+            "output_tokens_cumulative": 85495,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 9238.113,
+          "generated_tokens": 85495,
+          "generation_seconds": 7427.518,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 19.9,
+          "machine_seconds": 1810.595,
+          "peak_input_tokens": 202330,
+          "tokens_per_second": 11.51,
+          "wall_tokens_per_second": 9.25
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-removed-flag-does-not-kill-a-live-follower",
+          "session_id": "742d1647-84ca-4f73-866d-68be0cf060b4",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T15:08:03.756Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_removed_flag_migration.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -66228,6 +66375,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1079
+    "_version": 1080
   }
 }
