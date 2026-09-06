@@ -266,6 +266,45 @@ def _stream_refusal_block(record: Mapping[str, Any]) -> dict[str, Any] | None:
 # two dead-lane readings never overlap.
 _RATE_LIMIT_RETRY_RE = re.compile(r"after (\d+) rate-limit retries")
 
+# An exhausted unmetered lane folds no refusal at all: the observer writes
+# refusal false with lane_backpressure true and a detail naming the retry count
+# ("run died after N consumer-queue retries ...; the lane refused"), because a
+# lane without a budget has nothing to refuse from. The marker is what a run
+# that retried and recovered never carries, so it discriminates terminal
+# exhaustion from routine retries.
+_BACKPRESSURE_RETRY_RE = re.compile(r"run died after (\d+) consumer-queue retries")
+
+
+def _stream_exhaustion_block(
+    record: Mapping[str, Any], budget: Mapping[str, Any]
+) -> dict[str, Any] | None:
+    """Terminal retry exhaustion on an unmetered lane, as a refusal block.
+
+    A spent unmetered consumer ends its retries in an error result, and the
+    budget observer surfaces that terminal shape as ``lane_backpressure`` true
+    with the retry count in the detail — not as a budget refusal, because the
+    lane's budget is not what was spent. The marker is absent on a run that
+    retried and recovered, so no block is reached for a live or successful run;
+    only classify_pointer's dead-process hand joins the marker into a blocked
+    reading, so the row names the lane and offers resume. ``budget`` is the
+    block :func:`_stream_budget` already resolved, so the stream is parsed once
+    regardless of which gates consult it.
+    """
+    if budget.get("refusal"):
+        return None
+    if not budget.get("lane_backpressure"):
+        return None
+    detail = str(budget.get("detail") or "")
+    match = _BACKPRESSURE_RETRY_RE.search(detail)
+    if match is None:
+        return None
+    return {
+        "backend": str(record.get("backend") or "unknown"),
+        "limit_kind": "rate-limit",
+        "resets_at": None,
+        "retries": int(match.group(1)),
+    }
+
 
 def _stream_retry_block(
     record: Mapping[str, Any], budget: Mapping[str, Any]
@@ -729,6 +768,15 @@ def classify_pointer(
         if budget is not None and not budget.get("refusal")
         else None
     )
+    # Terminal retry exhaustion on an unmetered lane: the budget block carries
+    # lane_backpressure and a retry count where the metered exhaustion carries
+    # a refusal, so the two dead-lane readings stay on their own gates and a
+    # live or recovered run never reaches a block through either.
+    exhaustion_block = (
+        _stream_exhaustion_block(record, budget)
+        if budget is not None and not budget.get("refusal")
+        else None
+    )
     # A rejected rate-limit window is a hold time lifts, not a refusal a person
     # resolves: the event names the window and its reset, so the run pauses
     # until the window turns over rather than blocking for a coordinator.
@@ -904,6 +952,29 @@ def classify_pointer(
             )
         detail = f"blocked: {block}; {delivery}"
         action = f"reckon crew resume --run {run_id} once the limit lifts"
+    elif alive is False and exhaustion_block:
+        # A dead run whose unmetered lane ended its retries in refusal is the
+        # same stop as a metered budget refusal: the lane owns it, so the row
+        # names the lane and offers resume rather than reading as abandonment.
+        # The terminal-error shape sets it apart from the mid-flight retry arm
+        # below, which names the retry count of a run still in flight when it
+        # died — the exhausted run's own lane already refused, so the reading
+        # keeps the refusal phrasing instead.
+        classification = "blocked"
+        block = (
+            f"backend {exhaustion_block['backend']!r} refused the turn on a "
+            f"{exhaustion_block['limit_kind']} (consumer queue backpressure) "
+            f"after {exhaustion_block['retries']} retries"
+        )
+        if not manifest_file_present:
+            delivery = "no manifest was delivered and nothing has landed yet"
+        else:
+            delivery = (
+                "the in-progress manifest at "
+                f"{manifest} records what was already delivered"
+            )
+        detail = f"blocked: {block}; {delivery}"
+        action = f"reckon crew resume --run {run_id} once the lane recovers"
     elif alive is False and retry_block:
         # A dead process whose stream ended mid-retry is a lane kill, not a
         # vanished worker: the budget block names the retry count, the process
@@ -1055,7 +1126,7 @@ def classify_pointer(
     if classification == "blocked":
         session_resolution = _blocked_session_resolution(record, run_id)
     if session_resolution is not None and (
-        refusal_block is not None or retry_block is not None
+        refusal_block is not None or retry_block is not None or exhaustion_block is not None
     ):
         resume_remedy = _resume_remedy(session_resolution, run_id)
         if resume_remedy is None:
