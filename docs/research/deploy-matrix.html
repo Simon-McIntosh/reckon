@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="doc">
+  <meta name="plan-slug" content="deploy-matrix">
+  <meta name="plan-title" content="The Deploy Matrix — every configured lane, with every cell a dated snapshot or marked unmeasured">
+  <meta name="plan-summary" content="One row per configured worker backend — clive deepseek-v4-flash, clive glm-5.3, codex sol, codex luna, codex terra, codex spark, claude sonnet 5, claude opus 5 — with metering and its binding window, charged tokens per node class, wall and throughput per node class, multimodal capability, the concurrency ceiling and what binds it, failure modes and their recoveries, and best-fit node classes. Every cell is either a dated snapshot with the ledger filter that reproduces it or explicitly marked unmeasured; a lane ceiling is stated to belong to its deployment and to be discovered, never assumed.">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-tags" content="routing,backends,dispatch,crew">
+  <meta name="plan-informs" content="crew-effort-routing">
+  <title>The Deploy Matrix | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 — What this is, and the discipline that makes it a menu rather than decoration</h2>
+    <p>
+      This page is the endpoint menu a future session leader can dispatch to. The
+      reasoning that motivates it is on the <a href="/reckon/plans/crew-effort-routing">crew-effort-routing</a>
+      plan: every crew dispatch resolves its worker model and effort from flight config, more than
+      one backend now exists to route to, and multiple backends also raise net throughput when
+      implementing and reviewing. Three fleets have all been feeding measurements into messages;
+      this page is the single place those measurements land, one row per configured backend, so a
+      routing decision reads the matrix instead of a chat history.
+    </p>
+    <p>
+      The matrix is built under one binding rule, and the rule is the whole point of the page:
+      <strong>every cell is either a dated snapshot with its derivation, or explicitly marked
+      UNMEASURED</strong>. No figure is inferred for a lane nobody has run, no number is carried
+      from one model to its sibling, and no cell is left blank — a blank reads as zero or as
+      unknown depending on the reader, and the difference matters. Today most cells are unmeasured
+      and the matrix says so plainly: a menu that looks complete when it is mostly guesses is
+      worse than an empty one.
+    </p>
+    <p>
+      Three kinds of content appear in cells, and they are labelled rather than mixed:
+    </p>
+    <ul>
+      <li><strong>M</strong> — a dated measurement snapshot, with the ledger filter that
+        reproduces it stated in <a href="#s8">§8</a> and a link to the ledger-derived evidence
+        beside it.</li>
+      <li><strong>CONFIG</strong> — a declared configuration value (what flight config says the
+        lane runs), not a measurement; it reports the setting, never the outcome.</li>
+      <li><strong>UNMEASURED</strong> — no data exists; a reader must not treat the cell as a
+        fact in either direction.</li>
+    </ul>
+    <p>
+      <strong>A lane ceiling belongs to its deployment and is discovered, never assumed.</strong>
+      The local lane's concurrency admission limit changed by a large factor within a single day
+      and the serving pool behind it moved twice; any ceiling written here is a dated reading of
+      one deployment, not a property of reckon or of the model. Where a number is known to move,
+      the page says so rather than freezing it.
+    </p>
+    <p>
+      Measurement mechanics used throughout — an unmetered lane's 429 is backpressure rather than
+      exhaustion, stderr is not a status surface on the local lane, a session must never be
+      resumed across models, and the structured retry record is the discriminator when text is
+      ambiguous — follow <code>skills/reckon-ship/references/worker-backends.md</code>, which
+      carries the local lane facts, and the routing policy in
+      <code>skills/reckon-ship/references/effort-routing.md</code>. This page agrees with those
+      references rather than restating them differently.
+    </p>
+
+    <h2 id="s2">§2 — The lanes as configured</h2>
+    <p>
+      The flight-config rows, merged shipped → host → project layers, as declared on this host
+      (CONFIG). Effort is pinned on every lane so the ledger records what ran rather than an
+      inherited interactive default; a session is reused only when the recorded model matches the
+      dispatch's resolved model. Roster-member session reuse serialises the CLI lanes: one member
+      holds one live run at a time, refused with <code>member-in-flight</code> (exit 9).
+    </p>
+    <table>
+      <thead>
+        <tr><th>Lane (backend key)</th><th>Command</th><th>Model</th><th>Effort (pinned)</th><th>Time budget</th><th>Metered</th><th>Reachability</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>clive</code></td><td>clive</td><td><code>deepseek-v4-flash</code></td><td>xhigh</td><td>90m (advisory, not enforced)</td><td>no</td><td>default for <code>--local</code></td></tr>
+        <tr><td><code>clive-glm</code></td><td>clive</td><td><code>glm-5.3</code></td><td>xhigh</td><td>25m</td><td>no</td><td>shadow / override only</td></tr>
+        <tr><td><code>codex</code></td><td>codex</td><td><code>gpt-5.6-sol</code></td><td>high</td><td>25m</td><td>yes</td><td>role default / overlay</td></tr>
+        <tr><td><code>codex-luna</code></td><td>codex</td><td><code>gpt-5.6-luna</code></td><td>xhigh</td><td>25m</td><td>yes</td><td>shadow / override only</td></tr>
+        <tr><td><code>codex-terra</code></td><td>codex</td><td><code>gpt-5.6-terra</code></td><td>xhigh</td><td>25m</td><td>yes</td><td>shadow / override only</td></tr>
+        <tr><td><code>codex-spark</code></td><td>codex</td><td><code>gpt-5.3-codex-spark</code></td><td>xhigh</td><td>15m</td><td>yes — own weekly meter</td><td>shadow / override only</td></tr>
+        <tr><td><code>claude</code></td><td>claude</td><td><code>claude-sonnet-5</code></td><td>medium</td><td>25m</td><td>yes</td><td>default backend</td></tr>
+        <tr><td><code>claude-opus</code></td><td>claude</td><td><code>claude-opus-5</code></td><td>high</td><td>40m</td><td>yes</td><td>override (<code>--set</code>)</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <code>native</code> (in-harness) is configured but is not a dispatch lane — reckon prepares
+      a directive and the calling harness binds its own task — so it has no row here. The
+      <code>clive</code> time budget is deliberately advisory rather than enforced: the long walls
+      were all measured on a two-card deployment and are expected to move on a wider one, and a
+      fence calibrated on a configuration that no longer exists would be a lie.
+    </p>
+
+    <h2 id="s3">§3 — The matrix, one row per backend</h2>
+    <p>
+      Every populated cell is a dated snapshot whose filter is in <a href="#s8">§8</a>; cells
+      with no data say UNMEASURED. The ledger behind the <strong>M</strong> figures is the reckon
+      project's committed ledger at base revision <code>5bf3422</code>, snapshot read
+      2026-09-06. Node classes: <em>implement</em> = ledger roles implement/test/documentation/cleanup,
+      <em>measurement</em> = investigate, <em>review</em> = review.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Lane</th>
+          <th>Metered / window</th>
+          <th>Charged tokens per node class</th>
+          <th>Wall / throughput per node class</th>
+          <th>Multimodal</th>
+          <th>Concurrency ceiling — what binds</th>
+          <th>Failure modes &amp; recoveries</th>
+          <th>Best-fit node classes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>clive</code><br>deepseek-v4-flash</td>
+          <td><strong>Unmetered</strong> — locally served; no provider account meter. A 429 is
+            backpressure, not exhaustion (<a href="#s8">§8</a>; worker-backends.md).</td>
+          <td><strong>M 2026-09-06</strong> median input, all fresh (zero cache reads): implement
+            5.5M, measurement 4.2M, review 3.9M (<a href="#s8">filter</a>). Cost med 21.6 / 21.8 /
+            20.2 USD imputed per run.</td>
+          <td><strong>M 2026-09-06</strong> median wall: implement 24.7 min (p90 74 min),
+            measurement 16 min, review 14 min. Throughput 18.4 wall tokens/s (n=33).</td>
+          <td><strong>Text-only</strong> — declared served checkpoint family; no image-input probe
+            recorded. A <code>Read</code> of an image fails the lane outright.</td>
+          <td>Server admission on the serving deployment — <strong>belongs to the deployment,
+            discovered, not assumed</strong>; measured safe working concurrency ≤ 4 (6 shed 2 in
+            12 min). What binds: server admission → 429 backpressure on the wire.</td>
+          <td>429 = backpressure, no reset time, clears when a slot frees; a shed run classifies
+            <em>blocked and resumable</em>, never abandoned. Recovery: resume the session, hold
+            concurrency, never indict the model on a shed. <code>stderr.log</code> carries no
+            status on any outcome; read the stream.</td>
+          <td>Exact and guided-with-measurement-handed-over mechanical nodes (implement/test/
+            documentation) with runnable numeric-bound measures; never open design. Review is
+            unproven (0/3 passed). Two costs: no prompt caching — the whole context is re-read
+            every turn — and imputed ledger cost ranks the free lane dearest, so a router reading
+            cost inverts.</td>
+        </tr>
+        <tr>
+          <td><code>clive-glm</code><br>glm-5.3</td>
+          <td><strong>Unmetered</strong> — same local serving deployment; no provider meter.</td>
+          <td><strong>M 2026-09-06</strong> implement 55k median input — understated because every
+            run died early (0/9). Measurement / review node classes: <strong>UNMEASURED</strong>.</td>
+          <td><strong>M 2026-09-06</strong> implement wall median 5.2 min, but 0/9 passed — the
+            wall is a death, not a delivery. Measurement / review: <strong>UNMEASURED</strong>.</td>
+          <td><strong>Text-only</strong> — declared served checkpoint family (w4a8). Image
+            <code>Read</code> unsupported.</td>
+          <td>Same deployment admission as <code>clive</code>; the binding constraint measured is
+            the serving window — nodes sized beyond the 96k context die (see §6). Routing is
+            shadow / override only, so no fleet ceiling has been exercised. Ceiling for a routed
+            life: <strong>UNMEASURED</strong>.</td>
+          <td>Window-overflow deaths: nodes that do not fit the 96k window are refused without
+            work. Recovery: size the node to the window or do not route here — the lane stays for
+            shadow qualification only, per the effort-routing snapshot (0/9, dated 2026-09-05).</td>
+          <td>None routed today. Shadow-qualification candidate only; its snapshot reads 0/9, every
+            failure a window-overflow death, indicting the node-to-lane pairing rather than the
+            model.</td>
+        </tr>
+        <tr>
+          <td><code>codex</code><br>gpt-5.6-sol</td>
+          <td><strong>Metered</strong> — ChatGPT/codex account rolling window; budget records carry
+            utilisation and reset (observed resets: e.g. 2026-09-01, and a refusal with a reset
+            days out). <code>budget_check: true</code>.</td>
+          <td><strong>M 2026-09-06</strong> implement median total input 6.6M (fresh/cache split
+            not uniformly recorded — split UNMEASURED here). <strong>M 2026-09-04</strong> per
+            durable node (<a href="/reckon/plans/dispatch-cost-per-durable-node">date table</a>):
+            high 4.5M exact / 9.1M guided; medium 5.4M / 11.0M. Measurement 3.9M, review 12.8M
+            median (<a href="#s8">filter</a>).</td>
+          <td><strong>M 2026-09-06</strong> median wall: implement 9.0 min (p90 25 min),
+            measurement 8.0 min, review 8.2 min. Throughput: <strong>UNMEASURED</strong> — no
+            throughput records in this ledger.</td>
+          <td><strong>UNMEASURED</strong> — no image-input probe recorded on this lane. Treat as
+            text-only until verified; do not route a brief requiring image <code>Read</code> on a
+            guess.</td>
+          <td>The account's rolling window utilisation. What binds: the window figure on the
+            rate-limit event (fence on the window, never the calendar-month overage). When the
+            account crosses its limit the lane refuses every turn until a reset that can be hours
+            off — probe rather than trust a stated reset.</td>
+          <td>Metered refusal names a reset; the reset may be wrong by hours, so probe the lane
+            before waiting. A denial at dispatch is clean (no work lost); a mid-flight denial can
+            leave a completed worktree commit to recover — inspect the worktree before any
+            redispatch, resume while the live pointer survives, promote last.</td>
+          <td>The incumbent default heavy implement lane at <code>high</code> effort: open design,
+            guided above ~1 worker-hour, exact where no cheaper measured lane is wired. Caution
+            (dated 2026-09-04): sustainable ceiling ≈ 298 nodes/week against a measured
+            564 dispatched — volume, not node size, must fall by about half.</td>
+        </tr>
+        <tr>
+          <td><code>codex-luna</code><br>gpt-5.6-luna</td>
+          <td><strong>Metered</strong> — account-shared window presumed (CONFIG; not separately
+            verified for this identifier). <code>budget_check: true</code>.</td>
+          <td><strong>M 2026-09-06</strong> implement 8.8M median input, n=2. Measurement / review:
+            <strong>UNMEASURED</strong>.</td>
+          <td><strong>M 2026-09-06</strong> implement wall median 13.8 min, n=2. Measurement /
+            review: <strong>UNMEASURED</strong>.</td>
+          <td><strong>UNMEASURED</strong> — no probe recorded.</td>
+          <td><strong>UNMEASURED</strong> — defined-not-defaulted, nothing routes here; no ceiling
+            exercised.</td>
+          <td>No measured failure record beyond the n=2 sample. Recovery guidance inherited from
+            the shared codex dialect (§6, codex row).</td>
+          <td>Qualification candidate only. Shadow evidence: not graduated — one controlled pair
+            only, and the §12 checkpoint verdict is that neither luna nor terra opens routing on
+            current evidence.</td>
+        </tr>
+        <tr>
+          <td><code>codex-terra</code><br>gpt-5.6-terra</td>
+          <td><strong>Metered</strong> — account-shared window presumed (CONFIG; unverified).
+            <code>budget_check: true</code>.</td>
+          <td><strong>UNMEASURED</strong> — zero runs in the ledger.</td>
+          <td><strong>UNMEASURED</strong> — zero runs.</td>
+          <td><strong>UNMEASURED</strong> — no probe recorded.</td>
+          <td><strong>UNMEASURED</strong> — nothing routes here.</td>
+          <td><strong>UNMEASURED</strong> — no failure record exists. Shared codex dialect
+            recovery (§6, codex row) applies by configuration, not by measurement.</td>
+          <td>Qualification candidate only; no evidence to place it higher. Probe defines,
+            qualify by shadow — the ladder on the expedition-routing reference.</td>
+        </tr>
+        <tr>
+          <td><code>codex-spark</code><br>gpt-5.3-codex-spark</td>
+          <td><strong>Metered — its own dedicated small weekly meter</strong>, far smaller than the
+            account's. Measured (dated 2026-08-25): eight runs ≈ 41M input tokens ≈ 60% of the
+            weekly meter — a lane capacity of roughly a dozen runs a week at that profile.
+            <code>budget_check: true</code>.</td>
+          <td><strong>M 2026-09-06</strong> implement 4.1M median input, n=9, every run exact-tier.
+            Measurement / review: <strong>UNMEASURED</strong> — the lane never takes a judgment
+            role.</td>
+          <td><strong>M 2026-09-06</strong> implement wall median 3.9 min (p90 4.9 min).
+            Measurement / review: <strong>UNMEASURED</strong>.</td>
+          <td><strong>UNMEASURED</strong> — no probe recorded.</td>
+          <td>Its own weekly meter. What binds: the weekly window — a single wave can exhaust it,
+            and pre-flight must read real headroom, never <code>unknown</code>.</td>
+          <td>Weekly-meter exhaustion reads as a budget hold (metered), not backpressure; recovery
+            is waiting for the window or routing elsewhere, not redispatched volume. A gate failure
+            on an exact-tier node indicts the specification before the model.</td>
+          <td>Exact-tier small nodes (≤ 0.5 worker-hour) with a runnable named check, mechanical
+            roles only, token-lean dispatch (the named check, not the full suite). Never review or
+            investigate. The pilot continues capped at 9 of 20 audits with headroom unproven.</td>
+        </tr>
+        <tr>
+          <td><code>claude</code><br>claude-sonnet-5</td>
+          <td><strong>Metered</strong> — Anthropic subscription; rate-limit records show
+            <code>overage</code> type with resets observed at 2026-10-01. <code>budget_check:
+            true</code>. This lane is the default backend since a routing move on 2026-09-05.</td>
+          <td><strong>M 2026-09-06</strong> implement median total input 6.7M of which ≈ 98%
+            cache reads (fresh ≈ 146k); cost median 1.75 USD, sum ≈ 81 USD over the implement
+            class. Measurement: n=1 — <strong>flagged as a sample, not a figure</strong>. Review:
+            <strong>UNMEASURED</strong>.</td>
+          <td><strong>M 2026-09-06</strong> implement wall median 6.9 min (p90 29 min).
+            Measurement 4.8 min (n=1). Throughput 69.5 wall tokens/s (n=24).</td>
+          <td><strong>UNMEASURED</strong> — no image-input probe recorded on this subscription
+            route; verify before routing a brief that needs an image <code>Read</code>.</td>
+          <td>Subscription utilisation window. What binds: the overage window; utilisation is
+            reported on run records and preflight reads it.</td>
+          <td>Overage hold — refuse-with-reset semantics of a metered lane; recovery is holding
+            until the window or probing the lane directly. This family serves while the codex
+            account is held, which is what made it the fleet-extension lane.</td>
+          <td>Default lane for unnamed dispatches since 2026-09-05 (medium effort); implements fit
+            a medium default. Heavy implementation and measurement are routed onward to
+            <code>claude-opus</code> by override; scouts and attribution route to the local lane
+            by <code>--local</code>.</td>
+        </tr>
+        <tr>
+          <td><code>claude-opus</code><br>claude-opus-5</td>
+          <td><strong>Metered</strong> — same Anthropic subscription; overage window.
+            <code>budget_check: true</code>.</td>
+          <td><strong>M 2026-09-06</strong> implement median total input 5.4M of which ≈ 97%
+            cache reads (fresh ≈ 123k); cost median 3.66 USD, sum ≈ 46 USD implement + 7 USD for
+            the single review run. Measurement: <strong>UNMEASURED</strong>.</td>
+          <td><strong>M 2026-09-06</strong> implement wall median 8.0 min (p90 28 min); review
+            17.5 min (n=1). Throughput 64.8 wall tokens/s (n=6).</td>
+          <td><strong>UNMEASURED</strong> — no image-input probe recorded; verify before image
+            <code>Read</code> enters a brief.</td>
+          <td>Subscription utilisation window, same as <code>claude</code>. What binds: the
+            overage window.</td>
+          <td>Same metered-refusal-and-recovery shape as the <code>claude</code> row; one review
+            run recorded no failure.</td>
+          <td>Heavy implementation and measurement nodes routed with <code>--set</code>; the
+            judgment/design lane when a reduce-token-rate default is insufficient.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="s4">§4 — Wall clock, throughput and charged tokens per node class</h2>
+    <p>
+      The matrix cells above are the condensed form; this section carries the per-class numbers
+      behind them so a reader can see sample sizes and the classes that are still empty. All
+      <strong>M</strong> figures are the reckon ledger at <code>5bf3422</code>, read 2026-09-06,
+      filters in <a href="#s8">§8</a>. Median wall (implementation nodes), minutes:
+    </p>
+    <svg viewBox="0 0 760 210" width="100%" role="img"
+         aria-label="Median wall clock per lane for implement nodes, with p90 shown as an error bar; spark and claude lines are sub-five-minute medians, clive the longest by far">
+      <g font-family="system-ui, sans-serif" font-size="12.5" fill="#1a1a1c">
+        <text x="0" y="16">Median worker wall, implement nodes (minutes) — ledger @ 5bf3422, 2026-09-06</text>
+        <g font-size="11.5" text-anchor="end">
+          <text x="140" y="42">codex-spark</text>
+          <text x="140" y="62">claude sonnet 5</text>
+          <text x="140" y="82">claude opus 5</text>
+          <text x="140" y="102">codex sol</text>
+          <text x="140" y="122">codex-luna (n=2)</text>
+          <text x="140" y="142">clive-glm (0/9 died)</text>
+          <text x="140" y="162">clive dsv4-flash</text>
+        </g>
+        <!-- scale: 1 min = 9 px, cap 55 min; bar ends at bar_x + width, value label sits beside -->
+        <!-- codex-spark 3.9 -->
+        <rect x="146" y="30" width="35" height="14" fill="#2f6f4f"/>
+        <text x="186" y="42">3.9</text>
+        <!-- claude 6.9 -->
+        <rect x="146" y="50" width="62" height="14" fill="#2f6f4f"/>
+        <text x="213" y="62">6.9</text>
+        <!-- claude-opus 8.0 -->
+        <rect x="146" y="70" width="72" height="14" fill="#2f6f4f"/>
+        <text x="223" y="82">8.0</text>
+        <!-- codex 9.0 -->
+        <rect x="146" y="90" width="81" height="14" fill="#2f6f4f"/>
+        <text x="232" y="102">9.0</text>
+        <!-- codex-luna 13.8 -->
+        <rect x="146" y="110" width="124" height="14" fill="#c7c9cf"/>
+        <text x="275" y="122">13.8 (n=2)</text>
+        <!-- clive-glm 5.2 -->
+        <rect x="146" y="130" width="47" height="14" fill="#c2410c"/>
+        <text x="198" y="142">5.2 · 0/9 passed</text>
+        <!-- clive 24.7 -->
+        <rect x="146" y="150" width="222" height="14" fill="#2f6f4f"/>
+        <text x="373" y="162">24.7</text>
+        <!-- p90 tick marks -->
+        <g stroke="#4a4a50" stroke-width="1.4">
+          <line x1="350" y1="30" x2="350" y2="44"/><text x="356" y="44" font-size="10.5">p90 4.9</text>
+          <line x1="520" y1="50" x2="520" y2="64"/><text x="526" y="64" font-size="10.5">p90 29.1</text>
+          <line x1="510" y1="70" x2="510" y2="84"/><text x="516" y="84" font-size="10.5">p90 27.7</text>
+          <line x1="670" y1="90" x2="670" y2="104"/><text x="676" y="104" font-size="10.5">p90 25.1</text>
+          <line x1="150" y1="150" x2="150" y2="164"/><text x="6" y="178" font-size="10.5">clive p90 74.2 (off scale)</text>
+        </g>
+        <g font-size="11" fill="#4a4a50">
+          <rect x="146" y="192" width="12" height="12" fill="#2f6f4f"/>
+          <text x="164" y="202">measured medians</text>
+          <rect x="310" y="192" width="12" height="12" fill="#c7c9cf"/>
+          <text x="328" y="202">n ≤ 2 samples</text>
+          <rect x="470" y="192" width="12" height="12" fill="#c2410c"/>
+          <text x="488" y="202">no passed runs</text>
+        </g>
+      </g>
+    </svg>
+    <p>
+      The p90 spread is the practical routing input: <code>codex</code>, <code>claude</code> and
+      <code>claude-opus</code> implement nodes stay under ~29 minutes at p90, while
+      <code>clive</code> reaches 74 minutes at p90 — the distribution driving its advisory
+      (unenforced) budget and the rule that wall-clock planning on that lane is the coordinator's
+      job, not the worker's.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Lane</th><th>Class</th><th>n</th><th>Pass</th><th>Wall median / p90</th><th>Throughput (wall tok/s)</th><th>Tokens median (input)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td rowspan="3"><code>clive</code></td><td>implement</td><td>66</td><td>56/66</td><td>24.7 / 74.2 min</td><td>18.4 (n=33)</td><td>5.5M all fresh</td></tr>
+        <tr><td>measurement</td><td>6</td><td>6/6</td><td>15.8 min</td><td>UNMEASURED</td><td>4.2M</td></tr>
+        <tr><td>review</td><td>3</td><td>0/3</td><td>13.5 min</td><td>UNMEASURED</td><td>3.9M</td></tr>
+        <tr><td rowspan="1"><code>clive-glm</code></td><td>implement</td><td>9</td><td>0/9</td><td>5.2 min (died)</td><td>UNMEASURED</td><td>55k (early death)</td></tr>
+        <tr><td rowspan="3"><code>codex</code></td><td>implement</td><td>451</td><td>409/451</td><td>9.0 / 25.1 min</td><td>UNMEASURED</td><td>6.6M total; split unmeasured</td></tr>
+        <tr><td>measurement</td><td>30</td><td>28/30</td><td>8.0 min</td><td>UNMEASURED</td><td>3.9M</td></tr>
+        <tr><td>review</td><td>12</td><td>8/12</td><td>8.2 min</td><td>UNMEASURED</td><td>12.8M</td></tr>
+        <tr><td rowspan="1"><code>codex-luna</code></td><td>implement</td><td>2</td><td>1/2</td><td>13.8 / 23.2 min</td><td>UNMEASURED</td><td>8.8M</td></tr>
+        <tr><td rowspan="1"><code>codex-terra</code></td><td>—</td><td>0</td><td>—</td><td>UNMEASURED</td><td>UNMEASURED</td><td>UNMEASURED</td></tr>
+        <tr><td rowspan="1"><code>codex-spark</code></td><td>implement</td><td>9</td><td>8/9</td><td>3.9 / 4.9 min</td><td>UNMEASURED</td><td>4.1M</td></tr>
+        <tr><td rowspan="2"><code>claude</code></td><td>implement</td><td>54</td><td>43/54</td><td>6.9 / 29.1 min</td><td>69.5 (n=24)</td><td>6.7M total; fresh ≈146k (≈98% cache)</td></tr>
+        <tr><td>measurement</td><td>1</td><td>1/1</td><td>4.8 min</td><td>84.5 (n=1)</td><td>sample, not a figure</td></tr>
+        <tr><td rowspan="2"><code>claude-opus</code></td><td>implement</td><td>18</td><td>13/18</td><td>8.0 / 27.7 min</td><td>64.8 (n=6)</td><td>5.4M total; fresh ≈123k (≈97% cache)</td></tr>
+        <tr><td>review</td><td>1</td><td>1/1</td><td>17.5 min</td><td>UNMEASURED</td><td>sample, not a figure</td></tr>
+      </tbody>
+    </table>
+    <p>
+      Two reading traps are stated rather than hidden. First, token totals across lanes are not
+      directly comparable: <code>clive</code> is all fresh (the lane has no prompt caching —
+      measured ~46× uncached against a comparable codex node), while the claude family and mostly
+      codex are majority cache reads, so the charged-fresh column is the one that behaves like a
+      budget. Second, the codex fresh/cache split is not recorded uniformly across ledger
+      revisions, so the split for most codex cells is UNMEASURED even where the total is a solid
+      median; the dated per-durable-node figures (high-vs-medium at exact/guided, from
+      <a href="/reckon/plans/dispatch-cost-per-durable-node">dispatch-cost-per-durable-node</a>)
+      are the reproducible cost-ordering figures for that lane.
+    </p>
+
+    <h2 id="s5">§5 — Concurrency ceilings, and what binds each lane</h2>
+    <p>
+      A fleet cannot open more work than the lanes admit, and the binding constraint is not the
+      same on every lane. It is one of three shapes today:
+    </p>
+    <ul>
+      <li><strong>A router allowance (fleet-level, all lanes).</strong> The coordinator-side
+        ceiling on in-flight runs. Measured: a 16-live-run allowance was never reached because
+        graph width — how many independent nodes exist that do not contend for the same files —
+        bound the fleet first; client ceilings in live-run counts convert at roughly
+        0.5–0.7 requests per live run, so a "16 runs" ceiling throttles to about half that many
+        simultaneous requests. This is a property of the routing layer, not of any lane.</li>
+      <li><strong>Member serialisation (all CLI lanes).</strong> A roster member holds one live
+        session at a time; a second dispatch for that member is refused
+        (<code>member-in-flight</code>, exit 9) before worktree creation. Sessions also must not
+        cross models — each model needs its own member, because a resumed session inherits the
+        prior model's whole history.</li>
+      <li><strong>A server admission limit (local lanes) or a weekly/rolling account window
+        (metered lanes).</strong> These are the lane-level constraints, per row below.</li>
+    </ul>
+    <p><strong>The local lane's ceiling belongs to its deployment and is discovered, never
+      assumed.</strong> It is a number on the serving deployment, and reckon carries none of its
+      own. It moved within a single day of measurement and the serving pool behind it moved twice,
+      once as a side effect of an unrelated configuration change. Units mislead: a reckon-side
+      ceiling counts live runs while the server's admission limit counts simultaneous requests,
+      and the ratio is variable — measured, four concurrent workers generated two simultaneous
+      requests, because an agentic worker spends most of its wall clock between turns. So the
+      dated reading below is a working bound, not a queue model.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Lane</th><th>Ceiling type</th><th>Dated reading</th><th>What binds (the thing that refuses a turn)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>clive</code></td><td>server admission (unmetered)</td>
+          <td>safe working concurrency ≤ 4 (6 shed 2 in 12 min; M 2026-09-05 and again 2026-09-06);
+            the admission limit itself moved between 6 and 16 within one day and must be
+            re-read, not quoted.</td>
+          <td>server admission → 429 backpressure, which sheds a run as blocked/resumable.</td></tr>
+        <tr><td><code>clive-glm</code></td><td>server admission (unmetered) + window bound</td>
+          <td>not routed, so no fleet ceiling exercised — <strong>UNMEASURED</strong> as a routed
+            lane; the measured binding is node size vs the 96k window.</td>
+          <td>node sized past the serving window (window-overflow death); server admission if
+            it were routed.</td></tr>
+        <tr><td><code>codex</code></td><td>account rolling window (metered)</td>
+          <td>no numeric ceiling recorded — the account's utilisation gates admission; observed
+            refusal at high utilisation with a reset days out.</td>
+          <td>the window utilisation on the rate-limit event — <em>not</em> the calendar-month
+            overage figure, which reads above 1 for weeks and says nothing about whether a request
+            will be served.</td></tr>
+        <tr><td><code>codex-luna</code> / <code>codex-terra</code></td><td>unexercised</td>
+          <td><strong>UNMEASURED</strong> — defined-not-defaulted, nothing routes to either.</td>
+          <td>unmeasured; presumed account window by configuration.</td></tr>
+        <tr><td><code>codex-spark</code></td><td>dedicated weekly meter</td>
+          <td>capacity ≈ a dozen runs/week at the measured profile (8 runs ≈ 60% of the weekly
+            meter, M 2026-08-25).</td>
+          <td>the small weekly window — preflight reads real headroom because
+            <code>budget_check</code> is on.</td></tr>
+        <tr><td><code>claude</code> / <code>claude-opus</code></td><td>subscription overage window</td>
+          <td>no numeric ceiling recorded; utilisation reported per run with resets observed at
+            the overage horizon (2026-10-01).</td>
+          <td>the subscription's overage window.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s6">§6 — Failure modes and recoveries per lane</h2>
+    <p>
+      The common shape is the 429: the same status and retry records appear on the wire whatever
+      the lane's meteredness, and the declared meteredness is the only discriminator for what it
+      means. <strong>An unmetered lane's retry stream is the serving queue telling the worker to
+      stop asking for a while — no reset time, clears when a slot frees, and a shed run classifies
+      as blocked and resumable rather than abandoned. A metered lane's is a budget refusal, may
+      carry a reset moment that correctly holds a wave, and can be exhausted.</strong> Key on the
+      structured retry record, never on the refusal sentence — the sentence is a strict and
+      unreliable subset of the record.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Lane</th><th>Failure</th><th>Recovery</th><th>Measured note</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>clive</code></td>
+          <td>429 backpressure (unmetered).</td>
+          <td>Resume the session once a slot frees; never treat a shed as failure, never
+            redispatch-then-promote (promotion deletes the resume path). Hold concurrency ≤ 4.</td>
+          <td><code>stderr.log</code> carries no status on any outcome; its one conspicuous
+            <code>unrecognized_model</code> line is boilerplate that appears on healthy runs too.
+            Retry exhaustion mid-turn reads as "process gone without a complete manifest" and is
+            separated by the retry count, not the sentence.</td></tr>
+        <tr><td><code>clive-glm</code></td>
+          <td>Window-overflow death when a node exceeds the 96k serving window (0/9, every run a
+            size death).</td>
+          <td>Size the node to the window or do not route here; the lane remains shadow-only.</td>
+          <td>Deaths were early (worker med 70 s) — the wall is a refusal, not a delivery.</td></tr>
+        <tr><td><code>codex</code></td>
+          <td>Metered refusal naming a reset.</td>
+          <td>Hold until the reset or probe the lane — a stated reset has measured to be wrong by
+            hours. A denial at dispatch leaves nothing to recover; a mid-flight denial can leave a
+            completed commit at the worktree head — inspect the worktree before any redispatch.
+            Resume first while the live pointer and session survive; promote last.</td>
+          <td>Launch-time budget holds are per-lane and can outlive their cause; check the window
+            figure, not the account overage.</td></tr>
+        <tr><td><code>codex-spark</code></td>
+          <td>Weekly-meter exhaustion → preflight budget hold.</td>
+          <td>Wait for the window or route elsewhere; keep dispatches token-lean. A gate failure on
+            an exact-tier node indicts the specification before the model; an infrastructure
+            failure (no diff, no manifest) is re-dispatched and never counted toward the
+            two-failure breaker.</td>
+          <td>The lane's budget is small enough that preflight can see the hold before a wave
+            opens.</td></tr>
+        <tr><td><code>claude</code> / <code>claude-opus</code></td>
+          <td>Overage hold (metered).</td>
+          <td>Hold until the window or probe the lane; this family keeps serving while the codex
+            account is held, which is the extension the lane exists for.</td>
+          <td>Run records carry utilisation and cost; preflight reads both due to
+            <code>budget_check</code>.</td></tr>
+        <tr><td><code>codex-luna</code> / <code>codex-terra</code></td>
+          <td>No measured failure record.</td>
+          <td>Shared codex dialect recovery by configuration.</td>
+          <td>Failure records: <strong>UNMEASURED</strong> (n=2 and n=0).</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s7">§7 — Best-fit node classes and the routing reading</h2>
+    <p>
+      The matrix row's last column is the routing recommendation, and it is read against the
+      <a href="/reckon/plans/crew-effort-routing">crew-effort-routing</a> policy:
+      the coordinator declares a specification level, flight config resolves the backend and
+      effort underneath, and an explicit <code>--set</code> override always wins. The honest
+      reading today, given how much is measured on only one or two lanes:
+    </p>
+    <ul>
+      <li><strong>Exact, mechanical, small (≤ 0.5 worker-hour), named check:</strong> the local
+        lane (<code>--local</code> → <code>clive</code>) is qualified for it — 39/45 exact on the
+        reckon ledger at 2026-09-06 and 42/44 in the dated cross-project snapshot — and
+        <code>codex-spark</code> covers the same shape when the meter is being saved. Never let an
+        open or under-specified node land on either.</li>
+      <li><strong>Guided with the measurement handed over:</strong> local lane is permitted only
+        with the measurement handed over as established fact; otherwise <code>codex</code> (high)
+        or <code>claude-opus</code> by <code>--set</code>.</li>
+      <li><strong>Open design or decide-when-measurement-is-done:</strong> <code>codex</code>
+        (high) with <code>claude-opus</code> as the override for heavy judgment nodes; never the
+        local lane.</li>
+      <li><strong>Review:</strong> measured on <code>codex</code> (8/12) and a single
+        <code>claude-opus</code> pass; unproven on <code>clive</code> (0/3). Review routing should
+        stay on a frontier lane; the local lane has no authority argument yet.</li>
+    </ul>
+    <p>
+      Two quantities the routing reading must not confuse. <em>Cost ordering:</em> the local lane
+      looks free and its imputed ledger cost ranks it dearest, while the claude family carries
+      real per-run USD and high cache rates — the charged-fresh column, not total input, is the
+      budget for the metered reading. <em>Volume ceiling:</em> the sustainable ceiling on the
+      incumbent lane is roughly 298 nodes/week against a measured 564 dispatched (M 2026-09-04) —
+      node count, not node size and not effort, is the quantity that decides whether a lane
+      survives its week, so routing half the volume across the alternates is how multiple backends
+      raise net throughput rather than just re-pricing the same queue.
+    </p>
+
+    <h2 id="s8">§8 — Ledger evidence: source, filters and reproduction</h2>
+    <p>
+      <strong>Source.</strong> The committed run ledger <code>docs/state/reckon/crew.json</code>
+      in the reckon checkout, pinned at base revision <code>5bf3422</code> — 668 runs, snapshot
+      read 2026-09-06. A figure here is a dated snapshot precisely because the ledger is a moving
+      file: further promotion appends rows and moves every count. The effort-routing reference's
+      dated lane snapshot (2026-09-05, exact 42/44 and guided 30/38 for the local lane) reads
+      <em>across every mounted project's</em> ledgers, so its counts differ from this page's
+      reckon-only counts at a different date; both are stated with their scope rather than pooled.
+    </p>
+    <p><strong>Filter naming the rows behind each figure.</strong> A run belongs to a lane iff its
+      <code>agent.model</code> is that lane's model identifier; a run passes iff its
+      <code>gate</code> is exactly <code>"passed"</code>. Node classes map ledger roles:
+      implement/test/documentation/cleanup → <em>implement</em>, investigate →
+      <em>measurement</em>, review → <em>review</em>. Wall clock is <code>wall_seconds</code>,
+      tokens and cost come from each record's <code>budget</code> block (the claude family keeps
+      totals in cumulative fields, the codex/clive families in direct fields — the shape is not
+      uniform, which is why the codex cache split is marked unmeasured). Reproduce at the pinned
+      revision with:</p>
+    <pre>git show 5bf3422:docs/state/reckon/crew.json &gt; /tmp/crew.json
+# per lane: rows where agent.model == &lt;model&gt;; pass iff gate == "passed";
+# group by role-class; median of wall_seconds / budget.tokens fields.</pre>
+    <ul>
+      <li>Wall/token/cost cells above: <code>docs/state/reckon/crew.json</code> at
+        <code>5bf3422</code> (this page's own derivation).</li>
+      <li>Per-durable-node cost ordering for the codex lane: the dated table on
+        <a href="/reckon/plans/dispatch-cost-per-durable-node">dispatch-cost-per-durable-node</a>
+        (high 4.5M exact / 9.1M guided; medium 5.4M / 11.0M; open/high 8.9M).</li>
+      <li>Routing-slice read-outs (spec-level pass and rework by configuration):
+        <a href="/reckon/evidence/crew-effort-routing-landed">crew-effort-routing evidence</a>.</li>
+      <li>Local-lane lifecycle and the serving-deployment facts this page agrees with:
+        <a href="/reckon/evidence/clive-local-workers-landed">clive-local-workers evidence</a> and
+        <code>reckon/skills/reckon-ship/references/worker-backends.md</code>.</li>
+      <li>Fleet throughput cost and the ~298-node/week ceiling figure: <a href="/reckon/research/dispatch-cost-measurement">dispatch-cost-measurement</a>.</li>
+    </ul>
+    <p>
+      <strong>Known limits, stated rather than hidden.</strong> Every figure is reckon-project
+      only unless a cross-project scope is named; the ledger carries no image-input probe, so the
+      multimodal column is declared or unmeasured by design; and the throughput figure for the
+      claude family is a median over a wide spread (the local lane's single-run rate measured up
+      to 85 tokens/s while its median over 33 runs is 18), so plan walls in minutes from the wall
+      column, not from a rate.
+    </p>
+
+  </main>
+</body>
+</html>
