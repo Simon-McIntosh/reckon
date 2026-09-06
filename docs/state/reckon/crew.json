@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T12:09:03",
+  "updated": "2026-09-06T13:03:12",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -416,6 +416,15 @@
       },
       {
         "id": "crew-paused",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-06"
+      },
+      {
+        "id": "crew-resume-evidence",
         "harness": "clive",
         "role": "implement",
         "session_id": null,
@@ -64285,6 +64294,153 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T081645320307-waiting-is-paused-not-blocked",
+        "plan": "crew-observability-truth",
+        "section": "\u00a78",
+        "node": "waiting-is-paused-not-blocked",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1771,
+                "cached_input_tokens": 519357,
+                "input_tokens": 521130,
+                "output_tokens": 1827,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 522957,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_paused_is_not_blocked.py -q passes, and a run waiting on something that will lift itself no longer reports blocked. THE REQUEST IS THE REPOSITORY OWNERS: blocked is alarming when an agent is merely waiting on other work and needs nothing from outside, and a separate verb, paused, should carry that. Two coordinators who watched fleets all night converged independently on the SAME discriminator, and it is the rule to encode: who lifts it. If time or the run own job lifts it, it is paused; if a person or another session must act, it is blocked. Add paused to the classification vocabulary beside the existing states. PAUSED, from their measured cases: a live run waiting on a compute-node job it submitted; a dead process whose in-progress manifest names a still-running external job and whose worktree holds commits, which is parked and resumable when that job ends; a live run in a rate-limit backpressure retry loop, which is throttled rather than stopped; a run waiting on a peer-channel question with a bounded wait; and a refusal on a budget hold that is ageing out, since time lifts it and no person does. BLOCKED, unchanged: a manifest status blocked carrying a NEEDS-HELP question, a usage-limit refusal with a reset time on a metered lane where a coordinator must reroute or wait deliberately, and a missing prerequisite. ONE CONDITION IS BINDING AND CAME FROM THE COORDINATOR WHO ARGUED HARDEST FOR KEEPING BLOCKED: paused must carry a WAKE CONDITION or an expiry, and the closure fence must count a paused pointer as unreconciled. Without that it becomes the bucket runs are forgotten in, which is a worse failure than the alarming verb, because a blocked row gets looked at and a paused one does not. Assert both: every paused verdict names what will lift it, and drain counts a paused pointer as unreconciled. ALSO CORRECT A NEIGHBOURING VERDICT while you are here, measured the same night: stalled fired on a run whose stream was quiet because it sat in a long foreground poll, sleeping in a loop. A quiet stream with an ALIVE process and a bounded wait as the last tool call is paused, not stalled. Do not weaken the stalled arm otherwise \u2014 a genuinely hung process must still stall. FALSIFIERS: a NEEDS-HELP manifest still reads blocked and still names its question; a metered usage-limit refusal with a reset still reads blocked, because a coordinator chooses whether to wait or reroute; and a genuinely hung live process with no bounded wait still stalls. Measure base and head over tests/test_paused_is_not_blocked.py plus every test importing reckon.crew.recovery; report failure ids either side and require none added.",
+          "estimated_hours": 1.25,
+          "goal": "Give a run that is waiting on time or on its own job a state of its own, so blocked keeps meaning a stop that needs a person",
+          "id": "waiting-is-paused-not-blocked",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T081645320307-waiting-is-paused-not-blocked/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_paused_is_not_blocked.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-paused",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T08:16:54Z",
+        "completed_at": "2026-09-06T11:01:20.606Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 9839,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 9866,
+        "stalled": true,
+        "time_budget": "50m",
+        "base_sha": "13185ffba268a8ddfbad234b1c147ebc7d1cb186",
+        "commits": [
+          "f3358a7dc080a05f5bfcde676ec09c03f038313c"
+        ],
+        "changed_lines": {
+          "added": 876,
+          "removed": 13,
+          "files": 2
+        },
+        "tests_added": 15,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_paused_is_not_blocked.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T081645320307-waiting-is-paused-not-blocked/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T081645320307-waiting-is-paused-not-blocked/manifest.md",
+        "scope_changed": false,
+        "session_id": "3c698a87-727d-4dff-94b8-34f03f9566cd",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 48189830,
+            "input_tokens_cumulative": 48189830,
+            "output_tokens": 164407,
+            "output_tokens_cumulative": 164407,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 9863.423,
+          "generated_tokens": 164407,
+          "generation_seconds": 8828.369,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 34.6,
+          "machine_seconds": 1035.054,
+          "peak_input_tokens": 351237,
+          "tokens_per_second": 18.62,
+          "wall_tokens_per_second": 16.67
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/waiting-is-paused-not-blocked",
+          "session_id": "3c698a87-727d-4dff-94b8-34f03f9566cd",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T11:01:20.606Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_paused_is_not_blocked.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -64513,6 +64669,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1055
+    "_version": 1057
   }
 }
