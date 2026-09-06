@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T19:19:53",
+  "updated": "2026-09-06T20:00:33",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -67344,6 +67344,154 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T172045090971-an-overdue-wait-is-marked-not-recounted",
+        "plan": "crew-observability-truth",
+        "section": "\u00a78",
+        "node": "an-overdue-wait-is-marked-not-recounted",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1731,
+                "cached_input_tokens": 318209,
+                "input_tokens": 319942,
+                "output_tokens": 679,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 320621,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_external_wait.py tests/test_crew_ticker_layout.py tests/test_fleet_counter_coverage.py -q passes with no failure added against the base revision, and an overdue wait is counted as waiting while still carrying its action marker. THE CORRECTION THIS MAKES. A held commit, reachable as tag held-overdue-wait-placement, reconciled the ticker action set with the fleet counter coverage and in doing so moved the wait-aged state out of the waiting counter and into the blocked counter. It was implemented exactly as its brief instructed and the brief was wrong. Measured: tests/test_external_wait.py::test_an_old_wait_surfaces_its_age_without_becoming_blocked fails on that commit with counts blocked 1 waiting 0 where it asserts blocked 0 waiting 1. THE SEMANTICS TO HOLD, which the existing test already encodes and which the display work exists to serve. A run whose declared external wait has aged past its stall threshold is STILL WAITING on something outside itself. It has not failed, it is not stalled on anything a reader can clear by inspecting it, and reporting it in the blocked count produces the alarming signal that this display work was undertaken to remove. What is true of it is that its condition has not lifted when expected, and that fact belongs in the ACTION MARKER a reader sees on the row, not in the blocked tally. So the two facts are carried by two different mechanisms and must not be collapsed into one: the COUNT says what kind of thing this run is, and the MARKER says whether a reader should look at it. WHAT TO DO. Take the held commit as the starting point rather than reimplementing it: git show held-overdue-wait-placement gives its full diff, and the parts reconciling the action set with the counter coverage are wanted. Keep every part that places paused and waiting in the progress family. Change only the placement of wait-aged so it is counted with the waiting family, and keep or restore the action marker it renders on its row. Do not modify tests/test_external_wait.py; it states the contract this node exists to honour, and amending it would be the node marking its own homework. WHAT NOT TO CHANGE. Do not alter the lane-killed refusal classification landed in commit 342d00e. Do not change which states exist or their names. Do not change the paused and waiting placements. FALSIFIERS. tests/test_external_wait.py::test_an_old_wait_surfaces_its_age_without_becoming_blocked passes unmodified, asserting counts of blocked 0 and waiting 1 for an aged wait, and asserting both that the rendered line carries the action marker and that it names wait-aged. Every state the classifier can emit is placed in exactly one counter family, asserted by enumerating the states from the classifier rather than from a list written in the test, so a state added later is caught rather than silently uncounted. The action set and the counter coverage agree on every state, which is what the held commit set out to achieve and what must survive. A paused run and a waiting run are both counted in the waiting family and neither carries the action marker. Measure base and head over the three named files plus every test importing reckon.crew.recovery or reckon.crew.ticker; report failure ids either side and require none added. State the base revision you measured at.",
+          "estimated_hours": 1.0,
+          "goal": "Count an overdue wait with the waiting family and say it needs attention through its action marker, keeping the action set and counter coverage reconciled",
+          "id": "an-overdue-wait-is-marked-not-recounted",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T172045090971-an-overdue-wait-is-marked-not-recounted/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "reckon/crew/ticker.py",
+            "tests/test_crew_ticker_layout.py",
+            "tests/test_fleet_counter_coverage.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-surface-consistent",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T17:20:56Z",
+        "completed_at": "2026-09-06T17:58:10.449Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2205,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2234,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "239c54e1d3c7c149c308ea49152273b9d818563c",
+        "commits": [
+          "587b9e950da33f1cf478b864913b2615ae0fed4d"
+        ],
+        "changed_lines": {
+          "added": 102,
+          "removed": 41,
+          "files": 4
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_external_wait.py tests/test_crew_ticker_layout.py tests/test_fleet_counter_coverage.py tests/test_crew_recovery.py tests/test_lane_killed_run_is_blocked.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate46.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T172045090971-an-overdue-wait-is-marked-not-recounted/manifest.md",
+        "scope_changed": false,
+        "session_id": "34489e86-b735-4ecc-884f-f21414cf64a7",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 9507987,
+            "input_tokens_cumulative": 9507987,
+            "output_tokens": 74783,
+            "output_tokens_cumulative": 74783,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 2230.492,
+          "generated_tokens": 74783,
+          "generation_seconds": 1632.405,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 17.3,
+          "machine_seconds": 598.087,
+          "peak_input_tokens": 175457,
+          "tokens_per_second": 45.81,
+          "wall_tokens_per_second": 33.53
+        },
+        "follow_on_paths": [
+          "test_crew_dispatch_arming.py",
+          "producer/follower",
+          "tests/test_crew.py"
+        ],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_external_wait.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -67572,6 +67720,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1093
+    "_version": 1094
   }
 }

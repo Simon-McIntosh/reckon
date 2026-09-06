@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-06">
-<meta name="plan-version" content="161">
+<meta name="plan-version" content="162">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md">
 <meta name="plan-impl" content="0.9">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b">
@@ -847,6 +847,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260906T133059249033-the-classifier-and-its-readers-agree" data-who="crew-surface-consistent" data-when="2026-09-06T17:17:33.955Z">
     <div class="r-comment-body"><p>One of two commits landed. 342d00e makes a run killed by a lane that ran out of capacity read as a refusal rather than an abandonment, discriminating on the budget block the backend already writes; 78 passed at the merged head, and the ten lane-killed tests go from failing at base to green. THE SECOND COMMIT IS HELD AND THE BRIEF IS WHY. d9f5d8d moves an overdue wait from the waiting counter into the blocked counter, which the worker implemented exactly as the brief instructed. That instruction was wrong: it re-creates the alarming blocked signal the display work exists to remove, and an overdue wait is still waiting on external work. The existing design already had it right, counting the run as waiting while rendering an action marker, and an existing test asserts precisely that. Held as tag held-overdue-wait-placement pending a corrective node; the worker disclosed the added failure and attributed it to the correct commit.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20260906T172045090971-an-overdue-wait-is-marked-not-recounted" data-who="crew-surface-consistent" data-when="2026-09-06T17:58:10.449Z">
+    <div class="r-comment-body"><p>Corrects a coordinator brief error rather than a worker error. An overdue wait is counted with the waiting family and says it needs attention through its action marker, so two facts stay on two mechanisms: the counter says what kind of thing the run is, the marker says whether a reader should look. Measured at the merged head: WAITING_STATES is paused, wait-aged, waiting; NEEDS_ACTION carries wait-aged and carries neither paused nor waiting, so an agent waiting on other work raises no alarm. The unmodified contract test asserting blocked 0 and waiting 1 for an aged wait passes, and the node did not touch that file. 130 passed, both base failures in the fenced files fixed, none added across the importer set. Recovers the action-set and counter-coverage reconciliation from held commit d9f5d8d and changes only the placement.</p></div>
 </div>
 </section>
 </main>
