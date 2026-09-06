@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T15:25:21",
+  "updated": "2026-09-06T15:29:48",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -65533,6 +65533,153 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T121144656548-a-blocked-row-names-what-must-clear-first",
+        "plan": "crew-observability-truth",
+        "section": "\u00a76",
+        "node": "a-blocked-row-names-what-must-clear-first",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2713,
+                "cached_input_tokens": 711089,
+                "input_tokens": 713804,
+                "output_tokens": 1643,
+                "reasoning_output_tokens": 107,
+                "total_tokens": 715447,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_blocked_names_both_reasons.py -q passes, and a run carrying BOTH a blocked manifest reason and a provider refusal reports both, with the refusal named as the condition that must clear first. MEASURED ON A LIVE FLEET, NOT CONSTRUCTED. A peer ran a deliberate spend-down; four codex runs died within fourteen seconds of each other when the account window reached 100 percent, each stream carrying a turn.failed record saying the usage limit was hit and naming a date to try again. Classifying those pointers with current code reports, for three of them, only what their manifest last said \u2014 for example \"the worker manifest reports blocked: foreground H200 job ...\" \u2014 and never mentions the usage limit. THE ORDERING IS THE CAUSE: in classify_pointer the manifest-status arms sit around lines 792 and 802 while \"elif refusal_block:\" is around line 856, so a manifest reason always outranks a provider refusal when both are present. WHAT IT COSTS AN OPERATOR, which is the observable consequence: the two facts answer different questions and only one of them gates recovery. The manifest says what the worker was doing; the refusal says when anything can be done at all, and it carries a reset time. A coordinator reading the row learns the first, attempts a resume, and is refused on budget \u2014 discovering the second by attempting it. On this fleet the reset was five days out, so that attempt fails for five days. THE FIX IS NOT TO REORDER BUT TO REPORT BOTH. A run blocked on a NEEDS-HELP question with a spent lane still needs its question answered; the operator simply cannot act until the lane clears. So keep the classification and keep the manifest reason, and add the refusal to the detail with its reset when a refusal is present, phrased so the reader can tell which must clear first. Do not drop the manifest reason and do not let the refusal replace it. FALSIFIERS: a run with a manifest reason and NO refusal reads exactly as it does today, unchanged; a run with a refusal and no manifest reason reads exactly as it does today; a run with neither is unchanged; and the next action offered must remain correct for the combined state rather than proposing a resume the budget gate will refuse \u2014 if it still proposes resume, the detail must say the resume waits on the reset. Measure base and head over tests/test_blocked_names_both_reasons.py plus every test importing reckon.crew.recovery; report failure ids either side and require none added.",
+          "estimated_hours": 1.0,
+          "goal": "Make a blocked row name the lane refusal that gates its recovery, not only the reason its worker last wrote",
+          "id": "a-blocked-row-names-what-must-clear-first",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T121144656548-a-blocked-row-names-what-must-clear-first/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_blocked_names_both_reasons.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-both-reasons",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T12:11:55Z",
+        "completed_at": "2026-09-06T13:27:42.051Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4511,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4547,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "30014ce7093f9477fc659f5a821a2201beefe5d4",
+        "commits": [
+          "c9f57ccf0e99f11018c54267bad4d424ab4215d8"
+        ],
+        "changed_lines": {
+          "added": 255,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_blocked_names_both_reasons.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T121144656548-a-blocked-row-names-what-must-clear-first/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T121144656548-a-blocked-row-names-what-must-clear-first/manifest.md",
+        "scope_changed": false,
+        "session_id": "e98adee7-b64d-43c5-acec-cd7c1cbd6079",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 9516447,
+            "input_tokens_cumulative": 9516447,
+            "output_tokens": 59668,
+            "output_tokens_cumulative": 59668,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 4543.48,
+          "generated_tokens": 59668,
+          "generation_seconds": 3818.308,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 16.1,
+          "machine_seconds": 725.172,
+          "peak_input_tokens": 163396,
+          "tokens_per_second": 15.63,
+          "wall_tokens_per_second": 13.13
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-blocked-row-names-what-must-clear-first",
+          "session_id": "e98adee7-b64d-43c5-acec-cd7c1cbd6079",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T13:27:42.051Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_blocked_names_both_reasons.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -65761,6 +65908,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1072
+    "_version": 1073
   }
 }
