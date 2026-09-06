@@ -194,24 +194,19 @@ def _refusal_block(
     }
 
 
-def _stream_refusal_block(record: Mapping[str, Any]) -> dict[str, Any] | None:
-    """The provider refusal a cli run's stream records, folded in or read fresh.
+def _stream_budget(record: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    """The budget block a cli run's stream records, folded in or read fresh.
 
-    A spend or usage refusal is a block, not an abandonment: the account is not
-    broken, only spent until a moment the refusal names. observe() folds the
-    stream's refusal into the pointer's budget, while the ticker reads raw
-    pointers that have not been through observe. Both paths resolve through the
-    same backend translation, so they reach the same verdict and a ticker
-    reading a raw pointer cannot disagree with observe's phase.
-
-    Declining is the load-bearing half. A stream that reports an ordinary
-    failed turn — a bad model id, a lost stream, a context overflow — carries
-    none of the recognised limit phrases and returns None, so a crash is never
-    mistaken for a block.
+    Shared by the refusal and retry-shape gates so the stream is parsed once
+    even when both are consulted for the same run. observe() folds the stream's
+    budget into the pointer, while the ticker reads raw pointers that have not
+    been through observe; both paths resolve through the same backend
+    translation, so they reach the same block and a ticker reading a raw
+    pointer cannot disagree with observe's phase.
     """
     budget = record.get("budget")
     if isinstance(budget, Mapping) and budget.get("refusal"):
-        return _refusal_block(record, budget)
+        return budget
     if record.get("launch") != "cli":
         return None
     log = Path(str(record.get("log_path") or ""))
@@ -230,13 +225,69 @@ def _stream_refusal_block(record: Mapping[str, Any]) -> dict[str, Any] | None:
             log_path=log,
         )
     except (_backends.BackendError, CrewError, OSError, ValueError):
-        # An unreadable or untranslatable stream is a reading problem, not a
-        # block; the manifest and liveness paths still classify the run.
+        # An unreadable or untranslatable stream carries no readable budget;
+        # the manifest and liveness paths still classify the run.
         return None
     observed = observation.as_dict().get("budget") or {}
-    if observed.get("refusal"):
-        return _refusal_block(record, observed)
+    return observed or None
+
+
+def _stream_refusal_block(record: Mapping[str, Any]) -> dict[str, Any] | None:
+    """The provider refusal a cli run's stream records, folded in or read fresh.
+
+    A spend or usage refusal is a block, not an abandonment: the account is not
+    broken, only spent until a moment the refusal names. The block comes from
+    the same budget the retry-shape gate reads, so the two dead-lane readings
+    agree on one stream rather than each owning a separate translation.
+
+    Declining is the load-bearing half. A stream that reports an ordinary
+    failed turn — a bad model id, a lost stream, a context overflow — carries
+    none of the recognised limit phrases and returns None, so a crash is never
+    mistaken for a block.
+    """
+    budget = _stream_budget(record)
+    if budget is not None and budget.get("refusal"):
+        return _refusal_block(record, budget)
     return None
+
+
+# A spent local lane's mid-flight shape, folded from the budget block the
+# stream observer wrote: rate-limit retries counted with no terminal result, so
+# the number is a magnitude and liveness is the verdict. The exhaustion shape
+# (retries ended in a terminal error result) reads as a refusal instead, so the
+# two dead-lane readings never overlap.
+_RATE_LIMIT_RETRY_RE = re.compile(r"after (\d+) rate-limit retries")
+
+
+def _stream_retry_block(
+    record: Mapping[str, Any], budget: Mapping[str, Any]
+) -> dict[str, Any] | None:
+    """The mid-flight rate-limit retry shape budget carries, else None.
+
+    The local lane reports a spent consumer as rate-limit ``api_retry`` records,
+    and the budget observer surfaces the count in the block's detail with no
+    terminal result ("no terminal result yet"). From the stream alone that
+    shape is indistinguishable from a live worker mid-retry-burst, so no verdict
+    is reached here: the block names the lane and the count, and only
+    classify_pointer's dead-process hand joins it into a blocked reading. An
+    alive worker mid-retry-burst (measured completing with seven retries) reads
+    running, not blocked. ``budget`` is the block :func:`_stream_budget` already
+    resolved, so the stream is parsed once regardless of which gates consult it.
+    """
+    if budget.get("refusal"):
+        return None
+    detail = str(budget.get("detail") or "")
+    if "no terminal result yet" not in detail:
+        return None
+    match = _RATE_LIMIT_RETRY_RE.search(detail)
+    if match is None:
+        return None
+    return {
+        "backend": str(record.get("backend") or "unknown"),
+        "limit_kind": str(budget.get("rate_limit_type") or "rate-limit"),
+        "retries": int(match.group(1)),
+        "resets_at": str(budget.get("resets_at") or "unknown"),
+    }
 
 
 def _blocked_session_resolution(
@@ -531,12 +582,27 @@ def classify_pointer(
     # is gone but the stop is triageable (a named backend, limit and reset) and
     # resumable once the limit lifts. Detected from the same stream observe
     # reads, so the two paths agree.
-    refusal_block = _stream_refusal_block(record)
-    # A background wait is checked alongside the refusal, at the same
-    # priority, and only consulted when no refusal already explains the stop:
-    # both name a process that is gone but resumable, and a refusal is the
-    # more specific of the two when both happen to be present.
-    background_wait = None if refusal_block else _background_wait_signal(record)
+    budget = _stream_budget(record)
+    refusal_block = (
+        _refusal_block(record, budget)
+        if budget is not None and budget.get("refusal")
+        else None
+    )
+    # A spent lane writes retries, not a refusal event; its mid-flight shape is
+    # read alongside the refusal and only when no refusal already explains the
+    # stop, so the two dead-lane readings never compete for the same run. The
+    # budget is resolved once above, so both gates share a single stream read. A
+    # background wait is checked only when neither already explains the stop:
+    # all three name a process that is gone but resumable, and the lane reason
+    # is the most triageable of the three when more than one is present.
+    retry_block = (
+        _stream_retry_block(record, budget)
+        if budget is not None and not budget.get("refusal")
+        else None
+    )
+    background_wait = (
+        None if (refusal_block or retry_block) else _background_wait_signal(record)
+    )
     terminal = phase in ("complete", "failed")
     moment = _utc_seconds() if now_seconds is None else float(now_seconds)
     wait = _manifest_wait(
@@ -647,6 +713,31 @@ def classify_pointer(
             )
         detail = f"blocked: {block}; {delivery}"
         action = f"reckon crew resume --run {run_id} once the limit lifts"
+    elif alive is False and retry_block:
+        # A dead process whose stream ended mid-retry is a lane kill, not a
+        # vanished worker: the budget block names the retry count, the process
+        # table says the worker is gone, and the lane that refused is the most
+        # triageable stop a fleet can suffer. Liveness is the verdict, never the
+        # count alone — a live worker mid-retry-burst is exactly the
+        # two-runs-that-succeeded case and reads running, not blocked — and
+        # phase is not consulted, because a finished or killed run can still
+        # carry a starting phase in its pointer. The next action offers resume
+        # rather than discard because the lane, not the worker, owns the stop.
+        classification = "blocked"
+        block = (
+            f"backend {retry_block['backend']!r} rate-limited the run "
+            f"{retry_block['retries']} times and its process died mid-retry "
+            f"({retry_block['limit_kind']})"
+        )
+        if not manifest_file_present:
+            delivery = "no manifest was delivered and nothing has landed yet"
+        else:
+            delivery = (
+                "the in-progress manifest at "
+                f"{manifest} records what was already delivered"
+            )
+        detail = f"blocked: {block}; {delivery}"
+        action = f"reckon crew resume --run {run_id} once the lane recovers"
     elif background_wait:
         # A vanished process is not the same fact as a crashed one: the run
         # directory itself says it was waiting on background work when it
@@ -731,7 +822,9 @@ def classify_pointer(
     resume_remedy = None
     if classification == "blocked":
         session_resolution = _blocked_session_resolution(record, run_id)
-    if session_resolution is not None and refusal_block is not None:
+    if session_resolution is not None and (
+        refusal_block is not None or retry_block is not None
+    ):
         resume_remedy = _resume_remedy(session_resolution, run_id)
         if resume_remedy is None:
             absent_evidence = str(
