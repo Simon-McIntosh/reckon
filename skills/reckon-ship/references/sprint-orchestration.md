@@ -634,3 +634,114 @@ five successive refusals, so the fix is often small and general (a
 false-positive validator, a wrong call signature, a too-narrow guard) and
 unblocks everything stacked above it. Abandoning a chain near its bottom
 discards the most specific diagnosis anyone has ever had of that problem.
+
+## 11. Prior-art reconnaissance
+
+Plans go stale, and agents are quick to rebuild what already exists. Between
+reading the plan and authoring any implementation node: audit plan currency
+### 1b. Currency audit and prior-art reconnaissance — MANDATORY
+
+Plans go stale, and agents are quick to rebuild what already exists. Between
+reading the plan and authoring any implementation node:
+
+**Audit plan currency against the code.** Check every asserted API, file,
+limitation, and technical property against the named tree before cutting nodes.
+A node authored from stale text executes its defects faithfully.
+
+**Dispatch a prior-art scout in the background.** One read-only
+investigate-role node, dispatched through `reckon crew dispatch` exactly like
+every other node — never a harness-native background agent (that bypasses the
+run ledger, manifest contract, and calibration) and never inline; register a
+fresh roster member if every existing one is busy. Launch it at pre-flight so
+it runs while the coordinator finishes reading state. Its single deliverable is
+a REUSE MAP: the modules, symbols, tests and data already in reach that solve
+the problem in whole or part, each with a one-line fitness verdict. It searches
+capability-shaped, not filename-shaped ("2-D interpolation", not "does
+fsa_kernel.py exist"), across this repository, every repository named by the
+plan's external `depends_on` / `blocks` refs, and every repository this repo's
+AGENTS.md declares as coupled — coupling runs both ways.
+
+**Nodes cite the reuse map.** Each implementation node names the machinery it
+extends or consumes. New machinery requires a fitness verdict explaining why
+each named reuse candidate fails; otherwise it creates a competing authority.
+
+## 12. Stop discipline — these are not valid reasons to stop
+
+### These are not valid reasons to stop
+
+Continue through ordinary complexity, validation, and recoverable integration:
+
+| Rationalization | Reality |
+|---|---|
+| "This is risky or touches core code" | Route to a capable worker; test and validate integration. |
+| "Better to confirm the approach" | The plan and locked decisions are the approval. |
+| "This is long or needs full validation" | Continue; validation is a worker node. |
+| "I'll offer options" | Follow the locked choice unless a genuinely new decision surfaced. |
+| "A worker stopped at its fence" | Answer `NEEDS-HELP:` and resume that session, or reshape and redispatch the node. |
+| "Infrastructure timed out" | Verify outage versus latency, then repoint with the corrected runtime brief. |
+| "Two attempts failed" | Reshape or split the node; repeated worker failure is not plan abandonment. |
+| "This next step is a *different kind* of work" | Not an exemption. §7c's list is closed; a new category is the stop wearing a costume. |
+| "Each fold surfaced another fold" | That is convergence, not creep. See §7d — fold depth carries no stopping authority. |
+| "The handoff is written, the next link is named" | A named next link you could dispatch is a defect, not a deliverable. See §9. |
+
+Plans do not override global safety or expand user authority. A locked decision
+settles implementation choices only inside the already-authorised scope.
+
+**Hiccup or blocker — the one test.** If existing authority can move the work
+forward by changing runtime, member, scope, node shape, advice, or experiment,
+repoint and continue. Stop only when progress needs new authority: an external
+prerequisite, user-owned decision, excess spend, or consent for an outward effect.
+
+## 13. Continuity — who receives the next piece of work
+
+A node's worker holds context no fresh worker can rebuild cheaply. Route by what
+the next piece of work *is*, not by whichever worker is convenient:
+
+| Next work | Goes to | How |
+|---|---|---|
+| A `NEEDS-HELP:` brief from a CLI-launched live run | that same run's session | `reckon crew resume --run <id> --advice "…"` |
+| A `NEEDS-HELP:` brief from an in-harness run | that attached harness task/session | answer it through the host harness; CLI resume cannot launch it |
+| A followup on work that just landed — review comment, gate evidence, a fix within the node's own scope | the **same worker**, via its roster member's long-lived session | `reckon crew dispatch … --member <id>` |
+| New scope, a different file set, or significant rework | a **fresh dispatch**, its own worktree and node | `reckon crew dispatch …` with a new node id |
+
+**This works only if the original dispatch named `--member`** — the session
+survives in the member's committed `crew.json` entry after the live pointer
+goes. **So dispatch every node as a roster member by default** (`reckon crew
+member list` / `member add`; a member without a session captures its first
+run's). Scope decides continuity: work inside the landed node's paths returns
+to its member; wider scope is a new node recording `--scope-changed`. **A
+member is a serial worker** — dispatch refuses one with a non-terminal
+in-flight run, so independent concurrent work uses distinct members.
+
+**Do NOT stop at routine checkpoints.** Keep going and update state as work
+lands. Valid early stops are:
+- A prerequisite plan is unshipped (hard stop — see §Prerequisite blocking)
+- A NEW decision surfaced that is not already locked in the plan, is material to the work, and cannot be deduced from the plan/code/sensible defaults (an already-locked decision is NOT a reason to stop — honour it and proceed). When stopping for one, present it — and any other open decision the lead could settle in the same breath — as a structured multiple-choice question with a marked recommendation and per-option reasoning, per `reckon-edit` SKILL.md (*Interactive walkthrough*). Never hand back a bare list of open decision keys.
+- The next section's scope would require writing files outside your allocated write scope
+- Applicable safety policy or user authority requires confirmation
+- A worker commit cannot be integrated safely without overwriting unrelated work
+
+## 14. Target resolution mechanics
+
+### 0. Resolve plan, sprint, or graph
+
+1. Derive the current project from the repository/mount context.
+2. Treat `graph:<handle>` as a graph target. Call
+   `roadmap(project="graph:<handle>", view="raw")`; never reproduce its
+   traversal or persist its returned `members`. Refuse an error response or any
+   returned `decision_blockers`. Read every returned member plan, report the
+   `schedule_override.deferred` count and member refs, then use the coordinator
+   workflow over the returned ready queue across its mounted repositories.
+3. Otherwise call `roadmap(project)` and match the argument against exact sprint ids.
+4. Treat an exact sprint match, `sprint:<id>`, or `<project>:<id>` as
+   a sprint target, and `plan:<slug>` as an explicitly selected plan target.
+5. For every remaining bare token matching
+   `[A-Za-z0-9][A-Za-z0-9._-]*`, try the canonical
+   `roadmap(project="graph:<token>", view="raw")` read. A unique live claim makes
+   it a graph target. A response that the handle names no live plan means the
+   token remains a single-plan target; duplicate claims and every other graph
+   error are refusals, never plan fallbacks. A token outside the handle grammar
+   is also a plan target; authoring it as `plan-graph-handle` is refused with
+   the grammar stated.
+6. If a sprint target, resolve the sprint and use the same coordinator workflow
+   over its complete graph. Do not continue with the plan-only preflight below.

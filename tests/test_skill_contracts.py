@@ -777,7 +777,6 @@ def test_edit_skill_uses_version_safe_prose_tool() -> None:
 # an orchestrator's to call. An exemption asserts absence as well as presence, so
 # documenting one of these forces the entry to be removed rather than left to rot.
 CREW_VERBS_OUTSIDE_ORCHESTRATION = {
-    ("crew", "ledger"): "committed records are read through crew(view=...)",
     ("crew", "repair-completion"): "ledger maintenance, not orchestration",
 }
 
@@ -827,6 +826,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
             "--tests-added",
             "--scope-changed",
         },
+        ("crew", "directory"): {"--project", "--run", "--node"},
         ("crew", "dispatch"): {
             "--project",
             "--plan",
@@ -850,13 +850,16 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
         ("crew", "drain"): {"--project", "--leave"},
         ("crew", "follow"): {"--project"},
         ("crew", "gc"): set(),
+        ("crew", "ledger"): {"--project", "--view"},
         ("crew", "list"): set(),
         ("crew", "member", "add"): set(),
         ("crew", "member", "list"): {"--project"},
         ("crew", "observe"): {"--run"},
         ("crew", "preflight"): {"--project", "--role"},
         ("crew", "recover"): set(),
+        ("crew", "redispatch"): {"--run", "--backend", "--reason"},
         ("crew", "resume"): {"--run", "--advice"},
+        ("crew", "resume-ready"): {"--project"},
         ("crew", "shadow"): set(),
         ("crew", "stop"): set(),
         ("crew", "unwatch"): {"--project"},
