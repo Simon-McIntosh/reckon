@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-06">
-<meta name="plan-version" content="67">
+<meta name="plan-version" content="69">
 <meta name="plan-impl" content="1.0">
 <meta name="plan-commits" content="dbb81e0,2a10c38,6767cd5,b625b88,e016572,f049be9,d079949,1aa4215,9fa38fe,f65ea4c,4656c7a,0d92346,cc4c686,134d770,72ef099,9f3e8dc,39d7a28,cc03efe,492d498,8476b70">
 <meta name="plan-artifacts" content="docs/figures/crew-effort-routing/spec-level-slices.png,~/.config/reckon/crew/reports/model-id-probe.md,~/.config/reckon/crew/reports/shadow-prior-art-scout.md,~/.config/reckon/crew/reports/second-checkpoint-slices.md,~/.config/reckon/flight.yaml,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
@@ -1075,6 +1075,12 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260906T162556606604-a-reading-speaks-only-for-its-own-lane" data-who="crew-burn-admission" data-when="2026-09-06T16:38:41Z">
     <div class="r-comment-body"><p>Resolution now takes a backend's own reading first and otherwise exactly one declared coverage, replacing inference from a shared name prefix; 8 tests, 95 passed at the merged head, no verdict changed. THE GOAL IS NOT ACHIEVED LIVE AND THE BRIEF IS WHY. All four codex lanes still report identical utilisation from the account surface, because each lane probes independently and the result is stamped with the name of the lane that asked, so every reading resolves as a direct reading and the coverage path is never reached. The false identity is minted upstream in the probe, not in the resolution this node fixed. Recorded as a brief defect rather than a worker defect: the node satisfied its done-when exactly.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260906T151416751544-the-row-carries-what-routing-needs" data-who="crew-routing-evidence" data-when="2026-09-06T16:53:04.402Z">
+    <div class="r-comment-body"><p>A promoted row now carries the paths its manifest declared under follow_ons, a continuation link to a predecessor run, and a count of corrections the worker stated against its brief - each read from evidence rather than inferred. This is what a later touch needs to be separable from a defect, which is the objection that retired rework as a routing measure. Verified at the merged head: 120 passed, base 0 and head 0 across twelve files. The three discriminators hold under direct probe - an empty declaration yields an empty list rather than a missing key, an unreadable report yields unknown rather than zero, and a clean report yields zero. No rate is computed; which measure consumes these facts is a separate decision.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260906T164344614217-the-ceiling-holds-whatever-burn-decides" data-who="crew-burn-admission" data-when="2026-09-06T16:53:41Z">
+    <div class="r-comment-body"><p>Closes a fail-open introduced earlier the same day and live on the primary branch for about an hour: an inadmissible burn multiple marked the whole reading&#x27;s headroom unknown, and an unknown headroom is never held, so a lane at 99.5 percent of its quota was admitted whenever it was read early in its window. The floors now govern only whether a projection is emitted, not whether utilisation is a known reading. Re-measured at the merged head across utilisations 8, 60, 94, 96 and 99.5 percent at elapsed fractions either side of the floor: held depends on utilisation against the ceiling alone and is identical at both fractions, and the projection is still withheld below the floors and emitted above them. 140 passed. The worker blocked correctly for a scope extension to tests/test_burn_admission.py, whose assertions encoded the coupling being removed; granted on the live pointer.</p></div>
 </div>
 </section>
 </main>
