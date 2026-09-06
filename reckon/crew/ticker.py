@@ -27,7 +27,6 @@ from datetime import UTC, datetime
 from typing import Any
 
 CLOCK = 8
-ROLE = 4
 NODE = 36
 # One glyph, not a name. The only decision-relevant thing about the owning
 # session is whether the row is the reader's to act on, and a run id spelled in
@@ -137,12 +136,17 @@ NEEDS_ACTION = frozenset(
 DISPLAY = {"completed_unpromoted": "unpromoted"}
 
 # The dispatch vocabulary, verbatim. Kept here rather than derived from a
-# config so that a role is known the moment it is dispatched; the display form
-# is derived from it mechanically (first four characters) so no table or
-# glossary has to stay in step with a new role.
+# config so that a role is known the moment it is dispatched; the word IS the
+# display form, so no table or glossary has to stay in step with a new role.
 DISPATCH_ROLES = frozenset(
     {"implement", "cleanup", "review", "investigate", "test", "documentation"}
 )
+
+# The role column is sized by the vocabulary above, not guessed: the word is
+# the display form, so a longer role widens its own column rather than being
+# cut to a prefix. The longest member today is documentation at thirteen
+# characters, which sets the column width.
+ROLE = max(len(word) for word in DISPATCH_ROLES)
 
 # What an undispatched or unconfigured role renders as. A marker rather than a
 # truncated word, because a cut-off word invites a reader to guess the rest
@@ -198,6 +202,12 @@ STATS = sum(2 + 1 for _ in _MAX_CELLS) + 3 * (len(_MAX_CELLS) - 1)
 
 # The widest the fixed columns can be, plus the stats block and one gap. A width
 # below this cannot be honoured without wrapping, so it is raised to this.
+# Everything before the reason consumes exactly this many columns with the role
+# word at its widest (documentation, thirteen): against the 180-column
+# DEFAULT_WIDTH budget that leaves 46 for the reason, and 73 on the 208-column
+# pane this workstation measures (208 minus the inset) — either leaves room for
+# the whole role vocabulary, so the 46 at the default is what a later added
+# column spends first.
 MIN_WIDTH = (
     CLOCK
     + GAP
@@ -354,19 +364,19 @@ def _display_state(state: Any) -> str:
 
 
 def _display_role(role: Any) -> str:
-    """The role's first four characters lowercased, or the marker.
+    """The role word spelled in full, or the marker.
 
-    Every role in the dispatch vocabulary derives its four-character form
-    mechanically — no display table to stay in step with, so a role word
-    configured for the first time still renders. The first four of the living
-    set are all distinct: impl, inve, revi, test, clea, docu. A role not in the
+    The whole dispatch word is the display form — no table or derivation to
+    stay in step with, so a role word configured for the first time renders
+    exactly as it was dispatched. The pane has the room and the column is sized
+    by the vocabulary, so nothing is cut to a prefix. A role not in the
     vocabulary is never truncated to fit — that would show a plausible-looking
     but wrong word — so anything unrecognised renders the marker instead.
     """
     spelled = str(role or "")
     if spelled not in DISPATCH_ROLES:
         return ROLE_UNKNOWN
-    return spelled[:4].lower()
+    return spelled
 
 
 def _derive_effort(effort: Any) -> str:
