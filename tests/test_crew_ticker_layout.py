@@ -390,43 +390,57 @@ def test_the_action_set_is_one_set_with_three_readers():
 # ── The role column: the dispatch vocabulary, verbatim, left of the node ────
 
 
-def test_every_dispatch_role_renders_its_four_characters_in_its_own_column(grid):
-    """Each configured role derives to its first four characters, lowercased.
+def test_every_dispatch_role_renders_as_its_complete_word_in_its_own_column(grid):
+    """Each configured role spells itself in full; the vocabulary sets the width.
 
-    The derivation is mechanical — no display table to stay in step with — and
-    the six forms are all distinct: impl, inve, revi, test, clea, docu.
+    The display form is the dispatch word itself — a role once configured
+    renders exactly as it was dispatched, with no derivation and no prefix cut.
+    The assertion iterates the vocabulary rather than listing roles, so a role
+    added later is covered without editing this test.
     """
-    rows = {}
-    for role in sorted(ticker_module.DISPATCH_ROLES):
-        rows[role] = plain(grid.render(_event(role=role, node="n-target")))
-
-    expected = {
-        "implement": "impl",
-        "cleanup": "clea",
-        "review": "revi",
-        "investigate": "inve",
-        "test": "test",
-        "documentation": "docu",
+    rows = {
+        role: plain(grid.render(_event(role=role, node="n-target")))
+        for role in ticker_module.DISPATCH_ROLES
     }
-    for role, shown in expected.items():
-        assert shown in rows[role], role
-    assert len(set(expected.values())) == 6
+    for role, line in rows.items():
+        start = line.index(role)
+        # The whole word, not a prefix of it, occupies its own column; the
+        # truncation that used to ship would leave the tail outside the cell.
+        assert line[start : start + ticker_module.ROLE].strip() == role, role
 
     # Every row's role text starts at the same screen column.
-    positions = {rows[role].index(shown) for role, shown in expected.items()}
+    positions = {line.index(role) for role, line in rows.items()}
     assert len(positions) == 1
 
 
-def test_documentation_derives_to_docu_and_sets_no_wider_column():
-    """`documentation` is thirteen characters; `docu` is what actually ships."""
+def test_documentation_as_the_longest_role_sizes_the_column():
+    """`documentation` at thirteen characters is what sets the column width.
+
+    The column is derived from the vocabulary rather than guessed, so the
+    longest member renders whole and the cell is exactly its width.
+    """
+    assert len("documentation") == ticker_module.ROLE
     line = plain(
         ticker_module.Ticker(width=180).render(
             _event(role="documentation", node="n-target")
         )
     )
-    assert "docu" in line
-    assert "documentation" not in line
+    start = line.index("documentation")
+    assert line[start : start + ticker_module.ROLE].strip() == "documentation"
     assert len(line) == 180
+
+
+def test_the_widest_role_word_still_fits_the_width_budget(grid):
+    """A row carrying the longest role word never exceeds the stated budget.
+
+    The role column is sized by the vocabulary, so `documentation` renders
+    whole and the fixed grid stays within DEFAULT_WIDTH; the budget is asserted
+    on the rendered row, with the longest member present.
+    """
+    assert max(len(r) for r in ticker_module.DISPATCH_ROLES) == ticker_module.ROLE
+    line = plain(grid.render(_event(role="documentation", node="n" * 8)))
+    assert "documentation" in line
+    assert len(line) <= ticker_module.DEFAULT_WIDTH
 
 
 def test_an_unconfigured_role_renders_a_marker_not_a_truncated_word(grid):
@@ -445,7 +459,7 @@ def test_a_missing_role_also_renders_the_marker(grid):
 
 def test_the_role_column_sits_left_of_the_node_column(grid):
     line = plain(grid.render(_event(role="review", node="n-west")))
-    assert line.index("revi") < line.index("n-west")
+    assert line.index("review") < line.index("n-west")
 
 
 def test_the_role_column_is_stable_across_every_configured_role(grid):
@@ -455,7 +469,7 @@ def test_the_role_column_is_stable_across_every_configured_role(grid):
         plain(grid.render(_event(role="test", node="n" * 40))),
         plain(grid.render(_event(role="investigate", node="n-c"))),
     ]
-    tokens = ("impl", "test", "inve")
+    tokens = ("implement", "test", "investigate")
     assert len({row.index(token) for row, token in zip(rows, tokens, strict=True)}) == 1
 
 
@@ -465,12 +479,12 @@ def test_the_role_is_dim_rather_than_hued():
     line = painter.render(_event(role="review", node="n-west"))
 
     padded_role = (
-        re.escape(ticker_module._DIM) + r"revi" + re.escape(ticker_module._RESET)
+        re.escape(ticker_module._DIM) + r"review\s*" + re.escape(ticker_module._RESET)
     )
     assert re.search(padded_role, line) is not None
     # The role text is never wrapped in a hue selector, unlike the node
     # beside it (which does carry one, on the same coloured line).
-    assert re.search(r"\x1b\[38;5;\d+mrevi\x1b\[0m", line) is None
+    assert re.search(r"\x1b\[38;5;\d+mreview", line) is None
     assert re.search(r"\x1b\[38;5;\d+m", line) is not None
 
 
