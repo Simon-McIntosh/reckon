@@ -171,6 +171,61 @@ def _actionable_budget_hold(
     return BudgetHold(hold)
 
 
+def _live_runs_on_backend(backend_name: str) -> list[dict[str, Any]]:
+    """Return non-terminal live pointers claiming a backend, newest run id last."""
+    return [
+        pointer
+        for pointer in list_live()
+        if str(pointer.get("backend") or "") == backend_name
+        and str(pointer.get("phase") or "") not in _TERMINAL_RUN_PHASES
+    ]
+
+
+def _refuse_over_concurrency_ceiling(
+    backend_name: str, backend: Mapping[str, Any]
+) -> None:
+    """Refuse a dispatch that would push a backend past its declared ceiling.
+
+    A lane already carrying its ceiling of live runs must not be asked to carry
+    one more: the harness retry budget is fixed and reckon passes no retry
+    configuration, so once an overloaded lane refuses long enough a 429 turns
+    from a pause at the protocol into a dead print-mode worker — measured, a
+    sixth concurrent worker on the local lane killed two already-running runs
+    after ten 429 retries. Adding work destroyed work, so the only reliable
+    remedy is not to create the overload.
+
+    The refusal happens before any worktree or worker exists and never touches
+    a run already in flight — a finished run holds no slot (its phase is
+    terminal), and terminating one to admit a new one would reproduce the harm
+    this exists to prevent. ``max_concurrent_runs`` is user data; a backend
+    that declares none is unlimited and this check does nothing.
+    """
+    ceiling = backend.get("max_concurrent_runs")
+    # An unresolvable ceiling is an unmeasured lane: the schema rejects a value
+    # below one at load time, and a caller that bypassed the schema with a
+    # non-integer must not crash dispatch — an unknown ceiling cannot justify
+    # refusing work.
+    if (
+        ceiling is None
+        or isinstance(ceiling, bool)
+        or not isinstance(ceiling, int)
+        or ceiling <= 0
+    ):
+        return
+    occupying = _live_runs_on_backend(backend_name)
+    if len(occupying) < ceiling:
+        return
+    run_ids = ", ".join(
+        sorted(str(pointer.get("run_id") or "unknown") for pointer in occupying)
+    )
+    raise CrewError(
+        f"node is not dispatchable — backend {backend_name!r} is at its "
+        f"concurrency ceiling ({len(occupying)} live runs of {ceiling} max); "
+        f"the runs occupying its slots: {run_ids}. Wait for one to finish, "
+        f"or raise max_concurrent_runs for this backend."
+    )
+
+
 def _jsonl_events(path: Path) -> Iterable[Mapping[str, Any]]:
     """Yield readable objects from an append-only harness transcript."""
     try:
@@ -1988,6 +2043,11 @@ def dispatch(
     launch_kind = resolution.launch
     run_id = resolution.run_id
     directory = run_dir(run_id)
+    # A backend at its declared concurrency ceiling refuses a new dispatch
+    # before anything is created or spawned. A fallback backend resolved above
+    # gets the same ceiling as a directly chosen one, so a held lane never
+    # reroutes onto an already-saturated lane.
+    _refuse_over_concurrency_ceiling(backend_name, backend)
     explicitly_named_peers = set() if shadow_lineage else set(node.peer_scopes)
     peers = {} if shadow_lineage else _merge_peer_scopes(peer_claims, node.peer_scopes)
     node.peer_scopes = peers
