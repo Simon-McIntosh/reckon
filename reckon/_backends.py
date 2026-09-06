@@ -454,12 +454,14 @@ def _is_rate_limit_retry(event: Mapping[str, Any]) -> bool:
 
 
 def _retry_refusal_budget(budget: Mapping[str, Any], retries: int) -> dict[str, Any]:
-    """Record the rate-limit exhaustion shape as a refusal block.
+    """Record a metered lane's retry exhaustion as a refusal block.
 
     The retries are the magnitude and the terminal error result is the verdict.
     No retry record carries a reset moment, so the block states the limit and
     the observed count and leaves the reset unset — the same honest absence a
-    spend-limit refusal with no reset records.
+    spend-limit refusal with no reset records. Only metered backends take this
+    shape; an unmetered lane has no budget to exhaust, so its identical stream
+    is recorded as backpressure by :func:`_backpressure_budget` instead.
     """
     block = dict(budget)
     block.update(
@@ -478,6 +480,55 @@ def _retry_refusal_budget(budget: Mapping[str, Any], retries: int) -> dict[str, 
         }
     )
     return block
+
+
+def _backpressure_budget(budget: Mapping[str, Any], retries: int) -> dict[str, Any]:
+    """Record an unmetered lane's retry exhaustion as lane backpressure.
+
+    A consumer-queue 429 is the server telling the worker to stop asking for a
+    while, not the account running dry — an unmetered backend has no metered
+    window to spend, so its retry stream cannot be recording budget exhaustion.
+    The block states the refusal with none of the metered-budget semantics a
+    reader keys on: refusal stays false, headroom stays unknown, and the marker
+    names the lane rather than the account. A dispatch fence may hold new work
+    on the marker; nothing gates an existing run's resume on it, because a lane
+    that shed a worker is not the same lane an hour later.
+    """
+    block = dict(budget)
+    block.update(
+        {
+            "headroom": "unknown",
+            "utilisation_pct": None,
+            "rate_limit_type": "backpressure",
+            "resets_at": None,
+            "threshold_status": None,
+            "surpassed_threshold": None,
+            "refusal": False,
+            "lane_backpressure": True,
+            "detail": (
+                f"run died after {retries} consumer-queue retries "
+                "(api_retry 429); the lane refused (queue full) — backpressure "
+                "on an unmetered lane, not a spent budget"
+            ),
+        }
+    )
+    return block
+
+
+def _backend_is_unmetered(backend_name: str | None) -> bool:
+    """Whether a named backend carries no metered per-token price.
+
+    Read through the module rather than imported at the top of this file: the
+    cost model lives in the ledger, and this translation module does not need
+    it until a retry exhaustion has to be classified. A name that is absent or
+    unknown reads as metered — the direction that still holds a wave, so a lane
+    the cost model has not heard of can never silently unblock dispatch.
+    """
+    if not backend_name:
+        return False
+    from reckon import ledger
+
+    return ledger.is_unmetered_backend(str(backend_name))
 
 
 def _retry_prose(retries: int, *, terminal: bool) -> str:
@@ -546,12 +597,16 @@ class Dialect:
         events: Iterable[Mapping[str, Any]],
         *,
         elapsed_seconds: float | None = None,
+        backend_name: str | None = None,
     ) -> Observation:
         """Fold a stream into one observation.
 
         ``elapsed_seconds`` is the caller's wall clock for the run, offered
         because not every dialect reports a span of its own. A dialect that does
-        report one prefers its own figure and ignores this.
+        report one prefers its own figure and ignores this. ``backend_name`` is
+        the configured name of the backend the stream came from; only the
+        claude-shaped dialect needs it, because one wire shape has to mean
+        different things on a metered lane and an unmetered one.
         """
         raise NotImplementedError
 
@@ -666,6 +721,7 @@ class _CodexDialect(Dialect):
         events: Iterable[Mapping[str, Any]],
         *,
         elapsed_seconds: float | None = None,
+        backend_name: str | None = None,
     ) -> Observation:
         obs = Observation(backend=self.name, budget=unknown_budget(""))
         message: str | None = None
@@ -902,6 +958,7 @@ class _ClaudeDialect(Dialect):
         events: Iterable[Mapping[str, Any]],
         *,
         elapsed_seconds: float | None = None,
+        backend_name: str | None = None,
     ) -> Observation:
         obs = Observation(backend=self.name, budget=unknown_budget(""))
         message: str | None = None
@@ -964,7 +1021,16 @@ class _ClaudeDialect(Dialect):
                 and obs.exit_status == "error"
                 and not budget.get("refusal")
             ):
-                budget = _retry_refusal_budget(budget, rate_limit_retries)
+                # The stream cannot tell a spent consumer from a full queue —
+                # every 429 retry carries the identical field set — so the
+                # backend's meteredness is the only discriminator there is. An
+                # unmetered lane has no metered budget to exhaust, so the shape
+                # records lane backpressure rather than a budget refusal: new
+                # dispatch may be held on it, but a dying run's resume never is.
+                if _backend_is_unmetered(backend_name):
+                    budget = _backpressure_budget(budget, rate_limit_retries)
+                else:
+                    budget = _retry_refusal_budget(budget, rate_limit_retries)
             elif budget.get("headroom") != "known":
                 budget = unknown_budget(
                     _retry_prose(rate_limit_retries, terminal=obs.terminal)
@@ -1504,7 +1570,9 @@ def observe_stream(
     """
     dialect = dialect_for(backend)
     events, malformed = parse_events(lines)
-    obs = dialect.observe(events, elapsed_seconds=elapsed_seconds)
+    obs = dialect.observe(
+        events, elapsed_seconds=elapsed_seconds, backend_name=backend_name
+    )
     obs.backend = backend_name
     obs.malformed_lines = malformed
     obs.throughput = _refine_throughput_from_timestamps(obs.throughput, events)
