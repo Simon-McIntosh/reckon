@@ -727,14 +727,14 @@ def _window_elapsed_fraction(state: BudgetState) -> float | None:
 
 
 def _with_projected_exhaustion(state: BudgetState, *, now: datetime) -> BudgetState:
-    """Admit a burn reading and attach its projected exhaustion instant.
+    """Attach a projected exhaustion instant when burn evidence is admissible.
 
-    A projection is routing evidence, not a hold by itself. Its two floors keep
-    integer utilisation from becoming a high-resolution claim before either
-    enough time or enough usage has accumulated. Observation time is required
-    because an unstamped projection cannot say which window position it
-    describes, and a rolled-over window degrades through the same unknown path
-    as every other expired reading.
+    The floors govern the projection alone. A numeric utilisation remains known
+    and available to the ceiling comparison even when integer quantisation makes
+    its burn projection too coarse. Observation time is required because an
+    unstamped projection cannot say which window position it describes, and a
+    rolled-over window degrades through the same unknown path as every other
+    expired reading.
     """
     reset = _parse_stamp(state.resets_at) if state.resets_at else None
     if state.expired or (reset is not None and reset <= now):
@@ -771,10 +771,11 @@ def _with_projected_exhaustion(state: BudgetState, *, now: datetime) -> BudgetSt
         floor_detail = "burn evidence is quantised too coarsely: " + " and ".join(
             shortfalls
         )
-        detail = f"{state.detail}; {floor_detail}".strip("; ")
+        detail = state.detail
+        if floor_detail not in detail:
+            detail = f"{detail}; {floor_detail}".strip("; ")
         return replace(
             state,
-            headroom="unknown",
             projected_exhaustion_at=None,
             detail=detail,
         )
@@ -804,6 +805,11 @@ def _position(state: BudgetState) -> str:
     position = f"utilisation {utilisation} with burn multiple {burn}"
     if state.projected_exhaustion_at:
         position += f" and projected exhaustion {state.projected_exhaustion_at}"
+    else:
+        floor_marker = "burn evidence is quantised too coarsely:"
+        if floor_marker in state.detail:
+            floor_detail = state.detail[state.detail.index(floor_marker) :]
+            position += f"; projected exhaustion withheld because {floor_detail}"
     return position
 
 

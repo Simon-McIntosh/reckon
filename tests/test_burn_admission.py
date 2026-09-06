@@ -80,6 +80,7 @@ def _preflight_for(monkeypatch: pytest.MonkeyPatch, state: budget.BudgetState) -
 def test_opening_window_quantisation_is_not_admitted(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Burn floors govern projection, not whether utilisation is known."""
     state = budget.BudgetState(
         backend="lane",
         headroom="known",
@@ -95,7 +96,7 @@ def test_opening_window_quantisation_is_not_admitted(
     report = _preflight_for(monkeypatch, state)
     admitted = report["backends"][0]["state"]
 
-    assert admitted["headroom"] == "unknown"
+    assert admitted["headroom"] == "known"
     assert admitted["projected_exhaustion_at"] is None
     assert report["held"] is False
     assert "1.69% elapsed is below the 5% floor" in report["summary"]
