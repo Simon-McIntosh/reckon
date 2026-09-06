@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T15:29:48",
+  "updated": "2026-09-06T15:48:38",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -487,6 +487,15 @@
         "session_model": null,
         "sessions": {},
         "created": "2026-09-05"
+      },
+      {
+        "id": "crew-surface-consistent",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-06"
       },
       {
         "id": "crew-terminal-budget",
@@ -65680,6 +65689,153 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T125608701824-the-copyable-monitor-line-keeps-its-colour",
+        "plan": "crew-observability-truth",
+        "section": "\u00a74",
+        "node": "the-copyable-monitor-line-keeps-its-colour",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 577,
+                "cached_input_tokens": 783882,
+                "input_tokens": 784461,
+                "output_tokens": 2631,
+                "reasoning_output_tokens": 1221,
+                "total_tokens": 787092,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_monitor_invocation_docs.py -q passes, asserting that the Watch and Follow rows of reckon/crew/AGENTS.md present a copyable invocation carrying no --no-color, while the flag itself remains documented as an opt-out. MEASURED BEHAVIOUR, from the repository owner watching live sessions: three sessions are relaunching their monitors as \"reckon crew follow --project P --session S --no-color\", and the owner wants the colour. The flag is not the defect \u2014 the DOCUMENTATION IS. That file presents each command as a single bracketed form listing every option, so a session copying the canonical line copies the opt-out with it. The same file already states the intended behaviour in its own prose: the pane is a pipe so isatty is false and the conventional terminal probe would disable colour exactly where it is wanted, which is why colour is stated rather than detected, and why the arming line stays bare. So the prose and the copyable form disagree, and sessions follow the form. KEEP THE FLAG. It honours the NO_COLOR convention and a genuinely colourless sink needs it; removing it would repeat the migration failure this session caused an hour ago by deleting an option a live follower was still passing. Change only how the invocation is PRESENTED: the copyable line for Watch and Follow shows the bare command with the arguments a caller must supply, and the optional flags are described separately as options rather than embedded in the line a reader will paste. Say beside --no-color what it is for \u2014 a sink that cannot render colour \u2014 so nobody adds it defensively. Do the same for any other option in those two rows that a reader would paste without needing, but do NOT remove any option and do not change the CLI. Verify the prose and the presented form now agree rather than assuming: quote the sentence about colour being stated rather than detected and check the line above it does not contradict it. Measure base and head over tests/test_monitor_invocation_docs.py plus every test reading reckon/crew/AGENTS.md; report failure ids either side and require none added.",
+          "estimated_hours": 0.5,
+          "goal": "Stop the documented monitor invocation from teaching sessions to turn colour off, without removing the flag that a colourless sink needs",
+          "id": "the-copyable-monitor-line-keeps-its-colour",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T125608701824-the-copyable-monitor-line-keeps-its-colour/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "exact",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/crew/AGENTS.md",
+            "tests/test_monitor_invocation_docs.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-monitor-invocation",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T12:56:25Z",
+        "completed_at": "2026-09-06T13:47:07.924Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2996,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3042,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "5bf3422ef2fda9a4d21c97ab85188a58416551e9",
+        "commits": [
+          "7205eb99dd9cee4f3532dd8fc867c8d290ef9f76"
+        ],
+        "changed_lines": {
+          "added": 96,
+          "removed": 2,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_monitor_invocation_docs.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T125608701824-the-copyable-monitor-line-keeps-its-colour/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T125608701824-the-copyable-monitor-line-keeps-its-colour/manifest.md",
+        "scope_changed": false,
+        "session_id": "3d8c44e2-aab5-44ad-a815-e8dc162ffd9a",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 2708056,
+            "input_tokens_cumulative": 2708056,
+            "output_tokens": 28499,
+            "output_tokens_cumulative": 28499,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 3039.171,
+          "generated_tokens": 28499,
+          "generation_seconds": 3015.799,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 11.0,
+          "machine_seconds": 23.372,
+          "peak_input_tokens": 111609,
+          "tokens_per_second": 9.45,
+          "wall_tokens_per_second": 9.38
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-copyable-monitor-line-keeps-its-colour",
+          "session_id": "3d8c44e2-aab5-44ad-a815-e8dc162ffd9a",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T13:47:07.924Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_monitor_invocation_docs.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -65908,6 +66064,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1073
+    "_version": 1075
   }
 }
