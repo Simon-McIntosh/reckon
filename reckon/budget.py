@@ -235,6 +235,14 @@ class _Reading:
         return backend_name in self.covered_backends
 
 
+@dataclass(frozen=True)
+class _RefusalEvent:
+    """The newest stream refusal and any later provider-side refutation."""
+
+    stamp: str | None
+    served_status: str | None = None
+
+
 class _RecordedReadings(dict[str, _Reading]):
     """Best reading per backend plus signals whose owner is still unknown."""
 
@@ -345,14 +353,17 @@ def _event_stamp(event: Mapping[str, Any]) -> str | None:
     return str(stamp) if _parse_stamp(stamp) is not None else None
 
 
-def _refusal_event_stamp(pointer: Mapping[str, Any]) -> str | None:
+def _refusal_event_stamp(pointer: Mapping[str, Any]) -> _RefusalEvent | None:
     """Locate the newest rejected rate-limit event in a live run's stream.
 
     Rate-limit records do not consistently carry their own timestamp. Their
     immutable stream position does, however, place them between timestamped
     records. The closest surrounding stamp is therefore used; an equally near
     following record wins because expiring a real hold early is the unsafe
-    direction.
+    direction. A later provider ``rate_limit_event`` with status ``allowed`` or
+    ``allowed_warning`` is the served-turn marker: unlike assistant/user prose,
+    it records that a request was admitted, while another ``rejected`` event is
+    only another refusal.
     """
     log_path = pointer.get("log_path")
     if not log_path:
@@ -373,21 +384,33 @@ def _refusal_event_stamp(pointer: Mapping[str, Any]) -> str | None:
         ):
             rejected.append(index)
 
-    for index in reversed(rejected):
-        if stamp := _event_stamp(events[index]):
-            return stamp
-        distance = 1
-        while index - distance >= 0 or index + distance < len(events):
-            if index + distance < len(events) and (
-                stamp := _event_stamp(events[index + distance])
-            ):
-                return stamp
-            if index - distance >= 0 and (
-                stamp := _event_stamp(events[index - distance])
-            ):
-                return stamp
-            distance += 1
-    return None
+    if not rejected:
+        return None
+
+    index = rejected[-1]
+    served_status = next(
+        (
+            status
+            for event in events[index + 1 :]
+            if event.get("type") == "rate_limit_event"
+            and isinstance((info := event.get("rate_limit_info")), Mapping)
+            and (status := str(info.get("status") or "").casefold())
+            in {"allowed", "allowed_warning"}
+        ),
+        None,
+    )
+    if stamp := _event_stamp(events[index]):
+        return _RefusalEvent(stamp, served_status)
+    distance = 1
+    while index - distance >= 0 or index + distance < len(events):
+        if index + distance < len(events) and (
+            stamp := _event_stamp(events[index + distance])
+        ):
+            return _RefusalEvent(stamp, served_status)
+        if index - distance >= 0 and (stamp := _event_stamp(events[index - distance])):
+            return _RefusalEvent(stamp, served_status)
+        distance += 1
+    return _RefusalEvent(None, served_status)
 
 
 def _surface_opt_in(backend_name: str | None, config: Mapping[str, Any] | None) -> bool:
@@ -427,6 +450,7 @@ def _readings(
         budget = pointer.get("budget")
         if when is None or not isinstance(budget, Mapping):
             continue
+        budget_block = dict(budget)
         # `when` chooses the freshest reading and may track mutable observed_at.
         # Age is a different fact: it belongs to the refusal event that created
         # the hold. The event's fixed stream position survives every re-read.
@@ -435,8 +459,13 @@ def _readings(
         is_refusal = bool(budget.get("refusal")) or str(
             budget.get("threshold_status") or ""
         ).casefold() in {"exhausted", "rejected"}
-        refusal_stamp = _refusal_event_stamp(pointer) if is_refusal else None
-        if refusal_stamp is not None:
+        refusal_event = _refusal_event_stamp(pointer) if is_refusal else None
+        refusal_stamp = refusal_event.stamp if refusal_event is not None else None
+        if refusal_event is not None and refusal_event.served_status is not None:
+            budget_block["_refuted_by_served_turn"] = refusal_event.served_status
+            refusal_stamp = refusal_stamp or pointer.get("created_at") or ""
+            age_source = "served-turn-refutation"
+        elif refusal_stamp is not None:
             age_source = "rate-limit-event"
         elif is_refusal:
             refusal_stamp = pointer.get("created_at") or ""
@@ -448,7 +477,7 @@ def _readings(
         found.append(
             _Reading(
                 backend=backend_name,
-                budget=dict(budget),
+                budget=budget_block,
                 observed_at=str(refusal_stamp),
                 when=when,
                 source="live-run",
@@ -642,6 +671,13 @@ def _from_block(
         detail = (
             f"the measured window reset at {resets_at}, so the recorded "
             "utilisation no longer describes it"
+        )
+    served_status = block.get("_refuted_by_served_turn")
+    if served_status is not None:
+        headroom = "unknown"
+        detail = (
+            "a later served turn in the same stream refuted the newest refusal "
+            f"(provider rate-limit status {str(served_status)!r})"
         )
     utilisation = block.get("utilisation_pct")
     numeric_utilisation = (
@@ -911,6 +947,12 @@ def decide(
         )
         return verdict
     if state.headroom != "known":
+        if state.age_source == "served-turn-refutation":
+            verdict["reason"] = (
+                f"{state.detail}; the refusal no longer describes now and the lane "
+                "remains open"
+            )
+            return verdict
         if state.burn_multiple is not None:
             verdict["reason"] = (
                 f"{_position(state)} is not admissible budget evidence — "
