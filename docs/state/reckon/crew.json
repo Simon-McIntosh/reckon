@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T20:00:33",
+  "updated": "2026-09-06T20:07:12",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -67492,6 +67492,155 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T161933504001-the-sweep-runs-while-the-follower-reads",
+        "plan": "crew-observability-truth",
+        "section": "\u00a76",
+        "node": "the-sweep-runs-while-the-follower-reads",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1358,
+                "cached_input_tokens": 204361,
+                "input_tokens": 205721,
+                "output_tokens": 2895,
+                "reasoning_output_tokens": 926,
+                "total_tokens": 208616,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_follow_sweep_cadence.py -q passes, and the recovery sweep runs on its declared cadence while a follower is attached to a live producer stream. THE MEASUREMENT. reckon/crew/resumption.py declares DEFAULT_SWEEP_SECONDS 120.0, described in its own comment as short enough that a lane returning minutes later is picked up while the wave still matters. The status file at the recovery directory records swept_at 2026-09-06T15:08:27Z and swept_by_pid 4176213. That pid is a live crew follow process for this project, the producer is live, and four worker transitions were emitted to its pane at 15:18Z, 15:23Z, 15:38Z and 16:11Z. At 16:17Z the recorded sweep was 69 minutes old against a 120 second cadence. A second project reports the same shape: a run whose declared wait had been satisfied sat eligible for roughly 35 minutes with a live follower and no wake, and resume-ready run by hand picked it up at once. THE MECHANISM, in the follow loop in reckon/cli.py. The cadence gate is called at the top of the outer loop, once per outer iteration. The loop then opens the producer stream and enters an inner while True that reads lines, ticks, and sleeps. That inner loop never calls the cadence gate. It exits only when the follower is stopped or the producer stops being live. So while a producer stays up, the outer loop never iterates again and the sweep runs exactly once, at attach. The 120 second cadence is therefore not a cadence at all; it is a lower bound that only takes effect after a producer dies and the follower reattaches. A busy fleet and a quiet fleet are equally affected, because the inner loop is entered either way. WHAT TO CHANGE. The sweep must run on elapsed time while the follower is inside the stream read loop. Call the cadence gate from the inner loop on the same passes that already tick and sleep, so a follower reading a live stream sweeps on its declared interval. Keep the gate itself unchanged: it is already time since last sweep rather than a count of iterations, and it already guards against a tight poll becoming a hot path. Do not raise or lower DEFAULT_SWEEP_SECONDS, do not change what sweep does, and do not change the pane output; a sweep writes to the status file and the recovery log, and nothing about the follower belongs on the transition stream. WHY THIS IS NOT MERELY A MISSED WAKE. The sweep is what turns a parked run back into a running one, so a follower that stops sweeping converts every declared external wait into a manual operation while continuing to display as a healthy attached follower. The status file exists precisely because a sweep that ran and found nothing and a sweep that never ran are otherwise indistinguishable; that file is what made this measurable, and its stamp is the evidence above. FALSIFIERS, each asserted in tests/test_follow_sweep_cadence.py with an injected clock and an injected sweep so no real follower and no real provider are involved. A follower attached to a live producer stream that emits no lines for several cadence intervals calls the sweep once per interval, not once in total. A follower reading a stream that emits lines continuously calls the sweep on the cadence, so line traffic neither starves the sweep nor multiplies it. Two calls inside one interval produce one sweep, so the existing rate guard still holds from the inner loop. A sweep that raises does not end the follower and does not stop later sweeps. A stopped follower performs no sweep after it is stopped. The pane output for a given sequence of stream lines is byte-identical to the output before this change, asserted by comparing emitted lines with the sweep injected as a no-op. Measure base and head over tests/test_follow_sweep_cadence.py and every test importing reckon.cli or reckon.crew.resumption; report failure ids either side and require none added.",
+          "estimated_hours": 1.0,
+          "goal": "Make the follower's recovery sweep run on its declared interval while it is reading a live producer stream, instead of once at attach",
+          "id": "the-sweep-runs-while-the-follower-reads",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T161933504001-the-sweep-runs-while-the-follower-reads/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/cli.py",
+            "tests/test_follow_sweep_cadence.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-sweep-cadence",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T16:19:43Z",
+        "completed_at": "2026-09-06T18:06:07.151Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 6309,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 6384,
+        "stalled": true,
+        "time_budget": "45m",
+        "base_sha": "f2c3154c99ccf04b5a2b3aef7fd7525a16d8eb3c",
+        "commits": [
+          "d3f7af78f1eec85b239769f90f0512e678aa1df3"
+        ],
+        "changed_lines": {
+          "added": 321,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_follow_sweep_cadence.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate47.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T161933504001-the-sweep-runs-while-the-follower-reads/manifest.md",
+        "scope_changed": false,
+        "session_id": "d060d136-167a-4851-8684-1e9a82666a04",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 11597254,
+            "input_tokens_cumulative": 11597254,
+            "output_tokens": 76227,
+            "output_tokens_cumulative": 76227,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 6380.475,
+          "generated_tokens": 76227,
+          "generation_seconds": 4792.929,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 17.5,
+          "machine_seconds": 1587.546,
+          "peak_input_tokens": 178152,
+          "tokens_per_second": 15.9,
+          "wall_tokens_per_second": 11.95
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-sweep-runs-while-the-follower-reads",
+          "session_id": "d060d136-167a-4851-8684-1e9a82666a04",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T18:06:07.151Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_follow_sweep_cadence.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -67720,6 +67869,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1094
+    "_version": 1095
   }
 }
