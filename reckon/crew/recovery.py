@@ -790,12 +790,36 @@ def classify_pointer(
             reason_text = "the manifest reports a blocker"
         needs_help_complete_value = needs_help_complete
         detail = f"the worker manifest reports blocked: {reason_text}"
+        # The manifest says what the worker was doing when it stopped; a
+        # provider refusal says when anything can be attempted at all. When
+        # both are present the manifest arm must not crowd the refusal out:
+        # the refusal names the condition that gates recovery, so it is added
+        # with its reset and the reader is told which must clear first. The
+        # classification and the manifest reason both stay — a NEEDS-HELP
+        # question on a spent lane still needs its answer, and an operator
+        # simply cannot act on it until the lane clears.
+        if refusal_block:
+            lane = (
+                f"backend {refusal_block['backend']!r} refused the turn on a "
+                f"{refusal_block['limit_kind']}; reset {refusal_block['resets_at']}"
+            )
+            detail += (
+                f"; the provider refusal must clear first — {lane} — no resume "
+                "may be attempted before it does"
+            )
         if needs_help_complete:
             marker = "?"
             action = f"reckon crew resume --run {run_id} --advice <answer>"
         else:
             marker = "!"
             action = f"read {manifest}; resolve the blocker before resuming the run"
+        if refusal_block:
+            # The lane, not the worker, owns the stop: a resume attempted before
+            # the reset is refused on budget, so the offered resume is gated on
+            # the lane clearing rather than proposed as work the operator can do
+            # today. The recovery sweep resumes blocked runs, so the same command
+            # stays the correct next action under that gate.
+            action += " once the lane clears"
     elif manifest_status == "failed":
         classification = "failed"
         failure = "; ".join(manifest_blockers) or "the worker manifest reports failure"
