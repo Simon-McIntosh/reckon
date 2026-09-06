@@ -102,13 +102,10 @@ because a filter that legitimately matches nothing gives this host a pane
 reading `No output available`, which is indistinguishable from a follower that
 died. Measured: a session with two healthy runs sat like that for minutes.
 
-`--attention` exists for a caller that deliberately wants only the actionable
-states (`complete`, `blocked`, `failed`, `stalled`, `stopped`, `abandoned`,
-`completed_unpromoted`, `unknown`) and none of the progress ones (`dispatched`,
-`working`); `--run <id>` narrows to named runs. Both select on the transition's
-own state, which is why neither can repeat the three shell-filter mistakes:
-withholding lines in a stage's buffer, matching the `· N blocked · N unpromoted`
-summary that trails every line, or hiding a refusal behind `|| true`.
+`--run <id>` narrows to named runs, selecting on the transition's own fields,
+which is why it cannot repeat the three shell-filter mistakes: withholding
+lines in a stage's buffer, matching the `· N blocked · N unpromoted` summary
+that trails every line, or hiding a refusal behind `|| true`.
 
 The column after the clock is the model and effort that ran the node, read from
 the configuration persisted at dispatch rather than from current flight config —
