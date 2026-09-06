@@ -42,10 +42,18 @@ from reckon.crew.runs import (
 # blocked and failed outcomes remain distinct so neither can be mistaken for a
 # completed delivery that is eligible for promotion. An unreadable manifest is
 # its own outcome: a file exists but no reader can judge it, which is neither a
-# delivered record (completed_unpromoted) nor an absence (abandoned).
+# delivered record (completed_unpromoted) nor an absence (abandoned). Paused is
+# the wait that lifts itself: the run is waiting on time or on its own job, and
+# nobody has to act, because whoever or whatever lifts the run is not a person.
+# The discriminator is exactly that — who lifts it. A stop that needs a person
+# or another session stays blocked; a stop whose own job, a window reset or a
+# bounded wait ends it is paused. Blocked is alarming because it demands a
+# reader; paused must therefore always name what will lift it, so it never
+# becomes the bucket a forgotten run sits in.
 RECOVERY_CLASSES = (
     "running",
     "waiting",
+    "paused",
     "stopped",
     "completed_unpromoted",
     "blocked",
@@ -55,7 +63,7 @@ RECOVERY_CLASSES = (
 )
 
 WAITING_STATUS = "waiting"
-WAITING_STATES = frozenset({"waiting", "wait-aged"})
+WAITING_STATES = frozenset({"waiting", "wait-aged", "paused"})
 TERMINAL_MANIFEST_STATUSES = frozenset({"complete", "blocked", "failed"})
 
 
@@ -290,6 +298,31 @@ def _stream_retry_block(
     }
 
 
+def _budget_hold_block(
+    record: Mapping[str, Any], budget: Mapping[str, Any] | None
+) -> dict[str, Any] | None:
+    """A rate-limit event that rejected the turn, as a hold that ages out.
+
+    A metered harness reports a spent window as ``rate_limit_event`` with
+    ``status: rejected`` long before any prose refusal appears: the request was
+    refused, the window names itself, and its reset is the moment time lifts the
+    hold. This is distinct from :func:`_stream_refusal_block`, which reads a
+    terminal prose or retry-exhaustion refusal, so the two never compete for the
+    same run — a rejected window carries ``refusal`` false and reaches only
+    this gate, while a refusal block is read through the other. ``budget`` is
+    the block :func:`_stream_budget` already resolved.
+    """
+    if budget is None or budget.get("refusal"):
+        return None
+    if str(budget.get("threshold_status") or "").casefold() != "rejected":
+        return None
+    return {
+        "backend": str(record.get("backend") or "unknown"),
+        "limit_kind": str(budget.get("rate_limit_type") or "rate-limit"),
+        "resets_at": str(budget.get("resets_at") or "unknown"),
+    }
+
+
 def _blocked_session_resolution(
     record: Mapping[str, Any], run_id: str
 ) -> dict[str, Any]:
@@ -400,6 +433,102 @@ def _background_wait_signal(record: Mapping[str, Any]) -> str | None:
             f"before finalizing the manifest: {final_message.strip()}"
         )
     return None
+
+
+# A tool call whose own contract ends the wait. A quiet stream is read as a hang
+# unless the last thing the worker asked for was something that ends on its own:
+# a bounded sleep, the peer channel's bounded read, or a task wait that cannot
+# outlive its window. Only the last assistant turn is consulted, so a hang that
+# follows an earlier sleep still reads as a hang.
+_BOUNDED_WAIT_TOOL_NAMES = frozenset({"TaskOutput", "TaskOutputFull", "ScheduleWakeup"})
+# The double dash takes no leading word boundary — ``--wait`` follows a space,
+# and neither is a word character — so only the trailing boundary is anchored.
+_PEER_CHANNEL_WAIT_RE = re.compile(r"peer-read[^\n]*--wait\b", re.IGNORECASE)
+_SLEEP_RE = re.compile(r"(?:\btime\.)?\bsleep\s+(\d+)", re.IGNORECASE)
+
+
+def _last_bounded_wait(record: Mapping[str, Any]) -> str | None:
+    """The last tool call's bounded wait, named, or None when there is none.
+
+    Reads only the tool call the worker most recently started, because that is
+    the call a quiet stream is currently sitting in. A poll loop that sleeps is
+    bounded by its own sleeps; a peer-channel read with a ``--wait`` is bounded
+    by that duration; a task wait is bounded by its own contract. None of these
+    need a person — each wakes itself, which is what separates them from a hang.
+    """
+    log = Path(str(record.get("log_path") or ""))
+    if not log.is_file():
+        return None
+    try:
+        with log.open(encoding="utf-8", errors="replace") as handle:
+            last_name = ""
+            last_command = ""
+            for line in handle:
+                try:
+                    event = json.loads(line)
+                except (ValueError, TypeError):
+                    continue
+                message = event.get("message")
+                if not isinstance(message, Mapping):
+                    continue
+                content = message.get("content")
+                if not isinstance(content, list):
+                    continue
+                for block in content:
+                    if (
+                        not isinstance(block, Mapping)
+                        or block.get("type") != "tool_use"
+                    ):
+                        continue
+                    name = str(block.get("name") or "")
+                    command = ""
+                    if isinstance(block.get("input"), Mapping):
+                        command = str(
+                            block["input"].get("command")
+                            or block["input"].get("prompt")
+                            or ""
+                        )
+                    last_name, last_command = name, command
+    except OSError:
+        return None
+    if not last_name and not last_command:
+        return None
+    if last_name in _BOUNDED_WAIT_TOOL_NAMES:
+        return f"a {last_name} task wait"
+    if _PEER_CHANNEL_WAIT_RE.search(last_command):
+        return "a peer-channel read with a bounded wait"
+    match = _SLEEP_RE.search(last_command)
+    if match is not None:
+        return f"a {match.group(1)}s sleep"
+    return None
+
+
+def _stall_wait_reason(record: Mapping[str, Any]) -> str | None:
+    """Why a quiet, alive run is paused rather than hung, or None.
+
+    Three shapes turn a quiet stream into a wait instead of a stall: the worker
+    is mid-retry on a rate limit (the lane's window resets on its own), its
+    last request was refused on a rate-limit window that resets, or its last
+    tool call was a bounded wait (it wakes itself). A run with none of these is
+    genuinely hung and must stay stalled, and a live rate-limit retry loop that
+    is still emitting keeps reading as working — only a quiet one is arbitrated
+    here.
+    """
+    budget = _stream_budget(record)
+    if budget is not None and not budget.get("refusal"):
+        retry = _stream_retry_block(record, budget)
+        if retry is not None:
+            return (
+                f"a rate-limit retry loop ({retry['retries']} retries); "
+                "the lane's window resets and the loop keeps the session alive"
+            )
+        hold = _budget_hold_block(record, budget)
+        if hold is not None:
+            return (
+                f"a rejected {hold['limit_kind']} window that resets "
+                f"{hold['resets_at']}"
+            )
+    return _last_bounded_wait(record)
 
 
 def _wait_probe(value: Any) -> list[str]:
@@ -600,8 +729,14 @@ def classify_pointer(
         if budget is not None and not budget.get("refusal")
         else None
     )
+    # A rejected rate-limit window is a hold time lifts, not a refusal a person
+    # resolves: the event names the window and its reset, so the run pauses
+    # until the window turns over rather than blocking for a coordinator.
+    budget_hold = _budget_hold_block(record, budget)
     background_wait = (
-        None if (refusal_block or retry_block) else _background_wait_signal(record)
+        None
+        if (refusal_block or retry_block or budget_hold)
+        else _background_wait_signal(record)
     )
     terminal = phase in ("complete", "failed")
     moment = _utc_seconds() if now_seconds is None else float(now_seconds)
@@ -693,7 +828,39 @@ def classify_pointer(
         action = (
             f"inspect the worktree at {record.get('worktree')} and discard when safe"
         )
+    elif budget_hold and alive is not True:
+        # A rate-limit window that rejected the turn is the clearest case of
+        # the who-lifts-it rule: the request was refused on a window the
+        # provider resets on its own cadence, so time lifts the hold and no
+        # person is needed. The paused verdict names the reset as its wake.
+        # Deliberately not routed through the sweep claim the refusal arm makes:
+        # a rejected window is not a formal refusal, so the sweep is not the
+        # mechanism that lifts it — the reset is, and that is what is named.
+        # A live process is never classified paused on this signal: it is still
+        # running, and if it goes quiet the stall gate names the rejected
+        # window as a wait rather than a hang. This arm owns the dead-process
+        # reading, where a vanished run's last word was the rejection.
+        classification = "paused"
+        hold = (
+            f"{budget_hold['limit_kind']} window refusals on backend "
+            f"{budget_hold['backend']!r} reset {budget_hold['resets_at']}"
+        )
+        detail = (
+            f"paused: {hold}; the hold ages out when the window resets and "
+            "the run proceeds from there"
+        )
+        action = (
+            f"resume run {run_id} once the window reset at "
+            f"{budget_hold['resets_at']} lifts the hold"
+        )
     elif refusal_block:
+        # A refusal stays blocked rather than paused even when the limit has a
+        # reset: the recovery sweep auto-resumes only runs classified blocked
+        # (resumption gates on it), so a paused refusal would wait for a reset
+        # nothing acts on. The who-lifts-it rule is therefore applied to the
+        # window hold that carries its own expiry — the budget_hold arm above —
+        # while a prose or retry exhaustion refusal remains a decision the
+        # coordinator must make: it is not a wait that lifts itself.
         classification = "blocked"
         block = (
             f"backend {refusal_block['backend']!r} refused the turn on a "
@@ -741,9 +908,12 @@ def classify_pointer(
     elif background_wait:
         # A vanished process is not the same fact as a crashed one: the run
         # directory itself says it was waiting on background work when it
-        # ended, so it blocks and resumes rather than reading as abandoned
-        # and inviting a redispatch that throws away an intact session.
-        classification = "blocked"
+        # ended, so it resumes rather than reading as abandoned and inviting a
+        # redispatch that throws away an intact session. Whether it blocks or
+        # pauses is the who-lifts-it rule: a run whose in-progress manifest
+        # names committed work is parked on its own job and resumes when that
+        # job ends, so it pauses; one with nothing committed needs a reader to
+        # decide, so it stays blocked.
         if not manifest_file_present:
             delivery = "no manifest was delivered and nothing has landed yet"
         else:
@@ -751,8 +921,24 @@ def classify_pointer(
                 "the in-progress manifest at "
                 f"{manifest} records what was already delivered"
             )
-        detail = f"blocked: {background_wait}; {delivery}"
-        action = f"reckon crew resume --run {run_id}"
+        if manifest_commits:
+            # The who-lifts-it rule, on the parked case: the run is waiting on
+            # its own background job, its committed work is safe in the tree,
+            # and the job ends on its own — so it pauses and names the end of
+            # that work as the wake. The resume action is the follow-through
+            # once the job ends, not the reason it paused.
+            classification = "paused"
+            detail = (
+                f"paused: {background_wait}; the committed work is safe and the "
+                "run resumes when the background work it was waiting on ends"
+            )
+            action = (
+                f"resume run {run_id} when the background work it was waiting on ends"
+            )
+        else:
+            classification = "blocked"
+            detail = f"blocked: {background_wait}; {delivery}"
+            action = f"reckon crew resume --run {run_id}"
     elif manifest_error and manifest_present:
         # The third manifest outcome next to absent and readable-and-terminal:
         # a file that is present but that no supported reader can parse is
@@ -1053,7 +1239,7 @@ def overdue_unreconciled_runs(
         row = classify_pointer(pointer, now_seconds=now_seconds)
         age = row.get("terminal_age_seconds")
         if (
-            row["classification"] in {"completed_unpromoted", "blocked"}
+            row["classification"] in {"completed_unpromoted", "blocked", "paused"}
             and isinstance(age, int)
             and age > grace_seconds
         ):
@@ -1230,6 +1416,13 @@ def _watch_snapshot(
         state = "complete"
     elif classification == WAITING_STATUS:
         state = "wait-aged" if row.get("wait_overdue") else WAITING_STATUS
+    elif classification == "paused":
+        # A paused run is a member of the waiting family: nothing needs a
+        # person, so it renders under the same calm verb as a declared external
+        # wait and its classifier detail names what lifts it. Rendering it as
+        # its own grid word would need a second routing route with no reader
+        # benefit — the distinction that matters is that it is not blocked.
+        state = WAITING_STATUS
     elif classification in {"blocked", "failed"}:
         # A provider refusal blocks even though no manifest reached a verdict:
         # the process is gone, but the stop is triageable and resumable once
@@ -1265,8 +1458,18 @@ def _watch_snapshot(
         # its phase ever advanced past "starting" permanently exempt.
         quiet = _stream_quiet_seconds(pointer, now_seconds=moment)
         if quiet > stall_seconds:
-            state = "stalled"
-            detail = f"stream quiet for {quiet}s"
+            # A quiet stream is a hang only when nothing is waiting. An alive
+            # worker sitting in a bounded wait — a sleep, a peer read, a task
+            # wait, a rejected window, or a rate-limit retry loop — wakes
+            # itself, so it pauses rather than stalling; a genuinely hung
+            # process with none of those still stalls and is not weakened here.
+            wait = _stall_wait_reason(pointer)
+            if wait is not None:
+                state = WAITING_STATUS
+                detail = f"paused: sitting in {wait} for {quiet}s; it lifts itself"
+            else:
+                state = "stalled"
+                detail = f"stream quiet for {quiet}s"
         else:
             detail = ""
     elif state not in EXPLAINED_STATES:
@@ -1626,7 +1829,16 @@ def watch_follow(
                         "manifest_status"
                     ) not in {"complete", "blocked", "failed"}:
                         quiet = _stream_quiet_seconds(pointer, now_seconds=moment)
-                        if quiet > stall_seconds:
+                        # A quiet stream sleeping in a bounded wait is paused,
+                        # not stalled, so it must not wake the follower the way
+                        # a hang does — the same correction the ticker applies.
+                        # Only a live process can be sitting in the wait: a dead
+                        # one followed a bounded call no further and is a lost
+                        # run the follower must still report.
+                        live = row.get("process_alive") is True
+                        if quiet > stall_seconds and (
+                            not live or _stall_wait_reason(pointer) is None
+                        ):
                             reported_runs.add(run_id)
                             yield {
                                 "project": project,
@@ -1676,7 +1888,7 @@ def recover(
         name: sum(1 for item in reports if item["classification"] == name)
         for name in ("running", "completed_unpromoted", "abandoned")
     }
-    for name in ("waiting", "stopped", "blocked", "failed", "unreadable"):
+    for name in ("waiting", "paused", "stopped", "blocked", "failed", "unreadable"):
         count = sum(1 for item in reports if item["classification"] == name)
         if count:
             counts[name] = count
