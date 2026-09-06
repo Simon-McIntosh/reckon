@@ -349,16 +349,38 @@ def test_both_sides_of_a_transition_are_painted_by_the_state_map():
 
 def test_the_action_set_is_one_set_with_three_readers():
     """The blocked bucket, the states that may explain themselves, and the ones
-    the grid lets carry a reason are the same proposition.
+    the grid lets carry a reason agree on one proposition, with the waiting
+    family as the named exception that separates the marker from the count.
 
     Written out separately they drifted: `unknown` counted toward the blocked
     number and was allowed to keep its detail, but rendered without it, so the
-    count said something needed attention and the line would not say what.
+    count said something needed attention and the line would not say what. The
+    waiting family explains its own progress without asking a coordinator to
+    act, so waiting and paused stay out of the action set while remaining
+    explained. The overdue wait is the one member the two mechanisms split on:
+    it is actionable, so it is in the action set and its row is marked, yet it
+    is still a wait, so the counter keeps it in the waiting family — the count
+    says what kind of run it is, the marker says a reader should look at it.
     """
     from reckon.crew import recovery
 
-    assert set(recovery.EXPLAINED_STATES) == set(ticker_module.NEEDS_ACTION)
-    assert set(recovery.FLEET_BLOCKED_STATES) == set(ticker_module.NEEDS_ACTION)
+    # Every action state may explain itself, so an action state is never a bare
+    # number with no line.
+    assert set(recovery.EXPLAINED_STATES) >= ticker_module.NEEDS_ACTION
+    # The waiting family that lifts itself is progress, not action, yet still
+    # keeps its clause; only the overdue wait is actionable.
+    assert not ticker_module.NEEDS_ACTION & {"waiting", "paused"}
+    assert {"waiting", "paused"} <= set(recovery.EXPLAINED_STATES)
+    # The blocked bucket is the action set minus the waiting family: an overdue
+    # wait is marked (in the action set) but still counted as waiting (in the
+    # waiting family), so the counter and the marker separate on it.
+    assert set(recovery.FLEET_BLOCKED_STATES) == (
+        set(ticker_module.NEEDS_ACTION) - set(recovery.WAITING_STATES)
+    )
+    # The overdue wait is both actionable and waiting — the one member on both
+    # sides of the split rather than choosing between them.
+    assert {"wait-aged"} <= ticker_module.NEEDS_ACTION
+    assert {"wait-aged"} <= set(recovery.WAITING_STATES)
     # And each one is painted, since a state that needs action must be visible.
     for theme in ("light", "dark"):
         for state in ticker_module.NEEDS_ACTION:

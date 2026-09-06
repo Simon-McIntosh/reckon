@@ -109,14 +109,26 @@ STATE_HUE = {
 }
 
 # States a reader must act on: the ones that have stopped progressing and want
-# the coordinator. One set serves three purposes that have to agree — it is the
-# `blocked` bucket the fleet counter reports, the set of states allowed to carry
-# a reason, and the set allowed to keep one. Written out three times they drifted:
-# `unknown` counted as blocked and was permitted an explanation, but rendered
-# without it, so the number said something needed attention and the line did not
-# say what.
+# the coordinator. An overdue wait is in the set: its external condition has
+# not lifted when expected, so the row carries the marker that tells a reader
+# to look at it. That marker is deliberately not the fleet's `blocked` number —
+# an overdue wait is marked but still counted as waiting — so the blocked
+# bucket in recovery derives from this set minus the waiting family rather than
+# from this set verbatim. One set serves the marker and the explanation
+# together: `unknown` once counted as blocked while the line rendered without
+# it, so the number said something needed attention and the line did not say
+# what.
 NEEDS_ACTION = frozenset(
-    {"blocked", "failed", "stalled", "stopped", "abandoned", "unknown", "unreadable"}
+    {
+        "blocked",
+        "failed",
+        "stalled",
+        "stopped",
+        "abandoned",
+        "unknown",
+        "unreadable",
+        "wait-aged",
+    }
 )
 
 # An internal classification longer than the column it must occupy. The display
