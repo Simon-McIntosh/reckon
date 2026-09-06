@@ -93,6 +93,19 @@ DEFAULT_SWEEP_SECONDS = 120.0
 DEFAULT_AVAILABILITY_PROBE_CACHE_SECONDS = 60.0
 AVAILABILITY_PROBE_PROMPT = "Reply with OK."
 
+# What a sweep writer can call itself, so the status record can tell a
+# reader's own follower apart from a hand-run pass without a process lookup.
+# A follower keeps its own entry; the other kinds share one slot each, because
+# they have no durable identity a reader could name.
+SWEEP_WRITER_KINDS = frozenset({"follower", "command", "mcp", "other"})
+
+# The status record keeps at most this many writer entries. Hand-run, MCP and
+# other callers each collapse to a single slot, so the only unbounded growth is
+# distinct follower sessions; every session that ends leaves one stale entry,
+# and this cap evicts the least recently swept so the file stays bounded while
+# a reader who saw many sessions keeps their history.
+MAX_SWEEP_WRITERS = 8
+
 
 def _parse_stamp(value: Any) -> datetime | None:
     """Parse an ISO-8601 stamp, returning None for anything unreadable."""
@@ -608,43 +621,173 @@ def _stamp_resumption_trigger(run_id: str, signature: str) -> None:
 
 
 def sweep_status_path(project: str) -> Path:
-    """Where one project's most recent sweep records that it ran."""
+    """Where one project's sweep status accumulates, one entry per writer."""
     return recovery_log_path(project).with_suffix(".status.json")
 
 
-def _write_sweep_status(project: str, report: Mapping[str, Any]) -> None:
-    """Record that a sweep ran, what it found, and which process ran it.
+def _read_sweep_status(project: str) -> dict[str, Any]:
+    """The recorded sweep status for a project, or an empty mapping."""
+    try:
+        value = json.loads(sweep_status_path(project).read_text(encoding="utf-8"))
+    except (OSError, TypeError, ValueError):
+        return {}
+    return value if isinstance(value, dict) else {}
 
-    Overwritten rather than appended: the question this answers is whether the
-    recovery is running at all, and the answer is only ever the latest one. The
-    pid and the module version are on it because the failure it exposes is a
-    follower still executing pre-merge code — a process that cannot perform the
-    recovery it appears to be performing.
+
+def _normalise_writer(writer: Any) -> tuple[str, str]:
+    """Return (kind, key) identifying the writer of one sweep.
+
+    A caller declares the kind it is — a follower on its cadence, a hand-run
+    sweep from the command line, the MCP surface, or anything else — because a
+    reader distinguishing follower health from their own manual pass cannot do
+    it from a pid on a shared filesystem. The key is the caller's durable
+    identity within its kind: the session id for a follower, empty for a kind
+    with no stable identity, which gives every such caller one shared slot.
+    """
+    kind = "other"
+    key = ""
+    if isinstance(writer, Mapping):
+        kind = str(writer.get("kind") or "other")
+        key = str(writer.get("key") or writer.get("session") or writer.get("id") or "")
+    elif isinstance(writer, str) and writer:
+        kind, _, key = writer.partition(":")
+    if kind not in SWEEP_WRITER_KINDS:
+        kind = "other"
+    return kind, key
+
+
+def _writer_key(kind: str, key: str) -> str:
+    """The stable map key a writer's entry lives under in the status record."""
+    return f"follower:{key}" if kind == "follower" else kind
+
+
+def _sweep_writer_entry(
+    report: Mapping[str, Any], kind: str, key: str
+) -> dict[str, Any]:
+    """One writer's last sweep, carrying enough to answer without a process."""
+    return {
+        "kind": kind,
+        "key": key,
+        "swept_at": report.get("swept_at"),
+        "dry_run": report.get("dry_run"),
+        "checked": report.get("checked"),
+        "resumed": len(report.get("resumed") or []),
+        "skipped": len(report.get("skipped") or []),
+        "swept_by_pid": os.getpid(),
+    }
+
+
+@contextmanager
+def _sweep_status_lock(project: str):
+    """Serialize the read-modify-write on the status record.
+
+    Followers write on a cadence that keeps concurrent writes rare, but the
+    record is a merge after this change rather than a blind overwrite, and two
+    followers on a shared filesystem must not lose each other's entries.
+    """
+    path = sweep_status_path(project).with_suffix(".lock")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+", encoding="utf-8") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+def _write_sweep_status(
+    project: str, report: Mapping[str, Any], writer: Any = None
+) -> None:
+    """Record that a sweep ran, what it found, which process ran it, and who.
+
+    Written per writer rather than per project, because the question a reader
+    actually asks is whether THEIR follower is sweeping — a question one global
+    slot cannot answer when the file is written by every follower on the
+    project, by hand-run sweeps, and from the MCP surface, and the stamp is
+    only the last write by any writer. Each writer keeps its own last sweep; a
+    kind with no durable identity shares a single slot recording its most
+    recent pass. The project-level fields answer the question the file answered
+    before — the latest sweep's pid and instant — while ``writers`` holds each
+    writer's own, so existing readers keep their answer.
+
+    The map is bounded so a finished session does not accumulate forever: when
+    it passes MAX_SWEEP_WRITERS the least recently swept entries are dropped
+    until it fits again, the writer that just wrote always kept. Hand-run, MCP
+    and other callers already share one slot each, so the only growth is
+    distinct follower sessions; the cap keeps the file bounded while retaining
+    the session history a reader may still want.
     """
     path = sweep_status_path(project)
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(
-            json.dumps(
-                {
-                    "project": project,
-                    "swept_at": report.get("swept_at"),
-                    "dry_run": report.get("dry_run"),
-                    "checked": report.get("checked"),
-                    "resumed": len(report.get("resumed") or []),
-                    "skipped": len(report.get("skipped") or []),
-                    "swept_by_pid": os.getpid(),
-                },
-                indent=2,
-                sort_keys=True,
+        with _sweep_status_lock(project):
+            previous = _read_sweep_status(project)
+            kind, key = _normalise_writer(writer)
+            writers = dict(previous.get("writers") or {})
+            writers[_writer_key(kind, key)] = _sweep_writer_entry(report, kind, key)
+            if len(writers) > MAX_SWEEP_WRITERS:
+                freshly_written = _writer_key(kind, key)
+                # Deterministic: drop by sweep time, ties by key, never the
+                # writer that just wrote.
+                stale = sorted(
+                    writers,
+                    key=lambda name: (
+                        str(writers[name].get("swept_at") or ""),
+                        name,
+                    ),
+                )
+                for name in stale:
+                    if name == freshly_written:
+                        continue
+                    writers.pop(name)
+                    if len(writers) <= MAX_SWEEP_WRITERS:
+                        break
+            path.write_text(
+                json.dumps(
+                    {
+                        "project": project,
+                        "swept_at": report.get("swept_at"),
+                        "dry_run": report.get("dry_run"),
+                        "checked": report.get("checked"),
+                        "resumed": len(report.get("resumed") or []),
+                        "skipped": len(report.get("skipped") or []),
+                        "swept_by_pid": os.getpid(),
+                        "writers": writers,
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+                + "\n",
+                encoding="utf-8",
             )
-            + "\n",
-            encoding="utf-8",
-        )
     except OSError:
         # A status that cannot be written must not stop the recovery it
         # describes; the next tick writes it.
         return
+
+
+def read_sweep_status(project: str) -> dict[str, Any]:
+    """The recorded project-level sweep view, or an empty mapping.
+
+    The answer the file was built for — whether a sweep ran and found nothing,
+    or never ran — is the project-level view: present with ``checked`` zero
+    meaning it ran and found nothing, an empty mapping meaning no sweep has
+    ever been recorded.
+    """
+    return _read_sweep_status(project)
+
+
+def writer_sweep_status(project: str, writer: Any) -> dict[str, Any] | None:
+    """The recorded last sweep by one named writer, or None when it never wrote.
+
+    None means the writer is unknown to the record, which a reader must be able
+    to tell apart from a writer that swept and found nothing — that is a
+    mapping whose ``checked`` is zero. The answer comes from the record's own
+    contents: no process is consulted, because a pid on a shared filesystem is
+    meaningless on another host.
+    """
+    kind, key = _normalise_writer(writer)
+    return read_sweep_status(project).get("writers", {}).get(_writer_key(kind, key))
 
 
 def sweep(
@@ -655,6 +798,7 @@ def sweep(
     launcher: Callable[..., int] | None = None,
     now: datetime | None = None,
     condition_test: Callable[[Mapping[str, Any], Mapping[str, Any]], Any] | None = None,
+    writer: Any = None,
 ) -> dict[str, Any]:
     """Resume runs whose provider hold or declared external wait has ended.
 
@@ -662,6 +806,12 @@ def sweep(
     resumed for, so a second pass over the same fleet reports nothing to do.
     That is what makes it safe for something already running to call on a
     cadence.
+
+    ``writer`` names who is sweeping — a follower on its cadence, a hand-run
+    sweep from the command line or the MCP surface, or anything else — so the
+    status record can tell a reader's own follower apart from every other
+    writer of the same file without a process lookup. A caller that declares
+    nothing is recorded as ``other``.
     """
     launch = _spawn if launcher is None else launcher
     test_condition = _run_condition_probe if condition_test is None else condition_test
@@ -864,11 +1014,12 @@ def sweep(
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(report, sort_keys=True) + "\n")
-    # The status file holds THAT it happened, and is overwritten every sweep. A
+    # The status file holds THAT it happened, and is written every sweep. A
     # sweep that runs and finds nothing and a sweep that never ran are
     # indistinguishable otherwise, which is exactly how a fleet of followers
     # running pre-merge code looked healthy while none of them could recover
     # anything: the capability was absent and the pane said the same thing it
-    # says when the fleet is simply quiet.
-    _write_sweep_status(project, report)
+    # says when the fleet is simply quiet. Written per writer now, so a reader
+    # can ask about one writer rather than only about the project.
+    _write_sweep_status(project, report, writer)
     return report
