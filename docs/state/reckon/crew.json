@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T18:24:05",
+  "updated": "2026-09-06T18:36:17",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -66465,6 +66465,154 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T151722854859-the-reviewer-has-a-prompt-a-schema-and-a-store",
+        "plan": "crew-observability-truth",
+        "section": "\u00a78",
+        "node": "the-reviewer-has-a-prompt-a-schema-and-a-store",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 742,
+                "cached_input_tokens": 102361,
+                "input_tokens": 103105,
+                "output_tokens": 4284,
+                "reasoning_output_tokens": 1883,
+                "total_tokens": 107389,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_review_scoring.py -q passes, and the four artefacts below exist and are exercised by that file. WHY THIS EXISTS. A promoted run today carries a gate the worker wrote itself, which is why gate pass sits at 1.00 on every lane in the committed ledger and cannot separate one lane from another. An independent reader of the landed diff, run before the promotion decision rather than after it, supplies a second opinion the worker did not author. The local lane has the throughput to run one per landing. WHAT TO BUILD, all of it new files, none of it wired into dispatch or promotion in this node. FIRST, a persisted prompt file at reckon/crew/prompts/review.md holding the text a review worker is given. It is a file rather than a string inside a module so that it is versioned, diffable, and editable without a code change. It instructs the reviewer to read the source node goal, its done_when, its declared write paths, its manifest, and the diff of its commits against its base, and to emit one score from 0 to 20 for each of five named dimensions together with one sentence of justification per dimension citing a path or a line, plus a list of findings each naming a file and a line. The five dimensions are goal_fidelity, meaning the landed change does what the node goal states; evidence, meaning the gate measures what the done_when asserts and its result is recorded; scope_discipline, meaning the diff stays inside the declared write paths and carries nothing the goal does not imply; durability, meaning a test exists that fails if this change regresses; and fit, meaning the change matches the idiom of the code around it and introduces no name the repository naming rules forbid. SECOND, a schema in reckon/crew/review.py naming those five dimensions once, with the maximum of 20 stated once, so that a dimension added later is added in one place. THIRD, a parser in the same module turning a review worker emitted text into that schema. It accepts the emitted form the prompt asks for. It returns a value for every dimension the schema names. It does not average, weight, rank, or compare lanes; the total it reports is the arithmetic sum of what it parsed and nothing else. FOURTH, a durable store in the same module writing one review record per reviewed run under the reckon crew configuration directory, outside any run directory and outside any worktree, keyed by project and by the reviewed run id, with a read function returning it. The location must survive deletion of the run directory and of the worktree, because a measure that reads a file the cleaner removes decays to nothing. Every record carries the reviewed run id, the review run id, the reviewing backend and model, the timestamp, the parsed scores, the justifications, the findings, and the verbatim emitted text it parsed, so a later reader can re-derive the parse and see what was actually said. DO NOT WIRE IT. This node writes no call site in dispatch, promotion, recovery, or the ticker; those files are held by other workers in flight. It exposes the functions those call sites will use and nothing more. FALSIFIERS, each asserted in the test file. Emitted text missing one dimension parses to a record naming that dimension as absent, not to a total computed over four, because a total silently taken over fewer dimensions is a lower score indistinguishable from a worse one. A score outside 0 to 20 is refused with a message naming the dimension and the value rather than being clamped into range. Emitted text that does not parse at all is stored with its verbatim text and a status saying it did not parse, because an unparsed review and an absent review are different facts and merging them is the failure this store exists to prevent. A record written and then read back through the read function is equal to what was written. The store path resolves under the configuration directory the test points at a temporary location and the test asserts the real configuration directory gained no file. The prompt file is loaded from disk at call time and the test asserts the loaded text contains each of the five dimension names, so a dimension renamed in the schema and not in the prompt is caught. Measure base and head over tests/test_review_scoring.py and every test importing reckon.crew.prompts; report failure ids either side and require none added.",
+          "estimated_hours": 1.5,
+          "goal": "Give an independent reviewer a persisted prompt, a five-dimension scoring schema, a parser for what it emits, and a store that outlives the run directory",
+          "id": "the-reviewer-has-a-prompt-a-schema-and-a-store",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T151722854859-the-reviewer-has-a-prompt-a-schema-and-a-store/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "exact",
+          "time_budget": "55m",
+          "write_paths": [
+            "reckon/crew/review.py",
+            "reckon/crew/prompts/review.md",
+            "tests/test_review_scoring.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-review-reflex",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T15:18:15Z",
+        "completed_at": "2026-09-06T16:34:46.341Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4534,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4591,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "6c75699f3df2d43d9fa2a440f80b4a2b5ee9ca1e",
+        "commits": [
+          "e3a995672b787331ba966656293917163b80bdf3"
+        ],
+        "changed_lines": {
+          "added": 596,
+          "removed": 0,
+          "files": 3
+        },
+        "tests_added": 15,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_review_scoring.py tests/test_crew_prompts.py tests/test_crew_test_role.py tests/test_crew_recover.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate40.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T151722854859-the-reviewer-has-a-prompt-a-schema-and-a-store/manifest.md",
+        "scope_changed": false,
+        "session_id": "856d508b-66cb-42e5-9eba-8130285663f8",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 5426625,
+            "input_tokens_cumulative": 5426625,
+            "output_tokens": 49519,
+            "output_tokens_cumulative": 49519,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 4585.293,
+          "generated_tokens": 49519,
+          "generation_seconds": 4551.635,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 13.5,
+          "machine_seconds": 33.658,
+          "peak_input_tokens": 136951,
+          "tokens_per_second": 10.88,
+          "wall_tokens_per_second": 10.8
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-reviewer-has-a-prompt-a-schema-and-a-store",
+          "session_id": "856d508b-66cb-42e5-9eba-8130285663f8",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T16:34:46.341Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_review_scoring.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -66693,6 +66841,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1086
+    "_version": 1087
   }
 }
