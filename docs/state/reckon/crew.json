@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-05T23:07:37",
+  "updated": "2026-09-06T02:13:03",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -62571,6 +62571,278 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260905T204935211741-resume-clears-the-superseded-refusal",
+        "plan": "crew-observability-truth",
+        "section": "\u00a76",
+        "node": "resume-clears-the-superseded-refusal",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1710,
+                "cached_input_tokens": 312720,
+                "input_tokens": 314432,
+                "output_tokens": 1460,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 315892,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_resume_clears_prior_refusal.py -q passes, and a resumed run no longer classifies as blocked on its predecessor evidence. THE DEFECT, measured on run r-20260905T184635614727-pfs-constrained-reduced-route: refused by claude-opus on a spend limit at 20:46, resumed at 21:12, and while the resumed process generated normally into resume-1.jsonl the live view still reported classification blocked carrying the original spend-limit detail. The cause is a two-line interaction. reckon/crew/recovery.py _stream_refusal_block tests the pointer persisted budget FIRST, returning a refusal block when budget.get(\"refusal\") is set, and only falls through to reading the current log when that is absent. resume() in reckon/crew/dispatch.py around line 3115 updates pid, phase, attempt, attempt_kind, attempt_started_at and log_path, but leaves budget untouched, so attempt 1 folded refusal rides into attempt 2 and short-circuits the classifier before it reads the new stream. The pointer log_path field already holds the resume stream path, so the fall-through read would have returned None. Fix it in dispatch.py resume(): a new attempt has made no observations, so it must not inherit the previous attempt budget observation \u2014 clearing it to the honest unknown-headroom state is what lets the classifier read the attempt that is running. Do NOT edit recovery.py; another node holds it. The test must assert: a pointer carrying a refusal budget from a prior attempt, passed through the resume mutation, reports no refusal afterwards, and recovery classification of that resumed pointer is not blocked; a run refused and NOT resumed still classifies blocked with its reason intact, because the triage affordance that section describes must survive; and a resumed run whose NEW stream itself records a fresh refusal classifies blocked again on that new evidence, since the fix must clear a stale block without disabling a live one. That last assertion is the load-bearing one: a change that simply stops reporting refusals would pass the first two and silently destroy the blocked state this plan exists to protect. THE HAZARD IT ENDS: a coordinator scanning the live view for blocked rows would try to resume a run that is already working. Measure base and head over tests/test_resume_clears_prior_refusal.py plus every test importing reckon.crew.dispatch; report failure ids either side and require none added.",
+          "estimated_hours": 0.75,
+          "goal": "Clear the superseded attempt's provider refusal when a run is resumed, so a working run stops reporting itself blocked on a limit that no longer applies",
+          "id": "resume-clears-the-superseded-refusal",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T204935211741-resume-clears-the-superseded-refusal/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "tests/test_resume_clears_prior_refusal.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-resume-refusal",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-05T20:49:44Z",
+        "completed_at": "2026-09-05T21:38:20.330Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2892,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2916,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "034c594a2964000bdb2aa091a75b6d1957337065",
+        "commits": [
+          "1af9bb17aa641d650f2a143e2b292dcaac0f62af"
+        ],
+        "changed_lines": {
+          "added": 189,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_resume_clears_prior_refusal.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T204935211741-resume-clears-the-superseded-refusal/logs/newtest-final.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T204935211741-resume-clears-the-superseded-refusal/manifest.md",
+        "scope_changed": false,
+        "session_id": "ee1d00d4-a34a-43ab-a52f-742aff1a37ce",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": null,
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "run completed after 18 rate-limit retries; retries alone are not a refusal"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 2912.954,
+          "generated_tokens": 42040,
+          "generation_seconds": 2379.735,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 14.1,
+          "machine_seconds": 533.219,
+          "peak_input_tokens": 142837,
+          "tokens_per_second": 17.67,
+          "wall_tokens_per_second": 14.43
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/resume-clears-the-superseded-refusal",
+          "session_id": "ee1d00d4-a34a-43ab-a52f-742aff1a37ce",
+          "session_source": "stream",
+          "retained_at": "2026-09-05T21:38:20.330Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_resume_clears_prior_refusal.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260905T204758060987-closure-and-dispatch-agree-on-unreconciled",
+        "plan": "crew-observability-truth",
+        "section": "\u00a78",
+        "node": "closure-and-dispatch-agree-on-unreconciled",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 346,
+                "cached_input_tokens": 309751,
+                "input_tokens": 310099,
+                "output_tokens": 2168,
+                "reasoning_output_tokens": 625,
+                "total_tokens": 312267,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_closure_fence_agreement.py -q passes, and no pointer is reconciled on one surface and unreconciled on the other. THE DEFECT, measured by an imas-codex fleet and confirmed here at the source: two independent definitions of one word, neither consulting the other. reckon/crew/runs.py drain, around line 823, treats a pointer as reconciled when its recorded closure_disposition is handed-off, or still-working while its classification is running; for handed-off it consults neither age nor classification, and its docstring states that intent plainly, that a handoff remains valid until the receiving session reconciles the pointer. reckon/crew/recovery.py overdue_unreconciled_runs, around line 873, treats a pointer as unreconciled when its classification is completed_unpromoted or blocked and its terminal age exceeds the configured grace, and it never reads closure_disposition at all. So a terminal pointer past grace carrying a valid handed-off disposition is reconciled by drain and refused by dispatch with exit 6. That fleet measured exactly this on three pointers at once. WHY IT IS NOT A DISPLAY NIT: the ship skill instructs a coordinator to read the drain view and require unreconciled-runs zero before ending a session, so the fence a closure signature rests on is the permissive one. Their outgoing coordinator signed a sprint closure on that zero and committed it, attesting to a state the other surface denies. A fence satisfiable on one surface and refused on the other is not a fence. THE FIX: have overdue_unreconciled_runs consult the same recorded disposition drain does, through one shared predicate both call, so the two agree by construction rather than by two authors agreeing. Do not simply widen dispatch to ignore the pointers. THE PROTECTION THAT MUST SURVIVE, and these are the load-bearing assertions: a terminal pointer past grace carrying NO disposition is still refused by dispatch, because that is the forgotten-work case the fence exists for; a still-working disposition on a pointer that has since gone terminal excuses nothing on either surface, since drain already expires that and dispatch must not become the weaker of the two; and a handed-off pointer is reconciled on BOTH surfaces. Assert additionally that for a set of pointers mixing all three cases, the count drain reports and the count dispatch refuses on are equal. A change that merely relaxes dispatch would pass the third assertion and destroy the first. Measure base and head over tests/test_closure_fence_agreement.py plus every test importing reckon.crew.recovery or reckon.crew.runs; report failure ids either side and require none added.",
+          "estimated_hours": 1.0,
+          "goal": "Make the closure fence and the dispatch fence read one definition of unreconciled, so a session cannot be closed on a state dispatch denies",
+          "id": "closure-and-dispatch-agree-on-unreconciled",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T204758060987-closure-and-dispatch-agree-on-unreconciled/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_closure_fence_agreement.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-drain-fence",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-05T20:48:05Z",
+        "completed_at": "2026-09-05T21:39:31.709Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3079,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3086,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "034c594a2964000bdb2aa091a75b6d1957337065",
+        "commits": [
+          "431653ef8e4d3b5c53b473625859929c035b51f1"
+        ],
+        "changed_lines": {
+          "added": 276,
+          "removed": 6,
+          "files": 3
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_closure_fence_agreement.py -q",
+          "exit_status": 0,
+          "log_path": "/tmp/cot-closure-agg-test.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260905T204758060987-closure-and-dispatch-agree-on-unreconciled/manifest.md",
+        "scope_changed": false,
+        "session_id": "9e34c724-7081-499b-9f53-ef83abd2e4fb",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": null,
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "run completed after 9 rate-limit retries; retries alone are not a refusal"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 3083.126,
+          "generated_tokens": 56549,
+          "generation_seconds": 2718.532,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 14.6,
+          "machine_seconds": 364.594,
+          "peak_input_tokens": 148719,
+          "tokens_per_second": 20.8,
+          "wall_tokens_per_second": 18.34
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "scope_acceptances": [
+          {
+            "path": "reckon/crew/runs.py",
+            "reason": "The fence was written wrong by the coordinator, not exceeded by the worker. The node's goal was one shared predicate called by both surfaces, and drain lives in runs.py, so the stated goal was unreachable inside the declared paths. The worker made the minimal change the goal required \u2014 6 lines, 2 insertions and 4 deletions, confined to drain(): combine the function-local import, delete the inline validity expression, call the predicate \u2014 and disclosed the deviation in its manifest rather than leaving it to be found. No concurrent node held runs.py. Accepting the path and recording the fence error as mine."
+          }
+        ],
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/closure-and-dispatch-agree-on-unreconciled",
+          "session_id": "9e34c724-7081-499b-9f53-ef83abd2e4fb",
+          "session_source": "stream",
+          "retained_at": "2026-09-05T21:39:31.709Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_closure_fence_agreement.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -62799,6 +63071,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1034
+    "_version": 1036
   }
 }
