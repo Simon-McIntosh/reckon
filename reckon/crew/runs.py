@@ -1955,7 +1955,11 @@ def process_alive(pid: Any) -> bool | None:
 
     A dead process with no terminal event in its log is a recoverable orphan
     rather than a completed run, which is why liveness is recorded beside the
-    stream rather than inferred from it.
+    stream rather than inferred from it. A PermissionError from a zero signal
+    means the process exists but belongs to another user — proof of life, not
+    death. On a shared workstation carrying several fleets that is the normal
+    condition for a peer worker, so reporting it as dead would classify a live
+    run as abandoned.
     """
     if not pid:
         return None
@@ -1964,7 +1968,7 @@ def process_alive(pid: Any) -> bool | None:
     except ProcessLookupError:
         return False
     except PermissionError:
-        return False
+        return True
     except (TypeError, ValueError):
         return None
     return True
