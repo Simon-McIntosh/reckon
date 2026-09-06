@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T10:16:08",
+  "updated": "2026-09-06T12:09:03",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -343,6 +343,15 @@
         }
       },
       {
+        "id": "crew-admission",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-06"
+      },
+      {
         "id": "crew-backpressure",
         "harness": "clive",
         "role": "implement",
@@ -359,6 +368,15 @@
         "session_model": null,
         "sessions": {},
         "created": "2026-09-05"
+      },
+      {
+        "id": "crew-codex-usage",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-06"
       },
       {
         "id": "crew-drain-fence",
@@ -389,6 +407,15 @@
       },
       {
         "id": "crew-midflight",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-06"
+      },
+      {
+        "id": "crew-paused",
         "harness": "clive",
         "role": "implement",
         "session_id": null,
@@ -64146,6 +64173,118 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T100614600631-a-metered-run-keeps-its-token-receipt",
+        "plan": "dispatch-cost-per-durable-node",
+        "section": "\u00a77",
+        "node": "a-metered-run-keeps-its-token-receipt",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1323,
+                "cached_input_tokens": 592931,
+                "input_tokens": 594256,
+                "output_tokens": 2173,
+                "reasoning_output_tokens": 515,
+                "total_tokens": 596429,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_metered_token_receipt.py -q passes, and promoting a codex run whose stream carries a turn.completed usage record writes those token counts onto the ledger row instead of null. THE DEFECT IS A LOSS BETWEEN OBSERVATION AND PROMOTION, and I have narrowed it for you so you do not repeat the search. Measured on the real promoted run r-20260906T094246446330-pfs-view-nova-contourer-sol in the nova project: (1) its stream at ~/.config/reckon/crew/runs/<that run>/stream.jsonl DOES carry the usage, in a single terminal record of type turn.completed whose usage mapping reads input_tokens 11362309, cached_input_tokens 11147264, cache_write_input_tokens 0, output_tokens 35630, reasoning_output_tokens 10963; (2) reckon parses it correctly today \u2014 calling _backends.observe_log with backend_name codex and backend command codex over that exact file returns a budget whose tokens mapping holds all five figures; (3) the PROMOTED LEDGER ROW in nova docs/state/nova/crew.json for that node has budget.tokens null, utilisation_pct null, cost_usd null. So the data exists, is parsed, and is then dropped. (4) ledger.per_run_budget is generic over whatever token keys it is given and carries unknown names through, so it is not the loss point; the budget it received was already empty. Find where promotion resolves the stream observation for a codex run and why that resolution yields no usage where a direct observe_log call yields all of it \u2014 a plausible lead is which dialect or command the promotion path selects when it re-reads the stream, since the claude dialect over a codex stream would find nothing, but MEASURE it rather than assuming that. DO NOT read ~/.codex/sessions or any file outside the run directory: the figures are in the stream reckon already captures, and a fix that reaches into the CLI home would make the ledger depend on a path no other backend has. WHAT MUST NOT CHANGE: cost_usd stays null for codex, because that stream carries no price and inventing one is the defect reckon already refuses for unmetered lanes; the unit for a subscription lane is tokens and window percentage, not dollars. Assert: a codex stream with a turn.completed usage record promotes with those five figures on the row; a claude run keeps the token and cost behaviour it has today, unchanged; an unmetered clive run still records null cost with its imputed flag; and a stream with no usage record at all still promotes with null tokens rather than raising. Measure base and head over tests/test_metered_token_receipt.py plus every test importing reckon.crew.promotion or reckon.ledger; report failure ids either side and require none added.",
+          "estimated_hours": 1.0,
+          "goal": "Carry a codex run's token usage into its ledger row, so a metered lane can be priced from the committed record instead of from a file outside the repository",
+          "id": "a-metered-run-keeps-its-token-receipt",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T100614600631-a-metered-run-keeps-its-token-receipt/manifest.md",
+          "plan": "dispatch-cost-per-durable-node",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "reckon/ledger.py",
+            "tests/test_metered_token_receipt.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-codex-usage",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T10:06:25Z",
+        "completed_at": "2026-09-06T10:08:37.186Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 10,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 132,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "13185ffba268a8ddfbad234b1c147ebc7d1cb186",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "not-run",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T100614600631-a-metered-run-keeps-its-token-receipt/manifest.md",
+        "scope_changed": false,
+        "session_id": "396a563e-d623-4db6-a7ac-0347ff7cebd8",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no events yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "stopped one minute in, before any edit; no commit and no manifest",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-metered-run-keeps-its-token-receipt",
+          "session_id": "396a563e-d623-4db6-a7ac-0347ff7cebd8",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T10:08:37.186Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_metered_token_receipt.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -64374,6 +64513,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1051
+    "_version": 1055
   }
 }
