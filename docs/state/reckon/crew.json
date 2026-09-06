@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T21:16:52",
+  "updated": "2026-09-06T21:19:16",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -68213,6 +68213,292 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T182620624416-the-terminal-list-parses-like-the-probe",
+        "plan": "crew-observability-truth",
+        "section": "\u00a76",
+        "node": "the-terminal-list-parses-like-the-probe",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2853,
+                "cached_input_tokens": 371998,
+                "input_tokens": 374853,
+                "output_tokens": 1804,
+                "reasoning_output_tokens": 160,
+                "total_tokens": 376657,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_wait_declaration_parses_both_forms.py -q passes, and a terminal-state list written as a JSON array is read as the states it names rather than as strings carrying JSON punctuation. THE MEASUREMENT. A peer project counted 21 hand resumes of parked runs in one day and attributed the largest single cause, 5 of them, to this: a worker wrote its wait_terminal as a JSON array and its run never woke, until the coordinator rewrote every brief to demand a comma-separated form instead. THE MECHANISM, in reckon/crew/recovery.py. _wait_probe accepts either a list or a JSON string, decoding the string. _wait_terminal_values accepts a list, and otherwise splits the string on commas alone. So one manifest written in one consistent style has one field decoded and the other mangled. Reproduced on the current primary branch with the value [\"COMPLETED\",\"FAILED\"] written as JSON: _wait_probe returns the two strings COMPLETED and FAILED, and _wait_terminal_values returns the two strings [\"COMPLETED\" and \"FAILED\"], each carrying a bracket and a quote character. The sweep then compares a probe's observed output against states that cannot match it, so the run waits forever holding a declaration in which every field is present and non-empty and which therefore passes every completeness check the sweep applies. WHAT TO CHANGE. Read a terminal-state list from the same forms the probe accepts, so a manifest written consistently is parsed consistently. The comma-separated form keeps working, because briefs and manifests in flight use it. A value whose first non-space character is an opening square bracket is read as JSON only: when it parses to a list of non-empty strings those strings are the states, and when it does not parse, the result is no states at all and the surrounding wait declaration is reported by the same path that already reports an incomplete declaration. It must never fall back to comma-splitting in that case, because comma-splitting a malformed array is what produces a state name containing a bracket, and a declaration that cannot be read has to be visible rather than silently honoured. WHAT NOT TO CHANGE. Do not alter what the sweep does with a parsed declaration, the cadence, the probe execution, the resume brief, or the completeness rules for the other fields. Do not change _wait_probe. FALSIFIERS, asserted in tests/test_wait_declaration_parses_both_forms.py. A JSON array of states parses to exactly those states, and no returned string contains a square bracket, a quote character or a backslash. The identical value passed to the probe reader and to the terminal reader yields equal lists of strings, asserted by comparing the two readers on one input, so the asymmetry cannot return unnoticed. A comma-separated string parses as it does today, asserted over a value carrying spaces around its commas. A single bare state with no comma and no bracket parses to one state. A value opening with a square bracket that does not parse as JSON yields an empty list, and the wait declaration built from it is reported as incomplete rather than accepted. A comma inside a JSON array element is preserved as part of that element rather than splitting it. Measure base and head over the new file and every test importing reckon.crew.recovery; report failure ids either side and require none added.",
+          "estimated_hours": 0.75,
+          "goal": "Read a wait declaration's terminal-state list from the same forms its probe accepts, so a manifest written in one style is not half-decoded and half-mangled",
+          "id": "the-terminal-list-parses-like-the-probe",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T182620624416-the-terminal-list-parses-like-the-probe/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_wait_declaration_parses_both_forms.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-no-zombies",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T18:26:27Z",
+        "completed_at": "2026-09-06T19:07:42.032Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2467,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2475,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "814cf0b81f9f2cf6a78e4d9bbdad046cde86086f",
+        "commits": [
+          "538ae7326d3d028f15e7775a3d6187b39f04fd50"
+        ],
+        "changed_lines": {
+          "added": 147,
+          "removed": 3,
+          "files": 2
+        },
+        "tests_added": 12,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_wait_declaration_parses_both_forms.py tests/test_crew_ticker_layout.py tests/test_crew_ticker.py tests/test_crew_recovery.py tests/test_external_wait.py tests/test_crew_recover.py tests/test_fleet_counter_coverage.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate54.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T182620624416-the-terminal-list-parses-like-the-probe/manifest.md",
+        "scope_changed": false,
+        "session_id": "1cf43c08-4c58-4c14-9ef5-c303d2075f61",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 5931915,
+            "input_tokens_cumulative": 5931915,
+            "output_tokens": 51027,
+            "output_tokens_cumulative": 51027,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 2471.641,
+          "generated_tokens": 51027,
+          "generation_seconds": 859.338,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 12.8,
+          "machine_seconds": 1612.303,
+          "peak_input_tokens": 129828,
+          "tokens_per_second": 59.38,
+          "wall_tokens_per_second": 20.64
+        },
+        "follow_on_paths": [
+          "watch/dispatch"
+        ],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_wait_declaration_parses_both_forms.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260906T190006591896-the-role-column-shows-the-whole-word",
+        "plan": "crew-observability-truth",
+        "section": "\u00a78",
+        "node": "the-role-column-shows-the-whole-word",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2252,
+                "cached_input_tokens": 423062,
+                "input_tokens": 425316,
+                "output_tokens": 780,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 426096,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_crew_ticker_layout.py -q passes with no failure added anywhere in the importing scope, and every dispatch role renders as its complete word. WHAT THE LEAD ASKED FOR, verbatim: that the types should be spelled in full, because there is the space. Roles render truncated to four lowercase characters by spelled[:4].lower() in reckon/crew/ticker.py, so implement reads impl and documentation would read docu. WHAT THIS NODE MUST NOT DO, and this is the whole reason it exists as a second attempt. A previous commit, reachable as tag held-model-effort-split, delivered the role spelling AND split the joined model-and-effort cell into two columns. The split broke three tests that deliberately encode the joined presentation, in tests/test_crew_ticker.py and tests/test_crew_recovery.py, whose own text states the rationale that a model and its effort are one routing fact rendered as one cell. The lead did not ask for that split and it is not this node's to make. Take from that commit only the part that spells roles in full. Leave the agent cell exactly as it renders today, joined, and leave those three tests untouched and passing. WHAT TO CHANGE. Render each role as its whole dispatch word rather than its first four characters. Size the role column from this module's dispatch role set rather than from a guess: its longest member is documentation at thirteen characters. The row has a fixed budget, this module's DEFAULT_WIDTH is 180, and the follower's terminal was measured at 208 columns on this workstation. Spelling roles in full costs width; state in a comment what the row consumes after the change and against which budget, so a later reader adding a column knows what is left. Do not elide, truncate or ellipsize the role. If the role vocabulary does not fit the budget, reduce a fixed column elsewhere and say in the comment which one and why. WHAT NOT TO CHANGE. Do not touch the agent cell, the model, or the effort. Do not change which states exist, their names, their counter placement, or the action marker. Do not change what a transition carries. Do not remove colour. FALSIFIERS, asserted in tests/test_crew_ticker_layout.py. Every member of this module's dispatch role set renders as its complete word, asserted by iterating that set rather than by listing roles in the test, so a role added later is covered. A row whose role is not a dispatch role renders the existing unknown marker rather than a truncation. The agent cell still renders model and effort joined exactly as it does today, asserted against a rendered row rather than against a constant. A rendered row's total width does not exceed the stated budget, asserted with the longest role word present. Colour codes are still emitted. The three tests named above pass unmodified, and the node does not edit them; they are outside its write paths and it must not request them. Measure base and head over tests/test_crew_ticker_layout.py, tests/test_crew_ticker.py, tests/test_crew_recovery.py and every other test importing reckon.crew.ticker; report failure ids either side and require none added.",
+          "estimated_hours": 0.75,
+          "goal": "Spell each dispatch role in full in the fleet row, leaving the joined model and effort cell exactly as it renders today",
+          "id": "the-role-column-shows-the-whole-word",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T190006591896-the-role-column-shows-the-whole-word/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/ticker.py",
+            "tests/test_crew_ticker_layout.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-surface-consistent",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T19:00:13Z",
+        "completed_at": "2026-09-06T19:09:13.881Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 529,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 540,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "78c31d4c69a0f292d6c2e4505854a9edc029cc22",
+        "commits": [
+          "a9236556fdd556d2f2602daa16990a4a5292ce30"
+        ],
+        "changed_lines": {
+          "added": 61,
+          "removed": 37,
+          "files": 2
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_crew_ticker_layout.py tests/test_crew_ticker.py tests/test_crew_recovery.py tests/test_fleet_counter_coverage.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate54.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T190006591896-the-role-column-shows-the-whole-word/manifest.md",
+        "scope_changed": false,
+        "session_id": "2a8785d0-fee8-4177-91fc-bbc7dcea789c",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6631023,
+            "input_tokens_cumulative": 6631023,
+            "output_tokens": 37126,
+            "output_tokens_cumulative": 37126,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 537.329,
+          "generated_tokens": 37126,
+          "generation_seconds": 511.018,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 13.7,
+          "machine_seconds": 26.311,
+          "peak_input_tokens": 139336,
+          "tokens_per_second": 72.65,
+          "wall_tokens_per_second": 69.09
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_crew_ticker_layout.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -68441,6 +68727,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1099
+    "_version": 1101
   }
 }
