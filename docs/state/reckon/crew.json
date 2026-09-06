@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T15:48:38",
+  "updated": "2026-09-06T17:00:35",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -426,6 +426,15 @@
         "created": "2026-09-06"
       },
       {
+        "id": "crew-gc-coverage",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-06"
+      },
+      {
         "id": "crew-manifest-keys",
         "harness": "clive",
         "role": "implement",
@@ -445,6 +454,15 @@
       },
       {
         "id": "crew-monitor-invocation",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-06"
+      },
+      {
+        "id": "crew-no-zombies",
         "harness": "clive",
         "role": "implement",
         "session_id": null,
@@ -65836,6 +65854,152 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T130905825682-the-deploy-matrix-has-a-shape-to-fill",
+        "plan": "crew-effort-routing",
+        "section": "\u00a71",
+        "node": "the-deploy-matrix-has-a-shape-to-fill",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 374,
+                "cached_input_tokens": 819184,
+                "input_tokens": 819560,
+                "output_tokens": 1537,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 821097,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "docs/research/deploy-matrix.html exists, renders as a reckon doc, and carries one row per available backend with the columns below and an explicit evidence state per cell. A lead asked for it in these terms: a menu of endpoints future session leaders can dispatch to, on the reasoning that multiple backends also raise net throughput when implementing and reviewing. Mirror the head and structure of docs/research/brief-conformance-review.html, which is an existing reckon-type=doc \u2014 same meta block shape with your own plan-slug deploy-matrix, status reference, and tags naming routing and backends. ROWS, one per configured backend: clive deepseek-v4-flash, clive-glm, codex sol, codex luna, codex terra, codex spark, claude sonnet, claude-opus. COLUMNS: metered or unmetered and which window; charged tokens per node class, with implement, measurement and review distinguished; wall and throughput per node class; multimodal capability, because a Read on an image kills a text-only lane outright; the concurrency ceiling and WHAT BINDS, which today is a router allowance, member serialisation, or a weekly account window depending on the lane; failure modes and their recoveries; best-fit node classes; and a link to the ledger evidence for any populated cell. THE DISCIPLINE THAT MAKES IT USEFUL RATHER THAN DECORATIVE, and it is the whole point of the node: EVERY CELL IS EITHER A DATED SNAPSHOT WITH ITS DERIVATION, OR EXPLICITLY MARKED UNMEASURED. Do not infer a figure for a lane nobody has run, do not carry a number from one model to its sibling, and do not leave a cell blank \u2014 blank reads as zero or as unknown depending on the reader, and the difference matters. Most cells today are unmeasured and the matrix must say so plainly; a menu that looks complete when it is mostly guesses is worse than an empty one. Where a figure exists, state the ledger filter that reproduces it beside it, exactly as skills/reckon-ship/references/effort-routing.md states its derivation. Where a number is known to move, say so rather than freezing it: the local lane ceiling moved from six to sixteen within one day and the pool behind it moved twice. State in the document that a lane ceiling belongs to its deployment and is discovered rather than assumed. NO ATTRIBUTION: state mechanisms and measurements, never which session or person produced them. Read skills/reckon-ship/references/worker-backends.md first \u2014 it already carries the local lane facts and the matrix must agree with it rather than restate it differently. Verify by rendering: the file must parse as the served HTML docs do, and every internal link must resolve.",
+          "estimated_hours": 1.25,
+          "goal": "Create the endpoint deploy matrix as a reckon doc, with every row's evidence state explicit, so three fleets can feed measurements into one place instead of into messages",
+          "id": "the-deploy-matrix-has-a-shape-to-fill",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T130905825682-the-deploy-matrix-has-a-shape-to-fill/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "write_paths": [
+            "docs/research/deploy-matrix.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "doc-deploy-matrix",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T13:09:31Z",
+        "completed_at": "2026-09-06T14:58:52.645Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 6542,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 6561,
+        "stalled": true,
+        "time_budget": "50m",
+        "base_sha": "5bf3422ef2fda9a4d21c97ab85188a58416551e9",
+        "commits": [
+          "09d57ddb2bd34e7c0eda83bdb0a9418f40cb7a5a"
+        ],
+        "changed_lines": {
+          "added": 594,
+          "removed": 0,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "document renders as a reckon doc with a classified cell per row",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T130905825682-the-deploy-matrix-has-a-shape-to-fill/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T130905825682-the-deploy-matrix-has-a-shape-to-fill/manifest.md",
+        "scope_changed": false,
+        "session_id": "f9890ab5-f4d1-4bdb-821f-50dce54967a9",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6451473,
+            "input_tokens_cumulative": 6451473,
+            "output_tokens": 62283,
+            "output_tokens_cumulative": 62283,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 6558.001,
+          "generated_tokens": 62283,
+          "generation_seconds": 6524.373,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 17.0,
+          "machine_seconds": 33.628,
+          "peak_input_tokens": 172834,
+          "tokens_per_second": 9.55,
+          "wall_tokens_per_second": 9.5
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-deploy-matrix-has-a-shape-to-fill",
+          "session_id": "f9890ab5-f4d1-4bdb-821f-50dce54967a9",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T14:58:52.645Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -66012,13 +66176,13 @@
         "backend": "codex",
         "purpose": "dispatch",
         "opened_at": "2026-09-05T16:13:16Z",
-        "closed_at": null,
-        "held_seconds": null,
+        "closed_at": "2026-09-06T14:52:53Z",
+        "held_seconds": 81577,
         "utilisation_pct": 95.0,
         "resets_at": "2026-09-11T04:24:27Z",
         "effective_ceiling_pct": 95.0,
         "reason": "utilisation 95% with burn multiple 4.5x is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
-        "closed_by_purpose": null,
+        "closed_by_purpose": "dispatch",
         "resumption_fired": false
       },
       {
@@ -66026,13 +66190,13 @@
         "backend": "codex-luna",
         "purpose": "dispatch",
         "opened_at": "2026-09-05T19:23:58Z",
-        "closed_at": null,
-        "held_seconds": null,
+        "closed_at": "2026-09-06T14:52:53Z",
+        "held_seconds": 70135,
         "utilisation_pct": 95.0,
         "resets_at": "2026-09-11T04:24:27Z",
         "effective_ceiling_pct": 95.0,
         "reason": "utilisation 95% with burn multiple 4.1x is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
-        "closed_by_purpose": null,
+        "closed_by_purpose": "dispatch",
         "resumption_fired": false
       },
       {
@@ -66040,13 +66204,13 @@
         "backend": "codex-spark",
         "purpose": "dispatch",
         "opened_at": "2026-09-05T19:23:58Z",
-        "closed_at": null,
-        "held_seconds": null,
+        "closed_at": "2026-09-06T14:52:53Z",
+        "held_seconds": 70135,
         "utilisation_pct": 95.0,
         "resets_at": "2026-09-11T04:24:27Z",
         "effective_ceiling_pct": 95.0,
         "reason": "utilisation 95% with burn multiple 4.1x is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
-        "closed_by_purpose": null,
+        "closed_by_purpose": "dispatch",
         "resumption_fired": false
       },
       {
@@ -66054,16 +66218,16 @@
         "backend": "codex-terra",
         "purpose": "dispatch",
         "opened_at": "2026-09-05T19:23:58Z",
-        "closed_at": null,
-        "held_seconds": null,
+        "closed_at": "2026-09-06T14:52:53Z",
+        "held_seconds": 70135,
         "utilisation_pct": 95.0,
         "resets_at": "2026-09-11T04:24:27Z",
         "effective_ceiling_pct": 95.0,
         "reason": "utilisation 95% with burn multiple 4.1x is at or above the 95.0% ceiling for a dispatch (ceiling 100.0% less reserve)",
-        "closed_by_purpose": null,
+        "closed_by_purpose": "dispatch",
         "resumption_fired": false
       }
     ],
-    "_version": 1075
+    "_version": 1079
   }
 }
