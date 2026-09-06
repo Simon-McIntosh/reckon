@@ -593,9 +593,39 @@ def _wait_probe(value: Any) -> list[str]:
 
 
 def _wait_terminal_values(value: Any) -> list[str]:
-    """Read the external states that mean a condition has terminated."""
-    values = value if isinstance(value, list) else str(value or "").split(",")
-    return [str(item).strip() for item in values if str(item).strip()]
+    """Read the external states that mean a condition has terminated.
+
+    A terminal-state list is read from the same forms the probe accepts: a
+    list, or a JSON array written as a string, each validated the same way --
+    a list whose members are all non-empty strings. A value whose first
+    non-space character is an opening square bracket is read as JSON only:
+    when it parses to a list of non-empty strings those strings are the
+    states, and when it does not parse the result is no states at all, so a
+    manifest written that way is reported as an incomplete wait declaration
+    rather than honoured with state names carrying JSON punctuation. The
+    comma-separated form keeps working for briefs and manifests in flight,
+    and is never applied to a value that opens with a bracket: comma-splitting
+    a malformed array is what produces a state name containing a bracket.
+    """
+    if isinstance(value, list):
+        if any(not isinstance(i, str) or not i.strip() for i in value):
+            return []
+        states = value
+    else:
+        text = str(value or "")
+        if text.lstrip().startswith("["):
+            try:
+                parsed = json.loads(text)
+            except (TypeError, json.JSONDecodeError):
+                return []
+            if not isinstance(parsed, list) or any(
+                not isinstance(i, str) or not i.strip() for i in parsed
+            ):
+                return []
+            states = parsed
+        else:
+            states = text.split(",")
+    return [str(item).strip() for item in states if str(item).strip()]
 
 
 def _manifest_wait(
