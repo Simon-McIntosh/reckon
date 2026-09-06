@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T14:32:59",
+  "updated": "2026-09-06T14:38:53",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -409,6 +409,15 @@
       },
       {
         "id": "crew-elapsed",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-06"
+      },
+      {
+        "id": "crew-flag-migration",
         "harness": "clive",
         "role": "implement",
         "session_id": null,
@@ -65212,6 +65221,153 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T112317280887-the-receipt-is-folded-after-the-writer-stops",
+        "plan": "dispatch-cost-per-durable-node",
+        "section": "\u00a77",
+        "node": "the-receipt-is-folded-after-the-writer-stops",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 938,
+                "cached_input_tokens": 667466,
+                "input_tokens": 668406,
+                "output_tokens": 1924,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 670330,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_receipt_after_release.py -q passes, and promoting a run whose process is still alive records its completion and tokens from the terminal stream record rather than from the file mtime. THIS COMPLETES A FIX THAT LANDED HALF-DONE, and the half that is missing is the common case. Commit 6edb433 added a bounded settle before the observation is folded, but it engages ONLY once the process has exited, because I wrote that constraint into its brief. crew complete does not refuse a live run: it promotes and THEN signals the process group at reckon/crew/promotion.py around line 1711, while the observation is folded around lines 1492 and 1587, before that release. So a coordinator promoting promptly \u2014 which the skill asks for \u2014 reads the stream and only afterwards ends the writer that was still appending to it. MEASURED on run r-20260906T094246446330-pfs-view-nova-contourer-sol: manifest at 10:00:27Z, promotion stamped completed_at 10:01:03Z with source stream_mtime, terminal record with the full token usage written at 10:01:22Z, nineteen seconds later, against a settle ceiling of two seconds. SCALE, counted over 1200 rows of three project ledgers: completed_at_source is stream_mtime on 826 and terminal_event on 374; worker_seconds_source is wall_fallback on 798. THE REMEDY IS ORDERING, NOT A WIDER CEILING. Widening the ceiling only trades a missed record for a slower promotion and still loses the case where the worker takes longer than any bound. Instead, when the process is alive at promotion, let the existing release step end it first, then settle, then fold \u2014 or fold as now and re-read once after the release, amending the row when a terminal record has since appeared. Either shape is acceptable; choose the one you can test deterministically and say why. DO NOT make promotion wait on a process it is not going to end: if a code path promotes without releasing, that path keeps its current behaviour. DO NOT widen the existing two second ceiling as the primary fix. KEEP EVERY EXISTING GUARANTEE: a run that never emits a terminal record still promotes with the mtime fallback and its source recorded; promotion still completes promptly for an already-quiet stream; and no path may hang. Assert: a live-process promotion that releases records completed_at_source terminal_event with its token figures on the row; a run with no terminal record keeps the fallback and its source; an already-terminal quiet run is unchanged from the behaviour 6edb433 gives it today; and the whole path is bounded so a stream that never stops cannot hang a promotion. Measure base and head over tests/test_receipt_after_release.py plus every test importing reckon.crew.promotion; report failure ids either side and require none added.",
+          "estimated_hours": 1.25,
+          "goal": "Fold a promoted run's timing and token receipt after its writer has stopped, so a prompt promotion stops reading a stream that is still being written",
+          "id": "the-receipt-is-folded-after-the-writer-stops",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T112317280887-the-receipt-is-folded-after-the-writer-stops/manifest.md",
+          "plan": "dispatch-cost-per-durable-node",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "tests/test_receipt_after_release.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-codex-usage",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T11:23:25Z",
+        "completed_at": "2026-09-06T12:37:37.437Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4433,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4452,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "897327b225bfa0c6cc9d3a7399ceb8924b29ac50",
+        "commits": [
+          "901658ec5aac7b65c94d40b56799fdfed6dccc40"
+        ],
+        "changed_lines": {
+          "added": 540,
+          "removed": 17,
+          "files": 2
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_receipt_after_release.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T112317280887-the-receipt-is-folded-after-the-writer-stops/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T112317280887-the-receipt-is-folded-after-the-writer-stops/manifest.md",
+        "scope_changed": false,
+        "session_id": "bb6d964b-c2a4-44dd-bffb-67e371efac02",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 11975526,
+            "input_tokens_cumulative": 11975526,
+            "output_tokens": 64163,
+            "output_tokens_cumulative": 64163,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 4447.961,
+          "generated_tokens": 64163,
+          "generation_seconds": 3767.375,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 17.3,
+          "machine_seconds": 680.586,
+          "peak_input_tokens": 176216,
+          "tokens_per_second": 17.03,
+          "wall_tokens_per_second": 14.43
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-receipt-is-folded-after-the-writer-stops",
+          "session_id": "bb6d964b-c2a4-44dd-bffb-67e371efac02",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T12:37:37.437Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_receipt_after_release.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -65440,6 +65596,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1067
+    "_version": 1069
   }
 }
