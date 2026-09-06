@@ -346,6 +346,169 @@ def new_failure_attribution(
     }
 
 
+# ── Routing evidence (recorded at promotion) ────────────────────────────────
+#
+# A routing measure that only read the worker manifest decays as run
+# directories are cleaned, and a later touch of paths the earlier manifest
+# already named is a different event from a touch of paths it never did — yet
+# both read alike on a ledger row carrying only a manifest path and free-text
+# outcome. The three facts below are therefore captured onto each promoted row
+# at the moment the evidence exists, so a later measure does not need the file
+# that produced them.
+
+
+def _path_like_tokens(text: str) -> list[str]:
+    """Return the repository-path-shaped words inside one prose entry.
+
+    A follow_on is free text a worker wrote, so a path it names may be bare
+    (``reckon/crew/promotion.py``) or embedded in prose (``"workers.py is
+    outside the fence"``). A token counts as a path when it carries a slash or
+    ends in a file suffix — and is excluded when it is an option (``--flag``)
+    or a bare word. The host is a POSIX checkout, so the slash rule is enough
+    for repository-relative paths, which is the frame the later row's changed
+    paths are recorded in.
+    """
+    tokens: list[str] = []
+    for token in re.split(r"[\s,]+", text):
+        candidate = token.strip().strip("\"'`()[]{}*<>")
+        if not candidate or candidate.startswith("-") or "://" in candidate:
+            continue
+        if "/" in candidate or re.fullmatch(r"[\w./-]+\.[A-Za-z0-9]{1,8}", candidate):
+            tokens.append(candidate)
+    return tokens
+
+
+def follow_on_paths(entries: Any) -> list[str]:
+    """Extract the repository paths a manifest's ``follow_ons`` name.
+
+    A following run touching the paths an earlier manifest already named is the
+    continuation of that node's stated followup — a different routing event
+    from touching paths it never named. The extraction treats the source as
+    the prose it is: a structured entry may be a mapping with its own ``path``
+    or ``paths`` keys, and a textual entry is split into path-shaped tokens.
+    Paths keep first-appearance order and duplicates are dropped, so the list
+    stays comparable against a later row's ``changed_lines`` paths.
+    """
+    paths: list[str] = []
+    seen: set[str] = set()
+    for entry in entries or ():
+        candidates: list[str]
+        if isinstance(entry, Mapping):
+            candidates = [str(entry["path"])] if entry.get("path") else []
+            nested_paths = entry.get("paths")
+            if isinstance(nested_paths, str):
+                candidates.extend(_path_like_tokens(nested_paths))
+            elif isinstance(nested_paths, list):
+                for nested in nested_paths:
+                    if isinstance(nested, Mapping):
+                        if str(nested.get("path") or "").strip():
+                            candidates.append(str(nested["path"]).strip())
+                    elif str(nested or "").strip():
+                        candidates.extend(_path_like_tokens(str(nested)))
+        else:
+            candidates = _path_like_tokens(str(entry))
+        for candidate in candidates:
+            cleaned = str(candidate).strip()
+            if not cleaned or cleaned in seen:
+                continue
+            seen.add(cleaned)
+            paths.append(cleaned)
+    return paths
+
+
+def _run_tip(record: Mapping[str, Any]) -> str:
+    """Return the last cited commit of a promoted run, or empty."""
+    commits = record.get("commits")
+    if isinstance(commits, list):
+        for commit in reversed(commits):
+            if str(commit or "").strip():
+                return str(commit).strip()
+    return ""
+
+
+def predecessor_run_id(
+    *,
+    supplied: Any,
+    base_sha: str,
+    runs: Iterable[Mapping[str, Any]] | None,
+    exclude_run_id: str = "",
+) -> str | None:
+    """Return the run id this run continues, or None when none is evident.
+
+    A coordinator-supplied value is authoritative when present — it names a
+    predecessor the dispatcher already knows. Otherwise the link is derived
+    from the repository: a run whose base commit is the promoted tip of exactly
+    one earlier run is that run's continuation. A base matching several runs,
+    or no run, names no predecessor, and the caller omits the field rather
+    than writing null — a run without a predecessor must not read like one
+    whose linkage was measured and found empty.
+    """
+    supplied_run = str(supplied or "").strip()
+    if supplied_run:
+        return supplied_run
+    base = str(base_sha or "").strip()
+    if not base:
+        return None
+    matches = {
+        str(item.get("run_id") or "")
+        for item in runs or ()
+        if str(item.get("run_id") or "")
+        and str(item.get("run_id") or "") != exclude_run_id
+        and _run_tip(item) == base
+    }
+    if len(matches) == 1:
+        return matches.pop()
+    return None
+
+
+# A correction signal is phrasing a worker uses to state that a factual premise
+# of its brief is wrong. The list is the vocabulary, and it is deliberately
+# small so a normal report almost never trips it; the count is of statements,
+# not of marker hits, so a correction spanning words stays one correction.
+_CORRECTION_SIGNAL = re.compile(
+    r"disput(?:e|es|ed|ing) +the +(?:premise|brief|spec)"
+    r"|contrary to the (?:brief|spec|brief's premise)"
+    r"|contradicts the (?:brief|spec)"
+    r"|the (?:stated )?premise .{0,60}?(?:is|was) +(?:incorrect|wrong|false|"
+    r"untrue|not the case|no longer (?:true|the case))",
+    re.IGNORECASE,
+)
+
+
+def stated_correction_count(report_text: Any) -> int | str:
+    """Count corrections the worker's report states against the brief's premises.
+
+    The worker's own report is the only evidence that a premise was corrected,
+    so the count comes from the report text — never from a later reader's
+    opinion of the work. A report that can be read is scanned and the number of
+    distinct statements carrying a correction signal is returned, zero when the
+    worker made none. A report that cannot be read returns the string
+    ``"unknown"``, because a measured zero and an unmeasured report are
+    different values and merging them is what makes a dispute invisible.
+    """
+    text = str(report_text or "")
+    if not text.strip():
+        return "unknown"
+    from reckon.crew.reports import parse_manifest
+
+    try:
+        manifest = parse_manifest(text)
+    except (KeyError, ValueError):
+        return "unknown"
+    structured = manifest.get("premise_corrections")
+    if structured is not None:
+        if isinstance(structured, list):
+            items = structured
+        else:
+            items = [
+                part.strip()
+                for part in re.split(r"[\n,]+", str(structured))
+                if part.strip()
+            ]
+        return sum(1 for item in items if str(item or "").strip())
+    return sum(1 for line in text.splitlines() if _CORRECTION_SIGNAL.search(line))
+
+
 def evidence_records_for_plan(
     project: str,
     plan: str,
@@ -694,6 +857,9 @@ def build_record(
     require_gate_check: bool = False,
     suite_delta: Mapping[str, Any] | None = None,
     resume_remedy: Mapping[str, str] | None = None,
+    follow_on_paths: Iterable[str] | None = None,
+    predecessor_run: str | None = None,
+    dispute_count: int | str | None = None,
 ) -> dict[str, Any]:
     """Assemble one completed-run record, refusing an unknown gate verdict.
 
@@ -703,6 +869,13 @@ def build_record(
     verdict with no check unfalsifiable-by-construction: it is refused rather
     than stored, naming exactly which of command, exit status, and log
     path/digest is missing.
+
+    The routing-evidence fields record facts read from the worker's own
+    manifest at promotion, so a later measure can separate a followup touch
+    from a defect without the run directory. They are stored whenever the
+    caller supplies them and silently absent otherwise, so a row promoted
+    before this instrumentation keeps every existing field; the three new keys
+    are additions, never replacements.
     """
     verdict = str(gate).strip().lower()
     if verdict not in GATE_VERDICTS:
@@ -795,6 +968,19 @@ def build_record(
         record["budget_fallback"] = stored_fallback
     if resume_remedy is not None:
         record["resume_remedy"] = dict(resume_remedy)
+    # Routing evidence is present whenever promotion could read it. An empty
+    # ``follow_on_paths`` is a real measurement — the manifest declared no
+    # follow-ons — and stays distinct from an absent key, which is a row never
+    # measured; ``dispute_count`` is an integer when the report parsed and
+    # stated no corrections, the string "unknown" when it did not read;
+    # ``predecessor_run`` is a run id or nothing, since a run with no
+    # predecessor must not read identically to one with no base to compare.
+    if follow_on_paths is not None:
+        record["follow_on_paths"] = [str(path) for path in follow_on_paths]
+    if predecessor_run is not None:
+        record["predecessor_run"] = str(predecessor_run)
+    if dispute_count is not None:
+        record["dispute_count"] = dispute_count
     return record
 
 
