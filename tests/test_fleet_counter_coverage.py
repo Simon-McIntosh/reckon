@@ -41,7 +41,7 @@ def _emitted_states() -> set[str]:
     written out here would have to stay in step on its own.
     """
     source = inspect.getsource(recovery._watch_snapshot)
-    emitted = set(re.findall(r'state = "([a-z_]+)"', source))
+    emitted = set(re.findall(r'state = "([a-z_-]+)"', source))
     emitted |= {"complete", "blocked", "failed"}  # assigned from manifest_status
     emitted |= set(recovery.RECOVERY_CLASSES)  # classification via the fallback
     emitted |= {"unknown"}  # the fallback's last resort
@@ -113,51 +113,62 @@ def test_a_state_in_no_bucket_breaks_the_sum_instead_of_disappearing() -> None:
 
 
 def test_the_blocked_bucket_is_derived_from_the_attention_set() -> None:
-    """What the counter calls blocked is exactly what a reader must act on.
+    """The blocked tally is the action set with the waiting family removed.
 
-    The blocked tally and the attention set are one proposition, so the bucket
-    is derived from the set rather than kept as a second list that can drift
-    apart — the drift that let one attention-worthy state fall out. And the
-    attention set is not a bucket of imaginary states: every member is one a
-    snapshot can actually carry, which combined with the add-up assertion above
-    means a state needing attention is always counted as needing attention.
+    The bucket is derived from the set rather than kept as a second list that
+    can drift apart — the drift that let one attention-worthy state fall out.
+    The waiting family is the one documented carve-out: an overdue wait is a
+    member of the action set, so its row is marked, but the counter still
+    reports it as waiting, so the blocked bucket is the action set minus the
+    self-lifting family. And the action set is not a bucket of imaginary
+    states: every member is one a snapshot can actually carry, which combined
+    with the add-up assertion above means a state needing attention is always
+    counted as needing attention.
     """
-    assert tuple(sorted(ticker_module.NEEDS_ACTION)) == recovery.FLEET_BLOCKED_STATES
+    assert tuple(sorted(ticker_module.NEEDS_ACTION - recovery.WAITING_STATES)) == (
+        recovery.FLEET_BLOCKED_STATES
+    )
+    # The marker reaches every actionable state, an overdue wait included.
     assert _emitted_states() >= ticker_module.NEEDS_ACTION
 
 
 def test_every_emitted_state_is_watched_actionable_or_delivered() -> None:
-    """The emitted vocabulary splits into three designed dispositions.
+    """The emitted vocabulary splits into three designed counter dispositions.
 
-    A snapshot state is either work in progress, work a coordinator must act
-    on, or delivered work waiting on a gate. Stated as the reading that decides
-    whether someone wakes up: every emitted state that is not a delivered state
-    is either watched or in the attention set. A state outside all three is
+    A snapshot state is either progress (working or waiting), work a
+    coordinator must act on in the count, or delivered work waiting on a gate —
+    and the waiting family joins the working bucket because both are runs that
+    are not stuck. The counter dispositions stay mutually exclusive and cover
+    the whole emitted vocabulary. That is deliberately separate from the action
+    marker set, which may reach into the progress disposition: an overdue wait
+    is counted as waiting (progress) yet carries the action marker, so the
+    "every emitted state is watched or actionable" property holds while the two
+    mechanisms no longer have to be the same set. A state outside all three is
     exactly the one with no bucket, and it names itself here before any counter
     can hide it.
     """
-    working = set(recovery.FLEET_WORKING_STATES)
+    progress = set(recovery.FLEET_WORKING_STATES) | set(recovery.FLEET_WAITING_STATES)
     blocked = set(recovery.FLEET_BLOCKED_STATES)
     unpromoted = set(recovery.FLEET_UNPROMOTED_STATES)
-    disposed = {"working": working, "blocked": blocked, "unpromoted": unpromoted}
+    disposed = {"progress": progress, "blocked": blocked, "unpromoted": unpromoted}
 
     # The three dispositions are mutually exclusive: a double-counted state
     # would inflate a total beyond the row count rather than drop out.
     for left, right in (
-        ("working", "blocked"),
-        ("working", "unpromoted"),
+        ("progress", "blocked"),
+        ("progress", "unpromoted"),
         ("blocked", "unpromoted"),
     ):
         assert not disposed[left] & disposed[right], f"{left} and {right} overlap"
 
     emitted = _emitted_states()
-    unexplained = emitted - working - blocked - unpromoted
+    unexplained = emitted - progress - blocked - unpromoted
     assert not unexplained, f"states with no bucket: {sorted(unexplained)}"
 
     # The reading that decides whether someone wakes up, stated directly: every
     # non-delivered state is a watched state or an attention state, so nothing
     # a snapshot can carry is invisible to the columns that decide.
-    unwatched = emitted - unpromoted - working - blocked
+    unwatched = emitted - unpromoted - progress - blocked
     assert not unwatched, f"states neither watched nor actionable: {sorted(unwatched)}"
 
 

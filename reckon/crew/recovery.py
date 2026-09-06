@@ -63,6 +63,12 @@ RECOVERY_CLASSES = (
 )
 
 WAITING_STATUS = "waiting"
+# The waiting family is the stop that lifts itself, an overdue wait included:
+# a run whose declared external wait has aged past its expectation has not
+# failed and nothing about it lifts by inspection, so it is still waiting — the
+# fleet counts it here, never in the blocked tally. Its age is the news, and
+# the news is carried by the action marker on its row, so the wait-aged state
+# also sits in the action set while remaining a member of this family.
 WAITING_STATES = frozenset({"waiting", "wait-aged", "paused"})
 TERMINAL_MANIFEST_STATUSES = frozenset({"complete", "blocked", "failed"})
 
@@ -1475,11 +1481,13 @@ def _pointer_role(pointer: Mapping[str, Any]) -> str:
     return role
 
 
-# A state that needs action is exactly a state that may explain itself, so this
-# is the grid's set rather than a second copy of it.
-# The actionable states may keep the classifier's reason; an unreadable
-# manifest is one of them, because the refusal text naming the rejected format
-# is the one sentence a reader needs before repairing the file.
+# A state that needs action always may explain itself, and so may a member of
+# the waiting family: the clause on a waiting row names what lifts it and on a
+# blocked row names what a reader can do, so the explained set is the action
+# set plus the self-lifting family — an overdue wait is explained by both
+# routes at once. An unreadable manifest is one of the actionable states,
+# because the refusal text naming the rejected format is the one sentence a
+# reader needs before repairing the file.
 EXPLAINED_STATES = frozenset(NEEDS_ACTION | WAITING_STATES | {"unreadable"})
 
 
@@ -1510,6 +1518,10 @@ def _watch_snapshot(
     if classification == "completed_unpromoted":
         state = "complete"
     elif classification == WAITING_STATUS:
+        # A declared external wait stays in the waiting family even when it has
+        # aged past its expectation — the run has not failed, so the fleet keeps
+        # counting it as waiting rather than blocked. The age is the news, and
+        # the news is carried by the action marker on the row a reader sees.
         state = "wait-aged" if row.get("wait_overdue") else WAITING_STATUS
     elif classification == "paused":
         # A paused run is a member of the waiting family: nothing needs a
@@ -1622,9 +1634,13 @@ def _watch_snapshot(
 FLEET_WORKING_STATES = ("dispatched", "working", "running")
 FLEET_UNPROMOTED_STATES = ("complete", "completed_unpromoted")
 FLEET_WAITING_STATES = tuple(sorted(WAITING_STATES))
-# The same set again: what the counter calls blocked is what a reader must act
-# on, and a state in one and not the other is a number nobody can explain.
-FLEET_BLOCKED_STATES = tuple(sorted(NEEDS_ACTION))
+# The blocked bucket is the action set minus the waiting family. The action set
+# is the marker set — every state whose row a reader should look at, an overdue
+# wait included — but the counter says what kind of run this is, and an overdue
+# wait is still waiting. Count and marker therefore separate on that one
+# member: what the number reports as blocked is what a reader must act on
+# excluding a run that is legitimately still in the waiting column.
+FLEET_BLOCKED_STATES = tuple(sorted(NEEDS_ACTION - WAITING_STATES))
 
 
 def _fleet_counts(snapshots: Mapping[str, Mapping[str, Any]]) -> dict[str, int]:
