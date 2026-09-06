@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T17:22:20",
+  "updated": "2026-09-06T18:11:15",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -66174,6 +66174,141 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T152251166856-burn-rate-is-an-admission-input",
+        "plan": "crew-effort-routing",
+        "section": "\u00a71",
+        "node": "burn-rate-is-an-admission-input",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 325,
+                "cached_input_tokens": 119465,
+                "input_tokens": 119792,
+                "output_tokens": 686,
+                "reasoning_output_tokens": 122,
+                "total_tokens": 120478,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_burn_admission.py -q passes, and reckon crew preflight --project reckon emits a projected exhaustion time per backend whose burn multiple is admissible, with the summary WHEN line no longer asserting that burn multiple never holds. THE MEASUREMENT THIS RESTS ON, taken 2026-09-06T15:21:07Z on this project codex lane and replicated by a second project on the same account at 15:13:42Z. rate_limit_period_minutes 10080, seconds_until_reset 594566, so elapsed is 10234 seconds or 1.69 percent of the window; utilisation_pct 3; burn_multiple 1.7729. The preflight verdict prints that multiple and then admits on the 3 percent, and its own summary states that burn multiple is report-only and never holds. Sustained at 1.77 the weekly quota empties at 1 over 1.77 of the window, which is 2026-09-10, three days before the 2026-09-13 reset the lane advertises. Both sentences are true at once and only the second one governs a routing choice. WHAT TO CHANGE, in reckon/budget.py, where _burn_multiple at line 649 already computes the figure and stores it on BudgetState without any admission path reading it. FIRST, burn becomes admissible evidence only above a floor on BOTH elapsed fraction and utilisation. The reason both are needed is arithmetic rather than preference: utilisation_pct is an integer, so at 1.69 percent elapsed one unit of utilisation moves burn by 0.59, which is a third of the reading above. A threshold applied to a figure with that resolution fences on quantisation, and it fences hardest in the opening hours when the fewest requests have been served. State each floor as a named constant with the arithmetic above written beside it as the reason. SECOND, below either floor the state is headroom unknown and the lane is not held, matching the existing treatment of an expired window at lines 596 to 600. A lane that is held serves no run, and a served run is the only thing that writes a fresh budget record, so a fence built on an absent signal sustains itself with no path back. THIRD, the emitted verdict is a projected exhaustion instant, computed as the observation time plus seconds_until_reset divided by burn multiple, and it degrades to the reset time when burn is at or below 1. This is what a coordinator compares against the horizon of the work it is about to dispatch. Report it in the preflight payload and name it in the summary WHY line beside the utilisation figure. FOURTH, because a figure that holds a lane is a fence rather than a report, it takes the treatment utilisation already has: it is computed only from a reading carrying an observation time, and it is discarded when the window it described has rolled over. A projection derived from a reading of unknown age is not emitted at all. WHAT NOT TO DO. Do not change effective_ceiling_pct, the 95 percent ceiling, or which backends are held by utilisation today. Do not add a burn threshold that holds a lane in this node; the admission input is the projected instant and its floors, and whether a projected instant inside a horizon refuses a dispatch is a separate decision. FALSIFIERS, each asserted in tests/test_burn_admission.py against a constructed state rather than a live account. The measurement above, elapsed 1.69 percent and utilisation 3, yields headroom unknown and no projection, because it sits below the elapsed floor. A state at 30 percent elapsed with utilisation 55 yields a projection earlier than its reset time and a WHY line naming it. A state with burn at or below 1 projects exactly its reset instant. A state whose observation time is absent yields no projection and does not raise. A state whose window has rolled over past its reset yields no projection, matching the expired path. A backend held today by utilisation against the ceiling is still held, and a backend clear today is still clear, asserted over each of the nine backends this project configures. Measure base and head over tests/test_burn_admission.py and every test importing reckon.budget; report failure ids either side and require none added.",
+          "estimated_hours": 1.25,
+          "goal": "Let the preflight admit on how fast a quota is draining, not only on how much of it is gone, and emit the instant a lane is projected to run dry",
+          "id": "burn-rate-is-an-admission-input",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T152251166856-burn-rate-is-an-admission-input/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/budget.py",
+            "tests/test_burn_admission.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-burn-admission",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-06T15:23:53Z",
+        "completed_at": "2026-09-06T15:38:51Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 898,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 898,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "6c75699f3df2d43d9fa2a440f80b4a2b5ee9ca1e",
+        "commits": [
+          "a7489798e3ee2cd2d1a10610dfb33340fc5ffcaf"
+        ],
+        "changed_lines": {
+          "added": 297,
+          "removed": 9,
+          "files": 2
+        },
+        "tests_added": 23,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_burn_admission.py tests/test_budget.py tests/test_crew_recover.py tests/test_mcp_recovery.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate38.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T152251166856-burn-rate-is-an-admission-input/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07751-a8d1-7c20-bbf0-72b9337c183c",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 10648320,
+            "cached_input_tokens_cumulative": 10648320,
+            "input_tokens": 10842269,
+            "input_tokens_cumulative": 10842269,
+            "output_tokens": 32245,
+            "output_tokens_cumulative": 32245,
+            "reasoning_output_tokens": 11482,
+            "reasoning_output_tokens_cumulative": 11482
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 43727,
+          "peak_input_tokens": 21490589
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/burn-rate-is-an-admission-input",
+          "session_id": "01a07751-a8d1-7c20-bbf0-72b9337c183c",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T15:38:51Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_burn_admission.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -66402,6 +66537,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1083
+    "_version": 1084
   }
 }
