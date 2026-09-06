@@ -1683,6 +1683,7 @@ def _follow_watch_lines(
                     if selected is not None:
                         yield selected
                     _tick(stream_path=stream_path, offset=stream.tell())
+                    _sweep_on_cadence()
                     continue
                 # Stopping and losing what is already written would be the same
                 # defect at the other end of the pipe, so both endings drain
@@ -1692,6 +1693,10 @@ def _follow_watch_lines(
                 if not runs.producer_live(project):
                     break
                 _tick(stream_path=stream_path, offset=stream.tell())
+                # The gate is time-based, so calling it from the wait pass as
+                # well as the line pass runs the recovery on elapsed time while
+                # a producer is up; the outer loop only iterates after attach.
+                _sweep_on_cadence()
                 sleeper(poll_interval)
 
 
