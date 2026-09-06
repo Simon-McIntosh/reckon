@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T18:47:40",
+  "updated": "2026-09-06T19:19:53",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -66898,6 +66898,452 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T151416751544-the-row-carries-what-routing-needs",
+        "plan": "crew-effort-routing",
+        "section": "\u00a71",
+        "node": "the-row-carries-what-routing-needs",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 64631,
+                "cached_input_tokens": 30531,
+                "input_tokens": 95164,
+                "output_tokens": 2015,
+                "reasoning_output_tokens": 345,
+                "total_tokens": 97179,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_routing_evidence_fields.py -q passes, and a promoted ledger row carries three new fields: the repository paths the node manifest declared under follow_ons, a continuation link naming a predecessor run or absent, and a dispute count or the string unknown. WHY THE EXISTING MEASURE CANNOT ROUTE. Pass rate is saturated at 1.00 across every lane in the committed ledger, because the worker writes its own gate. Rework, defined as a later run touching the earlier node declared write paths in the same project and plan, was the replacement, and it discriminates about four to one, but it counts four different events as one. A node that left a defect which was then repaired is one event. A node that flagged an adjacent problem as a followup, which was then acted on over the same paths, is a second and opposite event scored identically. A node delivering part one of a planned two-part change is a third. A node that disputed the premises of its brief and landed once produces no later touch at all, so that event is invisible. The metric therefore ranks a worker that stays inside its fence above one that reports what it found outside it. THE DISCRIMINATOR EXISTS AND IS NOT ON THE ROW. A worker manifest carries follow_ons naming what it states should happen next, so a later touch of paths the earlier manifest already named is separable from a later touch of paths it did not. The ledger row carries only manifest_path and a free-text outcome, and a run directory can be deleted, so a measure reading the manifest decays as run directories are cleaned. RECORD THREE FIELDS AT PROMOTION, each read from evidence rather than inferred. First, the repository paths named in the promoted node manifest follow_ons. Second, a continuation link naming a predecessor run id, taken from a coordinator-supplied value when present and otherwise from this run base commit matching a predecessor run tip. Third, a count of corrections the worker stated against the factual premises of its brief, read from the worker own report text. DO NOT COMPUTE A NEW RATE IN THIS NODE. It records facts; which measure consumes them is a separate decision and is not this node to make. FALSIFIERS. A promotion whose manifest declares no follow_ons writes an empty list, not a missing key, so a node with nothing to declare is separable from one never measured. A run with no predecessor omits the continuation link rather than writing null. A worker report that parsed and stated no corrections writes 0; a worker report that did not parse writes the string unknown, because 0 and unmeasured are different values and merging them is the failure this node exists to prevent. Every existing ledger field keeps its current value and type, asserted over a row promoted before this change. Measure base and head over tests/test_routing_evidence_fields.py plus every test importing reckon.crew.promotion or reckon.ledger; report failure ids either side and require none added.",
+          "estimated_hours": 1.25,
+          "goal": "Record on each promoted row the three facts a routing measure needs, so a later touch can be separated from a defect without reading a file that may be deleted",
+          "id": "the-row-carries-what-routing-needs",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T151416751544-the-row-carries-what-routing-needs/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "reckon/ledger.py",
+            "tests/test_routing_evidence_fields.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-routing-evidence",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T15:14:53Z",
+        "completed_at": "2026-09-06T16:53:04.402Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 5882,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 5891,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "6c75699f3df2d43d9fa2a440f80b4a2b5ee9ca1e",
+        "commits": [
+          "48030b38e6091a3c0fc30fa09d9e0c72c2a8295f"
+        ],
+        "changed_lines": {
+          "added": 658,
+          "removed": 0,
+          "files": 3
+        },
+        "tests_added": 21,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_routing_evidence_fields.py tests/test_crew_promotion.py tests/test_crew_promotion_scope.py tests/test_crew_recover.py tests/test_crew_route_cost.py tests/test_gate_evidence.py tests/test_promotion_release.py tests/test_store_concurrency.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate43.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T151416751544-the-row-carries-what-routing-needs/manifest.md",
+        "scope_changed": false,
+        "session_id": "6b1709d2-5944-4dbe-a65c-292ae204e0e3",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 10965409,
+            "input_tokens_cumulative": 10965409,
+            "output_tokens": 59121,
+            "output_tokens_cumulative": 59121,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 5886.139,
+          "generated_tokens": 59121,
+          "generation_seconds": 5822.371,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 18.4,
+          "machine_seconds": 63.768,
+          "peak_input_tokens": 187159,
+          "tokens_per_second": 10.15,
+          "wall_tokens_per_second": 10.04
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-row-carries-what-routing-needs",
+          "session_id": "6b1709d2-5944-4dbe-a65c-292ae204e0e3",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T16:53:04.402Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_routing_evidence_fields.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260906T164344614217-the-ceiling-holds-whatever-burn-decides",
+        "plan": "crew-effort-routing",
+        "section": "\u00a71",
+        "node": "the-ceiling-holds-whatever-burn-decides",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 397,
+                "cached_input_tokens": 272961,
+                "input_tokens": 273360,
+                "output_tokens": 652,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 274012,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_ceiling_holds_regardless_of_burn.py -q passes, and a lane whose utilisation is at or above the ceiling is held whatever the burn floors decide. THE REGRESSION, introduced by commit a7489798 earlier today and live on the primary branch now. That change made burn multiple an admission input behind floors on elapsed fraction and utilisation. Where burn is not admissible it also sets the whole reading's headroom to unknown, and an unknown headroom is never held, by a deliberate and otherwise correct rule that absence of a signal must not be read as exhaustion. The two rules compose into a fail-open. Measured on the current primary branch by constructing the account-surface block that _from_block receives, then asking decide for a dispatch verdict against a 95 percent ceiling. Columns are utilisation, elapsed fraction of the window, resulting headroom, and whether the lane is held. 8 percent at 2.47 percent elapsed gives unknown and not held. 96 percent at 2.47 percent elapsed gives unknown and NOT HELD. 99.5 percent at 2.47 percent elapsed gives unknown and NOT HELD. The same three utilisations at 30 percent elapsed give known, and 96 and 99.5 are held. So a lane with almost none of its quota left is admitted for dispatch whenever the reading is taken early in its window, which is exactly when a burst of dispatches can spend the remainder. Before a7489798 those two rows were held. WHY THE EXISTING SUITE DID NOT CATCH IT. The falsifier written into that node required that each of the nine backends this project configures keep its held or clear verdict. Every one of those nine sits far below the ceiling, so the assertion ranged over a population that could not contain the failure and passed while the regression stood. The suite is green at 120 tests over four files. WHAT TO CHANGE. Separate what the burn floors govern from what they do not. The floors decide whether a projected exhaustion instant is emitted; they must not decide whether utilisation is a known reading. A reading carrying a utilisation figure has known headroom whether or not its burn multiple is admissible, and the ceiling comparison applies to it as it did before. Keep the emitted reason naming both facts, since a reader needs to know the utilisation was used and the projection was withheld. WHAT NOT TO CHANGE. Do not alter the floor values, the projection arithmetic, the degradation to the reset instant at burn at or below one, or the rule that a genuinely absent signal reports unknown and is not held. A reading with no utilisation figure at all still reports unknown. FALSIFIERS, asserted in tests/test_ceiling_holds_regardless_of_burn.py over a RANGE of utilisations rather than over the configured backends, because ranging over the configured backends is the defect that let this through. Across utilisations of 8, 60, 94, 96 and 99.5 percent, and across elapsed fractions both below and above the burn elapsed floor, the held verdict depends on utilisation against the ceiling alone and is identical at both elapsed fractions. A reading at or above the ceiling is held at every elapsed fraction tested. A reading below the ceiling is not held at any of them. A reading whose utilisation is absent reports unknown and is not held, at every elapsed fraction. A projection is still withheld below the floors and still emitted above them, so this changes which facts the floors govern and not the floors. State in the test file docstring that the range is the point, so a later reader does not narrow it back to the configured backends. Measure base and head over tests/test_ceiling_holds_regardless_of_burn.py and every test importing reckon.budget; report failure ids either side and require none added.",
+          "estimated_hours": 0.75,
+          "goal": "Restore the utilisation ceiling hold for a lane read early in its window, where the burn floors currently turn a known reading into an unknown one and admit a spent lane",
+          "id": "the-ceiling-holds-whatever-burn-decides",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T164344614217-the-ceiling-holds-whatever-burn-decides/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/budget.py",
+            "tests/test_ceiling_holds_regardless_of_burn.py",
+            "tests/test_burn_admission.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-burn-admission",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-06T16:44:01Z",
+        "completed_at": "2026-09-06T16:53:41Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 580,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 580,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "5d0f2a80fd424e3452449ee8056113f362adb9dc",
+        "commits": [
+          "aae2b7471e411345f687b1e107a7d8a92c1e24df"
+        ],
+        "changed_lines": {
+          "added": 138,
+          "removed": 11,
+          "files": 3
+        },
+        "tests_added": 12,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_ceiling_holds_regardless_of_burn.py tests/test_budget.py tests/test_budget_evidence_scope.py tests/test_burn_admission.py tests/test_crew_recover.py tests/test_mcp_recovery.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate44.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T164344614217-the-ceiling-holds-whatever-burn-decides/manifest.md",
+        "scope_changed": true,
+        "session_id": "01a0779b-0175-7f02-811d-33703f8b13fe",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3912960,
+            "cached_input_tokens_cumulative": 3912960,
+            "input_tokens": 3947923,
+            "input_tokens_cumulative": 3947923,
+            "output_tokens": 15270,
+            "output_tokens_cumulative": 15270,
+            "reasoning_output_tokens": 4853,
+            "reasoning_output_tokens_cumulative": 4853
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 20123,
+          "peak_input_tokens": 7860883
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-ceiling-holds-whatever-burn-decides",
+          "session_id": "01a0779b-0175-7f02-811d-33703f8b13fe",
+          "session_source": "pointer",
+          "retained_at": "2026-09-06T16:53:41Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_ceiling_holds_regardless_of_burn.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260906T133059249033-the-classifier-and-its-readers-agree",
+        "plan": "crew-observability-truth",
+        "section": "\u00a78",
+        "node": "the-classifier-and-its-readers-agree",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1979,
+                "cached_input_tokens": 867197,
+                "input_tokens": 869178,
+                "output_tokens": 2008,
+                "reasoning_output_tokens": 362,
+                "total_tokens": 871186,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_lane_killed_run_is_blocked.py tests/test_crew_ticker_layout.py tests/test_fleet_counter_coverage.py -q reports zero failures, from three at the current merged head. THESE ARE INTEGRATION DRIFT FROM PARALLEL NODES THAT EACH PASSED ALONE; the diagnosis is done and you are repairing rather than investigating. (1) test_the_action_set_is_one_set_with_three_readers and test_every_emitted_state_is_watched_actionable_or_delivered fail because the paused, waiting and wait-aged classifications now live in the classifier own state sets while the ticker action set and the fleet-counter coverage were never updated in step: two nodes landed those states and the monitor surface separately and neither could see the other. THE PLACEMENT IS STATED, not yours to choose: paused and waiting belong to PROGRESS, because both are waiting on something that lifts itself and neither asks a coordinator to act; wait-aged belongs to ACTION, because a wait that has outlived its expected duration is one whose own condition has not lifted and a coordinator should check the external job it names. The counter buckets must continue to partition the entire emitted vocabulary with nothing uncounted and nothing counted twice, which is what the coverage test asserts. (2) test_a_run_dead_after_terminal_exhaustion_keeps_its_refusal_reason fails because a later node changed the UNMETERED budget shape: retry exhaustion on an unmetered lane now records refusal false with a lane_backpressure marker rather than a budget refusal, so the fixture no longer yields the stream-derived refusal the test asserts and the run classifies abandoned. THAT IS A REAL DEFECT AND NOT ONLY A STALE TEST \u2014 it is the symptom an operator reported: a run the local lane killed reads \"the process is gone without a complete manifest\" and never names the rate limit. The discriminator is already present and observable: on an exhausted run the budget block carries lane_backpressure true and a detail naming the retry count, while on a run that retried and recovered the marker is absent. Join that marker with a dead process so the row names the lane and offers resume. Leave the metered refusal path unchanged. FALSIFIERS, all required: a run that retried and RECOVERED still reads running or complete and is never called blocked, which two runs carrying seven retries each and committing real work demonstrate; a metered usage-limit refusal keeps the reason and reset it has today; a dead run with no retries at all is still abandoned; and the counter buckets still partition every emitted state. Measure base and head over the three named files plus every test importing reckon.crew.recovery, reckon.crew.ticker or reckon.crew.runs; report failure ids either side and require none added beyond the three you are closing.",
+          "estimated_hours": 1.25,
+          "goal": "Bring the classifier's state vocabulary and the surfaces that read it back into agreement, so the merged head is green where each node was green alone",
+          "id": "the-classifier-and-its-readers-agree",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T133059249033-the-classifier-and-its-readers-agree/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "reckon/crew/ticker.py",
+            "reckon/crew/runs.py",
+            "tests/test_lane_killed_run_is_blocked.py",
+            "tests/test_crew_ticker_layout.py",
+            "tests/test_fleet_counter_coverage.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-surface-consistent",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T13:31:35Z",
+        "completed_at": "2026-09-06T17:17:33.955Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 13539,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 13558,
+        "stalled": true,
+        "time_budget": "50m",
+        "base_sha": "b2190378fa5b461af9823847bee8adb552ef488a",
+        "commits": [
+          "342d00e7626be89491d578f7a780bc43c651cb8d"
+        ],
+        "changed_lines": {
+          "added": 72,
+          "removed": 1,
+          "files": 1
+        },
+        "tests_added": 10,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_lane_killed_run_is_blocked.py tests/test_external_wait.py tests/test_crew_recovery.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate45.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T133059249033-the-classifier-and-its-readers-agree/manifest.md",
+        "scope_changed": false,
+        "session_id": "1e4febfa-e320-40a4-80cd-735793de2d2f",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 24962133,
+            "input_tokens_cumulative": 24962133,
+            "output_tokens": 120680,
+            "output_tokens_cumulative": 120680,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 13555.257,
+          "generated_tokens": 120680,
+          "generation_seconds": 12652.917,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 24.5,
+          "machine_seconds": 902.34,
+          "peak_input_tokens": 249292,
+          "tokens_per_second": 9.54,
+          "wall_tokens_per_second": 8.9
+        },
+        "follow_on_paths": [
+          "tests/test_external_wait.py::test_an_old_wait_surfaces_its_age_without_becoming_blocked",
+          "dispatch-arming/guard/orphan",
+          "visibility/lifetime",
+          "test_crew.py"
+        ],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-classifier-and-its-readers-agree",
+          "session_id": "1e4febfa-e320-40a4-80cd-735793de2d2f",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T17:17:33.955Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_lane_killed_run_is_blocked.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -67126,6 +67572,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1090
+    "_version": 1093
   }
 }
