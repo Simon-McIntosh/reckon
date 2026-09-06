@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T02:13:03",
+  "updated": "2026-09-06T02:16:32",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -1708,6 +1708,15 @@
         "session_model": null,
         "sessions": {},
         "created": "2026-09-01"
+      },
+      {
+        "id": "wave-verify",
+        "harness": "clive",
+        "role": "test",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-06"
       }
     ],
     "runs": [
@@ -62843,6 +62852,116 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T001426592969-merged-head-carries-no-added-failures",
+        "plan": "crew-observability-truth",
+        "section": "\u00a78",
+        "node": "merged-head-carries-no-added-failures",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 742,
+                "cached_input_tokens": 371583,
+                "input_tokens": 372327,
+                "output_tokens": 2127,
+                "reasoning_output_tokens": 928,
+                "total_tokens": 374454,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "Write the report at the declared path recording a full-suite run at the merged head HEAD_PLACEHOLDER and the same full-suite run at base 7351b63ca76b317931d43afaf7cdf96fc4446db2, each captured once to its own log with the command and exit status, and state the added-failure count as the difference between the two failure-id sets computed by set difference in both directions. Eight commits merged tonight touch reckon/_backends.py, reckon/crew/node.py, reckon/crew/promotion.py, reckon/crew/recovery.py, reckon/crew/runs.py, reckon/crew/dispatch.py, reckon/crew/reports.py and reckon/_store.py, plus two skill reference files and seven test files; each was gated only in its own worktree against its own base, so no measurement yet exists of the eight together. Report the failure-id set at each revision, the ids added at head, the ids removed at head, and the pass counts. Do not fix anything and do not edit any repository file: your role writes only the report at the declared path. A NON-ZERO ADDED COUNT IS A LEGITIMATE RESULT and is what this node exists to find; do not adjust the measurement to reach zero, and if a failure appears only at the merged head, name it, quote its assertion, and state which of the eight commits touches the file it exercises. Many failures are expected at BOTH revisions because a worker sandbox cannot arm watchers, bind sockets or resolve mounts; those are the tier and must appear identically on both sides. Judge by delta only.",
+          "estimated_hours": 0.75,
+          "goal": "Measure the merged head of tonight's wave against a stated base, so eight commits touching core dispatch surface are verified together rather than one worktree at a time",
+          "id": "merged-head-carries-no-added-failures",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T001426592969-merged-head-carries-no-added-failures/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "test",
+          "section": "\u00a78",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/merged-head-wave-verification.md"
+          ]
+        },
+        "role": "test",
+        "spec_level": "exact",
+        "member": "wave-verify",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T00:14:38Z",
+        "completed_at": "2026-09-06T00:15:38.746Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 36,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 60,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "b11107c52295dce8b1ec7790dbc167025f8d93a3",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "not-run",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T001426592969-merged-head-carries-no-added-failures/manifest.md",
+        "scope_changed": false,
+        "session_id": "0ebbe8ab-e6c6-417d-970f-9ae8aa704d3b",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no events yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "a verifier writes no commit: its deliverable is a report outside the repository, and it was stopped before writing one",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/merged-head-carries-no-added-failures",
+          "session_id": "0ebbe8ab-e6c6-417d-970f-9ae8aa704d3b",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T00:15:38.746Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "test",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -63071,6 +63190,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1036
+    "_version": 1038
   }
 }

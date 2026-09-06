@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-06">
-<meta name="plan-version" content="137">
+<meta name="plan-version" content="138">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md">
 <meta name="plan-impl" content="0.9">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b">
@@ -771,6 +771,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260905T204758060987-closure-and-dispatch-agree-on-unreconciled" data-who="crew-drain-fence" data-when="2026-09-05T21:39:31.709Z">
     <div class="r-comment-body"><p>One predicate now decides what unreconciled means, and both fences call it. closure_disposition_valid at recovery.py:859 is called by overdue_unreconciled_runs at 906 and by drain at runs.py:823, replacing two independent definitions that had never consulted each other. Verified at the merged head across all eight cases of the predicate, including the four that carry the risk: a terminal pointer with NO disposition is still refused on both surfaces, which is the forgotten-work protection the dispatch fence exists for and the thing a careless relaxation would have destroyed; a still-working disposition on a pointer that has gone terminal expires on both, so dispatch does not become the weaker surface; handed-off is reconciled on both; and an unrecognised disposition fails closed. Suite judged on delta across 32 recovery- and runs-importing files: 33 failures identical at base 034c594 and head, zero added, with the 6 new tests accounting for the pass count moving 599 to 605. THE DEFECT THIS ENDS, measured by an imas-codex fleet: drain reported unreconciled_runs 0 for three pointers carrying valid handed-off dispositions while dispatch refused those same three with exit 6. The ship skill directs a coordinator to read the drain view before closing a session, so the fence a closure signature rests on was the permissive one, and their outgoing coordinator committed a sprint closure attesting to a state the other surface denied. A fence satisfiable on one surface and refused on the other is not a fence.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20260906T001426592969-merged-head-carries-no-added-failures" data-who="wave-verify" data-when="2026-09-06T00:15:38.746Z">
+    <div class="r-comment-body"><p>Stopped by the coordinator two minutes in, for a coordinator error: a shell substitution in the dispatch script failed, so the done-when reached the worker carrying the literal token HEAD_PLACEHOLDER where the merged-head sha should have been. Nothing about the node or the worker. Resume refused correctly because the process was still live, so the run was stopped and reissued with the sha written inline. Recorded not-run so a briefing defect is not charged against the model or the lane.</p></div>
 </div>
 </section>
 </main>
