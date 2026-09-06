@@ -689,9 +689,8 @@ it is what §4d's closure fence exists to catch at the end. Also check
 `process_alive` against `manifest_status`: a non-terminal pointer whose process is
 gone is precisely the case no transition will ever announce.
 
-Follower flag variants — `--attention`, `--run <id>`, `--json`, and the
-no-`--session` whole-fleet form — are in `references/sprint-orchestration.md`
-§15.
+Follower flag variants — `--run <id>`, `--json`, and the no-`--session`
+whole-fleet form — are in `references/sprint-orchestration.md` §15.
 
 **Registration is what dispatch checks, and streaming is not registration.** A
 second follower for the same session is legitimate only as a replacement: it

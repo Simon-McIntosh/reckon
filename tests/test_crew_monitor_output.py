@@ -172,11 +172,10 @@ def test_harness_arms_a_monitor_and_attaches_followers() -> None:
     assert "persistent: true" in words
     assert "--session <session>'," in words, "the armed command must be the bare one"
     # A default state filter is what produced an empty pane on this host, so the
-    # reference has to say the follower reports everything and keep `--attention`
-    # as the deliberate exception.
+    # reference has to say the follower reports everything and carries no state
+    # filter at all.
     assert "do not add a state filter by default" in words
     assert "No output available" in words
-    assert "`--attention` exists for a caller that deliberately wants" in words
     assert "session_attached" in words
     # The measured failure the contrast exists to prevent.
     assert "four runs" in words
@@ -185,57 +184,15 @@ def test_harness_arms_a_monitor_and_attaches_followers() -> None:
     assert "more than two hours" in words
 
 
-def _transition(
-    to_state: str, *, from_state: str = "dispatched", blocked: int = 3
-) -> dict:
-    """Build one transition the way the producer records it."""
-    return {
-        "observed_at": "2026-08-26T09:15:00Z",
-        "run_id": f"r-{to_state}",
-        "node": "some-node",
-        "session": "mine",
-        "from_state": from_state,
-        "to_state": to_state,
-        "live": 4,
-        "blocked": blocked,
-        "unpromoted": 2,
-    }
+def test_every_state_the_snapshot_can_emit_is_in_the_watch_vocabulary() -> None:
+    """A state the snapshot can emit must be one the watch surface knows.
 
-
-def _selected(event: dict) -> bool:
-    """Ask the follower's own filter, which is where the filter now lives."""
-    return cli._follow_selects(event, session=None, run_ids=(), attention=True)
-
-
-@pytest.mark.parametrize("state", runs.WATCH_ATTENTION_STATES)
-def test_the_filter_wakes_the_session_on_every_attention_state(state: str) -> None:
-    assert _selected(_transition(state))
-
-
-@pytest.mark.parametrize("state", runs.WATCH_PROGRESS_STATES)
-def test_the_filter_stays_quiet_through_progress_carrying_a_blocked_count(
-    state: str,
-) -> None:
-    """A shell filter matched the summary field, so progress woke the session.
-
-    Every rendered line trails `N blocked · N unpromoted`, so an unanchored
-    pattern matched the whole stream — a firehose that reads as a working
-    channel until the monitor is stopped for volume. Selecting on the
-    transition's own state cannot express that mistake.
-    """
-    event = _transition(state, blocked=3)
-    assert " 3b " in recovery.format_watch_transition(event)
-    assert not _selected(event)
-
-
-def test_a_state_the_snapshot_can_emit_is_never_unrouted() -> None:
-    """`stalled` was in neither set, so no filter ever woke anyone for it.
-
-    The partition was asserted against the recovery classes, which do not
-    include the states the ticker itself derives — so the one state a
-    coordinator most needs (a worker gone quiet inside its budget) was
-    unroutable and the check stayed green. Read the states out of the function
-    that emits them instead.
+    The follower once routed through the attention set, and `stalled` — the
+    state a coordinator most needs, a worker gone quiet inside its budget —
+    was in neither set, so the check stayed green while nothing could wake
+    anyone for it. The follower carries no state filter any more; what
+    survives is the vocabulary check: read the states out of the function
+    that emits them and require every one to be a state the surface names.
     """
     source = inspect.getsource(recovery._watch_snapshot)
     emitted = set(re.findall(r'state = "([a-z_]+)"', source))
@@ -243,14 +200,6 @@ def test_a_state_the_snapshot_can_emit_is_never_unrouted() -> None:
     routed = set(runs.WATCH_ATTENTION_STATES) | set(runs.WATCH_PROGRESS_STATES)
     assert emitted <= routed, f"unrouted states: {sorted(emitted - routed)}"
     assert "stalled" in runs.WATCH_ATTENTION_STATES
-
-
-def test_attention_and_progress_stay_disjoint_across_every_recovery_class() -> None:
-    """A new run classification has to be routed before it can go unnoticed."""
-    attention = set(runs.WATCH_ATTENTION_STATES)
-    progress = set(runs.WATCH_PROGRESS_STATES)
-    assert not attention & progress
-    assert set(recovery.RECOVERY_CLASSES) <= attention | progress
 
 
 def test_watch_payloads_carry_the_line_that_attaches_this_session(

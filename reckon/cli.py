@@ -1411,7 +1411,6 @@ def _follow_selects(
     *,
     session: str | None,
     run_ids: tuple[str, ...],
-    attention: bool,
 ) -> bool:
     """Decide whether one transition belongs to this follower's fleet.
 
@@ -1419,17 +1418,19 @@ def _follow_selects(
     rendered, or a pointer carrying no session — reaches every follower. A
     reader that drops what it cannot attribute converts an unknown into a
     silence, which is the failure this whole surface exists to prevent.
-    """
-    from reckon.crew.runs import WATCH_ATTENTION_STATES
 
+    Every transition that belongs to the fleet is delivered; the follower
+    carries no state filter. A filter that reports how a run stopped and never
+    how it recovered is worse than none, because it hides the all-clear the
+    very same reader is waiting for, and a filter matching nothing is
+    indistinguishable from a follower that never started.
+    """
     if event.get("legacy"):
         return True
     owner = str(event.get("session") or "")
     if session is not None and owner and owner != session:
         return False
     if run_ids and str(event.get("run_id") or "") not in run_ids:
-        return False
-    if attention and str(event.get("to_state") or "") not in WATCH_ATTENTION_STATES:
         return False
     return True
 
@@ -1553,7 +1554,6 @@ def _follow_watch_lines(
     *,
     session: str | None = None,
     run_ids: Iterable[str] = (),
-    attention: bool = False,
     poll_interval: float = 0.1,
     sleeper=time.sleep,
     stop=None,
@@ -1603,9 +1603,7 @@ def _follow_watch_lines(
 
     def _emit(event: Mapping[str, Any]):
         """Return the event when it is both this follower's and news."""
-        if not _follow_selects(
-            event, session=session, run_ids=selected_runs, attention=attention
-        ):
+        if not _follow_selects(event, session=session, run_ids=selected_runs):
             return None
         run_id = str(event.get("run_id") or "")
         state = str(event.get("to_state") or "")
@@ -1801,14 +1799,6 @@ def _ticker_options(command):
     help="Deliver only these run ids. Repeat for several.",
 )
 @click.option(
-    "--attention",
-    is_flag=True,
-    help=(
-        "Deliver only states a coordinator must act on — terminal, blocked, "
-        "stalled, stopped, abandoned — rather than every progress transition."
-    ),
-)
-@click.option(
     "--json",
     "json_output",
     is_flag=True,
@@ -1816,9 +1806,7 @@ def _ticker_options(command):
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 @_ticker_options
-def crew_follow(
-    project, session, run_ids, attention, json_output, pretty, width, theme, no_color
-):
+def crew_follow(project, session, run_ids, json_output, pretty, width, theme, no_color):
     """Follow one session's runs without acquiring the project's watcher seat.
 
     The seat is project-global and this delivery is session-local, so a
@@ -1826,6 +1814,11 @@ def crew_follow(
     through the host harness's per-line notification primitive: this command
     produces lines and does not exit, so a mechanism that reports only on exit
     delivers nothing at all.
+
+    Every transition in the fleet is delivered, starts and recoveries
+    included; there is deliberately no option to narrow to the action states,
+    because a filter that hides a run's recovery hides the news the reader is
+    waiting for.
     """
     from reckon.crew import runs as runs_module
     from reckon.crew.recovery import format_watch_transition
@@ -1853,7 +1846,6 @@ def crew_follow(
             project,
             session=session,
             run_ids=run_ids,
-            attention=attention,
             on_poll=poll,
             resume=resume,
         ):
@@ -1874,7 +1866,7 @@ def crew_follow(
             project,
             session,
             delivery=delivery,
-            scope={"runs": list(run_ids), "attention": bool(attention)},
+            scope={"runs": list(run_ids)},
         ) as registration:
             stream_events(registration)
     except runs_module.CrewError as exc:
