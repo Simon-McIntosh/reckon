@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T20:07:12",
+  "updated": "2026-09-06T20:24:18",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -67641,6 +67641,143 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T181100676988-a-served-turn-refutes-the-refusal",
+        "plan": "crew-effort-routing",
+        "section": "\u00a71",
+        "node": "a-served-turn-refutes-the-refusal",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2496,
+                "cached_input_tokens": 341513,
+                "input_tokens": 344011,
+                "output_tokens": 639,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 344650,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_a_served_turn_refutes_the_refusal.py -q passes, and a refusal in a run's stream stops holding that run once the same stream shows the lane served a turn after it. THE MEASUREMENT, from a peer project across one afternoon. A run parked when a metered window closed at 14:07Z carried a refusal naming a reset two days out. The lane then served six turns under that same run, and the hold stood through every one of them; a person resumed the run by hand four times, and roughly eighteen hand resumes were needed across the fleet that afternoon. The hold text asserts that a served turn on the backend refreshes this evidence. Nothing in reckon/budget.py keys on served turns, so that sentence describes a mechanism that was never built, which is worse than silence because a reader waits for something that cannot happen. THE MECHANISM. _refusal_event_stamp walks a run's stream, finds the NEWEST rate_limit_event whose status is rejected, and dates it from the nearest surrounding timestamped record. DEFAULT_SHELF_LIFE_MINUTES then ages a refusal that names NO reset. A refusal that names a reset is exempt from that ageing and is trusted until the named instant. The comment beside the shelf life already records why a hold cannot clear itself: only a served run writes a budget record, and the hold refuses every run, so the lane is unreachable by the one thing that would update it. That reasoning applies identically to a dated refusal and was not applied to it, because a provider's stated reset was treated as authoritative. The measurement above refutes that assumption, and an earlier incident on this workstation recorded a stated reset clause wrong by three and a half hours, so it is not one provider's slip. WHY THE FIX IS CHEAP. The refutation is already parsed. That function loads the whole stream and already locates the newest rejected event by index. It never asks whether anything after that index succeeded. WHAT TO CHANGE. After locating the newest rejected event, determine from the SAME parsed events whether the lane served a turn at a later stream position. If it did, that refusal no longer describes now, and the run is not held on it. Choose the marker of a served turn from what the stream actually carries and state in a comment which record shape you chose and why; a retry that was itself rejected is not a served turn, and neither is a record that merely mentions a rejection. Where no later served turn exists, behaviour is unchanged. WHAT NOT TO CHANGE. Do not alter the shelf life, the floors, the projected exhaustion path, the ceiling comparison, or the treatment of a refusal that names no reset. Do not weaken a refusal that names a future reset and has no served turn after it; that evidence is current and holding on it is this module's purpose. Do not read any file other than the stream already being read. FALSIFIERS, asserted in tests/test_a_served_turn_refutes_the_refusal.py against constructed streams rather than a live account. A stream whose newest rejected event is followed by a served turn does not hold the run, and the emitted reason names the served turn as what refuted it. A stream whose newest rejected event is followed by nothing still holds, unchanged. A stream whose newest rejected event is followed only by further rejected events still holds, so a retry storm does not read as recovery. A refusal naming a future reset with no later served turn still holds, and its reason is unchanged. A refusal naming a reset already past does not hold, unchanged. A stream carrying the rejection phrase only inside an assistant or user record, which is how a worker discussing rate limits or reading a test fixture appears, is not treated as a rejection at all: measured across two fleets on 2026-09-06, 98,000 records carried 516 such substring hits and zero genuine rejections, so a phrase-matching implementation would hold every run that talks about rate limiting. Measure base and head over the new file and every test importing reckon.budget; report failure ids either side and require none added.",
+          "estimated_hours": 1.0,
+          "goal": "Stop holding a run on a refusal its own stream shows was overtaken by a served turn",
+          "id": "a-served-turn-refutes-the-refusal",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T181100676988-a-served-turn-refutes-the-refusal/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/budget.py",
+            "tests/test_a_served_turn_refutes_the_refusal.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-burn-admission",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-06T18:11:16Z",
+        "completed_at": "2026-09-06T18:23:04Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 708,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 708,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "5057ab1be36f03833dc59add2130e7afff8d45ef",
+        "commits": [
+          "ba3a3e761e6fe8c4d5dd7dca2b88ed1c30629cd6"
+        ],
+        "changed_lines": {
+          "added": 271,
+          "removed": 20,
+          "files": 2
+        },
+        "tests_added": 8,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_a_served_turn_refutes_the_refusal.py tests/test_budget.py tests/test_budget_evidence_scope.py tests/test_burn_admission.py tests/test_ceiling_holds_regardless_of_burn.py tests/test_crew_recover.py tests/test_mcp_recovery.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate49.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T181100676988-a-served-turn-refutes-the-refusal/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0779b-0175-7f02-811d-33703f8b13fe",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3998080,
+            "cached_input_tokens_cumulative": 7911040,
+            "input_tokens": 4186216,
+            "input_tokens_cumulative": 8134139,
+            "output_tokens": 10343,
+            "output_tokens_cumulative": 25613,
+            "reasoning_output_tokens": 4685,
+            "reasoning_output_tokens_cumulative": 9538
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 35151,
+          "peak_input_tokens": 16045179
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-served-turn-refutes-the-refusal",
+          "session_id": "01a0779b-0175-7f02-811d-33703f8b13fe",
+          "session_source": "pointer",
+          "retained_at": "2026-09-06T18:23:04Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_a_served_turn_refutes_the_refusal.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -67869,6 +68006,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1095
+    "_version": 1096
   }
 }
