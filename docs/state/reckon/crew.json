@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T07:18:36",
+  "updated": "2026-09-06T09:04:03",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -343,6 +343,15 @@
         }
       },
       {
+        "id": "crew-backpressure",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-06"
+      },
+      {
         "id": "crew-budget-instrument",
         "harness": "clive",
         "role": "implement",
@@ -377,6 +386,15 @@
         "session_model": null,
         "sessions": {},
         "created": "2026-09-05"
+      },
+      {
+        "id": "crew-midflight",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-06"
       },
       {
         "id": "crew-resume-refusal",
@@ -1584,6 +1602,15 @@
         "session_model": null,
         "sessions": {},
         "created": "2026-09-05"
+      },
+      {
+        "id": "skill-verb-surface",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-06"
       },
       {
         "id": "sonnet-a",
@@ -63245,6 +63272,153 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T052054751767-a-lane-killed-run-is-blocked-not-abandoned",
+        "plan": "crew-observability-truth",
+        "section": "\u00a76",
+        "node": "a-lane-killed-run-is-blocked-not-abandoned",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2824,
+                "cached_input_tokens": 411661,
+                "input_tokens": 414487,
+                "output_tokens": 1318,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 415805,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_lane_killed_run_is_blocked.py -q passes, and a dead run whose stream carries rate-limit retries and no terminal record classifies as blocked with a reason naming the lane, instead of abandoned. THIS IS THE HALF A SIBLING NODE DELIBERATELY LEFT UNDONE, and its reasoning is the specification. Commit 9e681aa taught reckon/_backends.py to read the api_retry records the local lane writes, and it refused to treat the mid-flight shape \u2014 retries with no terminal record \u2014 as a refusal, because from the STREAM ALONE a live worker mid-retry is indistinguishable from a dead one. Measured: two runs that carried seven retries each were still generating and went on to commit real work. So that verdict needs a fact the stream does not carry, and classify_pointer in reckon/crew/recovery.py has it: process liveness. The signal is already surfaced \u2014 the budget block carries the retry count in its detail \u2014 so this node joins two facts that both already exist rather than gathering a new one. THE FOUR CASES, and the last two are the falsifiers that matter. A dead process, retries present, no terminal record: blocked, with a reason naming rate limiting and the retry count, and a next action that offers resume rather than discard, because the lane refusing is the most triageable stop a fleet can suffer and abandoned is the least. A dead process, terminal exhaustion shape: already blocked today, and must stay blocked with its existing reason unchanged. AN ALIVE process with retries and no terminal record: still running, NOT blocked \u2014 this is the two-runs-that-succeeded case and a change that marks it blocked would report every throttled worker as dead while its work was still landing. A dead process with NO retries and no terminal record: still abandoned, because that is a genuine vanished worker and nothing here should reclassify it. Assert all four. Note that phase is not usable as a terminal signal \u2014 a run that finished normally was observed still reading phase starting \u2014 so derive from the process table and the stream, never from phase. Measure base and head over tests/test_lane_killed_run_is_blocked.py plus every test importing reckon.crew.recovery that reaches classify_pointer; report failure ids either side and require none added.",
+          "estimated_hours": 1.0,
+          "goal": "Classify a run the lane killed as blocked rather than abandoned, so it reads as triageable and resumable instead of as a vanished worker",
+          "id": "a-lane-killed-run-is-blocked-not-abandoned",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T052054751767-a-lane-killed-run-is-blocked-not-abandoned/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_lane_killed_run_is_blocked.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-midflight",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T05:21:01Z",
+        "completed_at": "2026-09-06T07:02:46.601Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 6085,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 6105,
+        "stalled": true,
+        "time_budget": "45m",
+        "base_sha": "268367bd5ca0d92964faed6a1c263aac50e94da5",
+        "commits": [
+          "4d9e71b9602ef76954a1e6b121971628da8bca38"
+        ],
+        "changed_lines": {
+          "added": 439,
+          "removed": 26,
+          "files": 2
+        },
+        "tests_added": 10,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_lane_killed_run_is_blocked.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T052054751767-a-lane-killed-run-is-blocked-not-abandoned/test_logs/head_suite_final.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T052054751767-a-lane-killed-run-is-blocked-not-abandoned/manifest.md",
+        "scope_changed": false,
+        "session_id": "93004bbd-7f7b-4b24-9887-87bf5f35ae56",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 16678193,
+            "input_tokens_cumulative": 16678193,
+            "output_tokens": 89155,
+            "output_tokens_cumulative": 89155,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 6102.72,
+          "generated_tokens": 89155,
+          "generation_seconds": 5083.467,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 20.6,
+          "machine_seconds": 1019.253,
+          "peak_input_tokens": 209850,
+          "tokens_per_second": 17.54,
+          "wall_tokens_per_second": 14.61
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-lane-killed-run-is-blocked-not-abandoned",
+          "session_id": "93004bbd-7f7b-4b24-9887-87bf5f35ae56",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T07:02:46.601Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_lane_killed_run_is_blocked.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -63473,6 +63647,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1041
+    "_version": 1045
   }
 }
