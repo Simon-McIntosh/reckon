@@ -5,6 +5,7 @@ import json
 import os
 import re
 import subprocess
+import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -873,6 +874,83 @@ def _terminal_stream_data(
     )
 
 
+# A prompt promotion can read a finished run's stream in the gap between the
+# manifest write and the harness' final turn record, folding a completion time
+# taken from a file mtime and losing the run's own token figures. Promotion
+# waits out that tail once the writer has exited, bounded by the values below.
+# The wait is a quiescence poll rather than a fixed sleep: an already-quiet
+# stream returns without waiting, and a writer still appending keeps the window
+# open until its tail lands or the ceiling elapses.
+_STREAM_SETTLE_POLL_SECONDS = 0.05
+_STREAM_SETTLE_QUIESCENCE_SECONDS = 0.2
+_STREAM_SETTLE_MAX_SECONDS = 2.0
+
+
+def _newest_stream_mtime(paths: Iterable[Path]) -> float:
+    """Return the newest modification time across a run's stream files."""
+    mtimes = [candidate.stat().st_mtime for candidate in paths if candidate.is_file()]
+    return max(mtimes) if mtimes else 0.0
+
+
+def _wait_out_stream_tail(paths: Iterable[Path]) -> None:
+    """Boundedly wait for a closed writer's stream tail, returning once quiet.
+
+    The stream's newest mtime is polled until it has not advanced for the
+    quiescence window, or the hard ceiling elapses, whichever comes first. A
+    stream whose newest write already predates the window is already quiet and
+    returns without any wait. The ceiling guarantees a truncated stream — a
+    writer that died mid-tail, or one whose terminal record never lands —
+    cannot hold a promotion past the bound.
+    """
+    candidates = [path for path in paths if path.is_file()]
+    if not candidates:
+        return
+    newest = _newest_stream_mtime(candidates)
+    if time.time() - newest >= _STREAM_SETTLE_QUIESCENCE_SECONDS:
+        return
+    deadline = time.monotonic() + _STREAM_SETTLE_MAX_SECONDS
+    last_mtime = newest
+    stable_since: float | None = None
+    while True:
+        observed = time.monotonic()
+        if (
+            stable_since is not None
+            and observed - stable_since >= _STREAM_SETTLE_QUIESCENCE_SECONDS
+        ):
+            return
+        if observed >= deadline:
+            return
+        time.sleep(_STREAM_SETTLE_POLL_SECONDS)
+        current = _newest_stream_mtime(candidates)
+        if current != last_mtime:
+            last_mtime = current
+            stable_since = None
+        elif stable_since is None:
+            stable_since = time.monotonic()
+
+
+def _promotion_terminal_observation(record: Mapping[str, Any]) -> StreamMeasures:
+    """Read a finished run's stream after a bounded settle for its terminal tail.
+
+    A worker writes its manifest before the harness reaches its terminal turn
+    record, so a prompt promotion can read the stream in that gap and fold a
+    completion taken from a file mtime — losing the run's own timing and token
+    figures from the ledger. Once the run's process has exited the writer can
+    only be flushing, so promotion waits out a short quiescence of the stream
+    and re-reads it. A process still alive is never waited on: its stream is
+    legitimately mid-write, and its behaviour here is unchanged. A stream that
+    never receives a terminal record still folds the mtime fallback, and the
+    bounded wait guarantees a truncated stream cannot hang a promotion.
+    """
+    if str(record.get("launch") or "") != "cli":
+        return _terminal_stream_data(record)
+    if process_alive(record.get("pid")) is True:
+        return _terminal_stream_data(record)
+    path = Path(str(record.get("log_path") or ""))
+    _wait_out_stream_tail(_run_streams(path))
+    return _terminal_stream_data(record)
+
+
 def _recoverable_session(record: Mapping[str, Any]) -> dict[str, str] | None:
     """The session a resume could still continue, and where it was found.
 
@@ -1431,10 +1509,13 @@ def _complete_locked(
     deleted. The comment uses a stable run-derived id, so a retry after an
     interruption cannot duplicate the narrative.
 
-    Worker-time spans the first and last timestamped stream events. A healthy
-    timestamp-less stream falls back to wall duration with an explicit source;
-    a stalled run keeps that duration absent. Promotion time remains an
-    explicit completion fallback when no stream survives.
+    Worker-time spans the first and last timestamped stream events. The stream
+    is read after a bounded settle once the run's process has exited, so the
+    terminal record the worker's harness writes after the manifest is not
+    missed; a live process is never waited on. A healthy timestamp-less stream
+    falls back to wall duration with an explicit source; a stalled run keeps
+    that duration absent. Promotion time remains an explicit completion
+    fallback when no stream survives.
     """
     record = read_pointer(run_id)
     project = str(record.get("project") or "")
@@ -1487,7 +1568,7 @@ def _complete_locked(
             "release": release,
         }
 
-    stream = _terminal_stream_data(record)
+    stream = _promotion_terminal_observation(record)
     if completed_at:
         finished = _assume_utc_if_naive(completed_at)
         completion_source = "provided"
