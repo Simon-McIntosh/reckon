@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T09:09:15",
+  "updated": "2026-09-06T09:12:57",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -1593,6 +1593,15 @@
         "session_model": null,
         "sessions": {},
         "created": "2026-09-05"
+      },
+      {
+        "id": "skill-monitor-rule",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-06"
       },
       {
         "id": "skill-routing-figures",
@@ -63576,6 +63585,139 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T062713476170-backpressure-on-an-unmetered-lane-is-not-exhaustion",
+        "plan": "crew-observability-truth",
+        "section": "\u00a75",
+        "node": "backpressure-on-an-unmetered-lane-is-not-exhaustion",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 3896,
+                "cached_input_tokens": 432299,
+                "input_tokens": 436197,
+                "output_tokens": 4157,
+                "reasoning_output_tokens": 2405,
+                "total_tokens": 440354,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_unmetered_lane_backpressure.py -q passes, and an exhausted retry sequence on an unmetered backend no longer produces a budget refusal that gates resume. THIS IS A REGRESSION I INTRODUCED TONIGHT IN 9e681aa AND IT IS ALREADY COSTING ANOTHER SESSION TIME. That commit taught _ClaudeDialect.observe to read api_retry records as a spent lane. _is_rate_limit_retry in reckon/_backends.py matches on error == \"rate_limit\" OR error_status == 429, and _retry_refusal_budget then records refusal true with the detail \"the lane is exhausted\". But the local server also returns 429 for CONSUMER QUEUE FULL, which is backpressure and not a spent budget: measured by a peer tonight, dispatching a sixth concurrent worker produced queue-full 429s that killed two RUNNING runs after ten retries at 40s spacing. The resulting exhaustion record then refused crew resume on the dead run for about six minutes on the budget evidence shelf life, and crew observe on a served live run did not lift it; only ageing did. So my change converts a transient capacity condition into a metered-budget hold on recovery. THE PRINCIPLE THAT RESOLVES IT is already in this repository and I did not use it: reckon/ledger.py declares UNMETERED_BACKENDS containing clive and clive-glm, with is_unmetered_backend at line 628. An unmetered backend HAS no metered budget, so a retry exhaustion there cannot be budget exhaustion by construction, and recording one is incoherent with the repository own cost model. Record it as lane backpressure instead: a condition that names the retry count and says the lane refused, that a dispatch fence may read to hold NEW work, and that carries no metered-budget semantics and therefore no evidence shelf life gating resume. Note that the two 429 kinds are NOT distinguishable in the stream \u2014 every api_retry record in eighteen sampled runs carries the identical field set, error rate_limit and error_status 429 \u2014 so do not attempt to tell them apart by message text; the backend meteredness is the discriminator you have. FALSIFIERS, both required: a METERED backend that genuinely refuses on a usage limit must still produce a budget refusal with its reset time, unchanged, because that path is what holds a wave correctly and a fix that flattened it would remove the protection this plan added; and a run that merely retried and recovered must still produce no refusal of either kind, which two runs carrying seven retries each and committing real work demonstrate. Measure base and head over tests/test_unmetered_lane_backpressure.py plus every test importing reckon._backends; report failure ids either side and require none added.",
+          "estimated_hours": 0.75,
+          "goal": "Record a local lane refusing on backpressure as backpressure rather than as a spent budget, so it holds new dispatch without blocking the resume of a run already killed",
+          "id": "backpressure-on-an-unmetered-lane-is-not-exhaustion",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T062713476170-backpressure-on-an-unmetered-lane-is-not-exhaustion/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/_backends.py",
+            "tests/test_unmetered_lane_backpressure.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-backpressure",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T06:27:21Z",
+        "completed_at": "2026-09-06T07:10:53.581Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2600,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2612,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "268367bd5ca0d92964faed6a1c263aac50e94da5",
+        "commits": [
+          "df1c7aec8d457e2c4c4ff73254895b3c0458fd38"
+        ],
+        "changed_lines": {
+          "added": 295,
+          "removed": 5,
+          "files": 2
+        },
+        "tests_added": 7,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_unmetered_lane_backpressure.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T062713476170-backpressure-on-an-unmetered-lane-is-not-exhaustion/newtest_standalone.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T062713476170-backpressure-on-an-unmetered-lane-is-not-exhaustion/manifest.md",
+        "scope_changed": false,
+        "session_id": "ff5c0359-e985-4971-a293-1b2ec112394d",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": null,
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "run completed after 6 rate-limit retries; retries alone are not a refusal"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 2609.301,
+          "generated_tokens": 49276,
+          "generation_seconds": 2210.628,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 14.8,
+          "machine_seconds": 398.673,
+          "peak_input_tokens": 150147,
+          "tokens_per_second": 22.29,
+          "wall_tokens_per_second": 18.88
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/backpressure-on-an-unmetered-lane-is-not-exhaustion",
+          "session_id": "ff5c0359-e985-4971-a293-1b2ec112394d",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T07:10:53.581Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_unmetered_lane_backpressure.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -63804,6 +63946,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1046
+    "_version": 1048
   }
 }
