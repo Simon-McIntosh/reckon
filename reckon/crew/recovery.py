@@ -856,13 +856,37 @@ def _derive_missing_manifest(
     return _mutate_pointer(run_id, record_gap) if run_id else record
 
 
+def closure_disposition_valid(disposition: str, classification: str) -> bool:
+    """Whether a recorded closure disposition excuses a pointer from the fences.
+
+    This is the single definition of ``reconciled`` shared by the closure drain
+    and the dispatch fence, so a pointer the drain counts as reconciled is never
+    refused by dispatch, and a pointer either surface still calls unreconciled
+    is refused on both. A ``handed-off`` disposition remains valid until the
+    receiving session reconciles the pointer; ``still-working`` excuses only a
+    pointer whose current classification is still ``running``. Any missing,
+    malformed or unknown disposition, or a disposition outlived by its run, is
+    not valid.
+    """
+    return disposition == "handed-off" or (
+        disposition == "still-working" and classification == "running"
+    )
+
+
 def overdue_unreconciled_runs(
     *,
     project: str,
     grace: str,
     now_seconds: float | None = None,
 ) -> list[dict[str, Any]]:
-    """Return actionable terminal pointers older than the configured grace."""
+    """Return actionable terminal pointers older than the configured grace.
+
+    A pointer is listed only when it is terminal past the grace AND not excused
+    by a recorded closure disposition: the same predicate the closure drain
+    uses, so a past-grace pointer that carries no valid disposition is still
+    refused here (the forgotten-work case) while one the drain counts as
+    reconciled is never refused.
+    """
     if not grace:
         return []
     grace_seconds = parse_duration(grace)
@@ -875,7 +899,12 @@ def overdue_unreconciled_runs(
             and isinstance(age, int)
             and age > grace_seconds
         ):
-            rows.append(row)
+            recorded = pointer.get("closure_disposition")
+            disposition = (
+                str(recorded.get("kind") or "") if isinstance(recorded, Mapping) else ""
+            )
+            if not closure_disposition_valid(disposition, row["classification"]):
+                rows.append(row)
     return rows
 
 
