@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import fcntl
+import hashlib
 import json
 import os
 import re
@@ -730,9 +731,16 @@ def classify_pointer(
     manifest_file_present, manifest_present = _manifest_freshness(record)
     manifest_data: dict[str, Any] = {}
     manifest_error = ""
+    manifest_digest: str | None = None
     if manifest_present:
         try:
-            manifest_data = parse_manifest(manifest.read_text())
+            manifest_text = manifest.read_text()
+            manifest_data = parse_manifest(manifest_text)
+            # A content digest lets a watcher tell a rewrite that changed
+            # something from a touch that did not. Computed from the same read
+            # that parsed the status, so the digest and the verdict can never
+            # describe different versions of the file.
+            manifest_digest = hashlib.sha256(manifest_text.encode("utf-8")).hexdigest()
         except (OSError, ManifestParseError) as exc:
             # The file exists but no reader can judge it: an unreadable file is
             # a condition of the delivery, not an exception in the classifier.
@@ -752,6 +760,7 @@ def classify_pointer(
         # A recovery artifact preserves evidence; it is not delivery by the
         # worker and therefore cannot satisfy the promotion precondition.
         manifest_present = False
+        manifest_digest = None
     manifest_commits = list(manifest_data.get("commits") or [])
     manifest_blockers = list(manifest_data.get("blockers") or [])
     needs_help = manifest_data.get("needs_help")
@@ -778,6 +787,7 @@ def classify_pointer(
     ):
         manifest_present = False
         manifest_data = {}
+        manifest_digest = None
         manifest_status = ""
         manifest_commits = []
         manifest_blockers = []
@@ -1210,6 +1220,11 @@ def classify_pointer(
         # The refusal text when a present manifest could not be read, carried on
         # the row so a surface that discards nothing has it one field away.
         "manifest_error": manifest_error or None,
+        # A content digest of the manifest as read, so a watcher can tell a
+        # rewrite that changed something from a touch that did not. None when
+        # no manifest was present or readable, so absence never looks like a
+        # digest to compare against.
+        "manifest_digest": manifest_digest,
         "terminal_at": terminal_at,
         "terminal_age_seconds": terminal_age_seconds,
         "log_age_seconds": age,
@@ -1654,6 +1669,13 @@ def _watch_snapshot(
         # reader to answer or read a manifest for.
         "needs_help_complete": row.get("needs_help_complete"),
         "wait_overdue": row.get("wait_overdue"),
+        # The manifest facts the fold needs to detect a rewrite: the effective
+        # status (empty while a live process defers a terminal report, so a
+        # deferred report never reads like a verdict), the commit list, and the
+        # content digest that distinguishes a changed rewrite from a touch.
+        "manifest_status": str(row.get("manifest_status") or ""),
+        "manifest_commits": list(row.get("manifest_commits") or []),
+        "manifest_digest": row.get("manifest_digest"),
     }
 
 
@@ -1694,6 +1716,38 @@ def _fleet_counts(snapshots: Mapping[str, Mapping[str, Any]]) -> dict[str, int]:
     return counts
 
 
+def _manifest_rewritten(
+    previous: Mapping[str, Any], current: Mapping[str, Any]
+) -> bool:
+    """Whether the report beneath an unchanged verdict was replaced.
+
+    A terminal manifest is the worker's own report and the fold emits one
+    state change per verdict, so a worker that replaces that report — the
+    measured case: an empty-commit failed placeholder overwritten eighteen
+    minutes later by the real failed manifest — must still surface, or the
+    coordinator holds the first reading forever. The signal is the content
+    digest, not the mtime: a digest fires only when the rewrite changed
+    something, while mtime alone fires on a touch of identical content, and a
+    transition without news is the noise this display exists to avoid. The
+    accepted cost is the opposite hole, a legitimate rewrite to byte-identical
+    content goes unseen — it carries no news to deliver, so there is nothing
+    a reader should be woken for.
+
+    Both readings must be an effective terminal verdict: a live process's
+    terminal report is deferred, so its rewrites stay silent until the process
+    dies, and an in-progress manifest is progress, not a verdict.
+    """
+    if str(previous.get("manifest_status") or "") not in TERMINAL_MANIFEST_STATUSES:
+        return False
+    if str(current.get("manifest_status") or "") not in TERMINAL_MANIFEST_STATUSES:
+        return False
+    previous_digest = previous.get("manifest_digest")
+    current_digest = current.get("manifest_digest")
+    return bool(
+        previous_digest and current_digest and previous_digest != current_digest
+    )
+
+
 def fleet_transitions(
     known: Mapping[str, Mapping[str, Any]],
     current: Mapping[str, Mapping[str, Any]],
@@ -1712,7 +1766,10 @@ def fleet_transitions(
 
     Departures first, then arrivals, then state changes — a promotion frees its
     slot before the next dispatch is counted into it, which is the order a
-    reader infers from the numbers.
+    reader infers from the numbers. A manifest rewrite that leaves the state
+    unchanged is folded after the state changes of the same observation: its
+    classification word did not move, so nothing else about the run could have
+    either.
     """
     running = {run_id: dict(snapshot) for run_id, snapshot in known.items()}
     changes: list[tuple[Mapping[str, Any], str | None, str]] = []
@@ -1741,13 +1798,22 @@ def fleet_transitions(
         state = str(current[run_id]["state"])
         if state != previous:
             changes.append((current[run_id], previous, state))
+        elif _manifest_rewritten(known[run_id], current[run_id]):
+            # The classification word did not move but the report it sits on
+            # did. The emitted snapshot is marked so the event builder records
+            # the rewrite as its own kind; the run's memory keeps the clean
+            # copy so the marker never leaks into a later departure.
+            rewritten = dict(current[run_id])
+            rewritten["manifest_rewritten"] = True
+            changes.append((rewritten, previous, state))
+            running[run_id] = dict(current[run_id])
 
     events: list[tuple[dict[str, Any], str | None, str, dict[str, int]]] = []
     for snapshot, previous, state in changes:
         run_id = str(snapshot.get("run_id") or "")
         if state == "promoted":
             running.pop(run_id, None)
-        else:
+        elif not snapshot.get("manifest_rewritten"):
             running[run_id] = dict(snapshot)
         events.append((dict(snapshot), previous, state, _fleet_counts(running)))
     return events, running
@@ -1794,6 +1860,16 @@ def _watch_transition(
         "detail": str(snapshot.get("detail") or ""),
         "needs_help_complete": snapshot.get("needs_help_complete"),
     }
+    if snapshot.get("manifest_rewritten"):
+        # A rewrite of the report beneath an unchanged verdict: from_state and
+        # to_state are the same word, so the distinct kind is what separates
+        # this event from one where the classification moved. The new report's
+        # facts ride along, so a reader sees what changed rather than only that
+        # something changed.
+        event["event"] = "manifest-rewritten"
+        event["manifest_status"] = str(snapshot.get("manifest_status") or "")
+        event["manifest_commits"] = list(snapshot.get("manifest_commits") or [])
+        event["commit_count"] = len(event["manifest_commits"])
     if "waiting" in counts or previous in WAITING_STATES or current in WAITING_STATES:
         event["waiting"] = counts.get("waiting", 0)
     return event
