@@ -215,44 +215,6 @@ def test_an_unscoped_follower_marks_foreign_ownership_with_a_glyph(home) -> None
     assert "mine" not in recovery.format_watch_transition(events[0])
 
 
-def test_the_attention_filter_is_inside_the_follower(home) -> None:
-    """The filter moved in so the attach line needs no pipe and no `|| true`."""
-    _write_pointer(home, "r-one", "one-node", session="mine", phase="working")
-    attention: list[dict] = []
-    every: list[dict] = []
-    stop = threading.Event()
-
-    def reader(sink: list[dict], **kwargs) -> None:
-        for event in cli._follow_watch_lines(
-            "proj", session="mine", poll_interval=0.001, stop=stop, **kwargs
-        ):
-            if event.get("event") in {"attached", "reattached"}:
-                continue
-            sink.append(event)
-
-    threads = [
-        threading.Thread(target=reader, args=(attention,), kwargs={"attention": True}),
-        threading.Thread(target=reader, args=(every,), daemon=True),
-    ]
-    for thread in threads:
-        thread.daemon = True
-        thread.start()
-    try:
-        with runs._project_watch_claim("proj", "1h"):
-            crew.list_live(project="proj")
-            _wait_for(lambda: any(e["to_state"] == "working" for e in every))
-            _deliver(home, "r-one", "complete")
-            crew.list_live(project="proj")
-            _wait_for(lambda: any(e["to_state"] == "complete" for e in attention))
-    finally:
-        stop.set()
-        for thread in threads:
-            thread.join(timeout=2)
-
-    assert [event["to_state"] for event in attention] == ["complete"]
-    assert [event["to_state"] for event in every] == ["working", "complete"]
-
-
 def test_the_attach_line_is_one_bare_command_a_monitor_can_arm() -> None:
     line = runs._watch_attach_line("nova", session="s18-hexgrid")
     assert "|" not in line, "a pipe buffers the ticker and hides its refusals"

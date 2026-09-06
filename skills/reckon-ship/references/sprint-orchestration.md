@@ -771,9 +771,7 @@ failure included), `unpromoted` is delivered work waiting on a gate.
 
 ### Follow flags
 
-`reckon crew follow` also takes `--attention` when a caller deliberately wants
-only the actionable states (terminal, blocked, stalled, stopped, abandoned) and
-none of the progress ones, `--run <id>` (repeatable) to babysit named runs,
+`reckon crew follow` takes `--run <id>` (repeatable) to babysit named runs,
 `--json` for transition objects, and no `--session` at all for the whole
 project's fleet, which labels every line with the session that owns it. Status
 and refusals go to stderr so stdout stays one notification per transition.

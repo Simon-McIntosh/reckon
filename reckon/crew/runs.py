@@ -1773,9 +1773,12 @@ def project_watch_visibility(
     }
 
 
-# Every state `_watch_snapshot` can emit, split by whether a coordinator has to
-# act on it. A ticker filter built from the first set wakes a session for work it
-# did not think to name; the second set is progress and would only add noise.
+# Every state the watch surface can emit, split by whether a coordinator has to
+# act on it. The first set is the vocabulary a reader acts on the sight of; the
+# second is progress and is not news on its own. The split used to feed a
+# follower state filter, which is gone — a follower now delivers every
+# transition — but the vocabulary remains the one the surface knows, and tests
+# still assert every emitted state lands in it.
 WATCH_ATTENTION_STATES = (
     "complete",
     "blocked",
@@ -1815,8 +1818,9 @@ def _watch_attach_line(project: str, *, session: str | None = None) -> str:
     It carries no state filter either. A filter that legitimately matches
     nothing produces an empty pane, which reads the same as a follower that
     never started -- and a reader watching a wave wants the starts and the
-    working transitions, not only the landings. ``--attention`` remains
-    available for a caller that deliberately wants the actionable states alone.
+    working transitions, not only the landings. A state filter is worse than
+    no filter even when it matches: it reports how a run stopped and hides how
+    it recovered, which is the half of the story the reader is waiting for.
     """
     parts = ["reckon", "crew", "follow", "--project", shlex.quote(project)]
     if session:
