@@ -105,7 +105,7 @@ recoverable orphan rather than a finished run; `observe` reports it as
 
 ```text
 node: <stable node id>
-status: complete | blocked | failed
+status: waiting | complete | blocked | failed
 commits: <sha list>
 changed_paths: <explicit list>
 tests: <concise command/result summary>
@@ -137,6 +137,47 @@ discovered but was fenced out of otherwise has nowhere to go but prose, where it
 is lost. The orchestrator either folds each candidate into the current wave or
 writes it as a plan followup; `crew.followup_ops_from_manifest` builds the append
 ops so the invocation line stays canonical.
+
+### The declared external wait
+
+**When your work submits a job it does not control — a batch job, a queued build,
+anything whose completion it would otherwise sit and check — write the wait into
+the manifest and exit, rather than polling the job from inside the turn.** The
+run then reads as waiting rather than as working or stalled, and `resume-ready`
+wakes it the moment the probe reports a terminal value. A declared wait is quiet
+without being dead; a poll loop is neither.
+
+`status: waiting` plus four fields make the declaration:
+
+| Field | What it carries |
+|---|---|
+| `wait_condition` | one line stating what is being waited on — the submitted job and what must happen for the wait to end |
+| `wait_probe` | the shell-free argument vector that answers the condition, run in your worktree |
+| `wait_terminal` | the probe's output values that mean the wait is over |
+| `resume_brief` | what the resumed self does next, in the same voice as the rest of the manifest |
+
+`wait_probe` runs without a shell, and its last non-empty output line is matched,
+case-insensitively, against `wait_terminal` — with `exit:<code>` standing in when
+the probe prints nothing. A state never listed there leaves the run waiting.
+`wait_started_at` dates the wait and is optional: the manifest's own modification
+time is the fallback, so write the manifest once and leave it alone. A resume
+needs the worktree, so the fields must be enough for a fresh eye there to finish
+the node.
+
+**Why polling is the wrong default.** Every check of a running job is a full
+model round-trip, and on this fleet each round-trip re-sends the whole context —
+measured at roughly 180,000 billed tokens per command on a node that submitted
+no job, and roughly 280,000 on one that did, on a metered lane where better than
+98 percent of the input was cached. The run that waited just over ninety minutes
+billed 46 million of its 51 million input tokens in the turn that did the
+waiting, because that turn *was* the poll loop. A declared wait charges a few
+tokens once, for the manifest, and nothing for the hours after. Those figures
+are a dated illustration of the mechanism, not a standing rate: the cost scales
+with context size and model.
+
+**The boundary.** A short bounded wait inside a turn — a counter that bumps a few
+times and resolves — is fine and simpler. This is for waits long enough that
+polling them costs more than a resume.
 
 Keep large logs and artifacts on disk. The orchestrator reads the manifest,
 `git show --stat` and bounded excerpts — never a whole log pulled into its
