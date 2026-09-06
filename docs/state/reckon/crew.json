@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T18:36:17",
+  "updated": "2026-09-06T18:42:38",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -66613,6 +66613,141 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T162556606604-a-reading-speaks-only-for-its-own-lane",
+        "plan": "crew-effort-routing",
+        "section": "\u00a71",
+        "node": "a-reading-speaks-only-for-its-own-lane",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2568,
+                "cached_input_tokens": 229057,
+                "input_tokens": 231627,
+                "output_tokens": 1714,
+                "reasoning_output_tokens": 76,
+                "total_tokens": 233341,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_budget_evidence_scope.py -q passes, and a budget reading is applied only to the lane it was observed on. THE MEASUREMENT. reckon crew preflight on this project at 2026-09-06T15:36:16Z reported codex, codex-luna, codex-spark and codex-terra with utilisation 5.0, burn multiple 2.7138, and the same observation instant, agreeing to four decimal places. A second project measured codex-spark at that time returning a hard usage-limit refusal naming its own reset, after four of its runs died at their first turn with no thread recorded. So the lane that was refusing reported 95 percent of its quota remaining, and a coordinator reading the preflight dispatched into it. THE MECHANISM. The account surface is read once and attributed to every backend whose name begins with the family prefix. The three named lanes have no state of their own, so the shared reading is the only thing describing them. Note what this does to a repair made elsewhere: a refusal parser that learns to read a hard usage-limit message would write that refusal against one of those names, and the next preflight would overwrite it from the shared surface, because the surface describes a different lane. The attribution defect therefore outranks the parser defect, and fixing the parser alone leaves the wrong verdict standing. WHAT TO CHANGE. A reading carries the identity of the lane it was observed on and is applied to that lane alone. Where one account surface genuinely covers several backends, that coverage is declared rather than inferred from a name prefix. A backend covered by no reading reports headroom unknown. Unknown is not held, matching this module's existing treatment of a window that has rolled over, and for the reason recorded there: only a served run writes a fresh budget record, so a hold derived from an absent signal has no path back. WHAT NOT TO CHANGE. Do not alter the ceiling, the resume reserve, the burn floors, or the projected exhaustion path landed earlier today. Do not change how any single reading is parsed or aged; this node changes which backends a reading speaks for and nothing else. FALSIFIERS, each asserted in tests/test_budget_evidence_scope.py against constructed states rather than a live account. A reading observed on one backend leaves every other backend reporting unknown, asserted over a family of four sharing a name prefix, so the measured shape above is refused by the result. A backend reporting unknown is not held. A declared multi-backend coverage applies to exactly the backends it names and to no others, and a backend absent from that declaration is unknown rather than covered. A backend that has its own reading keeps its own verdict unchanged, held or clear, so this removes attribution without altering any lane's own judgement. The nine backends this project configures each resolve to exactly one reading or to none, asserted by identity of the reading rather than by equality of its values, because two lanes that genuinely read the same numbers must still be distinguishable from one lane read twice. Measure base and head over tests/test_budget_evidence_scope.py and every test importing reckon.budget; report failure ids either side and require none added.",
+          "estimated_hours": 1.25,
+          "goal": "Apply a budget reading only to the lane it was observed on, so a backend with no reading of its own reports unknown instead of borrowing another lane's numbers",
+          "id": "a-reading-speaks-only-for-its-own-lane",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T162556606604-a-reading-speaks-only-for-its-own-lane/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/budget.py",
+            "tests/test_budget_evidence_scope.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-burn-admission",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-06T16:26:06Z",
+        "completed_at": "2026-09-06T16:38:41Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 755,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 755,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "cf64a62b610727f21cb343b9d222902b85a06d76",
+        "commits": [
+          "b281f0953ba347a8166471f65d11ac23ec6a8919"
+        ],
+        "changed_lines": {
+          "added": 192,
+          "removed": 7,
+          "files": 2
+        },
+        "tests_added": 8,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_budget_evidence_scope.py tests/test_budget.py tests/test_burn_admission.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate41.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T162556606604-a-reading-speaks-only-for-its-own-lane/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0778a-9a44-7652-9c91-4ff680b55c45",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 10636032,
+            "cached_input_tokens_cumulative": 10636032,
+            "input_tokens": 10859898,
+            "input_tokens_cumulative": 10859898,
+            "output_tokens": 28290,
+            "output_tokens_cumulative": 28290,
+            "reasoning_output_tokens": 11548,
+            "reasoning_output_tokens_cumulative": 11548
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 39838,
+          "peak_input_tokens": 21495930
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-reading-speaks-only-for-its-own-lane",
+          "session_id": "01a0778a-9a44-7652-9c91-4ff680b55c45",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T16:38:41Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_budget_evidence_scope.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -66841,6 +66976,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1087
+    "_version": 1088
   }
 }
