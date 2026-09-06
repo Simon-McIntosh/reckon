@@ -81,57 +81,19 @@ prefer pausing the node.
 
 ### Continuity — who receives the next piece of work
 
-A node's worker holds context no fresh worker can rebuild cheaply. Route by what
-the next piece of work *is*, not by whichever worker is convenient:
-
-| Next work | Goes to | How |
-|---|---|---|
-| A `NEEDS-HELP:` brief from a CLI-launched live run | that same run's session | `reckon crew resume --run <id> --advice "…"` |
-| A `NEEDS-HELP:` brief from an in-harness run | that attached harness task/session | answer it through the host harness; CLI resume cannot launch it |
-| A followup on work that just landed — review comment, gate evidence, a fix within the node's own scope | the **same worker**, via its roster member's long-lived session | `reckon crew dispatch … --member <id>` |
-| New scope, a different file set, or significant rework | a **fresh dispatch**, its own worktree and node | `reckon crew dispatch …` with a new node id |
-
-**This works only if the original dispatch named `--member`** — the session
-survives in the member's committed `crew.json` entry after the live pointer
-goes. **So dispatch every node as a roster member by default** (`reckon crew
-member list` / `member add`; a member without a session captures its first
-run's). Scope decides continuity: work inside the landed node's paths returns
-to its member; wider scope is a new node recording `--scope-changed`. **A
-member is a serial worker** — dispatch refuses one with a non-terminal
-in-flight run, so independent concurrent work uses distinct members.
-
-**Do NOT stop at routine checkpoints.** Keep going and update state as work
-lands. Valid early stops are:
-- A prerequisite plan is unshipped (hard stop — see §Prerequisite blocking)
-- A NEW decision surfaced that is not already locked in the plan, is material to the work, and cannot be deduced from the plan/code/sensible defaults (an already-locked decision is NOT a reason to stop — honour it and proceed). When stopping for one, present it — and any other open decision the lead could settle in the same breath — as a structured multiple-choice question with a marked recommendation and per-option reasoning, per `reckon-edit` SKILL.md (*Interactive walkthrough*). Never hand back a bare list of open decision keys.
-- The next section's scope would require writing files outside your allocated write scope
-- Applicable safety policy or user authority requires confirmation
-- A worker commit cannot be integrated safely without overwriting unrelated work
+Route the next piece of work by what it *is*, not by whichever worker is
+convenient: a `NEEDS-HELP:` brief returns to the session that holds its
+context, same-plan followup work returns to the roster member whose
+long-lived session remembers the node, and new scope is a fresh dispatch.
+The routing table and the member-serial rule are in
+`references/sprint-orchestration.md` §Continuity.
 
 ### These are not valid reasons to stop
 
-Continue through ordinary complexity, validation, and recoverable integration:
-
-| Rationalization | Reality |
-|---|---|
-| "This is risky or touches core code" | Route to a capable worker; test and validate integration. |
-| "Better to confirm the approach" | The plan and locked decisions are the approval. |
-| "This is long or needs full validation" | Continue; validation is a worker node. |
-| "I'll offer options" | Follow the locked choice unless a genuinely new decision surfaced. |
-| "A worker stopped at its fence" | Answer `NEEDS-HELP:` and resume that session, or reshape and redispatch the node. |
-| "Infrastructure timed out" | Verify outage versus latency, then repoint with the corrected runtime brief. |
-| "Two attempts failed" | Reshape or split the node; repeated worker failure is not plan abandonment. |
-| "This next step is a *different kind* of work" | Not an exemption. §7c's list is closed; a new category is the stop wearing a costume. |
-| "Each fold surfaced another fold" | That is convergence, not creep. See §7d — fold depth carries no stopping authority. |
-| "The handoff is written, the next link is named" | A named next link you could dispatch is a defect, not a deliverable. See §9. |
-
-Plans do not override global safety or expand user authority. A locked decision
-settles implementation choices only inside the already-authorised scope.
-
-**Hiccup or blocker — the one test.** If existing authority can move the work
-forward by changing runtime, member, scope, node shape, advice, or experiment,
-repoint and continue. Stop only when progress needs new authority: an external
-prerequisite, user-owned decision, excess spend, or consent for an outward effect.
+The enumeration of invalid stopping rationalizations — "this is risky",
+"the approach needs confirming", "a worker stopped at its fence", and the
+rest — and the one test that separates a hiccup from a blocker are in
+`references/sprint-orchestration.md` §Role of stopping.
 
 ## Fast path
 
@@ -200,18 +162,13 @@ structured state (decisions, followups). Do not implement items marked
 
 **Every routine question about plans, runs, sprints or budgets is an MCP read.
 Reaching for bash is almost always a sign the call was made wrongly, not that
-the surface is missing.** Measured 2026-09-04 across two coordinators: five
-`roadmap` calls omitted `view`, all five exceeded the response ceiling and
-spilled to a file answered with `jq`, and the identical sprint-scoped call with
-`view="summary"` returned about 900 characters against 99,329 — a hundred and
-ten times smaller, carrying completion, the ready and blocked counts, the
-finding counts and the critical path with its hours.
+the surface is missing.**
 
 - **Always pass `view`.** A single-project `roadmap` without one returns the
   lossless legacy report, which at a real project's size cannot be returned at
   all. `summary` answers nearly every question; ask for `raw` deliberately.
-- `crew(view="flight"|"budget"|"drain"|"live")` answers what `reckon crew
-  flight`/`preflight`/`drain`/`list` answer. Prefer the tool.
+- `crew(view="flight"|"budget"|"drain"|"live")` answers what `reckon flight`
+  and `reckon crew preflight`/`drain`/`list` answer. Prefer the tool.
 - `read_plan(..., view="summary")` before `view="raw"`; raw is for editing, not
   for looking.
 
@@ -243,16 +200,13 @@ measured instances: `~/.agents/AGENTS.md`, *Name The Target*.
    already excludes a plan at `impl` 1.0 **or** status `shipped`/`done` from
    `pending_work`, `ready_now`, `critical_path` and every open path — that is §7a-bis's
    mechanism, and reading those plans in full is the single largest re-litigation cost
-   of resuming an in-work sprint in a fresh session. Measured 2026-09-04 on this
-   project: 14 member plans against 9 pending, so a third of the reading bought
-   nothing. Read a completed plan only when a pending plan **depends** on it, and then
-   only for the contract it provides — its landed-summary and locked decisions, not its
-   run history.
+   of resuming an in-work sprint in a fresh session. Read a completed plan only when a
+   pending plan **depends** on it, and then only for the contract it provides — its
+   landed-summary and locked decisions, not its run history.
 
-   **Trust `pending_work` rather than recounting.** It was verified against an
-   independent count of the same sprint on 2026-09-04 and agreed exactly at 9. Note
-   that a sprint's `completed` figure counts membership from the project index and can
-   differ from a plan-metadata count; `pending_work` is the set that governs dispatch.
+   **Trust `pending_work` rather than recounting.** A sprint's `completed` figure
+   counts membership from the project index and can differ from a plan-metadata
+   count; `pending_work` is the set that governs dispatch.
 2. **Full plan by default.** `/reckon-ship <slug>` without a section flag means ALL implementable sections. Never implement one section and stop unless there is a hard blocker.
 3. **Whole sprint by default.** `/reckon-ship S1` means every executable item in the sprint plus actionable same-project prerequisites.
 4. **Whole graph by default.** `/reckon-ship <handle>` or its unambiguous long
@@ -353,26 +307,12 @@ Wait for the user's response before doing anything else. If the user authorizes 
 
 ### 0. Resolve plan, sprint, or graph
 
-1. Derive the current project from the repository/mount context.
-2. Treat `graph:<handle>` as a graph target. Call
-   `roadmap(project="graph:<handle>", view="raw")`; never reproduce its
-   traversal or persist its returned `members`. Refuse an error response or any
-   returned `decision_blockers`. Read every returned member plan, report the
-   `schedule_override.deferred` count and member refs, then use the coordinator
-   workflow over the returned ready queue across its mounted repositories.
-3. Otherwise call `roadmap(project)` and match the argument against exact sprint ids.
-4. Treat an exact sprint match, `sprint:<id>`, or `<project>:<id>` as
-   a sprint target, and `plan:<slug>` as an explicitly selected plan target.
-5. For every remaining bare token matching
-   `[A-Za-z0-9][A-Za-z0-9._-]*`, try the canonical
-   `roadmap(project="graph:<token>", view="raw")` read. A unique live claim makes
-   it a graph target. A response that the handle names no live plan means the
-   token remains a single-plan target; duplicate claims and every other graph
-   error are refusals, never plan fallbacks. A token outside the handle grammar
-   is also a plan target; authoring it as `plan-graph-handle` is refused with
-   the grammar stated.
-6. If a sprint target, resolve the sprint and use the same coordinator workflow
-   over its complete graph. Do not continue with the plan-only preflight below.
+The resolution mechanics for a plan, sprint, or graph target — how a bare
+token is matched against exact sprint ids and the handle grammar, and when a
+target resolves as a graph rather than a plan — are in
+`references/sprint-orchestration.md` §1. Call `roadmap(project)` first and
+match the argument against exact sprint ids before any other treatment; a
+token no live endpoint claims as its graph handle remains a single-plan target.
 
 ### 1. Plan pre-flight — read the FULL plan
 
@@ -397,29 +337,12 @@ subsections or deferral markers.
 
 ### 1b. Currency audit and prior-art reconnaissance — MANDATORY
 
-Plans go stale, and agents are quick to rebuild what already exists. Between
-reading the plan and authoring any implementation node:
-
-**Audit plan currency against the code.** Check every asserted API, file,
-limitation, and technical property against the named tree before cutting nodes.
-A node authored from stale text executes its defects faithfully.
-
-**Dispatch a prior-art scout in the background.** One read-only
-investigate-role node, dispatched through `reckon crew dispatch` exactly like
-every other node — never a harness-native background agent (that bypasses the
-run ledger, manifest contract, and calibration) and never inline; register a
-fresh roster member if every existing one is busy. Launch it at pre-flight so
-it runs while the coordinator finishes reading state. Its single deliverable is
-a REUSE MAP: the modules, symbols, tests and data already in reach that solve
-the problem in whole or part, each with a one-line fitness verdict. It searches
-capability-shaped, not filename-shaped ("2-D interpolation", not "does
-fsa_kernel.py exist"), across this repository, every repository named by the
-plan's external `depends_on` / `blocks` refs, and every repository this repo's
-AGENTS.md declares as coupled — coupling runs both ways.
-
-**Nodes cite the reuse map.** Each implementation node names the machinery it
-extends or consumes. New machinery requires a fitness verdict explaining why
-each named reuse candidate fails; otherwise it creates a competing authority.
+Plans go stale, and agents rebuild what already exists. Audit plan currency
+against the code before cutting nodes, and dispatch a prior-art scout whose
+single deliverable is a REUSE MAP that nodes then cite. The scout is an
+ordinary investigate-role node — never a harness-native background agent and
+never inline. The full mechanics of the scout and the citation rule are in
+`references/sprint-orchestration.md` §Prior-art reconnaissance.
 
 ### 2. Classify ALL items
 
@@ -595,7 +518,7 @@ per-task deviation is an override on the same call rather than a different call:
 reckon crew dispatch --project P --plan L --section §N --role implement \
   --node <id> --goal "<one deliverable>" --done-when "<numeric measure YOU name>" \
   --write-path <path> \
-  --time-budget 25m --session <session> [--set backends.<name>.effort=high]
+  --time-budget 25m --session <session> [--member <id>] [--set backends.<name>.effort=high]
 ```
 
 Peer scopes come from live pointers in the same project and repository. Dispatch
@@ -665,10 +588,18 @@ plans it is shipping, its repository, and whether it is still dispatching; pass
 that finds a defect touching a repository it does not own reports the finding
 to the live session working there when this directory names one. Send it as a
 finding, never as an instruction and never as authority: a peer cannot authorise
-work in another repository, and a relayed approval is not consent. Every
-correction that mattered in the measured 2026-09-04 fleet came from a peer
-measuring what the author could not see, and each was cheaper to send than to
-rediscover.
+work in another repository, and a relayed approval is not consent.
+
+`reckon crew directory` is the same read from the shell: it names every live
+coordinator, what it is shipping, its repository, and whether it is still
+dispatching, narrowed by `--project`, `--run`, or `--node`.
+
+`reckon crew redispatch --run <id> [--backend <name>] [--reason "<why>"]`
+moves a working run to another backend without replacing its identity — the
+same run, member, and worktree — and is the recovery when a lane is spent
+mid-flight. `reckon crew member list` shows the registered members; dispatch
+refuses a member that already owns a non-terminal in-flight run, so
+independent concurrent work uses distinct members.
 
 `view="live"` answers "are my background workers alive, and where are they" for
 the whole fleet at once; `reckon crew list`, stream-file `stat`s, and `ps`
@@ -749,14 +680,9 @@ leaves behind. The three buckets partition the fleet: `working` is work in
 progress, `blocked` is everything that has stopped and needs you (a stall or a
 failure included), `unpromoted` is delivered work waiting on a gate.
 
-**Silence after a drain is ambiguous, and the ambiguity has a measured cost.**
-The follower reports transitions; nothing reports the *absence* of further
-transitions, so a fleet that has gone quiet looks identical to one still working.
-Two failures measured on 2026-09-05: a coordinator sat with three terminal
-pointers unpromoted for hours because the fleet was quiet and quiet read as done;
-another learned four hours late that two runs had ended with work outstanding,
-their manifests still reading `in_progress`, because a process that ends without a
-terminal event produces no transition at all.
+**Silence after a drain is ambiguous.** The follower reports transitions; nothing
+reports the *absence* of further transitions, so a fleet that has gone quiet looks
+identical to one still working.
 
 Until the follower emits a drain line itself, compensate: **after any wave, when
 transitions stop arriving, call `crew(project, view="live")` rather than waiting.**
@@ -1052,126 +978,9 @@ advance the dependency wave with incomplete work.
 
 ### 5b. Read what the worker produced — the gate is not the evidence
 
-**Authored from measurement, not preference.** Two coordinators running fleets on
-2026-09-05 reported their converged practice over twenty-four landings between
-them. Both had independently stopped treating a passing gate as the verification
-and started treating it as one input to a read. This section is that practice.
+**Authored from measurement, not preference.** A passing gate the implementing worker wrote and ran against its own diff measures internal consistency, not correctness, so every landing is read before integration and release. Run the cheap checks in yield-per-second order before reading any code, then read the diff by anomaly at a depth set by blast radius × mechanicalness.
 
-**The distinction that aims everything below, and the single most useful sentence
-either of them wrote:**
-
-> A manifest reports what the worker knows it did, including what it knows went
-> wrong. It cannot report what the worker believes is correct and isn't.
-
-So self-reporting is *reliable* for fence violations, vacuous measures, mis-aimed
-briefs, and declared deviations — workers report those well, and today's corpus
-shows them doing it unprompted. **Reading is the only thing that catches
-confidently-wrong work.** Aim the read at that, and it stops being a ritual.
-
-**Why the gate cannot stand alone: it is usually the worker's own instrument.**
-When the implementing worker writes the check and the code, a pass measures
-internal consistency, not correctness — the check encodes the same
-misunderstanding as the code. Four measured shapes, all with green gates:
-
-| Shape | Instance |
-|---|---|
-| Gate written against its own diff, inputs never leaving the preserved regime | a census compaction whose byte-identity gate used fixtures where the truncation was unreachable |
-| Instrument agreeing with the only fixture it was pointed at | speculative counters reading zero against an engine publishing them, because the fixture was written by the parser's own author |
-| Gate ran but never finished | an after-gate log stopping mid-run because the worker backgrounded it and its process ended; the ledger says passed |
-| Gate unevaluable on real data | a measure asking for a condition the data never satisfies, carried on a fixture built to satisfy it |
-
-#### The cheap checks, in yield-per-second order
-
-Run these before reading any code. Each is one command, and each catches a class
-the later ones cannot.
-
-1. **Manifest mtime against dispatch time.** Catches the worst failure — a
-   manifest describing a *previous attempt* — which no content check can catch,
-   because the content is internally consistent. Staleness is its own axis.
-2. **`commits:` against `git -C <worktree> rev-parse HEAD`.** Mismatch was
-   observed in roughly a third of one backend's manifests in a single week.
-3. **`git -C <worktree> status --porcelain`.** Dirty means the commit list is
-   incomplete, whatever the manifest says.
-4. **`git show --stat <sha>` against the declared write paths.** Scope drift,
-   instantly.
-5. **Gate log: does the file exist at the claimed path, does its header name the
-   same tests as the `tests:` line, does its last line agree with the claim.**
-6. **Manifest status word against process liveness.** `in_progress` with a dead
-   process is the ended-with-its-turn case, and no terminal event ever fires for
-   it.
-7. **Declared deviations — last.** They tell you the worker is honest, not that
-   the work is right.
-
-#### Read the diff by anomaly, not sequentially
-
-**The highest-yield technique reported, and it inverts the obvious approach.** On
-a change that applied one rule to 118 sites, filtering the diff for lines matching
-the change's signature but **not** its expected shape returned five hits — and
-three of the four real defects were among those five. A sequential read finds
-those at hunk 90 of 118, or never.
-
-So: derive the change's expected shape, filter for what does not match it, and
-read the residue. Fall back to a full hunk read where the pattern is
-non-uniform, or where the file carries blast radius.
-
-#### Setting depth — and the two axes that do NOT set it
-
-Depth follows **blast radius × mechanicalness**:
-
-| Change | Depth | Measured yield |
-|---|---|---|
-| Scripted change applied at scale across a large module | full anomaly scan | four defects |
-| Small hand edit to one function | skim | none |
-| A shared enforcement predicate | read the predicate in full, nothing else | — |
-| Pure refactor with bit-identity over many files | manifest and stat only | none, repeatedly |
-
-Read test diffs for **inputs and assertions** — above all, whether fixtures are
-synthetic — not line by line. Read the stream only when something disagrees, or
-to find out why a process ended: a successful node's stream runs to tens or
-hundreds of thousands of records and is nearly all noise.
-
-**Role and spec level do not set depth.** Neither does the backend. Lane did not
-predict manifest honesty in the measured corpus — locally-served and frontier
-workers self-attributed their own failures at the same rate — and a coordinator
-who reads shallowly because a frontier model produced the diff is reading the
-wrong variable. What predicts defects is **mechanical-at-scale**: a script that
-gets one rule slightly wrong applies it uniformly, and no worker reviews its own
-scripted output line by line.
-
-**Expect roughly half of reads to return nothing material**, and treat that as the
-cost of the reflex rather than a sign it is miscalibrated. Measured: of twelve
-landings, line reads changed the outcome on two, refined the record on three, and
-confirmed seven; the other coordinator put material returns at 40–50%. A read that
-finds no defect but returns a habit worth copying has still paid.
-
-#### Name the measure yourself — as an enabler, not a control
-
-**The coordinator names the done-when measure numerically, and this is the rule
-with the best evidence behind it.** A coordinator-supplied numeric measure is the
-only instrument a worker has for *contradicting the coordinator*. Two measured
-instances: a worker held to a stated numeric contract over the coordinator's
-prose, proved two of the coordinator's four findings misattributed, and supplied a
-fifth defect in their place; another found the coordinator's two-sided gate could
-not discriminate and identified a cause in a function the brief never named. Both
-corrections travelled *through* the supplied measure.
-
-A worker writing its own gate writes one that agrees with its own reading of the
-brief, and loses that capability. State the rule that way round: "name the measure
-so the worker can prove you wrong" is followed; "we do not trust worker gates" is
-worked around.
-
-#### Independent review — a reflex with a trigger, not a universal
-
-Batch one read-only review node per wave over that wave's merged diffs, **when the
-trigger fires**: a merged production diff whose gate is an identity comparison or
-whose fixtures are synthetic, touching a shared authority, integrated without a
-line read. Record the reviewer's provenance beside the coordinator's on each row.
-
-Measured cost and return: **$6.51 and 14 minutes for three commits totalling about
-1,100 changed lines, returning one HIGH, two LOW and two coverage holes** —
-against $12–23 per implement node. It found what an audit of thirty merges had
-not. It would have found nothing on the pure refactor above, which is exactly why
-the trigger matters.
+The full practice — the four measured gate shapes, the seven cheap checks, the anomaly read, the depth rules, why the coordinator names the measure instead of leaving the worker to write its own gate, and when to batch an independent review — lives in `references/worker-verification.md`. Keeping it there is what bounds the fixed session read set.
 
 ### 6. Record outcomes — after EACH node
 
