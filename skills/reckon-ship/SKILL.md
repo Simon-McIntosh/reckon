@@ -626,6 +626,13 @@ them is the measured cause of finished runs sitting unnoticed for hours:
 | **Producer** | one `reckon crew watch --project P` per project, turning pointer changes into transitions | dispatch arms it detached; never arm a second |
 | **Follower** | `reckon crew follow --project P --session S` per **session**, delivering that session's runs to *you* | you, once per session |
 
+**Exactly one monitor per session.** A session arms and attaches exactly ONE
+monitor: the single `reckon crew follow --project P --session S` follower, one
+per session. A second follower on the same session is a defect, not
+redundancy — registration is single-holder and a second streams read-only, so it
+delivers nothing and adds no safety. To watch more than your own runs, attach
+the additional sessions to the one monitor; never arm a second follower.
+
 **A live producer is not your wake-up.** The seat is project-global and delivery
 is session-local, so `watcher_live` and `seat_held` read true while this session
 hears nothing — including when the seat belongs to a peer session, or to a
@@ -666,19 +673,9 @@ withholds every line until exit, an unanchored pattern matches the fleet summary
 that trails each line, and a trailing `|| true` turns a refusal into a success
 with no output.
 
-**It carries no state filter, deliberately.** A filter that legitimately matches
-nothing produces an empty pane, and an empty pane reads exactly like a follower
-that never started — the failure this whole surface exists to remove. So the
-follower reports every transition, starts included, and opens with one line per
-live run. The stream carries worker transitions and fleet posture and nothing
-else: follower status is not fleet state, and the session that needs telling
-about its registration is one trying to dispatch, which the guard tells there.
-Each line's
-`N working · N blocked · N unpromoted` is the fleet **after** that transition,
-so two landings in one cycle read as two, and a promotion reports the fleet it
-leaves behind. The three buckets partition the fleet: `working` is work in
-progress, `blocked` is everything that has stopped and needs you (a stall or a
-failure included), `unpromoted` is delivered work waiting on a gate.
+Follower stream mechanics — why the follower carries no state filter, the
+`N working · N blocked · N unpromoted` line format, and what each bucket means —
+are in `references/sprint-orchestration.md` §15.
 
 **Silence after a drain is ambiguous.** The follower reports transitions; nothing
 reports the *absence* of further transitions, so a fleet that has gone quiet looks
@@ -692,19 +689,18 @@ it is what §4d's closure fence exists to catch at the end. Also check
 `process_alive` against `manifest_status`: a non-terminal pointer whose process is
 gone is precisely the case no transition will ever announce.
 
-`reckon crew follow` also takes `--attention` when a caller deliberately wants
-only the actionable states (terminal, blocked, stalled, stopped, abandoned) and
-none of the progress ones, `--run <id>` (repeatable) to babysit named runs,
-`--json` for transition objects, and no `--session` at all for the whole
-project's fleet, which labels every line with the session that owns it. Status
-and refusals go to stderr so stdout stays one notification per transition.
+Follower flag variants — `--attention`, `--run <id>`, `--json`, and the
+no-`--session` whole-fleet form — are in `references/sprint-orchestration.md`
+§15.
 
 **Registration is what dispatch checks, and streaming is not registration.** A
-second follower for the same session streams read-only while the first holds the
-registration, and takes it over within a poll once that holder goes — so
-stopping an old follower after arming a new one self-corrects rather than
-leaving lines arriving at an unregistered reader. Silently, in both directions:
-the fact that matters reaches whoever tries to dispatch.
+second follower for the same session is legitimate only as a replacement: it
+streams read-only while the first holds the registration, then takes it over
+within a poll once that holder goes, so stopping an old follower after arming a
+new one self-corrects rather than leaving lines arriving at an unregistered
+reader. A deliberate second — armed for extra coverage, not to replace — is the
+defect the one-monitor rule refuses; extend the one follower instead. The fact
+that matters reaches whoever tries to dispatch.
 
 **One arming covers the session, not one wave.** The producer's seat is released
 when a wave drains and dispatch arms a fresh one for the next; the follower

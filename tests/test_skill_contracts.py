@@ -923,6 +923,36 @@ def test_every_leakage_exemption_still_earns_itself() -> None:
         )
 
 
+def test_ship_skill_states_one_monitor_per_session() -> None:
+    """A session arms and attaches exactly one monitor (follower).
+
+    The rule is asserted verbatim so a later rewrite cannot silently drop it: one
+    follower per session, a second on the same session is a defect rather than
+    redundancy, and the remedy for wanting more coverage is to attach the
+    additional sessions to the one monitor, never to arm a second follower.
+    """
+    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+
+    assert "Exactly one monitor per session" in ship
+    assert "A session arms and attaches exactly ONE monitor" in ship
+    assert "one per session" in ship
+    assert "A second follower on the same session is a defect, not redundancy" in ship
+    assert "To watch more than your own runs" in ship
+    assert "attach the additional sessions to the one monitor" in ship
+    assert "never arm a second follower" in ship
+
+    # The stream mechanics and the flag variants travel beside the rule, so the
+    # reader who armed can still reach them from the pointer the skill leaves.
+    orchestration = normalized(
+        (
+            ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md"
+        ).read_text()
+    )
+    assert "## 15. Monitor and follower stream mechanics" in orchestration
+    assert "The three buckets partition the fleet" in orchestration
+    assert "no `--session` at all for the whole" in orchestration
+
+
 def test_ship_dispatch_section_names_the_session_attach() -> None:
     """Dispatch arms a producer; the dispatch section must not let that read as a
     wake-up.

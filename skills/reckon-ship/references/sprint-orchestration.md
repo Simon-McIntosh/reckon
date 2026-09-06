@@ -745,3 +745,35 @@ lands. Valid early stops are:
    the grammar stated.
 6. If a sprint target, resolve the sprint and use the same coordinator workflow
    over its complete graph. Do not continue with the plan-only preflight below.
+
+## 15. Monitor and follower stream mechanics
+
+The follower a session attaches is that session's one monitor: exactly one, one
+per session, delivering that session's runs as lines. Its stream vocabulary and
+its flag variants are the part a coordinator consults when arming, so they live
+here rather than in the fixed read set.
+
+### The stream format and its three buckets
+
+**It carries no state filter, deliberately.** A filter that legitimately matches
+nothing produces an empty pane, and an empty pane reads exactly like a follower
+that never started — the failure this whole surface exists to remove. So the
+follower reports every transition, starts included, and opens with one line per
+live run. The stream carries worker transitions and fleet posture and nothing
+else: follower status is not fleet state, and the session that needs telling
+about its registration is one trying to dispatch, which the guard tells there.
+Each line's
+`N working · N blocked · N unpromoted` is the fleet **after** that transition,
+so two landings in one cycle read as two, and a promotion reports the fleet it
+leaves behind. The three buckets partition the fleet: `working` is work in
+progress, `blocked` is everything that has stopped and needs you (a stall or a
+failure included), `unpromoted` is delivered work waiting on a gate.
+
+### Follow flags
+
+`reckon crew follow` also takes `--attention` when a caller deliberately wants
+only the actionable states (terminal, blocked, stalled, stopped, abandoned) and
+none of the progress ones, `--run <id>` (repeatable) to babysit named runs,
+`--json` for transition objects, and no `--session` at all for the whole
+project's fleet, which labels every line with the session that owns it. Status
+and refusals go to stderr so stdout stays one notification per transition.
