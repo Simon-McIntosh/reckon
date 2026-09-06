@@ -18,9 +18,12 @@ trying to avoid is cheap and announces itself.
 
 **A newer silence never overwrites an older measurement.** An observation
 carrying no headroom carries no information, so the latest *known* reading is the
-state, and it decays only through its own reset time. Taking "most recent" at
-face value would let one silent run erase a real exhaustion and open the wave
-this module exists to hold.
+state, and it decays only through its own reset time. A successfully completed
+run is different: its trustworthy completion stamp proves that the backend
+served, so it can displace an earlier exhaustion without inventing a utilisation
+figure. Taking every other "most recent" silence at face value would let one
+quiet record erase a real exhaustion and open the wave this module exists to
+hold.
 
 **An undated refusal is probed, not timed.** A refusal naming a reset remains
 stronger evidence until that time. One naming no reset cannot say when the lane
@@ -227,6 +230,7 @@ class _Reading:
     attribution: str = ""
     surface_opt_in: bool = False
     covered_backends: tuple[str, ...] = ()
+    served_completion: bool = False
 
     def applies_to(self, backend_name: str) -> bool:
         """Return whether this reading explicitly describes ``backend_name``."""
@@ -523,9 +527,42 @@ def _readings(
                 attribution=attribution,
                 surface_opt_in=_surface_opt_in(backend, config),
                 covered_backends=_declared_coverage(budget),
+                # A passed gate plus a stream-derived or explicitly supplied
+                # completion stamp shows that this backend served the run.
+                # Promotion time alone only shows that a ledger writer ran.
+                served_completion=(
+                    str(record.get("gate") or "").casefold() == "passed"
+                    and str(record.get("completed_at_source") or "")
+                    in ledger.USABLE_COMPLETION_SOURCES
+                ),
             )
         )
     return found
+
+
+def _records_exhaustion(
+    budget_block: Mapping[str, Any], config: Mapping[str, Any] | None
+) -> bool:
+    """Whether this known reading would hold at the configured ceiling."""
+    if not _is_known(budget_block):
+        return False
+    policy_block = policy(config)
+    exhausted = {str(status) for status in policy_block.get("exhausted_statuses") or ()}
+    status = budget_block.get("threshold_status")
+    if status is not None and str(status) in exhausted:
+        return True
+    utilisation = budget_block.get("utilisation_pct")
+    return float(utilisation) >= effective_ceiling(policy_block, "resume")
+
+
+def _completion_after_exhaustion(reading: _Reading) -> _Reading:
+    """Carry why a served completion superseded an older exhausted reading."""
+    budget_block = dict(reading.budget)
+    budget_block["_displaced_exhaustion_by_completion"] = {
+        "run_id": reading.record_id,
+        "completed_at": reading.observed_at,
+    }
+    return replace(reading, budget=budget_block, age_source="served-completion")
 
 
 def latest_recorded(
@@ -538,13 +575,18 @@ def latest_recorded(
 
     A known measurement outranks any silence, however recent, because silence
     carries no information: letting a later unknown win would erase a recorded
-    exhaustion and open exactly the wave this module holds. Between two
-    readings of the same kind, the newer wins. Known signals that cannot be
-    matched remain available through ``unattributed`` on the result.
+    exhaustion and open exactly the wave this module holds. A later served
+    completion is positive evidence rather than silence and may displace an
+    exhausted reading, while remaining unknown rather than inventing headroom.
+    Between two readings of the same kind, the newer wins. Known signals that
+    cannot be matched remain available through ``unattributed`` on the result.
     """
     best: dict[str, _Reading] = {}
     unattributed: list[_Reading] = []
-    for reading in _readings(project, root=root, config=config):
+    readings = sorted(
+        _readings(project, root=root, config=config), key=lambda item: item.when
+    )
+    for reading in readings:
         if reading.backend is None:
             if _is_known(reading.budget):
                 unattributed.append(reading)
@@ -558,6 +600,12 @@ def latest_recorded(
         if known != current_known:
             if known:
                 best[reading.backend] = reading
+            elif reading.served_completion and _records_exhaustion(
+                current.budget, config
+            ):
+                best[reading.backend] = _completion_after_exhaustion(reading)
+            continue
+        if not known and current.served_completion and not reading.served_completion:
             continue
         if reading.when > current.when:
             best[reading.backend] = reading
@@ -678,6 +726,16 @@ def _from_block(
         detail = (
             "a later served turn in the same stream refuted the newest refusal "
             f"(provider rate-limit status {str(served_status)!r})"
+        )
+    completion = block.get("_displaced_exhaustion_by_completion")
+    if isinstance(completion, Mapping):
+        headroom = "unknown"
+        run_id = str(completion.get("run_id") or "")
+        completed_at = str(completion.get("completed_at") or observed_at)
+        identity = f" {run_id!r}" if run_id else ""
+        detail = (
+            f"completed run{identity} at {completed_at} displaced the earlier "
+            "recorded exhaustion without publishing a utilisation figure"
         )
     utilisation = block.get("utilisation_pct")
     numeric_utilisation = (
