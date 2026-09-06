@@ -154,6 +154,75 @@ process would learn nothing the run did not already report. And every failure pa
 naming the reason instead of raising, because an instrument that fails must not
 become a hold.
 
+## A lane is a measured deployment, and its ceiling is never assumed
+
+The local lane's concurrency ceiling is a number on the serving deployment, not
+a fact this package owns, and it moves without anything here changing: its
+admission limit changed by a large factor within a single day of measurement,
+and the key-value pool behind it moved twice, once as the side effect of a
+configuration change nobody was thinking of as a capacity change. So this file
+records no number. It records three things: the ceiling is the deployment's,
+reckon carries none of its own, and any per-backend ceiling an operator sets is
+a coarse bound on how much work one fleet holds open against a lane, not a model
+of the serving queue. The number is discovered, never assumed; a written figure
+would falsify the point, which is that it moves.
+
+Its units are where the comparison misleads, and the trap is worth stating
+plainly. A reckon-side ceiling counts live runs; a server admission limit
+counts simultaneous requests, and the ratio between them is variable — four
+concurrent workers were measured generating two simultaneous requests, because
+an agentic worker spends most of its wall clock between turns. Two limits set
+to the same number are therefore not aligned: a lane can refuse a request while
+the run count looks quiet, and admit one while it looks full.
+
+### A 429 on an unmetered lane is backpressure, not exhaustion
+
+A rate-limit retry stream means different things by the backend's declared
+meteredness, and the declared meteredness is the only discriminator — on the
+wire the two readings are identical, with the same status and the same retry
+records. A metered lane's retry exhaustion is a budget refusal: the window is
+spent, and the refusal may carry a reset moment that correctly holds a wave
+until it. An unmetered lane has no budget to spend, so the same stream is the
+serving queue telling the worker to stop asking for a while: it has no reset
+time, it clears when a slot frees, and a run it shed classifies as blocked and
+resumable rather than abandoned.
+
+Key on the structured retry record, never on the refusal sentence. The sentence
+is a strict and unreliable subset of the record: twenty-nine real refusal
+records were measured carrying zero occurrences of it, while other runs carry
+it as ordinary assistant text without any refusal. A reader keyed to the text
+will miss refusals that the record proves and invent refusals the record never
+recorded.
+
+### stderr carries no status for this lane on any outcome
+
+For the local lane, stderr.log is not a status surface: no outcome — success,
+refusal or crash — differs in what it emits. Its one conspicuous line, an
+unrecognized-model complaint naming the served model, appears on healthy runs
+too, so it is boilerplate rather than a diagnosis. Deaths were attributed to it
+before measurement, and the attribution was overturned each time: the runs that
+carry the line complete, and the runs that die carry it as well. The status of
+a run is in its stream — read the events in stream.jsonl.
+
+### One label names two distinct failures
+
+"Process gone without a complete manifest" is printed for two distinct failures
+whose causes and recoveries differ, and a fix aimed at one will look
+half-successful while the other keeps dying. The two separate on stream facts:
+
+- **retry exhaustion mid-turn** — the stream carries a high ``api_retry`` count
+  at 429 and no terminal result: the lane refused until the harness gave up.
+  The separating fact is the retry count.
+- **a completed turn with the deliverable written** — the stream shows a
+  terminal turn record and the run's work is on disk, so only the manifest is
+  missing: the process ended believing it had delivered. The separating fact
+  is the presence of a terminal turn record.
+
+As in the backpressure claim, key on the structured retry record when the
+distinction is in doubt. A prose sentence is a strict and unreliable subset
+both ways: it appears on runs that are not the labelled case, and it is absent
+from the records that prove the case.
+
 ## Recorded fixtures
 
 Every observation path is tested against streams captured from live runs, under
