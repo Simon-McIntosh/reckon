@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-06">
-<meta name="plan-version" content="164">
+<meta name="plan-version" content="165">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md">
 <meta name="plan-impl" content="0.9">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b">
@@ -856,6 +856,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260906T172045090971-an-overdue-wait-is-marked-not-recounted" data-who="crew-surface-consistent" data-when="2026-09-06T17:58:10.449Z">
     <div class="r-comment-body"><p>Corrects a coordinator brief error rather than a worker error. An overdue wait is counted with the waiting family and says it needs attention through its action marker, so two facts stay on two mechanisms: the counter says what kind of thing the run is, the marker says whether a reader should look. Measured at the merged head: WAITING_STATES is paused, wait-aged, waiting; NEEDS_ACTION carries wait-aged and carries neither paused nor waiting, so an agent waiting on other work raises no alarm. The unmodified contract test asserting blocked 0 and waiting 1 for an aged wait passes, and the node did not touch that file. 130 passed, both base failures in the fenced files fixed, none added across the importer set. Recovers the action-set and counter-coverage reconciliation from held commit d9f5d8d and changes only the placement.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20260906T183829217268-every-cell-shows-a-whole-word" data-who="crew-surface-consistent" data-when="2026-09-06T18:57:00.139Z">
+    <div class="r-comment-body"><p>The node did what it was briefed to do and the brief was malformed, so the failure measures the coordinator rather than the worker. The lead asked for one thing: that roles be spelled in full. The brief also required splitting the joined model-and-effort cell into two columns, which the lead never asked for, on my inference plus an unlanded commit from an earlier session. That half broke three tests in files outside the write fence which deliberately encode the joined presentation, and whose own text states the rationale that a model and its effort are one routing fact rendered as one cell. The worker disclosed all three, attributed them correctly, and its in-scope gate passed at 50. Held as tag held-model-effort-split; the requested half is redispatched as the-role-column-shows-the-whole-word, which takes the role spelling only and leaves the agent cell and those three tests untouched. The split is put to the lead as its own decision rather than shipped unasked.</p></div>
 </div>
 </section>
 </main>

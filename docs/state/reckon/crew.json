@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T20:34:53",
+  "updated": "2026-09-06T20:59:43",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -67929,6 +67929,151 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T183829217268-every-cell-shows-a-whole-word",
+        "plan": "crew-observability-truth",
+        "section": "\u00a78",
+        "node": "every-cell-shows-a-whole-word",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1517,
+                "cached_input_tokens": 410630,
+                "input_tokens": 412149,
+                "output_tokens": 2664,
+                "reasoning_output_tokens": 820,
+                "total_tokens": 414813,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_crew_ticker_layout.py -q passes, and no cell in a fleet row asks its reader to expand an abbreviation or to parse two values out of one label. WHAT THE READER SEES TODAY AND WHY IT WAS RAISED. The lead reported two things about the pane. Roles render truncated to four lowercase characters by spelled[:4].lower() at reckon/crew/ticker.py line 369, so implement reads impl and documentation reads docu, and the lead's words were that the types should be spelled in full because there is the space. Separately, model and effort arrive joined in one agent cell, rendering as dsv4-flash\u00b7high and sol5.6\u00b7high, so a reader wanting to scan effort down the pane has to parse it out of each composed label. A commit addressing the second half exists and was never landed; it is reachable as tag unlanded/model-and-effort-are-separate-columns and its diff is the reference for the column split, including its width reasoning that the widest shipped model alias is ten characters and the widest effort word is seven. It predates today's work on this file and must not be merged; take its approach, not its text. WHAT TO CHANGE. Render each role as its whole dispatch word. Render model and effort as two cells rather than one composed label. Size the columns from the shipped vocabularies rather than from a guess: the role words are the dispatch role set in this module, whose longest member is documentation at thirteen characters, and the model and effort widths are as the referenced commit reasoned them. An older record carrying a precomposed model and effort string must still render into the two cells. WIDTH IS THE CONSTRAINT THAT MAKES THIS ONE PIECE OF WORK. The row has a fixed budget, the module's DEFAULT_WIDTH is 180, and the follower's terminal was measured at 208 columns on this workstation. Spelling roles in full costs width and splitting the agent cell returns some, so deciding either alone would set a width the other then breaks. State in a comment what the total row consumes after the change and against which budget, so a later reader adding a column knows what is left. Do not elide, truncate or ellipsize any of the three cells; if the vocabularies do not fit the budget, reduce a fixed column elsewhere in the row and say in the comment which one and why. WHAT NOT TO CHANGE. Do not change which states exist, their names, their counter placement, or the action marker; those landed today and this node is presentation only. Do not change what a transition carries. Do not remove the colour, which the lead asked to keep. FALSIFIERS, asserted in tests/test_crew_ticker_layout.py. Every member of this module's dispatch role set renders as its complete word, asserted by iterating that set rather than by listing roles in the test, so a role added later is covered. A row whose role is not a dispatch role still renders the existing unknown marker rather than a truncation. Model and effort occupy separate cells, asserted by rendering a record whose effort differs while its model is constant and checking the effort text begins at the same column offset in both rows, which is the property a reader scanning down a column depends on. A record carrying a precomposed model and effort string renders the same two cells as an equivalent record carrying them separately. A rendered row's total width does not exceed the stated budget, asserted for the longest role, the longest model alias and the longest effort word together. Colour codes are still emitted. Measure base and head over tests/test_crew_ticker_layout.py and every test importing reckon.crew.ticker; report failure ids either side and require none added.",
+          "estimated_hours": 1.0,
+          "goal": "Render every fleet-row cell as a whole word, so a role is not truncated to four characters and effort is not buried inside a composed model label",
+          "id": "every-cell-shows-a-whole-word",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T183829217268-every-cell-shows-a-whole-word/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/ticker.py",
+            "tests/test_crew_ticker_layout.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-surface-consistent",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T18:38:36Z",
+        "completed_at": "2026-09-06T18:57:00.139Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1096,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1104,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "2ea1921ccd9c7c7dc22cf8263de7ed5da2efe0d9",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "malformed-node",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T183829217268-every-cell-shows-a-whole-word/manifest.md",
+        "scope_changed": false,
+        "session_id": "82d99494-ea91-4afd-80e6-06b114d342a1",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 8146524,
+            "input_tokens_cumulative": 8146524,
+            "output_tokens": 81278,
+            "output_tokens_cumulative": 81278,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 1100.089,
+          "generated_tokens": 81278,
+          "generation_seconds": 1052.739,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 18.7,
+          "machine_seconds": 47.35,
+          "peak_input_tokens": 190152,
+          "tokens_per_second": 77.21,
+          "wall_tokens_per_second": 73.88
+        },
+        "follow_on_paths": [
+          "tests/test_crew_ticker.py::test_the_ticker_states_the_model_and_effort_that_ran_the_node",
+          "tests/test_crew_ticker.py::test_effort_rejoins_the_alias_and_a_legacy_line_renders_whole",
+          "tests/test_crew_recovery.py::test_legacy_log_line_renders_and_new_line_renders_one_fused_cell",
+          "gpt-5.6-sol/medium",
+          "recovery.py"
+        ],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "The commit is held as tag held-model-effort-split rather than landed, because the brief bundled an unrequested design change with the requested one.",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/every-cell-shows-a-whole-word",
+          "session_id": "82d99494-ea91-4afd-80e6-06b114d342a1",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T18:57:00.139Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_crew_ticker_layout.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -68157,6 +68302,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1097
+    "_version": 1098
   }
 }
