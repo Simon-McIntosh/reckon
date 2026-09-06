@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T20:59:43",
+  "updated": "2026-09-06T21:16:52",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -68074,6 +68074,145 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T182849594714-a-served-run-is-not-silence",
+        "plan": "crew-effort-routing",
+        "section": "\u00a71",
+        "node": "a-served-run-is-not-silence",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2063,
+                "cached_input_tokens": 380218,
+                "input_tokens": 382283,
+                "output_tokens": 2793,
+                "reasoning_output_tokens": 789,
+                "total_tokens": 385076,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_a_served_run_is_not_silence.py -q passes, and a completed run on a backend stops an older recorded exhaustion on that same backend from remaining the operative reading. THE MEASUREMENT, from a peer project at 2026-09-06T18:26:20Z. A resume was refused with the reason that the lane's own budget verdict holds it at utilisation 100 percent, naming a reset of 2026-09-08T07:38. The refused run's streams carry zero rate_limit_event records of any status, so no in-stream evidence exists to refute anything. The operative reading comes from the committed ledger: promoted run records from 2 and 3 September carrying a budget block with threshold_status exhausted, utilisation 100, and that future reset. The account surface for the same backend read 4 to 5 percent throughout the day, and roughly twenty runs were served on it. The hold stood through all of them and cost a person 22 hand resumes across the day. THE MECHANISM, and the rule it turns on is correct in isolation. This module records that a newer silence never overwrites an older measurement, because an observation carrying no headroom carries no information, so the latest KNOWN reading is the state and decays only through its own reset time. That rule prevents one quiet run from erasing a real exhaustion. The backend in question publishes no headroom figure on a normal completion; promotions on it record that the backend reports token usage but no headroom. So every served run on that lane is silence by this rule, and the only non-silent record on it is the old exhaustion. The state therefore cannot be displaced by any amount of successful work, and a stated reset two days out keeps it operative for two days. A hold that no served run can clear is the failure this module already names elsewhere, arrived at from a direction it did not anticipate. WHAT TO CHANGE. A run that completed on a backend is evidence that the backend served, even when it publishes no utilisation figure. Treat that completion as positive evidence about the lane rather than as silence, sufficient to stop an EARLIER recorded exhaustion on the same backend from remaining operative. It does not become a headroom figure: after such a completion the lane's headroom is unknown where nothing else is known, and unknown is never held, which is this module's existing treatment and the safe direction here because the alternative is a hold nothing can lift. WHAT NOT TO CHANGE. A recorded exhaustion with no later completion on that backend still holds, and its reason is unchanged. The rule that a newer silence never overwrites an older KNOWN utilisation figure is unchanged for readings that are not completions: a run that merely reports nothing is still silence. Do not alter the ceiling comparison, the burn floors, the projected exhaustion path, the shelf life, or the stream-level served-turn refutation landed earlier today, which reads a live pointer's stream and is a different evidence source from this one. FALSIFIERS, asserted in tests/test_a_served_run_is_not_silence.py over constructed ledger records rather than a live account. An exhausted record followed by a completed run on the same backend leaves that backend not held, and the emitted reason names the later completion as what displaced it. An exhausted record followed by a completed run on a DIFFERENT backend leaves the first backend held, so evidence does not cross lanes. An exhausted record with no later completion holds, with its reason unchanged. An exhausted record followed only by runs that failed or were themselves refused holds, so a run that did not complete is not service. A completed run followed by an exhausted record leaves the backend held, so ordering is by record and not by presence. Where a later reading carries an actual utilisation figure, that figure governs and this change does not intervene. Measure base and head over the new file and every test importing reckon.budget or reckon.ledger; report failure ids either side and require none added.",
+          "estimated_hours": 1.0,
+          "goal": "Let a completed run on a backend displace an older recorded exhaustion on that backend, so a lane that is demonstrably serving is not held by a record no amount of successful work can clear",
+          "id": "a-served-run-is-not-silence",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T182849594714-a-served-run-is-not-silence/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/budget.py",
+            "tests/test_a_served_run_is_not_silence.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-burn-admission",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-06T18:28:59Z",
+        "completed_at": "2026-09-06T19:02:59Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 2040,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 2040,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "814cf0b81f9f2cf6a78e4d9bbdad046cde86086f",
+        "commits": [
+          "37cbb1ee847be7253de3eaa5e0526863dd2444df"
+        ],
+        "changed_lines": {
+          "added": 327,
+          "removed": 7,
+          "files": 2
+        },
+        "tests_added": 9,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q <39 tests importing reckon.budget or reckon.ledger>",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/census_head.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T182849594714-a-served-run-is-not-silence/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0779b-0175-7f02-811d-33703f8b13fe",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2632576,
+            "cached_input_tokens_cumulative": 10543616,
+            "input_tokens": 2608080,
+            "input_tokens_cumulative": 10742219,
+            "output_tokens": 2550,
+            "output_tokens_cumulative": 28163,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 8654
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 36817,
+          "peak_input_tokens": 21285835
+        },
+        "follow_on_paths": [
+          "base/head"
+        ],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-served-run-is-not-silence",
+          "session_id": "01a0779b-0175-7f02-811d-33703f8b13fe",
+          "session_source": "pointer",
+          "retained_at": "2026-09-06T19:02:59Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_a_served_run_is_not_silence.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -68302,6 +68441,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1098
+    "_version": 1099
   }
 }

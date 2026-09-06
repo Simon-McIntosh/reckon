@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-06">
-<meta name="plan-version" content="70">
+<meta name="plan-version" content="71">
 <meta name="plan-impl" content="1.0">
 <meta name="plan-commits" content="dbb81e0,2a10c38,6767cd5,b625b88,e016572,f049be9,d079949,1aa4215,9fa38fe,f65ea4c,4656c7a,0d92346,cc4c686,134d770,72ef099,9f3e8dc,39d7a28,cc03efe,492d498,8476b70">
 <meta name="plan-artifacts" content="docs/figures/crew-effort-routing/spec-level-slices.png,~/.config/reckon/crew/reports/model-id-probe.md,~/.config/reckon/crew/reports/shadow-prior-art-scout.md,~/.config/reckon/crew/reports/second-checkpoint-slices.md,~/.config/reckon/flight.yaml,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
@@ -1084,6 +1084,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260906T181100676988-a-served-turn-refutes-the-refusal" data-who="crew-burn-admission" data-when="2026-09-06T18:23:04Z">
     <div class="r-comment-body"><p>A refusal naming a future reset was trusted until that instant with no path by which being wrong could be discovered, and a peer project measured a lane serving six turns under a parked run while its hold stood, costing four hand resumes on that run alone. The refutation was already parsed: the stamp extractor loads the whole stream and locates the newest rejected event by index, and now asks whether a later provider rate-limit event records a request being admitted. The marker is a provider event with status allowed or allowed_warning, chosen because it is immune to the contamination measured earlier today, where 516 substring hits across 98,000 records in two fleets were all model prose and none were genuine rejections. Another rejection is not recovery, so a retry storm does not read as service. Verified at the merged head: 148 passed, base 3 failures all in the new file, head 0.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260906T182849594714-a-served-run-is-not-silence" data-who="crew-burn-admission" data-when="2026-09-06T19:02:59Z">
+    <div class="r-comment-body"><p>A completed run on a backend now stops an earlier recorded exhaustion on that backend from remaining the operative reading. The rule it corrects is right in isolation - a newer silence must not overwrite an older measurement - but this backend publishes no headroom on a normal completion, so every served run was silence and the only non-silent record was a September exhaustion whose stated reset kept it operative for days. A peer measured 22 hand resumes against it. The worker BLOCKED rather than claim a delta it could not finish measuring: the brief demanded a census over 39 importer files and it was interrupted. That is correct worker behaviour and an over-expensive brief; the coordinator ran the census at the merged head instead, 251 passed with zero failures, which needs no base comparison because zero cannot contain an added failure.</p></div>
 </div>
 </section>
 </main>
