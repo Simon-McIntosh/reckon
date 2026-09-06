@@ -1782,6 +1782,16 @@ def _ticker_options(command):
     return command
 
 
+# The date the deprecated flag stops being accepted, so the shim has an end
+# rather than becoming a permanent second spelling.
+_ATTENTION_REMOVED_AFTER = "2027-06-30"
+_ATTENTION_DEPRECATION = (
+    "Warning: --attention no longer filters; the follower now delivers every "
+    "transition. The flag is deprecated and stops being accepted after "
+    f"{_ATTENTION_REMOVED_AFTER}; remove it from any arming line before then."
+)
+
+
 @crew.command(name="follow")
 @click.option("--project", required=True, help="Project whose watch stream to follow.")
 @click.option(
@@ -1799,6 +1809,16 @@ def _ticker_options(command):
     help="Deliver only these run ids. Repeat for several.",
 )
 @click.option(
+    "--attention",
+    is_flag=True,
+    hidden=True,
+    help=(
+        "Deprecated no-op, accepted so a follower armed before the removal "
+        "reconnects instead of failing to parse. It no longer filters; its "
+        f"passing is announced on stderr. Removed after {_ATTENTION_REMOVED_AFTER}."
+    ),
+)
+@click.option(
     "--json",
     "json_output",
     is_flag=True,
@@ -1806,7 +1826,9 @@ def _ticker_options(command):
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 @_ticker_options
-def crew_follow(project, session, run_ids, json_output, pretty, width, theme, no_color):
+def crew_follow(
+    project, session, run_ids, attention, json_output, pretty, width, theme, no_color
+):
     """Follow one session's runs without acquiring the project's watcher seat.
 
     The seat is project-global and this delivery is session-local, so a
@@ -1820,6 +1842,8 @@ def crew_follow(project, session, run_ids, json_output, pretty, width, theme, no
     because a filter that hides a run's recovery hides the news the reader is
     waiting for.
     """
+    if attention:
+        click.echo(_ATTENTION_DEPRECATION, err=True)
     from reckon.crew import runs as runs_module
     from reckon.crew.recovery import format_watch_transition
 
