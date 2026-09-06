@@ -59,10 +59,35 @@ WAITING_STATES = frozenset({"waiting", "wait-aged"})
 TERMINAL_MANIFEST_STATUSES = frozenset({"complete", "blocked", "failed"})
 
 
+def _stream_completion_stamp(record: Mapping[str, Any]) -> str | None:
+    """The run's own finish stamp as its recorded stream dates it, else None.
+
+    Promotion writes this same stream completion stamp to the ledger row, so
+    the elapsed measure and the promoted record agree on when a run ended
+    rather than each keeping its own idea of the finish. None for an in-harness
+    run or a stream that was never written; the caller only resolves it once
+    liveness says the process is gone, so a still-writing stream is never
+    mistaken for a completion.
+    """
+    if record.get("launch") != "cli":
+        return None
+    from reckon.crew.promotion import _terminal_stream_data
+
+    return _terminal_stream_data(record).completed_at
+
+
 def _budget_timing(
     record: Mapping[str, Any], *, now_seconds: float | None = None
 ) -> dict[str, Any]:
-    """Measure one live run against its declared allowance without mutating it."""
+    """Measure one run against its declared allowance without mutating it.
+
+    A run whose worker process is gone has finished, so its elapsed is measured
+    to its own stream completion — the same stamp promotion records — rather
+    than to the moment of reading. A still-running run measures to now, and the
+    wall-clock ceiling that protects the fleet from a hang is untouched because
+    a live process still anchors here. A reader resolving a run late therefore
+    reports the worker's own time, not the coordinator's wait to promote it.
+    """
     node = record.get("node") or {}
     try:
         if "attempt_budget_seconds" in record:
@@ -84,7 +109,25 @@ def _budget_timing(
     if started.tzinfo is None:
         started = started.replace(tzinfo=timezone.utc)
     moment = _utc_seconds() if now_seconds is None else float(now_seconds)
-    elapsed = max(0, int(moment - started.timestamp()))
+    elapsed_to = None
+    if record.get("process_alive") is False:
+        try:
+            completion = _stream_completion_stamp(record)
+        except (CrewError, OSError):
+            completion = None
+        if isinstance(completion, str) and completion:
+            try:
+                finished = datetime.fromisoformat(completion)
+            except ValueError:
+                finished = None
+            else:
+                if finished.tzinfo is None:
+                    finished = finished.replace(tzinfo=UTC)
+                elapsed_to = finished.timestamp()
+    if elapsed_to is None:
+        elapsed = max(0, int(moment - started.timestamp()))
+    else:
+        elapsed = max(0, int(elapsed_to - started.timestamp()))
     overrun = max(0, elapsed - budget_seconds)
     return {
         "budget_seconds": budget_seconds,
