@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T05:01:13",
+  "updated": "2026-09-06T07:18:36",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -359,6 +359,15 @@
         "session_model": null,
         "sessions": {},
         "created": "2026-09-05"
+      },
+      {
+        "id": "crew-elapsed",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-06"
       },
       {
         "id": "crew-manifest-keys",
@@ -63089,6 +63098,153 @@
           "role": "test",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260906T030600695997-terminal-run-elapsed-measures-to-completion",
+        "plan": "clive-local-workers",
+        "section": "\u00a714",
+        "node": "terminal-run-elapsed-measures-to-completion",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1001,
+                "cached_input_tokens": 398922,
+                "input_tokens": 399925,
+                "output_tokens": 1427,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 401352,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_terminal_run_elapsed.py -q passes, and _budget_timing in reckon/crew/recovery.py measures elapsed to a run own completion when it has one, and only to now while it is still running. THE DEFECT, measured on run r-20260905T181359207739-apa-read-warns-on-unparsed: it finished in 2078 wall seconds against a 2400s budget, comfortably inside it, yet crew list reported elapsed_seconds 3651 with budget_overrun true, because _budget_timing subtracts the start from now with no branch for a terminal run. So a finished run reported overrun GROWS with how late its coordinator promotes it: the field measures the coordinator, not the worker, and every such row silently indicts the model for orchestrator delay. Across 48 local-lane runs in the committed ledger only 4 genuinely exceeded their budget, so the reported figure and the real one disagree for most rows. Use the same terminal stamp promotion already trusts, which promotion.py derives from the recorded stream completion around line 1487, rather than inventing a second notion of when a run ended. Note that phase is NOT a usable terminal signal here: the run above still read phase starting after finishing, so a fix keyed on _TERMINAL_RUN_PHASES would not fire on the very case that exposed this. The new test must assert: a record with a terminal completion stamp reports elapsed measured to that stamp and is NOT flagged budget_overrun when its completion was inside budget, asserted at two different observation times that must yield the SAME elapsed; a still-running record still measures to now and still trips the flag past its budget; the watchdog stop behaviour for a live over-grace CLI worker is unchanged; and a record with neither a terminal stamp nor a parseable budget still returns the null shape rather than raising. Measure base and head over tests/test_terminal_run_elapsed.py plus every test importing reckon.crew.recovery; report failure ids either side and require none added.",
+          "estimated_hours": 1.0,
+          "goal": "Stop charging a finished run for the time it spent waiting to be promoted, so a reported overrun measures the worker rather than the coordinator",
+          "id": "terminal-run-elapsed-measures-to-completion",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T030600695997-terminal-run-elapsed-measures-to-completion/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a714",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_terminal_run_elapsed.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-elapsed",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T03:06:09Z",
+        "completed_at": "2026-09-06T05:17:30.999Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 7828,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 7881,
+        "stalled": true,
+        "time_budget": "45m",
+        "base_sha": "0459451a9a761bb2be3e2ac53eeda4392ff4e535",
+        "commits": [
+          "12f4136c78163aed94a6cfb59c6b8b58dd92f9f3"
+        ],
+        "changed_lines": {
+          "added": 219,
+          "removed": 2,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_terminal_run_elapsed.py -q",
+          "exit_status": 0,
+          "log_path": "/tmp/head_gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T030600695997-terminal-run-elapsed-measures-to-completion/manifest.md",
+        "scope_changed": false,
+        "session_id": "cf70dfa6-ba4a-4cba-95f5-9fad585f9f18",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 17585412,
+            "input_tokens_cumulative": 17585412,
+            "output_tokens": 84318,
+            "output_tokens_cumulative": 84318,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 7878.248,
+          "generated_tokens": 84318,
+          "generation_seconds": 6568.039,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 20.7,
+          "machine_seconds": 1310.209,
+          "peak_input_tokens": 210404,
+          "tokens_per_second": 12.84,
+          "wall_tokens_per_second": 10.7
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/terminal-run-elapsed-measures-to-completion",
+          "session_id": "cf70dfa6-ba4a-4cba-95f5-9fad585f9f18",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T05:17:30.999Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_terminal_run_elapsed.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -63317,6 +63473,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1039
+    "_version": 1041
   }
 }
