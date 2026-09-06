@@ -38,7 +38,7 @@ lets the wave resume without a human.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 
@@ -76,6 +76,14 @@ UNSET_RESERVE_PCT = 0.0
 DEFAULT_SHELF_LIFE_MINUTES = 60.0
 DEFAULT_AVAILABILITY_PROBE_CACHE_SECONDS = 60.0
 
+# Provider utilisation is reported as an integer percentage. At 1.69% of a
+# window, one percentage point changes the burn multiple by 1 / 1.69 = 0.59,
+# so an opening-hours projection would mostly measure quantisation. Waiting for
+# 5% elapsed caps that step at 0.2x; requiring 5% used gives the reading at
+# least five integer samples, so one point is at most 20% of measured use.
+BURN_ELAPSED_FRACTION_FLOOR = 0.05
+BURN_UTILISATION_PCT_FLOOR = 5.0
+
 
 @dataclass
 class BudgetState:
@@ -91,6 +99,7 @@ class BudgetState:
     headroom: str = "unknown"
     utilisation_pct: float | None = None
     burn_multiple: float | None = None
+    projected_exhaustion_at: str | None = None
     rate_limit_type: str | None = None
     rate_limit_period_minutes: float | None = None
     resets_at: str | None = None
@@ -118,6 +127,7 @@ class BudgetState:
             "expired": self.expired,
             "headroom": self.headroom,
             "observed_at": self.observed_at,
+            "projected_exhaustion_at": self.projected_exhaustion_at,
             "rate_limit_period_minutes": self.rate_limit_period_minutes,
             "rate_limit_type": self.rate_limit_type,
             "resets_at": self.resets_at,
@@ -606,7 +616,7 @@ def _from_block(
     )
     period = block.get("rate_limit_period_minutes")
     numeric_period = float(period) if period is not None else None
-    return BudgetState(
+    state = BudgetState(
         backend=backend_name,
         headroom=headroom,
         utilisation_pct=numeric_utilisation,
@@ -630,6 +640,7 @@ def _from_block(
         expired=expired,
         detail=detail,
     )
+    return _with_projected_exhaustion(state, now=now)
 
 
 def _iso(moment: datetime) -> str:
@@ -667,8 +678,86 @@ def _burn_multiple(
     return (utilisation_pct / 100.0) / elapsed_fraction
 
 
+def _window_elapsed_fraction(state: BudgetState) -> float | None:
+    """Return how much of the reported window has elapsed."""
+    period = state.rate_limit_period_minutes
+    remaining = state.seconds_until_reset
+    if period is None or remaining is None:
+        return None
+    period_seconds = period * 60.0
+    elapsed_seconds = period_seconds - remaining
+    if period_seconds <= 0 or elapsed_seconds <= 0 or elapsed_seconds > period_seconds:
+        return None
+    return elapsed_seconds / period_seconds
+
+
+def _with_projected_exhaustion(state: BudgetState, *, now: datetime) -> BudgetState:
+    """Admit a burn reading and attach its projected exhaustion instant.
+
+    A projection is routing evidence, not a hold by itself. Its two floors keep
+    integer utilisation from becoming a high-resolution claim before either
+    enough time or enough usage has accumulated. Observation time is required
+    because an unstamped projection cannot say which window position it
+    describes, and a rolled-over window degrades through the same unknown path
+    as every other expired reading.
+    """
+    reset = _parse_stamp(state.resets_at) if state.resets_at else None
+    if state.expired or (reset is not None and reset <= now):
+        return replace(
+            state,
+            headroom="unknown",
+            burn_multiple=None,
+            projected_exhaustion_at=None,
+            expired=True,
+        )
+    if state.headroom != "known":
+        return replace(state, projected_exhaustion_at=None)
+
+    elapsed_fraction = _window_elapsed_fraction(state)
+    utilisation = state.utilisation_pct
+    burn = state.burn_multiple
+    if elapsed_fraction is None or utilisation is None or burn is None:
+        return replace(state, projected_exhaustion_at=None)
+
+    below_elapsed_floor = elapsed_fraction < BURN_ELAPSED_FRACTION_FLOOR
+    below_utilisation_floor = utilisation < BURN_UTILISATION_PCT_FLOOR
+    if below_elapsed_floor or below_utilisation_floor:
+        shortfalls = []
+        if below_elapsed_floor:
+            shortfalls.append(
+                f"{elapsed_fraction * 100:.2f}% elapsed is below the "
+                f"{BURN_ELAPSED_FRACTION_FLOOR * 100:g}% floor"
+            )
+        if below_utilisation_floor:
+            shortfalls.append(
+                f"{utilisation:g}% utilisation is below the "
+                f"{BURN_UTILISATION_PCT_FLOOR:g}% floor"
+            )
+        floor_detail = "burn evidence is quantised too coarsely: " + " and ".join(
+            shortfalls
+        )
+        detail = f"{state.detail}; {floor_detail}".strip("; ")
+        return replace(
+            state,
+            headroom="unknown",
+            projected_exhaustion_at=None,
+            detail=detail,
+        )
+
+    observed = _parse_stamp(state.observed_at) if state.observed_at else None
+    if observed is None or reset is None or state.seconds_until_reset is None:
+        return replace(state, projected_exhaustion_at=None)
+
+    projected = (
+        reset
+        if burn <= 1.0
+        else observed + timedelta(seconds=state.seconds_until_reset / burn)
+    )
+    return replace(state, projected_exhaustion_at=_iso(projected))
+
+
 def _position(state: BudgetState) -> str:
-    """Name utilisation and its report-only burn rate together."""
+    """Name utilisation, burn rate and any admitted projection together."""
     utilisation = (
         f"{state.utilisation_pct:g}%"
         if state.utilisation_pct is not None
@@ -677,7 +766,10 @@ def _position(state: BudgetState) -> str:
     burn = (
         f"{state.burn_multiple:.1f}x" if state.burn_multiple is not None else "unknown"
     )
-    return f"utilisation {utilisation} with burn multiple {burn}"
+    position = f"utilisation {utilisation} with burn multiple {burn}"
+    if state.projected_exhaustion_at:
+        position += f" and projected exhaustion {state.projected_exhaustion_at}"
+    return position
 
 
 def _age_basis(state: BudgetState) -> str:
@@ -753,6 +845,7 @@ def decide(
     """
     if purpose not in PURPOSES:
         raise ValueError(f"purpose {purpose!r} must be one of {', '.join(PURPOSES)}")
+    state = _with_projected_exhaustion(state, now=_now(now))
     ceiling = float(policy_block.get("utilisation_ceiling_pct", UNSET_CEILING_PCT))
     limit = effective_ceiling(policy_block, purpose)
     verdict: dict[str, Any] = {
@@ -777,10 +870,17 @@ def decide(
         )
         return verdict
     if state.headroom != "known":
-        verdict["reason"] = (
-            "headroom is unknown, and absence of a signal is never read as "
-            f"exhaustion — {state.detail or 'nothing recorded for this backend'}"
-        )
+        if state.burn_multiple is not None:
+            verdict["reason"] = (
+                f"{_position(state)} is not admissible budget evidence — "
+                f"{state.detail or 'the reported window is incomplete'}; "
+                "headroom is unknown and the lane remains open"
+            )
+        else:
+            verdict["reason"] = (
+                "headroom is unknown, and absence of a signal is never read as "
+                f"exhaustion — {state.detail or 'nothing recorded for this backend'}"
+            )
         return verdict
 
     if (lapse := _lapsed_minutes(state, policy_block, _now(now))) is not None:
@@ -1045,7 +1145,10 @@ def summary(report: Mapping[str, Any]) -> str:
     wait = report.get("resume_after_seconds")
     resume_at = report.get("resume_at")
     if not held:
-        when = "the wave may open now; burn multiple is report-only and never holds"
+        when = (
+            "the wave may open now; compare projected exhaustion with the work "
+            "horizon before dispatch"
+        )
     elif resume_at and wait is not None:
         when = f"resets at {resume_at}, in {wait}s — resume the wave then"
     else:
