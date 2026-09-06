@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-06">
-<meta name="plan-version" content="65">
+<meta name="plan-version" content="66">
 <meta name="plan-impl" content="1.0">
 <meta name="plan-commits" content="dbb81e0,2a10c38,6767cd5,b625b88,e016572,f049be9,d079949,1aa4215,9fa38fe,f65ea4c,4656c7a,0d92346,cc4c686,134d770,72ef099,9f3e8dc,39d7a28,cc03efe,492d498,8476b70">
 <meta name="plan-artifacts" content="docs/figures/crew-effort-routing/spec-level-slices.png,~/.config/reckon/crew/reports/model-id-probe.md,~/.config/reckon/crew/reports/shadow-prior-art-scout.md,~/.config/reckon/crew/reports/second-checkpoint-slices.md,~/.config/reckon/flight.yaml,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
@@ -1067,6 +1067,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260906T152251166856-burn-rate-is-an-admission-input" data-who="crew-burn-admission" data-when="2026-09-06T15:38:51Z">
     <div class="r-comment-body"><p>Burn multiple becomes an admission input: floors on both elapsed fraction (5%) and utilisation (5%) gate whether an integer reading is evidence at all, and an admissible reading emits projected_exhaustion_at. Below either floor the state stays unknown and the lane is not held, so a served run can still refine the estimate. The summary line asserting burn is report-only is gone, replaced by an instruction to compare the projection against the work horizon. Verified at the merged head: 120 passed, and the live preflight retains burn 2.75 while withholding a projection at 1.9 percent elapsed, so the measurement that motivated the change is inadmissible to it.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260906T162556606604-a-reading-speaks-only-for-its-own-lane" data-who="crew-burn-admission" data-when="2026-09-06T16:38:41Z">
+    <div class="r-comment-body"><p>Resolution now takes a backend&#x27;s own reading first and otherwise exactly one declared coverage, replacing inference from a shared name prefix; 8 tests, 95 passed at the merged head, no verdict changed. THE GOAL IS NOT ACHIEVED LIVE AND THE BRIEF IS WHY. All four codex lanes still report identical utilisation from the account surface, because each lane probes independently and the result is stamped with the name of the lane that asked, so every reading resolves as a direct reading and the coverage path is never reached. The false identity is minted upstream in the probe, not in the resolution this node fixed. Recorded as a brief defect rather than a worker defect: the node satisfied its done-when exactly.</p></div>
 </div>
 </section>
 </main>
