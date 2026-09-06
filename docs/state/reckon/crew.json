@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T13:03:12",
+  "updated": "2026-09-06T13:22:40",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -344,6 +344,15 @@
       },
       {
         "id": "crew-admission",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-06"
+      },
+      {
+        "id": "crew-attention",
         "harness": "clive",
         "role": "implement",
         "session_id": null,
@@ -1629,6 +1638,15 @@
         "session_model": null,
         "sessions": {},
         "created": "2026-09-05"
+      },
+      {
+        "id": "skill-local-lane",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-06"
       },
       {
         "id": "skill-monitor-rule",
@@ -64441,6 +64459,153 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T101007167232-promotion-waits-for-the-runs-own-verdict",
+        "plan": "dispatch-cost-per-durable-node",
+        "section": "\u00a77",
+        "node": "promotion-waits-for-the-runs-own-verdict",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1832,
+                "cached_input_tokens": 604743,
+                "input_tokens": 606577,
+                "output_tokens": 1697,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 608274,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_promotion_reads_the_terminal_record.py -q passes, and promoting a run whose process has exited records its completion from the terminal stream event rather than from the file mtime. THE DEFECT IS A RACE AND IT AFFECTS MOST OF THE LEDGER. Measured on promoted run r-20260906T094246446330-pfs-view-nova-contourer-sol in the nova project: its manifest landed at 10:00:27Z, promotion stamped completed_at 10:01:03Z with completed_at_source stream_mtime, and the stream FINAL write \u2014 the terminal turn.completed record carrying input_tokens 11362309, cached_input_tokens 11147264, output_tokens 35630, reasoning_output_tokens 10963 \u2014 landed at 10:01:22Z, NINETEEN SECONDS AFTER promotion read the file. The worker had written its manifest and the coordinator promoted promptly, which is what the skill asks for, and doing so read the stream before its writer finished. THE SCALE, counted over the last 400 rows of three project ledgers, 1200 rows: completed_at_source is stream_mtime on 826 and terminal_event on 374; worker_seconds_source is wall_fallback on 798 and stream_events on 374. So about two thirds of every promoted run here takes its completion time from a file mtime and its worker seconds from wall clock, and on a metered lane loses its token receipt entirely. That is the ledger the cost-per-durable-node work is computed from. THE SIGNAL ALREADY EXISTS: completed_at_source and worker_seconds_source already distinguish the two paths, so the ledger has recorded which rows are degraded all along and nothing reads it. THE FIX: when the run process has exited, give the stream a bounded settle and re-read before folding the observation \u2014 re-read once the file mtime stops advancing, or a short bounded wait, whichever you can make deterministic in a test \u2014 and fall back to mtime only when a terminal record genuinely never arrives. KEEP THE FALLBACK: some runs are killed and never write one, and promotion must still succeed for those, recording the fallback source exactly as now. DO NOT block promotion indefinitely and DO NOT wait on a process that is still alive; a live run keeps its current behaviour. Assert: a stream whose terminal record arrives shortly after the process exits promotes with completed_at_source terminal_event and its token figures on the row; a stream that never receives one still promotes with the mtime fallback and its source recorded; a run whose process is still alive is unchanged; and the settle is bounded so a truncated stream cannot hang a promotion. Measure base and head over tests/test_promotion_reads_the_terminal_record.py plus every test importing reckon.crew.promotion; report failure ids either side and require none added.",
+          "estimated_hours": 1.25,
+          "goal": "Let promotion read a finished run's own terminal record instead of racing it, so timing and token figures come from the run rather than from a file mtime",
+          "id": "promotion-waits-for-the-runs-own-verdict",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T101007167232-promotion-waits-for-the-runs-own-verdict/manifest.md",
+          "plan": "dispatch-cost-per-durable-node",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "tests/test_promotion_reads_the_terminal_record.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-codex-usage",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T10:10:15Z",
+        "completed_at": "2026-09-06T11:21:04.177Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4195,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4249,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "a55e1c6fffe203a2b324cc2f5e271f401e5b0113",
+        "commits": [
+          "6edb433f82b23c599b59c5b25e63790a9895afdb"
+        ],
+        "changed_lines": {
+          "added": 480,
+          "removed": 5,
+          "files": 2
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_promotion_reads_the_terminal_record.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T101007167232-promotion-waits-for-the-runs-own-verdict/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T101007167232-promotion-waits-for-the-runs-own-verdict/manifest.md",
+        "scope_changed": false,
+        "session_id": "fd068b9e-a845-42c9-9866-6df49240ad06",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 13612471,
+            "input_tokens_cumulative": 13612471,
+            "output_tokens": 69911,
+            "output_tokens_cumulative": 69911,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 4246.111,
+          "generated_tokens": 69911,
+          "generation_seconds": 3988.473,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 19.2,
+          "machine_seconds": 257.638,
+          "peak_input_tokens": 194763,
+          "tokens_per_second": 17.53,
+          "wall_tokens_per_second": 16.46
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/promotion-waits-for-the-runs-own-verdict",
+          "session_id": "fd068b9e-a845-42c9-9866-6df49240ad06",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T11:21:04.177Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_promotion_reads_the_terminal_record.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -64669,6 +64834,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1057
+    "_version": 1060
   }
 }
