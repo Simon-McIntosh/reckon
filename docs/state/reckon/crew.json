@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T09:04:03",
+  "updated": "2026-09-06T09:09:15",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -63419,6 +63419,163 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T052013589630-skill-command-surface-matches-the-registry",
+        "plan": "binding-rules-need-bound-checks",
+        "section": "\u00a73",
+        "node": "skill-command-surface-matches-the-registry",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 656,
+                "cached_input_tokens": 411005,
+                "input_tokens": 411663,
+                "output_tokens": 2379,
+                "reasoning_output_tokens": 1156,
+                "total_tokens": 414042,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_skill_contracts.py -q reports zero failures, from three at base. The three are one problem and they interact, which is why they are one node. (1) test_every_registered_crew_verb_is_documented_or_exempt fails with \"reckon crew directory is registered and the skill never names it\" \u2014 the verb exists in the CLI and no skill file mentions it, verified by grep across SKILL.md and all six reference files, zero hits. (2) test_ship_cli_instructions_match_registered_commands_and_flags fails with two extra items in the left set, (\"crew\",\"flight\") and (\"crew\",\"resume-ready\"); determine from the test which side is the registry and which is the skill, and correct whichever is wrong \u2014 do not assume the skill is the wrong one, because a stale exemption list and a stale document fail identically here. (3) test_engine_generated_dispatch_keeps_fixed_read_set_bounded is the constraint that makes this a single node rather than two: documenting a verb lengthens the skill, and that test bounds how much a generated dispatch reads. Satisfy all three together; a fix for (1) that breaks (3) is not a fix. THE RULE THIS SECTION IS ABOUT: the skill declares a command surface and the CLI registers one, and nothing but this test binds them, so they drift silently. If your change adds documentation, make it the minimum that names the verb and its purpose accurately \u2014 describe what \"reckon crew directory\" DOES by reading its implementation and its help text, never invent a description to satisfy a string match, because a wrong description passes the test and misleads every reader afterwards. Report in your manifest what the verb actually does and where you read that from. Measure base and head over tests/test_skill_contracts.py plus every test reading the skill files; report failure ids either side and require none added.",
+          "estimated_hours": 0.75,
+          "goal": "Bring the ship skill's documented command surface back into agreement with the registered CLI, within the read-set bound the same suite enforces",
+          "id": "skill-command-surface-matches-the-registry",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T052013589630-skill-command-surface-matches-the-registry/manifest.md",
+          "plan": "binding-rules-need-bound-checks",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "write_paths": [
+            "skills/reckon-ship/SKILL.md",
+            "tests/test_skill_contracts.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "skill-verb-surface",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T05:20:22Z",
+        "completed_at": "2026-09-06T07:07:42.289Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 6407,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 6440,
+        "stalled": true,
+        "time_budget": "40m",
+        "base_sha": "268367bd5ca0d92964faed6a1c263aac50e94da5",
+        "commits": [
+          "135fd49d747962ec09eb4062c9da448bba27ce2f"
+        ],
+        "changed_lines": {
+          "added": 295,
+          "removed": 242,
+          "files": 4
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_skill_contracts.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T052013589630-skill-command-surface-matches-the-registry/head-skill-contracts.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T052013589630-skill-command-surface-matches-the-registry/manifest.md",
+        "scope_changed": false,
+        "session_id": "30d17046-7027-4dda-9b50-f1ab97de12b6",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 22889841,
+            "input_tokens_cumulative": 22889841,
+            "output_tokens": 100415,
+            "output_tokens_cumulative": 100415,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 6437.248,
+          "generated_tokens": 100415,
+          "generation_seconds": 6260.389,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 22.7,
+          "machine_seconds": 176.859,
+          "peak_input_tokens": 231258,
+          "tokens_per_second": 16.04,
+          "wall_tokens_per_second": 15.6
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "scope_acceptances": [
+          {
+            "path": "skills/reckon-ship/references/sprint-orchestration.md",
+            "reason": "Same fence error: the relocation target for four sections moved out of SKILL.md to reach the budget the done-when demanded."
+          },
+          {
+            "path": "skills/reckon-ship/references/worker-verification.md",
+            "reason": "My fence was unsatisfiable, for the third time tonight. The done-when required the skill under a 16000-token read-set budget, and that budget test's own guidance prescribes relocating reference material into references/ rather than raising the constant \u2014 so the goal could not be reached inside the two paths I named. The worker relocated and disclosed it."
+          }
+        ],
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/skill-command-surface-matches-the-registry",
+          "session_id": "30d17046-7027-4dda-9b50-f1ab97de12b6",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T07:07:42.289Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_skill_contracts.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -63647,6 +63804,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1045
+    "_version": 1046
   }
 }
