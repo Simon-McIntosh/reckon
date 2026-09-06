@@ -14,7 +14,16 @@ its workers.
 The verdict is the terminal shape, never the retry count: busy lanes carry
 rate-limit retries and complete with work committed (measured: successful runs
 carried seven retries), so a count alone matches both a healthy run and a dead
-one. A refusal is recorded only when rate-limit retries end in an error result.
+one. Exhaustion is recorded only when rate-limit retries end in an error
+result, and the recording then resolves by the backend's meteredness: the
+identical 429 retry stream that records a budget refusal on a metered backend
+records lane backpressure on the unmetered local lane, which has no metered
+window to spend. Both verdicts share the detection that originally mattered —
+the death reads as the lane's own refusal signal, never as the "no rate-limit
+event in the stream yet" fallback that misread a dead lane as one never
+measured. The two tests below pin that detection and the meteredness split;
+the unmetered-vs-metered discrimination itself is pinned in
+``test_unmetered_lane_backpressure``.
 """
 
 from __future__ import annotations
@@ -63,15 +72,19 @@ def _result(*, is_error: bool, message: str = "") -> dict:
     }
 
 
-# ── The exhaustion shape ─────────────────────────────────────────────────────
+# ── The exhaustion shape resolves by meteredness ─────────────────────────────
 
 
-def test_rate_limit_retries_ending_in_an_error_result_report_a_refusal():
-    """The exhaustion shape: many retries, then a terminal error result.
+def test_rate_limit_retries_ending_in_an_error_result_report_lane_backpressure():
+    """The local-lane exhaustion shape: many retries, then a terminal error.
 
     The recorded message carries no recognised usage/spend phrase, which is
     exactly the run that previously fell through to "no rate-limit event in the
-    stream yet" despite having died on the lane's own rate-limit signal.
+    stream yet" despite having died on the lane's own rate-limit signal. The
+    death is still detected, and on the unmetered local lane it records lane
+    backpressure rather than a spent-budget refusal: the detail names the retry
+    count, and the refusal carries none of the metered-budget semantics a
+    resume resolver keys on.
     """
     events = [_retry() for _ in range(15)]
     events.append(_result(is_error=True))
@@ -79,20 +92,24 @@ def test_rate_limit_retries_ending_in_an_error_result_report_a_refusal():
     observation = _observe(events)
 
     assert observation.exit_status == "error"
-    assert observation.budget["refusal"] is True
-    assert observation.budget["headroom"] == "known"
-    assert _backends.budget_exhausted(observation.budget) is True
-    assert "rate-limit" in observation.budget["detail"]
+    assert observation.budget["refusal"] is False
+    assert observation.budget["lane_backpressure"] is True
+    assert observation.budget["headroom"] == "unknown"
+    assert _backends.budget_exhausted(observation.budget) is None
+    assert "15" in observation.budget["detail"]
     assert "no rate-limit event in the stream yet" not in observation.budget["detail"]
-    assert observation.phase == "blocked"
+    assert observation.phase == "failed"
 
 
-def test_claude_retries_speak_the_same_wire_language_as_the_local_lane():
-    """``claude`` and ``clive`` share a dialect, so the signal is not a lane quirk.
+def test_identical_wire_records_resolve_by_meteredness():
+    """``claude`` and ``clive`` read the same records, and the verdict splits.
 
-    The backend command selects the dialect; both names must refuse on the same
-    exhaustion shape, so renaming the lane in configuration cannot lose the
-    signal the observer now reads.
+    The backend command selects the dialect; both names must consume the
+    identical retry shape, so renaming the lane in configuration cannot lose
+    the signal the observer now reads. The meteredness split then answers that
+    one wire shape differently by construction: the unmetered local lane
+    records lane backpressure, the metered backend records a budget refusal,
+    and the run verdict differs accordingly (failed versus blocked).
     """
     events = [_retry() for _ in range(10)]
     events.append(_result(is_error=True))
@@ -100,8 +117,12 @@ def test_claude_retries_speak_the_same_wire_language_as_the_local_lane():
     clive_observation = _observe(events, CLIVE)
     claude_observation = _observe(events, CLAUDE)
 
-    assert clive_observation.budget["refusal"] is True
+    assert clive_observation.budget["refusal"] is False
+    assert clive_observation.budget["lane_backpressure"] is True
+    assert clive_observation.phase == "failed"
     assert claude_observation.budget["refusal"] is True
+    assert claude_observation.budget.get("lane_backpressure") is not True
+    assert claude_observation.phase == "blocked"
 
 
 # ── The falsifier: retrying is not refusing ──────────────────────────────────
