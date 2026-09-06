@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T09:56:05",
+  "updated": "2026-09-06T10:16:08",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -63998,6 +63998,154 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T070444215266-abandoned-requires-proof-of-death",
+        "plan": "crew-observability-truth",
+        "section": "\u00a78",
+        "node": "abandoned-requires-proof-of-death",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1256,
+                "cached_input_tokens": 469278,
+                "input_tokens": 470536,
+                "output_tokens": 2106,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 472642,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_crew_finished_display.py -q passes with zero failures, from six at base, and no run is called abandoned without proof of death. THIS COST ANOTHER FLEET TWO DUPLICATED NODES TONIGHT and the evidence is preserved and readable by you. Three runs under ~/.config/reckon/crew/runs/ were all classified abandoned: r-*-n-sli-which-sections-are-genuinely-closed is a GENUINE absence, no manifest then or now; r-*-n-s10-the-remainder-has-a-reuse-map and r-*-n-sli-the-gate-comment-stops-claiming-a-routing were ALIVE, and each wrote a complete manifest and finished its stream 17 and 24 minutes AFTER being declared dead. Measured: in both, the manifest predates the stream final record by about a minute, so nothing was written late and no poll interval would have helped. Read those three directly; a fix that classifies all three correctly cannot be doing it by luck. TWO DEFECTS, and the second is the more general. (1) In classify_pointer the arm \"elif terminal:\" \u2014 where terminal is phase in complete or failed \u2014 is evaluated BEFORE \"elif alive is True\", and never consults liveness, and its action tells the operator to inspect the worktree and redispatch. So the surface does not merely miss a live run, it advises duplicating one. (2) process_alive in reckon/crew/runs.py returns False on PermissionError. A PermissionError from os.kill(pid, 0) means the process EXISTS and belongs to another user: that is proof of life recorded as death, and on a shared workstation carrying several fleets it is the normal condition for a peer worker, not an edge case. THE REMEDY, which the affected coordinator asked for by name: abandoned must require positive proof of death. Where liveness cannot be established, report it honestly \u2014 an unknown that says the process liveness could not be proven, leaving the pointer alone \u2014 rather than guessing. An honest unknown is annoying; a confident abandoned gets acted on. Keep every existing correct verdict: a proven-dead process with no manifest is still abandoned, a live process is still running, and the blocked, waiting and stalled arms are unchanged. THE RED TESTS ARE IN YOUR SCOPE AND ARE PROBABLY THE POINT: six tests in tests/test_crew_finished_display.py fail at base and have failed since well before tonight, byte-identical across two census runs, and they are the contract tests for exactly this behaviour \u2014 one is named test_dispatched_with_no_manifest_and_a_dead_process_resolves_to_abandoned. Read each before changing anything and decide, per test, whether it encodes the behaviour the code should have and the code is wrong, or whether it encodes a superseded requirement and the test is wrong. State that judgement per test in your manifest with your reason. Do NOT delete a test to reach green, and do not weaken one; if a test is genuinely superseded, say what replaced it. Measure base and head over tests/test_crew_finished_display.py plus every test importing reckon.crew.recovery or reckon.crew.runs; report failure ids either side and require none added beyond the six you are fixing.",
+          "estimated_hours": 1.25,
+          "goal": "Refuse to call a run abandoned without positive proof its process died, and report an unprovable liveness honestly instead of guessing",
+          "id": "abandoned-requires-proof-of-death",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T070444215266-abandoned-requires-proof-of-death/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "reckon/crew/runs.py",
+            "tests/test_crew_finished_display.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-midflight",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T07:04:51Z",
+        "completed_at": "2026-09-06T08:14:32.063Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4156,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4181,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "1609bb9195103dc123a2355f51ef81f77b594ceb",
+        "commits": [
+          "94ff87a812e3e65383d3f62524d217ad9248c91f"
+        ],
+        "changed_lines": {
+          "added": 110,
+          "removed": 40,
+          "files": 3
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_crew_finished_display.py -q",
+          "exit_status": 0,
+          "log_path": "/tmp/head_finished_display2.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T070444215266-abandoned-requires-proof-of-death/manifest.md",
+        "scope_changed": false,
+        "session_id": "8be0b500-cc66-4ef1-b83b-e1f1d08c4870",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 10123821,
+            "input_tokens_cumulative": 10123821,
+            "output_tokens": 59779,
+            "output_tokens_cumulative": 59779,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 4177.391,
+          "generated_tokens": 59779,
+          "generation_seconds": 2651.727,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 17.2,
+          "machine_seconds": 1525.664,
+          "peak_input_tokens": 174516,
+          "tokens_per_second": 22.54,
+          "wall_tokens_per_second": 14.31
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/abandoned-requires-proof-of-death",
+          "session_id": "8be0b500-cc66-4ef1-b83b-e1f1d08c4870",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T08:14:32.063Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_crew_finished_display.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -64226,6 +64374,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1050
+    "_version": 1051
   }
 }
