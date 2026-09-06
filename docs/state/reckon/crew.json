@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T14:00:54",
+  "updated": "2026-09-06T14:32:59",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -355,13 +355,24 @@
         "id": "crew-attention",
         "harness": "clive",
         "role": "implement",
+        "session_id": "a610799a-5781-46cd-9c72-4110a2528ddb",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "a610799a-5781-46cd-9c72-4110a2528ddb"
+        },
+        "created": "2026-09-06"
+      },
+      {
+        "id": "crew-backpressure",
+        "harness": "clive",
+        "role": "implement",
         "session_id": null,
         "session_model": null,
         "sessions": {},
         "created": "2026-09-06"
       },
       {
-        "id": "crew-backpressure",
+        "id": "crew-both-reasons",
         "harness": "clive",
         "role": "implement",
         "session_id": null,
@@ -65045,6 +65056,162 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T110600171864-the-monitor-shows-every-transition",
+        "plan": "crew-observability-truth",
+        "section": "\u00a74",
+        "node": "the-monitor-shows-every-transition",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 809,
+                "cached_input_tokens": 636687,
+                "input_tokens": 637498,
+                "output_tokens": 2181,
+                "reasoning_output_tokens": 505,
+                "total_tokens": 639679,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_crew_monitor_output.py tests/test_skill_contracts.py -q reports zero failures, from one at the current head, and no --attention option remains on any crew command. THE REPOSITORY OWNER ASKED FOR THIS REMOVAL, on the grounds that a session may want only terminal requests yet still wants oversight of the work. Two coordinators who ran fleets all night were consulted and BOTH agreed without reservation, neither having ever used it, and one supplied the decisive argument: the filter carries \"blocked\" but NOT \"working\", so a coordinator watching two nodes go blocked on a spend limit would never have seen them recover. A filter that shows the alarm and hides the all-clear is worse than no filter. The skill already carries the companion argument that a filter matching nothing is indistinguishable from a dead follower. TWO CONDITIONS, both from the coordinators who use this surface daily. The default must keep EVERY transition \u2014 removing the filter must not narrow what a follower delivers. And terminal or needs-me rows must stay VISUALLY DISTINCT from routine confirmations, because the filter was a poor substitute for a real thing people wanted: the ability to pick the rows that need them out of a stream that shows everything. Do not add a replacement filter; the thing they actually want is a classifier output rather than a display mode, and it is not this node. A RED TEST AT HEAD IS YOURS TO CLOSE, and it is not incidental: tests/test_crew_monitor_output.py::test_attention_and_progress_stay_disjoint_across_every_recovery_class fails because the new paused class is in the progress set, and the assertion it makes \u2014 that the attention set and the progress set never overlap \u2014 is a property OF THE FILTER BEING REMOVED. So it goes with the filter rather than being patched. If any part of that test asserts something still true once attention is gone, keep that part under a name describing what survives. Do not simply delete the file. Remove the flag from every crew command that carries it, from the skill text that documents it, and from the exemption or command-surface data in tests/test_skill_contracts.py, so the documented surface and the registry stay in agreement \u2014 that parity is asserted and a stale entry will fail it. Watch the skill read-set budget: headroom is about 145 estimated tokens and this change should INCREASE it, so report the before and after word counts. Measure base and head over both named test files plus every test importing reckon.crew.ticker or reckon.crew.runs; report failure ids either side and require none added.",
+          "estimated_hours": 1.25,
+          "goal": "Remove the monitor's attention filter so a follower always delivers every transition, and close the assertion that filter's existence required",
+          "id": "the-monitor-shows-every-transition",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T110600171864-the-monitor-shows-every-transition/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/cli.py",
+            "reckon/crew/ticker.py",
+            "reckon/crew/runs.py",
+            "skills/reckon-ship/SKILL.md",
+            "tests/test_crew_monitor_output.py",
+            "tests/test_skill_contracts.py",
+            "tests/test_crew_session_delivery.py",
+            "reckon/crew/AGENTS.md",
+            "skills/reckon-ship/references/orchestrator-harness/claude-code.md",
+            "skills/reckon-ship/references/sprint-orchestration.md"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-attention",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T11:06:08Z",
+        "completed_at": "2026-09-06T12:31:04.277Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 5084,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 5096,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "565fe274c70591f839eb6a511ed51ac80c18235d",
+        "commits": [
+          "9ea85b7d9566e66975ee14781d3cf7fea61b0ac1",
+          "49ec60aaf9667a66bbf14973b3f30593a586ad1d"
+        ],
+        "changed_lines": {
+          "added": 41,
+          "removed": 140,
+          "files": 8
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_crew_monitor_output.py tests/test_skill_contracts.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T110600171864-the-monitor-shows-every-transition/logs/after_named2.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T110600171864-the-monitor-shows-every-transition/manifest.md",
+        "scope_changed": false,
+        "session_id": "a610799a-5781-46cd-9c72-4110a2528ddb",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 3777227,
+            "input_tokens_cumulative": 3777227,
+            "output_tokens": 14480,
+            "output_tokens_cumulative": 14480,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 796.074,
+          "generated_tokens": 14480,
+          "generation_seconds": 757.194,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 20.4,
+          "machine_seconds": 38.88,
+          "peak_input_tokens": 207689,
+          "tokens_per_second": 19.12,
+          "wall_tokens_per_second": 18.19
+        },
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-monitor-shows-every-transition",
+          "session_id": "a610799a-5781-46cd-9c72-4110a2528ddb",
+          "session_source": "pointer",
+          "retained_at": "2026-09-06T12:31:04.277Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_crew_monitor_output.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -65273,6 +65440,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1064
+    "_version": 1067
   }
 }
