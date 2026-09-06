@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T13:59:36",
+  "updated": "2026-09-06T14:00:54",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -64898,6 +64898,153 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T111339402146-the-backend-reference-knows-the-local-lane",
+        "plan": "clive-local-workers",
+        "section": "\u00a715",
+        "node": "the-backend-reference-knows-the-local-lane",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1322,
+                "cached_input_tokens": 656752,
+                "input_tokens": 658076,
+                "output_tokens": 2645,
+                "reasoning_output_tokens": 646,
+                "total_tokens": 660721,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_backend_reference_contract.py -q passes, asserting that skills/reckon-ship/references/worker-backends.md carries the four claims below. That file is 1503 words of maintainer notes on dialects and budget and mentions the local lane ZERO times, so this is missing content rather than a rewrite. FOUR CLAIMS, each measured across three sessions today, to be written in mechanism terms. (1) A LANES CONCURRENCY CEILING BELONGS TO THE DEPLOYMENT AND IS DISCOVERED, NEVER ASSUMED. The local lane admission limit moved from six to sixteen in one day and the KV pool behind it moved twice, once as a side effect of a config change nobody thought of as a capacity change. So the reference must NOT record a number: it records that the number is the deployments, that reckon carries none, and that any per-backend ceiling an operator sets is a coarse bound on how much work one fleet holds OPEN against a lane, not a model of the servers queue. State the unit trap plainly, because it is the part that misleads: a reckon ceiling counts LIVE RUNS while a server admission limit counts SIMULTANEOUS REQUESTS, and the ratio is variable \u2014 four sessions were measured producing two concurrent requests, since agentic workers spend most of their wall clock between turns. Two limits set to the same number are therefore not aligned. (2) A 429 ON AN UNMETERED LANE IS BACKPRESSURE, NOT EXHAUSTION. It has no reset time, it clears when a slot frees, and it classifies as blocked-and-resumable rather than abandoned. Contrast it with a metered refusal, which carries a reset and correctly holds a wave. Note that the two are indistinguishable on the wire \u2014 identical status and identical retry records \u2014 so the discriminator is the backends declared meteredness and nothing else. (3) STDERR CARRIES NO STATUS FOR THIS LANE ON ANY OUTCOME, and its one conspicuous line, an unrecognized-model complaint naming the served model, appears on HEALTHY runs too. Two sessions attributed deaths to it before measuring. The status is in stream.jsonl. (4) TWO DISTINCT FAILURES WEAR THE LABEL \"process gone without a complete manifest\", and a fix aimed at one will look half-successful: retry exhaustion mid-turn, and a run whose stream shows a completed turn with the deliverable written and only the manifest missing. They separate on the retry count and the presence of a terminal turn record. WRITE THE STRUCTURED FIELD RULE INTO CLAIMS 2 AND 4 because it is what makes them usable: key on the structured retry record, never on the refusal sentence. The sentence is a strict and unreliable subset \u2014 twenty-nine real refusal records were measured carrying zero occurrences of it, while other sessions runs carry it as ordinary assistant text. TWO CONSTRAINTS ON HOW YOU WRITE IT. No attribution: this repository forbids naming who found a thing in source or documentation, so state the mechanism and the measurement, never a session or a person. And no frozen figures: the six, the sixteen and the pool sizes are dated snapshots of a moving deployment, so either omit them or mark them explicitly as an illustration of movement rather than as the current value \u2014 the claim is that the number moves and must be discovered, and a number written down would falsify its own point. The test asserts the claims are present, not that any figure equals anything. Measure base and head over tests/test_backend_reference_contract.py plus every test reading the skill reference files; report failure ids either side and require none added.",
+          "estimated_hours": 1.0,
+          "goal": "Record in the backend reference what a night of measurement established about the local lane, and bind each claim to a check so it cannot quietly rot",
+          "id": "the-backend-reference-knows-the-local-lane",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T111339402146-the-backend-reference-knows-the-local-lane/manifest.md",
+          "plan": "clive-local-workers",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a715",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "skills/reckon-ship/references/worker-backends.md",
+            "tests/test_backend_reference_contract.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "skill-local-lane",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T11:13:46Z",
+        "completed_at": "2026-09-06T11:50:29.322Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2181,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2203,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "565fe274c70591f839eb6a511ed51ac80c18235d",
+        "commits": [
+          "88c17752672008f77e654744965ab73853bed9ab"
+        ],
+        "changed_lines": {
+          "added": 173,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_backend_reference_contract.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T111339402146-the-backend-reference-knows-the-local-lane/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T111339402146-the-backend-reference-knows-the-local-lane/manifest.md",
+        "scope_changed": false,
+        "session_id": "35e10800-a9fa-4d7e-94db-3284e151d1d9",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6306697,
+            "input_tokens_cumulative": 6306697,
+            "output_tokens": 44931,
+            "output_tokens_cumulative": 44931,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 2200.051,
+          "generated_tokens": 44931,
+          "generation_seconds": 2167.089,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 14.2,
+          "machine_seconds": 32.962,
+          "peak_input_tokens": 144520,
+          "tokens_per_second": 20.73,
+          "wall_tokens_per_second": 20.42
+        },
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-backend-reference-knows-the-local-lane",
+          "session_id": "35e10800-a9fa-4d7e-94db-3284e151d1d9",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T11:50:29.322Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_backend_reference_contract.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -65126,6 +65273,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1063
+    "_version": 1064
   }
 }
