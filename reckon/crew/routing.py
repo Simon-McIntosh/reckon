@@ -29,7 +29,6 @@ from reckon.crew.runs import (
     _live_worktree_claims,
     _pointer_lock,
     _process_start_time,
-    crew_home,
     list_live,
     pointer_path,
     process_alive,
@@ -283,6 +282,55 @@ def _registered_worktrees(repo: Path) -> list[Path]:
     ]
 
 
+def _run_directory_extractions(runs_root: Path) -> list[Path]:
+    """Return the git-less trees a worker left under the crew runs root.
+
+    Workers keep two kinds of source tree in a run directory: registered
+    worktrees, and plain extractions made with ``git archive`` that carry no
+    git directory. Both appear in the same places — the children of a
+    ``checkouts`` directory, and directories named for a base revision
+    (``base-source``, ``base-tree``, ``base-wt`` ...) at the run-directory
+    level or under ``artifacts``. A candidate that holds a git directory is a
+    real worktree that the worktree registry already reports, so only the
+    git-less ones are returned here — they are exactly the trees gc would
+    otherwise never see. Each run directory is scanned directly; the walk never
+    descends a whole run tree.
+    """
+    if not runs_root.is_dir():
+        return []
+    found: list[Path] = []
+    for run_dir in sorted(path for path in runs_root.iterdir() if path.is_dir()):
+        candidates: list[Path] = []
+        for pattern in ("base-*", "artifacts/base-*"):
+            candidates.extend(path for path in run_dir.glob(pattern) if path.is_dir())
+        checkouts = run_dir / "checkouts"
+        if checkouts.is_dir():
+            candidates.extend(path for path in checkouts.iterdir() if path.is_dir())
+        for candidate in candidates:
+            git_dir = candidate / ".git"
+            if git_dir.is_file() or git_dir.is_dir():
+                continue
+            if candidate not in found:
+                found.append(candidate)
+    return sorted(found)
+
+
+def _extraction_report(path: Path) -> dict[str, Any]:
+    """Report one git-less tree under the runs root as its own kind.
+
+    A plain extraction has no commit, so it cannot be judged by containment and
+    is never removable. Reporting it under one of the classifications the
+    worktree rules own would mislabel it, so it states its kind instead. The
+    caller's report loop adds the reclaimable and withheld fields like every
+    other row.
+    """
+    return {
+        "path": str(path),
+        "kind": "extraction",
+        "classification": "extraction",
+    }
+
+
 def _tree_state(path: Path) -> dict[str, Any]:
     """Return the commit and working-tree state needed for a boundary check."""
     if not path.is_dir():
@@ -496,6 +544,14 @@ WITHHELD_REASONS = {
         "run first"
     ),
 }
+# The extraction's reason is held in its own constant rather than joining
+# WITHHELD_REASONS: that mapping is asserted to name exactly the worktree-rule
+# vocabulary, and an extraction is not a worktree rule — it has no commit to
+# judge, only a kind to report.
+RUN_DIRECTORY_EXTRACTION_REASON = (
+    "a plain extraction with no git directory, so it has no commit to judge "
+    "by containment; it is never removed, only reported"
+)
 
 
 def garbage_collect(
@@ -513,12 +569,20 @@ def garbage_collect(
     repo_root = Path(repo).resolve()
     _git(repo_root, "rev-parse", "--verify", f"{integrated_into}^{{commit}}")
     roots = _workspace_roots(repo_root)
+    runs_root = runs_dir()
     claims = _live_worktree_claims()
     shadow_records = _shadow_worktree_records(repo_root, project)
+    # The managed set is the workspace registry; a tree the promotion boundary
+    # already walks must be one gc sees too, and that includes registered
+    # worktrees a worker created under a run directory.
     candidates = [
         path
         for path in _registered_worktrees(repo_root)
-        if path != repo_root and any(path.is_relative_to(root) for root in roots)
+        if path != repo_root
+        and (
+            any(path.is_relative_to(root) for root in roots)
+            or path.is_relative_to(runs_root)
+        )
     ]
     worktrees = [
         _inspect_workspace(
@@ -530,6 +594,11 @@ def garbage_collect(
         )
         for path in sorted(candidates)
     ]
+    # Extractions carry no git directory, so the worktree registry never sees
+    # them; they are reported beside the registry rows under their own kind.
+    worktrees.extend(
+        _extraction_report(path) for path in _run_directory_extractions(runs_root)
+    )
     removed: list[str] = []
     if apply:
         for item in worktrees:
@@ -574,7 +643,6 @@ def garbage_collect(
     cutoff = (now or datetime.now(tz=timezone.utc)) - timedelta(days=retention_days)
     live_ids = {str(record.get("run_id") or "") for record in list_live()}
     run_reports: list[dict[str, Any]] = []
-    runs_root = crew_home() / "runs"
     if runs_root.is_dir():
         for directory in sorted(path for path in runs_root.iterdir() if path.is_dir()):
             if directory.name not in ledgered or directory.name in live_ids:
@@ -610,8 +678,10 @@ def garbage_collect(
         classification = str(item["classification"])
         item["reclaimable"] = classification in RECLAIMABLE_CLASSES
         if not item["reclaimable"]:
-            item["withheld"] = WITHHELD_REASONS.get(
-                classification, "unrecognised classification"
+            item["withheld"] = (
+                RUN_DIRECTORY_EXTRACTION_REASON
+                if classification == "extraction"
+                else WITHHELD_REASONS.get(classification, "unrecognised classification")
             )
 
     counts = {
