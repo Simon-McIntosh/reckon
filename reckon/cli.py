@@ -1410,7 +1410,8 @@ def _follow_selects(
     event: Mapping[str, Any],
     *,
     session: str | None,
-    run_ids: tuple[str, ...],
+    observed: Iterable[str] = (),
+    run_ids: tuple[str, ...] = (),
 ) -> bool:
     """Decide whether one transition belongs to this follower's fleet.
 
@@ -1418,6 +1419,12 @@ def _follow_selects(
     rendered, or a pointer carrying no session — reaches every follower. A
     reader that drops what it cannot attribute converts an unknown into a
     silence, which is the failure this whole surface exists to prevent.
+
+    A follower narrows by the owning ``session`` and, when named, also admits
+    the ``observed`` sessions. The two halves are not the same: the owning
+    session is registered for delivery so a dispatch guard may trust it, while
+    an observed session is admitted for oversight only — nothing is recorded
+    for it, and a guard consulted for it still reports no delivery.
 
     Every transition that belongs to the fleet is delivered; the follower
     carries no state filter. A filter that reports how a run stopped and never
@@ -1428,11 +1435,35 @@ def _follow_selects(
     if event.get("legacy"):
         return True
     owner = str(event.get("session") or "")
-    if session is not None and owner and owner != session:
+    if session is not None and owner and owner != session and owner not in observed:
         return False
     if run_ids and str(event.get("run_id") or "") not in run_ids:
         return False
     return True
+
+
+def _follow_render_event(
+    event: Mapping[str, Any],
+    *,
+    session: str | None,
+    observed: Iterable[str],
+) -> Mapping[str, Any]:
+    """Prepare one delivered row for the ticker, marking observed rows foreign.
+
+    The ticker draws its owner column — and its foreign-owner glyph, for any
+    row that carries a session — only when asked ``with_session``. An observing
+    follower asks for it on every row so the grid stays aligned, which means
+    the owning session's own rows must reach the ticker without their session:
+    they are this reader's own, so the cell reads blank rather than foreign.
+    Observed rows keep their session and so carry the glyph. Without observed
+    sessions no row is rewritten and nothing about the scoped rendering
+    changes.
+    """
+    if not observed or session is None:
+        return event
+    if str(event.get("session") or "") == session:
+        return {**event, "session": ""}
+    return event
 
 
 def _sweep_lapsed_holds(project: str, *, dry_run: bool = False) -> dict[str, Any]:
@@ -1559,6 +1590,7 @@ def _follow_watch_lines(
     project: str,
     *,
     session: str | None = None,
+    observed: Iterable[str] = (),
     run_ids: Iterable[str] = (),
     poll_interval: float = 0.1,
     sleeper=time.sleep,
@@ -1583,10 +1615,16 @@ def _follow_watch_lines(
     fleet and emits only what changed since it last spoke, so a reconnect is
     quiet when nothing moved and cannot swallow a transition that happened
     while no producer was up.
+
+    ``observed`` names sessions delivered for oversight alongside the owning
+    ``session``. They carry no registration: the attachment and its dispatch
+    guard stay the owning session's alone, so observing never vouches for
+    delivery of the observed session's runs.
     """
     from reckon.crew import runs
 
     selected_runs = tuple(run_ids)
+    observed_sessions = frozenset(observed)
     resume_state = dict(resume or {})
     reported = {
         str(run_id): str(state)
@@ -1609,7 +1647,9 @@ def _follow_watch_lines(
 
     def _emit(event: Mapping[str, Any]):
         """Return the event when it is both this follower's and news."""
-        if not _follow_selects(event, session=session, run_ids=selected_runs):
+        if not _follow_selects(
+            event, session=session, observed=observed_sessions, run_ids=selected_runs
+        ):
             return None
         run_id = str(event.get("run_id") or "")
         state = str(event.get("to_state") or "")
@@ -1814,6 +1854,18 @@ _ATTENTION_DEPRECATION = (
     ),
 )
 @click.option(
+    "--observe-session",
+    "observe_sessions",
+    multiple=True,
+    help=(
+        "Deliver another session's transitions to this pane as well, to keep "
+        "older work in view beside your own. Repeat for several. Observing "
+        "registers nothing for the named session: it does not vouch for "
+        "delivery, and that session's own dispatch still requires its own "
+        "follower."
+    ),
+)
+@click.option(
     "--run",
     "run_ids",
     multiple=True,
@@ -1838,7 +1890,16 @@ _ATTENTION_DEPRECATION = (
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 @_ticker_options
 def crew_follow(
-    project, session, run_ids, attention, json_output, pretty, width, theme, no_color
+    project,
+    session,
+    observe_sessions,
+    run_ids,
+    attention,
+    json_output,
+    pretty,
+    width,
+    theme,
+    no_color,
 ):
     """Follow one session's runs without acquiring the project's watcher seat.
 
@@ -1852,6 +1913,11 @@ def crew_follow(
     included; there is deliberately no option to narrow to the action states,
     because a filter that hides a run's recovery hides the news the reader is
     waiting for.
+
+    ``observe_sessions`` names other sessions delivered for oversight beside
+    the owning one. Only the owning session is registered — an observed
+    session's dispatch guard still sees no delivery, so observing vouches for
+    hearing its rows, never for hearing every run it might finish.
     """
     if attention:
         click.echo(_ATTENTION_DEPRECATION, err=True)
@@ -1887,6 +1953,7 @@ def crew_follow(
         for event in _follow_watch_lines(
             project,
             session=session,
+            observed=observe_sessions,
             run_ids=run_ids,
             on_poll=poll,
             resume=resume,
@@ -1894,9 +1961,17 @@ def crew_follow(
             if json_output:
                 _emit({"ok": True, **event}, pretty)
             elif not _row_is_stale_inventory(event):
+                # An observing follower draws the owner column on every row so
+                # the grid stays aligned, and the owning session's own rows are
+                # blanked in it; only the observed rows carry the foreign glyph.
+                with_session = session is None or bool(observe_sessions)
                 _echo_follow_line(
                     format_watch_transition(
-                        event, with_session=session is None, ticker=grid
+                        _follow_render_event(
+                            event, session=session, observed=observe_sessions
+                        ),
+                        with_session=with_session,
+                        ticker=grid,
                     )
                 )
 
