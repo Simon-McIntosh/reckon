@@ -23,6 +23,8 @@
   <title>Animations Get A Tab, Artifacts Get A Save | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-07">
+<meta name="plan-version" content="1">
 </head>
 <body>
 <main class="plan-doc">
@@ -110,7 +112,7 @@
       <button class="r-opt chosen" data-value="its-own-tab">A tab of their own, beside Figures</button>
       <button class="r-opt" data-value="rows-in-the-figures-index">Rows in the existing Figures index</button>
       </p>
-    <p class="r-dec-rat">The lead asked for &ldquo;an additional gif tab next to figures&rdquo;. The alternative was proposed independently by a peer session working from a relayed version of the same request, and it is not a smaller version of this choice but a different product: folding animations into figure rows makes the tab impossible to build, because a row's kind is what a route resolves against. It would also mix 49 animations into 440 static figures in the one repository that has them, changing the character of an index the lead reads. The distinction cost one word in a peer's node brief and decided whether the surface work could exist.</p>
+    <p class="r-dec-rat">The lead asked for “an additional gif tab next to figures”. The alternative was proposed independently by a peer session working from a relayed version of the same request, and it is not a smaller version of this choice but a different product: folding animations into figure rows makes the tab impossible to build, because a row&#x27;s kind is what a route resolves against. It would also mix 49 animations into 440 static figures in the one repository that has them, changing the character of an index the lead reads. The distinction cost one word in a peer&#x27;s node brief and decided whether the surface work could exist.</p>
     </div>
 <div class="r-dec" data-key="document-download-scope" data-choice="figures-and-animations-only" data-by="Simon McIntosh (verbatim amendment, 2026-09-07)" data-when="2026-09-07">
     <p class="r-dec-q">Does the save control cover documents, and if not, is it hidden or shown disabled?</p>
@@ -119,17 +121,17 @@
       <button class="r-opt" data-value="all-artifacts-now">All artifacts, deciding document semantics now</button>
       <button class="r-opt" data-value="hide-where-unsupported">Hide the control where it does not apply</button>
       </p>
-    <p class="r-dec-rat">The lead's amendment: &ldquo;skip the download question for the docs for now, grey the button out. only implement for figs and gifs where the downloaded artifact file is clear.&rdquo; Greying rather than hiding keeps the affordance discoverable and makes the unanswered question visible instead of silently absent, and it means the later document decision changes a server field rather than the reader's layout.</p>
+    <p class="r-dec-rat">The lead&#x27;s amendment: “skip the download question for the docs for now, grey the button out. only implement for figs and gifs where the downloaded artifact file is clear.” Greying rather than hiding keeps the affordance discoverable and makes the unanswered question visible instead of silently absent, and it means the later document decision changes a server field rather than the reader&#x27;s layout.</p>
     </div>
-<div class="r-dec" data-key="download-field-shape" data-choice="single-href-empty-when-absent" data-by="reckon-ship (named on a peer session's request; reasoning below)" data-when="2026-09-07">
+<div class="r-dec" data-key="download-field-shape" data-choice="single-href-empty-when-absent" data-by="reckon-ship (named on a peer session&#x27;s request; reasoning below)" data-when="2026-09-07">
     <p class="r-dec-q">What shape does the server-derived download fact take on an artifact row?</p>
     <p class="r-dec-opts">
-      <button class="r-opt chosen" data-value="single-href-empty-when-absent">One <code>download</code> href, empty string when there is no unambiguous file</button>
-      <button class="r-opt" data-value="href-plus-boolean">An href beside a <code>downloadable</code> boolean</button>
+      <button class="r-opt chosen" data-value="single-href-empty-when-absent">One download href, empty string when there is no unambiguous file</button>
+      <button class="r-opt" data-value="href-plus-boolean">An href beside a downloadable boolean</button>
       <button class="r-opt" data-value="explicit-null">An href that is explicitly null when absent</button>
       <button class="r-opt" data-value="reader-derives-from-kind">No field; the reader enables on kind</button>
       </p>
-    <p class="r-dec-rat">A boolean beside the href is a second source of truth for one fact and can contradict the href it sits next to &mdash; precisely the defect this plan's §1 exists to remove, reintroduced in the field added to avoid it; a field cannot disagree with itself. Null was rejected because the row's sibling fields already express absence as an empty string, so one nullable field forces consumers to handle two falsy shapes for nothing. Deriving from kind in the reader was rejected by the project rule that the SPA renders rather than derives, and by that rule's test: an agent, a CLI caller and an MCP read all want to know which file backs an artifact. The peer session that owns the producing code asked for the name rather than guessing it, which is why this is recorded as a decision and not an implementation detail.</p>
+    <p class="r-dec-rat">A boolean beside the href is a second source of truth for one fact and can contradict the href it sits next to — precisely the defect this plan&#x27;s §1 exists to remove, reintroduced in the field added to avoid it; a field cannot disagree with itself. Null was rejected because the row&#x27;s sibling fields already express absence as an empty string, so one nullable field forces consumers to handle two falsy shapes for nothing. Deriving from kind in the reader was rejected by the project rule that the SPA renders rather than derives, and by that rule&#x27;s test: an agent, a CLI caller and an MCP read all want to know which file backs an artifact. The peer session that owns the producing code asked for the name rather than guessing it, which is why this is recorded as a decision and not an implementation detail.</p>
     </div>
 </section>
 
@@ -140,6 +142,11 @@
     <div class="r-fu-body"><p>Two nodes in series on one member, because both write the reader module and the second needs the first's kind plumbing. The animations tab is how the three-way collapse is demonstrated, so they are one node rather than two. The save control's enabled half is measured at a merged head carrying the peer session's <code>download</code> field; its disabled-everywhere state is correct and verifiable before that field exists. The served surface needs a server restart before either can be seen, because the animation row kind is Python and the running process holds pre-change code.</p></div>
     <pre class="r-fu-prompt">/reckon-ship gif-tab-and-artifact-download</pre>
     </article>
+</section>
+<section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260907T064705371699-animation-tab-through-one-kind-list" data-who="codex-a" data-when="2026-09-07T07:01:21Z">
+    <div class="r-comment-body"><p>One route declaration now decides tab rendering, canvas selection and hash resolution; the animations tab proves it with 5/5 derived kind sets equal, a real 85-frame GIF rendering at its natural 512x288, 0 GIF rows in Figures and 442 figure rows equal to 442 PNG/SVG files derived at assertion time. Three pre-existing route fixtures outside the fence now assert a stale four-kind contract and are repaired by a follow-on node before the merge.</p></div>
+</div>
 </section>
 </main>
 </body>
