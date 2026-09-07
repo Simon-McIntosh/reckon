@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-07T07:31:12",
+  "updated": "2026-09-07T08:13:52",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -70015,6 +70015,112 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260907T060820768791-the-figure-index-sees-animations",
+        "plan": "crew-observability-truth",
+        "section": "\u00a77",
+        "node": "the-figure-index-sees-animations",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1948,
+                "cached_input_tokens": 641229,
+                "input_tokens": 643179,
+                "output_tokens": 1884,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 645063,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_figure_index_covers_animations.py -q passes, and a GIF under a project's figures directory appears in the Figures index with its real pixel dimensions, and adding one invalidates the discovery cache. THE MEASUREMENT, reported by a peer project and confirmed here by reading and running the code. A consuming project holds 48 GIFs against 437 PNG and SVG files, and every GIF is absent from the index while remaining fetchable by URL, so it is reachable and invisible. FOUR CALL SITES, each verified rather than taken on report. First, figure_rows in reckon/figures.py builds its inventory from two globs, one for png and one for svg, so a GIF produces no row. Second, the same function chooses a dimension reader with a two-way expression that reads the png reader when the suffix is png and the svg reader otherwise. A GIF therefore takes the svg branch, which reads a binary file as text with replacement and fails its regex, returning nothing. Confirmed by running that reader against a constructed GIF: it returns None while the file's own header states 640 by 480. That is a wrong answer rather than a loud one, which is why nobody saw it. Third, _discovery_signature in reckon/serve.py globs the same two extensions, so a newly written GIF does not change the signature. This one matters on its own: fixing the index without fixing the signature would look correct until somebody added a figure to a running server, at which point the index would not refresh. Fourth, the figure_rows docstring states one row per PNG or SVG. WHAT TO CHANGE. Include GIFs wherever those two extensions are gathered, in both files. Make the dimension dispatch three-way rather than two-way, so each format reaches a reader written for it and no format falls through to another's. Read a GIF's dimensions from its own header with no new dependency: the first six bytes are the signature GIF87a or GIF89a, and bytes six through nine are the logical screen width and height as little-endian unsigned shorts, so the reader checks the signature and unpacks those four bytes, in the same shape as the existing png reader. Update the docstring with the rest. WHAT NEEDS NO CHANGE, verified so the node does not widen: figures are served through the standard library's type guesser, which already reports image/gif, and the gallery thumbnail is a plain image element, which animates a GIF natively, so no frame extraction and no imaging dependency are required. WHAT NOT TO CHANGE. Do not alter how titles or captions are resolved; that path reads a sidecar and is already format-agnostic. Do not alter the row shape, the ordering key, or the project segmentation. Do not add a dependency. Do not change what is served or how. Do not make an unreadable or truncated GIF raise: a file whose signature is absent or whose header is short reports no dimensions, exactly as a malformed PNG does today, because a figures index that refuses to render because one file is corrupt is worse than one row without dimensions. FALSIFIERS, asserted in tests/test_figure_index_covers_animations.py against a temporary figures tree the test creates. A GIF produces an inventory row, and that row carries the width and height from its header, asserted on a file whose dimensions are not square so a transposed unpack is caught. Both signature forms, GIF87a and GIF89a, are read. A PNG's dimensions and an SVG's dimensions are unchanged from what they are today, asserted on the same fixtures in the same test run so a three-way dispatch cannot have altered either. A GIF whose signature bytes are wrong yields a row with no dimensions and does not raise. A GIF truncated inside its header yields a row with no dimensions and does not raise. The discovery signature changes when a GIF is added to the tree and is stable when nothing changes, asserted by taking the signature twice around the addition rather than by inspecting the glob. Row count for a tree of one PNG, one SVG and one GIF is three. Measure base and head over the new file plus every test importing reckon.figures or exercising the discovery signature; report failure ids either side and require none added. Bound the run per file rather than issuing one census over every importing file.",
+          "estimated_hours": 1.0,
+          "goal": "Index a GIF figure with its real dimensions and invalidate the discovery cache when one is added, so an animation is not reachable and invisible",
+          "id": "the-figure-index-sees-animations",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T060820768791-the-figure-index-sees-animations/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/figures.py",
+            "reckon/serve.py",
+            "tests/test_figure_index_covers_animations.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-review-reflex",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-07T06:08:34Z",
+        "completed_at": "2026-09-07T06:13:09.169Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 266,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 275,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "33a7231985ea488b8b9c938480d5cdf5f87301f4",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "malformed-node",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T060820768791-the-figure-index-sees-animations/manifest.md",
+        "scope_changed": false,
+        "session_id": "b7cd3a5c-01c0-4168-8362-101494464a2c",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no events yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "dispute_count": "unknown",
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "Stopped before any commit; the brief carried a row shape that would have made the requested surface impossible.",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_figure_index_covers_animations.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -70243,6 +70349,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1111
+    "_version": 1112
   }
 }
