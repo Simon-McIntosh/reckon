@@ -452,6 +452,85 @@
       </tbody>
     </table>
 
+    <h2 id="s5a">§5a — The serving deployment today: topology capacity, decode parity, rotation and the address rule</h2>
+    <p>
+      Measured 2026-09-07, from the serving deployment's own engine startup reports — each figure
+      is what an engine reports on its own profile when it comes up — over a day that ran the clive
+      family across two real card counts, four to two to four. Like every capacity reading on this
+      page these belong to one deployment, are discovered rather than assumed, and are a report
+      from a startup log, not a probed limit: none of them is a ceiling, and a reader must not
+      assert against them as one.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Topology</th><th>KV pool (tokens)</th><th>kv_cache_max_concurrency</th><th>Per-request decode</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Four cards</td><td>2,554,833 – 2,557,835</td><td>2.44</td><td>23.3 tok/s</td></tr>
+        <tr><td>Two cards</td><td>1,173,125</td><td>1.12</td><td>23.1 tok/s</td></tr>
+      </tbody>
+    </table>
+    <p>
+      All figures at a max model length of 1,048,576 tokens. The two caveats below are the point
+      of this section, not footnotes.
+    </p>
+    <h3>What the concurrency figure counts</h3>
+    <p>
+      <code>kv_cache_max_concurrency</code> counts <strong>served requests at the maximum context
+      length</strong> — 2.44 on four cards and 1.12 on two — not sessions. Against the KV pool
+      above that is about two and a half full-length requests on four cards and barely more than
+      one on two. An agentic worker actually holds roughly 83,000 tokens of context; at that
+      realistic size four cards fit about <strong>thirty concurrent workers</strong> and two cards
+      about <strong>fourteen</strong>. Transcribing the raw figure as a worker count would
+      understate four-card capacity by an order of magnitude — the specific misreading the
+      measuring session asked to have prevented. The derived thirty and fourteen rest on the
+      83,000-token assumption stated here; the raw figures count requests at maximum context and
+      nothing else.
+    </p>
+    <h3>The pool is a range, not a constant</h3>
+    <p>
+      The four-card pool differed by roughly 3,000 tokens between two launches of the <em>same</em>
+      profile — 2,554,833 against 2,557,835 — so the cell is a range with the between-launch
+      variation stated, and it must not be written as a single constant to assert against.
+    </p>
+    <h3>Decode parity: cards buy pool and headroom, not speed</h3>
+    <p>
+      Per-request decode is the row people assume the other way, so the finding is stated plainly:
+      it is unchanged between the two topologies, 23.3 tokens/s on four cards against 23.1 on two.
+      Cards buy KV pool and long-context headroom — which is what the thirty-versus-fourteen
+      concurrency difference at realistic context is about — and do not raise per-request
+      throughput.
+    </p>
+    <h3>Prefix cache</h3>
+    <p>
+      Prefix cache is <strong>17.0 percent cumulative over the four-card window</strong>, measured
+      the same day. It is the cumulative reading across the whole window rather than a spot reading
+      on a warm working set — the whole-window cumulative figure is roughly half of what early spot
+      readings suggested — so the cumulative windowed figure is the one to quote.
+    </p>
+    <h3>Rotation: traffic moves on health, not on a timer</h3>
+    <p>
+      Zero-downtime rotation is now demonstrated rather than reasoned. The family ran four cards to
+      two to four across the day; the second rotation had no dark window because the new topology
+      came up on its own port while the old one kept serving, the router preferred it on card
+      count, and only then did the old one stop. An engine that never becomes reachable leaves the
+      old one serving — traffic moves on health rather than on elapsed time. The rotation rests on
+      two properties first exercised with two real serves up today: the router collapses a
+      duplicate model identifier onto the widest topology (previously that configuration returned a
+      conflict on every request), and the endpoint document republishes on both serve and
+      shutdown, which tracked a port moving 18800 → 18809 → 18800 across two rotations with no
+      operator step.
+    </p>
+    <h3>The address rule: a defect that is not about capacity</h3>
+    <p>
+      A consuming project had its client address pinned to a serve port and was unable to run for
+      hours during the two-card window while the model served normally — its gate treats an
+      unreachable compose endpoint as fatal to the entire run, so unrelated pools refused to
+      start. The cause was documentation naming a serve port under a heading about what to point a
+      client at. The rule to carry: <strong>only the router address is stable</strong>; a serve
+      port belongs to a profile at a topology and rotates.
+    </p>
+
     <h2 id="s6">§6 — Failure modes and recoveries per lane</h2>
     <p>
       The common shape is the 429: the same status and retry records appear on the wire whatever
