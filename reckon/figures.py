@@ -1,8 +1,10 @@
-"""Figure inventory rows: PNG/SVG discovery with dimensions read from the file.
+"""Figure inventory rows: PNG/SVG/GIF discovery with dimensions read from the file.
 
 No imaging dependency: a PNG's width and height are the two big-endian 32-bit
 integers following its 8-byte signature and IHDR chunk header; an SVG's come
-from its ``viewBox`` or ``width``/``height`` attributes.
+from its ``viewBox`` or ``width``/``height`` attributes; a GIF's are the two
+little-endian unsigned shorts following its 6-byte ``GIF87a``/``GIF89a``
+signature.
 """
 
 from __future__ import annotations
@@ -46,6 +48,20 @@ def _png_dims(path: Path) -> tuple[int, int] | None:
     ):
         return None
     width, height = struct.unpack(">II", header[16:24])
+    return width, height
+
+
+_GIF_SIGNATURES = (b"GIF87a", b"GIF89a")
+
+
+def _gif_dims(path: Path) -> tuple[int, int] | None:
+    try:
+        header = path.read_bytes()[:10]
+    except OSError:
+        return None
+    if len(header) < 10 or header[:6] not in _GIF_SIGNATURES:
+        return None
+    width, height = struct.unpack("<HH", header[6:10])
     return width, height
 
 
@@ -94,12 +110,18 @@ def _capture_metadata(path: Path) -> tuple[str | None, str]:
     return capture_name, ""
 
 
-def figure_rows(docs_dir: Path, project: str, plan_slugs: set[str]) -> list[dict]:
-    """Return one inventory row per PNG/SVG under ``docs_dir/figures``.
+_DIMS_BY_SUFFIX = {".png": _png_dims, ".svg": _svg_dims, ".gif": _gif_dims}
 
-    ``plan_slugs`` names the plans already discovered in this project; a
-    figure's ``for_plan`` is its top-level directory when that directory is
-    itself a plan slug, and empty otherwise.
+
+def figure_rows(docs_dir: Path, project: str, plan_slugs: set[str]) -> list[dict]:
+    """Return one inventory row per PNG/SVG/GIF under ``docs_dir/figures``.
+
+    A PNG or an SVG yields a row whose kind is ``figure``; a GIF's row is
+    identical in every other field but carries kind ``gif``, so a surface can
+    register a separate tab beside Figures rather than interleaving
+    animations into the figures index. ``plan_slugs`` names the plans already
+    discovered in this project; a row's ``for_plan`` is its top-level
+    directory when that directory is itself a plan slug, and empty otherwise.
     """
 
     figures_dir = docs_dir / "figures"
@@ -107,21 +129,28 @@ def figure_rows(docs_dir: Path, project: str, plan_slugs: set[str]) -> list[dict
         return []
 
     paths = sorted(
-        [*figures_dir.rglob("*.png"), *figures_dir.rglob("*.svg")],
+        [
+            *figures_dir.rglob("*.png"),
+            *figures_dir.rglob("*.svg"),
+            *figures_dir.rglob("*.gif"),
+        ],
         key=lambda p: p.relative_to(figures_dir).as_posix(),
     )
 
     rows = []
     for path in paths:
         slug = path.relative_to(figures_dir).as_posix()
-        dims = _png_dims(path) if path.suffix == ".png" else _svg_dims(path)
+        kind = "gif" if path.suffix == ".gif" else "figure"
+        # Each format has its own reader; a GIF must not fall through to the
+        # SVG reader, which would read a binary file as text and return None.
+        dims = _DIMS_BY_SUFFIX[path.suffix](path)
         capture, caption = _capture_metadata(path)
         title = _titleize(capture) if capture else _titleize(path.stem)
         first_segment = slug.split("/", 1)[0]
         rows.append(
             {
                 "slug": slug,
-                "type": "figure",
+                "type": kind,
                 "title": title,
                 "caption": caption,
                 "dims": _format_dims(*dims) if dims else "",
