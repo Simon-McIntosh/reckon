@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-07T02:58:19",
+  "updated": "2026-09-07T03:05:16",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -68797,6 +68797,157 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260907T004329197058-a-live-workers-report-is-not-an-outcome",
+        "plan": "crew-observability-truth",
+        "section": "\u00a78",
+        "node": "a-live-workers-report-is-not-an-outcome",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1429,
+                "cached_input_tokens": 487373,
+                "input_tokens": 488804,
+                "output_tokens": 2023,
+                "reasoning_output_tokens": 172,
+                "total_tokens": 490827,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_a_live_workers_report_is_not_an_outcome.py -q passes, and a terminal manifest word written by a process that is alive does not become the run's classification. THE MEASUREMENT, from a peer project on run r-20260906T193442836722-pfs-batched-engine, with the host question already settled. A codex worker wrote an orientation manifest 40 seconds after dispatch carrying status failed, an empty commits list, and a blockers entry reading pending implementation. The follower emitted dispatched to failed. The worker was alive and working for a further eighteen minutes, and the peer confirmed by hostname comparison that the follower and the worker ran on the same machine and that the pid was local and alive at the moment the transition fired. So liveness was available and was not consulted. THE MECHANISM, located in reckon/crew/recovery.py. The arm at line 907 reads elif manifest_status == \"failed\" and sets the classification from the manifest word alone. It consults no liveness of any kind and it sits upstream of every arm that does. Two arms further down DO handle this correctly and were never reached: the arm keyed on a terminal stored phase checks whether the process is alive and classifies a live one as running, carrying a comment that an alive process outranks the stored phase so a live worker is never duplicated. AND THE EXISTING GUARD IS NARROWER THAN ITS NAME. deferred_outcome is computed as alive is True and manifest_status in TERMINAL_MANIFEST_STATUSES, which reads as though it defers the outcome. It gates one thing: the block that computes when the run went terminal and how old that is. It does not gate any classification. So the deferral exists for the timestamp and not for the verdict. WHAT TO CHANGE. The arms that set a classification from a terminal manifest word must respect the same liveness deferral the stored-phase arm already applies. While the process is alive, a terminal manifest word is a report in progress rather than an outcome, and the run classifies as it would with no terminal report. Where liveness cannot be established, behaviour is unchanged, because an unprovable pid is not proof of death and this module already declines to treat it as one. WHAT NOT TO CHANGE. Do not alter the arms that already consult liveness. Do not change which classifications exist, their names, their counter placement, or the action marker. Do not change what deferred_outcome gates today for the terminal timestamp; add the deferral to the classification arms rather than repurposing that variable, or if you reuse it, say in a comment that it now governs both and which came first. Do not introduce any match on manifest prose: an empty commits list, a blockers phrase, or a manifest age are not part of this change. The peer offered a structural tiebreak of commits-empty plus alive plus manifest mtime within seconds of worktree creation, and offered it behind the liveness deferral rather than as a rule; it is recorded on the plan and is not implemented here. FALSIFIERS, asserted in tests/test_a_live_workers_report_is_not_an_outcome.py against constructed pointers and manifests. A manifest reading failed from a process that is alive does not classify the run as failed. The same manifest from a process proven dead classifies as failed exactly as it does today. The same manifest from a process whose liveness cannot be established classifies as it does today, unchanged. A manifest reading blocked and a manifest reading complete each behave the same way under all three liveness conditions, so the deferral covers every terminal word rather than only the measured one. A run whose manifest is rewritten after the process exits classifies from the final content, so this composes with the rewritten-report transition landed in bd7c4ca rather than suppressing it. The terminal timestamp behaviour is unchanged for a dead process. Measure base and head over the new file and every test importing reckon.crew.recovery; report failure ids either side and require none added, and note that thirteen failures in that set are environmental and equal on both sides.",
+          "estimated_hours": 1.0,
+          "goal": "Defer a terminal manifest word from a live process, so a worker's report in progress is not read as the run's outcome",
+          "id": "a-live-workers-report-is-not-an-outcome",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T004329197058-a-live-workers-report-is-not-an-outcome/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_a_live_workers_report_is_not_an_outcome.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-no-zombies",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-07T00:43:35Z",
+        "completed_at": "2026-09-07T01:03:04.183Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1162,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1169,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "69383e2af25b52580f710482fe67d6d4a9f981a2",
+        "commits": [
+          "3c8edce9e6c02dbf60454f40043f1dd136da3d44"
+        ],
+        "changed_lines": {
+          "added": 187,
+          "removed": 0,
+          "files": 1
+        },
+        "tests_added": 7,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_a_live_workers_report_is_not_an_outcome.py tests/test_crew_recovery.py tests/test_external_wait.py tests/test_a_rewritten_terminal_manifest_transitions.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate59.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T004329197058-a-live-workers-report-is-not-an-outcome/manifest.md",
+        "scope_changed": false,
+        "session_id": "3e306393-3f52-47b9-92c6-8ff1406f1d99",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6313509,
+            "input_tokens_cumulative": 6313509,
+            "output_tokens": 54581,
+            "output_tokens_cumulative": 54581,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 1165.785,
+          "generated_tokens": 54581,
+          "generation_seconds": 538.234,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 14.0,
+          "machine_seconds": 627.551,
+          "peak_input_tokens": 141813,
+          "tokens_per_second": 101.41,
+          "wall_tokens_per_second": 46.82
+        },
+        "follow_on_paths": [
+          "base_suite.log"
+        ],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-live-workers-report-is-not-an-outcome",
+          "session_id": "3e306393-3f52-47b9-92c6-8ff1406f1d99",
+          "session_source": "stream",
+          "retained_at": "2026-09-07T01:03:04.183Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_a_live_workers_report_is_not_an_outcome.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -69025,6 +69176,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1103
+    "_version": 1104
   }
 }
