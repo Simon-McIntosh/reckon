@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-07T09:22:57",
+  "updated": "2026-09-07T09:50:22",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -89,7 +89,8 @@
         "created": "2026-08-12",
         "sessions": {
           "gpt-5.6-sol": "01a038e7-fa6e-7333-af51-50f8a42a3220",
-          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06abe-eb18-74a0-b754-946566fe747b"
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a06abe-eb18-74a0-b754-946566fe747b",
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a07abe-f315-7da3-ac7c-006f4320a8e2"
         }
       },
       {
@@ -70865,6 +70866,322 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260907T071618296993-route-fixtures-derive-the-kind-set",
+        "plan": "gif-tab-and-artifact-download",
+        "section": "\u00a72",
+        "node": "route-fixtures-derive-the-kind-set",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 922,
+                "cached_input_tokens": 231886,
+                "input_tokens": 232810,
+                "output_tokens": 1191,
+                "reasoning_output_tokens": 284,
+                "total_tokens": 234001,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "798e59ac-3d9b-497a-824a-44b7647c524e",
+            "session_id": "ship-s16"
+          },
+          "done_when": "All three of tests/test_spa_artifact_routes.py, tests/test_spa_shell_container.py and tests/test_spa_vertical_scroll.py pass. Each derives its expected kind set from the published ARTIFACT_ROUTES declaration rather than restating a literal list or count, so adding a sixth artifact kind later needs no edit to these files; a fixture asserting five tabs by number is a failure of this node, not a pass. test_spa_shell_container obtains canvasViewForRoute together with the module-level declaration it now depends on. test_spa_vertical_scroll supplies one fixture row per declared kind, the gif row included, generated from the declaration rather than hand-listed. Report the pass count before and after against base 4938eb3d and add no new failures outside these three files.",
+          "estimated_hours": 2.0,
+          "goal": "The three route fixtures derive their expectations from the published route declaration instead of freezing a tab count.",
+          "id": "route-fixtures-derive-the-kind-set",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T071618296993-route-fixtures-derive-the-kind-set/manifest.md",
+          "plan": "gif-tab-and-artifact-download",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "tests/test_spa_artifact_routes.py",
+            "tests/test_spa_shell_container.py",
+            "tests/test_spa_vertical_scroll.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-a",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-07T07:16:25Z",
+        "completed_at": "2026-09-07T07:26:07Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 582,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 582,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "4938eb3d48d1a9d5bb7084eece77c4742eec1314",
+        "commits": [
+          "e0c674de15120bb5cf8d83cd326584057f5c4081"
+        ],
+        "changed_lines": {
+          "added": 137,
+          "removed": 38,
+          "files": 3
+        },
+        "tests_added": 3,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "infrastructure-failure",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T071618296993-route-fixtures-derive-the-kind-set/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07a9f-12ab-7191-a257-0f59bd481734",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 0,
+            "cached_input_tokens_cumulative": 4218112,
+            "input_tokens": 0,
+            "input_tokens_cumulative": 4355818,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 19525,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 5376
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2100,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 911,
+              "external_wait": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1265,
+              "log_fresh": false,
+              "manifest_commits": [
+                "4da2732c06ba11b41d49456a9a352d5a52710a10; changed_paths: [\"reckon/figures.py\"",
+                "\"tests/test_a_row_carries_its_downloadable_file.py\"]"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "7041be7b50079e3a90afbafa637fa27e30a4a9855a0c5049ed4c807e82417f34",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T063955193752-a-row-carries-its-downloadable-file/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260907T063955193752-a-row-carries-its-downloadable-file --gate <verdict> --commit 4da2732c06ba11b41d49456a9a352d5a52710a10; changed_paths: [\"reckon/figures.py\" --commit \"tests/test_a_row_carries_its_downloadable_file.py\"]",
+              "node": "a-row-carries-its-downloadable-file",
+              "phase": "starting",
+              "plan": "crew-observability-truth",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260907T063955193752-a-row-carries-its-downloadable-file",
+              "session": "ship-s15-2026-09-04",
+              "terminal_age_seconds": 1325,
+              "terminal_at": "2026-09-07T06:54:18Z",
+              "wait_age_seconds": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-row-carries-its-downloadable-file"
+            }
+          ]
+        },
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 24901,
+          "peak_input_tokens": 8573930
+        },
+        "follow_on_paths": [],
+        "predecessor_run": "r-20260907T064705371699-animation-tab-through-one-kind-list",
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16/route-fixtures-derive-the-kind-set",
+          "session_id": "01a07a9f-12ab-7191-a257-0f59bd481734",
+          "session_source": "pointer",
+          "retained_at": "2026-09-07T07:26:07Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260907T072201293729-save-control-reads-one-server-field",
+        "plan": "gif-tab-and-artifact-download",
+        "section": "\u00a73",
+        "node": "save-control-reads-one-server-field",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1041,
+                "cached_input_tokens": 244063,
+                "input_tokens": 245106,
+                "output_tokens": 1134,
+                "reasoning_output_tokens": 183,
+                "total_tokens": 246240,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "798e59ac-3d9b-497a-824a-44b7647c524e",
+            "session_id": "ship-s16"
+          },
+          "done_when": "A save control element is present on all five artifact readers. It carries the disabled state exactly when the row's download field is absent or an empty string, and is enabled and activatable exactly when that field is a non-empty string; a browser check reports one control per kind with its enabled flag beside the row's download value, and the two agree on all five. Activating an enabled control resolves the file's own name as the save target. A source assertion reports zero occurrences of any artifact kind name in the enablement condition. Your base predates the server field: against your base's live rows every one of the five reports disabled, which is the expected reading there, so verify the enabled path against a fixture row carrying a download href for a figure and for a gif and report the two halves separately, naming which used live rows and which used a fixture. Report pass counts for tests/test_spa_figure_reader.py before and after against base 4938eb3d with no new failures.",
+          "estimated_hours": 2.5,
+          "goal": "Every artifact reader offers a save control whose enabled state is the server's answer, not a list of kinds in the component.",
+          "id": "save-control-reads-one-server-field",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T072201293729-save-control-reads-one-server-field/manifest.md",
+          "plan": "gif-tab-and-artifact-download",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "docs/ui/plan.jsx"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-b",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-07T07:22:08Z",
+        "completed_at": "2026-09-07T07:35:18Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 790,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 790,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "4938eb3d48d1a9d5bb7084eece77c4742eec1314",
+        "commits": [
+          "dfbcc9907584ac688013668bd15ddcadc72dc0e8"
+        ],
+        "changed_lines": {
+          "added": 42,
+          "removed": 0,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=<worktree> /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_figure_reader.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T072201293729-save-control-reads-one-server-field/committed-save-control-browser.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T072201293729-save-control-reads-one-server-field/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07abe-f315-7da3-ac7c-006f4320a8e2",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 6289024,
+            "cached_input_tokens_cumulative": 6289024,
+            "input_tokens": 6415833,
+            "input_tokens_cumulative": 6415833,
+            "output_tokens": 23439,
+            "output_tokens_cumulative": 23439,
+            "reasoning_output_tokens": 9159,
+            "reasoning_output_tokens_cumulative": 9159
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 32598,
+          "peak_input_tokens": 12704857
+        },
+        "follow_on_paths": [],
+        "predecessor_run": "r-20260907T064705371699-animation-tab-through-one-kind-list",
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16/save-control-reads-one-server-field",
+          "session_id": "01a07abe-f315-7da3-ac7c-006f4320a8e2",
+          "session_source": "pointer",
+          "retained_at": "2026-09-07T07:35:18Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -71093,6 +71410,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1118
+    "_version": 1121
   }
 }
