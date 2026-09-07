@@ -1,6 +1,23 @@
 // Reckon shell route module.
 const { useCallback, useEffect, useMemo, useRef, useState } = React;
 
+const ARTIFACT_ROUTES = [
+  { key: "plan", label: "Plans", indexHash: "plans", readerHash: "plan", reader: "document" },
+  { key: "research", label: "Research", indexHash: "research", readerHash: "research", reader: "document" },
+  { key: "evidence", label: "Evidence", indexHash: "evidence", readerHash: "evidence", reader: "document" },
+  { key: "figure", label: "Figures", indexHash: "figures", readerHash: "figure", reader: "image" },
+  { key: "gif", label: "Animations", indexHash: "animations", readerHash: "gif", reader: "image", initialSize: "natural" },
+];
+
+const ARTIFACT_CANVAS_VIEWS = new Set(ARTIFACT_ROUTES.map(route => route.key));
+const SHELL_CANVAS_VIEWS = new Set([
+  "home",
+  "sprint",
+  "graph",
+  "crew",
+  ...ARTIFACT_CANVAS_VIEWS,
+]);
+
 function parseHash() {
   const h = (window.location.hash || "").replace(/^#/, "");
   if (!h || h === "home") return { view: "home" };
@@ -21,17 +38,10 @@ function parseHash() {
 
 function canvasViewForRoute(route) {
   const view = route?.view;
-  return ["home", "plan", "research", "evidence", "figure", "sprint", "graph", "crew"].includes(view)
+  return SHELL_CANVAS_VIEWS.has(view)
     ? view
     : "home";
 }
-
-const ARTIFACT_ROUTES = [
-  { key: "plan", label: "Plans", indexHash: "plans", readerHash: "plan" },
-  { key: "research", label: "Research", indexHash: "research", readerHash: "research" },
-  { key: "evidence", label: "Evidence", indexHash: "evidence", readerHash: "evidence" },
-  { key: "figure", label: "Figures", indexHash: "figures", readerHash: "figure" },
-];
 
 const ARTIFACT_TABS = ARTIFACT_ROUTES.map(route => ({
   key: route.key,
@@ -71,4 +81,4 @@ function useHashRoute() {
 
 
 window.ReckonShell = window.ReckonShell || {};
-window.ReckonShell.route = { parseHash, canvasViewForRoute, useHashRoute, ARTIFACT_ROUTES, ARTIFACT_TABS, WORK_TABS };
+window.ReckonShell.route = { parseHash, canvasViewForRoute, useHashRoute, ARTIFACT_ROUTES, ARTIFACT_CANVAS_VIEWS, ARTIFACT_TABS, WORK_TABS };
