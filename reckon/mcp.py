@@ -31,7 +31,8 @@ import shlex
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Literal
+from types import UnionType
+from typing import Annotated, Any, Literal, Union, get_args, get_origin
 
 # ── SDK import ─────────────────────────────────────────────────────────────
 try:
@@ -3814,8 +3815,39 @@ def _audit_tool(
     )
 
 
+def _field_declares_list(annotation: Any) -> bool:
+    """Return whether a pydantic field annotation declared the value as a list.
+
+    Unwraps ``Annotated`` and the ``X | None`` optional form so a nullable
+    list field — the shape every list argument on this surface uses — is
+    still recognised.
+    """
+
+    while True:
+        origin = get_origin(annotation)
+        if origin is Annotated:
+            annotation = get_args(annotation)[0]
+            continue
+        if origin in (Union, UnionType):
+            members = [a for a in get_args(annotation) if a is not type(None)]
+            if len(members) == 1:
+                annotation = members[0]
+                continue
+            return False
+        return origin is list
+
+
 def _reject_unknown_tool_arguments(tool_name: str) -> None:
-    """Make one FastMCP entry refuse misspelled parameters before dispatch."""
+    """Make one FastMCP entry refuse misspelled parameters before dispatch.
+
+    The strict wrapper also accepts, for every argument the model declares as
+    a list, a JSON text that parses to a list: a client may serialise a list
+    argument into a string, and the parsed list validates identically to one
+    delivered as a list. Only a list argument is treated this way — a text
+    argument whose content happens to parse as JSON is passed through
+    untouched, text that does not parse is left for normal field validation,
+    and unknown parameter names are still rejected.
+    """
 
     from pydantic import ConfigDict, model_validator
 
@@ -3825,6 +3857,11 @@ def _reject_unknown_tool_arguments(tool_name: str) -> None:
     argument_model = tool.fn_metadata.arg_model
     accepted = tuple(argument_model.model_fields)
     accepted_text = ", ".join(accepted)
+    list_arguments = frozenset(
+        name
+        for name, field in argument_model.model_fields.items()
+        if _field_declares_list(field.annotation)
+    )
 
     class StrictArguments(argument_model):
         model_config = ConfigDict(
@@ -3835,15 +3872,30 @@ def _reject_unknown_tool_arguments(tool_name: str) -> None:
         @model_validator(mode="before")
         @classmethod
         def reject_unknown(cls, value: Any) -> Any:
-            if isinstance(value, dict):
-                unknown = sorted(set(value) - set(accepted))
-                if unknown:
-                    names = ", ".join(unknown)
-                    raise ValueError(
-                        f"Unknown parameters: {names}. "
-                        f"Accepted parameters: {accepted_text}."
-                    )
-            return value
+            if not isinstance(value, dict):
+                return value
+            unknown = sorted(set(value) - set(accepted))
+            if unknown:
+                names = ", ".join(unknown)
+                raise ValueError(
+                    f"Unknown parameters: {names}. "
+                    f"Accepted parameters: {accepted_text}."
+                )
+            decoded = None
+            for argument in list_arguments:
+                candidate = value.get(argument)
+                if not isinstance(candidate, str):
+                    continue
+                try:
+                    parsed = json.loads(candidate)
+                except json.JSONDecodeError:
+                    continue
+                if not isinstance(parsed, list):
+                    continue
+                if decoded is None:
+                    decoded = dict(value)
+                decoded[argument] = parsed
+            return decoded if decoded is not None else value
 
     tool.fn_metadata.arg_model = StrictArguments
     tool.parameters = StrictArguments.model_json_schema(by_alias=True)
@@ -3867,8 +3919,8 @@ if mcp is not None:
     roadmap_tool = mcp.tool(name="_roadmap")(_roadmap_tool)
     audit_tool = mcp.tool(name="_audit")(_audit_tool)
     crew_tool = mcp.tool(name="_crew")(_crew)
-    for read_tool_name in ("_read_plan", "_roadmap", "_audit", "_crew"):
-        _reject_unknown_tool_arguments(read_tool_name)
+    for tool_name in ("_read_plan", "_edit_plan", "_roadmap", "_audit", "_crew"):
+        _reject_unknown_tool_arguments(tool_name)
 
 
 # ── Entrypoint ────────────────────────────────────────────────────────────
