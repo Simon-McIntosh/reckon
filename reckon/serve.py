@@ -1093,7 +1093,11 @@ def _discovery_signature(
     html_files = list(docs_dir.rglob("*.html"))
     figures_dir = docs_dir / "figures"
     figure_files = (
-        [*figures_dir.rglob("*.png"), *figures_dir.rglob("*.svg")]
+        [
+            *figures_dir.rglob("*.png"),
+            *figures_dir.rglob("*.svg"),
+            *figures_dir.rglob("*.gif"),
+        ]
         if figures_dir.is_dir()
         else []
     )
