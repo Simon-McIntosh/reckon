@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-07T08:26:00",
+  "updated": "2026-09-07T08:32:16",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -70272,6 +70272,156 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260907T061428910673-a-gif-row-is-its-own-kind",
+        "plan": "crew-observability-truth",
+        "section": "\u00a77",
+        "node": "a-gif-row-is-its-own-kind",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1181,
+                "cached_input_tokens": 652207,
+                "input_tokens": 653390,
+                "output_tokens": 2172,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 655562,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_gif_rows_are_their_own_kind.py -q passes, and a GIF under a project's figures directory yields an inventory row whose kind is gif rather than figure, carries its real pixel dimensions, and changes the discovery signature when added. WHY THE KIND IS THE POINT. A peer session holding the lead's request first-hand reports the ask is a GIF tab beside Figures, not GIFs inside Figures. A row emitted as a figure makes that tab unbuildable, because nothing downstream can register a route for a kind that is never emitted, and it would interleave 47 animations into a 437-row figures index in one consuming project. A first attempt at this node was stopped before committing for exactly that reason: every other finding in its brief was right and the row's kind was wrong. THE FOUR SITES, each verified by reading and running the code rather than taken on report. First, figure_rows in reckon/figures.py builds its inventory from a png glob and an svg glob, so a GIF yields no row and is fetchable by URL while invisible when browsing. Second, that function picks a dimension reader with a two-way expression: the png reader when the suffix is png, the svg reader otherwise. A GIF therefore reaches the svg reader, which reads a binary file as text with replacement and fails its regex, returning nothing. Confirmed by running that reader on a constructed GIF: it returns None while the file's header states 640 by 480. A wrong answer rather than a loud one. Third, _discovery_signature in reckon/serve.py globs the same two extensions, so a newly written GIF does not change the signature; fixing the index without this would look correct until somebody added a figure to a running server. Fourth, the figure_rows docstring states one row per PNG or SVG. WHAT TO CHANGE. Gather GIFs wherever those two extensions are gathered, in both files. Emit a GIF's row with its kind as gif, either as a branch inside figure_rows or as a sibling function, whichever keeps the row shape identical in every other field; the choice is yours and the constraint is that a figure row is unchanged and a gif row differs only in its kind. Make the dimension dispatch three-way so each format reaches a reader written for it and none falls through to another's. Read a GIF's dimensions from its own header with no new dependency: the first six bytes are the signature GIF87a or GIF89a, and bytes six through nine are the logical screen width and height as little-endian unsigned shorts. Update the docstring with the rest. WHAT NEEDS NO CHANGE, measured so the node does not widen. Figures are served through the standard library type guesser, which already reports image/gif. The gallery thumbnail is a plain image element, which animates a GIF natively, so no frame extraction and no imaging dependency are needed. Case variance was measured across the consuming project's figures tree: 47 files match a case-sensitive gif glob, 47 match a case-insensitive one, and none are spelled in upper case, so the glob stays case-sensitive to match the existing two rather than acquiring a behaviour the tree does not need. WHAT NOT TO CHANGE. Do not alter how titles or captions are resolved; that path reads a sidecar and is format-agnostic. Do not alter the row shape for a PNG or an SVG, the ordering key, or the project segmentation. Do not add a dependency. Do not change what is served or how. Do not add a download field; that is a separate node with a parity constraint of its own. Do not make an unreadable or truncated GIF raise: a file whose signature is absent or whose header is short reports no dimensions, as a malformed PNG does today, because an index that refuses to render because one file is corrupt is worse than one row without dimensions. FALSIFIERS, asserted in tests/test_gif_rows_are_their_own_kind.py against a temporary figures tree the test creates. A GIF yields a row whose kind is gif, and no row whose kind is figure. A PNG and an SVG each still yield a row whose kind is figure, asserted in the same run so the branch cannot have altered either. A gif row and a figure row are identical in every field except kind, asserted by comparing their key sets rather than by listing expected keys. A GIF's row carries the width and height from its header, asserted on a file whose dimensions are not square so a transposed unpack is caught. Both signature forms are read. A GIF with wrong signature bytes yields a row with no dimensions and does not raise. A GIF truncated inside its header yields a row with no dimensions and does not raise. The discovery signature changes when a GIF is added and is stable when nothing changes, asserted by taking it twice around the addition rather than by inspecting the glob. A tree of one PNG, one SVG and one GIF yields three rows, of which exactly one has kind gif. Measure base and head over the new file plus every test importing reckon.figures or exercising the discovery signature; report failure ids either side and require none added. Bound the run per file rather than issuing one census.",
+          "estimated_hours": 1.0,
+          "goal": "Emit a GIF as its own row kind with real dimensions and a refreshed discovery signature, so a GIF tab can be built beside Figures",
+          "id": "a-gif-row-is-its-own-kind",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T061428910673-a-gif-row-is-its-own-kind/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/figures.py",
+            "reckon/serve.py",
+            "tests/test_gif_rows_are_their_own_kind.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-review-reflex",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-07T06:14:38Z",
+        "completed_at": "2026-09-07T06:30:22.972Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 918,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 944,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "e7c992911c60acffbae0fe4bde1c2a993bf8d9ed",
+        "commits": [
+          "631655431c0e2cc060038874b55791324801885c"
+        ],
+        "changed_lines": {
+          "added": 211,
+          "removed": 11,
+          "files": 3
+        },
+        "tests_added": 9,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_gif_rows_are_their_own_kind.py <3 figures/signature importers>",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate69b.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T061428910673-a-gif-row-is-its-own-kind/manifest.md",
+        "scope_changed": false,
+        "session_id": "5ded168a-4cab-4ce4-bf96-7931e7839587",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 5265718,
+            "input_tokens_cumulative": 5265718,
+            "output_tokens": 30877,
+            "output_tokens_cumulative": 30877,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 940.604,
+          "generated_tokens": 30877,
+          "generation_seconds": 895.998,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 11.2,
+          "machine_seconds": 44.606,
+          "peak_input_tokens": 113545,
+          "tokens_per_second": 34.46,
+          "wall_tokens_per_second": 32.83
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-gif-row-is-its-own-kind",
+          "session_id": "5ded168a-4cab-4ce4-bf96-7931e7839587",
+          "session_source": "stream",
+          "retained_at": "2026-09-07T06:30:22.972Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_gif_rows_are_their_own_kind.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -70500,6 +70650,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1113
+    "_version": 1114
   }
 }
