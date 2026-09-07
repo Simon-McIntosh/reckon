@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-07T03:05:16",
+  "updated": "2026-09-07T03:27:52",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -68948,6 +68948,158 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260907T005057571580-a-reexec-keeps-its-children",
+        "plan": "crew-observability-truth",
+        "section": "\u00a76",
+        "node": "a-reexec-keeps-its-children",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1821,
+                "cached_input_tokens": 507564,
+                "input_tokens": 509387,
+                "output_tokens": 3275,
+                "reasoning_output_tokens": 1156,
+                "total_tokens": 512662,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_a_reexec_keeps_its_children.py -q passes, and a follower that replaces its own process image still collects the workers it launched before the replacement. THE MEASUREMENT, cross-session and confirmed on both sides. One session's project-wide recovery sweep resumed another session's run at about 21:24Z. The spawned child ended and remained defunct under the spawning follower's pid for roughly three hours, until that follower was replaced at 00:44Z. Throughout the window reckon refused the OWNING session's resume with the reason that the run still has a live process, because a zero signal against a defunct entry succeeds. The owning session could not clear it, because the parent was another session's follower. The follower's pid was 2466472, started 18:12:32Z, which is 87 minutes AFTER the reaper landed, so it was running code that registers every launched pid with a reaper thread and it still did not collect the child. THE MECHANISM, and it is why the reaper was present and ineffective. The follower checks at a bounded cadence whether it should adopt newly installed code and replaces its own process image with os.execv in reckon/cli.py. A process image replacement keeps the pid and keeps the parent-child relationships, and destroys every thread and all module state. So after a replacement the reaper thread no longer exists, the set of launched pids is empty, and the process remains the parent of children it can no longer name. Those children can never be collected by anyone: their parent is alive, so they are not reparented to the init process that would collect them, and their parent has forgotten them. The reaper is not broken; it is discarded along with the registry that told it what to wait for. A SECOND DEFECT IN THE SAME AREA, which the falsifiers must cover because it produces the same symptom by a different route. The helper that starts the reaper returns early when a thread object is already recorded, and never asks whether that thread is still running. A thread that has ended for any reason leaves its object in place, so every later launch takes the early return and the reaper is never started again for the life of the process, with nothing reporting it. WHAT TO CHANGE. Carry the outstanding launched pids across the process image replacement so the new image continues to own them and collects them as they end. The replacement path already has a preparation step where a reader checkpoint is written, which is where the handover belongs. Choose the carrier so that it survives an image replacement and state in a comment why the others were rejected. The new image adopts what it is handed and registers those pids exactly as if it had launched them, because it is the same process and it is still their parent. Separately, the helper that starts the reaper starts one whenever no live reaper is running rather than whenever no thread object is recorded. WHAT NOT TO CHANGE. Do not delay or block the image replacement waiting for children to finish; a follower that stops adopting new code to wait on a worker is a worse failure than the one being fixed. Do not change what the reaper does with a pid it owns. Do not reap a child a caller manages synchronously; the existing rule that only registered launch pids are touched must hold across the handover. Do not change the cadence at which the replacement is considered. FALSIFIERS, asserted in tests/test_a_reexec_keeps_its_children.py. Pids outstanding at the moment of a replacement appear in the new image's registry, asserted on the registry rather than on the carrier. A pid registered before a replacement and exiting after it is collected, asserted against a real spawned child rather than a constructed record. A replacement with no outstanding pids hands over nothing and the new image starts clean. A carrier that is absent, empty or unparseable leaves the new image with an empty registry and does not raise, because a follower that refuses to start is worse than one that misses a reap. The reaper starter starts a new reaper when the recorded thread has ended, and does not start a second one when the recorded thread is running, asserted by counting live reaper threads across repeated calls. A caller-managed child is still never collected by the reaper after a handover. Measure base and head over the new file and every test importing reckon.crew.dispatch or reckon.cli; report failure ids either side and require none added, noting that the dispatch-arming and watcher-lifetime failures in that set are environmental and equal on both sides.",
+          "estimated_hours": 1.25,
+          "goal": "Carry the launched-worker registry across a follower's process image replacement, so children spawned before it are still collected afterwards",
+          "id": "a-reexec-keeps-its-children",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T005057571580-a-reexec-keeps-its-children/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "reckon/cli.py",
+            "tests/test_a_reexec_keeps_its_children.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-sweep-cadence",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-07T00:51:05Z",
+        "completed_at": "2026-09-07T01:15:22.570Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1447,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1457,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "69383e2af25b52580f710482fe67d6d4a9f981a2",
+        "commits": [
+          "50a709de4cd8aab6fa0bb7cef1cdc72bd55784c3"
+        ],
+        "changed_lines": {
+          "added": 448,
+          "removed": 2,
+          "files": 3
+        },
+        "tests_added": 13,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_a_reexec_keeps_its_children.py <70 dispatch/cli-importing files, excluding 4 known-environmental>",
+          "exit_status": 1,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate60.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T005057571580-a-reexec-keeps-its-children/manifest.md",
+        "scope_changed": false,
+        "session_id": "0291f8aa-b36f-4f14-b6c8-4fd738fe1766",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 8109765,
+            "input_tokens_cumulative": 8109765,
+            "output_tokens": 69115,
+            "output_tokens_cumulative": 69115,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 1454.341,
+          "generated_tokens": 69115,
+          "generation_seconds": 825.517,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 15.6,
+          "machine_seconds": 628.824,
+          "peak_input_tokens": 158433,
+          "tokens_per_second": 83.72,
+          "wall_tokens_per_second": 47.52
+        },
+        "follow_on_paths": [
+          "recovery.py"
+        ],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-reexec-keeps-its-children",
+          "session_id": "0291f8aa-b36f-4f14-b6c8-4fd738fe1766",
+          "session_source": "stream",
+          "retained_at": "2026-09-07T01:15:22.570Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_a_reexec_keeps_its_children.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -69176,6 +69328,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1104
+    "_version": 1105
   }
 }
