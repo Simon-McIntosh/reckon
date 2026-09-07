@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-07T09:50:22",
+  "updated": "2026-09-07T11:16:41",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -71182,6 +71182,144 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260907T075050004524-artifact-index-reads-the-route-declaration",
+        "plan": "gif-tab-and-artifact-download",
+        "section": "\u00a72",
+        "node": "artifact-index-reads-the-route-declaration",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 504,
+                "cached_input_tokens": 304116,
+                "input_tokens": 304622,
+                "output_tokens": 745,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 305367,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "798e59ac-3d9b-497a-824a-44b7647c524e",
+            "session_id": "ship-s16"
+          },
+          "done_when": "In docs/ui/shell-plans.jsx no kind test decides whether an index row shows a thumbnail or dimensions: both follow from the published route declaration, whose gif and figure entries already carry reader 'image'. A browser check over the served animations index reports every row rendering an img element with a non-empty src and a non-empty dimensions string, and reports the same for the figures index, with the count of rows lacking an image equal to zero on both. The filter and heading labels resolve from the declaration too, so no label displays the raw token gif. A source assertion reports zero occurrences of the string 'figure' used as an equality test against a kind variable in that file. Report pass counts for tests/test_spa_plans_geometry.py and tests/test_spa_artifact_routes.py before and after against base HEAD with no new failures.",
+          "estimated_hours": 2.0,
+          "goal": "The artifact index derives thumbnail, dimensions and label from the route declaration, so an animation row renders its image like a figure row.",
+          "id": "artifact-index-reads-the-route-declaration",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T075050004524-artifact-index-reads-the-route-declaration/manifest.md",
+          "plan": "gif-tab-and-artifact-download",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "docs/ui/shell-plans.jsx"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-a",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-07T07:51:09Z",
+        "completed_at": "2026-09-07T08:04:23Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 794,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 794,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "6c8973261849a8f8e56d81e5701246bef22ea76d",
+        "commits": [
+          "fbd50cd5d2b47ddf38e5e9d75a6407307ea0cd00"
+        ],
+        "changed_lines": {
+          "added": 10,
+          "removed": 4,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=<worktree> /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_plans_geometry.py tests/test_spa_artifact_routes.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T075050004524-artifact-index-reads-the-route-declaration/browser-index-check.json",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T075050004524-artifact-index-reads-the-route-declaration/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07a9f-12ab-7191-a257-0f59bd481734",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2791168,
+            "cached_input_tokens_cumulative": 7009280,
+            "input_tokens": 2754341,
+            "input_tokens_cumulative": 7110159,
+            "output_tokens": 2550,
+            "output_tokens_cumulative": 22075,
+            "reasoning_output_tokens": 3662,
+            "reasoning_output_tokens_cumulative": 9038
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 31113,
+          "peak_input_tokens": 14119439
+        },
+        "follow_on_paths": [
+          "tests/test_spa_plans_geometry.py::test_rendered_plan_index_fills_the_window[1280"
+        ],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16/artifact-index-reads-the-route-declaration",
+          "session_id": "01a07a9f-12ab-7191-a257-0f59bd481734",
+          "session_source": "pointer",
+          "retained_at": "2026-09-07T08:04:23Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -71410,6 +71548,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1121
+    "_version": 1122
   }
 }
