@@ -35,14 +35,21 @@ NODE = 36
 # reader gets nothing, because every row it receives is its own by construction.
 OWNER = 1
 STATE = 10
-# A model at an effort is one routing fact, not two, so identity and effort
-# share one cell rather than reading down separate columns: a gap wide enough
-# for the widest pair left a hole in every ordinary row, which reads as a
-# missing field rather than a column boundary. AGENT is wide enough for the
-# widest real alias, one separator, and the widest configured effort word in
-# full, and for every legacy composed model/effort string a line written
-# before the facts switch carries.
-AGENT = 18
+# Model and effort are two cells so a reader scans the effort down a column
+# instead of parsing it out of a composed label. Their widths come from the
+# shipped set: the widest model alias dsv4-flash is ten characters and the
+# widest effort word minimal is seven, so the shipped vocabulary lands whole
+# with no elision. The cells sit one space apart — PAIR_GAP, not GAP — so
+# effort begins at the same screen column on every row while no row carries
+# padding wider than the alias it pads. The two cells plus their single gap
+# occupy exactly the eighteen columns the fused cell did, so the split does
+# not widen the row. A value wider than its cell (an unaliased model id, say)
+# renders whole rather than being cut: clipping a model-family prefix would
+# collapse its variants into one indistinguishable cell, and the rare overlong
+# row simply shifts the cells that follow it.
+MODEL = 10
+PAIR_GAP = 1
+EFFORT = 7
 GAP = 2
 
 # Identity hues, one set per background. Picked by measurement rather than eye:
@@ -194,20 +201,25 @@ STAT_LETTER = {
     "waiting": "q",
 }
 
-# Two digits and a single-letter suffix per counter, joined by " · ". Two digits
-# cover any fleet the dispatcher opens; a wider count pushes its own label
-# rather than silently misaligning the column beside it.
+# Two digits and a single-letter suffix per counter, joined by a bare middle
+# dot with no surrounding space. Two digits cover any fleet the dispatcher
+# opens; a wider count pushes its own label rather than silently misaligning
+# the column beside it. The two-digit alignment keeps the block a constant
+# width as counts change, so the right edge of the row never moves, and the
+# reclaimed separator space funds the model and effort cells without taking
+# width from the reason.
 _MAX_CELLS = (*_CELLS, _WAIT_CELL)
-STATS = sum(2 + 1 for _ in _MAX_CELLS) + 3 * (len(_MAX_CELLS) - 1)
+STATS = sum(2 + 1 for _ in _MAX_CELLS) + (len(_MAX_CELLS) - 1)
 
 # The widest the fixed columns can be, plus the stats block and one gap. A width
 # below this cannot be honoured without wrapping, so it is raised to this.
 # Everything before the reason consumes exactly this many columns with the role
-# word at its widest (documentation, thirteen): against the 180-column
-# DEFAULT_WIDTH budget that leaves 46 for the reason, and 73 on the 208-column
-# pane this workstation measures (208 minus the inset) — either leaves room for
-# the whole role vocabulary, so the 46 at the default is what a later added
-# column spends first.
+# word at its widest (documentation, thirteen), the model cell at ten and the
+# effort cell at seven: 128 after the counter separators lost their surrounding
+# spaces. Against the 180-column DEFAULT_WIDTH budget that leaves 52 for the
+# reason, and 79 on the 208-column pane this workstation measures (208 minus the
+# inset) — either leaves room for the vocabularies in full, so the 52 at the
+# default is what a later added column spends first.
 MIN_WIDTH = (
     CLOCK
     + GAP
@@ -219,7 +231,9 @@ MIN_WIDTH = (
     + GAP
     + (STATE * 2 + 3)
     + GAP
-    + AGENT
+    + MODEL
+    + PAIR_GAP
+    + EFFORT
     + GAP
     + STATS
     + GAP
@@ -392,49 +406,27 @@ def _derive_effort(effort: Any) -> str:
     return word.lower()
 
 
-def _model_label(event: Mapping[str, Any]) -> str:
-    """Model column: the alias when one is declared, else the model id, else a
-    legacy composed agent string.
+def _model_and_effort(event: Mapping[str, Any]) -> tuple[str, str]:
+    """The two agent cells for a transition: model and effort, laid apart.
 
-    The facts are preferred and the composed string is only a fallback for a
-    line written before the switch, when model and effort were fused at write
-    time and no facts were persisted to re-derive from. A legacy value is never
-    re-parsed, so it renders whole rather than holding a fragment.
+    A new-shape line persists model and effort as separate facts, so the model
+    cell is the alias that shortens the model — or the model itself — and the
+    effort cell is the whole effort word, each in its own column so a reader
+    scans effort down the pane rather than parsing it out of a composed label.
+    A legacy line carries a precomposed ``model/effort`` string instead and
+    splits at the slash so it still lands in the two cells; the fragments
+    render whole, never re-parsed beyond that split.
     """
-    alias = str(event.get("alias") or "").strip()
-    if alias:
-        return alias
     model = str(event.get("model") or "").strip()
-    if model:
-        return model
-    return str(event.get("agent") or "").strip()
-
-
-def _effort_label(event: Mapping[str, Any]) -> str:
-    """Effort column: the full effort word lowercased, or empty.
-
-    A new-shape line persists effort as a fact and renders it whole here. A
-    legacy line carries no separate effort and shows nothing beside its composed
-    agent string, which already holds the effort it could not split.
-    """
     effort = str(event.get("effort") or "").strip()
-    return _derive_effort(effort) if effort else ""
-
-
-def _agent_column(event: Mapping[str, Any]) -> str:
-    """The routing identity and its effort as one cell, joined by one separator.
-
-    A model at an effort is one fact a reader compares row to row, not a pair to
-    parse apart, so the two share a column rather than reading down separate
-    ones. A record carrying no effort renders the identity alone — appending a
-    bare separator would read as a missing field rather than the absence it
-    actually is.
-    """
-    base = _model_label(event)
-    effort = _effort_label(event)
-    if not effort:
-        return base
-    return f"{base}\N{MIDDLE DOT}{effort}" if base else effort
+    alias = str(event.get("alias") or "").strip()
+    if model or effort or alias:
+        return (alias or model), _derive_effort(effort)
+    agent = str(event.get("agent") or "").strip()
+    if "/" in agent:
+        model, _, effort = agent.partition("/")
+        return model.strip(), effort.strip()
+    return agent, ""
 
 
 def _display_marker(event: Mapping[str, Any]) -> str:
@@ -556,6 +548,7 @@ class Ticker:
         # transition the fleet never made.
         from_state = "" if baseline else _display_state(event.get("from_state"))
         role = _display_role(event.get("role"))
+        model_cell, effort_cell = _model_and_effort(event)
 
         cells: list[tuple[str, Any]] = [
             (f"{local_clock(event.get('observed_at')):<{CLOCK}}", "dim"),
@@ -581,7 +574,9 @@ class Ticker:
             (" ", None),
             (f"{to_state:<{STATE}}", hues.get(to_state, "dim")),
             (" " * GAP, None),
-            (f"{elide(_agent_column(event), AGENT):<{AGENT}}", "dim"),
+            (f"{model_cell:<{MODEL}}", "dim"),
+            (" " * PAIR_GAP, None),
+            (f"{effort_cell:<{EFFORT}}", "dim"),
             (" " * GAP, None),
         ]
         cells.extend(self._stats(event))
@@ -636,7 +631,7 @@ class Ticker:
         labels = (*_CELLS, _WAIT_CELL) if _WAIT_CELL in event else _CELLS
         for index, label in enumerate(labels):
             if index:
-                cells += [(" ", None), ("·", "dim"), (" ", None)]
+                cells += [("·", "dim")]
             count = int(event.get(label) or 0)
             cells.append((f"{count:>2}{STAT_LETTER[label]}", None if count else "dim"))
         return cells

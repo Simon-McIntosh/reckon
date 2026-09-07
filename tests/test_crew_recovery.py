@@ -1623,10 +1623,11 @@ def test_a_written_log_line_persists_facts_and_no_display_values(
         )
 
 
-def test_legacy_log_line_renders_and_new_line_renders_one_fused_cell(home) -> None:
+def test_legacy_log_line_renders_and_new_line_renders_two_cells(home) -> None:
     # A real line taken from the project's events log, written before the facts
     # switch: it has only the composed agent, a pre-claused reason, and no raw
-    # fields underneath, and must still render without raising.
+    # fields underneath. The slash-composed model/effort splits into the two
+    # columns a reader scans, so it still renders without raising.
     legacy = {
         "agent": "gpt-5.6-sol/medium",
         "blocked": 1,
@@ -1643,12 +1644,14 @@ def test_legacy_log_line_renders_and_new_line_renders_one_fused_cell(home) -> No
         "working": 0,
     }
     legacy_line = recovery.format_watch_transition(legacy)
-    assert "gpt-5.6-sol/medium" in legacy_line
+    assert "gpt-5.6-sol" in legacy_line
+    assert "medium" in legacy_line
+    assert legacy_line.index("gpt-5.6-sol") < legacy_line.index("medium")
     assert "the same focused pytest command failed twice" in legacy_line
 
-    # A line in the new shape renders the model and its effort as one routing
-    # fact: a single cell, alias and effort word joined by exactly one
-    # separator with no padding between them.
+    # A line in the new shape renders model and effort as two facts a reader
+    # scans in two columns: the alias in the model cell and the whole effort
+    # word in its own, with nothing bridging them but the gap between columns.
     transition = _fact_transition(
         home,
         "r-new",
@@ -1661,8 +1664,12 @@ def test_legacy_log_line_renders_and_new_line_renders_one_fused_cell(home) -> No
         },
     )
     new_line = recovery.format_watch_transition(transition)
-    assert "dsv4-flash·high" in new_line
-    assert "dsv4-flash · high" not in new_line  # no padding around the separator
+    assert "dsv4-flash" in new_line
+    assert "high" in new_line
+    between = new_line[
+        new_line.index("dsv4-flash") + len("dsv4-flash") : new_line.index("high")
+    ]
+    assert "·" not in between
 
 
 def test_one_stored_new_line_renders_differently_at_two_display_settings(home) -> None:
