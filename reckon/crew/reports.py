@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import json
+import os
 import re
+import tempfile
+from collections.abc import Iterator
 from typing import Any, TypedDict
 
 from reckon import ledger
@@ -404,6 +407,60 @@ def audit_manifest(
                 "changed paths outside the write scope: " + ", ".join(stray)
             )
     return {"manifest": manifest, "findings": findings, "ok": not findings}
+
+
+def report_log_paths_under_temp_root(
+    manifest: dict[str, Any],
+    *,
+    name: str,
+) -> list[dict[str, str]]:
+    """Report the log paths a manifest cites that resolve under the temp root.
+
+    A promoted run record cites a gate command, an exit status and a log
+    path, and the log path is what a later reader opens to check the claim.
+    The run directory persists with the run; the platform temporary directory
+    is a small allocation cleared without notice. A citation resolving there
+    can point at a file that no longer exists, and nothing then distinguishes
+    it from a citation to a file that was never written. This check reports
+    such citations, naming the manifest, the key and the offending path. It
+    reports and returns; it never refuses, rewrites, relocates or touches
+    anything, because a coordinator promoting a run whose logs are already
+    written cannot make them durable, and refusing would strand the record.
+
+    A path is under the root when its resolved form is contained by the
+    resolved root, so a relative spelling or a path reaching the root through
+    a symbolic link is caught rather than only a literal prefix. The root is
+    what the running system reports as the temporary directory, read at call
+    time rather than written as a literal. A cited path is judged by where it
+    points rather than by whether it exists, because a missing durable path
+    and a missing temporary path are different findings.
+    """
+    root = os.path.realpath(tempfile.gettempdir())
+    findings: list[dict[str, str]] = []
+    for key, path in _cited_log_paths(manifest):
+        if _resolves_under(path, root):
+            findings.append({"manifest": name, "key": key, "path": path})
+    return findings
+
+
+def _cited_log_paths(manifest: dict[str, Any]) -> Iterator[tuple[str, str]]:
+    """Yield ``(manifest key, cited path)`` for every log a manifest cites."""
+    for path in manifest.get("test_logs") or []:
+        yield "test_logs", str(path)
+    for key in ("baseline_suite", "after_suite"):
+        observation = manifest.get(key)
+        if isinstance(observation, dict):
+            log_path = observation.get("log_path")
+            if log_path:
+                yield f"{key}.log_path", str(log_path)
+
+
+def _resolves_under(path: str, root: str) -> bool:
+    """Whether a path's resolved form is contained by the resolved root."""
+    try:
+        return os.path.commonpath((os.path.realpath(path), root)) == root
+    except (OSError, ValueError):
+        return False
 
 
 def followup_ops_from_manifest(
