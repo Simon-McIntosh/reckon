@@ -23,8 +23,8 @@
   <title>A Fleet Display That Cannot Lie | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-06">
-<meta name="plan-version" content="167">
+<meta name="plan-modified" content="2026-09-07">
+<meta name="plan-version" content="168">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md">
 <meta name="plan-impl" content="0.9">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b">
@@ -865,6 +865,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260906T190006591896-the-role-column-shows-the-whole-word" data-who="crew-surface-consistent" data-when="2026-09-06T19:09:13.881Z">
     <div class="r-comment-body"><p>Each dispatch role renders as its whole word, sized from the dispatch role set itself rather than a guess, so implement no longer reads impl and documentation would no longer read docu. Verified by rendering every member of that set: all six render whole and an unrecognised role still renders the existing unknown marker rather than a truncation. The joined model and effort cell was deliberately left untouched, which is what the previous attempt got wrong; 165 passed in the importing scope with none added, against 3 added by that attempt.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20260906T200639100111-a-rewritten-report-wakes-its-reader" data-who="crew-no-zombies" data-when="2026-09-06T21:27:39.834Z">
+    <div class="r-comment-body"><p>A rewritten manifest now emits a transition carrying the new content, so a coordinator learns the real outcome instead of holding the first verdict. A peer measured the cost: a worker wrote a placeholder manifest 40 seconds after dispatch, the follower emitted a terminal transition, and eighteen minutes later the real manifest with two commits and an unmet gate landed with nothing firing, because the classification word had not moved. Rewrite detection uses a content digest computed from the same read that parsed the status, so the digest and the verdict can never describe different versions of the file. Six specified falsifiers plus three the worker added, including that a live process&#x27;s terminal-report rewrite stays deferred. Verified by the coordinator at the merged head over 27 importer files: 13 failed and 499 passed against 13 failed at base, and the failure identities are equal, so none added and none fixed - the 13 are the environmental dispatch-arming and watcher-lifetime set.</p></div>
 </div>
 </section>
 </main>

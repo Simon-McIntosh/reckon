@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-06T21:19:16",
+  "updated": "2026-09-07T02:42:49",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -68499,6 +68499,155 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260906T200639100111-a-rewritten-report-wakes-its-reader",
+        "plan": "crew-observability-truth",
+        "section": "\u00a78",
+        "node": "a-rewritten-report-wakes-its-reader",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 3038,
+                "cached_input_tokens": 464172,
+                "input_tokens": 467212,
+                "output_tokens": 573,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 467785,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_a_rewritten_terminal_manifest_transitions.py -q passes, and a terminal manifest whose content changes emits a transition even when its status word does not change. THE MEASUREMENT, reported by a peer project on run r-20260906T193442836722-pfs-batched-engine. A codex worker wrote an orientation manifest 40 seconds after dispatch carrying status failed, an empty commits list, and a blockers entry reading pending implementation. The follower emitted dispatched to failed. Eighteen minutes later the same worker wrote its REAL manifest, also status failed, carrying two commits and an unmet gate. No transition fired, because the classification was already failed, so nothing woke the coordinator and the actual outcome sat unread. WHY THIS HALF IS WORTH LANDING FIRST. The same report proposes also treating an empty-commit placeholder as non-terminal while the process is alive, and this module already defers a terminal manifest from a live process. Whichever way that first classification is decided, a coordinator must still learn when the worker replaces its own report. A classification that is correct once and never revisited is indistinguishable from one that is watching, and the cost is measured here at eighteen minutes of a live coordinator believing a stale verdict. WHAT TO CHANGE. A run whose manifest is rewritten emits a transition, carrying whatever the new manifest says. Detect the rewrite from the manifest itself rather than from the classification: this module already reads the manifest and its mtime, and a content digest distinguishes a rewrite that changed something from a touch that did not. State in a comment which signal you chose and why the other was rejected, because mtime alone fires on a rewrite of identical content and a digest alone misses a legitimate rewrite to identical content, and a reader needs to know which was preferred. The emitted transition must be distinguishable from a state change: a reader seeing it needs to know the classification word did not move and the report beneath it did. WHAT NOT TO CHANGE. Do not change which classifications exist, their names, their counter placement, or the action marker. Do not change the deferral of a terminal manifest from a live process. Do not emit a transition for a manifest that has not been written at all, and do not emit one on every sweep for an unchanged manifest, because a transition that fires without news is the noise this display exists to avoid. FALSIFIERS, asserted in tests/test_a_rewritten_terminal_manifest_transitions.py against constructed pointers and manifests rather than a live fleet. A manifest rewritten from an empty-commit terminal record to one carrying commits emits a transition, and that transition carries the commit count from the new content. A manifest rewritten with identical content emits no transition. A manifest never rewritten emits no transition on repeated reads, asserted over at least three reads so a per-read emission is caught. A rewrite that also changes the status word emits exactly one transition rather than two. The emitted transition is distinguishable in its own fields from one where the classification changed, asserted on the emitted record rather than on its rendered text. A run with no manifest at all emits nothing and does not raise. Measure base and head over the new file and every test importing reckon.crew.recovery; report failure ids either side and require none added.",
+          "estimated_hours": 1.0,
+          "goal": "Emit a transition when a worker rewrites its terminal manifest, so a coordinator learns the real outcome instead of holding the first verdict",
+          "id": "a-rewritten-report-wakes-its-reader",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T200639100111-a-rewritten-report-wakes-its-reader/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_a_rewritten_terminal_manifest_transitions.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-no-zombies",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-06T20:06:50Z",
+        "completed_at": "2026-09-06T21:27:39.834Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4837,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4849,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "3977244b14a1fb6caa12f0341434e487d99f4459",
+        "commits": [
+          "bd7c4ca0ead85c1de6eb16ff13dc4934a1cb0d22"
+        ],
+        "changed_lines": {
+          "added": 499,
+          "removed": 3,
+          "files": 2
+        },
+        "tests_added": 9,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q <27 tests importing reckon.crew.recovery>",
+          "exit_status": 1,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate56.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260906T200639100111-a-rewritten-report-wakes-its-reader/manifest.md",
+        "scope_changed": false,
+        "session_id": "9690049e-7302-43ef-98d6-b28bee4ff00c",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 15225928,
+            "input_tokens_cumulative": 15225928,
+            "output_tokens": 79202,
+            "output_tokens_cumulative": 79202,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 4845.873,
+          "generated_tokens": 79202,
+          "generation_seconds": 2926.866,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 20.0,
+          "machine_seconds": 1919.007,
+          "peak_input_tokens": 203132,
+          "tokens_per_second": 27.06,
+          "wall_tokens_per_second": 16.34
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-rewritten-report-wakes-its-reader",
+          "session_id": "9690049e-7302-43ef-98d6-b28bee4ff00c",
+          "session_source": "stream",
+          "retained_at": "2026-09-06T21:27:39.834Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_a_rewritten_terminal_manifest_transitions.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -68727,6 +68876,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1101
+    "_version": 1102
   }
 }
