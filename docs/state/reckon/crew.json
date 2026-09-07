@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-07T04:44:39",
+  "updated": "2026-09-07T07:31:12",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -69859,6 +69859,162 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260907T042615158552-a-serialised-list-argument-is-accepted",
+        "plan": "crew-observability-truth",
+        "section": "\u00a77",
+        "node": "a-serialised-list-argument-is-accepted",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1009,
+                "cached_input_tokens": 609484,
+                "input_tokens": 610495,
+                "output_tokens": 2283,
+                "reasoning_output_tokens": 591,
+                "total_tokens": 612778,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_tool_arguments_accept_a_serialised_list.py -q passes, and a tool argument declared as a list is accepted when the client delivers it as a JSON text that parses to a list. THE MEASUREMENT, reported by a peer project. Five edit_plan calls in one evening were rejected with a validation error stating that ops should be a valid list, with input_type str and the input value shown as the serialised ops text. Structurally identical calls minutes apart succeeded. The peer's pattern: every rejection was an append to the comments target, or a batch containing one, with a body over roughly seven hundred characters; a resolve op and a followup append of similar length succeeded in the same minutes; shortening the body and removing parentheses did not change the outcome; the same content succeeded once on retry after a literal section sign was replaced with an escape, and failed three other times with no section sign present. So the correlation is with payload shape rather than with any one character, and the peer's reading is that the client hands the argument through as JSON text for some payloads. The consequence is that plan state cannot be written through that channel for long bodies; the peer preserved the record by writing it into the cumulative evidence document instead, so nothing was lost, but the comment channel was unreliable for an evening. WHERE TO FIX IT. reckon/mcp.py wraps each strict tool's argument model in a subclass carrying a before-mode validator that rejects unknown parameter names. That validator sees the raw incoming mapping before any field is coerced, and is the point where a serialised list can be recognised. WHAT TO CHANGE. When an argument declared as a list arrives as text that parses as JSON to a list, use the parsed list. Apply it to every argument the model declares as a list rather than to one named argument, because the variance is in how a client serialises and not in which tool is being called. Leave every other case to the existing validation so a genuine type error still reports as one. WHAT NOT TO CHANGE. Do not alter the rejection of unknown parameter names, which is what that validator exists for. Do not coerce an argument the model declares as text, even when its content parses as JSON: an authored HTML argument can legitimately contain bracketed text, and rewriting it would corrupt a document rather than reject a call. Do not accept text that parses to something other than a list for a list argument. Do not accept text that does not parse. Do not change any tool's declared schema, so a client reading the schema still sees a list. FALSIFIERS, asserted in tests/test_tool_arguments_accept_a_serialised_list.py. A list argument delivered as JSON text produces the same result as the same argument delivered as a list, asserted by comparing the two outcomes rather than by asserting the call merely succeeded. A list argument delivered as JSON text that parses to a mapping is rejected, and the message names the argument. A list argument delivered as text that does not parse is rejected, and the message names the argument. A list argument delivered as an integer is rejected as it is today. AN ARGUMENT DECLARED AS TEXT WHOSE VALUE PARSES AS A JSON LIST IS PASSED THROUGH UNCHANGED, asserted on an authored HTML argument containing a bracketed list, because coercing it would corrupt a document. An unknown parameter name is still rejected with the existing message listing the accepted names. A tool's published schema still declares the argument as a list. Measure base and head over the new file and every test importing reckon.mcp; report failure ids either side and require none added. Bound the run per file rather than issuing one census over every importing file.",
+          "estimated_hours": 1.0,
+          "goal": "Accept a list-declared tool argument that a client delivers as JSON text, so a plan write is not refused for how the client serialised it",
+          "id": "a-serialised-list-argument-is-accepted",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T042615158552-a-serialised-list-argument-is-accepted/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/mcp.py",
+            "tests/test_tool_arguments_accept_a_serialised_list.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-surface-consistent",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-07T04:26:27Z",
+        "completed_at": "2026-09-07T05:24:30.564Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3474,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3483,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "4b03347d1a9423e9b5d3172d10dd29f8cfb1861c",
+        "commits": [
+          "3c3c2b335a82b323b43750601aea419926388cb8"
+        ],
+        "changed_lines": {
+          "added": 407,
+          "removed": 13,
+          "files": 2
+        },
+        "tests_added": 8,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_tool_arguments_accept_a_serialised_list.py <30 mcp-importing files, excluding 4 known-environmental>",
+          "exit_status": 1,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate66b.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T042615158552-a-serialised-list-argument-is-accepted/manifest.md",
+        "scope_changed": false,
+        "session_id": "dd7c1b17-6cce-4fe5-ba5f-0f6c7af867ef",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 13293652,
+            "input_tokens_cumulative": 13293652,
+            "output_tokens": 90587,
+            "output_tokens_cumulative": 90587,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 3479.722,
+          "generated_tokens": 90587,
+          "generation_seconds": 1773.536,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 18.2,
+          "machine_seconds": 1706.186,
+          "peak_input_tokens": 185215,
+          "tokens_per_second": 51.08,
+          "wall_tokens_per_second": 26.03
+        },
+        "follow_on_paths": [
+          "tests/test_provenance.py::test_spa_sources_keep_typed_facets_and_provenance_direction",
+          "tests/test_typed_resources.py::test_spa_graph_uses_typed_navigation_identity",
+          "facets/identity).",
+          "tests/test_crew.py",
+          "subprocess/CLI-only",
+          "70/178"
+        ],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-serialised-list-argument-is-accepted",
+          "session_id": "dd7c1b17-6cce-4fe5-ba5f-0f6c7af867ef",
+          "session_source": "stream",
+          "retained_at": "2026-09-07T05:24:30.564Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_tool_arguments_accept_a_serialised_list.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -70087,6 +70243,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1110
+    "_version": 1111
   }
 }
