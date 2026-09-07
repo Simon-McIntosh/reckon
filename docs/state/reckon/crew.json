@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-07T09:15:17",
+  "updated": "2026-09-07T09:18:50",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -70565,6 +70565,158 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260907T063955193752-a-row-carries-its-downloadable-file",
+        "plan": "crew-observability-truth",
+        "section": "\u00a77",
+        "node": "a-row-carries-its-downloadable-file",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2535,
+                "cached_input_tokens": 672237,
+                "input_tokens": 674774,
+                "output_tokens": 2807,
+                "reasoning_output_tokens": 982,
+                "total_tokens": 677581,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_a_row_carries_its_downloadable_file.py -q passes, and every figure row and every gif row carries a download field naming the fetchable file, so a reader can offer a save control without enumerating kinds. WHY IT IS DERIVED IN PYTHON RATHER THAN DECIDED IN THE SURFACE. This repository's binding rule is that the surface renders and does not derive, and its test is one question: would an agent, a CLI caller or an MCP read have any use for this value. All three want to know the fetchable file for an artifact, so it is a fact and belongs on the row. The alternative the rule forbids is a conditional in the reader keyed on the kind, which puts the kind enumeration in two places and lets the two surfaces disagree later. THE FIELD, named by the session that owns the reader. It is called download. It is a string href. It is the empty string where there is no unambiguous file, matching the row convention already in force: caption, dims and for_plan are each the empty string when absent, so a null would make the row heterogeneous and force the reader to handle two falsy shapes for no gain. There is no boolean beside it, deliberately: a boolean beside an href is a second source of truth for one fact, and a field cannot disagree with itself. The reader then needs one kind-agnostic line, that an empty download disables the control. WHAT TO CHANGE. figure_rows in reckon/figures.py emits rows of two kinds, figure and gif. Both name a file on disk by construction, because the inventory is built by walking that directory, so for both kinds the download value is the row's own href. Add the field to both. State in a comment why the value equals href for these kinds and is not therefore redundant: href answers where the artifact is addressed, download answers whether that address is a file a reader can save, and the two coincide here and diverge for kinds produced elsewhere. SCOPE IT TO THIS PRODUCER. Do not add the field to rows produced anywhere else, and do not chase the document kinds. The lead has explicitly deferred document download, and an absent field is falsy, so a reader disables the control for those rows today with no further work; when document download is authorised, that producer adds the same field and the reader lights up unchanged. Be accurate about what that means rather than overstating it: this is absence-as-default rather than an explicit server refusal, and it is acceptable because the rule forbids the READER enumerating kinds, which it will not, not because every row must carry the key. WHAT NOT TO CHANGE. Do not alter type, href, slug, title, caption, dims, for_plan or path on any row. Do not alter which files are gathered, the dimension readers, the ordering key, the project segmentation or the discovery signature. Do not add a dependency. Do not add a boolean, a nullable, or any second field describing the same fact. FALSIFIERS, asserted in tests/test_a_row_carries_its_downloadable_file.py against a temporary figures tree the test creates. A figure row's download equals that row's href, asserted by comparing the two fields on the same row rather than against a constructed string. A gif row's download equals that row's href. Both are non-empty. The download value is a string for every row, never None, asserted by type. Every other field on a figure row and on a gif row is unchanged from what it is without this change, asserted by comparing key sets and values against rows built at the previous revision or by pinning the full expected row, so the field is additive. A row whose kind is neither figure nor gif is not produced by this function at all, which the test states as the reason it asserts nothing about other kinds. Measure base and head over the new file plus every test importing reckon.figures or exercising the discovery signature; report failure ids either side and require none added.",
+          "estimated_hours": 0.6,
+          "goal": "Carry a download href on figure and gif rows, so the reader offers a save control without enumerating kinds",
+          "id": "a-row-carries-its-downloadable-file",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T063955193752-a-row-carries-its-downloadable-file/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "exact",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/figures.py",
+            "tests/test_a_row_carries_its_downloadable_file.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-review-reflex",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-07T06:40:06Z",
+        "completed_at": "2026-09-07T06:55:17.659Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 864,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 911,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "4f6c968d0941bfaee569c15428231f2531d946a8",
+        "commits": [
+          "4da2732c06ba11b41d49456a9a352d5a52710a10"
+        ],
+        "changed_lines": {
+          "added": 147,
+          "removed": 1,
+          "files": 2
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_a_row_carries_its_downloadable_file.py <figures importers>",
+          "exit_status": 1,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate70b.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T063955193752-a-row-carries-its-downloadable-file/manifest.md",
+        "scope_changed": false,
+        "session_id": "1177e0c6-aa97-4b8d-b3db-184833089a3a",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 3837231,
+            "input_tokens_cumulative": 3837231,
+            "output_tokens": 35405,
+            "output_tokens_cumulative": 35405,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 908.454,
+          "generated_tokens": 35405,
+          "generation_seconds": 855.088,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 11.7,
+          "machine_seconds": 53.366,
+          "peak_input_tokens": 119417,
+          "tokens_per_second": 41.41,
+          "wall_tokens_per_second": 38.97
+        },
+        "follow_on_paths": [
+          "tests/test_gif_rows_are_their_own_kind.py:86",
+          "slug/href/path."
+        ],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-row-carries-its-downloadable-file",
+          "session_id": "1177e0c6-aa97-4b8d-b3db-184833089a3a",
+          "session_source": "stream",
+          "retained_at": "2026-09-07T06:55:17.659Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_a_row_carries_its_downloadable_file.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -70793,6 +70945,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1116
+    "_version": 1117
   }
 }
