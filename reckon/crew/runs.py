@@ -6,7 +6,6 @@ import json
 import os
 import re
 import shlex
-import socket
 import stat
 import tempfile
 import time
@@ -265,35 +264,8 @@ def new_run_id(node_id: str, *, now: datetime | None = None) -> str:
     return f"r-{stamp}-{token}"
 
 
-def _stamp_pointer_launch_host(
-    path: Path, payload: Mapping[str, Any]
-) -> Mapping[str, Any]:
-    """Record a live pointer's launching host on its first write.
-
-    A process id is meaningful only on the machine that issued it, and the
-    crew configuration home is shared across login nodes, so a run records
-    where it was created under the key the classifier reads (``launcher_host``),
-    spelled with ``socket.gethostname()`` on both sides so the writer and the
-    reader cannot disagree. The host is a property of where the process was
-    created and never changes while it lives, so it is stamped exactly once,
-    when the pointer file is first created. A pointer that predates this
-    change has no recoverable launching host, so rewriting one never invents
-    the rewriter's host on a file that already exists.
-    """
-    if "launcher_host" in payload:
-        return payload
-    if path.parent != live_dir() or path.exists():
-        return payload
-    host = socket.gethostname()
-    if isinstance(payload, dict):
-        payload["launcher_host"] = host
-        return payload
-    return {**payload, "launcher_host": host}
-
-
 def _write_json(path: Path, payload: Mapping[str, Any]) -> None:
     """Write JSON atomically, so a reader never sees a half-written record."""
-    payload = _stamp_pointer_launch_host(path, payload)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp: Path | None = None
     try:
