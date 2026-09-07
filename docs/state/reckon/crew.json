@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-07T08:13:52",
+  "updated": "2026-09-07T08:26:00",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -70121,6 +70121,157 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260907T054236765019-model-and-effort-are-two-columns",
+        "plan": "crew-observability-truth",
+        "section": "\u00a78",
+        "node": "model-and-effort-are-two-columns",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 723,
+                "cached_input_tokens": 630096,
+                "input_tokens": 630821,
+                "output_tokens": 2803,
+                "reasoning_output_tokens": 952,
+                "total_tokens": 633624,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_crew_ticker_layout.py -q passes with no failure added across the ticker's importing set, and model and effort occupy separate scannable cells whose width is reclaimed from separator padding rather than taken from the reason column. WHAT THE LEAD ASKED FOR, and this supersedes an earlier refusal. A previous attempt split the joined model-and-effort cell and was held, because the lead had not asked for the split. The lead has now asked for it, with two qualifications in their own words: the gap between model and effort must remain tight, and the gaps in the right-hand counter may be closed. So the split lands, and it lands without widening the row. THE STARTING POINT. The held commit is reachable as tag held-model-effort-split and carries the split with its width reasoning: the widest shipped model alias is ten characters and the widest effort word is seven. Take its approach rather than its text; it predates the whole-word role column now on the branch, which already spent nine columns on spelling documentation in full. TWO QUALIFICATIONS, STATED AS MECHANISM. Tight gap: the model cell is sized to the widest shipped alias and the effort cell follows it after a single space, so effort begins at the same column on every row while no row carries padding wider than the alias it holds. Alignment and tightness are the same requirement here rather than competing ones, because the column is sized to the content and not to a round number. Counter: the counter today renders each count as two right-aligned digits and a single letter, joined by a space, a middle dot and a space. Closing those gaps means the separator loses its surrounding spaces. The counted block must keep a constant width as counts change so the right edge of the row does not move, which is why the two-digit alignment stays. WHERE THE WIDTH COMES FROM. Reclaimed separator columns fund the model and effort cells. State in a comment what the row consumes after the change and against which budget, so a later reader adding a column knows what is left. The module's declared default width and the terminal width measured on this workstation, 208 columns, are both stated in the existing comments. The reason column must not shrink to fund this. THREE TESTS DELIBERATELY ENCODE THE JOINED CELL and must be updated rather than worked around: two in tests/test_crew_ticker.py and one in tests/test_crew_recovery.py, whose own text calls the joined form one routing fact rendered as one cell. Update each to state the new contract in its own words, that model and effort are two facts a reader scans in two columns, and keep every other assertion in those tests unchanged. Do not delete a test to make a suite pass. WHAT NOT TO CHANGE. Do not alter which states exist, their names, their counter placement, the action marker, or the whole-word role rendering. Do not remove colour. Do not change what a transition carries. Do not shrink or truncate the reason column. FALSIFIERS. Effort begins at the same column offset on two rows whose model aliases differ in length, asserted on rendered rows rather than on a constant. No row places more than a single space between the end of the widest model alias and the effort word. A record carrying a precomposed joined model and effort string renders the same two cells as an equivalent record carrying them separately. The counter block occupies the same width for counts of 0, 9, 10 and 99, asserted across all four. The counter separator carries no surrounding space, asserted on a rendered row. The longest role word, the longest model alias and the longest effort word together do not exceed the stated budget. Colour codes are still emitted. Every dispatch role still renders whole. Measure base and head over tests/test_crew_ticker_layout.py, tests/test_crew_ticker.py, tests/test_crew_recovery.py, tests/test_fleet_counter_coverage.py and tests/test_external_wait.py; report failure ids either side and require none added.",
+          "estimated_hours": 1.25,
+          "goal": "Render model and effort as two scannable cells, funding their width by closing separator padding rather than by shrinking the reason column",
+          "id": "model-and-effort-are-two-columns",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T054236765019-model-and-effort-are-two-columns/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/crew/ticker.py",
+            "tests/test_crew_ticker_layout.py",
+            "tests/test_crew_ticker.py",
+            "tests/test_crew_recovery.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-surface-consistent",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-07T05:42:43Z",
+        "completed_at": "2026-09-07T06:24:14.825Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2483,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2491,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "33a7231985ea488b8b9c938480d5cdf5f87301f4",
+        "commits": [
+          "c36c26cb49bc28f033b571f79620a86e1f35c08e"
+        ],
+        "changed_lines": {
+          "added": 261,
+          "removed": 130,
+          "files": 4
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_crew_ticker_layout.py tests/test_crew_ticker.py tests/test_crew_recovery.py tests/test_fleet_counter_coverage.py tests/test_external_wait.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate68.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T054236765019-model-and-effort-are-two-columns/manifest.md",
+        "scope_changed": false,
+        "session_id": "7f6c5f75-9c9f-4a8b-8653-039f9acc3790",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 22990782,
+            "input_tokens_cumulative": 22990782,
+            "output_tokens": 106399,
+            "output_tokens_cumulative": 106399,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 2488.359,
+          "generated_tokens": 106399,
+          "generation_seconds": 2167.679,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 24.2,
+          "machine_seconds": 320.68,
+          "peak_input_tokens": 245631,
+          "tokens_per_second": 49.08,
+          "wall_tokens_per_second": 42.76
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/model-and-effort-are-two-columns",
+          "session_id": "7f6c5f75-9c9f-4a8b-8653-039f9acc3790",
+          "session_source": "stream",
+          "retained_at": "2026-09-07T06:24:14.825Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_crew_ticker_layout.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -70349,6 +70500,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1112
+    "_version": 1113
   }
 }
