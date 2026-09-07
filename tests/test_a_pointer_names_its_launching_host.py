@@ -186,11 +186,14 @@ def test_the_lookup_happens_only_when_the_host_matches(
 ) -> None:
     # The host gate decides whether the process table is consulted at all.
     # Observing the lookup rather than only its result: a pointer naming this
-    # host is probed, a pointer naming any other host is not.
+    # host is probed, a pointer naming any other host is not. The lookup is
+    # replaced on the module that defines it, because the classifier reads the
+    # attribute on that module at the moment of use — a replacement on a name
+    # bound elsewhere at import time would never be consulted.
     pid = os.getpid()
     looked_up: list[int] = []
     monkeypatch.setattr(
-        recovery,
+        runs,
         "process_alive",
         lambda candidate: looked_up.append(candidate) or False,
     )
