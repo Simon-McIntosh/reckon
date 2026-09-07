@@ -14,6 +14,7 @@ from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterator, Mapping
 
+from reckon.crew import runs
 from reckon.crew.node import (
     DEFAULT_WATCH_STALL_WINDOW,
     CrewError,
@@ -34,9 +35,16 @@ from reckon.crew.runs import (
     _utc_now,
     _write_watch_record,
     list_live,
-    process_alive,
     watch_lock_path,
 )
+
+
+# The classifier reaches liveness through the module at the point of call, so
+# replacing the definition on its owning module replaces what classification
+# consults. This import-time snapshot of the same function stays on this module
+# for callers that patch this namespace; classification itself reads the live
+# module attribute.
+process_alive = runs.process_alive
 
 
 # ── Recovery: what an interrupted orchestrator left behind ───────────────────
@@ -794,7 +802,7 @@ def classify_pointer(
         # reused pid — the same reading ``list_live`` produces for a fleet
         # view. A zombie entry answers not alive, composing with the narrowed
         # probe rather than reviving the old answer.
-        alive = process_alive(record.get("pid"))
+        alive = runs.process_alive(record.get("pid"))
         expected_start = record.get("pid_start_time")
         if alive is True and expected_start is not None:
             alive = _process_start_time(record.get("pid")) == expected_start
