@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="gif-tab-and-artifact-download">
+  <meta name="plan-title" content="Animations Get A Tab, Artifacts Get A Save">
+  <meta name="plan-summary" content="A fifth artifact tab for animations, a save control derived server-side, and one kind list behind every tab instead of three that must agree.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="5.0">
+  <meta name="plan-wall-clock-hours" content="2.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="low">
+  <meta name="plan-sprint" content="S16">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="spa">
+  <meta name="plan-north-star" content="state-that-tells-the-truth">
+  <title>Animations Get A Tab, Artifacts Get A Save | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<header>
+  <p class="eyebrow">The served surface &middot; two features the lead asked for, and the correction that makes one possible</p>
+  <h1>Animations Get A Tab, Artifacts Get A Save</h1>
+  <p class="lead">Forty-nine animations exist in one consuming repository and none of them can be browsed, because figure discovery globs two extensions and an animation is neither. The lead asked for an animation tab beside Figures and a save control on artifacts whose file is unambiguous. The tab is the easy half to describe and the impossible half to build as things stand: three separate hardcoded lists decide whether a tab renders, which canvas it opens, and which item it resolves, and each one fails silently and differently when a fourth kind becomes a fifth. This plan makes one declaration decide all three, then adds the two features on top of it.</p>
+</header>
+
+<h2 id="s1">&#167;1 &mdash; Why this exists</h2>
+<p>The request came from a repository that has been producing animations all day. Measured in <code>imas-ambix</code> at 06:33Z on 2026-09-07: <strong>49 files matching <code>*.gif</code></strong> against 440 matching <code>*.png</code> or <code>*.svg</code>, spread across topic directories, all of them fetchable by URL and none of them listed anywhere a reader browses.</p>
+<p><strong>The count is moving, and that decides how this plan is verified.</strong> Three independent readings of the same tree gave 47, 48 and 49 within about two hours, and none was wrong: four animations landed during that window, the newest two in commit <code>be9d45b</code> at 08:25 local, while three live render nodes continued to produce more. So no fixed row count can be an acceptance criterion here &mdash; a gate asserting &ldquo;47 rows&rdquo; would have failed twice over during the conversation that specified it. Every count in this plan is therefore derived from the filesystem at assertion time and compared, never written down as a literal. This is the repository's own rule about recorded absolutes that move on their own, and this is the clearest instance of it the project has produced.</p>
+<p>Two extension globs are the whole of the discovery defect, and they are owned elsewhere: a peer session holds <code>reckon/figures.py</code> and <code>reckon/serve.py</code> and has already landed animations as a distinct row kind. That work is a prerequisite in fact but not a blocker in bookkeeping, because the surface half below is demonstrable against the emitted kind the moment the server carries it.</p>
+
+<h3>Three lists decide one thing, and none derives from another</h3>
+<p>Registering a fifth artifact route today requires editing three places that have no structural relationship to each other. Each omission produces a working-looking surface rather than an error, which is why this is the load-bearing section and not a tidy-up.</p>
+<table>
+  <thead><tr><th>Declaration</th><th>What it actually decides</th><th>Symptom when the fifth kind is missing from it</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>ARTIFACT_ROUTES</code><br><code>docs/ui/shell-route.jsx</code></td>
+      <td>Whether the tab is rendered in the artifact bar at all, and the hashes it navigates to.</td>
+      <td>No tab. The only honest failure of the three &mdash; the feature is visibly absent rather than visibly wrong.</td>
+    </tr>
+    <tr>
+      <td><code>canvasViewForRoute</code><br>same file, twelve lines above</td>
+      <td>Which canvas the shell paints, via a literal whitelist with a fallback to <code>"home"</code>.</td>
+      <td>The tab renders in the bar and opens the <strong>home dashboard</strong>. Nothing throws, nothing logs.</td>
+    </tr>
+    <tr>
+      <td><code>readerKindFromHash</code><br><code>docs/ui/plan.jsx</code></td>
+      <td>Which kind an artifact hash resolves to, via a regex alternation defaulting to <code>"plan"</code>.</td>
+      <td>The hash resolves kind <code>plan</code>, a plan is looked up whose slug is an image path, and the reader gets <code>null</code>.</td>
+    </tr>
+  </tbody>
+</table>
+<p>The pattern is one this project keeps meeting: a declarative list that reads like the single source of truth, with a second declaration nearby that actually decides, and a fallback that renders the disagreement as something plausible. A test over any one list's members passes while the list itself is the wrong list, so the assertion that catches the class is one comparing the declarations to <em>each other</em> rather than checking either one's contents.</p>
+
+<h2 id="s2">&#167;2 &mdash; One declaration behind every tab, proven by the new tab working</h2>
+<p>The three declarations above collapse into one, and the other two derive from it. The animation tab is not a separate deliverable from that collapse: it is how the collapse is demonstrated, because a fifth kind that renders, routes and resolves without three coordinated edits is the only evidence that one declaration now decides all three. Shipping the unification without a new kind would prove nothing, and shipping the tab without the unification is not possible.</p>
+<p>The reader itself needs no new branch. An animation row is identical to a figure row in every field except its kind, so the existing figure reader path renders it once it is reachable; an <code>&lt;img&gt;</code> element animates a GIF natively, which is why no frame extraction, no imaging dependency and no contact-sheet convention appear anywhere in this plan.</p>
+<p><strong>Gate for this section, recorded when the measure runs: adding one entry to the single declaration makes a fifth tab render in the bar, open its own canvas rather than the home dashboard, and resolve its own item rather than defaulting to a plan lookup &mdash; with no other file edited. Its evidence is the three-way equality assertion, the resolved kind for an animation hash, and one real animation from the consuming repository rendering in its own tab.</strong></p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>animation-tab-through-one-kind-list</code></td>
+      <td>One declaration decides tab rendering, canvas selection and hash resolution, and an animations tab exists that proves it.</td>
+      <td>The canvas whitelist and the hash-resolution alternation are both derived from the route declaration rather than restated, asserted by a test comparing the three resulting sets for <strong>equality</strong> &mdash; not by listing expected members, so a future kind cannot be added to one and forgotten in the others. <code>#gif/&lt;slug&gt;</code> resolves kind <code>gif</code> and not the <code>plan</code> default. Navigating the animations tab paints the artifact canvas, never <code>home</code>. One real <code>.gif</code> from <code>imas-ambix</code> renders animated in that tab at its natural size. The Figures tab lists <strong>zero</strong> rows of kind <code>gif</code>, and its row count equals the number of <code>*.png</code> and <code>*.svg</code> files on disk, both counted at assertion time from the filesystem rather than compared against a literal. No test in this node hardcodes an animation count.</td>
+      <td><code>docs/ui/shell-route.jsx</code>, <code>docs/ui/plan.jsx</code></td>
+      <td>guided &middot; sonnet</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="s3">&#167;3 &mdash; A save control the server decides</h2>
+<p>The lead scoped this deliberately: a save control for figures and animations, where the artifact is one unambiguous file, and a visibly disabled control for plans, research and evidence, where what &ldquo;download&rdquo; should mean is an open question this plan does not answer. Every artifact reader is one component keyed by kind, so the control renders in all five places and is live in two.</p>
+<p><strong>Whether an artifact can be saved is a server fact, not reader chrome.</strong> The row carries a <code>download</code> field &mdash; an href, empty where there is no unambiguous file &mdash; and the control's enabled state is exactly that field's emptiness. The reader never names a kind. This follows the project's binding rule that the SPA renders rather than derives, and it passes that rule's own test: an agent, a CLI caller and an MCP read all want to know which file backs an artifact, so the value is a fact the server owes every consumer and not a detail of one surface. It is also what stops the two surfaces disagreeing later, which is the failure the rule exists to prevent.</p>
+<p>The field is a single href rather than an href beside a boolean, because a boolean is a second source of truth for one fact and can contradict the href it sits next to &mdash; the same shape as the three lists in &#167;1, reintroduced in the very field added to avoid them. A field cannot disagree with itself. It carries an empty string rather than a null because the sibling fields on that row already use empty strings for absence, and one nullable field among them would force every consumer to handle two falsy shapes for no gain.</p>
+<p>Because absence is falsy, this section is correct and demonstrable before the server field exists: every control is disabled, which is the honest rendering of a server that reports no downloadable file. It lights up without a further edit when the field arrives. The enabled half is therefore measured at a merged head carrying both commits, never against this node's own worktree alone.</p>
+<p><strong>Gate for this section, recorded when the measure runs: the control is enabled for exactly those artifacts whose row carries a non-empty <code>download</code>, disabled for every other kind, and the enablement condition contains no kind name. Its evidence is a saved file from each live kind, the disabled state on the three document kinds, and a source assertion that no kind literal appears in the condition.</strong></p>
+<table>
+  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>save-control-reads-one-server-field</code></td>
+      <td>Every artifact reader offers a save control whose live-or-greyed state is the server's answer, not a list of kinds in the component.</td>
+      <td>The control renders on all five artifact readers. It is enabled exactly when the row's <code>download</code> is non-empty and disabled otherwise, with the disabled state visibly distinguishable rather than absent. Clicking an enabled control saves the file under its own name. A test in this node asserts that the enablement condition names no artifact kind, and that test is scoped to this node so it cannot pass while the condition it guards is edited elsewhere. Enabled behaviour is verified at a merged head that also carries the server's <code>download</code> field; the disabled-everywhere state is verified in this worktree alone and is the correct rendering there. A figure and an animation each save; a plan, a research doc and an evidence record each stay greyed.</td>
+      <td><code>docs/ui/plan.jsx</code></td>
+      <td>guided &middot; sonnet</td>
+    </tr>
+  </tbody>
+</table>
+<p>Both nodes write <code>docs/ui/plan.jsx</code>, so they run in series on one member rather than concurrently, and the second inherits the first's context rather than rediscovering the reader's kind plumbing.</p>
+
+<h2 id="s4">&#167;4 &mdash; Out of scope</h2>
+<p>What downloading a plan, research doc or evidence record should mean, which the lead explicitly deferred: the artifact there is HTML served through a plan route, so a save could reasonably mean the source file an agent edits and which carries the semantic state, or the rendered page a reader is looking at. Those need different server work and the answer probably differs by kind, so the control is greyed and the question stays open rather than being settled by whichever was easier to build.</p>
+<p>Also out of scope: the two extension globs and the animation row kind, owned by a peer session in <code>reckon/figures.py</code> and <code>reckon/serve.py</code>; frame extraction, playback controls and contact-sheet generation, all of which a natively animating <code>&lt;img&gt;</code> makes unnecessary; the <code>download</code> field on document rows, which comes from the inventory producer rather than figure discovery and which lights this plan's control up with no change to it; and case-insensitive globbing, measured unnecessary at zero <code>.GIF</code> files.</p>
+
+<section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="animation-placement" data-choice="its-own-tab" data-by="Simon McIntosh (verbatim request, 2026-09-07)" data-when="2026-09-07">
+    <p class="r-dec-q">Do animations appear in the Figures index, or in a tab of their own?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="its-own-tab">A tab of their own, beside Figures</button>
+      <button class="r-opt" data-value="rows-in-the-figures-index">Rows in the existing Figures index</button>
+      </p>
+    <p class="r-dec-rat">The lead asked for &ldquo;an additional gif tab next to figures&rdquo;. The alternative was proposed independently by a peer session working from a relayed version of the same request, and it is not a smaller version of this choice but a different product: folding animations into figure rows makes the tab impossible to build, because a row's kind is what a route resolves against. It would also mix 49 animations into 440 static figures in the one repository that has them, changing the character of an index the lead reads. The distinction cost one word in a peer's node brief and decided whether the surface work could exist.</p>
+    </div>
+<div class="r-dec" data-key="document-download-scope" data-choice="figures-and-animations-only" data-by="Simon McIntosh (verbatim amendment, 2026-09-07)" data-when="2026-09-07">
+    <p class="r-dec-q">Does the save control cover documents, and if not, is it hidden or shown disabled?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="figures-and-animations-only">Figures and animations only; shown but greyed elsewhere</button>
+      <button class="r-opt" data-value="all-artifacts-now">All artifacts, deciding document semantics now</button>
+      <button class="r-opt" data-value="hide-where-unsupported">Hide the control where it does not apply</button>
+      </p>
+    <p class="r-dec-rat">The lead's amendment: &ldquo;skip the download question for the docs for now, grey the button out. only implement for figs and gifs where the downloaded artifact file is clear.&rdquo; Greying rather than hiding keeps the affordance discoverable and makes the unanswered question visible instead of silently absent, and it means the later document decision changes a server field rather than the reader's layout.</p>
+    </div>
+<div class="r-dec" data-key="download-field-shape" data-choice="single-href-empty-when-absent" data-by="reckon-ship (named on a peer session's request; reasoning below)" data-when="2026-09-07">
+    <p class="r-dec-q">What shape does the server-derived download fact take on an artifact row?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="single-href-empty-when-absent">One <code>download</code> href, empty string when there is no unambiguous file</button>
+      <button class="r-opt" data-value="href-plus-boolean">An href beside a <code>downloadable</code> boolean</button>
+      <button class="r-opt" data-value="explicit-null">An href that is explicitly null when absent</button>
+      <button class="r-opt" data-value="reader-derives-from-kind">No field; the reader enables on kind</button>
+      </p>
+    <p class="r-dec-rat">A boolean beside the href is a second source of truth for one fact and can contradict the href it sits next to &mdash; precisely the defect this plan's §1 exists to remove, reintroduced in the field added to avoid it; a field cannot disagree with itself. Null was rejected because the row's sibling fields already express absence as an empty string, so one nullable field forces consumers to handle two falsy shapes for nothing. Deriving from kind in the reader was rejected by the project rule that the SPA renders rather than derives, and by that rule's test: an agent, a CLI caller and an MCP read all want to know which file backs an artifact. The peer session that owns the producing code asked for the name rather than guessing it, which is why this is recorded as a decision and not an implementation detail.</p>
+    </div>
+</section>
+
+<section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-gtad-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-07" data-recommends-skill="/reckon-ship gif-tab-and-artifact-download" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land the kind-list collapse with the animations tab, then the save control</h4>
+    <div class="r-fu-body"><p>Two nodes in series on one member, because both write the reader module and the second needs the first's kind plumbing. The animations tab is how the three-way collapse is demonstrated, so they are one node rather than two. The save control's enabled half is measured at a merged head carrying the peer session's <code>download</code> field; its disabled-everywhere state is correct and verifiable before that field exists. The served surface needs a server restart before either can be seen, because the animation row kind is Python and the running process holds pre-change code.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship gif-tab-and-artifact-download</pre>
+    </article>
+</section>
+</main>
+</body>
+</html>
