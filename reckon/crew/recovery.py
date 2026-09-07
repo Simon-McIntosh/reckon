@@ -6,6 +6,7 @@ import json
 import os
 import re
 import shlex
+import socket
 import subprocess
 import time
 from contextlib import contextmanager
@@ -33,6 +34,7 @@ from reckon.crew.runs import (
     _utc_now,
     _write_watch_record,
     list_live,
+    process_alive,
     watch_lock_path,
 )
 
@@ -712,6 +714,11 @@ def external_wait(
     )
 
 
+def _reading_host() -> str:
+    """The host this reader runs on, for gating process-table lookups."""
+    return socket.gethostname()
+
+
 def classify_pointer(
     record: Mapping[str, Any],
     *,
@@ -721,9 +728,13 @@ def classify_pointer(
     """Classify one live pointer, without touching it.
 
     Pure and read-only, so the same judgement serves an MCP read and
-    :func:`recover`. Liveness comes from the process table and delivery from the
-    manifest's status, because a terminal stream event only says the worker's
-    turn ended. It does not say the node completed successfully.
+    :func:`recover`. Liveness is established at the moment of use: when the
+    record's launching host is this host the process table is asked now, and
+    otherwise the stored answer is carried and marked unproven. The recorded
+    launching host is the pointer's ``launcher_host`` field, spelled with
+    ``socket.gethostname()`` on the machine that launched the run. Delivery
+    comes from the manifest's status, because a terminal stream event only says
+    the worker's turn ended. It does not say the node completed successfully.
     """
     run_id = str(record.get("run_id") or "")
     phase = str(record.get("phase") or "")
@@ -764,11 +775,33 @@ def classify_pointer(
     manifest_commits = list(manifest_data.get("commits") or [])
     manifest_blockers = list(manifest_data.get("blockers") or [])
     needs_help = manifest_data.get("needs_help")
-    # Fleet reads refresh this fact once while loading the pointer, so every
-    # consumer of the same record shares one liveness verdict. Direct callers
-    # may also classify an observation they already hold without silently
-    # replacing it with a second process-table reading.
-    alive = record.get("process_alive")
+    # Liveness is read at the moment it is used, not carried from the fleet
+    # read that loaded the pointer. The process table answers only when the
+    # record's launching host is the reading host: a pid is meaningful only on
+    # the machine that issued it, and the crew home is shared across login
+    # nodes, so asking a foreign pid table fabricates a verdict in both
+    # directions. Where the launching host cannot be shown to be this host the
+    # stored answer is kept and the row carries that it is unproven — an
+    # unprovable answer is not proof of death.
+    stored_alive = record.get("process_alive")
+    if (
+        record.get("launcher_host") is not None
+        and str(record.get("launcher_host")) == _reading_host()
+        and record.get("pid")
+    ):
+        # The run was launched here: the launched pid's kernel state is the
+        # authority at this instant, and the recorded start tick rules out a
+        # reused pid — the same reading ``list_live`` produces for a fleet
+        # view. A zombie entry answers not alive, composing with the narrowed
+        # probe rather than reviving the old answer.
+        alive = process_alive(record.get("pid"))
+        expected_start = record.get("pid_start_time")
+        if alive is True and expected_start is not None:
+            alive = _process_start_time(record.get("pid")) == expected_start
+        liveness_proven = True
+    else:
+        alive = stored_alive
+        liveness_proven = False
     log = Path(str(record.get("log_path") or ""))
     age = None
     if log.is_file():
@@ -1201,6 +1234,11 @@ def classify_pointer(
         "classification": classification,
         "phase": phase,
         "process_alive": alive,
+        # False when the stored answer was carried because the launching host
+        # could not be shown to be this host, or there is no pid to ask about.
+        # An unproven answer is not death, so a reader needing certainty reads
+        # this field rather than treating a stale stored value as a verdict.
+        "liveness_proven": liveness_proven,
         "manifest_present": manifest_present,
         "manifest_file_present": manifest_file_present,
         "manifest_fresh": manifest_present,
