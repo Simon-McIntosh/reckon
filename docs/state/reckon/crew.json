@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-07T04:01:54",
+  "updated": "2026-09-07T04:23:54",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -69255,6 +69255,159 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260907T020236814747-a-pointer-names-its-launching-host",
+        "plan": "crew-observability-truth",
+        "section": "\u00a76",
+        "node": "a-pointer-names-its-launching-host",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1970,
+                "cached_input_tokens": 548184,
+                "input_tokens": 550156,
+                "output_tokens": 1667,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 551823,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_a_pointer_names_its_launching_host.py -q passes, and every live pointer written for a newly launched run records the hostname of the machine that launched it. WHY THIS IS OWED. A change landed at ab47256 makes the classifier establish liveness at the point of use rather than from a stored field, and gates that lookup on the pointer's launcher_host matching the reading host. Measured immediately after it landed: zero of nine live pointers carried that key, and no module in the repository writes it. So the gate is always false, the classifier keeps using the stored answer, and the landed change is inert. WHY THE GATE IS RIGHT EVEN THOUGH IT IS CURRENTLY EMPTY. The crew configuration home is on shared storage and the live-pointer directory is global across projects and machines. A pointer carries pid and pid_start_time and names no machine. So a reader on one login node computing liveness for a run launched on another asks its own process table about a pid that means nothing locally, and gets a fabricated answer in both directions: an absent pid reads as dead, which is the proof-of-death that a run needs before it may be called abandoned, and a reused pid reads as alive. The host gate is what makes the point-of-use read safe to perform at all; without the field the read cannot be enabled. WHAT TO CHANGE. When a run's live pointer is first written, record the hostname of the machine writing it, under the key the classifier already reads. Use the same spelling the reader uses so the two cannot disagree: the reader takes socket.gethostname(), so the writer takes socket.gethostname(). Record it once at launch rather than refreshing it, because it is a property of where the process was created and does not change while the process lives. WHAT NOT TO CHANGE. Do not alter the classifier or any classification arm; the reader already exists and this node only supplies what it reads. Do not alter pid or pid_start_time. Do not backfill the field onto pointers already on disk: a pointer written before this change has no recoverable launching host, and inventing one would assert a fact nobody measured. Do not make the absence of the field an error anywhere; a pointer without it must behave exactly as it does today, because pointers written before this change will outlive it and a reader that refuses them would strand live runs. FALSIFIERS, asserted in tests/test_a_pointer_names_its_launching_host.py against a temporary configuration home, with an assertion that the real configuration home gains no file. A pointer written for a newly launched run carries the launching host, and its value equals what socket.gethostname() returns in the writing process. A pointer written and then re-read carries the same value, so the field survives the write-and-read cycle the classifier depends on. A pointer that predates this change, constructed without the field, is read without error and classifies exactly as it does today, asserted by comparing the classification against the same pointer processed before the change. The classifier performs a process-table lookup for a pointer whose recorded host equals the reading host, and performs none for a pointer whose recorded host differs, asserted by observing whether the lookup happened rather than only its result. A run whose pointer is rewritten during its life keeps its original launching host rather than acquiring the rewriter's. Measure base and head over the new file and every test importing reckon.crew.dispatch or reckon.crew.runs. Report failure ids either side and require none added. Do not run a census over the full importing set in one command: bound it per file, or gate only the files that cover the changed paths, because that set contains a test which does not complete in this environment and two nodes today ended without a manifest after backgrounding a long census.",
+          "estimated_hours": 0.75,
+          "goal": "Record the launching machine's hostname on a run's live pointer, so the classifier's host-gated liveness read can fire at all",
+          "id": "a-pointer-names-its-launching-host",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T020236814747-a-pointer-names-its-launching-host/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/runs.py",
+            "tests/test_a_pointer_names_its_launching_host.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-gc-coverage",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-07T02:02:55Z",
+        "completed_at": "2026-09-07T02:19:31.016Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 989,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 996,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "473edef4e6ea32e8bfbe496acc9a578dd5f28a05",
+        "commits": [
+          "9c25914d72664cd6b7087bae95e80f448d11a97b"
+        ],
+        "changed_lines": {
+          "added": 245,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 8,
+        "gate": "failed",
+        "gate_check": {
+          "command": "pytest -q tests/test_a_pointer_names_its_launching_host.py tests/test_crew_live_listing.py tests/test_crew_runs_scope.py tests/test_crew_runs_view.py tests/test_liveness_is_read_when_it_is_used.py tests/test_crew_recovery.py",
+          "exit_status": 1,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate62.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": "work-rejected",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T020236814747-a-pointer-names-its-launching-host/manifest.md",
+        "scope_changed": false,
+        "session_id": "85d75c9e-32ff-4f47-befc-16ba7c75e0a4",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 7706936,
+            "input_tokens_cumulative": 7706936,
+            "output_tokens": 71053,
+            "output_tokens_cumulative": 71053,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 992.813,
+          "generated_tokens": 71053,
+          "generation_seconds": 571.443,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 16.1,
+          "machine_seconds": 421.37,
+          "peak_input_tokens": 163589,
+          "tokens_per_second": 124.34,
+          "wall_tokens_per_second": 71.57
+        },
+        "follow_on_paths": [
+          "tests/test_crew_recovery.py::test_observe_and_watch_render_failure_only_after_the_process_stops",
+          "tests/test_crew_attempt_accounting.py",
+          "tests/test_crew.py"
+        ],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-pointer-names-its-launching-host",
+          "session_id": "85d75c9e-32ff-4f47-befc-16ba7c75e0a4",
+          "session_source": "stream",
+          "retained_at": "2026-09-07T02:19:31.016Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_a_pointer_names_its_launching_host.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -69483,6 +69636,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1106
+    "_version": 1107
   }
 }
