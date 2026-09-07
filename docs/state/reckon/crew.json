@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-07T09:18:50",
+  "updated": "2026-09-07T09:22:57",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -70717,6 +70717,154 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260907T071926989075-the-exclusion-set-knows-the-new-field",
+        "plan": "crew-observability-truth",
+        "section": "\u00a77",
+        "node": "the-exclusion-set-knows-the-new-field",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1369,
+                "cached_input_tokens": 710643,
+                "input_tokens": 712014,
+                "output_tokens": 614,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 712628,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_gif_rows_are_their_own_kind.py -q passes, and its field-comparison test treats the download href as per-row rather than as shared. THE MEASUREMENT. tests/test_gif_rows_are_their_own_kind.py::test_gif_row_and_figure_row_differ_only_in_kind compares a gif row against a figure row after excluding the fields that legitimately differ per row, and its exclusion set is type, slug, href and path. A download href was then added to both kinds and it equals each row's own href, so it differs per row exactly as href does. The test fails with a message naming the two values, one ending in .gif and one in .png, which is the correct behaviour of a test whose exclusion set has not been told about a new per-row field. WHAT THE TEST IS FOR AND WHY IT STAYS. Its purpose is that a gif row and a figure row are identical in every SHARED field, so a reader needs no branch beyond the kind. That purpose is unchanged and worth keeping. The repair is to its notion of which fields are per-row, not to its assertion. WHAT TO CHANGE. Add the download field to that test's exclusion set, and say in the test why it belongs there: it names the row's own file, so it varies per row for the same reason href and slug do. Change nothing else in that test and nothing else in that file. WHAT NOT TO CHANGE. Do not alter reckon/figures.py or any other source file. Do not relax the assertion from equality to a subset or a superset check. Do not remove any test. Do not widen the exclusion set beyond the one field, because every field excluded is a field the test no longer protects, and the value of this test is exactly what remains inside the comparison. Do not assert the exclusion set's size or membership by literal count anywhere, because that freezes a number that grows whenever a per-row field is added. FALSIFIERS. The named test passes. Every other test in that file passes unchanged. The comparison still detects a genuine divergence: a row whose title, caption, dims or for_plan differed between the two kinds would still fail, asserted by constructing such a divergence in a new case rather than by reasoning about it. The download field is still asserted to equal href elsewhere, so excluding it from this comparison does not leave it unchecked; name the test that covers it. Measure base and head over tests/test_gif_rows_are_their_own_kind.py, tests/test_a_row_carries_its_downloadable_file.py and every other test importing reckon.figures; report failure ids either side and require none added.",
+          "estimated_hours": 0.4,
+          "goal": "Teach the field-comparison test that the download href is per-row, keeping its equality assertion intact",
+          "id": "the-exclusion-set-knows-the-new-field",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T071926989075-the-exclusion-set-knows-the-new-field/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "exact",
+          "time_budget": "25m",
+          "write_paths": [
+            "tests/test_gif_rows_are_their_own_kind.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-review-reflex",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-07T07:19:32Z",
+        "completed_at": "2026-09-07T07:21:42.332Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 123,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 130,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "ba73a4e79775c14b721b23f39e8a8878e0c57af8",
+        "commits": [
+          "b336c23a832bcf059f7633d5f2ba20a322203d0c"
+        ],
+        "changed_lines": {
+          "added": 7,
+          "removed": 3,
+          "files": 1
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q <all tests importing reckon.figures or exercising the discovery signature>",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate71.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T071926989075-the-exclusion-set-knows-the-new-field/manifest.md",
+        "scope_changed": false,
+        "session_id": "910ea31f-d510-44b8-a5a7-b534856d0b88",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 1502123,
+            "input_tokens_cumulative": 1502123,
+            "output_tokens": 11320,
+            "output_tokens_cumulative": 11320,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 127.25,
+          "generated_tokens": 11320,
+          "generation_seconds": 101.904,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 7.5,
+          "machine_seconds": 25.346,
+          "peak_input_tokens": 76188,
+          "tokens_per_second": 111.08,
+          "wall_tokens_per_second": 88.96
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-exclusion-set-knows-the-new-field",
+          "session_id": "910ea31f-d510-44b8-a5a7-b534856d0b88",
+          "session_source": "stream",
+          "retained_at": "2026-09-07T07:21:42.332Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_gif_rows_are_their_own_kind.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -70945,6 +71093,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1117
+    "_version": 1118
   }
 }
