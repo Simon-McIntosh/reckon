@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-07T11:16:41",
+  "updated": "2026-09-07T13:26:35",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -71320,6 +71320,200 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260907T091345098061-one-follower-observes-many-sessions",
+        "plan": "crew-observability-truth",
+        "section": "\u00a78",
+        "node": "one-follower-observes-many-sessions",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2618,
+                "cached_input_tokens": 730842,
+                "input_tokens": 733462,
+                "output_tokens": 859,
+                "reasoning_output_tokens": 252,
+                "total_tokens": 734321,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_follow_observes_other_sessions.py -q passes, and one follower delivers transitions for its own session plus any number of named other sessions, registering delivery for its own session alone. WHAT THE LEAD ASKED FOR, in their words: extend the monitor to enable an attach to multiple sessions, because it is useful when tracking old work in addition to our own, and they suggested an appended session. WHY THE OBVIOUS IMPLEMENTATION IS UNSAFE, and this is the constraint the node exists to honour. The follow command's session option does two things, not one: it narrows delivery to the runs that session dispatched, AND it registers the session as attached. Dispatch refuses a session whose runs would finish unheard, and that refusal is decided on the attachment record. So a follower that registered attachment for a second session would satisfy the OTHER coordinator's dispatch precondition with delivery that ends when this session ends. Their guard would read as cleared while the thing it guards against became true, which is the failure this fleet has spent a night removing: a guard satisfied by evidence that does not mean what it claims. WHAT TO CHANGE. Keep the existing session option exactly as it is: one value, the owning session, narrowing delivery and registering attachment. Add a separate repeatable option naming other sessions to observe. Transitions for an observed session are delivered to the pane. Nothing is registered for an observed session: no attachment record, no delivery claim, no effect on any dispatch guard anywhere. Say in the option's help text that observing does not vouch for delivery, so a reader of the command line knows which half they are getting. A row from an observed session is marked as another session's, and the ticker already carries a marker for exactly that meaning; use it rather than inventing a second spelling. WHAT NOT TO CHANGE. Do not alter what the existing session option does, its name, or its registration. Do not alter the producer seat, its arming, or the watcher record. Do not alter which transitions are emitted for the owning session. Do not add a way to observe every session at once: the lead asked to name old work alongside their own, and an all-sessions mode would deliver another fleet's whole history into a pane sized for one coordinator's attention. Do not change the ticker's column widths or its marker's spelling; if the marker turns out to need a change, block and say so rather than reaching outside the fence. FALSIFIERS, asserted in tests/test_follow_observes_other_sessions.py against constructed pointers and a temporary configuration home, with an assertion that the real configuration home gains no file. A follower given an owning session and two observed sessions delivers transitions for all three. The attachment record names the owning session only, asserted by reading the record rather than by reading the command's output. A dispatch guard consulted for an observed session reports no delivery, asserted through whatever the guard reads rather than by asserting on the follower. A follower given no observed sessions behaves exactly as it does today, asserted against the same expected lines as the existing single-session case. Rows from an observed session carry the other-session marker and rows from the owning session do not. An observed session named identically to the owning session does not produce duplicate rows for one transition. An observed session that dispatched nothing yields no rows and no error. Naming an observed session does not change what any other session's dispatch is permitted to do, asserted by checking the guard for a third session that was neither owned nor observed. Measure base and head over the new file plus every test importing reckon.cli or reckon.crew.runs; report failure ids either side and require none added, and bound the run per file rather than issuing one census, because that set contains a test which does not complete in this environment.",
+          "estimated_hours": 1.25,
+          "goal": "Let one follower deliver another session's transitions for oversight while registering delivery for its own session alone",
+          "id": "one-follower-observes-many-sessions",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T091345098061-one-follower-observes-many-sessions/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/cli.py",
+            "reckon/crew/runs.py",
+            "tests/test_follow_observes_other_sessions.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-surface-consistent",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-07T09:14:12Z",
+        "completed_at": "2026-09-07T11:13:25.993Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 7130,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 7153,
+        "stalled": true,
+        "time_budget": "50m",
+        "base_sha": "8b7c59a10f9d3d207f5cdb6326781b3c3ee6fdc2",
+        "commits": [
+          "015dfbd1e5432f6e806f908e3bbc51d657ce6ac7"
+        ],
+        "changed_lines": {
+          "added": 446,
+          "removed": 5,
+          "files": 2
+        },
+        "tests_added": 11,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_follow_observes_other_sessions.py <67 cli/runs importers, excluding 5 known-environmental>",
+          "exit_status": 1,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate72b.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T091345098061-one-follower-observes-many-sessions/manifest.md",
+        "scope_changed": false,
+        "session_id": "897520fa-223d-46d5-9ee3-64eba307bd67",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 18123469,
+            "input_tokens_cumulative": 18123469,
+            "output_tokens": 121126,
+            "output_tokens_cumulative": 121126,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 1800,
+              "classification": "completed_unpromoted",
+              "detail": "the worker manifest reports completion and the run is still a pointer; promoting it moves the delivered record into the repository ledger",
+              "elapsed_seconds": 794,
+              "external_wait": null,
+              "liveness_proven": true,
+              "log_age_seconds": 4185,
+              "log_fresh": false,
+              "manifest_commits": [
+                "fbd50cd5d2b47ddf38e5e9d75a6407307ea0cd00]; changed_paths: [\"docs/ui/shell-plans.jsx"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "fd9a6c3f3884ea4034b7950f6bc74a2525e6c0198c65d825646f6eaadc76a120",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T075050004524-artifact-index-reads-the-route-declaration/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew complete --run r-20260907T075050004524-artifact-index-reads-the-route-declaration --gate <verdict> --commit fbd50cd5d2b47ddf38e5e9d75a6407307ea0cd00]; changed_paths: [\"docs/ui/shell-plans.jsx",
+              "node": "artifact-index-reads-the-route-declaration",
+              "phase": "complete",
+              "plan": "gif-tab-and-artifact-download",
+              "process_alive": false,
+              "project": "reckon",
+              "run_id": "r-20260907T075050004524-artifact-index-reads-the-route-declaration",
+              "session": "ship-s16",
+              "terminal_age_seconds": 4305,
+              "terminal_at": "2026-09-07T08:02:22Z",
+              "wait_age_seconds": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16/artifact-index-reads-the-route-declaration"
+            }
+          ]
+        },
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 7147.672,
+          "generated_tokens": 121126,
+          "generation_seconds": 5876.017,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 25.1,
+          "machine_seconds": 1271.655,
+          "peak_input_tokens": 254726,
+          "tokens_per_second": 20.61,
+          "wall_tokens_per_second": 16.95
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/one-follower-observes-many-sessions",
+          "session_id": "897520fa-223d-46d5-9ee3-64eba307bd67",
+          "session_source": "stream",
+          "retained_at": "2026-09-07T11:13:25.993Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_follow_observes_other_sessions.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -71548,6 +71742,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1122
+    "_version": 1123
   }
 }
