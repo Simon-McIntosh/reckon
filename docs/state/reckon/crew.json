@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-07T04:34:47",
+  "updated": "2026-09-07T04:44:39",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -69710,6 +69710,155 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260907T023537808659-a-cited-log-outlives-its-run",
+        "plan": "crew-observability-truth",
+        "section": "\u00a77",
+        "node": "a-cited-log-outlives-its-run",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1613,
+                "cached_input_tokens": 579428,
+                "input_tokens": 581043,
+                "output_tokens": 898,
+                "reasoning_output_tokens": 71,
+                "total_tokens": 581941,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_manifest_log_paths_are_durable.py -q passes, and a promoted run whose manifest cites a test log under the shared temporary directory is reported rather than recorded silently. THE MEASUREMENT, from this session's own promotions. Three separate workers wrote their test logs under the shared temporary directory despite the dispatch contract naming the run directory: their manifests cite paths beginning with the temporary root, and the coordinator noticed only while reading the manifests by hand. Two of the three were this coordinator's own nodes. WHY IT MATTERS BEYOND TIDINESS. Those logs are the evidence a promotion cites. A promoted ledger row names a gate command, an exit status and a log path, and the log path is what a later reader opens to check the claim. The shared temporary directory on this workstation is a small allocation that is cleared without notice, so a promotion can carry a citation to a file that no longer exists, and nothing distinguishes that from a citation to a file that was never written. The run directory persists with the run; the temporary root does not. WHAT TO CHANGE. Add a check over a manifest's cited log paths that reports any path resolving under the shared temporary root, naming the manifest, the key and the offending path. It reports; it does not refuse, rewrite or relocate anything. A path under the run directory, under the repository, or under any other durable location is not reported. The temporary root is what the standard library reports as the platform temporary directory, read from the running system rather than written as a literal, and a path is under it when its resolved form is contained by that resolved root, so a symlinked or relative spelling is caught rather than only a literal prefix. WHAT NOT TO CHANGE. Do not alter promotion, the gate requirement, the ledger row, or any classification. Do not refuse a promotion on this finding: a coordinator promoting a run whose logs are already written cannot make them durable, and refusing would strand the record rather than improve it. Do not touch the manifest file. Do not check any path other than those a manifest cites as logs. FALSIFIERS, asserted in tests/test_manifest_log_paths_are_durable.py against constructed manifests and a temporary directory the test itself creates. A manifest citing a log under the platform temporary root is reported, and the report names the manifest, the key and the path. A manifest citing a log under the run directory is not reported. A manifest citing a log under the repository is not reported. A manifest citing no logs is not reported and does not raise. A manifest whose cited path does not exist on disk is judged by where it points rather than by whether it exists, because a missing durable path and a missing temporary path are different findings. A path that reaches the temporary root through a symbolic link or a relative spelling is reported, asserted by constructing such a path rather than by asserting on a prefix string. A manifest citing several logs of which one is under the temporary root reports exactly that one. The check reports and returns; no test asserts a refusal, and the absence of a refusal path is asserted rather than assumed. Measure base and head over the new file and every test importing the module you place the check in; report failure ids either side and require none added. Bound the run per file rather than issuing one census over every importing file.",
+          "estimated_hours": 0.75,
+          "goal": "Report a manifest that cites test logs under the shared temporary root, so a promotion's evidence is not a path that vanishes",
+          "id": "a-cited-log-outlives-its-run",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T023537808659-a-cited-log-outlives-its-run/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/reports.py",
+            "tests/test_manifest_log_paths_are_durable.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-routing-evidence",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-07T02:35:46Z",
+        "completed_at": "2026-09-07T02:41:31.023Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 338,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 345,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "86aa8115ad923a002c8d1d98b0f42174ef4e9524",
+        "commits": [
+          "f115aacd618537f1251bed5181fe433095a7e9fb"
+        ],
+        "changed_lines": {
+          "added": 227,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 9,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_manifest_log_paths_are_durable.py tests/test_crew_reports.py tests/test_crew_manifest.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate65.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T023537808659-a-cited-log-outlives-its-run/manifest.md",
+        "scope_changed": false,
+        "session_id": "b2c9c22b-ebb9-4819-8945-f5f1c9dc8cb0",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 4135795,
+            "input_tokens_cumulative": 4135795,
+            "output_tokens": 42431,
+            "output_tokens_cumulative": 42431,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 341.338,
+          "generated_tokens": 42431,
+          "generation_seconds": 307.405,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 13.9,
+          "machine_seconds": 33.933,
+          "peak_input_tokens": 141163,
+          "tokens_per_second": 138.03,
+          "wall_tokens_per_second": 124.31
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-cited-log-outlives-its-run",
+          "session_id": "b2c9c22b-ebb9-4819-8945-f5f1c9dc8cb0",
+          "session_source": "stream",
+          "retained_at": "2026-09-07T02:41:31.023Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_manifest_log_paths_are_durable.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -69938,6 +70087,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1109
+    "_version": 1110
   }
 }
