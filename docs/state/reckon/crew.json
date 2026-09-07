@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-07T02:42:49",
+  "updated": "2026-09-07T02:58:19",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -68648,6 +68648,155 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260907T004756687474-a-zombie-is-not-alive",
+        "plan": "crew-observability-truth",
+        "section": "\u00a76",
+        "node": "a-zombie-is-not-alive",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 3103,
+                "cached_input_tokens": 498988,
+                "input_tokens": 502093,
+                "output_tokens": 613,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 502706,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_a_zombie_is_not_alive.py -q passes, and a pid in the kernel's zombie state reports as not alive. THE MEASUREMENT, reported by a peer session and cross-session in a way that matters. A resume launched by one session's project-wide recovery sweep resumed another session's run. When the resumed process ended, its child remained as a defunct entry under the SPAWNING session's follower pid for about three hours. During that window reckon refused the owning session's own resume attempt with the reason that the run still has a live process, because os.kill against a zombie succeeds. The owning session could not clear it: the parent was another session's follower, so the only party able to reap it was the party that did not know it was holding anything. THE MECHANISM, in reckon/crew/runs.py. process_alive signals the pid with a zero signal and reports the outcome. A zombie is a process table entry whose process has exited and whose exit status has not been collected; the kernel accepts a zero signal against it, so this function returns True. Its docstring reasons carefully about a PermissionError meaning the process belongs to another user and is therefore proof of life; it does not reason about the state the process is in. THE SIGNAL IS ALREADY BEING READ IN THIS FILE. _process_start_time, the function immediately below, opens the per-process stat record under /proc for that pid and parses it for the start tick that distinguishes reused process ids. The process state is a field on that same line. So the file already reads the record that answers this and uses one field from it. WHY REAPING IS NOT THE WHOLE ANSWER, so this node is not made redundant by the reaper. Launched workers are registered with a reaper that collects them on a background thread, so a zombie is expected to be short-lived. Reaping is asynchronous, which means there is always a window in which the process has exited and its status has not been collected, and during that window every reader of this function gets the wrong answer in the dangerous direction: a finished run reported as running holds its slot, refuses its own resume, and cannot be cleared by whoever owns it. A window that is usually brief is still a window, and the peer measured one lasting three hours. WHAT TO CHANGE. A pid whose kernel state is zombie reports as not alive. Read the state from the same per-process stat record this file already parses. Where that record cannot be read at all, behaviour is unchanged, because an unreadable record is not proof of death and this module already declines to treat unprovable liveness as death. Say in a comment why a zombie is not alive for this function's purpose: its process has exited, so every caller asking whether work is still running wants no. WHAT NOT TO CHANGE. Do not alter the PermissionError branch, which correctly reports a process owned by another user as alive. Do not alter the branch returning None when there is no pid or the pid is not an integer. Do not change the reaper, its registration, or its thread. Do not read any file for a pid other than the one asked about. FALSIFIERS, asserted in tests/test_a_zombie_is_not_alive.py. A pid whose per-process stat record reports the zombie state returns not alive. A pid whose record reports a running, sleeping, stopped or uninterruptible-sleep state returns alive, asserted across each of those states rather than only one, so the change narrows to the zombie case alone. A pid with no per-process stat record at all returns as it does today. A pid whose per-process stat record exists and cannot be parsed returns as it does today rather than raising. A pid of None or a non-integer returns as it does today. A real spawned child that has exited and not been waited on reports not alive, and the same child reports alive before it exits, asserted against an actual process rather than a constructed record, so the field offset being read is proven against the kernel rather than against a fixture. Measure base and head over the new file and every test importing reckon.crew.runs; report failure ids either side and require none added, noting that the dispatch-arming and watcher-lifetime failures in that set are environmental and equal on both sides.",
+          "estimated_hours": 0.75,
+          "goal": "Report a pid in the kernel's zombie state as not alive, so a finished run stops holding its slot and refusing its own resume",
+          "id": "a-zombie-is-not-alive",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T004756687474-a-zombie-is-not-alive/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/runs.py",
+            "tests/test_a_zombie_is_not_alive.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-gc-coverage",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-07T00:48:01Z",
+        "completed_at": "2026-09-07T00:55:36.205Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 448,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 455,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "69383e2af25b52580f710482fe67d6d4a9f981a2",
+        "commits": [
+          "8d856e978438b8ab145a3765a42f62c87f9785ab"
+        ],
+        "changed_lines": {
+          "added": 186,
+          "removed": 4,
+          "files": 2
+        },
+        "tests_added": 9,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_a_zombie_is_not_alive.py <32 runs-importing files, excluding 4 known-environmental>",
+          "exit_status": 1,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate58.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T004756687474-a-zombie-is-not-alive/manifest.md",
+        "scope_changed": false,
+        "session_id": "11e07d9a-a14f-4cb2-a77d-81e23adf2293",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 3634249,
+            "input_tokens_cumulative": 3634249,
+            "output_tokens": 37927,
+            "output_tokens_cumulative": 37927,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 452.186,
+          "generated_tokens": 37927,
+          "generation_seconds": 324.711,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 11.2,
+          "machine_seconds": 127.475,
+          "peak_input_tokens": 113641,
+          "tokens_per_second": 116.8,
+          "wall_tokens_per_second": 83.87
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-zombie-is-not-alive",
+          "session_id": "11e07d9a-a14f-4cb2-a77d-81e23adf2293",
+          "session_source": "stream",
+          "retained_at": "2026-09-07T00:55:36.205Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_a_zombie_is_not_alive.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -68876,6 +69025,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1102
+    "_version": 1103
   }
 }
