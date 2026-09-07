@@ -23,8 +23,10 @@ ESCAPES = re.compile(r"\x1b\[[0-9;]*m")
 
 # The fleet counter block, wherever it sits on the row. Located by its own
 # shape rather than by searching from the right edge: the reason is the last
-# column now, so a letter at the end of a line belongs to free text.
-COUNTERS = re.compile(r"(\s?\d{1,2})w( ·\s+\d{1,2})b( ·\s+\d{1,2})u")
+# column now, so a letter at the end of a line belongs to free text. The
+# counters are joined by a bare middle dot with no surrounding space (the gap
+# was reclaimed to fund the model and effort cells).
+COUNTERS = re.compile(r"(\s?\d{1,2})w(·\s?\d{1,2})b(·\s?\d{1,2})u")
 
 
 def plain(line: str) -> str:
@@ -51,7 +53,7 @@ def _event(**overrides):
         "run_id": "r-1",
         "node": "n-west-review-pr8-cut",
         "session": "ship-s10-20260901",
-        "agent": "gpt-5.6-sol/medium",
+        "agent": "dsv4-flash/medium",
         "role": "implement",
         "from_state": "working",
         "to_state": "blocked",
@@ -107,11 +109,46 @@ def test_stat_digits_align_across_one_and_two_digit_counts(grid):
 def test_the_fleet_counters_render_as_digits_followed_by_one_letter(grid):
     """Each counter is its number followed by the state's single letter.
 
-    `2 working · 4 blocked · 1 unpromoted` becomes `2w · 4b · 1u`: the word is
+    `2 working · 4 blocked · 1 unpromoted` becomes `2w·4b·1u`: the word is
     gone from the count column, and a zero still shows rather than vanishing.
+    The counts are joined by a bare middle dot with no surrounding space, so
+    the separator adds nothing to the block a reader is summing.
     """
     line = plain(grid.render(_event(working=2, blocked=4, unpromoted=1)))
-    assert " 2w ·  4b ·  1u" in line
+    assert " 2w· 4b· 1u" in line
+
+
+def test_the_counter_separator_carries_no_surrounding_space(grid):
+    """Each count ends at its letter and the bare dot follows it directly.
+
+    The old separator wrapped its middle dot in two spaces; the reclaimed
+    spaces are what fund the model and effort cells without taking width from
+    the reason. Asserted on a rendered row: a space before the dot would read
+    as the padding the change set out to remove.
+    """
+    line = plain(grid.render(_event(working=2, blocked=4, unpromoted=1)))
+    assert "w· " in line
+    assert "b· " in line
+    assert " ·" not in line
+    assert " · " not in line
+
+
+def test_the_counter_block_holds_one_width_across_counts(grid):
+    """The counted block keeps one width as counts change, so the row's right
+    edge never moves.
+
+    Each counter is two right-aligned digits and one letter: a single-digit
+    count pads a leading space and a two-digit count does not, and the bare
+    middle-dot separators add nothing per count. Asserted on rendered rows at
+    the boundaries — 0, 9, 10 and 99 — where a naive renderer would drop the
+    zero or widen the block.
+    """
+    rows = {
+        count: letter_columns(plain(grid.render(_event(working=count))))
+        for count in (0, 9, 10, 99)
+    }
+    for letter in ("w", "b", "u"):
+        assert len({rows[count][letter] for count in rows}) == 1, letter
 
 
 def test_stat_letters_align_at_a_fixed_column_across_one_and_two_digits(grid):
@@ -518,7 +555,7 @@ def test_a_narrow_width_still_widens_to_fit_the_role_column():
     assert len(line) == grid.width
 
 
-# ── The agent column: alias and effort fused into one cell, one separator ──
+# ── The agent: model and effort as two cells, one tight gap between them ────
 
 
 def _fact_event(**overrides):
@@ -533,10 +570,18 @@ def _fact_event(**overrides):
     return _event(**event)
 
 
-def test_a_declared_alias_renders_fused_with_its_effort(grid):
-    """The alias spares the reader the model line, fused with its effort."""
+def test_a_declared_alias_and_its_effort_render_in_two_cells(grid):
+    """The alias leads the model cell and the effort has a column of its own.
+
+    The effort is read down the pane rather than parsed out of a composed
+    label, so nothing bridges the two cells but the gap between columns.
+    """
     line = plain(grid.render(_fact_event(alias="sonnet5")))
-    assert "sonnet5\N{MIDDLE DOT}medium" in line
+    assert "sonnet5" in line
+    assert "medium" in line
+    between = line[line.index("sonnet5") + len("sonnet5") : line.index("medium")]
+    assert "\N{MIDDLE DOT}" not in between
+    assert line.index("sonnet5") < line.index("medium")
     assert "claude-sonnet-5" not in line
     assert len(line) == 180
 
@@ -544,10 +589,10 @@ def test_a_declared_alias_renders_fused_with_its_effort(grid):
 def test_a_backend_with_no_alias_renders_the_model_id_not_an_empty_cell(grid):
     """An unaliased model must not read as missing data.
 
-    Without an alias the cell shows the model id itself rather than the empty
-    identity it used to render. This model id alone reaches the column
-    budget, so the fused effort elides rather than truncating the identity —
-    the more useful half to keep.
+    Without an alias the model cell shows the model id itself rather than the
+    empty identity it used to render. The id renders whole even though it is
+    longer than the model cell, because a clipped model-family prefix would
+    collapse its variants; the cells that follow simply shift on that row.
     """
     line = plain(
         grid.render(_event(model="deepseek-v4-flash", alias="", effort="xhigh"))
@@ -556,10 +601,11 @@ def test_a_backend_with_no_alias_renders_the_model_id_not_an_empty_cell(grid):
     assert len(line) == 180
 
 
-def test_effort_renders_in_full_beside_the_alias(grid):
-    """The effort renders whole, never abbreviated, beside the alias."""
+def test_effort_renders_in_full_in_its_own_cell(grid):
+    """The effort renders whole, never abbreviated, right of the model cell."""
     line = plain(grid.render(_fact_event(effort="xhigh")))
-    assert "sonnet5\N{MIDDLE DOT}xhigh" in line
+    assert "xhigh" in line
+    assert line.index("xhigh") > line.index("sonnet5")
 
 
 def test_the_derivation_lowercases_the_effort_word(grid):
@@ -568,65 +614,106 @@ def test_the_derivation_lowercases_the_effort_word(grid):
 
 
 def test_max_renders_in_full_not_abbreviated(grid):
-    """`max` spells in full beside the alias; no mx shorthand survives."""
+    """`max` spells in full in its own column; no mx shorthand survives."""
     line = plain(grid.render(_fact_event(effort="max")))
-    assert "sonnet5\N{MIDDLE DOT}max" in line
-    assert "sonnet5\N{MIDDLE DOT}mx" not in line
+    assert "max" in line
+    assert "mx" not in line
 
 
 def test_a_declared_effort_spelling_does_not_abbreviate_the_full_word(grid):
-    """The fused cell spells the effort whole.
+    """The effort cell spells the whole word, never a declared prefix.
 
-    The abbreviation served the fused cell before the twin-column split; the
-    rejoin keeps the full word, so a declared spelling is not consulted here
-    at all.
+    The two-cell shape is what made the whole word affordable, so a declared
+    abbreviation is not consulted anywhere on the display.
     """
     line = plain(grid.render(_fact_event(effort="high")))
-    assert "sonnet5\N{MIDDLE DOT}high" in line
+    assert "high" in line
 
 
-def test_the_model_and_effort_share_one_cell_with_one_separator(grid):
-    """One cell, one separator: no gap wide enough to read as a missing field."""
+def test_the_model_and_effort_are_not_fused_into_one_cell(grid):
+    """Two cells, one column boundary: no composed label and no separator."""
     line = plain(
         grid.render(_fact_event(model="deepseek-v4-flash", alias="dsv4-flash"))
     )
-    assert "dsv4-flash\N{MIDDLE DOT}medium" in line
+    assert "dsv4-flash" in line
+    assert "medium" in line
+    between = line[line.index("dsv4-flash") + len("dsv4-flash") : line.index("medium")]
+    assert "\N{MIDDLE DOT}" not in between
+    assert line.index("dsv4-flash") < line.index("medium")
     assert len(line) == 180
 
 
-def test_the_widest_configured_pair_renders_without_elision(grid):
-    """Ten characters of alias, one separator, seven of effort: eighteen exactly.
+def test_the_longest_role_model_and_effort_land_whole_in_budget(grid):
+    """The widest shipped vocabulary fits the fixed grid, whole, in budget.
 
-    dsv4-flash and minimal are the widest real alias and effort word; the
-    resolved column must hold the whole pair with no padding beyond the single
-    separator and no truncation.
+    documentation (thirteen characters) is the longest dispatch role,
+    dsv4-flash (ten) the widest model alias and minimal (seven) the widest
+    effort word; the row carries all three with no elision mark, within the
+    180-column default the module states as its budget.
     """
     line = plain(
         grid.render(
-            _fact_event(model="deepseek-v4-flash", alias="dsv4-flash", effort="minimal")
+            _event(
+                role="documentation",
+                model="deepseek-v4-flash",
+                alias="dsv4-flash",
+                effort="minimal",
+            )
         )
     )
-    fused = "dsv4-flash\N{MIDDLE DOT}minimal"
-    assert len(fused) == ticker_module.AGENT
-    start = line.index(fused)
-    assert line[start + len(fused)] == " "
+    assert "documentation" in line
+    assert "dsv4-flash" in line
+    assert "minimal" in line
+    assert "\N{HORIZONTAL ELLIPSIS}" not in line
+    assert len(line) == ticker_module.DEFAULT_WIDTH
+    assert len(line) <= grid.width
 
 
-def test_a_pointer_written_before_this_change_still_renders_a_label(grid):
-    """A precomposed `model/effort` string must keep working, not raise.
+def test_a_pointer_written_before_this_change_still_renders_two_cells(grid):
+    """A precomposed `model/effort` string splits into the two cells, not raises.
 
     This is the backward-compatibility negative: a log line written before the
     facts switch carries a composed agent string and no facts underneath, and
-    it renders whole rather than raising.
+    it still lands in the two columns a reader scans.
     """
     line = plain(grid.render(_event(agent="gpt-5.6-sol/medium")))
-    assert "gpt-5.6-sol/medium" in line
+    assert "gpt-5.6-sol" in line
+    assert "medium" in line
+    assert line.index("gpt-5.6-sol") < line.index("medium")
     assert len(line) == 180
 
 
+def test_a_legacy_composed_string_renders_the_same_cells_as_separate_facts(
+    grid,
+):
+    """A precomposed `model/effort` string gives the two cells facts would.
+
+    The falsifier for the fallback: an older line that carries model and effort
+    fused must render the same two cells as an equivalent line carrying them
+    separately, so the columns a reader scans hold their offsets across record
+    shapes.
+    """
+    legacy = plain(
+        grid.render(_event(agent="dsv4-flash/minimal", model="", alias="", effort=""))
+    )
+    separate = plain(
+        grid.render(
+            _event(
+                agent="",
+                model="deepseek-v4-flash",
+                alias="dsv4-flash",
+                effort="minimal",
+            )
+        )
+    )
+    assert "dsv4-flash" in legacy
+    assert "minimal" in legacy
+    assert legacy.index("dsv4-flash") == separate.index("dsv4-flash")
+    assert legacy.index("minimal") == separate.index("minimal")
+
+
 def test_a_record_with_no_effort_renders_the_alias_alone(grid):
-    """No effort, no trailing separator: a bare separator would look like a
-    truncated identity rather than the absence it is."""
+    """No effort, no separator: the model cell stands alone, effort is empty."""
     line = plain(
         grid.render(
             _event(model="claude-sonnet-5", alias="sonnet5", agent="", effort="")
@@ -638,12 +725,45 @@ def test_a_record_with_no_effort_renders_the_alias_alone(grid):
 
 
 def test_an_effort_only_record_renders_without_a_leading_separator(grid):
-    """Effort with no identity beside it renders alone, not prefixed by a
-    separator that has nothing to attach to."""
+    """Effort with no identity beside it renders in its own column, unprefixed."""
     line = plain(grid.render(_event(agent="", effort="high")))
     assert "high" in line
     assert "\N{MIDDLE DOT}high" not in line
     assert len(line) == 180
+
+
+def test_the_effort_column_keeps_one_offset_whatever_the_alias_length(grid):
+    """Two rows whose model aliases differ in length share one effort column.
+
+    The property a reader scanning down the effort column depends on: the model
+    cell is sized to the widest shipped alias, so the effort text begins at the
+    same screen column on every row rather than riding the length of the alias
+    beside it. Asserted on the rendered rows, never on the constant.
+    """
+    short = plain(grid.render(_fact_event(alias="sonnet5", effort="medium")))
+    wide = plain(grid.render(_fact_event(alias="dsv4-flash", effort="medium")))
+    assert short.index("sonnet5") == wide.index("dsv4-flash")
+    assert short.index("medium") == wide.index("medium")
+
+
+def test_no_row_pads_the_widest_alias_before_its_effort(grid):
+    """One space separates the widest alias from its effort word, never more.
+
+    The model cell is sized to dsv4-flash, so the widest alias fills its cell
+    exactly and the effort cell follows after the single tight gap; anything
+    wider between the two would read as a hole the column design disallows.
+    """
+    line = plain(
+        grid.render(
+            _fact_event(
+                model="deepseek-v4-flash",
+                alias="dsv4-flash",
+                effort="minimal",
+            )
+        )
+    )
+    between = line[line.index("dsv4-flash") + len("dsv4-flash") : line.index("minimal")]
+    assert between == " "
 
 
 def test_dispatch_facts_flow_to_the_log_and_a_later_config_edit_cannot_restate_them(
@@ -804,7 +924,7 @@ def test_every_line_ends_at_the_resolved_width_when_crowded(monkeypatch):
     # The counters sit ahead of the reason, at the same column a one-digit row
     # puts them, so a pane clipping its own right edge takes free text and
     # never a count.
-    assert "12w ·  9b ·  7u" in line
+    assert "12w· 9b· 7u" in line
     narrow = plain(grid.render(_event(working=1, blocked=2, unpromoted=3)))
     assert letter_columns(line) == letter_columns(narrow)
     assert counters(line).end() < len(line)

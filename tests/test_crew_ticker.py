@@ -185,7 +185,7 @@ def test_ticker_line_is_compact_and_bounds_free_text_to_one_clause() -> None:
     assert "working" in line and "→" in line
     # The counts are a fixed grid whose digits share a column, each number
     # followed by its state's single letter.
-    assert " 3w ·  1b ·  0u" in line
+    assert " 3w· 1b· 0u" in line
     # Free text is bounded to one clause and stays on the line; a second row
     # would cost a quarter of a pane that shows about eight.
     assert "first clause" in line
@@ -238,7 +238,7 @@ def test_follow_renders_at_the_resolved_terminal_width(home, monkeypatch) -> Non
     assert len(line) == 207
     # The counters hold their own column inside the resolved-width grid, ahead
     # of the reason a clipping pane is allowed to cut.
-    assert " 3w ·  1b ·  0u" in line
+    assert " 3w· 1b· 0u" in line
 
 
 def test_follow_explicit_width_beats_the_measurement(home, monkeypatch) -> None:
@@ -459,10 +459,14 @@ def test_the_ticker_states_the_model_and_effort_that_ran_the_node(home) -> None:
             from_state="dispatched",
         )
     )
-    # The effort is spelled in full, fused with the model by one separator: a
-    # model at an effort is one routing fact, not two read from a gap between
-    # columns wide enough to look like a missing field.
-    assert "gpt-5.6-sol\u00b7high" in line
+    # Model and effort are two facts a reader scans in two columns, so the
+    # line places them apart rather than fusing them with a separator: the
+    # model cell holds the model (or its alias) and the effort cell the whole
+    # word, and nothing bridges the two cells but the gap between columns.
+    assert "gpt-5.6-sol" in line
+    assert "high" in line
+    between = line[line.index("gpt-5.6-sol") : line.index("high")]
+    assert "\u00b7" not in between
     assert "gpt-5.6-sol/high" not in line
     # After the state, not before the node. On a uniform wave this column
     # repeats the same value on every row, so it must not occupy the position
@@ -639,11 +643,13 @@ def test_a_baseline_row_reads_differently_from_a_transition_into_it(
 def test_effort_rejoins_the_alias_and_a_legacy_line_renders_whole(
     monkeypatch,
 ) -> None:
-    """The effort is a fact of its own, spelled in full and fused with the alias.
+    """The effort is a fact of its own, spelled in full, in a column of its own.
 
-    A line written before the facts switch has model and effort already fused
-    into one string and nothing to split, so it renders that string whole
-    rather than raising or re-parsing a composed value into a guess.
+    Model and effort are two facts a reader scans in two columns, so a
+    new-shape line places them apart rather than fusing them with a separator.
+    A line written before the facts switch carries a composed agent string that
+    cannot be re-derived, so it renders that string whole rather than raising
+    or splitting a value it could not verify.
     """
     rows = _follow_rows(
         monkeypatch,
@@ -660,13 +666,16 @@ def test_effort_rejoins_the_alias_and_a_legacy_line_renders_whole(
     )
     facts, legacy = rows
 
-    # One cell, one separator: the alias and its effort word read as a single
-    # routing fact rather than two fields with a gap between them.
-    assert "sonnet5·medium" in facts
+    # Two cells, one column boundary: the alias and its effort word occupy
+    # separate columns rather than sharing a composed label.
+    assert "sonnet5" in facts
+    assert "medium" in facts
+    between = facts[facts.index("sonnet5") + len("sonnet5") : facts.index("medium")]
+    assert "·" not in between
     assert "sonnet5/medium" not in facts
 
-    # The composed legacy value renders whole, at the same column the fused
-    # cell above starts at.
+    # The composed legacy value renders whole, in the model cell at the same
+    # column the new-shape model cell above starts at.
     assert "dsv4-flash·xh" in legacy
     assert facts.index("sonnet5") == legacy.index("dsv4-flash")
 
@@ -697,7 +706,7 @@ def test_a_row_wider_than_the_pane_loses_reason_characters_and_no_counter(
         "207",
     )
 
-    for row, counts in zip(rows, (" 3w ·  1b ·  0u", "12w ·  9b ·  7u"), strict=True):
+    for row, counts in zip(rows, (" 3w· 1b· 0u", "12w· 9b· 7u"), strict=True):
         assert len(row) == 207
         clipped = row[:pane]
         # The whole counter block survives the clip, at every count width.
@@ -742,7 +751,7 @@ def test_every_field_holds_one_column_across_every_row_kind(monkeypatch) -> None
     assert len({row.index("implement"[:4]) for row in rows}) == 1
     for letter, spelling in (("w", "working"), ("b", "blocked"), ("u", "unpromoted")):
         columns = {
-            re.search(r"\d{1,2}w ·\s+\d{1,2}b ·\s+\d{1,2}u", row).end(0) for row in rows
+            re.search(r"\d{1,2}w·\s?\d{1,2}b·\s?\d{1,2}u", row).end(0) for row in rows
         }
         assert len(columns) == 1, (letter, spelling)
 
