@@ -2446,9 +2446,16 @@ def _worker_reaper_loop() -> None:
 
 
 def _ensure_launched_worker_reaper() -> None:
-    """Start the process's reaper once, on the first worker it launches."""
+    """Start the process's reaper whenever no live reaper is running.
+
+    The recorded thread object is not evidence that the thread is running: a
+    thread that ended for any reason — an uncaught exception in the poll loop
+    — leaves its object in the holder, and a start-once guard keyed to the
+    object would then silently stop reaping for the life of the process.
+    """
     with _LAUNCHED_WORKERS_LOCK:
-        if _LAUNCHED_WORKER_REAPER["thread"] is not None:
+        recorded = _LAUNCHED_WORKER_REAPER["thread"]
+        if recorded is not None and recorded.is_alive():
             return
         thread = threading.Thread(
             target=_worker_reaper_loop,
@@ -2457,6 +2464,66 @@ def _ensure_launched_worker_reaper() -> None:
         )
         thread.start()
         _LAUNCHED_WORKER_REAPER["thread"] = thread
+
+
+# The launched-worker set crosses a follower's in-place process reload in the
+# environment, which a process image replacement preserves. A file would
+# survive too, but a stale file from a replacement that never happened could
+# be adopted by an unrelated later process; the env var dies with the process
+# and only this handover consumes it. A pipe survives as well and offers
+# nothing over an env var, and module state is the carrier the replacement
+# destroys, which is the defect the handover exists to fix.
+_LAUNCHED_WORKERS_HANDOVER_ENV = "RECKON_FOLLOWER_LAUNCHED_PIDS"
+
+
+def _export_launched_workers_for_reexec() -> None:
+    """Hand the outstanding launched pids to the follower's replacement image.
+
+    A follower that adopts newly installed code replaces its own process image
+    with ``os.execv``. The replacement keeps the pid and every parent-child
+    relationship and destroys all threads and module state, so a reaper thread
+    and the launched-worker set built before the swap vanish even though the
+    process is still the parent of the children it launched. Those children
+    can then never be collected by anyone: their parent is alive, so they are
+    not reparented to the init process that would collect them, and the new
+    image has forgotten them. The reloader already carries its reader
+    checkpoint across the boundary in the environment, so the pids cross the
+    same way, at the same moment. Only outstanding pids are exported: a
+    follower that launched nothing hands over nothing and the new image starts
+    clean.
+    """
+    with _LAUNCHED_WORKERS_LOCK:
+        outstanding = sorted(_LAUNCHED_WORKERS)
+    if outstanding:
+        os.environ[_LAUNCHED_WORKERS_HANDOVER_ENV] = json.dumps(outstanding)
+    else:
+        os.environ.pop(_LAUNCHED_WORKERS_HANDOVER_ENV, None)
+
+
+def _adopt_launched_workers_from_reexec() -> None:
+    """Register pids handed across a process image replacement, or start clean.
+
+    The new follower image after an ``os.execv`` owns the same process, so the
+    pids its previous image launched are still its children; registering them
+    exactly as a launch would makes the reaper their owner again, because it
+    is the same process and remains their parent. A carrier that is absent,
+    empty or unparseable leaves the registry empty and does not raise, because
+    a follower that refuses to start is worse than one that misses a reap.
+    """
+    raw = os.environ.pop(_LAUNCHED_WORKERS_HANDOVER_ENV, "")
+    if not raw:
+        return
+    try:
+        pids = [int(pid) for pid in json.loads(raw)]
+    except (TypeError, ValueError):
+        return
+    with _LAUNCHED_WORKERS_LOCK:
+        _LAUNCHED_WORKERS.update(pid for pid in pids)
+        adopted = bool(_LAUNCHED_WORKERS)
+        if adopted:
+            _LAUNCHED_WORKERS_WAKE.set()
+    if adopted:
+        _ensure_launched_worker_reaper()
 
 
 def _spawn(

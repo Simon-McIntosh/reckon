@@ -1500,6 +1500,7 @@ class _FollowerReloader:
     def poll(self, checkpoint: Mapping[str, Any]) -> None:
         """Check at a bounded cadence and re-exec with the reader checkpoint."""
         from reckon.crew import runs
+        from reckon.crew.dispatch import _export_launched_workers_for_reexec
 
         if self.failed:
             return
@@ -1516,6 +1517,11 @@ class _FollowerReloader:
         os.environ[_FOLLOWER_CHECKPOINT_ENV] = json.dumps(
             {"project": self.project, "checkpoint": dict(checkpoint)}
         )
+        # The launched-worker registry does not survive an image replacement,
+        # though the process (and therefore the parent-child relationships)
+        # does. Hand the outstanding pids over beside the checkpoint so the
+        # replacement image continues to own the workers it launched.
+        _export_launched_workers_for_reexec()
         if self.registration is not None:
             self.registration.prepare_reexec()
         # A shell commonly supplies only a command name in argv[0], so an
@@ -1855,6 +1861,13 @@ def crew_follow(
     delivery = runs_module.delivery_mode()
     grid = _ticker_grid(width, theme, no_color)
     resume = _take_follower_checkpoint(project)
+    from reckon.crew.dispatch import _adopt_launched_workers_from_reexec
+
+    # The follower may have just replaced its own process image; the launched
+    # workers it spawned before the replacement are still its children, so it
+    # adopts them exactly as if it had launched them and collects them as they
+    # end.
+    _adopt_launched_workers_from_reexec()
 
     def stream_events(registration):
         reloader = _FollowerReloader(project, registration)
