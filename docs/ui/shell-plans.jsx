@@ -182,12 +182,16 @@ function paletteItems(currentState, projects) {
   return rows;
 }
 
+function artifactRouteForKind(kind) {
+  return window.ReckonShell.route.ARTIFACT_ROUTES.find(route => route.key === kind) || null;
+}
+
 function paletteKindLabel(kind) {
-  return ({ plan: "Plans", research: "Research", evidence: "Evidence", figure: "Figures", archive: "Archive" })[kind] || kind;
+  return artifactRouteForKind(kind)?.label || ({ archive: "Archive" })[kind] || kind;
 }
 
 function artifactKindLabel(kind) {
-  return ({ plan: "Plans", research: "Research", evidence: "Evidence", figure: "Figures" })[kind] || readableFilterLabel(kind);
+  return artifactRouteForKind(kind)?.label || readableFilterLabel(kind);
 }
 
 function artifactStamp(value, numeric = false) {
@@ -228,7 +232,9 @@ function ArtifactIndex({ kind, onSelect, filters, setFilters, sortBy, setSortBy,
   const state = window.STATE || {};
   const inventory = state.inventory || [];
   const project = state.project || "project";
+  const artifactRoute = artifactRouteForKind(kind);
   const label = artifactKindLabel(kind);
+  const showsImages = artifactRoute?.reader === "image";
   const status = kind === "plan" ? (filters?.status || [])[0] || "" : "";
   const hideStorage = `reckon:${project}:showShipped`;
   const [hideDone, setHideDone] = React.useState(() => {
@@ -316,7 +322,7 @@ function ArtifactIndex({ kind, onSelect, filters, setFilters, sortBy, setSortBy,
           return (
             <button type="button" key={navKey} className={`r-artifact-row r-artifact-row-${kind}`} data-artifact-slug={navKey} onClick={() => onSelect(navKey)}>
               <span className={`r-artifact-dot ${kind}-${itemState}`} aria-hidden="true"></span>
-              {kind === "figure" && <img className="r-artifact-thumb" src={item.href} alt="" width="50" height="34" />}
+              {showsImages && <img className="r-artifact-thumb" src={item.href} alt="" width="50" height="34" />}
               <span className="r-artifact-row-main">
                 <span className="r-artifact-row-title">{item.title || item.slug}</span>
                 <code>{item.slug}</code>
@@ -326,7 +332,7 @@ function ArtifactIndex({ kind, onSelect, filters, setFilters, sortBy, setSortBy,
                     <span>{Number.isFinite(hours) ? `${hours}h` : (item.effort || "—")} · {item.sprint || "unassigned"}</span>
                   </span>
                 )}
-                {kind === "figure" && <span className="r-artifact-dimensions">{item.dims || "dimensions unknown"}</span>}
+                {showsImages && <span className="r-artifact-dimensions">{item.dims || "dimensions unknown"}</span>}
               </span>
               <span className="r-artifact-row-trailing">
                 <span className="r-artifact-stamps">
