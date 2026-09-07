@@ -147,6 +147,14 @@ def figure_rows(docs_dir: Path, project: str, plan_slugs: set[str]) -> list[dict
         capture, caption = _capture_metadata(path)
         title = _titleize(capture) if capture else _titleize(path.stem)
         first_segment = slug.split("/", 1)[0]
+        # download names the fetchable file a reader can offer to save, and it
+        # equals href here for every figure and gif row because the inventory is
+        # built by walking this directory, so each row is a file on disk by
+        # construction. It is not therefore redundant: href answers where the
+        # artifact is addressed, download answers whether that address is a file
+        # a reader can save, and the two coincide for these kinds and diverge
+        # for kinds produced elsewhere.
+        href = f"/{project}/figures/{slug}"
         rows.append(
             {
                 "slug": slug,
@@ -155,7 +163,8 @@ def figure_rows(docs_dir: Path, project: str, plan_slugs: set[str]) -> list[dict
                 "caption": caption,
                 "dims": _format_dims(*dims) if dims else "",
                 "for_plan": first_segment if first_segment in plan_slugs else "",
-                "href": f"/{project}/figures/{slug}",
+                "href": href,
+                "download": href,
                 "path": path,
             }
         )
