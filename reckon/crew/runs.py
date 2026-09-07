@@ -1967,6 +1967,17 @@ def process_alive(pid: Any) -> bool | None:
     """
     if not pid:
         return None
+    # A zombie is a process-table entry whose process has exited and whose
+    # exit status the parent has not yet collected, so the kernel accepts a
+    # zero signal against it and the probe below would report the finished
+    # run as running: its slot stays held and its own resume is refused while
+    # it lingers. Every caller asking whether work is still running wants
+    # "no" for a zombie, because the process it was launched to run has
+    # finished either way. Reading the state from per-process stat is what
+    # tells that apart from the liveness proof above; an unreadable record is
+    # not proof of death, so it falls through to the signal probe unchanged.
+    if _process_state(pid) == "Z":
+        return False
     try:
         os.kill(int(pid), 0)
     except ProcessLookupError:
@@ -1978,12 +1989,28 @@ def process_alive(pid: Any) -> bool | None:
     return True
 
 
-def _process_start_time(pid: Any) -> str | None:
-    """Read the kernel start tick that distinguishes reused process ids."""
+def _process_stat_fields(pid: Any) -> list[str]:
+    """The space-separated per-process stat fields, or [] when unreadable.
+
+    The comm field is parenthesised and may itself contain spaces and closing
+    parentheses, so the split begins after the final ``)``; the fields are the
+    third one (state) onwards, unrenumbered from the parenthesised form.
+    """
     try:
         value = int(pid)
         stat = Path(f"/proc/{value}/stat").read_text()
     except (OSError, TypeError, ValueError):
-        return None
-    fields = stat[stat.rfind(")") + 2 :].split()
+        return []
+    return stat[stat.rfind(")") + 2 :].split()
+
+
+def _process_state(pid: Any) -> str | None:
+    """The single-character kernel state from the per-process stat record."""
+    fields = _process_stat_fields(pid)
+    return fields[0] if fields else None
+
+
+def _process_start_time(pid: Any) -> str | None:
+    """Read the kernel start tick that distinguishes reused process ids."""
+    fields = _process_stat_fields(pid)
     return fields[19] if len(fields) > 19 else None
