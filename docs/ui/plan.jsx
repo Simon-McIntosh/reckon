@@ -276,8 +276,11 @@ function readerProvenanceSignals(focusMode, htmlFailure, stateFailure) {
 }
 
 function readerKindFromHash(hash) {
-  const match = String(hash || "").match(/^#(plan|research|evidence|figure)\//);
-  return match ? match[1] : "plan";
+  const readerHash = String(hash || "").match(/^#([^/]+)\//)?.[1];
+  const route = window.ReckonShell.route.ARTIFACT_ROUTES.find(
+    candidate => candidate.readerHash === readerHash
+  );
+  return route?.key || "plan";
 }
 
 function readerItem(state, requestedSlug, kind) {
@@ -334,16 +337,19 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
     sprint: metadataValueIsPresent(PG.sprint) ? PG.sprint : "",
   };
   const kind = PG.type === "doc" ? "research" : (PG.type || routeKind || "plan");
+  const artifactRoute = window.ReckonShell.route.ARTIFACT_ROUTES.find(route => route.key === kind);
   const isPlan = kind === "plan";
   const isResearch = kind === "research";
   const isEvidence = kind === "evidence";
-  const isFigure = kind === "figure";
+  const usesImageReader = artifactRoute?.reader === "image";
+  const usesNaturalImageSize = artifactRoute?.initialSize === "natural";
   const refSlug = (ref) => String(ref || "").split("#", 1)[0].split(":").pop();
   const projectSource = M.project || document.querySelector('meta[name="docs-project"]')?.content || "";
   const project = metadataValueIsPresent(projectSource) ? projectSource : "";
   const [liveRuns, setLiveRuns] = useState([]);
   const [dependenciesOpen, setDependenciesOpen] = useState(false);
   const [figureZoom, setFigureZoom] = useState(1);
+  const [figureNaturalWidth, setFigureNaturalWidth] = useState(0);
   const [figurePanning, setFigurePanning] = useState(false);
   const figureViewportRef = useRef(null);
   const figureDragRef = useRef(null);
@@ -355,6 +361,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
 
   useEffect(() => {
     setFigureZoom(1);
+    setFigureNaturalWidth(0);
     setFigurePanning(false);
     figureDragRef.current = null;
     const viewport = figureViewportRef.current;
@@ -461,7 +468,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
     setPlanHtml(null);
     setHtmlFailure(null);
     if (!project) { setHtmlReady(true); return; }
-    if (isFigure) { setHtmlReady(true); return; }
+    if (usesImageReader) { setHtmlReady(true); return; }
 
     // Use plan's href (may include subdir e.g. "curated/slug") if available
     const href = PG.href || slug;
@@ -504,7 +511,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
         setHtmlFailure({ status: error?.responseStatus || "network error" });
         setHtmlReady(true);
       });
-  }, [project, slug, isFigure, htmlRetry]);
+  }, [project, slug, usesImageReader, htmlRetry]);
 
   // ── Fetch full doc state (decisions, followups) ─────────────────────────
   useEffect(() => {
@@ -512,7 +519,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
     setDecs([]);
     setStateFailure(null);
     if (!project) return;
-    if (isFigure) return;
+    if (usesImageReader) return;
     const stateRoot = { plan: "plans", research: "research", evidence: "evidence" }[kind];
     const statePath = `${stateRoot}/${PG.slug}`;
     fetch(`/plan/${project}/${statePath}`, { cache: "no-store" })
@@ -543,7 +550,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
         }));
       })
       .catch(error => setStateFailure({ status: error?.responseStatus || "network error" }));
-  }, [project, slug, PG.type, isFigure, stateRetry]);
+  }, [project, slug, PG.type, usesImageReader, stateRetry]);
 
   // ── Comment / prompt wiring ─────────────────────────────────────────────
   useEffect(() => {
@@ -809,7 +816,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
               {(PG.artifacts || []).length > 0 && <span>artifacts&nbsp;{PG.artifacts.join(", ")}</span>}
             </div>
           )}
-          {isFigure ? (
+          {usesImageReader ? (
             <figure className="r-reader-figure">
               <div
                 className={`r-reader-figure-viewport ${figurePanning ? "is-panning" : ""}`}
@@ -823,7 +830,12 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
                 <img src={readerFigureSource(PG, project)}
                   alt={PG.title || PG.slug}
                   draggable={false}
-                  style={{ width: `${figureZoom * 100}%` }}
+                  style={{
+                    width: usesNaturalImageSize && figureNaturalWidth
+                      ? `${figureNaturalWidth * figureZoom}px`
+                      : `${figureZoom * 100}%`,
+                  }}
+                  onLoad={event => setFigureNaturalWidth(event.currentTarget.naturalWidth)}
                   onClick={zoomFigureToNaturalSize}
                 />
               </div>

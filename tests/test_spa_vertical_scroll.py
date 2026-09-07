@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import subprocess
 from collections.abc import Mapping
 from pathlib import Path
 
@@ -10,12 +12,61 @@ from tests.spa_browser_harness import installed_browser_or_skip
 from tests.spa_containment_harness import file_spa_with_bootstrap
 
 ROOT = Path(__file__).resolve().parents[1]
+ROUTE_SOURCE = ROOT / "docs" / "ui" / "shell-route.jsx"
 VIEWPORT = (1374, 900)
+TRANSPARENT_IMAGE = (
+    "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+)
+
+
+def _published_artifact_routes() -> list[dict[str, object]]:
+    source = ROUTE_SOURCE.read_text(encoding="utf-8")
+    script = f"""
+global.React = {{
+  useCallback: value => value,
+  useEffect: () => undefined,
+  useMemo: value => value(),
+  useRef: value => ({{current: value}}),
+  useState: value => [typeof value === "function" ? value() : value, () => undefined],
+}};
+global.window = {{location: {{hash: ""}}, ReckonShell: {{}}}};
+{source}
+console.log(JSON.stringify(ARTIFACT_ROUTES));
+"""
+    result = subprocess.run(
+        ["node", "-e", script],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return json.loads(result.stdout)
+
+
+def _artifact_fixture_rows(
+    routes: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    return [
+        {
+            "slug": f"vertical-scroll-{route['key']}",
+            "title": f"Vertical scroll {route['label']}",
+            "summary": "Generated reader fixture",
+            "type": route["key"],
+            "status": "active",
+            "href": (
+                TRANSPARENT_IMAGE
+                if route.get("reader") == "image"
+                else f"vertical-scroll-{route['key']}"
+            ),
+        }
+        for route in routes
+    ]
 
 
 def _composed_state() -> dict[str, object]:
     state = discover_plans(ROOT / "docs", "reckon", ROOT / "docs" / "state")
-    inventory = state.get("inventory", [])
+    routes = _published_artifact_routes()
+    inventory = [*_artifact_fixture_rows(routes), *state.get("inventory", [])]
     active = [
         sprint
         for sprint in state.get("sprints", [])
@@ -29,6 +80,14 @@ def _composed_state() -> dict[str, object]:
         "active_sprint_conflict": len(active) > 1,
         "plans": {item["slug"]: item for item in inventory},
     }
+
+
+def test_scroll_reader_fixtures_cover_the_published_artifact_kinds() -> None:
+    routes = _published_artifact_routes()
+    rows = _artifact_fixture_rows(routes)
+
+    assert len(rows) == len(routes)
+    assert {row["type"] for row in rows} == {route["key"] for route in routes}
 
 
 def _vertical_probe() -> str:

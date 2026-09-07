@@ -9,6 +9,7 @@ from tests.spa_browser_harness import authored_shell_source
 
 ROOT = Path(__file__).resolve().parents[1]
 SHELL = authored_shell_source(ROOT)
+ROUTE_SOURCE = next(path for path in SHELL.paths if path.stem == "shell-route")
 TOPBAR = ROOT / "docs" / "ui" / "topbar.css"
 
 
@@ -39,6 +40,30 @@ def _evaluate(functions: list[str], expression: str) -> object:
     return json.loads(result.stdout)
 
 
+def _evaluate_route_contract(expression: str) -> object:
+    source = ROUTE_SOURCE.read_text(encoding="utf-8")
+    script = f"""
+global.React = {{
+  useCallback: value => value,
+  useEffect: () => undefined,
+  useMemo: value => value(),
+  useRef: value => ({{current: value}}),
+  useState: value => [typeof value === "function" ? value() : value, () => undefined],
+}};
+global.window = {{location: {{hash: ""}}, ReckonShell: {{}}}};
+{source}
+console.log(JSON.stringify({expression}));
+"""
+    result = subprocess.run(
+        ["node", "-e", script],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return json.loads(result.stdout)
+
+
 def _declarations(selector: str) -> dict[str, str]:
     source = TOPBAR.read_text()
     match = re.search(rf"{re.escape(selector)}\s*\{{([^}}]+)\}}", source)
@@ -52,18 +77,31 @@ def _declarations(selector: str) -> dict[str, str]:
 
 
 def test_each_route_selects_exactly_one_canvas_view() -> None:
-    route_views = ["home", "cockpit", "plan", "sprint", "graph", "crew"]
-    selected = _evaluate(
-        ["canvasViewForRoute"],
-        f"{json.dumps(route_views)}.map(view => canvasViewForRoute({{view}}))",
+    evaluated = _evaluate_route_contract(
+        """({
+          publishedKinds: ARTIFACT_ROUTES.map(route => route.key),
+          canvasKinds: [...ARTIFACT_CANVAS_VIEWS],
+          selectedKinds: ARTIFACT_ROUTES.map(route => canvasViewForRoute({view: route.key})),
+          workKinds: ["home", "cockpit", ...WORK_TABS.map(route => route.key)],
+          selectedWorkKinds: ["home", "cockpit", ...WORK_TABS.map(route => route.key)]
+            .map(view => canvasViewForRoute({view})),
+        })"""
     )
 
-    assert selected == ["home", "home", "plan", "sprint", "graph", "crew"]
-    assert set(selected) == {"home", "plan", "sprint", "graph", "crew"}
+    assert evaluated["selectedKinds"] == evaluated["publishedKinds"]
+    assert (
+        set(evaluated["selectedKinds"])
+        == set(evaluated["canvasKinds"])
+        == set(evaluated["publishedKinds"])
+    )
+    assert evaluated["selectedWorkKinds"] == [
+        "home" if kind == "cockpit" else kind for kind in evaluated["workKinds"]
+    ]
 
     app = _function_source("App")
     assert "r-3col" not in app
-    assert '{canvasView === "plan" ? (' in app
+    assert "ARTIFACT_ROUTES.some" in app
+    assert "{artifactKind ? (" in app
     for view in ("home", "sprint", "graph", "crew"):
         assert f'canvasView === "{view}" &&' in app
     assert ".r-3col.plans-mode" not in (ROOT / "docs/ui/plans.css").read_text()
