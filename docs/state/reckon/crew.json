@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-07T13:26:35",
+  "updated": "2026-09-07T17:27:37",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -71514,6 +71514,157 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260907T152204618457-the-matrix-carries-the-topology-measurements",
+        "plan": "crew-effort-routing",
+        "section": "\u00a71",
+        "node": "the-matrix-carries-the-topology-measurements",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 937,
+                "cached_input_tokens": 764438,
+                "input_tokens": 765377,
+                "output_tokens": 2097,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 767474,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "The document docs/research/deploy-matrix.html carries the topology measurements below, each with its observation date and its derivation, and no figure is presented in a form that invites the misreading its source warns about. Then: grep for the string 2.44 and for the string 1.12 in that file and confirm neither appears adjacent to the words concurrent workers, and grep for 30% and confirm the prefix-cache figure is not stated as thirty percent anywhere. WHAT ARRIVED, from the session that owns the deployment, measured today from each engine's own startup report. Per topology at a max model length of 1,048,576: the four-card topology reports a KV pool between 2,554,833 and 2,557,835 tokens with a kv_cache_max_concurrency of 2.44; the two-card topology reports 1,173,125 tokens with 1.12. Per-request decode is 23.3 tokens per second on four cards and 23.1 on two. Prefix cache is 17.0 percent cumulative over the four-card window. THE TWO CAVEATS ARE THE POINT, NOT FOOTNOTES. First, kv_cache_max_concurrency counts requests at the maximum context length, not sessions. At the roughly 83,000 tokens an agentic worker actually holds, four cards fit about thirty concurrent and two cards about fourteen. A matrix that recorded 2.44 as two concurrent workers would understate capacity by an order of magnitude, and that is the specific misreading the measuring session asked to have prevented. Record the raw figure, record what it counts, and record the derived figure at realistic context beside it with the 83,000 stated as the assumption it is. Second, the four-card pool differed by about 3,000 tokens between two launches of the SAME profile, so it is approximate and must not be written as a constant to assert against; state the range and the fact that it moved between launches. THE ROW THE MEASURING SESSION MOST WANTS CARRIED: per-request decode is unchanged between the two topologies, 23.3 against 23.1. Cards buy pool and long-context headroom, not speed. State it as the finding it is, because it is the row people assume the other way. A ZERO-DOWNTIME ROTATION IS NOW DEMONSTRATED RATHER THAN REASONED. Four cards to two to four across one day; the second rotation had no dark window because the new topology came up on its own port while the old kept serving, the router preferred it on card count, and only then did the old one stop. Record that traffic moves on health rather than on a timer, so an engine that never becomes reachable leaves the old one serving. Record that this rests on two properties first exercised with two real serves up today: the router collapsing a duplicate model identifier onto the widest topology, which previously returned a conflict on every request, and the endpoint document republishing on both serve and shutdown, which tracked a port moving 18800 to 18809 to 18800 across two rotations with no operator step. A DEFECT THAT DESERVES ITS OWN ROW BECAUSE IT IS NOT ABOUT CAPACITY. A consuming project had its client address pinned to a serve port and was unable to run for hours during the two-card window while the model served normally, because its gate treats an unreachable compose endpoint as fatal to the entire run, so unrelated pools refused to start. The cause was documentation naming a serve port under a heading about what to point a client at. The rule to record: only the router address is stable; a serve port belongs to a profile at a topology and rotates. WHAT TO CORRECT. If the document carries a prefix-cache figure near thirty percent, replace it with 17.0 percent cumulative and state the window, because the earlier figure was generalised from three early spot readings on a warm working set and the cumulative figure is roughly half. WHAT NOT TO CHANGE. Do not alter any existing measured cell, its date or its derivation. Do not convert a cell marked unmeasured into a measured one unless this message supplies the measurement. Do not restate the ledger filters in section eight. Do not add a lane, remove a lane, or change the row-per-backend shape. Do not present any capacity figure as a ceiling: this document's own discipline is that a lane ceiling belongs to its deployment and is discovered rather than assumed, and these figures are capacity reports from a startup log, not probed limits. FALSIFIERS. Every figure added carries its observation date and how it was obtained. The raw concurrency figures appear only beside a statement of what they count. The derived thirty and fourteen appear only beside the 83,000-token assumption they rest on. The pool figure appears as a range with the between-launch variation stated. No sentence claims cards increase per-request speed. The rotation account names health rather than elapsed time as what moves traffic. The address rule names the router as the only stable address. Any prefix-cache figure in the document reads 17.0 percent with its window. The document still parses as the reckon research type it declares, with its existing meta unchanged.",
+          "estimated_hours": 1.0,
+          "goal": "Fold today's measured topology capacity, decode parity, rotation account and address rule into the deploy matrix, each with its date and derivation",
+          "id": "the-matrix-carries-the-topology-measurements",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T152204618457-the-matrix-carries-the-topology-measurements/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "documentation",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "docs/research/deploy-matrix.html"
+          ]
+        },
+        "role": "documentation",
+        "spec_level": "exact",
+        "member": "crew-routing-evidence",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-07T15:22:12Z",
+        "completed_at": "2026-09-07T15:25:54.092Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 212,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 222,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "e374779e87f2dd77dbee589644d8898a8982d817",
+        "commits": [
+          "e6d228a74dad31d269227eb3e64eac480312a1ed"
+        ],
+        "changed_lines": {
+          "added": 79,
+          "removed": 0,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "grep falsifiers over the merged document + reckon doccheck",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/doc.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T152204618457-the-matrix-carries-the-topology-measurements/manifest.md",
+        "scope_changed": false,
+        "session_id": "20d6a1b5-80ef-4dd8-9cdd-8a5ac9984912",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 2067491,
+            "input_tokens_cumulative": 2067491,
+            "output_tokens": 27086,
+            "output_tokens_cumulative": 27086,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 218.527,
+          "generated_tokens": 27086,
+          "generation_seconds": 213.398,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 10.2,
+          "machine_seconds": 5.129,
+          "peak_input_tokens": 104098,
+          "tokens_per_second": 126.93,
+          "wall_tokens_per_second": 123.95
+        },
+        "follow_on_paths": [
+          "deploy-matrix.html",
+          "docs/research;"
+        ],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-matrix-carries-the-topology-measurements",
+          "session_id": "20d6a1b5-80ef-4dd8-9cdd-8a5ac9984912",
+          "session_source": "stream",
+          "retained_at": "2026-09-07T15:25:54.092Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "documentation",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -71742,6 +71893,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1123
+    "_version": 1124
   }
 }
