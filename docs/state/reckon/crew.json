@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-07T03:27:52",
+  "updated": "2026-09-07T04:01:54",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -69100,6 +69100,161 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260907T010558019705-liveness-is-read-when-it-is-used",
+        "plan": "crew-observability-truth",
+        "section": "\u00a78",
+        "node": "liveness-is-read-when-it-is-used",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2414,
+                "cached_input_tokens": 530445,
+                "input_tokens": 532861,
+                "output_tokens": 1928,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 534789,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_liveness_is_read_when_it_is_used.py -q passes, and the classifier's liveness answer reflects the process at the moment it classifies rather than a value stored earlier. THE MEASUREMENT, taken on a live run at 2026-09-07T01:04Z on this project. A worker was mid-flight, its process genuinely running, and its pointer read process_alive None. A second live run's pointer read the same. The classifier obtains liveness with record.get(\"process_alive\"), a stored field. Every liveness-conditioned branch therefore evaluates against None rather than against the process. WHY THAT MATTERS MORE THAN IT LOOKS. A deferral arm ahead of the manifest-status arms exists precisely so a terminal manifest word from a live worker is treated as a report in progress rather than an outcome; it is gated on alive is True. With the stored field reading None, that condition is false and the deferral does not apply, so the arm that exists to prevent a premature verdict is bypassed in exactly the case it was written for. A peer session measured the consequence: a worker wrote a placeholder manifest 40 seconds after dispatch, the follower emitted a terminal transition while the process was demonstrably alive on the same host, and the coordinator held that verdict for eighteen minutes. The arm was present, correct, and not reached. WHAT TO CHANGE. Establish liveness at the point of use. Where the reading host is the host that launched the run, ask the process table; the module that owns that question already exposes a function for it and already distinguishes a running process, a process owned by another user, a defunct entry, and an absent one. Where the launching host cannot be shown to be the reading host, do not ask, because a pid is meaningful only on the machine that issued it and this project's crew home is shared across login nodes, so asking there fabricates an answer in both directions. In that case use what is stored and carry forward that the answer is not proven. The stored field remains written as it is written today; this node changes which value the classifier consults, not what any writer records. WHAT NOT TO CHANGE. Do not alter any classification arm, any classification name, the counter placement, or the action marker. Do not alter what the deferral does once its condition holds. Do not add a process lookup for any run other than the one being classified. Do not change how liveness is recorded onto a pointer. Do not treat an unprovable answer as death: that distinction is load-bearing here and elsewhere in this module. FALSIFIERS, asserted in tests/test_liveness_is_read_when_it_is_used.py. A pointer whose stored field says nothing, whose recorded launching host is the reading host, and whose pid names a running process classifies as though alive, and a terminal manifest word on that pointer does not become the classification. The same pointer with a pid naming no process classifies as though not alive. The same pointer with a pid naming a defunct entry classifies as though not alive, so this composes with the zombie narrowing landed in 8d856e9 rather than reintroducing the old answer. A pointer whose recorded launching host differs from the reading host is classified from its stored field alone, no process lookup is performed for it, and the result carries that the answer is unproven; assert the absence of the lookup rather than only its result. A pointer with no pid at all behaves as it does today. The classification for every combination of stored field and real process state is stated in the test as a table, so a later reader can see which of the two the code consults. Measure base and head over the new file and every test importing reckon.crew.recovery; report failure ids either side and require none added, noting the thirteen environmental failures in that set are equal on both sides.",
+          "estimated_hours": 1.25,
+          "goal": "Have the classifier establish liveness at the moment it classifies, so the deferral guarding a live worker's report actually applies",
+          "id": "liveness-is-read-when-it-is-used",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T010558019705-liveness-is-read-when-it-is-used/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_liveness_is_read_when_it_is_used.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-no-zombies",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-07T01:06:03Z",
+        "completed_at": "2026-09-07T02:00:09.529Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3239,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3246,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "76a04636fcdfc782ece197111938b7227a192fb3",
+        "commits": [
+          "ab47256541c56699f7eceaeda7e1db62895f85f8"
+        ],
+        "changed_lines": {
+          "added": 411,
+          "removed": 8,
+          "files": 2
+        },
+        "tests_added": 19,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_liveness_is_read_when_it_is_used.py tests/test_crew_recovery.py tests/test_external_wait.py tests/test_a_live_workers_report_is_not_an_outcome.py tests/test_a_rewritten_terminal_manifest_transitions.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate61.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T010558019705-liveness-is-read-when-it-is-used/manifest.md",
+        "scope_changed": false,
+        "session_id": "ad7d9701-21f8-4858-b7cd-f11d13e5092e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 15762022,
+            "input_tokens_cumulative": 15762022,
+            "output_tokens": 81370,
+            "output_tokens_cumulative": 81370,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 3243.143,
+          "generated_tokens": 81370,
+          "generation_seconds": 1364.54,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 20.4,
+          "machine_seconds": 1878.603,
+          "peak_input_tokens": 207194,
+          "tokens_per_second": 59.63,
+          "wall_tokens_per_second": 25.09
+        },
+        "follow_on_paths": [
+          "new/updated",
+          "reckon/crew/dispatch.py",
+          "reckon/crew/runs.py's",
+          "stored/unproven",
+          "test_crew.py"
+        ],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/liveness-is-read-when-it-is-used",
+          "session_id": "ad7d9701-21f8-4858-b7cd-f11d13e5092e",
+          "session_source": "stream",
+          "retained_at": "2026-09-07T02:00:09.529Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_liveness_is_read_when_it_is_used.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -69328,6 +69483,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1105
+    "_version": 1106
   }
 }
