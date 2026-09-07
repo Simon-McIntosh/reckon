@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-07T04:23:54",
+  "updated": "2026-09-07T04:34:47",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -69408,6 +69408,308 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260907T022222069965-the-liveness-lookup-is-reachable",
+        "plan": "crew-observability-truth",
+        "section": "\u00a78",
+        "node": "the-liveness-lookup-is-reachable",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1042,
+                "cached_input_tokens": 560878,
+                "input_tokens": 561922,
+                "output_tokens": 2288,
+                "reasoning_output_tokens": 524,
+                "total_tokens": 564210,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_liveness_lookup_is_reachable.py -q passes, and the classifier's liveness lookup is reached through the module that owns it, so replacing that function replaces what the classifier calls. THE MEASUREMENT, and it cost a revert. The point-of-use liveness read landed at ab47256 and imports the liveness function by name: reckon/crew/recovery.py line 27 opens a from-import of reckon.crew.runs and line 37 binds the function into the classifier's own namespace, and line 797 calls that bound name. A companion commit then began recording the launching host on each pointer, which enabled the host gate and made the point-of-use read fire for the first time. At that point tests/test_crew_recovery.py::test_observe_and_watch_render_failure_only_after_the_process_stops failed: it replaces the function on the owning module, the classifier holds its own binding, so the replacement never reached it and the classifier consulted a real process id instead of the one the test had arranged. The observable consequence in that test was that no transition to failed was emitted after the process stopped, which is the follower declining to report a failed run. The companion commit was reverted to restore a passing branch and is held as tag held-launcher-host-writer; it will be re-landed once this node lands. THE GENERAL SHAPE, recorded in this project's notes before tonight and not applied during review: a name imported into another module is bound at import time, so replacing the attribute on the defining module leaves every such binding untouched. A test that replaces the definition and a caller that holds a binding disagree silently, and the disagreement appears only when the call path is first exercised. WHAT TO CHANGE. Reach the liveness function through the module that defines it at the point of call, so that replacing the definition replaces what the classifier calls. Leave every other name this file imports from that module as it is; this node changes one call path, not an import policy. WHAT NOT TO CHANGE. Do not alter any classification arm, any classification name, the counter placement, or the action marker. Do not change the host gate, what it compares, or its fallback to the stored answer. Do not change what is recorded onto a pointer. Do not alter the zombie narrowing or the PermissionError branch in the liveness function itself. FALSIFIERS, asserted in tests/test_liveness_lookup_is_reachable.py. Replacing the liveness function on its defining module changes the classification the classifier produces, asserted for both a replacement reporting alive and one reporting not alive, so the reachability is proven in both directions rather than inferred from one. A pointer carrying a launching host equal to the reading host, whose replaced liveness function reports not alive, classifies as failed for a terminal manifest word; the same pointer whose replaced function reports alive does not. THAT PAIR IS THE COMBINATION THE REVERT WAS CAUSED BY and must be asserted here rather than left to the file that discovered it. A pointer carrying no launching host classifies from the stored answer, unchanged, and performs no lookup. tests/test_crew_recovery.py::test_observe_and_watch_render_failure_only_after_the_process_stops passes unmodified, and this node does not edit that file. Measure base and head over the new file plus tests/test_crew_recovery.py, tests/test_liveness_is_read_when_it_is_used.py, tests/test_external_wait.py and tests/test_a_rewritten_terminal_manifest_transitions.py; report failure ids either side and require none added. Bound the run per file rather than issuing one census over every importing file.",
+          "estimated_hours": 0.75,
+          "goal": "Reach the liveness function through its defining module at the point of call, so replacing that function replaces what the classifier calls",
+          "id": "the-liveness-lookup-is-reachable",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T022222069965-the-liveness-lookup-is-reachable/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_liveness_lookup_is_reachable.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-no-zombies",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-07T02:22:30Z",
+        "completed_at": "2026-09-07T02:28:45.050Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 368,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 375,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "4c1acbb507d0b51c1bbd22d7b56700a2b9c1824b",
+        "commits": [
+          "7ac5fd552c8ab23cc9c6bafe9f8dfc68cf6b48af"
+        ],
+        "changed_lines": {
+          "added": 127,
+          "removed": 2,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q <the liveness chain: 10 files>",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate64.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T022222069965-the-liveness-lookup-is-reachable/manifest.md",
+        "scope_changed": false,
+        "session_id": "8fd67913-ed38-4ae1-a4ac-63c6b6ed6e24",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 5231384,
+            "input_tokens_cumulative": 5231384,
+            "output_tokens": 40962,
+            "output_tokens_cumulative": 40962,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 371.466,
+          "generated_tokens": 40962,
+          "generation_seconds": 351.02,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 14.3,
+          "machine_seconds": 20.446,
+          "peak_input_tokens": 145257,
+          "tokens_per_second": 116.69,
+          "wall_tokens_per_second": 110.27
+        },
+        "follow_on_paths": [
+          "reckon/crew/runs.py",
+          "pointer/snapshot",
+          "tests/test_crew_recovery.py::test_observe_and_watch_render_failure_only_after_the_process_stops",
+          "tests/test_liveness_is_read_when_it_is_used.py"
+        ],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-liveness-lookup-is-reachable",
+          "session_id": "8fd67913-ed38-4ae1-a4ac-63c6b6ed6e24",
+          "session_source": "stream",
+          "retained_at": "2026-09-07T02:28:45.050Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_liveness_lookup_is_reachable.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
+      },
+      {
+        "run_id": "r-20260907T023039639640-the-lookup-is-observed-where-it-happens",
+        "plan": "crew-observability-truth",
+        "section": "\u00a76",
+        "node": "the-lookup-is-observed-where-it-happens",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 255,
+                "cached_input_tokens": 572413,
+                "input_tokens": 572670,
+                "output_tokens": 1604,
+                "reasoning_output_tokens": 233,
+                "total_tokens": 574274,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_a_pointer_names_its_launching_host.py -q passes, and the test observing the liveness lookup observes it where the classifier now performs it. THE MEASUREMENT. tests/test_a_pointer_names_its_launching_host.py::test_the_lookup_happens_only_when_the_host_matches records lookups by replacing the attribute named process_alive on the reckon.crew.recovery module and asserts the recorded list equals a single pid. At the current head it records nothing and the assertion reads that an empty list is not equal to a list holding one pid. The reason is that commit 7ac5fd5 moved the classifier's call from a name bound into that module at import time to a call through the module that defines the function, which is what made the lookup replaceable at all. So the test replaces a binding the call path no longer uses. WHAT IS BEING ASSERTED IS STILL RIGHT. A lookup must happen for a pointer whose recorded launching host matches the reading host, and must not happen for one whose recorded host differs, and observing whether the lookup occurred rather than only its result is the correct way to assert it. Only the observation point is stale. WHAT TO CHANGE. Replace the liveness function on the module that defines it, which is the module the classifier now calls through and the same module whose read_pointer this test already uses. Change nothing else about the test: the same pointers, the same hosts, the same assertions, the same pid. WHAT NOT TO CHANGE. Do not modify reckon/crew/recovery.py or any other source file; this node changes one test's observation point. Do not weaken the assertion to check only the classification and drop the lookup observation, because the absence of the lookup for a foreign host is the property most likely to regress silently and is the reason the test was written this way. Do not add or remove any test in the file. FALSIFIERS. The named test passes. Its sibling asserting that no lookup happens for a pointer whose recorded launching host differs from the reading host still passes, and still observes the absence of the lookup rather than only the resulting classification. Every other test in that file passes unchanged. Reverting the source change at 7ac5fd5 would make the named test fail again, which the worker states in the manifest rather than performs, so a reader knows the test is bound to the call path rather than to either module by habit. Measure base and head over tests/test_a_pointer_names_its_launching_host.py, tests/test_liveness_lookup_is_reachable.py, tests/test_crew_recovery.py and tests/test_liveness_is_read_when_it_is_used.py; report failure ids either side and require none added.",
+          "estimated_hours": 0.4,
+          "goal": "Observe the liveness lookup on the module the classifier now calls through, so the host-gate test measures the call path that exists",
+          "id": "the-lookup-is-observed-where-it-happens",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T023039639640-the-lookup-is-observed-where-it-happens/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "exact",
+          "time_budget": "25m",
+          "write_paths": [
+            "tests/test_a_pointer_names_its_launching_host.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-review-reflex",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-07T02:30:47Z",
+        "completed_at": "2026-09-07T02:32:43.269Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 109,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 116,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "934c0101320d94b86c73e5081b161fb1f8b24e4e",
+        "commits": [
+          "a74780b2954ed4b02da254dfffbcbd1ebf575d28"
+        ],
+        "changed_lines": {
+          "added": 5,
+          "removed": 2,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q <the liveness chain: 10 files>",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate64.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260907T023039639640-the-lookup-is-observed-where-it-happens/manifest.md",
+        "scope_changed": false,
+        "session_id": "3e8d43d6-1ab6-42c5-a417-030e78486aa3",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 1617046,
+            "input_tokens_cumulative": 1617046,
+            "output_tokens": 13612,
+            "output_tokens_cumulative": 13612,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 112.742,
+          "generated_tokens": 13612,
+          "generation_seconds": 102.019,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 10.0,
+          "machine_seconds": 10.723,
+          "peak_input_tokens": 102123,
+          "tokens_per_second": 133.43,
+          "wall_tokens_per_second": 120.74
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-lookup-is-observed-where-it-happens",
+          "session_id": "3e8d43d6-1ab6-42c5-a417-030e78486aa3",
+          "session_source": "stream",
+          "retained_at": "2026-09-07T02:32:43.269Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_a_pointer_names_its_launching_host.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -69636,6 +69938,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1107
+    "_version": 1109
   }
 }
