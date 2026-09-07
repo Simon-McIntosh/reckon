@@ -78,9 +78,13 @@ def test_gif_row_and_figure_row_differ_only_in_kind(tmp_path: Path) -> None:
     fig = next(r for r in rows if r["type"] == "figure")
 
     assert set(gif) == set(fig)
-    # File-identity fields (slug, href, path) differ by filename by design; every
-    # shared content field must match, so the two rows differ only in kind.
-    excluded = {"type", "slug", "href", "path"}
+    # File-identity fields (slug, href, path, download) differ by filename by
+    # design; download names the row's own file and equals that row's href, so it
+    # varies per row for the same reason href and slug do. It is still asserted
+    # equal to href in test_a_row_carries_its_downloadable_file.py, so excluding
+    # it here does not leave it unchecked. Every shared content field must match,
+    # so the two rows differ only in kind.
+    excluded = {"type", "slug", "href", "path", "download"}
     shared = {k: v for k, v in gif.items() if k not in excluded}
     shared_fig = {k: v for k, v in fig.items() if k not in excluded}
     assert shared == shared_fig
