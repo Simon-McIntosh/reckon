@@ -317,6 +317,30 @@ function readerFigurePath(item) {
   return `docs/figures/${item?.slug || ""}`;
 }
 
+function readerDownloadHref(item) {
+  return typeof item?.download === "string" ? item.download : "";
+}
+
+function readerDownloadName(downloadHref) {
+  const pathname = new URL(downloadHref, window.location.href).pathname;
+  const encodedName = pathname.split("/").filter(Boolean).pop() || "artifact";
+  try {
+    return decodeURIComponent(encodedName);
+  } catch (_) {
+    return encodedName;
+  }
+}
+
+function saveReaderArtifact(downloadHref) {
+  const link = document.createElement("a");
+  link.href = downloadHref;
+  link.download = readerDownloadName(downloadHref);
+  link.hidden = true;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
 function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus }) {
   const M = window.STATE;
   if (!M) return null;
@@ -346,6 +370,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
   const refSlug = (ref) => String(ref || "").split("#", 1)[0].split(":").pop();
   const projectSource = M.project || document.querySelector('meta[name="docs-project"]')?.content || "";
   const project = metadataValueIsPresent(projectSource) ? projectSource : "";
+  const downloadHref = readerDownloadHref(PG);
   const [liveRuns, setLiveRuns] = useState([]);
   const [dependenciesOpen, setDependenciesOpen] = useState(false);
   const [figureZoom, setFigureZoom] = useState(1);
@@ -749,6 +774,23 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
             onToggleDependencies={() => setDependenciesOpen(open => !open)}
             onToggleFocus={onToggleFocus}
           />
+          <div
+            className="r-reader-save-bar"
+            style={{ display: "flex", flex: "none", justifyContent: "flex-end", padding: "8px 22px", borderBottom: "1px solid var(--line)" }}
+          >
+            <button
+              type="button"
+              className="r-reader-save"
+              data-download={downloadHref}
+              disabled={!downloadHref}
+              aria-label={downloadHref ? `Save ${readerDownloadName(downloadHref)}` : "Save unavailable"}
+              title={downloadHref ? `Save ${readerDownloadName(downloadHref)}` : "No downloadable file available"}
+              onClick={() => saveReaderArtifact(downloadHref)}
+              style={{ padding: "5px 12px", border: "1px solid var(--line-2)", borderRadius: 5, background: "var(--bg)", color: "var(--ink-2)", fontFamily: "var(--mono)", fontSize: 11.5, cursor: downloadHref ? "pointer" : "not-allowed", opacity: downloadHref ? 1 : 0.45 }}
+            >
+              Save
+            </button>
+          </div>
           <div className="r-reading-viewport">
             <div className="r-reading-content">
           {isPlan && dependenciesOpen && (
