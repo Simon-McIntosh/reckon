@@ -2,7 +2,18 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from reckon.roadmap import build_roadmap
+
+
+def _declared_manifest() -> dict:
+    """Return the project resource's data block as the axis reads it."""
+    project_resource = (
+        Path(__file__).parents[1] / "docs" / "state" / "reckon" / "project.json"
+    )
+    return json.loads(project_resource.read_text(encoding="utf-8"))["data"]
 
 
 def _plan(
@@ -46,9 +57,10 @@ def _result(declared: dict[str, int]) -> dict:
     return build_roadmap("sample", inventory, sprints, project_manifest=declared)
 
 
-def test_a_width_of_three_defers_a_fourth_open_sprint_behind_the_boundary() -> None:
-    result = _result({"schedule_horizon_sprints": 3})
+def test_declared_width_of_three_defers_a_fourth_sprint_behind_the_boundary() -> None:
+    result = _result(_declared_manifest())
 
+    assert result["schedule"]["window_sprints"] == 3
     assert result["schedule"] == {
         "configured": True,
         "configuration_key": "schedule_horizon_sprints",
