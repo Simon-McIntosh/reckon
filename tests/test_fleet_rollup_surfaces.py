@@ -122,6 +122,15 @@ def test_fleet_cli_refuses_when_no_projects_are_mounted(tmp_path, monkeypatch):
 
 
 def test_fleet_rollup_remains_a_view_on_the_existing_mcp_tool():
-    names = {item.name for item in mcp.mcp._tool_manager.list_tools()}
+    published = {item.name for item in mcp.mcp._tool_manager.list_tools()}
 
-    assert names == {"_read_plan", "_edit_plan", "_roadmap", "_audit", "_crew"}
+    assert published == {
+        function.__name__.removeprefix("_")
+        for function in (
+            mcp._read_plan,
+            mcp._edit_plan,
+            mcp._roadmap,
+            mcp._audit,
+            mcp._crew,
+        )
+    }
