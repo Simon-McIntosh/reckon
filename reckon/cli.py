@@ -708,6 +708,16 @@ def _resolved_flight(flight_module, project, checkout_path, overrides):
         raise click.ClickException(str(exc)) from exc
 
 
+def _dispatch_resolved_flight(flight_module, project, checkout_path, overrides):
+    """Resolve dispatch flight data with its operator-facing recovery command."""
+    from reckon.crew.refusals import format_refusal
+
+    try:
+        return _resolved_flight(flight_module, project, checkout_path, overrides)
+    except click.ClickException as exc:
+        raise click.ClickException(format_refusal("D06", str(exc))) from exc
+
+
 def _flight_default_backend_override(flight_module, config, overrides):
     """Return the resolved default only when the prompt layer supplied it."""
     if not overrides:
@@ -863,7 +873,7 @@ def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, 
     from reckon import ledger as ledger_module
 
     crew_module, flight_module = _crew_modules()
-    config = _resolved_flight(flight_module, project, checkout_path, overrides)
+    config = _dispatch_resolved_flight(flight_module, project, checkout_path, overrides)
     try:
         report = budget_module.preflight(
             project,
@@ -880,7 +890,9 @@ def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, 
             resumption_fired=purpose == "resume",
         )
     except (crew_module.CrewError, ledger_module.LedgerError, ValueError) as exc:
-        raise click.ClickException(str(exc)) from exc
+        from reckon.crew.refusals import format_refusal
+
+        raise click.ClickException(format_refusal("D01", str(exc))) from exc
     _emit({"ok": True, **report}, pretty)
     raise click.exceptions.Exit(3 if report["held"] else 0)
 
@@ -1040,7 +1052,7 @@ def crew_dispatch(
     ``launch`` kind.
     """
     crew_module, flight_module = _crew_modules()
-    config = _resolved_flight(flight_module, project, checkout_path, overrides)
+    config = _dispatch_resolved_flight(flight_module, project, checkout_path, overrides)
     flight_backend_override = _flight_default_backend_override(
         flight_module, config, overrides
     )
@@ -1048,8 +1060,14 @@ def crew_dispatch(
         try:
             config = flight_module.select_local_backend(config)
         except flight_module.FlightConfigError as exc:
+            from reckon.crew.refusals import format_refusal
+
             _emit(
-                {"ok": False, "error": "request-error", "detail": str(exc)},
+                {
+                    "ok": False,
+                    "error": "request-error",
+                    "detail": format_refusal("D03", str(exc)),
+                },
                 pretty,
             )
             raise click.exceptions.Exit(1) from exc
@@ -1074,10 +1092,13 @@ def crew_dispatch(
         crew_module, flight_module, config, node
     )
     if availability_refusal is not None:
+        from reckon.crew.refusals import format_refusal
+
         _emit(
             {
                 "ok": False,
                 "error": "competence-refusal",
+                "detail": format_refusal("D04", str(availability_refusal["reason"])),
                 "competence": availability_refusal,
             },
             pretty,
@@ -1291,7 +1312,7 @@ def crew_shadow(run_id, backend, overrides, member, dry_run, pretty):
             routed_overrides.append(
                 f"roles.{node.role}.by_spec_level.{node.spec_level}.backend={backend}"
             )
-        config = _resolved_flight(
+        config = _dispatch_resolved_flight(
             flight_module,
             source["project"],
             repo,

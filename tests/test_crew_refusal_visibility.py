@@ -28,30 +28,10 @@ from reckon.crew.refusals import (
     format_refusal,
 )
 
-CONVERTED_REFUSAL_FAMILIES = frozenset(
-    {
-        "D02",
-        "D05",
-        "D07",
-        "D08",
-        "D09",
-        "D10",
-        "D11",
-        "D12",
-        "D13",
-        "D14",
-        "D15",
-        "D16",
-        "D17",
-        "D18",
-        "D19",
-        "D20",
-        "D21",
-        "D22",
-    }
-)
-COMMAND_BOUNDARY_FAMILIES = frozenset({"D01", "D03", "D04", "D06"})
+CONVERTED_REFUSAL_FAMILIES = frozenset(f"D{number:02d}" for number in range(1, 23))
+COMMAND_BOUNDARY_FAMILIES = frozenset()
 REFUSAL_SOURCE_PATHS = (
+    "reckon/cli.py",
     "reckon/budget.py",
     "reckon/crew/dispatch.py",
     "reckon/crew/node.py",
