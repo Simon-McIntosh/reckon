@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T11:32:29",
+  "updated": "2026-09-08T11:56:15",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -383,6 +383,15 @@
         "created": "2026-09-06"
       },
       {
+        "id": "crew-brief-points",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-08"
+      },
+      {
         "id": "crew-budget-instrument",
         "harness": "clive",
         "role": "implement",
@@ -561,9 +570,11 @@
         "id": "crew-mcp-tool-names",
         "harness": "codex-terra",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a0805a-0ac0-7be1-9c11-2860d1d37bf6",
+        "session_model": "gpt-5.6-terra",
+        "sessions": {
+          "{\"alias\":\"terra5.6\",\"backend\":\"codex-terra\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-terra\",\"sandbox\":\"worktree-full\"}": "01a0805a-0ac0-7be1-9c11-2860d1d37bf6"
+        },
         "created": "2026-09-08"
       },
       {
@@ -76732,6 +76743,175 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T092929611096-the-published-tool-names-are-regular",
+        "plan": "crew-observability-truth",
+        "section": "\u00a71",
+        "node": "the-published-tool-names-are-regular",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1440,
+                "cached_input_tokens": 642753,
+                "input_tokens": 644195,
+                "output_tokens": 2080,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 646275,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_mcp_tool_names_are_regular.py -q passes, and every tool the reckon MCP server publishes carries an explicit wire name with no leading underscore, so each is addressed as mcp followed by the server name, a double separator, and the tool name, exactly as the other servers on this workstation are. THE DEFECT, measured from inside two dispatched worker processes today. The server registers five tools with a FastMCP decorator applied to module-private functions named with a leading underscore, and FastMCP takes the wire name from the function name. So the underscore that marks a function private in Python leaks into the published name and absorbs a separator. Measured: three of the four MCP servers declared on this workstation publish as mcp, server, double separator, tool. Reckon alone publishes with a single separator on one host and with three underscores on another, for the same five tools. That is not cosmetic. A coordinator matching tool names by pattern found none of reckon's tools, concluded the server was unreachable from dispatched workers, reported that as a finding, and was wrong; the server was answering the whole time. The irregularity cost a false absence claim in a committed record. WHAT TO CHANGE. Give each of the five tool registrations an explicit published name equal to the function name with its leading underscore removed, so the five become the plain nouns and verbs they already are. Keep every Python function name exactly as it is: those underscores are correct, the functions are module-private, and renaming them would ripple through internal call sites for no benefit. The change is confined to the decorator call. Read the file to find all five rather than trusting a list, and say in your manifest how many you found, because a rename that misses one leaves the inconsistency it exists to remove. UPDATE THE HOST HARNESS CONFIGURATION IN THE SAME NODE, because two of the five are named there and would otherwise silently stop matching. The workstation configuration file for the metered harness declares per-tool approval settings keyed by the old names for two of these tools. Those keys must move to the new names. That file is outside the repository; you are permitted to edit ONLY those two keys in it and nothing else, and you must report the before and after of each line you touched verbatim in your manifest. Do not add, remove or reorder any other key, and do not touch any other file outside the repository. THIS IS A BREAKING CHANGE AND MUST BE STATED WHERE A CALLER WILL MEET IT. Any session holding a connection to this server keeps calling the old names until it reconnects, and will meet a tool-not-found. Record the old and new spelling for both host conventions in the repository's own documentation of this surface, so the next reader can map a stale call rather than guess. Find where this server's tools are already documented and put it there rather than creating a new file. WHAT NOT TO DO. Do not change any tool's arguments, behaviour, return shape or description. Do not add or remove a tool. Do not change the server's own name. Do not touch reckon/crew/recovery.py, reckon/mcp_views.py, reckon/crew/promotion.py or reckon/_backends.py. Do not restart or reconnect anything: the operator owns that beat and a worker cannot do it. FALSIFIERS, in tests/test_mcp_tool_names_are_regular.py. Instantiate or introspect the server and assert the published name of every registered tool, by iterating the registry rather than by naming the five, so a sixth tool added later is held to the same rule. Assert no published name begins with an underscore. Assert every published name matches the same shape as the others, stated as a pattern in the test with the contract named in its docstring. Assert the count of registered tools is unchanged from before your edit, computed in the test rather than written as a literal, so the rename cannot have dropped or added one. Assert each of the five publishes the exact expected plain name, derived in the test from the function names by stripping one leading underscore rather than hard-coded, so the test states the rule instead of restating the answer. Assert the Python function names still carry their leading underscore, which pins that only the wire name moved. And read the host configuration file back and assert the two approval keys carry the new names and that the file still parses, without asserting anything else about its contents. Report base and head over the new file and every test importing reckon.mcp, with failure ids either side and none added. Bound the run per file and never run the full suite.",
+          "estimated_hours": 0.75,
+          "goal": "Publish reckon's five MCP tools under regular wire names with no leading underscore, updating the two host approval keys and documenting both stale spellings",
+          "id": "the-published-tool-names-are-regular",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T092929611096-the-published-tool-names-are-regular/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "codex-terra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/mcp.py",
+            "tests/test_mcp_tool_names_are_regular.py",
+            "docs/AGENTS.md",
+            "tests/test_mcp_recovery.py",
+            "tests/test_tool_arguments_accept_a_serialised_list.py",
+            "tests/test_mcp_views.py",
+            "tests/test_typed_resources.py",
+            "tests/test_provenance.py",
+            "tests/test_mcp_roadmap.py",
+            "tests/test_crew_recover.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-mcp-tool-names",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T09:29:39Z",
+        "completed_at": "2026-09-08T09:54:55Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1516,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1516,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "c8289f311475a65b0067b2c8e38b4d248cae163a",
+        "commits": [
+          "1ec06c6c1b99b07a32af1be810e86fb8d4f1a2ab",
+          "cef27d06c3e0ede93c8a8d6e3d21b63871ad31ab",
+          "9a3d1dd0e00665bda78a6ca9fee621a0e884cca6"
+        ],
+        "changed_lines": {
+          "added": 103,
+          "removed": 29,
+          "files": 8
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_mcp_tool_names_are_regular.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T092929611096-the-published-tool-names-are-regular/logs/tool-names-final.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T092929611096-the-published-tool-names-are-regular/manifest.md",
+        "scope_changed": true,
+        "session_id": "01a0805a-0ac0-7be1-9c11-2860d1d37bf6",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 5573760,
+            "cached_input_tokens_cumulative": 5573760,
+            "input_tokens": 5767904,
+            "input_tokens_cumulative": 5767904,
+            "output_tokens": 20264,
+            "output_tokens_cumulative": 20264,
+            "reasoning_output_tokens": 7042,
+            "reasoning_output_tokens_cumulative": 7042
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-08T09:54:55Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 27.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-08T09:54:55Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 5573760,
+          "cumulative_input_tokens": 11341664,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 27306
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-published-tool-names-are-regular",
+          "session_id": "01a0805a-0ac0-7be1-9c11-2860d1d37bf6",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T09:54:55Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -76960,6 +77140,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1191
+    "_version": 1194
   }
 }
