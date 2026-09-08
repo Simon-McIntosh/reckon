@@ -14,7 +14,7 @@ description: >-
   to every dispatch, selecting the backend named by `local_backend`.
   For editing plan text use reckon-edit; for defining or rebalancing sprint
   state use reckon-sprint.
-allowed-tools: Read Write Edit Bash(*) Grep Agent mcp__reckon___read_plan mcp__reckon___edit_plan mcp__reckon___roadmap mcp__reckon___audit mcp__reckon___crew
+allowed-tools: Read Write Edit Bash(*) Grep Agent mcp__reckon__read_plan mcp__reckon__edit_plan mcp__reckon__roadmap mcp__reckon__audit mcp__reckon__crew
 ---
 
 # reckon-ship — execute a complete plan or sprint and record outcomes
