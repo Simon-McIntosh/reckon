@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T08:07:18",
+  "updated": "2026-09-08T08:08:41",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -72708,6 +72708,143 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260908T054256290753-the-rate-card-and-the-threshold-are-recorded",
+        "plan": "crew-effort-routing",
+        "section": "\u00a71",
+        "node": "the-rate-card-and-the-threshold-are-recorded",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2184,
+                "cached_input_tokens": 155339,
+                "input_tokens": 157525,
+                "output_tokens": 2704,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 160229,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "docs/research/deploy-matrix.html carries a section recording the vendor's published per-token rates for the metered family, the 272,000-token surcharge rule, the relative burn weight those imply per lane, and the measured evidence that one ledger field holds two different quantities \u2014 each figure attributed to whether it was read from a vendor publication or measured from this project's own ledgers, and the document still parses as the reckon research doc it already is. WHY. Every routing decision this fleet is taking rests on figures that currently live only in one session's working memory, and the document that exists to hold them already says, in its own words, that cumulative input per durable node and exact quota cost per durable node are UNMEASURED. Two of those three gaps closed today and the third turned out to be a naming defect rather than an absence. A finding nobody can read is not a finding. THE FIGURES TO RECORD, all of them given here so you do not need to search for or verify any of them; you have no network access and must not attempt to obtain them. Published per million tokens: the family's strongest member, input 4.00 and output 20.00; the middle member, input 2.00 and output 12.00; the efficient member, input 0.20 and output 1.20. Relative to the strongest member that is 0.50 input and 0.60 output for the middle member, 0.05 and 0.06 for the efficient one. The fourth, smaller member this project dispatches to has NO published rate and must appear in the table as unpriced, explicitly, not as a blank cell and not with a guessed number. Published surcharge: a request whose input exceeds 272,000 tokens is charged at twice input and one and a half times output for the WHOLE request, not for the tokens above the line; the family's raw context window is 372,000 with an effective figure near 353,400, so a default configuration carries roughly 81,400 tokens of exposure above the threshold, and the documented workaround is a client setting capping auto-compaction at 270,000. Published per-window message allowances on the subscription tier this project uses, which are a SECOND and independent denomination: roughly 200 to 2,000 for the strongest member, 500 to 4,000 for the middle, 5,000 to 40,000 for the efficient one, a ratio near one to two to twenty that agrees with the token ratio in direction and order of magnitude. Record explicitly that the vendor states a subscription is not priced per token, so the rates are being used as ratios between family members and never as a currency amount charged to this project. MEASURED HERE, from 3,269 rows across the mounted project ledgers: the strongest member's recorded input figure has a median of 16,385,195 and a maximum of 106,803,531 over 305 rows carrying it; the middle member 8,862,849 median over 15 rows; the efficient member 8,354,435 median over 14 rows; the local unmetered lane 171,518 median over 200 rows; one claude lane 135,558 median over 66 rows. Combining the published ratios with those medians gives relative burn per run of 1.00 for the strongest member, 0.27 for the middle, 0.025 for the efficient one. Record the sample sizes beside every median and record in prose that the multipliers are firm while the medians are thin at 15 and 14 rows against 305, and that the node populations behind each lane are not matched, so the burn figures are indicative of order and not a controlled comparison. THE FIELD DEFECT, measured here and the reason the medians above must be read carefully: reckon/_backends.py fills one throughput field, named for a per-request peak, from two different derivations. On the claude and local dialects it is the largest single request the run sent. On the metered family's dialect it is a SUM over the whole run, and the module's own docstring in the sibling method states the rule that breaks, saying that cumulative totals would read far past any window. No context window is sixteen million tokens. So the cumulative figure this document called unmeasured was in fact being recorded all along under a name that denies it, and the quantity genuinely missing is the per-request maximum for that family, which is exactly what the 272,000 threshold keys on. Record that a crossing count cannot be recovered from a total in either direction, with the arithmetic: eighty requests of 200,000 tokens sum to sixteen million and cross nothing, two requests of 300,000 sum to six hundred thousand and cross twice. Record that the cached prefix counts toward the threshold, so a run with a high cache-hit rate is MORE likely to be paying the surcharge rather than less, which turns a previously recorded linear cost in cached tokens into a step function at 272,000. Record that any comparison of that field ACROSS dialects is a maximum against a total and is invalid. WHAT NOT TO DO. Do not edit any file under reckon/ or tests/; three peers hold source this hour. Do not restate or relitigate the existing content of the document beyond what is needed to correct the UNMEASURED claim where it is now false; add your section and amend that specific claim, leaving the rest of the prose alone. Do not add a figure that is not either in this brief or read by you from the mounted ledgers, and label which of the two every number came from. Do not name any plan, sprint, node, session or ticket identifier anywhere in the document. Do not include a graphic unless you generate it from the ledger data yourself under docs/figures and reference it with a project-absolute src; a placeholder or an undrawn reference is worse than no figure. FALSIFIERS. The document parses: assert with the repository's own document check that docs/research/deploy-matrix.html is valid and carries the metadata it carried before your edit, and report the command and its exit status verbatim rather than paraphrasing the result. Every rate, threshold and multiplier in your section matches this brief exactly, which you verify by rereading your own section against it before you finish and stating in the manifest that you did. The unpriced fourth member appears as explicitly unpriced. Every median carries its sample size. The word UNMEASURED no longer stands beside cumulative input in the document, and the sentence that replaces it says where the figure now comes from. No number in the section lacks an attribution to publication or to measurement here. The tests that assert on the served document set still pass: run only those, measure base and head, report failure ids either side, and require none added.",
+          "estimated_hours": 1.25,
+          "goal": "Record the published rates, the 272k surcharge, the implied per-lane burn weight, and the two-quantities-one-field defect, each attributed to publication or to local measurement",
+          "id": "the-rate-card-and-the-threshold-are-recorded",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T054256290753-the-rate-card-and-the-threshold-are-recorded/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "documentation",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "docs/research/deploy-matrix.html"
+          ]
+        },
+        "role": "documentation",
+        "spec_level": "exact",
+        "member": "crew-rate-evidence",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T05:43:09Z",
+        "completed_at": "2026-09-08T06:07:16Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1447,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1447,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "e6242ffc70fc227e36c943b57cf1116997f122fb",
+        "commits": [
+          "66872e7ff4eebef514fead2b28c968d4666b7e5a"
+        ],
+        "changed_lines": {
+          "added": 102,
+          "removed": 3,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "reckon audit-doc docs/research/deploy-matrix.html",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T054256290753-the-rate-card-and-the-threshold-are-recorded/after-audit-doc.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T054256290753-the-rate-card-and-the-threshold-are-recorded/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07f8a-b0a7-7c13-9c9b-541e796eced1",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 9864448,
+            "cached_input_tokens_cumulative": 9864448,
+            "input_tokens": 10072930,
+            "input_tokens_cumulative": 10072930,
+            "output_tokens": 35448,
+            "output_tokens_cumulative": 35448,
+            "reasoning_output_tokens": 13246,
+            "reasoning_output_tokens_cumulative": 13246
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 9864448,
+          "cumulative_input_tokens": 19937378,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 48694
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-rate-card-and-the-threshold-are-recorded",
+          "session_id": "01a07f8a-b0a7-7c13-9c9b-541e796eced1",
+          "session_source": "stream",
+          "retained_at": "2026-09-08T06:07:16Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "documentation",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -72936,6 +73073,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1140
+    "_version": 1141
   }
 }
