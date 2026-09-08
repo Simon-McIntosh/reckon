@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T07:16:26",
+  "updated": "2026-09-08T07:18:20",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -72222,6 +72222,158 @@
           "role": "documentation",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260908T044149665503-the-durable-write-is-recovery-not-prevention",
+        "plan": "crew-observability-truth",
+        "section": "\u00a78",
+        "node": "the-durable-write-is-recovery-not-prevention",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2087,
+                "cached_input_tokens": 885637,
+                "input_tokens": 887726,
+                "output_tokens": 827,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 888553,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "grep for the phrase durable write in skills/reckon-ship/references/worker-protocol.md and confirm the file states that a worker commits at each deliverable and writes its manifest before beginning any long output, that its stated reason is loss recovery rather than death prevention, and that it names the measurement which refutes the death-prevention reading; then diff the existing manifest-path and delivery sections against the previous revision and confirm they are byte-identical. THE CHANGE AND WHY ITS JUSTIFICATION MATTERS MORE THAN USUAL. An earlier attempt at this node was stopped before committing because its brief carried a reason a peer measurement falsified while the node ran. Landing a falsified justification into the worker contract is worse than landing one into a plan: the contract is what a worker is told to follow, and a later reader who measures the wrong claim will find no effect and discard a control that works. THE MEASUREMENT, from a peer session that instrumented write position against each run's DECLARED deliverable paths across eight report-shaped nodes on one lane. Four total losses: three never touched their deliverable at all, and a fourth created it once at 0.7 percent of its life and never returned. Three landings wrote their deliverable across spans of 0.10 to 0.98, 0.03 to 1.00, and 0.94 to 1.00 of their lives. THAT THIRD ONE IS THE REFUTATION AND MUST APPEAR IN THE FILE: it wrote its deliverable entirely inside the final 6 percent of its run, a closing generation by any definition, and it landed cleanly. So a closing generation is not fatal, and writing incrementally does not predict survival. Note also the peer's methodological warning, which the file should carry in one clause: their first instrument counted every write including scratch files and separated nothing, because a node that writes ten scratch scripts and no report scores as incremental by write count. Filtering to the declared deliverable is what makes the measurement discriminate. WHAT THE MEASUREMENT DOES ESTABLISH, and this is the reason to state. Every total loss never wrote its deliverable at all. So the discriminator is whether a run reached its writing phase, not how it wrote once there \u2014 and a run that dies before that phase leaves nothing to recover. Two nodes in the same wave survived partially for exactly this reason: one wrote its findings into its manifest before the report it never produced, and all six findings were later re-measured as exact; another committed before dying, so the commit survived. A separate fleet reported four rescues with deliverables already on disk for the same reason. WHAT TO WRITE. State that a worker commits at each deliverable rather than once at the end, and writes its manifest before beginning any long output. State the reason as LOSS RECOVERY: a durable write that precedes a long generation survives that generation failing, and every total loss measured had never written its deliverable at all. State explicitly that this does not prevent deaths and is not expected to, naming the node that wrote its deliverable in the final 6 percent and landed, so a reader who measures death-reduction finds the claim already disclaimed rather than discovering it and discarding the practice. Connect to the existing rule that long output goes in the file and the reply is the path rather than restating it. WHAT NOT TO CHANGE. Do not alter the eight node properties or their order. Do not alter the manifest-path section, the delivery section, or the fence descriptions. Do not add a rate-based abort rule, a turn-count limit or a context-size limit: tokens per second was measured on 14 runs and did not reproduce on 26, and turn count and cumulative input were measured and separate nothing, so the file must not acquire a threshold the data refutes. Do not claim incremental writing improves survival. Do not name a backend, a model or a lane: the property is about where the durable write falls relative to the long output. FALSIFIERS. The file states the commit-at-each-deliverable and manifest-before-long-output rules. Its stated reason is loss recovery and the words survival or prevents are not used to describe the effect. The refuting node is named with its final-6-percent span and its clean landing. The declared-deliverable filtering clause is present. The words tokens per second, turn limit and context limit appear nowhere as a rule. No backend or model name appears in the added text. The manifest-path and delivery sections are byte-identical to the previous revision, asserted by diff. The file's front matter and section numbering are unchanged.",
+          "estimated_hours": 0.75,
+          "goal": "State the commit-and-manifest-early rule in the worker protocol with loss recovery as its reason and the node that refutes the survival reading named",
+          "id": "the-durable-write-is-recovery-not-prevention",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T044149665503-the-durable-write-is-recovery-not-prevention/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "documentation",
+          "section": "\u00a78",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "write_paths": [
+            "skills/reckon-ship/references/worker-protocol.md"
+          ]
+        },
+        "role": "documentation",
+        "spec_level": "exact",
+        "member": "crew-review-reflex",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T04:42:25Z",
+        "completed_at": "2026-09-08T05:17:02Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 2077,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 2077,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "84e5a07f6fa03dfb024d33dff2918f976477a678",
+        "commits": [
+          "5038d9184fd7386d10637227f495ff2a1f8cdc96"
+        ],
+        "changed_lines": {
+          "added": 17,
+          "removed": 0,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "semantic assertions over worker-protocol.md (15/15) + coordinator falsifier greps + diff of the unchanged sections",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate81.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T044149665503-the-durable-write-is-recovery-not-prevention/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07f5f-f41a-72b0-b646-bf9473de51be",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 10478336,
+            "cached_input_tokens_cumulative": 10478336,
+            "input_tokens": 10681322,
+            "input_tokens_cumulative": 10681322,
+            "output_tokens": 30452,
+            "output_tokens_cumulative": 30452,
+            "reasoning_output_tokens": 11590,
+            "reasoning_output_tokens_cumulative": 11590
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": {
+          "attempt": 2,
+          "kind": "lane-change",
+          "lanes": [
+            {
+              "changed_at": "2026-09-08T04:56:29Z",
+              "detail": "starting fresh because the session cannot follow the move from harness 'claude' to 'codex'",
+              "from_backend": "clive",
+              "from_harness": "claude",
+              "reason": "Report-shaped documentation work belongs on a metered lane on this evidence: two fleets measured report-shaped nodes at 3 of 8 and 0 of 5 on the local lane against 8 of 8 and 7 of 7 for implement and review, and a shape-matched pair completed the same question in 8m40s on terra and 22m on sol against three local attempts totalling 4 to 7 hours with two total losses. Dispatching documentation to the local lane was against the coordinator's own evidence.",
+              "session": "fresh",
+              "to_backend": "codex",
+              "to_harness": "codex"
+            }
+          ],
+          "root_run_id": "r-20260908T044149665503-the-durable-write-is-recovery-not-prevention"
+        },
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 42042,
+          "peak_input_tokens": 21159658
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "attempt": 2,
+        "attempt_kind": "lane-change",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-durable-write-is-recovery-not-prevention",
+          "session_id": "01a07f5f-f41a-72b0-b646-bf9473de51be",
+          "session_source": "stream",
+          "retained_at": "2026-09-08T05:17:02Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "documentation",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -72450,6 +72602,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1129
+    "_version": 1130
   }
 }
