@@ -82,6 +82,64 @@ WAITING_STATUS = "waiting"
 # also sits in the action set while remaining a member of this family.
 WAITING_STATES = frozenset({"waiting", "wait-aged", "paused"})
 TERMINAL_MANIFEST_STATUSES = frozenset({"complete", "blocked", "failed"})
+NON_TERMINAL_MANIFEST_STATUSES = frozenset({"in-progress"})
+
+# This is the authoritative answer to "what should the coordinator do now?".
+# The older classification remains a lifecycle grouping used by recovery and
+# promotion, while this vocabulary names the cause whose remedy differs. A
+# lane hold and a worker failure therefore cannot share an instruction even
+# though both remain attention-worthy terminal-looking rows.
+RECOVERY_VERBS = {
+    "running": "observe",
+    "waiting": "wait",
+    "paused": "wait",
+    "completed_unpromoted": "promote",
+    "held": "resume",
+    "needs-help": "answer",
+    "failed": "redispatch",
+    "stalled": "investigate",
+    "blocked": "decide",
+    "stopped": "inspect",
+    "unreadable": "repair",
+    "unwritten": "resume",
+    "abandoned": "recover",
+    "wait-aged": "investigate",
+}
+RECOVERY_CLASSIFICATIONS = tuple(RECOVERY_VERBS)
+ACTIONABLE_RECOVERY_CLASSIFICATIONS = frozenset(
+    {
+        "held",
+        "needs-help",
+        "failed",
+        "stalled",
+        "blocked",
+        "stopped",
+        "unreadable",
+        "unwritten",
+        "abandoned",
+        "wait-aged",
+    }
+)
+SELF_LIFTING_RECOVERY_CLASSIFICATIONS = frozenset({"waiting", "paused"})
+DEFAULT_LIFTING_CONDITIONS = {
+    "waiting": "the declared condition reaches one of its terminal states",
+    "paused": "the condition named by the row ends",
+}
+
+
+def _manifest_status_is_template(value: Any) -> bool:
+    """Whether a manifest still carries the dispatch contract's placeholder."""
+    status = str(value or "").strip().lower()
+    choices = {part.strip(" <>\t") for part in status.split("|")}
+    return "|" in status and choices == set(TERMINAL_MANIFEST_STATUSES)
+
+
+def manifest_status_is_terminal(value: Any) -> bool:
+    """Whether a worker supplied one exact terminal status value."""
+    status = str(value or "").strip().lower()
+    return not _manifest_status_is_template(status) and (
+        status in TERMINAL_MANIFEST_STATUSES
+    )
 
 
 def _stream_completion_stamp(record: Mapping[str, Any]) -> str | None:
@@ -639,6 +697,31 @@ def _wait_terminal_values(value: Any) -> list[str]:
     return [str(item).strip() for item in states if str(item).strip()]
 
 
+def _wait_expected_seconds(
+    manifest_data: Mapping[str, Any], *, default_seconds: int
+) -> tuple[int, str]:
+    """Read a declared wait horizon, retaining the existing default if absent."""
+    field = ""
+    value: Any = None
+    for candidate in ("wait_expected_seconds", "wait_expected", "wait_horizon"):
+        if candidate in manifest_data:
+            field = candidate
+            value = manifest_data.get(candidate)
+            break
+    if not field:
+        return int(default_seconds), ""
+    try:
+        if field == "wait_expected_seconds" and not isinstance(value, str):
+            seconds = int(value)
+        else:
+            seconds = parse_duration(str(value or ""))
+    except (CrewError, TypeError, ValueError):
+        return int(default_seconds), f"readable positive {field}"
+    if seconds <= 0:
+        return int(default_seconds), f"positive {field}"
+    return seconds, ""
+
+
 def _manifest_wait(
     manifest_data: Mapping[str, Any],
     manifest: Path,
@@ -681,6 +764,11 @@ def _manifest_wait(
     else:
         started_seconds = started.timestamp()
     age_seconds = max(0, int(now_seconds - started_seconds))
+    expected_seconds, expected_error = _wait_expected_seconds(
+        manifest_data, default_seconds=stale_after_seconds
+    )
+    if expected_error:
+        missing.append(expected_error)
     return {
         "condition": condition,
         "probe": probe,
@@ -691,7 +779,8 @@ def _manifest_wait(
             "%Y-%m-%dT%H:%M:%SZ"
         ),
         "age_seconds": age_seconds,
-        "overdue": age_seconds > stale_after_seconds,
+        "expected_horizon_seconds": expected_seconds,
+        "overdue": age_seconds > expected_seconds,
         "signature": f"condition:{manifest.stat().st_mtime_ns}",
         "valid": not missing,
         "error": "missing or invalid " + ", ".join(missing) if missing else "",
@@ -769,7 +858,12 @@ def classify_pointer(
             # rather than escaping this function and failing every ticker
             # refresh for every session.
             manifest_error = str(exc)
-    manifest_status = str(manifest_data.get("status") or "").strip().lower()
+    manifest_reported_status = str(manifest_data.get("status") or "").strip().lower()
+    manifest_unwritten = _manifest_status_is_template(manifest_reported_status)
+    # The dispatch contract prints all terminal choices as a placeholder. It
+    # is evidence that the worker never wrote a verdict, not a fourth spelling
+    # of one, so no terminal predicate may see it as delivered state.
+    manifest_status = "" if manifest_unwritten else manifest_reported_status
     manifest_derived = str(manifest_data.get("derived") or "").strip().lower() in {
         "1",
         "true",
@@ -814,13 +908,17 @@ def classify_pointer(
     age = None
     if log.is_file():
         age = max(0, int(_utc_seconds() - log.stat().st_mtime))
-    # Superseded-by-newer-activity applies to a non-terminal manifest that is
-    # not yet a verdict. Terminal-looking reports are handled below: the live
-    # process outranks every worker-reported outcome regardless of file
-    # recency, and the manifest becomes authoritative when that process exits.
+    # Superseded-by-newer-activity applies to an ordinary non-terminal report
+    # that is not yet a verdict. A declared wait is different: the manifest is
+    # the authority for what the worker is parked on, and its process may stay
+    # alive briefly or exit immediately without changing that condition.
+    # Terminal-looking reports are handled below: the live process outranks
+    # every worker-reported outcome regardless of file recency, and the
+    # manifest becomes authoritative when that process exits.
     if (
         manifest_status
         and manifest_status not in TERMINAL_MANIFEST_STATUSES
+        and manifest_status != WAITING_STATUS
         and alive is True
         and log.is_file()
         and manifest.is_file()
@@ -895,7 +993,17 @@ def classify_pointer(
 
     marker = None
     needs_help_complete_value = None
-    if deferred_outcome:
+    if manifest_unwritten:
+        classification = "running"
+        detail = (
+            f"the manifest template at {manifest} is present but its status "
+            "placeholder was never replaced"
+        )
+        action = (
+            f"reckon crew resume --run {run_id} --advice "
+            "write the manifest's current status before continuing"
+        )
+    elif deferred_outcome:
         classification = "running"
         detail = "the process is alive"
         action = f"reckon crew observe --run {run_id}"
@@ -1213,7 +1321,9 @@ def classify_pointer(
     if classification == "blocked":
         session_resolution = _blocked_session_resolution(record, run_id)
     if session_resolution is not None and (
-        refusal_block is not None or retry_block is not None or exhaustion_block is not None
+        refusal_block is not None
+        or retry_block is not None
+        or exhaustion_block is not None
     ):
         resume_remedy = _resume_remedy(session_resolution, run_id)
         if resume_remedy is None:
@@ -1228,6 +1338,35 @@ def classify_pointer(
                     "log; no session id is available to resume"
                 )
 
+    hold = refusal_block or exhaustion_block or retry_block or budget_hold
+    if manifest_unwritten:
+        recovery_classification = "unwritten"
+    elif classification in {"blocked", "paused"} and hold is not None:
+        recovery_classification = "held"
+    elif classification == "blocked" and needs_help_complete_value:
+        recovery_classification = "needs-help"
+    elif classification == WAITING_STATUS and wait and wait.get("overdue"):
+        recovery_classification = "wait-aged"
+    else:
+        recovery_classification = classification
+    recovery_verb = RECOVERY_VERBS[recovery_classification]
+
+    lifting_condition = None
+    if classification == WAITING_STATUS and wait is not None:
+        lifting_condition = (
+            f"{wait['condition']} reports one of {', '.join(wait['terminal'])}"
+        )
+    elif classification == "paused":
+        if budget_hold is not None:
+            lifting_condition = (
+                f"the {budget_hold['limit_kind']} window resets at "
+                f"{budget_hold['resets_at']}"
+            )
+        elif background_wait:
+            lifting_condition = "the background work named by the row ends"
+        else:
+            lifting_condition = DEFAULT_LIFTING_CONDITIONS["paused"]
+
     timing = _budget_timing(record, now_seconds=now_seconds)
     classified = {
         "run_id": run_id,
@@ -1240,6 +1379,17 @@ def classify_pointer(
         "plan": (record.get("node") or {}).get("plan"),
         "node": (record.get("node") or {}).get("id"),
         "classification": classification,
+        # Cause and remedy are separate from the compatibility lifecycle
+        # grouping above. This pair is the authoritative instruction surface:
+        # readers act on the verb and use the classification to understand why.
+        "recovery_classification": recovery_classification,
+        "recovery": recovery_verb,
+        "lifting_condition": lifting_condition,
+        "resets_at": (
+            str(hold.get("resets_at") or "unknown")
+            if recovery_classification == "held" and hold is not None
+            else None
+        ),
         "phase": phase,
         "process_alive": alive,
         # False when the stored answer was carried because the launching host
@@ -1260,7 +1410,7 @@ def classify_pointer(
         # live process defers terminal-looking placeholders, while the one-shot
         # watcher still needs to recognise a fresh completion written by the
         # resumed attempt it is waiting for.
-        "manifest_reported_status": manifest_status or None,
+        "manifest_reported_status": manifest_reported_status or None,
         "manifest_derived": manifest_derived,
         "manifest_commits": manifest_commits,
         # The refusal text when a present manifest could not be read, carried on
@@ -1579,7 +1729,9 @@ def _pointer_role(pointer: Mapping[str, Any]) -> str:
 # routes at once. An unreadable manifest is one of the actionable states,
 # because the refusal text naming the rejected format is the one sentence a
 # reader needs before repairing the file.
-EXPLAINED_STATES = frozenset(NEEDS_ACTION | WAITING_STATES | {"unreadable"})
+EXPLAINED_STATES = frozenset(
+    NEEDS_ACTION | WAITING_STATES | {"unreadable", "unwritten"}
+)
 
 
 def _watch_snapshot(
@@ -1631,6 +1783,12 @@ def _watch_snapshot(
         # an absence, so the run reads as unreadable rather than falling into
         # the abandoned bucket the liveness checks below would assign it.
         state = "unreadable"
+    elif str(row.get("recovery_classification") or "") == "unwritten":
+        # The compatibility state stays non-terminal while the typed surface
+        # names that the worker never replaced its template. This keeps a
+        # placeholder from satisfying a terminal fence without inventing a
+        # second attention vocabulary in the run registry.
+        state = "running"
     elif phase == "stopped":
         state = "stopped"
     elif alive is False:
@@ -1677,6 +1835,21 @@ def _watch_snapshot(
         # routine progress read as a warning.
         detail = ""
 
+    recovery_classification = str(row.get("recovery_classification") or state)
+    recovery_verb = str(row.get("recovery") or "")
+    lifting_condition = row.get("lifting_condition")
+    if state == "stalled":
+        recovery_classification = "stalled"
+        recovery_verb = RECOVERY_VERBS["stalled"]
+        lifting_condition = None
+    elif state == "wait-aged":
+        recovery_classification = "wait-aged"
+        recovery_verb = RECOVERY_VERBS["wait-aged"]
+    elif state == WAITING_STATUS and classification == "running":
+        recovery_classification = "paused"
+        recovery_verb = RECOVERY_VERBS["paused"]
+        lifting_condition = detail
+
     # What ran it, as facts rather than a display string. The alias and effort
     # spelling were decided at dispatch and frozen onto the pointer; a later
     # configuration edit must not restate what ran, so the facts are read from
@@ -1706,6 +1879,11 @@ def _watch_snapshot(
         # carries it under its own name rather than as a flattened display flag.
         "lineage": pointer.get("lineage"),
         "state": state,
+        "recovery_classification": recovery_classification,
+        "recovery": recovery_verb,
+        "lifting_condition": lifting_condition,
+        "resets_at": row.get("resets_at"),
+        "next_action": row.get("next_action"),
         # The full, untruncated reason. The bounded clause a reader can act on
         # is derived from it at render time, so nothing here is shaped for the
         # grid before it is stored.
@@ -1750,13 +1928,29 @@ def _fleet_counts(snapshots: Mapping[str, Mapping[str, Any]]) -> dict[str, int]:
     ``waiting`` is a run whose declared external condition remains outstanding.
     A run that leaves the fleet is in none of them.
     """
-    states = [str(snapshot.get("state") or "") for snapshot in snapshots.values()]
+    rows = list(snapshots.values())
+    states = [str(snapshot.get("state") or "") for snapshot in rows]
+    held = sum(
+        str(snapshot.get("recovery_classification") or "") == "held"
+        for snapshot in rows
+    )
     counts = {
         "working": sum(state in FLEET_WORKING_STATES for state in states),
-        "blocked": sum(state in FLEET_BLOCKED_STATES for state in states),
+        "blocked": sum(
+            str(snapshot.get("state") or "") in FLEET_BLOCKED_STATES
+            and str(snapshot.get("recovery_classification") or "") != "held"
+            for snapshot in rows
+        ),
         "unpromoted": sum(state in FLEET_UNPROMOTED_STATES for state in states),
     }
-    waiting = sum(state in FLEET_WAITING_STATES for state in states)
+    waiting = (
+        sum(
+            str(snapshot.get("state") or "") in FLEET_WAITING_STATES
+            and str(snapshot.get("recovery_classification") or "") != "held"
+            for snapshot in rows
+        )
+        + held
+    )
     if waiting:
         counts["waiting"] = waiting
     return counts
@@ -1842,7 +2036,11 @@ def fleet_transitions(
     for run_id in (item for item in current if item in known):
         previous = str(known[run_id]["state"])
         state = str(current[run_id]["state"])
-        if state != previous:
+        previous_recovery = str(
+            known[run_id].get("recovery_classification") or previous
+        )
+        current_recovery = str(current[run_id].get("recovery_classification") or state)
+        if state != previous or current_recovery != previous_recovery:
             changes.append((current[run_id], previous, state))
         elif _manifest_rewritten(known[run_id], current[run_id]):
             # The classification word did not move but the report it sits on
@@ -1904,6 +2102,13 @@ def _watch_transition(
         "blocked": counts["blocked"],
         "unpromoted": counts["unpromoted"],
         "detail": str(snapshot.get("detail") or ""),
+        "recovery_classification": str(
+            snapshot.get("recovery_classification") or current
+        ),
+        "recovery": str(snapshot.get("recovery") or ""),
+        "lifting_condition": snapshot.get("lifting_condition"),
+        "resets_at": snapshot.get("resets_at"),
+        "next_action": snapshot.get("next_action"),
         "needs_help_complete": snapshot.get("needs_help_complete"),
     }
     if snapshot.get("manifest_rewritten"):
