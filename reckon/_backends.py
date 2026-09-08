@@ -43,6 +43,11 @@ surface what remains. Such a read costs no worker budget and runs no model, so
 it can serve a free pre-flight — but it spawns a process, so it happens only for
 a backend whose config asks for it. A dialect with no such surface returns no
 probe, and the answer stays honestly unknown.
+
+Throughput keeps the largest single request and the cumulative input over a run
+as separately named quantities. Neither may be filled from the other: only the
+request maximum can be compared with a context window, while cumulative input
+describes the whole run and can legitimately exceed that window many times over.
 """
 
 from __future__ import annotations
@@ -245,6 +250,8 @@ def unknown_throughput(reason: str) -> dict[str, Any]:
         "tokens_per_second": None,
         "wall_tokens_per_second": None,
         "peak_input_tokens": None,
+        "cumulative_input_tokens": None,
+        "cumulative_cached_input_tokens": None,
         "input_budget_tokens": None,
         "input_utilisation_pct": None,
         "detail": reason,
@@ -279,6 +286,8 @@ def throughput_block(
     generation_seconds: float | None,
     elapsed_seconds: float | None,
     peak_input_tokens: int | None,
+    cumulative_input_tokens: int | None,
+    cumulative_cached_input_tokens: int | None,
     input_budget_tokens: int | None,
     detail: str,
 ) -> dict[str, Any]:
@@ -308,7 +317,11 @@ def throughput_block(
             "tokens_per_second": _rate(generated_tokens, generation_seconds),
             "wall_tokens_per_second": _rate(generated_tokens, elapsed_seconds),
             "peak_input_tokens": peak_input_tokens,
+            "cumulative_input_tokens": cumulative_input_tokens,
+            "cumulative_cached_input_tokens": cumulative_cached_input_tokens,
             "input_budget_tokens": input_budget_tokens,
+            # A context window is spent by one request. A run total can exceed
+            # it repeatedly, so absence of a request maximum leaves this unknown.
             "input_utilisation_pct": _percent(peak_input_tokens, input_budget_tokens),
         }
     )
@@ -725,7 +738,8 @@ class _CodexDialect(Dialect):
     ) -> Observation:
         obs = Observation(backend=self.name, budget=unknown_budget(""))
         message: str | None = None
-        usage: Mapping[str, Any] | None = None
+        usage: dict[str, int | float] = {}
+        completed_turn = False
         for event in events:
             obs.events += 1
             kind = event.get("type")
@@ -736,14 +750,14 @@ class _CodexDialect(Dialect):
                 if isinstance(item, Mapping) and item.get("type") == "agent_message":
                     message = item.get("text") or message
             elif kind == "turn.completed":
+                completed_turn = True
                 obs.terminal = True
                 obs.exit_status = "ok"
-                usage = (
-                    event.get("usage")
-                    if isinstance(event.get("usage"), Mapping)
-                    else usage
-                )
-                obs.budget = self._budget(event.get("usage"))
+                turn_usage = event.get("usage")
+                if isinstance(turn_usage, Mapping):
+                    _accumulate_usage(usage, turn_usage)
+                # A usage-less turn contributes nothing. It must not reuse the
+                # preceding turn's mapping as though that mapping described it.
             elif kind in ("turn.failed", "thread.error", "error", "stream.error"):
                 obs.terminal = True
                 obs.exit_status = "error"
@@ -751,25 +765,35 @@ class _CodexDialect(Dialect):
                 refused = refusal_budget(obs.detail)
                 if refused is not None:
                     obs.budget = refused
+        measured_usage = usage or None
+        if completed_turn:
+            measured_budget = self._budget(measured_usage)
+            if obs.budget.get("refusal"):
+                obs.budget["tokens"] = measured_budget["tokens"]
+            else:
+                obs.budget = measured_budget
         obs.final_message = message
-        obs.throughput = self._throughput(usage, elapsed_seconds)
+        obs.throughput = self._throughput(measured_usage, elapsed_seconds)
         obs.phase = _phase(obs)
         return obs
 
     def _throughput(
         self, usage: Mapping[str, Any] | None, elapsed_seconds: float | None
     ) -> dict[str, Any]:
-        """Rate this harness's turn against the caller's clock.
+        """Rate this harness's run against the caller's clock.
 
-        This stream reports what a turn consumed but not how long it took, so the
-        span has to come from the caller. Without one there is no rate — the
-        token counts alone cannot say whether they took a minute or an hour, and
-        that distinction is the whole question.
+        This stream reports what each turn consumed but not how long the run took,
+        so the span has to come from the caller. Without one there is no rate —
+        the token counts alone cannot say whether they took a minute or an hour,
+        and that distinction is the whole question.
         """
-        generated = peak_input = None
+        generated = cumulative_input = cumulative_cached_input = None
         if isinstance(usage, Mapping):
             generated = _sum_tokens(usage, ("output_tokens", "reasoning_output_tokens"))
-            peak_input = _sum_tokens(usage, ("input_tokens", "cached_input_tokens"))
+            cumulative_input = _sum_tokens(
+                usage, ("input_tokens", "cached_input_tokens")
+            )
+            cumulative_cached_input = _sum_tokens(usage, ("cached_input_tokens",))
         elif elapsed_seconds is None:
             return unknown_throughput("no completed turn to measure yet")
         if elapsed_seconds is None:
@@ -788,7 +812,12 @@ class _CodexDialect(Dialect):
             # one. The wall rate is the honest figure it can support.
             generation_seconds=None,
             elapsed_seconds=elapsed_seconds,
-            peak_input_tokens=peak_input,
+            # The exec stream reports usage once per turn rather than once per
+            # request, so a request maximum is not derivable from this record.
+            # Per-session rollout files do carry the individual request records.
+            peak_input_tokens=None,
+            cumulative_input_tokens=cumulative_input,
+            cumulative_cached_input_tokens=cumulative_cached_input,
             input_budget_tokens=None,
             detail=detail,
         )
@@ -819,11 +848,11 @@ class _CodexDialect(Dialect):
     def _budget(self, usage: Any) -> dict[str, Any]:
         """Record spent tokens, and state plainly that headroom is not reported.
 
-        This harness's run stream reports what a turn consumed and nothing about
-        what remains, so the honest record is tokens plus an unknown headroom. A
-        later reader must not mistake the presence of token counts for a budget.
-        Headroom is obtainable from this harness — just not here; see
-        :meth:`budget_probe`.
+        This harness's run stream reports what each turn consumed and nothing
+        about what remains, so the honest record is accumulated tokens plus an
+        unknown headroom. A later reader must not mistake the presence of token
+        counts for a budget. Headroom is obtainable from this harness — just not
+        here; see :meth:`budget_probe`.
         """
         budget = unknown_budget("backend reports token usage but no headroom")
         if isinstance(usage, Mapping):
@@ -1063,6 +1092,8 @@ class _ClaudeDialect(Dialect):
         generation = _seconds(result.get("duration_api_ms"))
         model_usage = result.get("modelUsage")
         generated: int | None = None
+        cumulative_input: int | None = None
+        cumulative_cached_input: int | None = None
         window: int | None = None
         if isinstance(model_usage, Mapping):
             per_model = [
@@ -1071,20 +1102,51 @@ class _ClaudeDialect(Dialect):
             totals = [_number(entry.get("outputTokens")) for entry in per_model]
             measured = [value for value in totals if value is not None]
             generated = int(sum(measured)) if measured else None
+            input_totals = [
+                _sum_tokens(
+                    entry,
+                    ("inputTokens", "cacheReadInputTokens", "cacheCreationInputTokens"),
+                )
+                for entry in per_model
+            ]
+            measured_inputs = [value for value in input_totals if value is not None]
+            cumulative_input = int(sum(measured_inputs)) if measured_inputs else None
+            cached_totals = [
+                _number(entry.get("cacheReadInputTokens")) for entry in per_model
+            ]
+            measured_cached = [value for value in cached_totals if value is not None]
+            cumulative_cached_input = (
+                int(sum(measured_cached)) if measured_cached else None
+            )
             windows = [_number(entry.get("contextWindow")) for entry in per_model]
             usable = [value for value in windows if value]
             # One usable window even when several models ran: the run is held by
             # the smallest, since that is the one a shared prompt overflows first.
             window = int(min(usable)) if usable else None
-        if generated is None:
-            usage = result.get("usage")
-            if isinstance(usage, Mapping):
+        usage = result.get("usage")
+        if isinstance(usage, Mapping):
+            if generated is None:
                 generated = _sum_tokens(usage, ("output_tokens",))
+            if cumulative_input is None:
+                cumulative_input = _sum_tokens(
+                    usage,
+                    (
+                        "input_tokens",
+                        "cache_read_input_tokens",
+                        "cache_creation_input_tokens",
+                    ),
+                )
+            if cumulative_cached_input is None:
+                cumulative_cached_input = _sum_tokens(
+                    usage, ("cache_read_input_tokens",)
+                )
         return throughput_block(
             generated_tokens=generated,
             generation_seconds=generation,
             elapsed_seconds=elapsed,
             peak_input_tokens=peak_input or None,
+            cumulative_input_tokens=cumulative_input,
+            cumulative_cached_input_tokens=cumulative_cached_input,
             input_budget_tokens=window,
             detail=(
                 "generation and wall clock reported separately by the backend"
@@ -1158,6 +1220,14 @@ def _sum_tokens(usage: Mapping[str, Any], keys: Sequence[str]) -> int | None:
     """Total the named token counts, or None when none of them was reported."""
     measured = [value for key in keys if (value := _number(usage.get(key))) is not None]
     return int(sum(measured)) if measured else None
+
+
+def _accumulate_usage(total: dict[str, int | float], usage: Mapping[str, Any]) -> None:
+    """Add one turn's numeric counters to a run-level usage mapping."""
+    for key, value in usage.items():
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            continue
+        total[key] = total.get(key, 0) + value
 
 
 def _prompt_tokens(event: Mapping[str, Any]) -> int:
