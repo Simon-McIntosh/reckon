@@ -24,6 +24,7 @@ CONFIG = {
             "model": "default-model",
             "sandbox": "worktree-full",
             "time_budget": "25m",
+            "budget_check": True,
         },
         "beta": {
             "launch": "in-harness",
@@ -244,7 +245,7 @@ def test_member_harness_and_named_backend_must_agree(
     assert "agent" not in payload
 
 
-def test_metered_member_harness_does_not_declare_the_lane(
+def test_unknown_member_harness_does_not_declare_the_lane(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     ledger.register_member("proj", "worker", harness="beta", root=dispatch_repo)
@@ -261,6 +262,8 @@ def test_metered_member_harness_does_not_declare_the_lane(
     assert result.exit_code == 2
     assert payload["error"] == "not-dispatchable"
     assert "beta" in payload["detail"]
+    assert "not known to be unmetered" in payload["detail"]
+    assert "is metered" not in payload["detail"]
     assert "52%" in payload["detail"]
     assert "clive" in payload["detail"]
 
@@ -332,6 +335,28 @@ def test_undeclared_metered_default_refuses_with_window_and_free_alternative(
     assert "52%" in payload["detail"]
     assert "clive" in payload["detail"]
     assert "--backend alpha" in payload["detail"]
+    assert "is metered" in payload["detail"]
+
+
+def test_unknown_backend_still_requires_an_explicit_lane(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ledger.register_member("proj", "worker", harness="gamma", root=dispatch_repo)
+    _observe_window(monkeypatch)
+    _config, result = _invoke(
+        dispatch_repo,
+        monkeypatch,
+        node="unknown-member-backend",
+        extra=["--member", "worker"],
+        dry_run=False,
+    )
+
+    payload = _payload(result)
+    assert result.exit_code == 2
+    assert payload["error"] == "not-dispatchable"
+    assert "not known to be unmetered" in payload["detail"]
+    assert "is metered" not in payload["detail"]
+    assert "--backend gamma" in payload["detail"]
 
 
 def test_run_record_pairs_declared_lane_with_dispatch_window(

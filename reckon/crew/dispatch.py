@@ -1582,10 +1582,11 @@ def _lane_declaration_evidence(
 def _lane_declaration_finding(
     *,
     backend_name: str,
+    backend: Mapping[str, Any],
     observation: Mapping[str, Any],
     alternatives: Iterable[str],
 ) -> dict[str, str]:
-    """Explain how to make an inherited metered route explicit."""
+    """Explain how to make an undeclared non-unmetered route explicit."""
     utilisation = observation.get("utilisation_pct")
     figure = (
         "unknown"
@@ -1593,13 +1594,19 @@ def _lane_declaration_finding(
         else f"{float(utilisation):g}%"
     )
     candidates = ", ".join(repr(name) for name in alternatives) or "none configured"
+    if backend.get("budget_check"):
+        classification = "is metered"
+        declaration = "this metered lane"
+    else:
+        classification = "is not known to be unmetered"
+        declaration = "this lane"
     return {
         "property": "fully-specified",
         "detail": (
-            f"resolved backend {backend_name!r} is metered, but the caller declared "
+            f"resolved backend {backend_name!r} {classification}, but the caller declared "
             f"no lane; window utilisation read at dispatch is {figure}; unmetered "
             f"backends that would serve this node: {candidates}. Pass --backend "
-            f"{backend_name} to declare this metered lane, or name one of the "
+            f"{backend_name} to declare {declaration}, or name one of the "
             "unmetered alternatives"
         ),
     }
@@ -1922,6 +1929,7 @@ def plan_dispatch(
                     *verdict.findings,
                     _lane_declaration_finding(
                         backend_name=backend_name,
+                        backend=backend,
                         observation=observation,
                         alternatives=_unmetered_dispatch_alternatives(
                             config, role=node.role, spec_level=node.spec_level
