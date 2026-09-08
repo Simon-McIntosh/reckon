@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T09:39:01",
+  "updated": "2026-09-08T09:48:05",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -455,6 +455,15 @@
         "session_model": null,
         "sessions": {},
         "created": "2026-09-06"
+      },
+      {
+        "id": "crew-handoff-reading",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-08"
       },
       {
         "id": "crew-lane-disagreement",
@@ -75077,6 +75086,152 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T073744512575-a-lane-near-its-ceiling-says-so",
+        "plan": "crew-observability-truth",
+        "section": "\u00a71",
+        "node": "a-lane-near-its-ceiling-says-so",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 612,
+                "cached_input_tokens": 448895,
+                "input_tokens": 449509,
+                "output_tokens": 3628,
+                "reasoning_output_tokens": 802,
+                "total_tokens": 453137,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_lanes_view_serving_state.py -q passes, and the lanes view's serving state distinguishes a lane with ample quota, a lane close enough to its ceiling that a dispatch is at risk, and a lane whose reading is too old to support any claim, rather than reporting that a lane will serve at every utilisation below the absolute ceiling. THE DEFECT, measured against the live route minutes after the view landed. reckon/mcp_views.py derives the serving state as exhausted when used percent is at or above one hundred and as will-serve for every other measured value. The utilisation figure is reported in WHOLE NUMBERS, so at-or-above-one-hundred means the lane is completely spent; there is no band between ample and gone. The live reading that exposed it: one endpoint reported ninety-seven percent used and three percent remaining on a three-hundred-minute window, and the view reported that it will serve. By the time that guard can fire, a dispatch has already been refused. This is the same shape as a guard that reports safety it does not provide, and this project has shipped one before: a state that could not fire at any input in its own domain, past a clean gate, because its falsifier ranged over the live inventory rather than over the input range. AND THE READING'S AGE IS IGNORED. That ninety-seven percent observation was fifty-five minutes old when the view served it, on a window that resets in hours, and the row carried the observation time without letting it qualify the claim. A lane's utilisation at some point in the past does not support a statement about whether it will serve now; the older the reading, the less it supports, and a reading old enough supports nothing. The view already carries the observation time on every row, so the input exists and is simply unused. WHAT TO CHANGE. Give the serving state at least three outcomes: one for a lane whose measured utilisation leaves clear room, one for a lane close enough to its ceiling that a dispatch is at risk, and one for a lane whose reading is too old to support a claim about the present. Name them by what the reader should conclude, not by a number. Declare the utilisation band and the staleness horizon as named module constants with a comment giving the reason for each value, and choose values you can justify in that comment rather than round numbers: the utilisation figure is quantised to whole percent, so a band narrower than a few points is measuring quantisation, and the staleness horizon must be short relative to the shortest window the view reports, which is three hundred minutes. Keep the exhausted outcome for a lane at its ceiling. A lane whose reading is stale must not be reported as ample even when the stale figure was low, because that is the direction that costs a refused dispatch; equally it must not be reported as exhausted, because that would hold work for no reason, and the honest third state is what avoids choosing between two wrong answers. FIX THE TWO ABSENCE DEFECTS IN THE SAME NODE, since both are the same error and both were asked for and not delivered. First, a lane that writes no receipt of this kind because it is not metered through this mechanism is a DIFFERENT state from a lane whose receipt should exist and is missing, and the view currently reports both as unreadable with the same reason. Distinguish them: several lanes in the live output are unmetered through this surface by nature and will never have a receipt, and reporting them as unreadable invites a reader to think something is broken. Second, a lane whose receipt is missing carries an observation time anyway, in one live case two days old, which is some other quantity presented in the field a reader will take as the receipt's observation time. When there is no receipt there is no observation, so that field must say so rather than carry a timestamp from elsewhere; if the timestamp is genuinely useful, give it a name that says what it measures. WHAT NOT TO DO. Do not add a recommendation, a ranking, or a preferred lane; the existing test that scans the response for such a field must keep passing, and this node must not weaken it. Do not compute a burn rate or project a reset. Do not change the quota readings themselves, the horizon keying, the effective context window or the plan type. Do not edit reckon/crew/rollout.py, reckon/crew/recovery.py, reckon/crew/ticker.py, reckon/crew/promotion.py, reckon/ledger.py, reckon/crew/quota_weight.py or reckon/schema/flight.yaml; peers hold all seven. Do not edit any file outside the repository, and in particular do not touch the host flight configuration even though it still declares a withdrawn lane; that is the coordinator's to raise. FALSIFIERS, in tests/test_lanes_view_serving_state.py, every fixture synthesised, no test reading the real configuration home or a real session file, and every expected figure computed in the test from the declared constants rather than written as a literal. RANGE THE UTILISATION FALSIFIER OVER THE INPUT RANGE, NOT OVER THE LANES THAT HAPPEN TO EXIST: assert the state at a sweep of utilisation values from zero to one hundred inclusive, including every value in the at-risk band and the values immediately either side of its boundary, and require the boundary to fall exactly where the constant declares. A fixture at ninety-seven percent on a fresh reading does NOT report the ample state, asserted directly against the ample state's own value, which is the live case that exposed this. A fixture at the ceiling still reports exhausted. A fixture whose reading is older than the staleness horizon reports the stale state regardless of how low its utilisation is, asserted with a deliberately low utilisation so a lenient implementation cannot pass. A fixture one second inside the horizon reports on its utilisation, pinning the boundary both ways. A lane unmetered through this surface reports its own state, distinguishable from a lane whose receipt is missing, asserted against each other directly. A lane with no receipt reports no observation time rather than a timestamp, asserted by requiring the field to be the unmeasured marker. Every existing lanes-view test passes unchanged. Report base and head over tests/test_lanes_view_serving_state.py, tests/test_crew_lanes_view.py and the tests importing reckon.mcp_views, with failure ids either side and none added. Bound the run per file and never run the full suite.",
+          "estimated_hours": 1.25,
+          "goal": "Report a lane near its ceiling and a lane whose reading is too old as their own states, and separate an unmetered lane from a missing receipt",
+          "id": "a-lane-near-its-ceiling-says-so",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T073744512575-a-lane-near-its-ceiling-says-so/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "codex-terra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/mcp_views.py",
+            "tests/test_lanes_view_serving_state.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-serving-state",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T07:38:00Z",
+        "completed_at": "2026-09-08T07:46:04Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 484,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 484,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "b04decf159b4627d561ff03a28337f209e21862d",
+        "commits": [
+          "b5fc5a233d8215731ca3b74df62c44ecf40af641"
+        ],
+        "changed_lines": {
+          "added": 310,
+          "removed": 16,
+          "files": 2
+        },
+        "tests_added": 7,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_lanes_view_serving_state.py tests/test_crew_lanes_view.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T073744512575-a-lane-near-its-ceiling-says-so/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T073744512575-a-lane-near-its-ceiling-says-so/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07ff3-d259-71f2-b04c-b3258ba95232",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 4541184,
+            "cached_input_tokens_cumulative": 4541184,
+            "input_tokens": 4681830,
+            "input_tokens_cumulative": 4681830,
+            "output_tokens": 19140,
+            "output_tokens_cumulative": 19140,
+            "reasoning_output_tokens": 6433,
+            "reasoning_output_tokens_cumulative": 6433
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 4541184,
+          "cumulative_input_tokens": 9223014,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 25573
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-lane-near-its-ceiling-says-so",
+          "session_id": "01a07ff3-d259-71f2-b04c-b3258ba95232",
+          "session_source": "stream",
+          "retained_at": "2026-09-08T07:46:04Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -75305,6 +75460,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1172
+    "_version": 1174
   }
 }
