@@ -404,6 +404,47 @@
       carrying a disposition for all nine.
     </p>
 
+    <h2 id="s10">&#167;10 &mdash; A gate can be recorded as passed beside a log that failed</h2>
+    <p>
+      Promotion asks for a gate command, an exit status and a log, and checks none of them
+      against each other. Read at the promotion path: the evidence requirement resolves the
+      commits a run presents and returns rather than raising on a shortfall, deliberately, so a
+      passing verdict is never turned into an exception. Nothing anywhere compares the log's
+      contents with the command filed beside it, or with the exit status asserted for it.
+    </p>
+    <p>
+      So the ledger can carry a row whose verdict and whose evidence contradict each other, and
+      the row is the durable artifact everything downstream trusts. Two instances are on record.
+      In one, a coordinator attached the wrong log to a run and had to correct a committed row in
+      prose afterwards. In the other, a run was promoted with an asserted exit status of zero
+      beside a log whose entire content is a command-not-found error at exit two &mdash; naming a
+      subcommand that does not exist, while the two real entry points both do. Neither was caught
+      by the gate; both were caught by a person reading afterwards.
+    </p>
+    <p>
+      This is the plan's own subject arriving in the record rather than the display. A pane that
+      lies can be re-read; a committed ledger row that lies is what a later reader reasons from,
+      and calibration, routing and every rework figure in this project are computed from these
+      rows. A verdict whose own evidence refutes it is worse than a missing verdict, because a
+      gap invites a question and a contradiction answers it.
+    </p>
+    <p>
+      The check is cheap because the material is already in hand at promotion: the command, the
+      claimed status, and the log. What it must not do is re-run anything or parse test output
+      formats, both of which would make promotion depend on the shape of every runner this fleet
+      uses.
+    </p>
+    <p>
+      <em>Done when</em> a promotion asserting a passing gate is refused if the log it cites is
+      empty, or if the log's own recorded exit status contradicts the asserted one, or if the log
+      contains no evidence of the command having run at all; when the refusal names which of
+      those three it found and the resolving verb; when a promotion whose log and command agree
+      is unchanged; when a non-passing verdict is unaffected, since it already carries its
+      failure; and when the check reads the log as text without parsing any runner's result
+      format. Asserted by promoting the two recorded contradictory pairs and requiring a refusal
+      for each, and by promoting an agreeing pair and requiring it to land unchanged.
+    </p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="liveness-source" data-choice="reconcile-on-read" data-by="lead" data-when="2026-09-03T07:38:29+00:00">
