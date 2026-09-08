@@ -43,6 +43,18 @@ class Unmeasured(StrEnum):
     NO_RATE_LIMIT_VALUE = auto()
 
 
+WEEKLY_WINDOW_MINUTES = 7 * 24 * 60
+
+
+@dataclass(frozen=True, slots=True)
+class QuotaReading:
+    """One quota window, retained with the dimensions that identify it."""
+
+    window_minutes: int
+    used_percent: int | float | Unmeasured
+    resets_at: int | float | Unmeasured
+
+
 @dataclass(frozen=True, slots=True)
 class RolloutReceipt:
     """Measured client receipt values, with an explicit marker for every gap."""
@@ -53,9 +65,57 @@ class RolloutReceipt:
     maximum_request_input_tokens: int | Unmeasured
     requests_over_threshold: int | Unmeasured
     model_context_window: int | Unmeasured
-    quota_used_percent: int | float | Unmeasured
-    quota_window_minutes: int | Unmeasured
-    quota_resets_at: int | float | Unmeasured
+    quota_readings: Mapping[int, QuotaReading] | Unmeasured
+    plan_type: str | Unmeasured
+
+    def quota_for_window(self, window_minutes: int) -> QuotaReading | Unmeasured:
+        """Return the reading for one window length without positional lookup."""
+        if isinstance(self.quota_readings, Unmeasured):
+            return self.quota_readings
+        return self.quota_readings.get(window_minutes, Unmeasured.NO_RATE_LIMIT_VALUE)
+
+    @property
+    def weekly_quota(self) -> QuotaReading | Unmeasured:
+        """Return the seven-day reading, wherever it appeared in the receipt."""
+        return self.quota_for_window(WEEKLY_WINDOW_MINUTES)
+
+    @property
+    def short_horizon_quota(self) -> QuotaReading | Unmeasured:
+        """Return the shortest positive window shorter than one week."""
+        if isinstance(self.quota_readings, Unmeasured):
+            return self.quota_readings
+        short_windows = (
+            window
+            for window in self.quota_readings
+            if 0 < window < WEEKLY_WINDOW_MINUTES
+        )
+        window = min(short_windows, default=None)
+        if window is None:
+            return Unmeasured.NO_RATE_LIMIT_VALUE
+        return self.quota_readings[window]
+
+    @property
+    def five_hour_quota(self) -> QuotaReading | Unmeasured:
+        """Return the account's short-horizon reading."""
+        return self.short_horizon_quota
+
+    @property
+    def quota_used_percent(self) -> int | float | Unmeasured:
+        """Compatibility view of the weekly utilisation."""
+        reading = self.weekly_quota
+        return reading if isinstance(reading, Unmeasured) else reading.used_percent
+
+    @property
+    def quota_window_minutes(self) -> int | Unmeasured:
+        """Compatibility view of the weekly window length."""
+        reading = self.weekly_quota
+        return reading if isinstance(reading, Unmeasured) else reading.window_minutes
+
+    @property
+    def quota_resets_at(self) -> int | float | Unmeasured:
+        """Compatibility view of the weekly reset time."""
+        reading = self.weekly_quota
+        return reading if isinstance(reading, Unmeasured) else reading.resets_at
 
 
 def _unmeasured(reason: Unmeasured) -> RolloutReceipt:
@@ -88,13 +148,6 @@ def _usage_value(usage: Mapping[str, object] | None, key: str) -> int | Unmeasur
     return value if value is not None else Unmeasured.NO_TOTAL_TOKEN_USAGE
 
 
-def _quota_integer(quota: Mapping[str, object] | None, key: str) -> int | Unmeasured:
-    if quota is None:
-        return Unmeasured.NO_RATE_LIMITS
-    value = _integer(quota.get(key))
-    return value if value is not None else Unmeasured.NO_RATE_LIMIT_VALUE
-
-
 def _quota_number(
     quota: Mapping[str, object] | None, key: str
 ) -> int | float | Unmeasured:
@@ -102,6 +155,35 @@ def _quota_number(
         return Unmeasured.NO_RATE_LIMITS
     value = _number(quota.get(key))
     return value if value is not None else Unmeasured.NO_RATE_LIMIT_VALUE
+
+
+def _quota_text(quota: Mapping[str, object] | None, key: str) -> str | Unmeasured:
+    if quota is None:
+        return Unmeasured.NO_RATE_LIMITS
+    value = quota.get(key)
+    return value if isinstance(value, str) and value else Unmeasured.NO_RATE_LIMIT_VALUE
+
+
+def _quota_readings(
+    rate_limits: Mapping[str, object] | None,
+) -> Mapping[int, QuotaReading] | Unmeasured:
+    if rate_limits is None:
+        return Unmeasured.NO_RATE_LIMITS
+
+    readings: dict[int, QuotaReading] = {}
+    for name in ("primary", "secondary"):
+        quota = rate_limits.get(name)
+        if not isinstance(quota, Mapping):
+            continue
+        window_minutes = _integer(quota.get("window_minutes"))
+        if window_minutes is None or window_minutes <= 0:
+            continue
+        readings[window_minutes] = QuotaReading(
+            window_minutes=window_minutes,
+            used_percent=_quota_number(quota, "used_percent"),
+            resets_at=_quota_number(quota, "resets_at"),
+        )
+    return readings
 
 
 def read_rollout_receipt(session_id: str) -> RolloutReceipt:
@@ -121,7 +203,7 @@ def read_rollout_receipt(session_id: str) -> RolloutReceipt:
     latest_total: Mapping[str, object] | None = None
     request_inputs: list[int] = []
     latest_context_window: int | None = None
-    latest_quota: Mapping[str, object] | None = None
+    latest_rate_limits: Mapping[str, object] | None = None
 
     try:
         with path.open(encoding="utf-8") as stream:
@@ -156,9 +238,7 @@ def read_rollout_receipt(session_id: str) -> RolloutReceipt:
 
                 rate_limits = payload.get("rate_limits")
                 if isinstance(rate_limits, Mapping):
-                    primary = rate_limits.get("primary")
-                    if isinstance(primary, Mapping):
-                        latest_quota = primary
+                    latest_rate_limits = rate_limits
     except (OSError, UnicodeError):
         return _unmeasured(Unmeasured.UNREADABLE_ROLLOUT)
 
@@ -191,14 +271,15 @@ def read_rollout_receipt(session_id: str) -> RolloutReceipt:
         maximum_request_input_tokens=maximum_request,
         requests_over_threshold=crossing_count,
         model_context_window=context_window,
-        quota_used_percent=_quota_number(latest_quota, "used_percent"),
-        quota_window_minutes=_quota_integer(latest_quota, "window_minutes"),
-        quota_resets_at=_quota_number(latest_quota, "resets_at"),
+        quota_readings=_quota_readings(latest_rate_limits),
+        plan_type=_quota_text(latest_rate_limits, "plan_type"),
     )
 
 
 __all__ = [
     "REQUEST_INPUT_CROSSING_THRESHOLD",
+    "WEEKLY_WINDOW_MINUTES",
+    "QuotaReading",
     "RolloutReceipt",
     "Unmeasured",
     "read_rollout_receipt",
