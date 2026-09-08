@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T08:22:26",
+  "updated": "2026-09-08T08:29:20",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -73115,6 +73115,144 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260908T055807926942-the-client-writes-a-quota-receipt",
+        "plan": "crew-effort-routing",
+        "section": "\u00a71",
+        "node": "the-client-writes-a-quota-receipt",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 3093,
+                "cached_input_tokens": 210043,
+                "input_tokens": 213138,
+                "output_tokens": 4696,
+                "reasoning_output_tokens": 1571,
+                "total_tokens": 217834,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_rollout_receipt.py -q passes, and a function in a new module reads, for one run identified by its session id, the quota and token receipt the metered client already writes to its own per-session rollout file: the run's true cumulative input across every turn, the largest single request it sent, how many of its requests exceeded 272,000 input tokens, the effective context window the client reported, and the run's position in its rolling quota window. WHY THIS IS THE MOST VALUABLE NODE AVAILABLE. This fleet is rationing a weekly quota and has been reasoning about it from wall clock and from a mislabelled token column, while the client has been writing the actual quota reading into a file on this machine on every single request. Nothing in this project reads that file. A peer established the route this hour and it is verified: the client keeps one rollout file per session under its own sessions directory, the file name contains the crew session id verbatim, and its records carry the figures below. This is not a modelled cost, it is the vendor's own accounting handed to us. THE RECORD SHAPE, verified on this host so you do not need to discover it, though you must confirm it rather than trust me. Records of interest have a payload whose type is token_count. That payload carries an info object holding total_token_usage and last_token_usage, each with input_tokens, cached_input_tokens, cache_write_input_tokens, output_tokens, reasoning_output_tokens and total_tokens; info also carries model_context_window. The payload additionally carries a rate_limits object with a primary object holding used_percent, window_minutes and resets_at, and a credits object. Measured: window_minutes is 10080, which is seven days, so primary is the weekly quota and used_percent is our position in it. total_token_usage is the run's running total across every turn, which is the figure a peer proved the existing ledger column understates on any resumed run, and last_token_usage is the most recent single request, which is the figure this dialect's crew stream cannot supply at all. WHAT TO BUILD, IN A NEW MODULE ONLY. Create reckon/crew/rollout.py exposing one function that takes a session id, locates that session's rollout file, and returns the cumulative input, cumulative cached input and cumulative output from the LAST total_token_usage record; the maximum input over every last_token_usage record; the count of last_token_usage records whose input exceeded the threshold; the effective context window; and the quota window's used_percent, window_minutes and reset time from the last record that carries them. Take the threshold as a named module constant with its published rule in a comment. Do not wire it into promotion, dispatch, the ledger, the CLI or any surface. Do not read or modify any configuration file. Do not edit reckon/_backends.py, reckon/crew/metering.py, reckon/crew/quota_weight.py, reckon/crew/context_budget.py, reckon/crew/promotion.py, reckon/crew/prompts.py or docs/research/deploy-matrix.html; peers hold all seven this hour. THE BOUNDARY WITH A PEER, so you do not duplicate it: another node derives cumulative tokens from the CREW STREAM and correctly reports the per-request maximum as unmeasurable there. Your module reads the CLIENT'S ROLLOUT instead, which does carry it. Both are correct and they are different surfaces; say so in your docstring and name the other surface, so a reader meeting one knows the other exists. THE QUANTISATION CAVEAT IS PART OF THE DELIVERABLE, NOT A FOOTNOTE. Measured across twenty-four runs today, used_percent is reported only as whole numbers, so a single run's consumption comes back as zero, one, two or three points and a run that truly cost four tenths of a point is indistinguishable from one that cost nothing. Per-run attribution from this field is therefore not sound and per-model aggregates over many runs are. State that in the docstring in those terms, and return the raw reading rather than a computed per-run delta, so no caller can accidentally attribute a single run's burn from a quantised figure. This project already carries the same reasoning elsewhere for a burn projection floor: below a few percent of a window, quantisation dominates the measurement. Do not invent a floor here; just refuse to compute the delta. AN ABSENT RECEIPT IS NOT A ZERO. A session id with no rollout file, a rollout file that cannot be read, a file carrying no token_count record, and a file whose records carry no rate limits are four different states and must not collapse into one another or into zero. Return an explicit unmeasured marker for each figure the file does not support, and never return zero for a figure that was not measured: a quota reading of zero means an untouched window and is a real and different fact from an unread file. FALSIFIERS, asserted in tests/test_rollout_receipt.py, every expected figure computed in the test rather than written as a literal, and every fixture constructed rather than borrowed from a real session except where stated. A constructed rollout whose last_token_usage records carry differing input sizes returns the LARGEST, not the first, not the last, and not their sum, asserted against a fixture whose total is much larger than its maximum so a sum cannot pass. A constructed rollout carrying three requests above the threshold and four below returns three. A constructed rollout with several total_token_usage records returns the LAST one's figures, not the first and not a sum of them, since the field is already cumulative and summing it would double count; assert against a fixture whose earlier totals are smaller. The returned maximum single request is strictly less than the returned cumulative input on any fixture with more than one request, which is an arithmetic invariant and catches a confusion between the two objects. A missing session id, an unreadable file and a file with no token_count record each return the unmeasured markers and do not raise. A constructed rollout reporting a used_percent of zero returns zero and NOT the unmeasured marker, asserted directly against the unmeasured case, because those two are the states this project most often conflates. RANGE ONE FALSIFIER OVER THE REAL POPULATION, deliberately: run the function over at least twelve real session ids taken from this project's own ledger rows, assert it raises on none, and assert that for every run where both figures are measured the maximum single request does not exceed the reported effective context window, which is a physical invariant and the strongest available check that you are reading the right field. Report how many of the twelve had a rollout file at all, because a low hit rate is itself a finding about retention. Measure base and head over the new file and the tests that import reckon.crew, report failure ids either side, require none added, bound the run per file, and never run the full suite for this node.",
+          "estimated_hours": 1.5,
+          "goal": "Read the per-session quota and token receipt the metered client already writes, including true cumulative input, the largest single request, the crossing count, the effective window and the weekly quota position",
+          "id": "the-client-writes-a-quota-receipt",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T055807926942-the-client-writes-a-quota-receipt/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "55m",
+          "write_paths": [
+            "reckon/crew/rollout.py",
+            "tests/test_rollout_receipt.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-rollout-receipt",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T05:58:26Z",
+        "completed_at": "2026-09-08T06:21:40Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1394,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1394,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "e6242ffc70fc227e36c943b57cf1116997f122fb",
+        "commits": [
+          "d900cc6865a1ca09f2f486e572d5e6a9a0c34b63"
+        ],
+        "changed_lines": {
+          "added": 478,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 7,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_rollout_receipt.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T055807926942-the-client-writes-a-quota-receipt/after.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T055807926942-the-client-writes-a-quota-receipt/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07f98-abf4-7683-9ba7-b86e2d8d6c50",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 10609664,
+            "cached_input_tokens_cumulative": 10609664,
+            "input_tokens": 10784024,
+            "input_tokens_cumulative": 10784024,
+            "output_tokens": 35605,
+            "output_tokens_cumulative": 35605,
+            "reasoning_output_tokens": 14278,
+            "reasoning_output_tokens_cumulative": 14278
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 10609664,
+          "cumulative_input_tokens": 21393688,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 49883
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-client-writes-a-quota-receipt",
+          "session_id": "01a07f98-abf4-7683-9ba7-b86e2d8d6c50",
+          "session_source": "stream",
+          "retained_at": "2026-09-08T06:21:40Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -73343,6 +73481,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1147
+    "_version": 1148
   }
 }
