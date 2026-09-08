@@ -66,7 +66,7 @@ def _artifact_fixture_rows(
 def _composed_state() -> dict[str, object]:
     state = discover_plans(ROOT / "docs", "reckon", ROOT / "docs" / "state")
     routes = _published_artifact_routes()
-    inventory = [*_artifact_fixture_rows(routes), *state.get("inventory", [])]
+    inventory = [*state.get("inventory", []), *_artifact_fixture_rows(routes)]
     active = [
         sprint
         for sprint in state.get("sprints", [])
@@ -78,6 +78,7 @@ def _composed_state() -> dict[str, object]:
         "projects": [{"project": "reckon", "plans_count": len(inventory)}],
         "active_sprints": active,
         "active_sprint_conflict": len(active) > 1,
+        "inventory": inventory,
         "plans": {item["slug"]: item for item in inventory},
     }
 
@@ -88,6 +89,9 @@ def test_scroll_reader_fixtures_cover_the_published_artifact_kinds() -> None:
 
     assert len(rows) == len(routes)
     assert {row["type"] for row in rows} == {route["key"] for route in routes}
+    assert {row["slug"] for row in rows} <= {
+        item["slug"] for item in _composed_state()["inventory"]
+    }
 
 
 def _vertical_probe() -> str:
