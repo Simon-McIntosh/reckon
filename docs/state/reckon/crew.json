@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T06:40:53",
+  "updated": "2026-09-08T07:16:26",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -72070,6 +72070,158 @@
           "role": "documentation",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260908T043606789253-the-matrix-drops-glm-and-carries-the-effort-finding",
+        "plan": "crew-effort-routing",
+        "section": "\u00a71",
+        "node": "the-matrix-drops-glm-and-carries-the-effort-finding",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2417,
+                "cached_input_tokens": 866004,
+                "input_tokens": 868423,
+                "output_tokens": 583,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 869006,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "The document docs/research/deploy-matrix.html states that the glm lane is withdrawn with its date and reason, carries the effort-versus-durable-cost figures below, and carries the spark profile below; then grep the file and confirm the glm rows are marked withdrawn rather than deleted, and confirm no sentence recommends a lower effort for any node class. THREE CHANGES, ALL MEASURED, ALL DATED 2026-09-08. FIRST, THE GLM LANE IS WITHDRAWN. The lead has dropped it: the model does not fit the serving deployment alongside capacity for other work. Mark the lane withdrawn with that reason and date. Do not delete its cells and do not scrub its rows from the matrix, because a withdrawn lane that was measured is a record and a reader comparing lanes later needs to know it existed and why it went. State alongside it that the lane was never cleanly measured: nine rows, zero passing, and the classifications were six malformed-node and three infrastructure-failure, so two thirds were coordinator brief defects and the remaining three trace to a window defect on that lane. The honest cell is not that the model performed poorly; it is that no clean measurement of it exists. SECOND, EFFORT DOES NOT WANT A DISPATCH KNOB, AND THE MEDIAN HIDES WHY. Measured on the committed ledger over the sol model, which carries the only two-effort sample large enough to compare: at high effort 266 runs, 246 durable, 92 percent, median wall 568 seconds, total wall 38.2 hours, and 558 seconds of wall per durable node. At medium effort 236 runs, 207 durable, 88 percent, median wall 492 seconds, total wall 48.6 hours, and 846 seconds of wall per durable node. So medium is faster per run by median and 52 percent dearer per durable node, and it consumed more total wall while producing fewer durable nodes. State the median beside the per-durable figure precisely because the median inverts the conclusion, and a reader who sees only the median will route to the wrong effort. The finding to record is that effort trades turns rather than buying quality, and the unit-of-work cost favours a uniform high effort over a routing knob. WHAT MUST NOT BE OVERSTATED IN THAT CELL. Generated tokens per durable node run the other way, 6.9 thousand at high against 3.6 thousand at medium, and generation is not what a subscription meter charges. Cumulative input per run is not recorded anywhere in the ledger, only a peak, so the exact quota cost per durable node is unmeasured and must be marked so. Record the wall-per-durable figure as the strongest available evidence and record the quota-cost figure as absent rather than inferring it from wall. THIRD, THE SPARK PROFILE, WHICH IS NARROW AND CONSISTENT. Nine rows, every one role implement at spec level exact, eight durable, median wall 236 seconds, 249 seconds of wall per durable node. That is 2.2 times cheaper per durable node than sol at high effort, on the one node shape it has been given. State that the sample is nine and that it spans a single role and a single spec level, so it supports a hypothesis about focused well-specified implementation work and supports nothing about any other shape. State that spark carries its own separate quota window rather than sharing the primary one, which is why it is worth measuring rather than merely fast. Note that spark rows carry no generated-token figures, so its token cost is unmeasured too. WHAT NOT TO CHANGE. Do not alter any existing measured cell, its date or its derivation. Do not delete the glm rows. Do not convert a cell marked unmeasured into a measured one unless this message supplies the measurement. Do not add a recommendation to lower effort anywhere. Do not present the spark figures as a lane ceiling or as evidence about roles other than implement. Do not restate the ledger filters in the evidence section. FALSIFIERS. The glm lane reads as withdrawn with its date and reason, and its rows are still present. A sentence states that no clean measurement of glm exists, with the six-and-three classification split. The sol effort comparison carries both the median and the per-durable figure, and a sentence says the median inverts the conclusion. The generated-token counter-figure is present and is stated not to be what a meter charges. Cumulative input per durable node is marked unmeasured. The spark cell states nine rows, one role, one spec level, and the separate quota window. No sentence in the document recommends a lower effort for any node class. No spark figure is presented as a ceiling. The document still passes reckon audit-doc at exit 0.",
+          "estimated_hours": 1.0,
+          "goal": "Bring the deploy matrix current: the glm lane withdrawn with its reason, the effort-versus-durable-cost finding, and the spark profile",
+          "id": "the-matrix-drops-glm-and-carries-the-effort-finding",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T043606789253-the-matrix-drops-glm-and-carries-the-effort-finding/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "documentation",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "docs/research/deploy-matrix.html"
+          ]
+        },
+        "role": "documentation",
+        "spec_level": "exact",
+        "member": "crew-matrix-currency",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T04:36:14Z",
+        "completed_at": "2026-09-08T05:15:01Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 2327,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 2327,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "cf3030d806a84aa4e0f0b84508bb874f4ef0dc2a",
+        "commits": [
+          "319fd5ece76b417b1c57ab841f64419daa69ad38"
+        ],
+        "changed_lines": {
+          "added": 106,
+          "removed": 39,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "reckon audit-doc docs/research/deploy-matrix.html + falsifier greps over the merged document",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/72a3a18b-a229-494a-aed5-99d277991aec/scratchpad/gate80.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T043606789253-the-matrix-drops-glm-and-carries-the-effort-finding/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07f5f-e9ea-7333-b259-7fc810dbe2d7",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 10830720,
+            "cached_input_tokens_cumulative": 10830720,
+            "input_tokens": 11026019,
+            "input_tokens_cumulative": 11026019,
+            "output_tokens": 29262,
+            "output_tokens_cumulative": 29262,
+            "reasoning_output_tokens": 11925,
+            "reasoning_output_tokens_cumulative": 11925
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": {
+          "attempt": 2,
+          "kind": "lane-change",
+          "lanes": [
+            {
+              "changed_at": "2026-09-08T04:56:26Z",
+              "detail": "starting fresh because the session cannot follow the move from harness 'claude' to 'codex'",
+              "from_backend": "clive",
+              "from_harness": "claude",
+              "reason": "Report-shaped documentation work belongs on a metered lane on this evidence: two fleets measured report-shaped nodes at 3 of 8 and 0 of 5 on the local lane against 8 of 8 and 7 of 7 for implement and review, and a shape-matched pair completed the same question in 8m40s on terra and 22m on sol against three local attempts totalling 4 to 7 hours with two total losses. Dispatching documentation to the local lane was against the coordinator's own evidence.",
+              "session": "fresh",
+              "to_backend": "codex",
+              "to_harness": "codex"
+            }
+          ],
+          "root_run_id": "r-20260908T043606789253-the-matrix-drops-glm-and-carries-the-effort-finding"
+        },
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 41187,
+          "peak_input_tokens": 21856739
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "attempt": 2,
+        "attempt_kind": "lane-change",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-matrix-drops-glm-and-carries-the-effort-finding",
+          "session_id": "01a07f5f-e9ea-7333-b259-7fc810dbe2d7",
+          "session_source": "stream",
+          "retained_at": "2026-09-08T05:15:01Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "documentation",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -72298,6 +72450,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1128
+    "_version": 1129
   }
 }
