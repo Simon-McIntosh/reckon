@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T21:51:48",
+  "updated": "2026-09-08T21:56:53",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -2100,9 +2100,11 @@
         "id": "ship0908b-a",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a0828a-85d9-74b0-9ea9-b1dd07e0b7cd",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a0828a-85d9-74b0-9ea9-b1dd07e0b7cd"
+        },
         "created": "2026-09-08"
       },
       {
@@ -79541,6 +79543,169 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T194140935832-promotion-requires-the-commit-it-claims",
+        "plan": "concurrency-and-schedule-visibility",
+        "section": "\u00a78",
+        "node": "promotion-requires-the-commit-it-claims",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1244,
+                "cached_input_tokens": 214706,
+                "input_tokens": 215952,
+                "output_tokens": 1048,
+                "reasoning_output_tokens": 365,
+                "total_tokens": 217000,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "c97ff0dc-76f9-4d90-a37e-98717f5066f2",
+            "session_id": "ship-s15-2026-09-08b"
+          },
+          "done_when": "tests/test_crew_promotion.py passes with new cases proving: a promotion whose manifest reports status complete with a non-empty changed-paths list and an empty or absent commit sha is refused rather than recorded, the refusal naming the manifest field that is missing; a manifest reporting complete with a commit sha promotes unchanged; and a manifest reporting complete with no changed paths and no commit sha is unaffected, so a report-only node still promotes. Record the new case count and the file pass total in the manifest tests line",
+          "estimated_hours": null,
+          "goal": "promotion refuses a manifest that reports completion with changed paths and no commit sha",
+          "id": "promotion-requires-the-commit-it-claims",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T194140935832-promotion-requires-the-commit-it-claims/manifest.md",
+          "plan": "concurrency-and-schedule-visibility",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "tests/test_crew_promotion.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "ship0908b-a",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T19:41:51Z",
+        "completed_at": "2026-09-08T19:53:57Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 726,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 726,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "69db659251b7eb4af64d12c611949fa213afc79d",
+        "commits": [
+          "0e664628962c464542e331561c23d86e6bbef4a8"
+        ],
+        "changed_lines": {
+          "added": 130,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=\"$PWD\" .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_promotion.py",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T194140935832-promotion-requires-the-commit-it-claims/after-test_crew_promotion.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T194140935832-promotion-requires-the-commit-it-claims/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0828a-85d9-74b0-9ea9-b1dd07e0b7cd",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 5038720,
+            "cached_input_tokens_cumulative": 5038720,
+            "input_tokens": 5183532,
+            "input_tokens_cumulative": 5183532,
+            "output_tokens": 17946,
+            "output_tokens_cumulative": 17946,
+            "reasoning_output_tokens": 4876,
+            "reasoning_output_tokens_cumulative": 4876
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-08T19:53:57Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 53.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-08T19:53:57Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 5038720,
+          "cumulative_input_tokens": 10222252,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 22822
+        },
+        "follow_on_paths": [
+          "resume/worktree-retention",
+          "tests/test_crew_promotion.py",
+          "resume_waiver/worktree_retention"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-08b/promotion-requires-the-commit-it-claims",
+          "session_id": "01a0828a-85d9-74b0-9ea9-b1dd07e0b7cd",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T19:53:57Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -79769,6 +79934,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1226
+    "_version": 1228
   }
 }
