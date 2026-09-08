@@ -34,9 +34,10 @@
     other section in the plan changes behaviour a follower executes, so landing them under
     stale followers would ship capabilities the running fleet cannot reach. That had already
     happened once, with a recovery sweep no follower on the workstation ever called.</p>
-    <p>This record covers &sect;2 only. &sect;3 through &sect;7 remain open, and the plan
-    stayed blocked on <code>work-survives-a-provider-outage</code> for its dependency
-    throughout.</p>
+    <p>The record opened covering &sect;2 alone. It now also carries the currency audit of
+    2026-09-08, which found &sect;3, &sect;4, &sect;5 and &sect;7 already present on the
+    primary branch, and the repairs to the test contracts that audit exposed. &sect;6 is the
+    one section still owing implementation.</p>
   </section>
 
   <section id="s2-follower-reload">
@@ -98,6 +99,85 @@
     fleet adopting this needs <strong>one</strong> cycling pass at adoption, once, and never
     again. Neither the stamp-driven nor the announce-only shape would have avoided this —
     both also require the running process to hold code that knows to check.</p>
+  </section>
+
+  <section id="s3-s7-currency">
+    <h2>The currency audit &mdash; four sections were already built</h2>
+    <p>Measured 2026-09-08 at base <code>21fa838</code> by a read-only node whose only
+    deliverable was a reuse map. Of the five sections the plan showed as open, four were
+    already present on the primary branch with source and test citations, one was partial,
+    and none was absent. The capability tests covering all five pass: <strong>45 passed</strong>
+    in the selection that excludes the two stale contracts below, from a broad focused run of
+    65 cases at 61 passed, 1 failed, 3 errors.</p>
+    <table>
+      <thead><tr><th>Section</th><th>Verdict</th><th>Landed as</th></tr></thead>
+      <tbody>
+        <tr><td>&sect;3 &mdash; external waits</td><td>present</td>
+          <td><code>2e4eee8</code> <em>resume declared external waits</em></td></tr>
+        <tr><td>&sect;4 &mdash; lane changes</td><td>present</td>
+          <td><code>b01329f</code> <em>move live runs between backends</em></td></tr>
+        <tr><td>&sect;5 &mdash; companion-path acceptance</td><td>present</td>
+          <td><code>520de08</code>, restored by <code>1dc2853</code> after a merge dropped it</td></tr>
+        <tr><td>&sect;6 &mdash; refusals name their verb</td><td>partial</td>
+          <td>&mdash;</td></tr>
+        <tr><td>&sect;7 &mdash; coordinator directory</td><td>present</td>
+          <td><code>2828bd7</code> <em>expose live coordinator directory</em></td></tr>
+      </tbody>
+    </table>
+    <p>&sect;5's row carries its own warning: the option was landed once, silently dropped by
+    a merge, and landed again. A section can be built, recorded, and still absent from the
+    branch, which is the same class of defect this audit exists to catch from the other
+    direction.</p>
+    <p><strong>Why the audit was worth its cost.</strong> Nothing in the plan distinguished
+    these four from unbuilt work &mdash; the sections read as open because no one had collapsed
+    them, and a coordinator reading the page would have dispatched four nodes to rebuild
+    shipped code. The remaining gap in &sect;6 is precise rather than general: the held-lane
+    refusal at <code>reckon/crew/dispatch.py</code> names the reset time and the evidence
+    condition but no <code>reckon crew</code> verb, and no aggregate assertion requires every
+    refusal to name a verb or state that none exists.</p>
+    <h3>The collaboration default, carried over from &sect;7's own text</h3>
+    <p>A finding about another repository is worth more to the session working in it than to
+    the one that found it, and the night &sect;7 was written the evidence was one-sided: every
+    correction that mattered came from a peer measuring something the author could not see. A
+    stale-base warning caught a merge misreading inherited ancestry as delivered work. A count
+    of five-of-six dead-process claims holding unintegrated work stopped a data-loss predicate
+    shipping. A measurement of zero file-writing tool calls corrected a loss claim in the other
+    direction. Each arrived unbidden, and each was cheaper to send than to rediscover. So a
+    coordinator that finds a defect touching a repository it does not own reports it to the
+    session working there when one is live &mdash; as a finding, never as an instruction, and
+    never as authority, since a peer cannot authorise work in a repository that is not
+    theirs.</p>
+    <p>That default was exercised twice on 2026-09-08, in both directions and with a
+    correction landing each way: a peer's dirtiness scan had concluded the largest unlanded
+    delta was gone, and the reply that it was sitting in an unmerged commit was itself
+    corrected on the instrument rather than the conclusion. Neither correction would have been
+    sent under a silence default.</p>
+  </section>
+
+  <section id="rename-fallout-repairs">
+    <h2>The test contracts the audit exposed, and what one of them was hiding</h2>
+    <p>Two suites were red on the primary branch before any of this session's work, neither
+    caused by it. Both are repaired and merged.</p>
+    <p><strong>&sect;4's fixture</strong> &mdash; commit <code>f4aa07a</code>, merged at
+    <code>c53b0ae</code>. Three cases errored before any assertion ran, because dispatch now
+    refuses a node declaring no specification level and the fixture's node declared none. One
+    line, in the test only: <strong>1 passed with 3 errors becomes 4 passed</strong>, exit 1
+    to exit 0. The section's production path was never at fault, which is the point &mdash; a
+    red suite named the lane-change feature and measured a fixture.</p>
+    <p><strong>&sect;7's expectation</strong> &mdash; commit <code>e48c772</code>. The test
+    asserted the five MCP tool names as literals, and the server had just renamed them to the
+    regular double-separator form. The repair derives the expected set from the server's own
+    registry rather than retyping it, so the exact-five guard survives the next rename instead
+    of becoming its first casualty: <strong>1 failed becomes 7 passed</strong>.</p>
+    <p><strong>The companion path is the finding.</strong> That repair could not pass without
+    one line outside its fence, and the worker said so rather than making it quietly.
+    <code>skills/reckon-ship/SKILL.md</code> still listed the pre-rename wire names in its
+    <code>allowed-tools</code> &mdash; five tools the server no longer publishes, so the line
+    authorised nothing at all. It was accepted through
+    <code>crew complete --accept-path</code> with the reason recorded on the ledger row, which
+    is &sect;5's capability paying for &sect;7's repair. A stale authorisation list is
+    invisible in exactly the way this plan keeps finding: it fails open, silently, and only a
+    derived assertion notices.</p>
   </section>
 
 </main>

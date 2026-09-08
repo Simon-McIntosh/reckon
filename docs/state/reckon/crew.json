@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T13:11:39",
+  "updated": "2026-09-08T13:15:39",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -77972,6 +77972,174 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T111222273123-fleet-rollup-test-follows-the-published-names",
+        "plan": "every-state-has-a-verb",
+        "section": "\u00a77",
+        "node": "fleet-rollup-test-follows-the-published-names",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 516,
+                "cached_input_tokens": 295532,
+                "input_tokens": 296050,
+                "output_tokens": 955,
+                "reasoning_output_tokens": 473,
+                "total_tokens": 297005,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "91fbc665-22c6-45fd-9451-3fbf95ca126e",
+            "session_id": "ship-s15-2026-09-08"
+          },
+          "done_when": "python -m pytest -p no:cacheprovider -q tests/test_fleet_rollup_surfaces.py exits 0 with zero failures against a captured baseline log showing the failure at base, the expected names are derived from the server's own registry in the same form tests/test_crew_directory.py already uses at main rather than retyped as literals, the exact-set guard is preserved rather than loosened, and no production module is edited",
+          "estimated_hours": 0.4,
+          "goal": "Update the fleet rollup surface test expectation to the MCP tool names the server now publishes",
+          "id": "fleet-rollup-test-follows-the-published-names",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T111222273123-fleet-rollup-test-follows-the-published-names/manifest.md",
+          "plan": "every-state-has-a-verb",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "tests/test_fleet_rollup_surfaces.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "ship0908-local-a",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-08T11:12:26Z",
+        "completed_at": "2026-09-08T11:14:37.798Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 120,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 131,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "3de3071d377550c89e3fbae98eb8ad2a2d3ecc2c",
+        "commits": [
+          "58a5b760b8a37a1703b3984e70298a28063f1f71"
+        ],
+        "changed_lines": {
+          "added": 12,
+          "removed": 3,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_fleet_rollup_surfaces.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T111222273123-fleet-rollup-test-follows-the-published-names/after.log",
+          "log_digest": "ca38ec9f74e12343a8366405fa8bc214a48045899c5f51fdc93ac6c8960b8893"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T111222273123-fleet-rollup-test-follows-the-published-names/manifest.md",
+        "scope_changed": false,
+        "session_id": "12b8a2d9-410c-4d17-9554-e800734f2502",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 0,
+            "input_tokens_cumulative": 1574625,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 6686,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-08T11:14:37.798Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 1574625,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 127.995,
+          "generated_tokens": 6686,
+          "generation_seconds": 106.401,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 10.1,
+          "machine_seconds": 21.594,
+          "peak_input_tokens": 103058,
+          "tokens_per_second": 62.84,
+          "wall_tokens_per_second": 52.24
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-08/fleet-rollup-test-follows-the-published-names",
+          "session_id": "12b8a2d9-410c-4d17-9554-e800734f2502",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T11:14:37.798Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -78200,6 +78368,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1211
+    "_version": 1212
   }
 }

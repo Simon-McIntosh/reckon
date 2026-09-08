@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-08">
-<meta name="plan-version" content="32">
-<meta name="plan-impl" content="0.7">
+<meta name="plan-version" content="37">
+<meta name="plan-impl" content="0.83">
 <meta name="plan-commits" content="e5f4ef4">
 </head>
 <body>
@@ -110,108 +110,43 @@
         <a href="/reckon/evidence/archive/every-state-has-a-verb-landed#s2-follower-reload">§2 landed</a>.</p>
     </section>
 
-    <h2 id="s3">§3 — Waiting on an external job is a state, not a blocker</h2>
-    <p>
-      A worker that submits a cluster job and outlives its own turn has nowhere
-      to put that fact. The manifest vocabulary has no state for waiting on an
-      external condition, so the worker parks as <code>blocked</code> with prose
-      naming the job. The follower then counts it in the blocked bucket beside
-      genuine failures, a coordinator resumes it by hand when a separate watch
-      fires, and the recovery sweep cannot help because nothing refused it.
-    </p>
-    <p>
-      Measured on four runs in one night: two parked on jobs that ran
-      forty-two minutes and three hours, each needing a hand resume; two more
-      lost their turn while backgrounding a poll and were indistinguishable from
-      crashes. The second pair is the sharper half — a wait that ends in silence
-      and a crash that ends in silence produce the same record, so the
-      coordinator cannot tell a healthy long job from a dead worker.
-    </p>
-    <p>
-      The state carries what a resumer needs and nothing more: what is being
-      waited on, how to ask whether it is finished, what finished means, and the
-      brief to hand back on resumption. The follower gives it its own bucket, so
-      a fleet with four healthy waits does not read as four failures. And the
-      sweep that already resumes lapsed provider holds acts on it when the named
-      condition turns terminal — the same actor, a second trigger, because the
-      shape is identical: a run that stopped for a reason that has since gone
-      away.
-    </p>
-    <p>
-      Done when a worker can declare in its manifest that it is waiting on a
-      named external condition with a way to test it and a resume brief; when
-      the follower renders that as a bucket distinct from blocked and from
-      working; when the sweep resumes such a run once the condition reaches a
-      terminal state and leaves it alone until then; when a run waiting on a
-      condition that never terminates is surfaced by age rather than waiting
-      forever; and when a crashed worker is still distinguishable from a waiting
-      one. Asserted through the follower's own rendering and the sweep's entry
-      point, with the condition test injected so no test submits a job.
-    </p>
+    <section id="s3" class="section-landed">
+      <header><span class="badge badge-shipped">&#10003; landed 2026-09-04</span>
+        <h2>&#167;3 &mdash; Waiting on an external job is a state, not a blocker</h2></header>
+      <p class="landed-summary">A worker declares a named external wait with its terminal
+        test and resume brief; the follower renders those in their own bucket instead of
+        counting healthy long jobs as failures, and the sweep resumes each only once its
+        condition turns terminal. Commit <code>2e4eee8</code>; verified present on main at
+        <code>21fa838</code> by the 2026-09-08 currency audit, capability tests green. Full
+        record: <a href="/reckon/evidence/archive/every-state-has-a-verb-landed#s3-s7-currency">the
+        currency audit</a>.</p>
+    </section>
 
-    <h2 id="s4">§4 — A run changes lane without losing its identity</h2>
-    <p>
-      Moving a dispatched run from one backend to another costs
-      <code>stop</code>, then <code>discard</code>, then a fresh dispatch — and
-      that dispatch is refused twice on the way, once because the member is
-      still in flight until the old pointer is gone, and once because the
-      worktree path already exists. So the price of a lane switch is either a
-      new node id, which breaks the node's identity across the ledger, or a
-      manual worktree removal.
-    </p>
-    <p>
-      <strong>Both prices are paid in the currency this system spent the night
-      protecting.</strong> A new node id makes one piece of work appear as two
-      unrelated runs in the record. A manual worktree removal is the act that
-      turned a ten-minute provider outage into an unrecoverable loss, and the
-      act that a promotion guard now refuses to perform on a recoverable run.
-      Meanwhile <code>resume</code> accepts no backend override, so a run whose
-      lane is genuinely spent cannot be continued elsewhere at all — the one
-      case where moving lanes is obviously right is the case with no verb.
-    </p>
-    <p>
-      Done when a dispatched run can be moved to another backend keeping its
-      node id, its worktree and its ledger identity; when the move records both
-      lanes and the reason, so the run's history shows where it ran rather than
-      appearing to have always run on the second; when a move onto a held lane
-      is refused with the hold named; and when a session that cannot follow the
-      move — because the new backend is a different harness — is reported as
-      starting fresh rather than silently losing its context. Asserted through
-      the command a coordinator invokes, over a dispatched run, requiring the
-      worktree path and node id to be unchanged afterwards.
-    </p>
+    <section id="s4" class="section-landed">
+      <header><span class="badge badge-shipped">&#10003; landed 2026-09-04</span>
+        <h2>&#167;4 &mdash; A run changes lane without losing its identity</h2></header>
+      <p class="landed-summary">A dispatched run moves between backends keeping its node id,
+        worktree and ledger identity, through one shared operation reached by both
+        <code>crew resume --backend</code> and <code>crew redispatch</code>. Commit
+        <code>b01329f</code>. Its test contract was repaired on 2026-09-08 &mdash; three cases
+        were erroring on a fixture that declared no specification level, 1 passed with 3 errors
+        becoming 4 passed (<code>f4aa07a</code>). Full record:
+        <a href="/reckon/evidence/archive/every-state-has-a-verb-landed#rename-fallout-repairs">the
+        contract repairs</a>.</p>
+    </section>
 
-    <h2 id="s5">§5 — A promotion can accept a path the node did not declare</h2>
-    <p>
-      A producer regenerated a declared JSON artifact and, in the same call,
-      its companion image. The image was not in the write scope, so
-      <code>crew complete</code> refused the promotion for changed paths
-      outside the declared scope — and neither the scope-changed flag nor the
-      boundary waiver lifts that particular refusal. The run's commit was
-      already merged to the primary branch. There was no way to record it.
-    </p>
-    <p>
-      The two available exits are both wrong. Discarding the record throws away
-      the account of work that is already in the tree, leaving a commit no
-      ledger row explains. Leaving the pointer strands it as an unreconciled
-      remainder that also blocks its member from further dispatch. A third exit
-      exists but is undocumented and unsafe by construction: hand-editing the
-      live pointer's declared paths, which this coordinator has done, and which
-      makes the fence agree by rewriting the thing it checks against.
-    </p>
-    <p>
-      The fence is right to refuse by default — an undeclared write is how one
-      worker silently overwrites another. What is missing is the deliberate,
-      recorded exception every other fence here already has. Done when a
-      promotion accepts a named path outside the declared scope with a stated
-      reason; when the accepted paths and reasons land on the promoted ledger
-      row so the exception is auditable; when accepting a path claimed by
-      another live run is still refused, because that is a collision rather than
-      a companion; and when a promotion with undeclared paths and no acceptance
-      is refused exactly as it is today. Asserted through the completion entry
-      point over a run whose commit touches one declared and one undeclared
-      path.
-    </p>
+    <section id="s5" class="section-landed">
+      <header><span class="badge badge-shipped">&#10003; landed 2026-09-04</span>
+        <h2>&#167;5 &mdash; A promotion can accept a path the node did not declare</h2></header>
+      <p class="landed-summary">A promotion accepts a named companion path with a stated
+        reason, both recorded on the ledger row, while a path another live run claims is still
+        refused as a collision. Commit <code>520de08</code>, and <code>1dc2853</code> after a
+        merge silently dropped the option &mdash; a section can be built, recorded, and still
+        absent from the branch. Used in anger on 2026-09-08 to land this plan's own &#167;7
+        repair. Full record:
+        <a href="/reckon/evidence/archive/every-state-has-a-verb-landed#s3-s7-currency">the
+        currency audit</a>.</p>
+    </section>
 
     <h2 id="s6">§6 — The surface answers the question an agent is holding</h2>
     <p>
@@ -244,66 +179,21 @@
       name a verb or an explicit absence.
     </p>
 
-    <h2 id="s7">§7 — A worker can find the worker it needs to talk to</h2>
-    <p>
-      Six coordinators were live on this workstation across four repositories on
-      2026-09-04, and no tool could say so. Every cross-session message this
-      night was addressed by a name someone happened to remember, and every
-      question of the form <em>whose run is that</em> was answered by reading
-      another session's pointer files by hand — a boundary no coordinator should
-      have to cross to learn who owns a run.
-    </p>
-    <p>
-      The cost is not hypothetical. This session told a nova coordinator to
-      resume a run that belonged to <strong>a different nova coordinator</strong>
-      — nova had two, <code>s18-pta</code> and <code>s19-relaunch</code>, and
-      nothing surfaced that. They corrected it, and the correct answer was
-      already on disk: the run's pointer named its session, its project and its
-      repository. A peer separately guessed a run id from memory of dispatch
-      order and got a microsecond timestamp wrong, because the only ways to
-      learn one were to glob a config directory or parse a committed ledger.
-    </p>
-    <p>
-      <strong>The join already exists and the tool is a thin read.</strong> Every
-      live pointer carries the coordinator's own session label, the project, the
-      plan its node serves, and the repository in its worktree path. Grouping
-      those four fields produces the directory directly, demonstrated against
-      the live fleet before this section was written. What the pointer cannot
-      supply is the harness address a message is sent to, which arrives on every
-      cross-session message as its sender socket — so the tool reports the
-      reckon-side identity it knows and the transport identity where it has seen
-      one, and never invents the second from the first.
-    </p>
-    <p>
-      Done when one read answers, for a project or for the whole workstation,
-      every live coordinator session with its project, its repository, the plans
-      or sprint it is shipping, and its live node count; when a run can be
-      resolved to its owning session without reading another session's files;
-      when a node id rather than a run id is enough to identify a run, since the
-      node id is the human handle and the run id carries a timestamp nobody can
-      reconstruct; when the answer distinguishes a session that is dispatching
-      from one whose runs are all terminal, because those want different
-      messages; and when the transport address is reported only where it has
-      been observed rather than derived from a name. Asserted through the read a
-      coordinator calls, over pointers built the way dispatch writes them,
-      including the two-coordinators-in-one-project case that caused the
-      misaddressed instruction.
-    </p>
-    <p>
-      <strong>And the default is collaboration, not silence.</strong> A finding
-      about another repository is worth more to the session working in it than to
-      the one that found it, and this night's evidence is one-sided: every
-      correction that mattered came from a peer measuring something the author
-      could not see. A stale-base warning caught a merge misreading inherited
-      ancestry as delivered work. A count of five-of-six dead-process claims
-      holding unintegrated work stopped a data-loss predicate shipping. A
-      measurement of zero file-writing tool calls corrected a loss claim in the
-      other direction. Each arrived unbidden, and each was cheaper to send than
-      to rediscover. So a coordinator that finds a defect touching a repository
-      it does not own reports it to the session working there when one is live —
-      as a finding, never as an instruction, and never as authority, since a
-      peer cannot authorise work in a repository that is not theirs.
-    </p>
+    <section id="s7" class="section-landed">
+      <header><span class="badge badge-shipped">&#10003; landed 2026-09-04</span>
+        <h2>&#167;7 &mdash; A worker can find the worker it needs to talk to</h2></header>
+      <p class="landed-summary">One read names every live coordinator across the workstation
+        with its project, repository, plans and live node count, resolves a run or a node id to
+        its owning session, and reports a transport address only where one has been observed.
+        Commit <code>2828bd7</code>, reached as <code>crew directory</code> and as a view on the
+        <code>crew</code> tool. Used on 2026-09-08 to identify which of two live reckon
+        coordinators held S15 before a handoff was requested &mdash; the case the section was
+        written for. Its two test contracts were repaired the same day after the MCP rename
+        (<code>e48c772</code>, <code>58a5b76</code>): both now derive the expected names from the
+        server's own registry. Full record:
+        <a href="/reckon/evidence/archive/every-state-has-a-verb-landed#rename-fallout-repairs">the
+        contract repairs</a>.</p>
+    </section>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -427,6 +317,12 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-20260908T111500" data-who="reckon-ship" data-when="2026-09-08T11:15:00Z">
     <div class="r-comment-body">directory-test-follows-the-published-names landed — commit e48c772, merged at the head that follows c53b0ae; gate passed. Measure: tests/test_crew_directory.py goes from 1 failed at base d599982 to 7 passed, exit 1 to exit 0. The expected surface is now derived from the server's own registry — the five published names come from the wrapped functions with the underscore removed, and the wire name is built from the server name — so the exact-five guard survives without hand-typed literals that rot at the next rename. One companion path outside the declared fence was accepted and recorded rather than reverted: skills/reckon-ship/SKILL.md carried the pre-rename triple-underscore wire names in its allowed-tools, which authorised five tools the server no longer publishes, so the derived assertion could not hold until it was corrected. Verified at the merged head: the published spelling appears once, the stale spelling zero times. A third instance of the same rename fallout is now known and unfixed: tests/test_fleet_rollup_surfaces.py:127 asserts the same underscored set and fails at base.</div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260908T111222273123-fleet-rollup-test-follows-the-published-names" data-who="ship0908-local-a" data-when="2026-09-08T11:14:37.798Z">
+    <div class="r-comment-body"><p>Rollup surface expectation derives from the registry like the directory test: 2 passed with 1 failed at base becomes 3 passed, exact-set guard preserved</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-20260908T111800" data-who="reckon-ship" data-when="2026-09-08T11:18:00Z">
+    <div class="r-comment-body">fleet-rollup-test-follows-the-published-names landed — commit 58a5b76, merged; gate passed. Measure: tests/test_fleet_rollup_surfaces.py goes from 2 passed with 1 failed at base 3de3071 to 3 passed, exit 1 to exit 0, deriving the expected set the same way the directory test now does and keeping the exact-set guard rather than loosening it. That closes the third and last known instance of the rename fallout; the worker reports no further follow-ons. impl moves to 0.83 on a denominator of six executable sections — s2 landed on 2026-09-04, s3, s4, s5 and s7 are present on main and now collapsed on the strength of the currency audit, and s6 alone still owes implementation. Evidence: /reckon/evidence/archive/every-state-has-a-verb-landed#s3-s7-currency and #rename-fallout-repairs.</div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260904T073440247788-a-run-changes-lane-and-keeps-its-identity" data-who="codex-m" data-when="2026-09-04T07:51:53Z">
     <div class="r-comment-body"><p>A run moves between backends keeping its node id, worktree and ledger identity; a held destination is named and changes nothing; a cross-harness move reports a fresh start rather than losing context silently; and both entry points call one shared operation.</p></div>
