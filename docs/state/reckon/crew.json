@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T00:02:12",
+  "updated": "2026-09-09T00:16:08",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -381,9 +381,11 @@
         "id": "crew-both-reasons",
         "harness": "clive",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "610e9ad5-48c9-4e9d-8983-0cc2cfcfbf7b",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "610e9ad5-48c9-4e9d-8983-0cc2cfcfbf7b"
+        },
         "created": "2026-09-06"
       },
       {
@@ -82117,6 +82119,353 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T220651432047-promotion-contracts-follow-the-record",
+        "plan": "concurrency-and-schedule-visibility",
+        "section": "\u00a78",
+        "node": "promotion-contracts-follow-the-record",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 629,
+                "cached_input_tokens": 584511,
+                "input_tokens": 585142,
+                "output_tokens": 3066,
+                "reasoning_output_tokens": 2352,
+                "total_tokens": 588208,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "c97ff0dc-76f9-4d90-a37e-98717f5066f2",
+            "session_id": "ship-s15-2026-09-08b"
+          },
+          "done_when": "one captured run of tests/test_crew_promotion.py reports zero failures where the same command reported 6 at the run's base revision, and those 6 are the cases asserting that a resume-waiver key and a worktree-retention key are absent from the promoted record while production emits both. Each is migrated to assert the field production actually writes, keeping whatever each case was protecting; no assertion is deleted, skipped, or widened to accept either presence or absence, and no production file is changed. Record the before and after pass/fail counts and name each migrated case in the manifest tests line",
+          "estimated_hours": null,
+          "goal": "the promotion tests assert the record production writes rather than the one it wrote before",
+          "id": "promotion-contracts-follow-the-record",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-08T22:06:51Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T220651432047-promotion-contracts-follow-the-record/manifest.md",
+          "plan": "concurrency-and-schedule-visibility",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "exact",
+          "time_budget": "25m",
+          "write_paths": [
+            "tests/test_crew_promotion.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-both-reasons",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-08T22:06:57Z",
+        "completed_at": "2026-09-08T22:12:59.091Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 354,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 362,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "1129f84580d9201b957f4eee6359e8f0678841ee",
+        "commits": [
+          "ff5aa9a1058b736692cc5875a99737379f1c19f2"
+        ],
+        "changed_lines": {
+          "added": 8,
+          "removed": 6,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=\"$PWD\" .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_promotion.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T220651432047-promotion-contracts-follow-the-record/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T220651432047-promotion-contracts-follow-the-record/manifest.md",
+        "scope_changed": false,
+        "session_id": "610e9ad5-48c9-4e9d-8983-0cc2cfcfbf7b",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 4819292,
+            "input_tokens_cumulative": 4819292,
+            "output_tokens": 27196,
+            "output_tokens_cumulative": 27196,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-08T22:12:59.091Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 4819292,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 358.806,
+          "generated_tokens": 27196,
+          "generation_seconds": 333.48,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 10.7,
+          "machine_seconds": 25.326,
+          "peak_input_tokens": 109002,
+          "tokens_per_second": 81.55,
+          "wall_tokens_per_second": 75.8
+        },
+        "follow_on_paths": [
+          "tests/"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-08b/promotion-contracts-follow-the-record",
+          "session_id": "610e9ad5-48c9-4e9d-8983-0cc2cfcfbf7b",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T22:12:59.091Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T220033889823-the-fence-fires-only-on-a-metered-lane",
+        "plan": "dispatch-cost-per-durable-node",
+        "section": "\u00a712",
+        "node": "the-fence-fires-only-on-a-metered-lane",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2710,
+                "cached_input_tokens": 557634,
+                "input_tokens": 560346,
+                "output_tokens": 2294,
+                "reasoning_output_tokens": 1270,
+                "total_tokens": 562640,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "c97ff0dc-76f9-4d90-a37e-98717f5066f2",
+            "session_id": "ship-s15-2026-09-08b"
+          },
+          "done_when": "the undeclared-lane refusal fires only where the resolved backend's own configuration declares it must be budget-checked, and no longer on a backend that merely fails to appear in the unmetered name list. Proven by: one captured run of tests/test_a_brief_points_rather_than_quotes.py, tests/test_budget.py, tests/test_crew_coordinator_spend.py and tests/test_dispatch_names_its_backend.py showing zero failures carrying the undeclared-lane refusal, with NO edit to any of the first three files; a case proving a dispatch resolving to a backend that declares the budget check with no lane flag is still refused; a case proving a dispatch resolving to a backend that declares no budget check with no lane flag now launches; and a case proving the in-harness backend named in flight config is not refused for this reason. Record the pass totals per file and the count of undeclared-lane refusals before and after in the manifest tests line",
+          "estimated_hours": null,
+          "goal": "the undeclared-lane refusal triggers on a declared budget check rather than on absence from a name list",
+          "id": "the-fence-fires-only-on-a-metered-lane",
+          "lane_declaration": {
+            "backend": "codex",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-08T22:00:34Z",
+            "read_at": "2026-09-08T22:00:36Z",
+            "resolved_backend": "codex",
+            "utilisation_pct": 56.0
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T220033889823-the-fence-fires-only-on-a-metered-lane/manifest.md",
+          "plan": "dispatch-cost-per-durable-node",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a712",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "tests/test_dispatch_names_its_backend.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "ship0908b-a",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T22:00:44Z",
+        "completed_at": "2026-09-08T22:14:07Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 803,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 803,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "6bc2c06d006d1edbfba5d88ce0b51a4ac432c758",
+        "commits": [
+          "f2b2c2c2bf43318da1433ef425bdd126182c65a8"
+        ],
+        "changed_lines": {
+          "added": 51,
+          "removed": 44,
+          "files": 2
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=\"$PWD\" .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_brief_points_rather_than_quotes.py tests/test_budget.py tests/test_crew_coordinator_spend.py tests/test_dispatch_names_its_backend.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T220033889823-the-fence-fires-only-on-a-metered-lane/after-four-file.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T220033889823-the-fence-fires-only-on-a-metered-lane/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0828a-85d9-74b0-9ea9-b1dd07e0b7cd",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 6428416,
+            "cached_input_tokens_cumulative": 11317504,
+            "input_tokens": 6668106,
+            "input_tokens_cumulative": 11597543,
+            "output_tokens": 7886,
+            "output_tokens_cumulative": 17196,
+            "reasoning_output_tokens": 2829,
+            "reasoning_output_tokens_cumulative": 5027
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-08T22:14:07Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 56.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-08T22:14:07Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 11317504,
+          "cumulative_input_tokens": 22915047,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 22223
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-08b/the-fence-fires-only-on-a-metered-lane",
+          "session_id": "01a0828a-85d9-74b0-9ea9-b1dd07e0b7cd",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T22:14:07Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -82345,6 +82694,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1247
+    "_version": 1250
   }
 }
