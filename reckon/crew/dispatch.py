@@ -3060,6 +3060,136 @@ def _recorded_task_node(record: Mapping[str, Any]) -> TaskNode:
     )
 
 
+def _worktree_git_read(
+    worktree: Path, *arguments: str
+) -> tuple[subprocess.CompletedProcess[str] | None, str | None]:
+    """Run one bounded, read-only git query inside an inherited worktree."""
+    try:
+        result = subprocess.run(
+            ["git", *arguments],
+            cwd=worktree,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10,
+        )
+    except (OSError, UnicodeError, subprocess.TimeoutExpired) as exc:
+        return None, str(exc)
+    if result.returncode:
+        detail = result.stderr.strip() or result.stdout.strip()
+        return result, detail or f"git {' '.join(arguments)} exited {result.returncode}"
+    return result, None
+
+
+def _inherited_worktree_reading(record: Mapping[str, Any]) -> str:
+    """Describe a lane successor's retained worktree without blocking handoff."""
+    taken_at = _utc_now()
+    worktree = Path(str(record.get("worktree") or ""))
+    lines = [
+        "INHERITED WORKTREE READING (measured fact)",
+        f"Reading taken at: {taken_at}",
+        f"Worktree: {worktree}",
+    ]
+    if not worktree.is_dir():
+        return "\n".join(
+            [
+                *lines,
+                "Inherited worktree could not be read.",
+                "Reason: the recorded path does not exist or is not a directory.",
+            ]
+        )
+
+    head_result, head_error = _worktree_git_read(
+        worktree, "rev-parse", "--verify", "HEAD"
+    )
+    status_result, status_error = _worktree_git_read(
+        worktree,
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all",
+        "--no-renames",
+    )
+    summary_result, summary_error = _worktree_git_read(
+        worktree,
+        "diff",
+        "--stat",
+        "--no-ext-diff",
+        "--no-textconv",
+        "--no-renames",
+        "HEAD",
+        "--",
+    )
+    failure = head_error or status_error or summary_error
+    if failure:
+        return "\n".join(
+            [
+                *lines,
+                "Inherited worktree could not be read.",
+                f"Reason: {' '.join(str(failure).splitlines())}",
+            ]
+        )
+
+    assert head_result is not None
+    assert status_result is not None
+    assert summary_result is not None
+    head = head_result.stdout.strip()
+    status = status_result.stdout.rstrip("\n")
+    recorded_base = str(record.get("base_sha") or record.get("base") or "")
+    lines.extend(
+        [f"Head commit: {head}", f"Recorded base: {recorded_base or 'not recorded'}"]
+    )
+    if recorded_base:
+        base_result, base_error = _worktree_git_read(
+            worktree,
+            "rev-parse",
+            "--verify",
+            "--end-of-options",
+            f"{recorded_base}^{{commit}}",
+        )
+        if base_error or base_result is None:
+            lines.append(
+                "Head differs from recorded base: unknown; the recorded base could "
+                f"not be resolved ({' '.join(str(base_error).splitlines())})."
+            )
+        else:
+            differs = "yes" if head != base_result.stdout.strip() else "no"
+            lines.append(f"Head differs from recorded base: {differs}.")
+    else:
+        lines.append("Head differs from recorded base: unknown; no base was recorded.")
+
+    if not status:
+        lines.extend(
+            [
+                "Porcelain status: clean (no entries).",
+                "Per-file change summary: no changes.",
+            ]
+        )
+        return "\n".join(lines)
+
+    lines.extend(["Porcelain status:", status, "Per-file change summary:"])
+    summary = summary_result.stdout.rstrip("\n")
+    if summary:
+        lines.append(summary)
+    untracked = [
+        entry[3:]
+        for entry in status.splitlines()
+        if len(entry) >= 4 and entry.startswith("?? ")
+    ]
+    lines.extend(f"{path} | untracked" for path in untracked)
+    if not summary and not untracked:
+        lines.extend(
+            f"{entry[3:]} | status {entry[:2]}"
+            for entry in status.splitlines()
+            if len(entry) >= 4
+        )
+    lines.append(
+        "Checkpoint instruction: Commit the inherited changes before continuing; "
+        "an inherited diff is the only copy of that work and a later refusal or "
+        "death takes it."
+    )
+    return "\n".join(lines)
+
+
 def _lane_prompt(
     record: Mapping[str, Any], advice: str, reason: str, *, continued: bool
 ) -> str:
@@ -3074,10 +3204,14 @@ def _lane_prompt(
         )
     original = prompt_path.read_text(encoding="utf-8")
     continuation = advice or "Continue the assigned work from its retained worktree."
+    reading = _inherited_worktree_reading(record)
     return (
         f"{original.rstrip()}\n\n"
         "EXECUTION BACKEND CHANGED\n"
-        f"Reason: {reason}\n{continuation}\n"
+        f"Reason: {reason}\n\n"
+        f"{reading}\n\n"
+        "COORDINATOR ADVICE (instruction; passed through unchanged)\n"
+        f"{continuation}"
     )
 
 
