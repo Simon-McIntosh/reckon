@@ -409,9 +409,108 @@
       quality, and the unit-of-work evidence favours a uniform high effort over a dispatch routing
       knob. The generated-token counter-figure runs the other way — 6.9 thousand at high against
       3.6 thousand at medium — but generation is not what the subscription meter charges.
-      Cumulative input per run is not recorded anywhere in the ledger, only a peak, so cumulative
-      input per durable node and exact quota cost per durable node are <strong>UNMEASURED</strong>;
-      wall per durable node is the strongest available evidence and is not a proxy for quota cost.
+      Cumulative input per run is recorded for the codex family in
+      <code>throughput.peak_input_tokens</code>, despite that field's peak-shaped name, so it can
+      supply cumulative input per durable node. The source and the cross-dialect defect are
+      measured below.
+    </p>
+    <p>
+      Exact quota cost per durable node remains <strong>UNMEASURED</strong> because the per-request
+      maxima and threshold-crossing count are genuinely absent; wall per durable node is not a
+      proxy for that cost.
+    </p>
+    <h3 id="metered-family-economics">Published rates, surcharge threshold, and measured relative burn</h3>
+    <p>
+      <strong>PUBLISHED — vendor rate card, recorded here 2026-09-08:</strong> the per-token prices
+      below are the vendor's published API rates, not charges observed on this subscription. The
+      vendor states that the subscription is <em>not</em> priced per token. This record therefore
+      uses the rates only as relative weights between members of the same family and never as a
+      currency amount charged to this work.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Configured member</th><th>Published input / million</th><th>Published output / million</th><th>Input / output weight relative to strongest</th><th>Attribution</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>gpt-5.6-sol</code> — strongest</td><td>$4.00</td><td>$20.00</td><td>1.00 / 1.00</td><td>PUBLISHED — vendor rate card</td></tr>
+        <tr><td><code>gpt-5.6-terra</code> — middle</td><td>$2.00</td><td>$12.00</td><td>0.50 / 0.60</td><td>PUBLISHED — vendor rate card</td></tr>
+        <tr><td><code>gpt-5.6-luna</code> — efficient</td><td>$0.20</td><td>$1.20</td><td>0.05 / 0.06</td><td>PUBLISHED — vendor rate card</td></tr>
+        <tr><td><code>gpt-5.3-codex-spark</code> — smaller dispatched member</td><td><strong>UNPRICED — no published rate</strong></td><td><strong>UNPRICED — no published rate</strong></td><td><strong>UNPRICED — no ratio assigned</strong></td><td>PUBLISHED — vendor rate card has no rate for this member</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>PUBLISHED — subscription allowance:</strong> the subscription tier used here is also
+      denominated in per-window message allowances, independently of the token rate card. The
+      strongest member is published at roughly 200–2,000 messages per window, the middle member at
+      roughly 500–4,000, and the efficient member at roughly 5,000–40,000. That is a ratio near
+      1:2:20; it agrees with the token-price ratios in direction and order of magnitude, but it is
+      a second allowance, not a token-priced bill.
+    </p>
+    <p>
+      <strong>PUBLISHED — long-context surcharge:</strong> when a request's input exceeds
+      272,000 tokens, the vendor charges <strong>2× the input rate and 1.5× the output rate for the
+      whole request</strong>, not only for the tokens above the line. The raw
+      context window is 372,000 tokens and the effective figure is near 353,400, leaving roughly
+      81,400 tokens of a default configuration exposed above the surcharge threshold. The
+      documented client workaround caps auto-compaction at 270,000 tokens. The cached prefix
+      counts toward the 272,000-token test, so a high cache-hit rate makes a request <em>more</em>
+      likely to pay the surcharge, not less: what looked like a linear cost in cached tokens is a
+      step function at the threshold.
+    </p>
+    <p>
+      <strong>MEASURED HERE 2026-09-08 — mounted ledgers:</strong> a local census of 3,269 ledger
+      rows grouped records carrying <code>throughput.peak_input_tokens</code> by
+      <code>agent.model</code> and took the median in each group. Each median carries its own
+      contributing sample size; only the strongest member's maximum was part of this measurement.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Lane / model</th><th>Recorded-input median</th><th>Rows carrying the figure</th><th>Recorded maximum</th><th>Attribution</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>gpt-5.6-sol</code></td><td>16,385,195</td><td>305</td><td>106,803,531</td><td>MEASURED HERE — mounted project ledgers</td></tr>
+        <tr><td><code>gpt-5.6-terra</code></td><td>8,862,849</td><td>15</td><td>not part of this measurement</td><td>MEASURED HERE — mounted project ledgers</td></tr>
+        <tr><td><code>gpt-5.6-luna</code></td><td>8,354,435</td><td>14</td><td>not part of this measurement</td><td>MEASURED HERE — mounted project ledgers</td></tr>
+        <tr><td><code>clive</code> — local unmetered lane</td><td>171,518</td><td>200</td><td>not part of this measurement</td><td>MEASURED HERE — mounted project ledgers</td></tr>
+        <tr><td><code>claude-opus</code></td><td>135,558</td><td>66</td><td>not part of this measurement</td><td>MEASURED HERE — mounted project ledgers</td></tr>
+      </tbody>
+    </table>
+    <table>
+      <thead>
+        <tr><th>Metered family member</th><th>Relative input-rate weight</th><th>Measured median relative to strongest</th><th>Indicative relative burn per run</th><th>Attribution</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>gpt-5.6-sol</code></td><td>1.00</td><td>1.00</td><td><strong>1.00</strong></td><td>DERIVED — published input-rate ratio × locally measured median</td></tr>
+        <tr><td><code>gpt-5.6-terra</code></td><td>0.50</td><td>8,862,849 / 16,385,195</td><td><strong>0.27</strong></td><td>DERIVED — published input-rate ratio × locally measured median</td></tr>
+        <tr><td><code>gpt-5.6-luna</code></td><td>0.05</td><td>8,354,435 / 16,385,195</td><td><strong>0.025</strong></td><td>DERIVED — published input-rate ratio × locally measured median</td></tr>
+      </tbody>
+    </table>
+    <p>
+      The published multipliers are firm for this ratio use; the local medians are not. The middle
+      and efficient samples are thin at 15 and 14 rows against 305 for the strongest member, and
+      the node populations behind the lanes are not matched. The derived 1.00, 0.27 and 0.025 burn
+      figures are therefore indicative of order only, not a controlled comparison.
+    </p>
+    <h4>The field holds two different quantities</h4>
+    <p>
+      <strong>MEASURED HERE — implementation and ledger shape:</strong>
+      <code>reckon/_backends.py</code> fills the throughput field named
+      <code>peak_input_tokens</code> from two incompatible derivations. On the Claude and local
+      dialects it is the largest single request the run sent. On the codex dialect it is a sum
+      over the whole run. A sibling method's own docstring states the invariant the codex path
+      breaks: cumulative totals would read far past any context window. The strongest member's
+      measured 16,385,195-token median demonstrates exactly that — no context window is sixteen
+      million tokens.
+    </p>
+    <p>
+      The cumulative codex input this page previously called unmeasured was therefore present all
+      along under a name that denies what it contains. The quantity genuinely missing for that
+      family is the maximum input of a single request, which is exactly what the published
+      272,000-token surcharge keys on. A threshold-crossing count cannot be recovered from a run
+      total in either direction: <strong>DERIVED EXAMPLE</strong> — eighty requests of 200,000
+      tokens sum to 16,000,000 and cross nothing, while two requests of 300,000 sum to 600,000 and
+      cross twice. Consequently, any comparison of <code>peak_input_tokens</code> across dialects
+      is a maximum against a total and is invalid.
     </p>
     <h3 id="s4-spark-profile">Measured 2026-09-08 — the spark profile is narrow and consistent</h3>
     <table>
