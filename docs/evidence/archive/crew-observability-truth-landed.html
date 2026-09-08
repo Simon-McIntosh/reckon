@@ -366,6 +366,73 @@
     and the thing it describes with no binding between them &mdash; produced here by the
     orchestration rather than by the code.</p>
   </section>
+
+<section id="s4-aimed-checks">
+<h2 id="s4-aimed-checks-h">The check existed and ran in the wrong place</h2>
+
+<p>Thirty-three merges landed on 2026-09-08 across this plan and
+<code>crew-effort-routing</code>, every one measured base against head with zero
+added failures. The individual repairs are recorded in the ledger. What is worth
+keeping is the shape they share, which a peer coordinator named in one sentence
+after their fifth one-hour GPU allocation timed out: <strong>the check existed
+and ran in the wrong place.</strong> Five instances, all found in a single day,
+all previously invisible because each check was green.</p>
+
+<table>
+<thead><tr><th>The check</th><th>Where it was aimed</th><th>Where the failure was</th></tr></thead>
+<tbody>
+<tr><td>A written rule forbidding a dispatch from restating its plan</td>
+    <td>a reference document</td>
+    <td>the dispatch itself — two coordinators broke it seven times in one day</td></tr>
+<tr><td>A serving-state guard on a metered lane</td>
+    <td>utilisation at or above one hundred percent</td>
+    <td>the figure is quantised to whole percent, so the guard could only fire once the lane was wholly spent</td></tr>
+<tr><td>A falsifier for a declared wait outranking worker liveness</td>
+    <td>the liveness dimension</td>
+    <td>the wait's own condition state — every fixture carried a pending condition, so the met case could not appear</td></tr>
+<tr><td>A pattern searching for a server's published tools</td>
+    <td><code>mcp__server__tool</code></td>
+    <td>that server publishes with one separator, so the pattern could not have matched, and a working server was reported unreachable</td></tr>
+<tr><td>A two-member correctness check on a GPU lane</td>
+    <td>a one-hour GPU allocation</td>
+    <td>a two-member CPU run would have shown the same defect in seconds</td></tr>
+</tbody>
+</table>
+
+<p><strong>The defence is one line and it is cheap in every instance:</strong> a
+check needs a case it must fail. The pattern above would have been caught by
+matching a tool name already known to be present. The liveness falsifier would
+have been caught by varying the second dimension. A peer's equality comparison
+that passed because its fixture never exercised it is now guarded by a strike
+point displaced one millimetre and required to count outside.</p>
+
+<p><strong>And the twin, from the same peer, about work rather than checks:</strong>
+a row that four separate one-hour allocations had failed to produce timed out a
+fifth time at fifty-five minutes and <em>lost nothing</em> — seven completed
+subsolves were on disk as receipt parts, written as the allocation ran, and the
+next attempt resumes from them. The difference between four hours spent and four
+hours banked was a small change to where the driver writes. <em>The work existed
+and was written nowhere</em> is the same defect one layer over: something real
+happened and no reader could reach it.</p>
+
+<h3 id="s4-worker-blocks-h">Eight worker blocks, eight coordinator defects</h3>
+
+<p>Every block a worker raised on this day named a real defect in the
+instruction it was given, and no confident completion surfaced one. Five were
+the coordinator's write fence or its restatement of plan content — the two
+classes the checks landed here now catch. Two are worth recording individually
+because the worker declined an available shortcut that would have passed its own
+gate: one refused to substitute a turn-level token aggregate for a per-request
+maximum, which would have relabelled the quantity the node existed to separate;
+another refused a compatibility export that would have satisfied its node while
+leaving in source the concrete model names its contract forbids.</p>
+
+<p>The routing consequence is recorded on <code>crew-effort-routing</code>: a
+worker's dispute rate discriminates where a gate pass rate cannot, because the
+worker writes its own gate and that rate is saturated at 0.9938 across every
+lane measured here.</p>
+</section>
+
 </main>
 </body>
 </html>
