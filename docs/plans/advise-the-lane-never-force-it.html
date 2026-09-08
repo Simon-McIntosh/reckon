@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="advise-the-lane-never-force-it">
+  <meta name="plan-title"     content="Advise The Lane, Never Force It">
+  <meta name="plan-summary"   content="A lane's capacity is shared across sessions and two lanes exhaust in opposite ways, only one of them audibly. Advise at the moment of choice; never override.">
+  <meta name="plan-status"    content="draft">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort-hours" content="12.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint"    content="S17">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-tags"      content="reckon-tooling,crew">
+  <meta name="plan-depends-on" content="dispatch-cost-per-durable-node,clive-local-workers">
+  <title>Advise The Lane, Never Force It | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">&#167;1 &mdash; Two lanes, two exhaustion modes, one of them silent</h2>
+    <p>
+      Every figure an orchestrator needs to choose a lane already exists, and none of it
+      reaches the orchestrator at the moment it chooses. That is the whole of this plan. The
+      surrounding work makes the numbers <em>readable</em>; this makes them <em>arrive</em>.
+    </p>
+    <p>
+      The two lanes in use do not run out in the same way, and the difference decides what an
+      advisory has to say about each:
+    </p>
+    <table>
+      <thead>
+        <tr><th></th><th>Metered lane</th><th>Local lane</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Scarce quantity</td><td>quota in a rolling window</td><td>throughput</td></tr>
+        <tr><td>Signal while approaching the limit</td>
+            <td>utilisation, burn multiple, projected exhaustion</td>
+            <td><strong>none</strong></td></tr>
+        <tr><td>Behaviour at the limit</td>
+            <td>a hard refusal naming the reset</td>
+            <td>everything slows, nothing refuses</td></tr>
+        <tr><td>Who pays</td><td>the session that asked</td><td>every session on the host</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>Measured on the metered side, 2026-09-08.</strong> The weekly window opened at
+      02:28Z and resets at 02:28Z on 2026-09-15. Two live probes: 30% utilisation at 10:34Z,
+      46% at 15:57Z &mdash; sixteen points in five hours and twenty-two minutes, a rate of
+      about three points an hour against a sustainable 0.35. The engine reported a burn
+      multiple of 5.7&times; and projected exhaustion for the following evening, six days
+      before the reset. Every one of those figures was available from
+      <code>crew preflight</code>, and none of it was said to any of the four coordinators
+      spending the window.
+    </p>
+    <p>
+      <strong>Measured on the local side, and the measurement is the point.</strong> A paired
+      run of one mechanical node took 131 seconds on a loaded lane and 133 on a free one, so
+      at three concurrent workers there is no queueing component to recover. Reported from the
+      night of 2026-09-07 and not yet reproduced here: <strong>32 concurrent workers degraded
+      the lane</strong>. Between three and thirty-two the curve is unknown, which is precisely
+      the interval any advice to move work onto this lane would push us into.
+    </p>
+    <p>
+      So the naive response to a spent metered lane &mdash; send the work to the local one
+      &mdash; trades a loud failure for a quiet one. A quota outage names itself and its reset
+      time; a contended local lane simply makes everyone slower, with no refusal and no way
+      for any session to tell whose fleet is responsible.
+    </p>
+
+    <h2 id="s2">&#167;2 &mdash; The advisory arrives where the choice is made</h2>
+    <p>
+      A coordinator learns its lane's trajectory only by asking, and the one moment it is
+      certainly not asking is while it dispatches. The advisory therefore rides on the
+      dispatch itself, unrequested, and says the three things that change a decision: what the
+      lane's projected exhaustion is, whether that precedes the horizon of the work in hand,
+      and which lane would serve <em>this node's role</em> more cheaply on measured evidence.
+    </p>
+    <p>
+      The shape is not new and should not be invented. Gate enforcement already has an
+      advisory mode that records a warning where a strict mode would refuse, and a named
+      backend that cannot be honoured is already reported rather than silently substituted.
+      This is the same contract applied to a resource whose scarcity is shared.
+    </p>
+    <p>
+      Done when a dispatch onto a lane whose projected exhaustion precedes the work horizon
+      emits an advisory naming the utilisation, the burn multiple, the projected exhaustion
+      and the reset; when that advisory names the lane that measured rework says would serve
+      the node's role more cheaply, or states that none would; when it is emitted without
+      being asked for and without adding a call; and when nothing about it refuses, holds, or
+      alters the resolved routing. Asserted through the dispatch payload over a lane fixed at
+      a spending trajectory, requiring the advisory present and the resolved backend
+      unchanged.
+    </p>
+
+    <h2 id="s3">&#167;3 &mdash; The choice is recorded, so advice becomes evidence</h2>
+    <p>
+      An advisory that is only printed is a preference. What makes it a mechanism is that the
+      run records both halves: the advice that was shown and the lane that was chosen. The
+      record already carries the requested backend beside the resolved one for exactly this
+      reason, so the field has a precedent and a place.
+    </p>
+    <p>
+      This is also the only way the guidance can ever be judged. With the pair on the ledger, a
+      later reader can ask whether advice was taken, and whether the runs that took it cost
+      less per durable node than the runs that did not &mdash; which is the return-on-experience
+      loop closing on itself rather than accumulating as opinion.
+    </p>
+    <p>
+      Done when a run whose dispatch carried an advisory records the advisory and the chosen
+      lane on its live pointer and on its promoted ledger row; when a run that took the advice
+      is distinguishable from one that declined it; and when both are readable from the
+      committed record without reading a stream. Asserted over a promoted run of each kind.
+    </p>
+
+    <h2 id="s4">&#167;4 &mdash; One window, four coordinators</h2>
+    <p>
+      The metered window is an account-wide resource and every reading of it is session-local.
+      Four coordinators were live on this workstation while it went from 30% to 46%, in three
+      repositories, and none of them could see the others' draw. A coordinator that halves its
+      own spending has no way to know whether that changed the trajectory or was absorbed by a
+      peer.
+    </p>
+    <p>
+      The join already exists. The coordinator directory names every live session, its project
+      and repository; the ledger records what each run spent. What is missing is the sentence
+      that says a lane's remaining capacity is being drawn by <em>n</em> sessions rather than
+      by this one, so the figure a coordinator reads is the figure it actually faces.
+    </p>
+    <p>
+      Done when a coordinator reading a metered lane's headroom is told how many live sessions
+      share that window and what they are shipping; when the advisory of &#167;2 carries that
+      count so a trajectory is attributed to a fleet rather than to a session; and when a
+      session that is the sole drawer is told that too, because sole responsibility changes the
+      decision as much as shared responsibility does. Asserted over a directory holding
+      coordinators in more than one repository against one window.
+    </p>
+
+    <h2 id="s5">&#167;5 &mdash; The local lane's ceiling is a curve nobody has measured</h2>
+    <p>
+      Advising work onto the local lane without knowing where it degrades is how a quota
+      problem becomes a latency problem. Two points exist and they are far apart: no
+      measurable queueing at three concurrent workers, and reported degradation at
+      thirty-two. Worker count is known to be a poor proxy for the pressure that matters,
+      since admission is governed by instantaneous in-flight requests and eight workers mid
+      test-run generate less of it than four mid-reasoning &mdash; so the measurement has to
+      record what it can defend rather than a worker count alone.
+    </p>
+    <p>
+      Done when the lane's throughput is measured at several concurrencies spanning the
+      reported degradation, with node size held constant so the curve is not confounded by
+      what the workers were doing; when the measurement records in-flight requests beside
+      worker count and states which one tracks the degradation; when the reported
+      thirty-two-worker result is either reproduced or contradicted on the record; and when
+      the resulting figure is expressed as something an advisory can carry. Asserted from the
+      committed runs of the measurement itself.
+    </p>
+
+    <h2 id="s6">&#167;6 &mdash; Return on experience reaches the decision</h2>
+    <p>
+      The ledger already answers which configuration costs least per durable node, charged for
+      rework, per model, effort, specification level and role. That answer currently reaches a
+      coordinator only if it goes looking, and the one conclusion drawn from it today &mdash;
+      that read-and-report work is zero-rework on both lanes and therefore belongs on the
+      unmetered one, while implement work on the local lane costs about twice the metered
+      lane's runs per durable node &mdash; lives in a plan comment rather than anywhere a
+      dispatch would surface it.
+    </p>
+    <p>
+      Prose guidance and ledger evidence drift apart by construction: one is written once and
+      the other updates on every promotion. The remedy is that the advisory quotes the ledger
+      rather than a document, so the recommendation ages with the evidence.
+    </p>
+    <p>
+      Done when the cheaper-lane clause of &#167;2 is derived from the routing figures at the
+      time of dispatch rather than from any written table; when a role with too few samples to
+      discriminate says so instead of recommending; and when the derivation is one call that
+      spends nothing. Asserted by moving a role's measured figures and requiring the
+      recommendation to follow them.
+    </p>
+
+    <h2 id="s7">&#167;7 &mdash; What this plan does not do</h2>
+    <p>
+      It does not schedule, rank lanes into a hierarchy, or choose on the orchestrator's
+      behalf; the choice stays where it is and the advisory is deleted from the decision the
+      moment the orchestrator has read it. It does not replace the existing hard ceiling,
+      which remains the only thing that refuses. It adds no new command and no new tool: the
+      advisory rides on a call that is already being made, and the shared-window count comes
+      from a directory that already exists.
+    </p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">&#167;</span> Decisions</h2>
+      <div class="r-dec" data-key="advisory-delivery-point" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">Where is the advisory emitted, given that it must arrive unasked?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="dispatch-payload">on the dispatch payload only</button>
+          <button class="r-opt" data-value="dispatch-and-follower">on the dispatch payload and as a follower line</button>
+          <button class="r-opt" data-value="dispatch-and-preflight">on the dispatch payload and in the pre-flight summary</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+      <div class="r-dec" data-key="local-lane-scarcity-signal" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">What does the local lane publish as its scarcity signal, once measured?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="concurrency-ceiling">a measured concurrency ceiling</button>
+          <button class="r-opt" data-value="in-flight-requests">instantaneous in-flight requests against an admission figure</button>
+          <button class="r-opt" data-value="latency-curve">a measured latency-degradation curve</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+      <div class="r-dec" data-key="shared-window-source" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">How does a coordinator learn that peers are drawing on its window?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="directory-derived">derived from the live coordinator directory</button>
+          <button class="r-opt" data-value="ledger-derived">derived from recent promoted runs across mounted ledgers</button>
+          <button class="r-opt" data-value="both">the directory for who, the ledgers for how much</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">&#167;</span> Followups</h2>
+      <article class="r-fu" data-id="f-atl-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-08">
+        <h4 class="r-fu-title">Start with the advisory and the local measurement together</h4>
+        <div class="r-fu-body">
+          <p>&#167;2 and &#167;5 are independent and should run in the same wave. &#167;2 is
+          buildable now, because the projected exhaustion it reports is already computed by the
+          pre-flight and needs no new probe, and the metered window is where quota is being
+          spent today. &#167;5 gates any advice that points work at the local lane, and until
+          its curve exists an advisory can say a lane is cheap but not whether it is free.</p>
+          <p>&#167;3 follows &#167;2, since there is nothing to record until an advisory
+          exists. &#167;4 needs &#167;2's payload to carry the count. &#167;6 goes last: it
+          replaces the advisory's recommendation clause with a ledger-derived one, which is
+          only worth doing once the clause has a shape. Settle the delivery point before
+          &#167;2 is dispatched; the other two decisions can be settled by the nodes that
+          implement them.</p>
+        </div>
+        <pre class="r-fu-prompt">/reckon-ship advise-the-lane-never-force-it §2</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
