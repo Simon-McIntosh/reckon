@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T08:02:30",
+  "updated": "2026-09-08T08:07:18",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -72569,6 +72569,145 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260908T053828598698-the-two-input-figures-are-not-one-field",
+        "plan": "crew-observability-truth",
+        "section": "\u00a71",
+        "node": "the-two-input-figures-are-not-one-field",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2277,
+                "cached_input_tokens": 140941,
+                "input_tokens": 143220,
+                "output_tokens": 2304,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 145524,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_input_token_quantities.py -q passes, and the throughput block a run records carries the largest single request's input tokens and the run's cumulative input tokens in two separately named fields, with neither dialect ever filling one from the other. WHY. reckon/_backends.py has one field, peak_input_tokens, carrying two different quantities depending on which backend wrote the row, and the module states the rule it breaks in its own docstring. The method that serves the claude and clive dialects says, verbatim: Peak input is the largest single prompt the run sent, which is the figure a context window is actually spent against; the cumulative totals on the result are the sum over every request and would read far past any window. The method that serves the codex dialect then computes peak_input as a SUM over the run's usage counters, input tokens plus cached input tokens, and stores that sum in the field named peak. Measured across 3,269 ledger rows in the mounted projects: the codex figure has a median of 16,385,195 and a maximum of 106,803,531 while the clive figure's median is 171,518 and claude-opus's is 135,558. No context window is sixteen million tokens, so the codex column is not a peak and every surface that reads it as one is wrong. WHY IT MATTERS BEYOND TIDINESS. A published rule charges a request whose input exceeds 272,000 tokens at twice input and one and a half times output for the whole request, so the largest single request is what decides whether a run paid a surcharge, and the sum cannot answer it in either direction: eighty requests of 200,000 sum to sixteen million and never cross, two requests of 300,000 sum to 600,000 and cross twice. Both shapes occur here. Separately, input_utilisation_pct is computed from this field against the input budget, so on any dialect where the field holds a sum that percentage is a cumulative-over-window ratio and means nothing. WHAT TO CHANGE. Give the shared throughput block a cumulative input field and a cumulative cached input field alongside the existing peak field, defaulting to the unmeasured marker the block already uses for everything it did not measure, and thread them through the block constructor and the block that admits it measured nothing so both shapes carry the same keys. In the codex dialect, record the summed counters into the cumulative fields where they belong, and record the peak field as the unmeasured marker rather than as the sum, because that dialect's result does not report a per-request maximum and an honest absence is worth more than a wrong number. Do not attempt to derive the per-request maximum here: it needs a walk over per-turn records, another node owns that, and guessing it in this file is how the present defect was introduced. In the claude and clive dialect, keep the existing peak derivation exactly as it is and populate the cumulative fields from the result's own cumulative totals if and only if the result reports them; where it does not, leave them unmeasured. Compute input_utilisation_pct from the peak field only, so it becomes unmeasured on the codex dialect rather than misleading, and say why in a comment at the computation. WHAT NOT TO CHANGE. Do not touch reckon/crew/promotion.py or reckon/crew/prompts.py, both held by peers. Do not rewrite existing ledger rows or add a migration: the historical codex column keeps its recorded value under whatever name the field ends up with, and a reader of old rows is served by the finding being documented, not by a rewrite this node cannot verify. Do not add the surcharge multiplier or any cost arithmetic; this node records quantities and another owns their price. FALSIFIERS, asserted in tests/test_input_token_quantities.py. A constructed codex-dialect stream carrying known input, cached input and output counters produces a throughput block whose cumulative input equals the sum the test computes from those counters, whose cumulative cached input equals the cached counter, and WHOSE PEAK INPUT FIELD IS THE UNMEASURED MARKER, so the sum can never again be read as a peak. A constructed claude-dialect stream with three assistant turns of differing input sizes produces a peak input equal to the largest of the three and not their sum, asserted against figures the test computes. The block returned by the constructor and the block that admits it measured nothing carry exactly the same set of keys, asserted by comparing the key sets, so no reader meets a block missing a field. input_utilisation_pct is the unmeasured marker whenever the peak field is unmeasured, even when a cumulative figure and an input budget are both present, so the ratio cannot be computed from the wrong numerator. A block where peak input is present and below the input budget still reports the same percentage it reports today, asserted against a figure the test computes, so the existing meaning is unchanged on the dialect that was correct. Every existing test that asserts on a throughput block still passes: run the tests that import the backends module and the tests that assert on ledger throughput rows, measure base and head over that set, report failure ids either side, and require none added. Bound the run per file rather than issuing one census, and never run the full suite for this node.",
+          "estimated_hours": 1.5,
+          "goal": "Record the largest single request's input and the run's cumulative input as two separately named fields, so neither dialect fills one from the other",
+          "id": "the-two-input-figures-are-not-one-field",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T053828598698-the-two-input-figures-are-not-one-field/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "55m",
+          "write_paths": [
+            "reckon/_backends.py",
+            "tests/test_input_token_quantities.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-token-quantities",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T05:38:38Z",
+        "completed_at": "2026-09-08T06:06:24Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1666,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1666,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "e6242ffc70fc227e36c943b57cf1116997f122fb",
+        "commits": [
+          "35d91e4baf65cebb1f869906d52e2f639330da85"
+        ],
+        "changed_lines": {
+          "added": 319,
+          "removed": 24,
+          "files": 2
+        },
+        "tests_added": 7,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_input_token_quantities.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T053828598698-the-two-input-figures-are-not-one-field/focused-head.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T053828598698-the-two-input-figures-are-not-one-field/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07f86-8a87-72e1-a1fb-6d206c4f02d2",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3617408,
+            "cached_input_tokens_cumulative": 3617408,
+            "input_tokens": 3651407,
+            "input_tokens_cumulative": 3651407,
+            "output_tokens": 13518,
+            "output_tokens_cumulative": 13518,
+            "reasoning_output_tokens": 4677,
+            "reasoning_output_tokens_cumulative": 4677
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 18195,
+          "peak_input_tokens": 7268815
+        },
+        "follow_on_paths": [
+          "tests/test_backends.py"
+        ],
+        "dispute_count": 0,
+        "attempt": 2,
+        "attempt_kind": "resume",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-two-input-figures-are-not-one-field",
+          "session_id": "01a07f86-8a87-72e1-a1fb-6d206c4f02d2",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T06:06:24Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the tests",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -72797,6 +72936,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1139
+    "_version": 1140
   }
 }
