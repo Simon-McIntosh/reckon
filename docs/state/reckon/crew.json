@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T09:28:17",
+  "updated": "2026-09-08T09:39:01",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -675,6 +675,24 @@
         "id": "crew-routing-guidance",
         "harness": "codex-luna",
         "role": "documentation",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-08"
+      },
+      {
+        "id": "crew-serving-state",
+        "harness": "codex-terra",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-08"
+      },
+      {
+        "id": "crew-state-typing",
+        "harness": "codex",
+        "role": "implement",
         "session_id": null,
         "session_model": null,
         "sessions": {},
@@ -74901,6 +74919,164 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T044741871468-the-prompt-carries-the-contract",
+        "plan": "crew-observability-truth",
+        "section": "\u00a78",
+        "node": "the-prompt-carries-the-contract",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1406,
+                "cached_input_tokens": 901419,
+                "input_tokens": 902827,
+                "output_tokens": 2703,
+                "reasoning_output_tokens": 625,
+                "total_tokens": 905530,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_the_prompt_carries_the_contract.py -q passes, and a composed dispatch prompt states that the worker commits at each deliverable and writes its manifest before beginning any long output, so the instruction reaches the worker through the channel the worker actually receives. WHY THIS IS THE GAP RATHER THAN A NICETY. reckon carries this discipline in skills/reckon-ship/references/worker-protocol.md, and the composed prompt embeds no protocol reference at all: it is deliberately short and tells the worker to read the plan and section named. So the protocol reaches a worker only if something puts it in the prompt, and nothing does. The consequence was measured across three sessions this week, which independently reported the same class of manifest defect: manifests under-reporting real work, one reading commits pending over a real commit, one reading status complete with its declared artifact absent, three passed runs leaving commits and artifacts blank. One reporting coordinator stated the conclusion as only flight config is enforced, so only flight config is real, and then compensated by hand-writing the discipline into every brief's own done-when text for its next wave. That compensation is the evidence for this node: a coordinator should not have to retype a contract clause into every brief for it to reach a worker. THE DISTINCTION THAT MAKES THIS BELONG IN THE PROMPT RATHER THAN IN A BRIEF. The prompt's own docstring states its principle: anything the live plan already says is omitted, because the worker's first act is to read the plan. That principle is correct and this text does not violate it. Plan content is what THIS node must achieve and varies per node. Contract content is what EVERY node must do regardless of plan, and a worker that never reads the references cannot learn it from anywhere else. Commit-at-each-deliverable is contract content by that test: it is identical for every node reckon will ever dispatch. WHAT TO ADD, AND ITS STATED REASON. Add to the composed prompt that the worker commits each deliverable as it completes rather than once at the end, and writes its manifest carrying whatever it already holds before beginning any long output. State the reason as loss recovery and not as death prevention: a durable write preceding a long generation survives that generation failing. Do not claim it improves the chance of finishing, because that reading was measured and refuted on two fleets independently, one of which found a node that wrote its entire deliverable inside the final six percent of its run and landed cleanly. KEEP IT SHORT, BECAUSE SHORTNESS IS THE PROMPT'S DESIGN AND NOT AN ACCIDENT. The addition is at most four sentences. It names no backend, no model and no lane. It does not restate the manifest path rules, the fence descriptions or the delivery rule, all of which the prompt or the references already carry. WHAT NOT TO CHANGE. Do not add any other protocol text, however useful; a prompt that grows to hold the whole reference stops being read. Do not embed the references by file path or by inclusion, because a path in a prompt is an instruction to go and read, which is the failure this node exists to remove. Do not alter what the prompt says about the plan, the section, the write paths, the peers, the manifest path or the time budget. Do not add a rate limit, a turn limit or a context limit. FALSIFIERS, asserted in tests/test_the_prompt_carries_the_contract.py against a composed prompt built from a constructed node. The composed prompt contains the commit-at-each-deliverable instruction and the manifest-before-long-output instruction. Its stated reason is recovery, and the prompt does not assert that the practice prevents failure or improves completion. The added text is at most four sentences, asserted by counting. No backend, model or lane name appears in the addition. Every other element the prompt carried before is still present, asserted by composing the same node before and after and diffing, so the addition is purely additive. The prompt does not contain a filesystem path to any reference document. A node with no write paths and a node with several both receive the addition, so it is not conditional on shape. Measure base and head over the new file plus every test importing reckon.crew.prompts; report failure ids either side and require none added.",
+          "estimated_hours": 0.75,
+          "goal": "Put the commit-and-manifest-early contract into the composed dispatch prompt, so it reaches the worker rather than depending on a reference nothing embeds",
+          "id": "the-prompt-carries-the-contract",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T044741871468-the-prompt-carries-the-contract/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/prompts.py",
+            "tests/test_the_prompt_carries_the_contract.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-no-zombies",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-08T04:48:01Z",
+        "completed_at": "2026-09-08T07:36:31.601Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 9994,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 10110,
+        "stalled": true,
+        "time_budget": "40m",
+        "base_sha": "84e5a07f6fa03dfb024d33dff2918f976477a678",
+        "commits": [
+          "be48b42090da6a306fc2b9dcdd6a1cf2c5dc67a3"
+        ],
+        "changed_lines": {
+          "added": 208,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 12,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider tests/test_the_prompt_carries_the_contract.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T044741871468-the-prompt-carries-the-contract/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T044741871468-the-prompt-carries-the-contract/manifest.md",
+        "scope_changed": false,
+        "session_id": "bc027684-fe6c-4f5f-9230-2fd698d6cb83",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 7118520,
+            "input_tokens_cumulative": 7118520,
+            "output_tokens": 51449,
+            "output_tokens_cumulative": 51449,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 7118520,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 10106.529,
+          "generated_tokens": 51449,
+          "generation_seconds": 9178.101,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 13.5,
+          "machine_seconds": 928.428,
+          "peak_input_tokens": 136987,
+          "tokens_per_second": 5.61,
+          "wall_tokens_per_second": 5.09
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_the_prompt_carries_the_contract.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-prompt-carries-the-contract",
+          "session_id": "bc027684-fe6c-4f5f-9230-2fd698d6cb83",
+          "session_source": "stream",
+          "retained_at": "2026-09-08T07:36:31.601Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -75129,6 +75305,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1169
+    "_version": 1172
   }
 }
