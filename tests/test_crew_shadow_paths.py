@@ -1,11 +1,9 @@
-"""Shadow worktree paths name their candidate so many can shadow one primary.
+"""Shadow worktree paths retain several comparison arms for one primary.
 
-A shadow worktree's session token is ``shadow-<primary>-<candidate>``; the
-candidate is what lets several models shadow the same committed node at the same
-time. The dispatcher builds the session from that tuple and the reclamation site
-rebuilds the location from the committed record's backend, both through the one
-shared helper, so a second (and third) candidate no longer collides with the
-first while a repeat of the same candidate still refuses.
+A shadow worktree's session token names its primary, candidate, and a unique
+recorded component. The dispatcher and reclamation site both use the same helper,
+so different candidates and repeated arms on one candidate keep separate retained
+evidence.
 
 Every test here is hermetic: ``RECKON_HOME`` moves the crew directory into a
 temp tree, the repository is a real but throwaway git repo, and dispatch
@@ -49,7 +47,7 @@ def _node(manifest_path: str) -> crew.TaskNode:
         id="node-a",
         goal="record the launch matrix for one backend",
         plan="plan-a",
-        section="§3",
+        section="dispatch",
         spec_level="exact",
         done_when="uv run pytest tests/test_backends.py reports 34 passed",
         write_paths=["reckon/_backends.py"],
@@ -100,7 +98,7 @@ def repo(tmp_path, home):
 <meta name="docs-project" content="proj">
 <meta name="reckon-type" content="plan">
 <meta name="plan-slug" content="plan-a">
-</head><body><h2 id="s3">§3 — Dispatch</h2></body></html>
+</head><body><h2 id="dispatch">Dispatch</h2></body></html>
 """
     )
     (root / "seed.txt").write_text("seed\n")
@@ -124,21 +122,30 @@ def _completed_primary(home, repo) -> dict:
         config=CONFIG,
         session="sess",
         launcher=lambda *args, **kwargs: 0,
+        backend_override="alpha",
     )
     return crew.complete(pointer["run_id"], gate="passed")["record"]
 
 
-def _shadow(primary_run_id: str, backend_name: str, repo: Path) -> dict:
+def _shadow(
+    primary_run_id: str,
+    backend_name: str,
+    repo: Path,
+    *,
+    config: dict | None = None,
+    configuration_overrides: set[str] | None = None,
+) -> dict:
     return dispatch_shadow(
         primary_run_id,
         candidate_backend=backend_name,
-        config=_candidate_config(backend_name),
+        config=config or _candidate_config(backend_name),
         repo=repo,
+        configuration_overrides=configuration_overrides or set(),
         launcher=lambda *args, **kwargs: 0,
     )
 
 
-def _commit_shadow_record(repo, home, *, run_id, primary_run_id, backend) -> Path:
+def _commit_shadow_record(repo, home, *, run_id, lineage, backend) -> Path:
     artifact = home / "crew" / "runs" / run_id / "shadow.patch"
     artifact.parent.mkdir(parents=True, exist_ok=True)
     artifact.write_text("retained evidence\n")
@@ -150,7 +157,7 @@ def _commit_shadow_record(repo, home, *, run_id, primary_run_id, backend) -> Pat
             gate="passed",
             node="node-a",
             backend=backend,
-            lineage={"kind": "shadow", "primary_run_id": primary_run_id},
+            lineage=lineage,
             shadow_patch=str(artifact),
         ),
         root=repo,
@@ -179,23 +186,62 @@ def test_many_candidates_shadow_one_primary_without_colliding(home, repo) -> Non
         assert record["backend"] == backend
         # The dispatcher derives its session through the shared helper, so each
         # worktree lives under a session that names both primary and candidate.
-        assert record["session"] == routing.shadow_worktree_session(primary_id, backend)
-        assert Path(record["session"]).name == f"shadow-{primary_id}-{backend}"
+        component = record["lineage"]["worktree_component"]
+        assert record["session"] == routing.shadow_worktree_session(
+            primary_id, backend, component
+        )
+        assert record["session"].startswith(
+            routing.shadow_worktree_session(primary_id, backend) + "-"
+        )
 
 
-def test_the_same_candidate_cannot_shadow_the_same_primary_twice(home, repo) -> None:
+def test_two_effort_arms_on_one_backend_keep_separate_patches(home, repo) -> None:
     primary = _completed_primary(home, repo)
     primary_id = str(primary["run_id"])
 
-    first = _shadow(primary_id, "candidate-a", repo)
-    assert Path(first["worktree"]).is_dir()
-    # Retire the first run's live pointer so the collision that matters here —
-    # the worktree path already on disk — is what the second shadow hits, rather
-    # than a still-in-flight member guard.
-    pointer_path(str(first["run_id"])).unlink(missing_ok=True)
+    inherited_config = _candidate_config("candidate-a")
+    inherited_config["backends"]["candidate-a"]["effort"] = "xhigh"
+    first = _shadow(primary_id, "candidate-a", repo, config=inherited_config)
+    overridden_config = _candidate_config("candidate-a")
+    overridden_config["backends"]["candidate-a"]["effort"] = "medium"
+    second = _shadow(
+        primary_id,
+        "candidate-a",
+        repo,
+        config=overridden_config,
+        configuration_overrides={"effort"},
+    )
 
-    with pytest.raises(crew.CrewError, match="worktree"):
-        _shadow(primary_id, "candidate-a", repo)
+    assert first["agent"]["effort"] == primary["agent"]["effort"] == "high"
+    assert second["agent"]["effort"] == "medium"
+    assert first["session"] != second["session"]
+    assert first["worktree"] != second["worktree"]
+    assert (
+        first["lineage"]["worktree_component"]
+        != second["lineage"]["worktree_component"]
+    )
+
+    for record, content in ((first, "inherited\n"), (second, "overridden\n")):
+        changed = Path(record["worktree"]) / "reckon" / "_backends.py"
+        changed.parent.mkdir(parents=True)
+        changed.write_text(content)
+
+    stored = [
+        crew.complete(record["run_id"], gate="passed")["record"]
+        for record in (first, second)
+    ]
+    patches = [Path(record["shadow_patch"]) for record in stored]
+    assert patches[0] != patches[1]
+    assert all(path.is_file() for path in patches)
+    assert "inherited" in patches[0].read_text()
+    assert "overridden" in patches[1].read_text()
+    assert stored[0]["lineage"]["configuration"]["resolved"]["effort"] == "high"
+    assert stored[0]["lineage"]["configuration"]["overrides"] == {}
+    assert stored[1]["lineage"]["configuration"]["resolved"]["effort"] == "medium"
+    assert stored[1]["lineage"]["configuration"]["overrides"]["effort"] == {
+        "layers": {"backend": "medium"},
+        "resolved": "medium",
+    }
 
 
 def test_each_shadow_is_reclaimed_against_its_own_committed_record(home, repo) -> None:
@@ -213,7 +259,7 @@ def test_each_shadow_is_reclaimed_against_its_own_committed_record(home, repo) -
             repo,
             home,
             run_id=str(record["run_id"]),
-            primary_run_id=primary_id,
+            lineage=record["lineage"],
             backend=backend,
         )
         # A terminal shadow run's live pointer is retired once the record is
