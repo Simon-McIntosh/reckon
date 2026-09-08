@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T09:26:13",
+  "updated": "2026-09-08T09:28:17",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -74754,6 +74754,153 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T065912755552-one-disagreement-one-refusal",
+        "plan": "crew-observability-truth",
+        "section": "\u00a71",
+        "node": "one-disagreement-one-refusal",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1574,
+                "cached_input_tokens": 384964,
+                "input_tokens": 386540,
+                "output_tokens": 2181,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 388721,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_dispatch_lane_disagreement.py -q passes, and a dispatch whose flight override names one backend while its roster member declares another is refused with a message naming both, exactly as the named-backend path already refuses. THE DEFECT, measured by probe on this host within the last hour on code that landed an hour ago. reckon crew dispatch gained a --backend option that refuses when the named backend disagrees with the roster member's declared harness; the refusal names both sides and is correct. In the same change the member's declared harness became authoritative for routing, where it had previously been decorative. Those two are right. What is wrong is the third case. A dispatch carrying the flight override --set default_backend=codex-luna against a member declaring harness codex-terra resolved codex-terra, with no refusal and no warning, and recorded requested_backend as codex-terra. So the override the caller typed was discarded in favour of the member's declaration, silently. That is the same class of defect the --backend work was landed to remove, reintroduced from the other direction: a caller states an intent, something else wins, and nothing says so. WHY IT IS URGENT RATHER THAN TIDY. Two peer sessions on this machine route their live nodes with that exact flight override, and both maintain rosters whose members carry declared harnesses that were chosen while the field was decorative. As of the change, every one of their dispatches is being steered by a declaration they made when it had no routing authority, and their typed override is being dropped. One of those sessions reported today that it accidentally sent five consecutive nodes to a single metered lane; the remedy it is now applying is a roster redistribution, which this defect would silently defeat. WHAT TO CHANGE. When a dispatch's resolved flight configuration names a default backend that differs from the roster member's declared harness, refuse, with a message naming the override value and the member's declared harness and saying that the two disagree. Reuse the existing refusal for the named-backend disagreement rather than writing a second one: same error vocabulary, same exit code, same message shape, so a caller meets one behaviour for one situation regardless of which surface expressed the intent. Find that refusal and extend it rather than adding a parallel check. Do not change what happens when they AGREE, and do not change what happens when the member declares no harness, in which case the override must continue to route exactly as it does today; both are pinned by falsifiers below. Do not change the --backend path's behaviour at all. WHAT NOT TO DO. Do not resolve the disagreement by precedence: not member-wins, not override-wins, not most-recent-wins. A precedence rule would be a defensible design and it is the wrong one here, because the caller and the roster disagree about something the harness cannot settle, and picking a winner is how the present defect reads to its victims. Refusing costs one command; guessing costs a lane. Do not add a flag to suppress the refusal. Do not edit reckon/crew/lane_evidence.py, reckon/_mcp_tools.py, reckon/mcp_views.py, reckon/mcp.py or reckon/crew/promotion.py; peers hold all five. FALSIFIERS, in tests/test_dispatch_lane_disagreement.py, using the project's existing dispatch test fixtures and a synthesised temporary repository, never a real checkout and never the real configuration home or live-pointer directory. A dry-run dispatch whose flight override names one declared backend, against a member declaring a DIFFERENT declared backend, refuses, and the message contains both names; assert both appear, so the refusal is diagnosable rather than merely a failure. That same case populates no resolved agent block, asserted directly, because a refusal that has already resolved a lane somewhere else is the shape that let this defect exist. A dry-run dispatch whose flight override names the same backend the member declares succeeds and resolves that backend. A dry-run dispatch carrying a flight override against a member declaring NO harness resolves the override's backend, which pins the behaviour peers depend on today. A dry-run dispatch with no override and a member declaring a harness resolves the member's harness, unchanged from now. The named-backend disagreement continues to refuse with its existing message, asserted so this node cannot regress the path it is modelled on. And assert that the override-disagreement refusal and the named-backend disagreement refusal report the SAME error identity, comparing them directly, since one situation reported two ways is the thing this node exists to prevent. Measure base and head over the changed files and the tests that import reckon.crew.dispatch, report failure ids either side, require none added, bound the run per file, and never run the full suite for this node.",
+          "estimated_hours": 1.0,
+          "goal": "Refuse when a flight override and a member's declared harness name different lanes, reporting it as the same refusal the named-backend path already gives",
+          "id": "one-disagreement-one-refusal",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T065912755552-one-disagreement-one-refusal/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "reckon/cli.py",
+            "tests/test_dispatch_lane_disagreement.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-lane-disagreement",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T06:59:40Z",
+        "completed_at": "2026-09-08T07:26:48Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1628,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1628,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "80ada6e3625a0b19a8d958d19707054597480b62",
+        "commits": [
+          "d4083aa1bdc821dc52d5a90b7b58a17f247fbc22"
+        ],
+        "changed_lines": {
+          "added": 164,
+          "removed": 8,
+          "files": 3
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_dispatch_lane_disagreement.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T065912755552-one-disagreement-one-refusal/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T065912755552-one-disagreement-one-refusal/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07fd0-bde1-7d72-a689-196ad8375136",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 12369408,
+            "cached_input_tokens_cumulative": 12369408,
+            "input_tokens": 12542331,
+            "input_tokens_cumulative": 12542331,
+            "output_tokens": 35554,
+            "output_tokens_cumulative": 35554,
+            "reasoning_output_tokens": 14679,
+            "reasoning_output_tokens_cumulative": 14679
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 12369408,
+          "cumulative_input_tokens": 24911739,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 50233
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/one-disagreement-one-refusal",
+          "session_id": "01a07fd0-bde1-7d72-a689-196ad8375136",
+          "session_source": "stream",
+          "retained_at": "2026-09-08T07:26:48Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -74982,6 +75129,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1168
+    "_version": 1169
   }
 }
