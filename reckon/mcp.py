@@ -3940,12 +3940,12 @@ def _reject_unknown_tool_arguments(tool_name: str) -> None:
 # coordinator can answer a provider refusal without shelling out to the CLI.
 
 if mcp is not None:
-    read_plan_tool = mcp.tool(name="_read_plan")(_read_plan_tool)
-    edit_plan_tool = mcp.tool(name="_edit_plan")(_edit_plan_tool)
-    roadmap_tool = mcp.tool(name="_roadmap")(_roadmap_tool)
-    audit_tool = mcp.tool(name="_audit")(_audit_tool)
-    crew_tool = mcp.tool(name="_crew")(_crew)
-    for tool_name in ("_read_plan", "_edit_plan", "_roadmap", "_audit", "_crew"):
+    read_plan_tool = mcp.tool(name="read_plan")(_read_plan_tool)
+    edit_plan_tool = mcp.tool(name="edit_plan")(_edit_plan_tool)
+    roadmap_tool = mcp.tool(name="roadmap")(_roadmap_tool)
+    audit_tool = mcp.tool(name="audit")(_audit_tool)
+    crew_tool = mcp.tool(name="crew")(_crew)
+    for tool_name in ("read_plan", "edit_plan", "roadmap", "audit", "crew"):
         _reject_unknown_tool_arguments(tool_name)
 
 
