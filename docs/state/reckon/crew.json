@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T00:43:26",
+  "updated": "2026-09-09T00:54:38",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -82641,6 +82641,181 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T221926145417-the-drain-counts-this-sessions-work",
+        "plan": "concurrency-and-schedule-visibility",
+        "section": "\u00a78",
+        "node": "the-drain-counts-this-sessions-work",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1015,
+                "cached_input_tokens": 620206,
+                "input_tokens": 621223,
+                "output_tokens": 483,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 621706,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "c97ff0dc-76f9-4d90-a37e-98717f5066f2",
+            "session_id": "ship-s15-2026-09-08b"
+          },
+          "done_when": "tests/test_crew_drain_by_coordinator.py passes with cases proving: the drain separates runs dispatched by the asking session from those dispatched by another, counting only the former toward the closure count; a peer's run is reported for visibility with its owning session named beside its run id, without contributing to that count; a session that leaves its OWN run unreconciled is still refused exactly as it is today; and the dispatch refusal for unreconciled runs likewise counts only the asking session's rows while naming any peer rows it saw. Use the dispatching session already recorded on each run rather than adding new state. Record the closure count before and after for a fixture holding one own and one peer run, and the test file pass total, in the manifest tests line",
+          "estimated_hours": null,
+          "goal": "the closure drain counts this session's outstanding runs and reports a peer's without blocking on them",
+          "id": "the-drain-counts-this-sessions-work",
+          "lane_declaration": {
+            "backend": "codex",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-08T22:19:26Z",
+            "read_at": "2026-09-08T22:19:27Z",
+            "resolved_backend": "codex",
+            "utilisation_pct": 56.0
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T221926145417-the-drain-counts-this-sessions-work/manifest.md",
+          "plan": "concurrency-and-schedule-visibility",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "reckon/crew/dispatch.py",
+            "tests/test_crew_drain_by_coordinator.py",
+            "reckon/crew/runs.py",
+            "reckon/cli.py",
+            "reckon/mcp.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "ship0908-a",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T22:19:34Z",
+        "completed_at": "2026-09-08T22:52:50Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1996,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1996,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "ca89e54407daf468bf60dd1f2424d86b9a962fb0",
+        "commits": [
+          "55a24297cdf92bda2d245077dd9a6dc558c91ae3"
+        ],
+        "changed_lines": {
+          "added": 345,
+          "removed": 21,
+          "files": 6
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=\"$PWD\" .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_drain_by_coordinator.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T221926145417-the-drain-counts-this-sessions-work/final-drain-by-coordinator.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T221926145417-the-drain-counts-this-sessions-work/manifest.md",
+        "scope_changed": true,
+        "session_id": "01a082af-c968-74d0-9fd5-4f4aaca2c1dc",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 21048064,
+            "cached_input_tokens_cumulative": 24868992,
+            "input_tokens": 20850694,
+            "input_tokens_cumulative": 25099775,
+            "output_tokens": 18031,
+            "output_tokens_cumulative": 38452,
+            "reasoning_output_tokens": 7312,
+            "reasoning_output_tokens_cumulative": 13089
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-08T22:52:50Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 57.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-08T22:52:50Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 24868992,
+          "cumulative_input_tokens": 49968767,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 51541
+        },
+        "follow_on_paths": [
+          "tests/test_crew.py::test_dispatch_refuses_every_unreconciled_run_past_the_grace",
+          "tests/test_crew.py::test_cli_dispatch_reports_unreconciled_runs_on_its_own_exit_code"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-08b/the-drain-counts-this-sessions-work",
+          "session_id": "01a082af-c968-74d0-9fd5-4f4aaca2c1dc",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T22:52:50Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -82869,6 +83044,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1252
+    "_version": 1253
   }
 }
