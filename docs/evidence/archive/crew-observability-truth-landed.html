@@ -433,6 +433,47 @@ worker writes its own gate and that rate is saturated at 0.9938 across every
 lane measured here.</p>
 </section>
 
+
+<section id="s5-a-partial-read-inferred-to-a-cause">
+<h2 id="s5-partial-read-h">Correction: three rows cited as evidence were correct behaviour</h2>
+
+<p>The shared-attempt-chain baseline change is correct and its cause is verified:
+a resumed run's freshness baseline was captured from its predecessor attempt's
+manifest, so the inherited manifest's mtime equalled the baseline exactly and was
+judged stale. Measured on one run at attempt six, both values
+<code>1788874593998173197</code>, with the file reading <code>status: waiting</code>
+and five well-formed wait fields while the tool reported no manifest status.</p>
+
+<p><strong>What was wrong is the scale claimed for it.</strong> The landing outcome
+and its merge message state that four of five live runs in a peer fleet had their
+manifests discarded, three of them with a harmless-looking outcome. That is false.
+Those three — later five — rows read a file status of <code>blocked</code> or
+<code>failed</code> against a classification of <code>running</code>, and
+<strong>every one had a live process</strong>. A live process outranking a stale
+terminal manifest is the documented and correct answer, so those rows were never
+evidence of a discard. Only the parked run, whose process had correctly exited,
+was an instance.</p>
+
+<p>The error was reading two columns and inferring a mechanism from their
+disagreement without reading the third that governs it. The peer whose rows they
+were caught it; the coordinator who cited them did not check
+<code>process_alive</code> before writing the claim into a committed record.</p>
+
+<p><strong>The fix's justification survives without them, on a different argument.</strong>
+Preferring a baseline change over exempting a waiting status was partly defended
+here by those three rows as "the everywhere-else already visible", and that defence
+is withdrawn. The argument that stands is the peer's: the baseline exists to answer
+whether <em>this attempt</em> has written anything, and an inherited manifest answers
+whether <em>any attempt ever</em> did. Those are different questions, so exempting one
+status would leave the wrong answer in place everywhere else the baseline is
+consulted. That is a category error rather than an inconvenience, and it needs no
+observed symptom to justify repairing.</p>
+
+<p>This is the same shape as the section above, from the coordinator's own hand and
+after writing that section: a check aimed where the failure could not be, and a
+reading taken as an authority it was not.</p>
+</section>
+
 </main>
 </body>
 </html>
