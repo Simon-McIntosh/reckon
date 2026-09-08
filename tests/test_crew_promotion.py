@@ -122,6 +122,33 @@ def _write_commit_pointer(repository: Path, run_id: str, base: str) -> None:
     )
 
 
+def _write_complete_manifest_pointer(
+    repository: Path,
+    tmp_path: Path,
+    run_id: str,
+    *,
+    base: str,
+    changed_paths: str,
+    commits: str | None,
+) -> Path:
+    manifest = tmp_path / "manifests" / f"{run_id}.md"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    commit_line = "" if commits is None else f"commits: {commits}\n"
+    manifest.write_text(
+        "node: node-a\n"
+        "status: complete\n"
+        f"{commit_line}"
+        f"changed_paths: {changed_paths}\n"
+        "tests: focused promotion check passed\n",
+        encoding="utf-8",
+    )
+    _write_commit_pointer(repository, run_id, base)
+    record = json.loads(pointer_path(run_id).read_text(encoding="utf-8"))
+    record["manifest_path"] = str(manifest)
+    _write_json(pointer_path(run_id), record)
+    return manifest
+
+
 def test_promotion_splits_narrative_from_run_measurements(repository: Path) -> None:
     run_id = "r-20260824T190800000000-node-a"
     _write_json(
@@ -396,6 +423,82 @@ def test_full_commit_promotes_without_rewriting_its_identity(
     )["record"]
 
     assert stored["commits"] == [commit]
+    assert not pointer_path(run_id).exists()
+
+
+@pytest.mark.parametrize("commits", [None, "none"])
+def test_complete_manifest_with_changed_paths_requires_commits_field(
+    repository: Path, tmp_path: Path, commits: str | None
+) -> None:
+    _base, head = _repository_with_candidate(repository)
+    run_id = f"r-changed-manifest-{commits or 'absent'}"
+    _write_complete_manifest_pointer(
+        repository,
+        tmp_path,
+        run_id,
+        base=head,
+        changed_paths="candidate.txt",
+        commits=commits,
+    )
+
+    with pytest.raises(crew.CrewError, match="manifest field 'commits' is missing"):
+        crew.complete(
+            run_id,
+            gate="passed",
+            no_commit="the coordinator supplied a rationale",
+            root=repository,
+        )
+
+    assert ledger.runs(PROJECT, root=repository) == []
+    assert pointer_path(run_id).is_file()
+
+
+def test_complete_manifest_with_changed_paths_and_commit_promotes(
+    repository: Path, tmp_path: Path
+) -> None:
+    _base, commit = _repository_with_candidate(repository)
+    run_id = "r-changed-manifest-with-commit"
+    _write_complete_manifest_pointer(
+        repository,
+        tmp_path,
+        run_id,
+        base=commit,
+        changed_paths="candidate.txt",
+        commits=commit,
+    )
+
+    promoted = crew.complete(
+        run_id,
+        gate="passed",
+        commits=[commit],
+        root=repository,
+    )
+
+    assert promoted["record"]["commits"] == [commit]
+    assert not pointer_path(run_id).exists()
+
+
+def test_complete_report_only_manifest_without_commit_promotes(
+    repository: Path, tmp_path: Path
+) -> None:
+    _base, head = _repository_with_candidate(repository)
+    run_id = "r-report-only-manifest"
+    _write_complete_manifest_pointer(
+        repository,
+        tmp_path,
+        run_id,
+        base=head,
+        changed_paths="none",
+        commits=None,
+    )
+
+    promoted = crew.complete(
+        run_id,
+        gate="passed",
+        root=repository,
+    )
+
+    assert promoted["record"]["commits"] == []
     assert not pointer_path(run_id).exists()
 
 
