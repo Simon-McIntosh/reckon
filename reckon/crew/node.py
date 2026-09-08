@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping
 
 from reckon import ledger
+from reckon.crew.refusals import format_refusal
 
 # The eight properties of the task-definition contract, in the order a reader of
 # the plan meets them. Order is part of the contract: a node that is not scoped
@@ -181,7 +182,10 @@ class MemberInFlight(CrewError):
         self.member = member
         self.run_id = run_id
         super().__init__(
-            f"crew member {member!r} already holds in-flight run {run_id!r}"
+            format_refusal(
+                "D16",
+                f"crew member {member!r} already holds in-flight run {run_id!r}",
+            )
         )
 
 
@@ -201,8 +205,11 @@ class ScopeConflict(CrewError):
         self.candidate_path = candidate_path
         self.claimed_path = claimed_path
         super().__init__(
-            f"write scope {candidate_path!r} conflicts with live claim "
-            f"{claimed_path!r} held by run {run_id!r} (node {node_id!r})"
+            format_refusal(
+                "D12",
+                f"write scope {candidate_path!r} conflicts with live claim "
+                f"{claimed_path!r} held by run {run_id!r} (node {node_id!r})",
+            )
         )
 
 
@@ -216,10 +223,13 @@ class UnreconciledRuns(CrewError):
             f"- {run['run_id']}: {run['next_action']}" for run in self.runs
         )
         super().__init__(
-            f"project has {len(self.runs)} unreconciled run(s) older than the "
-            f"{grace} grace:\n{actions}\n"
-            "reconcile each run, or pass --allow-unreconciled-runs to record "
-            "an explicit waiver on the new run"
+            format_refusal(
+                "D11",
+                f"project has {len(self.runs)} unreconciled run(s) older than the "
+                f"{grace} grace:\n{actions}\n"
+                "reconcile each run, or pass --allow-unreconciled-runs to record "
+                "an explicit waiver on the new run",
+            )
         )
 
 
@@ -264,12 +274,15 @@ class WatcherRequired(CrewError):
         attach = watch.get("attach_line") or "reckon crew follow"
         if session is None:
             super().__init__(
-                f"project {project!r} has no live crew watcher; arm one with "
-                f"`{watch['arming_line']}`, then attach this session to it with "
-                f"`{attach}` as a per-line monitor -- a live seat is "
-                "project-global and does not by itself deliver anything to the "
-                "session that dispatched. Or pass --no-watch to record an "
-                "explicit waiver for a synchronous dispatch"
+                format_refusal(
+                    "D13",
+                    f"project {project!r} has no live crew watcher; arm one with "
+                    f"`{watch['arming_line']}`, then attach this session to it with "
+                    f"`{attach}` as a per-line monitor -- a live seat is "
+                    "project-global and does not by itself deliver anything to the "
+                    "session that dispatched. Or pass --no-watch to record an "
+                    "explicit waiver for a synchronous dispatch",
+                )
             )
             return
         delivery = str(watch.get("follower", {}).get("delivery") or "none")
@@ -280,16 +293,19 @@ class WatcherRequired(CrewError):
             else "it has no registered follower"
         )
         super().__init__(
-            f"session {session!r} would not hear this run finish: {cause}. "
-            f"Arm `{attach}` with the harness primitive that reports each line "
-            "as it is written -- named for this host in reckon-ship "
-            "references/orchestrator-harness/<harness>.md -- then dispatch "
-            "again. A copied-but-wrongly-armed line is the common case: the "
-            "command is right and its lines still end where nothing reads "
-            "them. A live seat is project-global and wake delivery is "
-            "session-local, so `watcher_live` being true says nothing about "
-            "this session. Or pass --no-watch to waive delivery for a "
-            "synchronous dispatch"
+            format_refusal(
+                "D13",
+                f"session {session!r} would not hear this run finish: {cause}. "
+                f"Arm `{attach}` with the harness primitive that reports each line "
+                "as it is written -- named for this host in reckon-ship "
+                "references/orchestrator-harness/<harness>.md -- then dispatch "
+                "again. A copied-but-wrongly-armed line is the common case: the "
+                "command is right and its lines still end where nothing reads "
+                "them. A live seat is project-global and wake delivery is "
+                "session-local, so `watcher_live` being true says nothing about "
+                "this session. Or pass --no-watch to waive delivery for a "
+                "synchronous dispatch",
+            )
         )
 
 
@@ -306,8 +322,11 @@ class BudgetHold(CrewError):
     def __init__(self, verdict: Mapping[str, Any]) -> None:
         self.verdict = dict(verdict)
         super().__init__(
-            f"wave held on budget for backend {verdict.get('backend')!r} — "
-            f"{verdict.get('reason')}"
+            format_refusal(
+                "D10",
+                f"wave held on budget for backend {verdict.get('backend')!r} — "
+                f"{verdict.get('reason')}",
+            )
         )
 
 
@@ -316,16 +335,24 @@ class CompetenceLimit(CrewError):
 
     def __init__(self, verdict: Mapping[str, Any]) -> None:
         self.verdict = dict(verdict)
+        reason = str(self.verdict.get("reason") or "competence horizon exceeded")
+        self.verdict["reason"] = format_refusal("D08", reason)
         super().__init__(
-            f"node estimate {verdict['estimated_hours']} worker-hours exceeds "
-            f"the {verdict['competence_horizon_hours']} worker-hour competence "
-            f"horizon after speed adjustment; split into nodes no larger than "
-            f"{verdict['target_size_hours']} worker-hours"
+            format_refusal(
+                "D08",
+                f"node estimate {verdict['estimated_hours']} worker-hours exceeds "
+                f"the {verdict['competence_horizon_hours']} worker-hour competence "
+                f"horizon after speed adjustment; split into nodes no larger than "
+                f"{verdict['target_size_hours']} worker-hours",
+            )
         )
 
 
 class PlanVisibilityError(CrewError):
     """The worker's base ref cannot show the named plan section."""
+
+    def __init__(self, detail: str) -> None:
+        super().__init__(format_refusal("D05", detail))
 
 
 # ── Node definition and the task contract ───────────────────────────────────

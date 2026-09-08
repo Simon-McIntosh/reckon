@@ -25,6 +25,7 @@ from reckon.crew.node import (
     _TERMINAL_RUN_PHASES,
     parse_duration,
 )
+from reckon.crew.refusals import format_refusal
 from reckon.crew.runs import (
     _live_worktree_claims,
     _pointer_lock,
@@ -735,8 +736,11 @@ def _fleet_script() -> Path:
             return script
     searched = ", ".join(str(path) for path in candidates)
     raise CrewError(
-        "the reckon installation is missing its worktree fleet script; "
-        f"searched: {searched}; reinstall reckon"
+        format_refusal(
+            "D17",
+            "the reckon installation is missing its worktree fleet script; "
+            f"searched: {searched}; reinstall reckon",
+        )
     )
 
 
@@ -1479,9 +1483,10 @@ def _competence_verdict(
                 "estimated_tokens": context_fit["estimated_tokens"],
                 "window_tokens": context_fit["window_tokens"],
                 "shortfall_tokens": context_fit["shortfall_tokens"],
-                "recommendation": (
+                "recommendation": format_refusal(
+                    "D08",
                     "split the node or route it to a backend with at least "
-                    f"{context_fit['estimated_tokens']} usable input tokens"
+                    f"{context_fit['estimated_tokens']} usable input tokens",
                 ),
             }
         )
@@ -1528,8 +1533,9 @@ def _competence_verdict(
         }
     )
     if not verdict["allowed"]:
-        verdict["recommendation"] = (
+        verdict["recommendation"] = format_refusal(
+            "D08",
             f"split into nodes no larger than {verdict['target_size_hours']} "
-            "worker-hours for this agent configuration"
+            "worker-hours for this agent configuration",
         )
     return with_context_fit()
