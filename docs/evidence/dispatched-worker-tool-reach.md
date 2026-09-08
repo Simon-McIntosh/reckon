@@ -164,3 +164,24 @@ plausible version range from being mistaken for live tool evidence.
 No server was installed, started, configured, edited, or contacted through a
 manual HTTP request. No repository test suite was run because this is an
 evidence-only node with no code gate.
+
+## Coordinator correction, 2026-09-08
+
+An earlier reading of this report by the coordinator claimed the reckon MCP
+server's tools were absent from the worker's process. That was wrong, and the
+error was in the reading rather than in this report.
+
+This harness names an MCP tool `mcp__<server>_<tool>` with a **single**
+underscore between server and tool. The coordinator matched on a pattern
+requiring a double underscore, so it could not match `mcp__reckon_crew` and
+returned nothing; the same pattern undercounted the total at 91 against the 97
+this report states. The report names Reckon among the servers in its own prose.
+
+The measured position is therefore that a dispatched worker reaches **all four**
+declared servers, reckon included, and can read plans, roadmap and crew state
+through MCP without an approval prompt. No server needed repair.
+
+The general shape is one this fleet has recorded before: a check whose form
+could not observe the thing it was asked about, reported as an absence of the
+thing. An absence claim needs a positive control — here, matching a tool name
+already known to be present would have failed the pattern immediately.
