@@ -722,13 +722,23 @@
       whether the five-hour windows are per-lane is unmeasured.
     </p>
     <p>
-      <strong>A declared lane can still be overridden, and a fence on the undeclared case alone
-      would miss it.</strong> A member's declared harness silently beats an explicitly set
-      default backend, with no refusal and no record &mdash; measured by the same peer across a
-      whole session whose nodes all reached the metered lane while it believed it had redirected
-      them. That is the same resolution line, so a caller who <em>did</em> declare can be
-      overruled by the roster and told nothing, which reproduces the defect one step further
-      along. Both cases belong to this section rather than only the never-declared one.
+      <strong>The declared-but-overridden case was reported as open and is already closed;
+      recorded because the report was credible and acting on it would have built a refusal
+      twice.</strong> A peer coordinator lost a whole session's routing to a member's declared
+      harness beating an explicitly set default backend, silently, and a note of the same
+      behaviour was carried into this session from elsewhere. Probed directly instead of
+      inherited: an explicit backend flag disagreeing with a member's harness is refused naming
+      both, and a set default backend disagreeing with a member's harness is refused the same
+      way. Two variants, two refusals. The behaviour both accounts describe is real but predates
+      the refusal work that landed earlier the same day.
+    </p>
+    <p>
+      What remains is narrower and is not an override at all: the roster is consulted only when
+      the call supplied a backend, so a default declared purely in a configuration layer routes
+      without the member's harness ever being compared. Nothing is overruled silently there
+      because nothing is contested &mdash; the roster simply does not participate. That is worth
+      a sentence in the fence's design rather than a deliverable of its own, and it is the reason
+      the requirement below speaks only to the undeclared case.
     </p>
     <p>
       <em>Done when</em> a dispatch whose lane resolves to a metered backend without an
@@ -737,8 +747,8 @@
       when the same dispatch carrying an explicit declaration proceeds unchanged; when a
       dispatch resolving to an unmetered backend is never refused for this reason, proven by
       a local dispatch that still launches with no lane flag; when a member's declared
-      harness neither supplies a metered lane on its own nor silently overrules a lane the caller
-      did declare, disagreement between the two being refused with both named; and when the run
+      harness no longer supplies a metered lane on its own, the existing refusal for a harness
+      that disagrees with a declared lane being left as it stands; and when the run
       record carries
       the declared lane beside the window utilisation observed at dispatch, so the ledger can
       later show what each choice cost. Asserted by dispatching the same node with and
