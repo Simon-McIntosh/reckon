@@ -498,6 +498,55 @@
       first wording, and a path inside the repository and requiring the second.
     </p>
 
+    <h2 id="s12">&#167;12 &mdash; Two fields on one manifest line disarm the guard that reads them</h2>
+    <p>
+      The manifest format is one key per line, and a worker that writes two on one line is not
+      refused &mdash; it is misparsed, in the direction that removes a protection. Measured
+      2026-09-09 against the live parser:
+    </p>
+    <table>
+      <thead><tr><th>Written</th><th>Parsed commits</th><th>Parsed changed paths</th></tr></thead>
+      <tbody>
+        <tr><td>the two keys on separate lines</td><td>the sha</td><td>both paths</td></tr>
+        <tr><td>the two keys on one line, semicolon separated</td>
+          <td>one corrupt string carrying the rest of the line</td><td><strong>empty</strong></td></tr>
+      </tbody>
+    </table>
+    <p>
+      The empty half is what matters. The promotion guard that refuses a completed manifest
+      reporting changed paths with no commit fires only when changed paths are present, so a
+      manifest written on one line presents none, and the guard built this session to catch a
+      worker that committed without recording it does not fire at all. A corrupted commit value
+      travels alongside, and it is not a valid object id, so nothing downstream that resolves it
+      would succeed either &mdash; but nothing downstream is asked to, because the coordinator
+      supplies the sha explicitly at promotion.
+    </p>
+    <p>
+      Three of this session's workers wrote the one-line form. Every ledger row is correct
+      regardless, because each promotion named its commit on the command line and the recorded
+      sha was verified against the worktree head before merging. That is exactly what makes this
+      worth a section rather than a note: the protection was absent for three landings and
+      nothing reported it, and the reason no harm followed is a coordinator habit rather than a
+      mechanism.
+    </p>
+    <p>
+      Two candidate repairs and they are not equivalent. Parsing the second key would make the
+      malformed line work, which teaches the format to accept a shape it does not document.
+      Refusing the line names the defect where it is introduced, at the cost of a refusal a
+      worker meets mid-run. The stronger reason to refuse is the one this plan keeps meeting: a
+      manifest that parses into a wrong value is a confident wrong answer, and one that refuses
+      is an honest absence.
+    </p>
+    <p>
+      <em>Done when</em> a manifest line carrying a second key after the first value is reported
+      rather than silently misparsed, naming the line and the keys it found; when the promotion
+      guard for changed paths without a commit cannot be disarmed by the field it reads being
+      misparsed to empty, proven by feeding it the one-line form and requiring a refusal rather
+      than a skip; and when the separate-line form is unaffected. Asserted by parsing both forms
+      and requiring the malformed one to be reported, and by promoting a run whose manifest
+      carries the one-line form and requiring the guard to speak.
+    </p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="liveness-source" data-choice="reconcile-on-read" data-by="lead" data-when="2026-09-03T07:38:29+00:00">
