@@ -1452,6 +1452,7 @@ def plan_dispatch(
     report_live_conflicts: bool = False,
     local: bool = False,
     backend_override: str | None = None,
+    default_backend_override: str | None = None,
     member: str = "",
 ) -> DispatchPlan:
     """Resolve routing and defaults for one node and judge it. No side effects.
@@ -1460,12 +1461,11 @@ def plan_dispatch(
     fill — the time budget from the resolved fence and the manifest path from
     the run directory — so the verdict is the one a real dispatch would reach.
 
-    ``backend_override`` re-resolves the role's own overlay against an
-    explicitly named backend instead of the one the role or default_backend
-    would select — the re-resolution a budget hold's declared fallback needs,
-    kept here rather than duplicated so it inherits every other check this
-    function already makes (execution fit, sandbox reachability, write-path
-    scope) for the substituted backend rather than the original.
+    ``backend_override`` and ``default_backend_override`` re-resolve the role's
+    own overlay against a caller-requested backend instead of the configured
+    default. Keeping both request surfaces here makes them inherit the same
+    disagreement refusal and every later check this function performs
+    (execution fit, sandbox reachability, and write-path scope).
     """
     if not _SAFE_ID.fullmatch(node.id):
         raise CrewError(f"node id {node.id!r} must match {_SAFE_ID.pattern}")
@@ -1478,10 +1478,12 @@ def plan_dispatch(
     # documented job is to validate the call, cannot report a dispatchable
     # node that the real dispatch then refuses on a missing precondition.
     _fleet_script()
-    requested_backend = str(backend_override or "").strip()
+    requested_backend = str(backend_override or default_backend_override or "").strip()
     # The command passes an empty string when its option is omitted. ``None``
     # belongs to internal callers that did not invoke that routing surface.
-    if member and backend_override is not None:
+    if member and (
+        backend_override is not None or default_backend_override is not None
+    ):
         if repo is None:
             raise CrewError(
                 f"crew member {member!r} cannot be resolved without a repository"
@@ -1887,6 +1889,7 @@ def dispatch(
     lineage_override: Mapping[str, Any] | None = None,
     local: bool = False,
     backend_override: str | None = None,
+    default_backend_override: str | None = None,
 ) -> dict[str, Any]:
     """Validate, prepare and launch one node; return its run record.
 
@@ -1950,6 +1953,7 @@ def dispatch(
         authority=authority,
         local=local,
         backend_override=backend_override,
+        default_backend_override=default_backend_override,
         member=member,
     )
     if not resolution.validation.ok:
