@@ -2275,6 +2275,26 @@ def shadow(
     )
 
 
+def _session_unreconciled_refusal(
+    runs: Iterable[Mapping[str, Any]],
+    peer_runs: Iterable[Mapping[str, Any]],
+    grace: str,
+) -> UnreconciledRuns:
+    """Build an own-session refusal that keeps observed peer rows visible."""
+    refusal = UnreconciledRuns(runs, grace)
+    refusal.peer_runs = [dict(row) for row in peer_runs]
+    if refusal.peer_runs:
+        peer_lines = "\n".join(
+            f"- {row['run_id']} (session {(row.get('session') or '<unknown>')!s}): visible, not counted"
+            for row in refusal.peer_runs
+        )
+        peer_heading = (
+            f"{refusal!s}\nPeer-session unreconciled runs observed but not counted "
+        )
+        refusal.args = (peer_heading + f"toward this session's refusal:\n{peer_lines}",)
+    return refusal
+
+
 def dispatch(
     *,
     node: TaskNode,
@@ -2401,14 +2421,22 @@ def dispatch(
 
     fences = config.get("fences") or {}
     unreconciled_grace = str(fences.get("unreconciled_run_grace") or "")
-    from reckon.crew.recovery import overdue_unreconciled_runs
+    from reckon.crew.recovery import (
+        _partition_session_rows,
+        overdue_unreconciled_runs,
+    )
 
-    unreconciled = overdue_unreconciled_runs(
+    project_unreconciled = overdue_unreconciled_runs(
         project=project,
         grace=unreconciled_grace,
     )
+    unreconciled, peer_unreconciled = _partition_session_rows(
+        project_unreconciled, session
+    )
     if unreconciled and not unreconciled_override:
-        raise UnreconciledRuns(unreconciled, unreconciled_grace)
+        raise _session_unreconciled_refusal(
+            unreconciled, peer_unreconciled, unreconciled_grace
+        )
     waiver = (
         {
             "requested": True,

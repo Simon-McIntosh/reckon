@@ -802,6 +802,7 @@ def record_run_disposition(
     disposition: str,
     *,
     project: str | None = None,
+    session: str | None = None,
 ) -> dict[str, Any]:
     """Record why one live pointer may remain across session closure."""
     reason = str(disposition).strip()
@@ -816,6 +817,12 @@ def record_run_disposition(
                 f"live run {run_id!r} belongs to project {pointer_project!r}, "
                 f"not {project!r}"
             )
+        pointer_session = str(pointer.get("session") or "")
+        if session is not None and pointer_session != session:
+            raise CrewError(
+                f"live run {run_id!r} belongs to session {pointer_session!r}, "
+                f"not {session!r}"
+            )
         pointer["closure_disposition"] = {
             "kind": reason,
             "recorded_at": _utc_now(),
@@ -825,16 +832,24 @@ def record_run_disposition(
     return _mutate_pointer(run_id, record)
 
 
-def drain(project: str) -> dict[str, Any]:
-    from reckon.crew.recovery import classify_pointer, closure_disposition_valid
-
+def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
     """Return the closure drain derived from one project's live pointers.
 
-    A handoff remains valid until the receiving session reconciles the pointer.
-    ``still-working`` is narrower: it excuses only a pointer whose current
-    classification remains ``running``. Any missing, malformed, unknown or
-    expired disposition therefore contributes to ``unreconciled_runs``.
+    Without ``session`` every project pointer contributes, preserving the
+    established project-wide view. With it, only pointers dispatched by that
+    session contribute to the closure count and peer-session rows remain
+    visible separately. A handoff remains valid until the receiving session
+    reconciles the pointer. ``still-working`` is narrower: it excuses only a
+    pointer whose current classification remains ``running``. Any missing,
+    malformed, unknown or expired disposition therefore contributes to
+    ``unreconciled_runs``.
     """
+    from reckon.crew.recovery import (
+        _partition_session_rows,
+        classify_pointer,
+        closure_disposition_valid,
+    )
+
     rows: list[dict[str, Any]] = []
     for pointer in list_live(project=project):
         # ``still-working`` is a current liveness claim. Recheck it rather
@@ -860,15 +875,25 @@ def drain(project: str) -> dict[str, Any]:
             }
         )
 
-    unreconciled = sum(1 for row in rows if row["unreconciled"])
-    return {
+    counted, peers = _partition_session_rows(rows, session)
+    unreconciled = sum(1 for row in counted if row["unreconciled"])
+    result = {
         "project": project,
-        "live_pointers": len(rows),
-        "disposed_runs": len(rows) - unreconciled,
+        "live_pointers": len(counted),
+        "disposed_runs": len(counted) - unreconciled,
         "unreconciled_runs": unreconciled,
         "dispositions": list(RUN_DRAIN_DISPOSITIONS),
-        "runs": rows,
+        "runs": counted,
     }
+    if session is not None:
+        result.update(
+            {
+                "session": session,
+                "peer_pointers": len(peers),
+                "peer_runs": peers,
+            }
+        )
+    return result
 
 
 def _read_watch_record(handle) -> dict[str, Any]:

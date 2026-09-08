@@ -1215,6 +1215,7 @@ def crew_dispatch(
                 "error": "unreconciled-runs",
                 "detail": str(exc),
                 "runs": exc.runs,
+                "peer_runs": getattr(exc, "peer_runs", []),
             },
             pretty,
         )
@@ -1382,6 +1383,7 @@ def crew_shadow(run_id, backend, overrides, member, dry_run, pretty):
                 "error": "unreconciled-runs",
                 "detail": str(exc),
                 "runs": exc.runs,
+                "peer_runs": getattr(exc, "peer_runs", []),
             },
             pretty,
         )
@@ -2265,6 +2267,14 @@ def crew_directory(project, run_id, node_id, pretty):
 @crew.command(name="drain")
 @click.option("--project", required=True, help="Project whose live pointers to drain.")
 @click.option(
+    "--session",
+    default=None,
+    help=(
+        "Count only this session's outstanding runs while reporting peer-session "
+        "rows separately. Omit for the project-wide count."
+    ),
+)
+@click.option(
     "--leave",
     "leaves",
     multiple=True,
@@ -2275,7 +2285,7 @@ def crew_directory(project, run_id, node_id, pretty):
     ),
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_drain(project, leaves, pretty):
+def crew_drain(project, session, leaves, pretty):
     """Report the session-closure count and dispositions for live run pointers."""
     crew_module, _ = _crew_modules()
     requested = []
@@ -2296,10 +2306,11 @@ def crew_drain(project, leaves, pretty):
                 run_id,
                 disposition,
                 project=project,
+                session=session,
             )
             for run_id, disposition in requested
         ]
-        result = crew_module.drain(project)
+        result = crew_module.drain(project, session=session)
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit(
