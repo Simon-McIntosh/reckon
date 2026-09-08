@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping
 
 from reckon import _backends, _store, ledger
+from reckon.crew import rollout
 from reckon.crew.dispatch import _backend_settings, _capture_member_session
 from reckon.crew.node import (
     STALL_BUDGET_MULTIPLE,
@@ -1624,6 +1625,97 @@ def _coordinator_supplied_predecessor(
     return clean or None
 
 
+def _receipt_unmeasured_reason(value: object) -> str | None:
+    """Return the stable reason carried by an unmeasured receipt value."""
+    return value.value if isinstance(value, rollout.Unmeasured) else None
+
+
+def _harvest_lane_receipt(
+    record: Mapping[str, Any],
+    *,
+    session_id: object,
+    observed_at: str,
+) -> dict[str, Any]:
+    """Serialize the client-owned quota receipt at the promotion boundary."""
+    # Do not source this from the delivered manifest: a run cannot independently
+    # attest its own quota use. The harness-owned client receipt is evidence the
+    # run did not author, even though adding a manifest field would look simpler.
+    receipt = rollout.read_rollout_receipt(str(session_id or ""))
+    unmeasured: dict[str, str] = {}
+    context_reason = _receipt_unmeasured_reason(receipt.model_context_window)
+    if context_reason is None:
+        effective_context_window: object = receipt.model_context_window
+    else:
+        effective_context_window = "unmeasured"
+        unmeasured["effective_context_window"] = context_reason
+
+    result: dict[str, Any] = {
+        "quota_state": "unmeasured",
+        "observed_at": observed_at,
+        "effective_context_window": effective_context_window,
+        "quota_windows": [],
+    }
+    agent = record.get("agent")
+    agent_backend = agent.get("backend") if isinstance(agent, Mapping) else ""
+    backend = str(record.get("backend") or agent_backend or "")
+    if ledger.is_unmetered_backend(backend):
+        unmeasured["quota_windows"] = "unmetered"
+        result["unmeasured"] = unmeasured
+        return result
+
+    readings = receipt.quota_readings
+    readings_reason = _receipt_unmeasured_reason(readings)
+    if readings_reason is not None:
+        unmeasured["quota_windows"] = readings_reason
+        result["unmeasured"] = unmeasured
+        return result
+    if not isinstance(readings, Mapping) or not readings:
+        unmeasured["quota_windows"] = rollout.Unmeasured.NO_RATE_LIMIT_VALUE.value
+        result["unmeasured"] = unmeasured
+        return result
+
+    windows: list[dict[str, Any]] = []
+    for raw_window, reading in sorted(readings.items(), key=lambda item: int(item[0])):
+        window_minutes = getattr(reading, "window_minutes", raw_window)
+        used_percent = getattr(
+            reading, "used_percent", rollout.Unmeasured.NO_RATE_LIMIT_VALUE
+        )
+        resets_at = getattr(
+            reading, "resets_at", rollout.Unmeasured.NO_RATE_LIMIT_VALUE
+        )
+        row: dict[str, Any] = {
+            "window_minutes": int(window_minutes),
+            "used_percent": (
+                "unmeasured"
+                if _receipt_unmeasured_reason(used_percent) is not None
+                else used_percent
+            ),
+            "resets_at": (
+                "unmeasured"
+                if _receipt_unmeasured_reason(resets_at) is not None
+                else resets_at
+            ),
+            "observed_at": observed_at,
+        }
+        row_unmeasured = {
+            key: reason
+            for key, reason in (
+                ("used_percent", _receipt_unmeasured_reason(used_percent)),
+                ("resets_at", _receipt_unmeasured_reason(resets_at)),
+            )
+            if reason is not None
+        }
+        if row_unmeasured:
+            row["unmeasured"] = row_unmeasured
+        windows.append(row)
+
+    result["quota_state"] = "measured"
+    result["quota_windows"] = windows
+    if unmeasured:
+        result["unmeasured"] = unmeasured
+    return result
+
+
 def _complete_locked(
     run_id: str,
     *,
@@ -1703,7 +1795,7 @@ def _complete_locked(
             record,
             retention if isinstance(retention, Mapping) else None,
         )
-        return {
+        result = {
             "run_id": run_id,
             "project": project,
             "ledger_path": str(ledger.ledger_path(project, ledger_root)),
@@ -1715,6 +1807,10 @@ def _complete_locked(
             "plan_comment": comment,
             "release": release,
         }
+        lane_receipt = existing.get("lane_receipt")
+        if isinstance(lane_receipt, Mapping):
+            result["lane_receipt"] = dict(lane_receipt)
+        return result
 
     # A writer still alive when a prompt promotion arrives is about to be ended
     # by this promotion's own release step; end it before the observation so the
@@ -1812,6 +1908,11 @@ def _complete_locked(
     )
 
     session_id = record.get("session_id") or stream.session_id
+    lane_receipt = _harvest_lane_receipt(
+        record,
+        session_id=session_id,
+        observed_at=finished,
+    )
     previous = next(
         (
             item
@@ -1912,6 +2013,7 @@ def _complete_locked(
         scope_changed=scope_changed,
         session_id=session_id,
         budget=measured_budget,
+        lane_receipt=lane_receipt,
         throughput=stream.throughput,
         budget_fallback=record.get("budget_fallback"),
         lineage=record.get("lineage"),
@@ -1997,6 +2099,7 @@ def _complete_locked(
         "ledger_version": written["version"],
         "pointer_removed": not pointer_path(run_id).exists(),
         "record": written["run"],
+        "lane_receipt": dict(written["run"]["lane_receipt"]),
         "already_promoted": already_promoted,
         "session_capture": capture,
         "plan_comment": comment,
