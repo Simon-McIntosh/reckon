@@ -83,6 +83,8 @@ WAITING_STATUS = "waiting"
 WAITING_STATES = frozenset({"waiting", "wait-aged", "paused"})
 TERMINAL_MANIFEST_STATUSES = frozenset({"complete", "blocked", "failed"})
 NON_TERMINAL_MANIFEST_STATUSES = frozenset({"in-progress"})
+WAIT_CONDITION_STATES = frozenset({"pending", "met", "unknown"})
+WAIT_PROBE_TIMEOUT_SECONDS = 1.0
 
 # This is the authoritative answer to "what should the coordinator do now?".
 # The older classification remains a lifecycle grouping used by recovery and
@@ -102,6 +104,7 @@ RECOVERY_VERBS = {
     "stopped": "inspect",
     "unreadable": "repair",
     "unwritten": "resume",
+    "ready": "resume",
     "abandoned": "recover",
     "wait-aged": "investigate",
 }
@@ -116,6 +119,7 @@ ACTIONABLE_RECOVERY_CLASSIFICATIONS = frozenset(
         "stopped",
         "unreadable",
         "unwritten",
+        "ready",
         "abandoned",
         "wait-aged",
     }
@@ -697,6 +701,93 @@ def _wait_terminal_values(value: Any) -> list[str]:
     return [str(item).strip() for item in states if str(item).strip()]
 
 
+def _wait_condition_observation(
+    value: Any, *, terminal_values: list[str]
+) -> dict[str, str]:
+    """Normalise a probe result into pending, met, or unknown."""
+    if isinstance(value, bool):
+        return {
+            "state": "met" if value else "pending",
+            "observed": "terminal" if value else "pending",
+            "detail": "condition test returned a boolean verdict",
+        }
+    if isinstance(value, Mapping):
+        state = str(value.get("state") or "").strip().lower()
+        if state not in WAIT_CONDITION_STATES:
+            terminal = value.get("terminal")
+            state = (
+                "met"
+                if terminal is True
+                else "pending"
+                if terminal is False
+                else "unknown"
+            )
+        return {
+            "state": state,
+            "observed": str(value.get("observed") or state),
+            "detail": str(value.get("detail") or "condition test returned a verdict"),
+        }
+    observed = str(value or "").strip()
+    terminal = {item.casefold() for item in terminal_values}
+    return {
+        "state": "met" if observed.casefold() in terminal else "unknown",
+        "observed": observed or "unavailable",
+        "detail": "condition test returned an unstructured observation",
+    }
+
+
+def _run_wait_condition_probe(
+    record: Mapping[str, Any], wait: Mapping[str, Any]
+) -> dict[str, str]:
+    """Read a declared condition through a short, shell-free probe."""
+    worktree = Path(str(record.get("worktree") or "."))
+    try:
+        completed = subprocess.run(
+            list(wait.get("probe") or ()),
+            cwd=worktree if worktree.is_dir() else None,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=WAIT_PROBE_TIMEOUT_SECONDS,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return {
+            "state": "unknown",
+            "observed": "unavailable",
+            "detail": f"condition probe could not answer: {exc}",
+        }
+    lines = [line.strip() for line in completed.stdout.splitlines() if line.strip()]
+    observed = lines[-1] if lines else "unavailable"
+    if completed.returncode != 0 or not lines:
+        return {
+            "state": "unknown",
+            "observed": observed,
+            "detail": (
+                f"condition probe did not answer successfully; exit "
+                f"{completed.returncode}"
+            ),
+        }
+    candidates = {observed.casefold()}
+    candidates.update(
+        line.split(maxsplit=1)[0].rstrip("+").casefold() for line in lines
+    )
+    terminal = {str(value).strip().casefold() for value in wait.get("terminal") or ()}
+    if candidates & terminal:
+        return {
+            "state": "met",
+            "observed": observed,
+            "detail": f"condition probe reported terminal state {observed!r}",
+        }
+    return {
+        "state": "unknown",
+        "observed": observed,
+        "detail": (
+            f"condition probe reported {observed!r}, which matches no declared "
+            "terminal state"
+        ),
+    }
+
+
 def _wait_expected_seconds(
     manifest_data: Mapping[str, Any], *, default_seconds: int
 ) -> tuple[int, str]:
@@ -821,6 +912,7 @@ def classify_pointer(
     *,
     stale_after_seconds: int = LOG_STALE_AFTER_SECONDS,
     now_seconds: float | None = None,
+    condition_test: Callable[[Mapping[str, Any], Mapping[str, Any]], Any] | None = None,
 ) -> dict[str, Any]:
     """Classify one live pointer, without touching it.
 
@@ -979,6 +1071,25 @@ def classify_pointer(
         now_seconds=moment,
         stale_after_seconds=stale_after_seconds,
     )
+    wait_observation: dict[str, str] | None = None
+    if wait is not None and wait["valid"]:
+        observe_condition = (
+            _run_wait_condition_probe if condition_test is None else condition_test
+        )
+        try:
+            wait_observation = _wait_condition_observation(
+                observe_condition(record, wait),
+                terminal_values=list(wait["terminal"]),
+            )
+        # A probe is untrusted external input. Any ordinary fault says nothing
+        # about either the condition or the worker, so it becomes unknown and
+        # the run stays waiting; abandoned remains reserved for proof of death.
+        except Exception as exc:  # noqa: BLE001
+            wait_observation = {
+                "state": "unknown",
+                "observed": "unavailable",
+                "detail": f"condition probe could not answer: {exc}",
+            }
     terminal_at = None
     terminal_age_seconds = None
     deferred_outcome = alive is True and manifest_status in TERMINAL_MANIFEST_STATUSES
@@ -1073,14 +1184,27 @@ def classify_pointer(
         )
     elif wait is not None and wait["valid"]:
         classification = WAITING_STATUS
-        detail = (
-            f"waiting {wait['age_seconds']}s on {wait['condition']}; "
-            f"terminal when the probe reports {', '.join(wait['terminal'])}"
-        )
-        action = (
-            f"the recovery sweep will resume run {run_id} when the condition "
-            "test reports a terminal state"
-        )
+        if wait_observation and wait_observation["state"] == "met":
+            detail = (
+                f"ready to resume: {wait['condition']} reported "
+                f"{wait_observation['observed']!r}, a declared terminal state"
+            )
+            action = f"reckon crew resume --run {run_id} --advice continue"
+        else:
+            observation_detail = (
+                wait_observation["detail"]
+                if wait_observation is not None
+                else "the condition probe did not answer"
+            )
+            detail = (
+                f"waiting {wait['age_seconds']}s on {wait['condition']}; "
+                f"{observation_detail}; terminal when the probe reports "
+                f"{', '.join(wait['terminal'])}"
+            )
+            action = (
+                f"the recovery sweep will resume run {run_id} when the condition "
+                "test reports a terminal state"
+            )
     elif wait is not None:
         classification = "unreadable"
         manifest_error = str(wait["error"])
@@ -1345,6 +1469,12 @@ def classify_pointer(
         recovery_classification = "held"
     elif classification == "blocked" and needs_help_complete_value:
         recovery_classification = "needs-help"
+    elif (
+        classification == WAITING_STATUS
+        and wait_observation is not None
+        and wait_observation.get("state") == "met"
+    ):
+        recovery_classification = "ready"
     elif classification == WAITING_STATUS and wait and wait.get("overdue"):
         recovery_classification = "wait-aged"
     else:
@@ -1438,6 +1568,12 @@ def classify_pointer(
         "external_wait": wait,
         "wait_age_seconds": wait.get("age_seconds") if wait else None,
         "wait_overdue": wait.get("overdue") if wait else None,
+        "wait_condition_state": (
+            wait_observation.get("state") if wait_observation is not None else None
+        ),
+        "wait_observed": (
+            wait_observation.get("observed") if wait_observation is not None else None
+        ),
     }
     if session_resolution is not None:
         classified["session_resolution"] = session_resolution
