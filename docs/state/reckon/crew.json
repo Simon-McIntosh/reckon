@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T21:56:53",
+  "updated": "2026-09-08T22:13:28",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -2034,9 +2034,11 @@
         "id": "ship0908-b",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a0828a-1e22-7ee3-aca2-80b1b659747c",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a0828a-1e22-7ee3-aca2-80b1b659747c"
+        },
         "created": "2026-09-08"
       },
       {
@@ -79706,6 +79708,501 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T194126094026-command-boundary-refusals-name-their-verb",
+        "plan": "every-state-has-a-verb",
+        "section": "\u00a76",
+        "node": "command-boundary-refusals-name-their-verb",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1201,
+                "cached_input_tokens": 213505,
+                "input_tokens": 214708,
+                "output_tokens": 669,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 215377,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "c97ff0dc-76f9-4d90-a37e-98717f5066f2",
+            "session_id": "ship-s15-2026-09-08b"
+          },
+          "done_when": "tests/test_crew_refusal_visibility.py passes with COMMAND_BOUNDARY_FAMILIES empty and CONVERTED_REFUSAL_FAMILIES holding all twenty-two ids, so test_the_dispatch_refusal_census_is_partitioned_without_gaps and test_every_reachable_family_calls_the_shared_formatter both hold with reckon/cli.py added to REFUSAL_SOURCE_PATHS, and test_each_reachable_refusal_names_its_resolving_action grows from 18 parametrized cases to 22. Record the case count and the file's pass total in the manifest tests line",
+          "estimated_hours": null,
+          "goal": "the four command-boundary refusal families emit through the shared formatter so each names its resolving verb",
+          "id": "command-boundary-refusals-name-their-verb",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T194126094026-command-boundary-refusals-name-their-verb/manifest.md",
+          "plan": "every-state-has-a-verb",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/cli.py",
+            "tests/test_crew_refusal_visibility.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "ship0908-a",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T19:41:36Z",
+        "completed_at": "2026-09-08T19:59:16Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1060,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1060,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "69db659251b7eb4af64d12c611949fa213afc79d",
+        "commits": [
+          "d895941031d7abbb323743906cf440efef35cf26"
+        ],
+        "changed_lines": {
+          "added": 29,
+          "removed": 28,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=\"$PWD\" .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_refusal_visibility.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T194126094026-command-boundary-refusals-name-their-verb/after-dispatch-boundary-compatibility.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T194126094026-command-boundary-refusals-name-their-verb/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a080c3-7312-7291-8b79-6ffc05da48e5",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2145920,
+            "cached_input_tokens_cumulative": 20740352,
+            "input_tokens": 2280676,
+            "input_tokens_cumulative": 21134230,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 21922,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 5039
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-08T19:59:16Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 54.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-08T19:59:16Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 20740352,
+          "cumulative_input_tokens": 41874582,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 26961
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-08b/command-boundary-refusals-name-their-verb",
+          "session_id": "01a080c3-7312-7291-8b79-6ffc05da48e5",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T19:59:16Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T195253024108-dispatch-fixtures-declare-their-level",
+        "plan": "every-state-has-a-verb",
+        "section": "\u00a76",
+        "node": "dispatch-fixtures-declare-their-level",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 737,
+                "cached_input_tokens": 272256,
+                "input_tokens": 272995,
+                "output_tokens": 729,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 273724,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "c97ff0dc-76f9-4d90-a37e-98717f5066f2",
+            "session_id": "ship-s15-2026-09-08b"
+          },
+          "done_when": "the eleven previously failing cases in tests/test_crew_dispatch_arming.py and tests/test_crew_dispatch_guard.py pass, so one captured run of those two files reports 11 passed 0 failed 0 errors where the same command at base reported 0 passed 11 failed; the declaration added is the specification level the dispatch validator names, added at the two _node() helpers rather than case by case; and no assertion in either file is weakened, deleted or skipped to reach the count. Quote the exact command and record the before and after split in the manifest tests line",
+          "estimated_hours": null,
+          "goal": "the two dispatch-fixture helpers declare the specification level the validator requires",
+          "id": "dispatch-fixtures-declare-their-level",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T195253024108-dispatch-fixtures-declare-their-level/manifest.md",
+          "plan": "every-state-has-a-verb",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "exact",
+          "time_budget": "20m",
+          "write_paths": [
+            "tests/test_crew_dispatch_arming.py",
+            "tests/test_crew_dispatch_guard.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "ship0908-local-a",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-08T19:52:58Z",
+        "completed_at": "2026-09-08T20:02:57.426Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 587,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 599,
+        "stalled": false,
+        "time_budget": "20m",
+        "base_sha": "9ef615b36e1e586ccaa311d7cd367cbf2c18128a",
+        "commits": [
+          "7224a0edf9e6cea207cf5a4abc1498bff38caa30"
+        ],
+        "changed_lines": {
+          "added": 8,
+          "removed": 1,
+          "files": 2
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=\"$PWD\" .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_dispatch_arming.py tests/test_crew_dispatch_guard.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T195253024108-dispatch-fixtures-declare-their-level/after.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T195253024108-dispatch-fixtures-declare-their-level/manifest.md",
+        "scope_changed": false,
+        "session_id": "12b8a2d9-410c-4d17-9554-e800734f2502",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 2119713,
+            "input_tokens_cumulative": 3694338,
+            "output_tokens": 16602,
+            "output_tokens_cumulative": 23288,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-08T20:02:57.426Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 3694338,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 596.131,
+          "generated_tokens": 23288,
+          "generation_seconds": 554.286,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 13.9,
+          "machine_seconds": 41.845,
+          "peak_input_tokens": 141330,
+          "tokens_per_second": 42.01,
+          "wall_tokens_per_second": 39.07
+        },
+        "follow_on_paths": [
+          "tests/test_crew_dispatch_guard.py",
+          "directory/rollup"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-08b/dispatch-fixtures-declare-their-level",
+          "session_id": "12b8a2d9-410c-4d17-9554-e800734f2502",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T20:02:57.426Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T194117234360-metered-lane-is-declared",
+        "plan": "dispatch-cost-per-durable-node",
+        "section": "\u00a712",
+        "node": "metered-lane-is-declared",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 937,
+                "cached_input_tokens": 212568,
+                "input_tokens": 213507,
+                "output_tokens": 993,
+                "reasoning_output_tokens": 146,
+                "total_tokens": 214500,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "c97ff0dc-76f9-4d90-a37e-98717f5066f2",
+            "session_id": "ship-s15-2026-09-08b"
+          },
+          "done_when": "tests/test_dispatch_names_its_backend.py passes with new cases proving all five: (1) a dispatch resolving to a metered backend with no explicit lane declaration is refused not-dispatchable, its message naming the resolved backend, the window utilisation figure read at that moment, and at least one unmetered backend that would serve; (2) the same dispatch carrying an explicit declaration launches unchanged; (3) a dispatch resolving to an unmetered backend with no lane flag is not refused; (4) a member declaring a metered harness does not by itself satisfy the declaration; (5) the run record carries the declared lane beside the utilisation observed at dispatch. Record the case count and the full-file pass total in the manifest tests line, and report the base-versus-head failure delta for tests/test_crew_dispatch_guard.py and tests/test_crew_dispatch_arming.py without editing them",
+          "estimated_hours": null,
+          "goal": "dispatch refuses to route a node onto a metered backend that no caller declared",
+          "id": "metered-lane-is-declared",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T194117234360-metered-lane-is-declared/manifest.md",
+          "plan": "dispatch-cost-per-durable-node",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a712",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "reckon/crew/refusals.py",
+            "tests/test_dispatch_names_its_backend.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "ship0908-b",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T19:41:24Z",
+        "completed_at": "2026-09-08T20:07:43Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1579,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1579,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "69db659251b7eb4af64d12c611949fa213afc79d",
+        "commits": [
+          "f90456661d5d2e5aa246819217c8aa59a4ab48d5"
+        ],
+        "changed_lines": {
+          "added": 244,
+          "removed": 18,
+          "files": 2
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=\"$PWD\" .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_dispatch_names_its_backend.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T194117234360-metered-lane-is-declared/focused-dispatch-lane.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T194117234360-metered-lane-is-declared/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0828a-1e22-7ee3-aca2-80b1b659747c",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 15938944,
+            "cached_input_tokens_cumulative": 15938944,
+            "input_tokens": 16173808,
+            "input_tokens_cumulative": 16173808,
+            "output_tokens": 40507,
+            "output_tokens_cumulative": 40507,
+            "reasoning_output_tokens": 18031,
+            "reasoning_output_tokens_cumulative": 18031
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-08T20:07:43Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 54.0,
+              "resets_at": 1789439332,
+              "observed_at": "2026-09-08T20:07:43Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 15938944,
+          "cumulative_input_tokens": 32112752,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 58538
+        },
+        "follow_on_paths": [
+          "tests/test_dispatch_lane_disagreement.py::test_member_harness_routes_when_no_flight_override_is_present",
+          "tests/test_crew_dispatch_guard.py",
+          "tests/test_crew_dispatch_arming.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-08b/metered-lane-is-declared",
+          "session_id": "01a0828a-1e22-7ee3-aca2-80b1b659747c",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T20:07:43Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -79934,6 +80431,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1228
+    "_version": 1232
   }
 }
