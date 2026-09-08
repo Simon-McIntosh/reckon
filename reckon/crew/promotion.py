@@ -169,8 +169,14 @@ def _registered_repository_roots() -> list[Path]:
     return roots
 
 
-def _commit_resolves_in(root: Path, revision: str) -> bool:
-    """Report whether one revision names a commit object in one repository."""
+def _commit_canonical_id(root: Path, revision: str) -> str | None:
+    """Return the canonical object id one revision names, or None.
+
+    The same resolution the scope paths use, returning the canonical id rather
+    than a boolean so an abbreviated or branch-named revision can be compared
+    against another spelling of the same commit. None is an unresolvable
+    revision, never evidence of absence.
+    """
     probe = subprocess.run(
         [
             "git",
@@ -185,7 +191,15 @@ def _commit_resolves_in(root: Path, revision: str) -> bool:
         text=True,
         check=False,
     )
-    return not probe.returncode and bool(probe.stdout.strip())
+    canonical = probe.stdout.strip()
+    if probe.returncode or not canonical:
+        return None
+    return canonical
+
+
+def _commit_resolves_in(root: Path, revision: str) -> bool:
+    """Report whether one revision names a commit object in one repository."""
+    return _commit_canonical_id(root, revision) is not None
 
 
 def _foreign_repository(revision: str, *, exclude: Path) -> Path | None:
@@ -208,8 +222,8 @@ def _require_gate_evidence(
     verdict: str,
     commits: tuple[str, ...],
     no_commit_reason: str,
-) -> None:
-    """Refuse a passing gate that leaves the run's own commits uncited.
+) -> dict[str, Any] | None:
+    """Refuse an uncited commitless gate, and report a presented shortfall.
 
     Gate correctness and integration completeness are two separate claims, and a
     ledger row must carry both: a gate can be independently defensible — the
@@ -228,18 +242,36 @@ def _require_gate_evidence(
     Inferring this from the node's role or sandbox tier instead would refuse
     every honest commitless promotion, so it reads the repository rather than
     the metadata, and stays silent whenever it cannot measure.
+
+    The other half of the same silence is a presentation that is short
+    of the manifest's list, and it is the warn half of refuse-or-warn: a
+    passing promotion whose presented commits are a strict subset of the
+    manifest's declared commits is reported — naming how many were presented,
+    how many the manifest declared, and which revisions are missing — and never
+    refused. The out-of-scope boundary check runs against the commits a
+    promotion presents, so an incomplete presentation silently narrows that
+    check. Only the strict-subset direction is reported: a presented commit the
+    manifest does not declare is the coordinator having declined the worker's
+    revision, where the presented list is the one that resolves, so reporting
+    it would name the list that resolves and recreate the confusion the counts
+    cause. Only declared commits that resolve in the run's repository are
+    compared, so a manifest quoting a revision that resolves nowhere is neither
+    counted nor named as missing — it is not authoritative. The report is a
+    returned value, never an exception: a shortfall must not turn a passing
+    promotion into a failed one.
     """
-    if verdict != "passed" or commits or str(no_commit_reason).strip():
-        return
+    if verdict != "passed" or str(no_commit_reason).strip():
+        return None
 
     # First ask the worker, because it already answered. The manifest's
     # `commits:` line is delivered evidence that Reckon holds and, until now,
     # discarded: a coordinator that omitted one flag produced a ledger saying
     # the node succeeded with nothing pointing at the work. Naming the exact
-    # revisions is more use than describing the condition, so this runs before
-    # the repository check below.
+    # revisions is more use than describing the condition, so the manifest is
+    # read before the repository check below.
     tree = Path(str(record.get("worktree") or ""))
     manifest_present, fresh = _manifest_freshness(record)
+    delivered: dict[str, Any] = {}
     if manifest_present and fresh and tree.is_dir():
         try:
             delivered = parse_manifest(
@@ -247,33 +279,76 @@ def _require_gate_evidence(
             )
         except (OSError, KeyError, ValueError):
             delivered = {}
-        # Only an entry that resolves to a real commit means Reckon is holding
-        # something. The line is free text a worker wrote: a report-only node
-        # writes `commits: none (repository worktree remained clean)`, which is
-        # neither a revision nor an omission, and matching a literal "none"
-        # would refuse it. Resolving instead of pattern-matching cannot make
-        # that mistake.
-        stated = [
-            candidate
-            for candidate in (
-                str(sha).strip() for sha in (delivered.get("commits") or [])
-            )
-            if candidate and _commit_resolves_in(tree, candidate)
-        ]
-        if stated:
-            raise CrewError(
-                f"run {run_id!r} has a passing gate and cites no commit, but its "
-                f"manifest records {len(stated)}: {', '.join(stated)}. Reckon is "
-                "holding the answer and would discard it — the ledger row would "
-                "say the node succeeded with nothing pointing at the work, and "
-                "the commit would survive only as long as its worktree. Pass "
-                "--commit for each, or --no-commit '<why>' to record "
-                "deliberately that they are not being registered"
-            )
+    declared = [
+        str(sha).strip()
+        for sha in (delivered.get("commits") or [])
+        if str(sha).strip()
+    ]
+
+    presented = [str(sha).strip() for sha in commits if str(sha).strip()]
+    if presented:
+        # A promotion that presents commits is the case the commitless guard
+        # cannot see: its condition returns on any non-empty list, so a
+        # presentation naming one commit of the manifest's declared eight
+        # passes through untouched and the boundary check runs against the one.
+        resolving_declared = {
+            canonical
+            for candidate in declared
+            if (canonical := _commit_canonical_id(tree, candidate)) is not None
+        }
+        resolving_presented = {
+            canonical
+            for candidate in presented
+            if (canonical := _commit_canonical_id(tree, candidate)) is not None
+        }
+        # A strict subset is the only shape reported. Equality is a full
+        # presentation; a superset, or a presented commit outside the declared
+        # list, is the coordinator declining the worker's revision, where the
+        # presented list resolves and the manifest's does not.
+        if resolving_presented and resolving_presented < resolving_declared:
+            missing = sorted(resolving_declared - resolving_presented)
+            return {
+                "kind": "presented_commits_subset_of_manifest",
+                "presented": len(presented),
+                "declared": len(resolving_declared),
+                "missing": missing,
+                "message": (
+                    f"run {run_id!r} has a passing gate presenting "
+                    f"{len(presented)} commit(s) of the {len(resolving_declared)} "
+                    f"its manifest declares; missing: {', '.join(missing)}. The "
+                    "out-of-scope boundary check runs against the presented "
+                    "commits, so an incomplete presentation narrows it. This is "
+                    "a report, not a refusal — present the full list, or the "
+                    "boundary check may not cover the node's work"
+                ),
+            }
+        return None
+
+    # Only an entry that resolves to a real commit means Reckon is holding
+    # something. The line is free text a worker wrote: a report-only node
+    # writes `commits: none (repository worktree remained clean)`, which is
+    # neither a revision nor an omission, and matching a literal "none"
+    # would refuse it. Resolving instead of pattern-matching cannot make
+    # that mistake.
+    stated = [
+        candidate
+        for candidate in declared
+        if candidate and _commit_resolves_in(tree, candidate)
+    ]
+    if stated:
+        raise CrewError(
+            f"run {run_id!r} has a passing gate and cites no commit, but its "
+            f"manifest records {len(stated)}: {', '.join(stated)}. Reckon is "
+            "holding the answer and would discard it — the ledger row would "
+            "say the node succeeded with nothing pointing at the work, and "
+            "the commit would survive only as long as its worktree. Pass "
+            "--commit for each, or --no-commit '<why>' to record "
+            "deliberately that they are not being registered"
+        )
 
     base = str(record.get("base_sha") or "").strip()
     if not base or not tree.is_dir():
-        return
+        return None
     head = subprocess.run(
         ["git", "rev-parse", "--verify", "--quiet", "HEAD"],
         cwd=tree,
@@ -283,7 +358,7 @@ def _require_gate_evidence(
     )
     tip = head.stdout.strip()
     if head.returncode or not tip or tip == base:
-        return
+        return None
     raise CrewError(
         f"run {run_id!r} has a passing gate and cites no commit, but its "
         f"worktree is at {tip[:12]} rather than its base {base[:12]}: it "
@@ -1099,7 +1174,7 @@ def complete(
             raise CrewError(
                 f"shadow run {run_id!r} is commitless evidence; --commit is refused"
             )
-        _require_gate_evidence(
+        commit_list_shortfall = _require_gate_evidence(
             run_id,
             record,
             verdict=verdict,
@@ -1150,7 +1225,7 @@ def complete(
             record,
             waiver_reason=suite_delta_waiver,
         )
-        return _complete_locked(
+        result = _complete_locked(
             run_id,
             gate=gate,
             failure_classification=classification,
@@ -1171,7 +1246,11 @@ def complete(
             recoverable_session=recoverable_session,
             discard_resume_worktree=discard_resume_worktree,
             accepted_paths=accepted_paths,
+            commit_list_shortfall=commit_list_shortfall,
         )
+        if commit_list_shortfall is not None:
+            result["commit_list_shortfall"] = dict(commit_list_shortfall)
+        return result
 
 
 def _evaluate_suite_delta(
@@ -1567,6 +1646,7 @@ def _complete_locked(
     recoverable_session: Mapping[str, str] | None = None,
     discard_resume_worktree: bool = False,
     accepted_paths: Mapping[str, str] | None = None,
+    commit_list_shortfall: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Promote a finished run into the owning repository's committed ledger.
 
@@ -1851,6 +1931,11 @@ def _complete_locked(
     # so a later reader can tell it from one that recorded nothing by accident.
     if str(no_commit).strip():
         run["no_commit"] = str(no_commit).strip()
+    # A presented-list shortfall survives on the record so a reader of the
+    # ledger sees the boundary check may have been under-scoped, not only the
+    # coordinator that was looking at the immediate report.
+    if commit_list_shortfall:
+        run["commit_list_shortfall"] = dict(commit_list_shortfall)
     if boundary_waived is not None:
         run["boundary_waiver"] = boundary_waived
     if scope_acceptances:
