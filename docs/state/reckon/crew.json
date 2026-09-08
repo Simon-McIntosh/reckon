@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T11:56:15",
+  "updated": "2026-09-08T12:05:38",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -819,6 +819,15 @@
         "sessions": {
           "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a07f86-8a87-72e1-a1fb-6d206c4f02d2"
         },
+        "created": "2026-09-08"
+      },
+      {
+        "id": "crew-tool-approval",
+        "harness": "codex-terra",
+        "role": "investigate",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
         "created": "2026-09-08"
       },
       {
@@ -76912,6 +76921,165 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T093604797921-a-brief-points-rather-than-quotes",
+        "plan": "crew-observability-truth",
+        "section": "\u00a71",
+        "node": "a-brief-points-rather-than-quotes",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 3087,
+                "cached_input_tokens": 656484,
+                "input_tokens": 659573,
+                "output_tokens": 909,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 660482,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_a_brief_points_rather_than_quotes.py -q passes, and a dispatch whose done-when reproduces a long contiguous span of its own plan section's text is reported at dispatch time with that span quoted back, so a coordinator sees it has copied the plan instead of pointing at it. WHY A CHECK AND NOT MORE GUIDANCE. The rule already exists, in writing, in this repository: skills/reckon-ship/references/sprint-orchestration.md says do not restate plan context, decisions, research or done-when criteria in the dispatch. Two coordinators broke it seven times between them today, and every one produced a defect. Mine, four: a done-when naming a discriminator the plan had already rejected, so the worker faced two contradictory authorities and changed nothing; a fence naming a generated file as the place to declare a configuration field; a fence excluding the test that imports the symbol the node had to remove; and an instruction to put values in a configuration layer whose own invariant forbids them. A peer's, three: a test list naming a file that exists only in a held prototype tree, an environment variable the production function does not honour, and a receipt path that had been re-keyed out from under the brief. In all seven the worker blocked or disputed and the change it named was the one that landed, while the coordinator's copy named a file, variable, path or measure that the source did not carry. So a written rule with no check decays exactly as this project has recorded elsewhere, and the remedy is a check bound to the moment that always happens. WHAT TO BUILD. At dispatch, after the node's plan and section are resolved and before the worker is launched, compare the done-when text against the text of that plan section. Where a contiguous run of the plan's own words reappears in the done-when beyond a declared length, report it: name the overlapping span, quote it, and say which plan section it came from. Put the report on the dispatch result so a coordinator reading the launch sees it, and record it on the run so a later reader can find it. Declare the length threshold as a named module constant with a comment justifying its value; choose it from what discriminates rather than from a round number, and say in the comment what a shorter span would catch that is legitimate. REPORT, DO NOT REFUSE, AND SAY WHY IN A COMMENT. A done-when legitimately shares short phrases with its plan: a file path, a function name, a measure's units, a threshold figure. Those are pointers, which is the behaviour the rule wants, and a refusal on them would make the check hated and then disabled. A long verbatim paragraph is a copy. The check therefore reports rather than blocks, and the report is the deliverable: a coordinator who sees its own copied paragraph quoted back will fix the brief, and one who is told a number is over a threshold will not. Do not add a flag to suppress it, and do not make it configurable off. NORMALISE BEFORE COMPARING, or the check is trivially defeated and worthless. The plan is HTML and the done-when is prose, so strip markup, collapse whitespace and compare on words rather than characters; a coordinator who reflows a copied paragraph has still copied it. Do not compare on a digest of the whole text, which changes with one word. Do not use a similarity score: a percentage cannot be quoted back to a reader, and quoting the span is the entire point. WHAT NOT TO TOUCH. Do not edit reckon/mcp.py, tests under it, or docs/AGENTS.md; a peer holds all three. Do not change the eight-property node contract, the existing dispatchability refusals, or any other validation. Do not read a plan from anywhere except the resolved plan the node already names, and do not fetch anything. FALSIFIERS, in tests/test_a_brief_points_rather_than_quotes.py, using the project's existing dispatch fixtures and a synthesised temporary repository, never a real checkout and never the real configuration home. A done-when carrying a long verbatim paragraph from its plan section produces a report naming the section and quoting the overlapping span, asserted by finding the span text inside the report rather than by asserting a boolean. RANGE THE FALSIFIER OVER SPAN LENGTH, which is the dimension the threshold lives on: assert the outcome at a sweep of overlap lengths either side of the declared constant, and require the boundary to fall exactly where the constant says. A done-when sharing only a file path, a symbol name and a numeric threshold with its plan produces NO report, asserted with all three present together so a lenient threshold cannot pass; that is the legitimate-pointer case and it is the one that decides whether the check survives contact. A copied paragraph whose whitespace and line breaks have been reflowed is still reported, asserted against a fixture that differs from the plan only in whitespace. A done-when sharing no long span produces no report. A plan section that cannot be resolved or read produces no report and does not raise, and the dispatch proceeds unchanged, because a check that can break a dispatch is worse than the defect it looks for. The dispatch's own behaviour is otherwise identical with and without a report, asserted by comparing a dry-run result that reports against one that does not on every other field. Report base and head over the new file and the tests importing reckon.crew.dispatch, with failure ids either side and none added. Bound the run per file and never run the full suite.",
+          "estimated_hours": 1.25,
+          "goal": "Report at dispatch when a done-when reproduces a long contiguous span of its own plan section, quoting the span back to the coordinator",
+          "id": "a-brief-points-rather-than-quotes",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T093604797921-a-brief-points-rather-than-quotes/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "tests/test_a_brief_points_rather_than_quotes.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-brief-points",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T09:36:15Z",
+        "completed_at": "2026-09-08T10:04:38Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1703,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1703,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "0f76fc4210d55314bb181390320a8d642dee3590",
+        "commits": [
+          "73d438d6e01f441a9a8bd84ecbea67237cc9c64e"
+        ],
+        "changed_lines": {
+          "added": 462,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 7,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_a_brief_points_rather_than_quotes.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T093604797921-a-brief-points-rather-than-quotes/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T093604797921-a-brief-points-rather-than-quotes/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a08060-166f-7b62-bb80-dcb77c4441c7",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 13870208,
+            "cached_input_tokens_cumulative": 13870208,
+            "input_tokens": 14082918,
+            "input_tokens_cumulative": 14082918,
+            "output_tokens": 40559,
+            "output_tokens_cumulative": 40559,
+            "reasoning_output_tokens": 14863,
+            "reasoning_output_tokens_cumulative": 14863
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-08T10:04:38Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 28.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-08T10:04:38Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 13870208,
+          "cumulative_input_tokens": 27953126,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 55422
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-brief-points-rather-than-quotes",
+          "session_id": "01a08060-166f-7b62-bb80-dcb77c4441c7",
+          "session_source": "stream",
+          "retained_at": "2026-09-08T10:04:38Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -77140,6 +77308,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1194
+    "_version": 1196
   }
 }
