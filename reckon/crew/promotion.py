@@ -35,6 +35,7 @@ from reckon.crew.runs import (
     _pointer_lock,
     _utc_now,
     _write_json,
+    drain,
     list_live,
     pointer_path,
     process_alive,
@@ -1716,6 +1717,49 @@ def _harvest_lane_receipt(
     return result
 
 
+def _fleet_state_reading(project: str) -> dict[str, Any]:
+    """Return a bounded current reading of the project's fleet state.
+
+    The live-pointer and drain projections own their respective derivations;
+    promotion only composes their already-derived facts into the result that an
+    orchestrator is about to read. The reading deliberately stays outside the
+    ledger because it describes the fleet at this moment, not this run.
+    """
+    observed_at = _utc_now()
+    try:
+        from reckon.crew import recovery
+
+        pointers = list_live(project=project)
+        closure = drain(project)
+        classified = [recovery.classify_pointer(pointer) for pointer in pointers]
+        actionable = [
+            str(row.get("recovery_classification") or "")
+            for row in classified
+            if str(row.get("recovery_classification") or "")
+            in recovery.ACTIONABLE_RECOVERY_CLASSIFICATIONS
+        ]
+        lanes = {
+            str(pointer.get("backend") or "").strip()
+            for pointer in pointers
+            if str(pointer.get("backend") or "").strip()
+        }
+        return {
+            "fleet_state": "measured",
+            "observed_at": observed_at,
+            "live_runs": len(pointers),
+            "unreconciled_runs": int(closure["unreconciled_runs"]),
+            "actionable_runs": len(actionable),
+            "actionable_classifications": sorted(set(actionable)),
+            "occupied_lanes": len(lanes),
+        }
+    except Exception:  # noqa: BLE001 - an unavailable reading never blocks landing
+        return {
+            "fleet_state": "unmeasured",
+            "observed_at": observed_at,
+            "unmeasured": {"fleet_state": "unavailable"},
+        }
+
+
 def _complete_locked(
     run_id: str,
     *,
@@ -1810,6 +1854,10 @@ def _complete_locked(
         lane_receipt = existing.get("lane_receipt")
         if isinstance(lane_receipt, Mapping):
             result["lane_receipt"] = dict(lane_receipt)
+        # This is a bounded fleet reading, not a readiness recommendation: the
+        # result states only what promotion observed, and the orchestrator owns
+        # every decision about what to do next.
+        result["fleet_state"] = _fleet_state_reading(project)
         return result
 
     # A writer still alive when a prompt promotion arrives is about to be ended
@@ -2092,6 +2140,9 @@ def _complete_locked(
         worktree_retention,
         process_already_ended=ended_writer,
     )
+    # This is a bounded fleet reading, not a readiness recommendation: the
+    # result states only what promotion observed, and the orchestrator owns
+    # every decision about what to do next.
     return {
         "run_id": run_id,
         "project": project,
@@ -2100,6 +2151,7 @@ def _complete_locked(
         "pointer_removed": not pointer_path(run_id).exists(),
         "record": written["run"],
         "lane_receipt": dict(written["run"]["lane_receipt"]),
+        "fleet_state": _fleet_state_reading(project),
         "already_promoted": already_promoted,
         "session_capture": capture,
         "plan_comment": comment,
