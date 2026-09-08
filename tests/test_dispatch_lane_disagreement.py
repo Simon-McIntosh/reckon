@@ -120,7 +120,7 @@ def test_flight_override_routes_when_member_declares_no_harness(
     assert payload["agent"]["backend"] == "gamma"
 
 
-def test_member_harness_routes_when_no_flight_override_is_present(
+def test_member_harness_without_override_meets_lane_declaration_refusal(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     ledger.register_member("proj", "worker", harness="beta", root=dispatch_repo)
@@ -131,7 +131,12 @@ def test_member_harness_routes_when_no_flight_override_is_present(
         extra=["--member", "worker"],
     )
 
-    assert result.exit_code == 0
-    assert payload["requested_backend"] == "beta"
-    assert payload["backend"] == "beta"
+    assert result.exit_code == 2
+    assert payload["validation"]["ok"] is False
+    detail = payload["validation"]["findings"][0]["detail"]
+    assert "beta" in detail
+    assert "not known to be unmetered" in detail
+    assert "is metered" not in detail
     assert payload["agent"]["backend"] == "beta"
+    assert payload["lane_declaration"]["backend"] is None
+    assert payload["lane_declaration"]["resolved_backend"] == "beta"
