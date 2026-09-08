@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-08">
-<meta name="plan-version" content="34">
+<meta name="plan-version" content="35">
 <meta name="plan-commits" content="d5811b204966f31db83bab190b6440a6eb7b9842,db329f84e6eecc232e8cf41f35e828f84365dee8,b99ccdf829c50659c34efdd354642b5a9cba6827,0b146679a6585b480b35fed528801a1bd4acedf8">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-artifacts" content="reckon/crew/node.py,reckon/budget.py,reckon/crew/dispatch.py,reckon/capabilities.py,reckon/mcp.py,reckon/serve.py,tests/test_crew_node.py,tests/test_budget.py,tests/test_crew_coordinator_spend.py,tests/test_routing_surface.py,skills/reckon-ship/SKILL.md,skills/reckon-ship/references/effort-routing.md">
@@ -601,14 +601,35 @@
       ledger seeing one half of the system.
     </p>
     <p>
+      <strong>And a third, found by trying to work around the first two.</strong> The shadow
+      worktree is named <code>shadow-&lt;primary run id&gt;-&lt;backend&gt;</code> at
+      <code>reckon/crew/routing.py:487</code>, with no effort, attempt or uniqueness component. A
+      shadow's durable deliverable is its retained worktree patch, so the first arm's evidence is
+      still on disk when the second arm asks for the same path, and the launch dies with
+      <code>worktree creation failed: worktree path already exists</code>. Measured on all three
+      pairs attempted: <strong>one shadow per primary per backend is the structural limit</strong>,
+      so an effort contrast on a single lane cannot be run at all without deleting the first arm's
+      evidence &mdash; and that evidence is the thing a shadow exists to produce.
+    </p>
+    <p>
+      The three compound rather than sit side by side. The instrument cannot reproduce the
+      primary's effort, cannot be corrected through the documented override, and cannot hold two
+      arms of one pair. Between them they rule out both designs the measurement wanted:
+      shadow-against-primary is not single-variable, and shadow-against-shadow cannot be launched.
+      The workaround actually available is to pair across backends, which reintroduces the lane
+      as a second variable and measures neither cleanly.
+    </p>
+    <p>
       Done when a shadow resolves effort through the same path a dispatch does, so re-running a
       committed node reproduces its declared effort unless an override says otherwise; when an
       override that cannot be applied is refused or recorded rather than dropped, since a
-      silently ignored override is indistinguishable from a lane that behaves oddly; and when the
-      resolved effort and the overrides that produced it sit on the shadow's own record, so a
-      later reader can tell which arm ran at what. Asserted by resolving the same committed node
-      through both paths and requiring agreement, and by requiring a refusal or a record for an
-      override the path cannot honour.
+      silently ignored override is indistinguishable from a lane that behaves oddly; when two
+      shadows of one primary on one backend can coexist, each keeping its own retained patch, so a
+      single-variable contrast is launchable at all; and when the resolved effort and the
+      overrides that produced it sit on the shadow's own record, so a later reader can tell which
+      arm ran at what. Asserted by resolving the same committed node through both paths and
+      requiring agreement, by requiring a refusal or a record for an override the path cannot
+      honour, and by launching two arms of one pair and requiring both to exist afterwards.
     </p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">

@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T16:27:57",
+  "updated": "2026-09-08T17:37:45",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -2023,9 +2023,11 @@
         "id": "ship0908-a",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a080c3-7312-7291-8b79-6ffc05da48e5",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a080c3-7312-7291-8b79-6ffc05da48e5"
+        },
         "created": "2026-09-08"
       },
       {
@@ -2067,7 +2069,8 @@
         "session_id": "ad4aab06-f903-46c0-a4c5-2db5bc922df3",
         "session_model": "deepseek-v4-flash",
         "sessions": {
-          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "ad4aab06-f903-46c0-a4c5-2db5bc922df3"
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "ad4aab06-f903-46c0-a4c5-2db5bc922df3",
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "e0726dd9-3e0f-4ff9-851b-4222717fde05"
         },
         "created": "2026-09-08"
       },
@@ -78819,6 +78822,382 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T112753957018-fleet-rollup-test-follows-the-published-names",
+        "plan": "every-state-has-a-verb",
+        "section": "\u00a77",
+        "node": "fleet-rollup-test-follows-the-published-names",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1988,
+                "cached_input_tokens": 355412,
+                "input_tokens": 357402,
+                "output_tokens": 496,
+                "reasoning_output_tokens": 85,
+                "total_tokens": 357898,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "91fbc665-22c6-45fd-9451-3fbf95ca126e",
+            "session_id": "shadow-r-20260908T111222273123-fleet-rollup-test-follows-the-published-names-clive"
+          },
+          "done_when": "python -m pytest -p no:cacheprovider -q tests/test_fleet_rollup_surfaces.py exits 0 with zero failures against a captured baseline log showing the failure at base, the expected names are derived from the server's own registry in the same form tests/test_crew_directory.py already uses at main rather than retyped as literals, the exact-set guard is preserved rather than loosened, and no production module is edited",
+          "estimated_hours": 0.4,
+          "goal": "Update the fleet rollup surface test expectation to the MCP tool names the server now publishes",
+          "id": "fleet-rollup-test-follows-the-published-names",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T112753957018-fleet-rollup-test-follows-the-published-names/manifest.md",
+          "plan": "every-state-has-a-verb",
+          "requested_backend": null,
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "tests/test_fleet_rollup_surfaces.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "ship0908-local-c",
+        "backend": "clive",
+        "local": false,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-08T11:27:55Z",
+        "completed_at": "2026-09-08T11:30:08.979Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 124,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 133,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "3de3071d377550c89e3fbae98eb8ad2a2d3ecc2c",
+        "commits": [],
+        "changed_lines": {
+          "added": 12,
+          "removed": 3,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q tests/test_fleet_rollup_surfaces.py",
+          "exit_status": 0,
+          "log_path": "/tmp/fleet_after.log",
+          "log_digest": "2fac095b607a3098c31bd16abea685565efb1dd7ceed3938c4d2c4d6c27a421f"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "Medium-effort shadow arm reproduced the primary's fix and passed the same gate first time",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T112753957018-fleet-rollup-test-follows-the-published-names/manifest.md",
+        "scope_changed": false,
+        "session_id": "22b203a3-d280-4948-bb32-afb0f1b02f86",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 722996,
+            "input_tokens_cumulative": 722996,
+            "output_tokens": 7356,
+            "output_tokens_cumulative": 7356,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-08T11:30:08.979Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": {
+          "configuration": {
+            "inherited": {
+              "launch": "cli",
+              "model": "deepseek-v4-flash",
+              "sandbox": "worktree-full",
+              "time_budget": "25m"
+            },
+            "substituted": {
+              "backend": {
+                "primary": "clive",
+                "shadow": "clive",
+                "via": "backend"
+              },
+              "effort": {
+                "primary": "high",
+                "shadow": "medium",
+                "via": "override"
+              }
+            }
+          },
+          "kind": "shadow",
+          "primary_run_id": "r-20260908T111222273123-fleet-rollup-test-follows-the-published-names"
+        },
+        "shadow_controlled": false,
+        "shadow_patch": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T112753957018-fleet-rollup-test-follows-the-published-names/shadow.patch",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 722996,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 130.629,
+          "generated_tokens": 7356,
+          "generation_seconds": 122.664,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 7.3,
+          "machine_seconds": 7.965,
+          "peak_input_tokens": 73742,
+          "tokens_per_second": 59.97,
+          "wall_tokens_per_second": 56.31
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "shadow",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": "shadow arm; the deliverable is the retained worktree patch and is never merged by construction",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/shadow-r-20260908T111222273123-fleet-rollup-test-follows-the-published-names-clive/fleet-rollup-test-follows-the-published-names",
+          "session_id": "22b203a3-d280-4948-bb32-afb0f1b02f86",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T11:30:08.979Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T112752527143-directory-test-follows-the-published-names",
+        "plan": "every-state-has-a-verb",
+        "section": "\u00a77",
+        "node": "directory-test-follows-the-published-names",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1988,
+                "cached_input_tokens": 355412,
+                "input_tokens": 357402,
+                "output_tokens": 496,
+                "reasoning_output_tokens": 85,
+                "total_tokens": 357898,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "91fbc665-22c6-45fd-9451-3fbf95ca126e",
+            "session_id": "shadow-r-20260908T110131352087-directory-test-follows-the-published-names-clive"
+          },
+          "done_when": "python -m pytest -p no:cacheprovider -q tests/test_crew_directory.py exits 0 with zero failures, its log is captured to the run directory, the expected names are read from the server's own published registry rather than retyped as literals where that is possible, and no production module is edited",
+          "estimated_hours": 0.4,
+          "goal": "Update the directory test expectation to the MCP tool names the server now publishes",
+          "id": "directory-test-follows-the-published-names",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T112752527143-directory-test-follows-the-published-names/manifest.md",
+          "plan": "every-state-has-a-verb",
+          "requested_backend": null,
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "tests/test_crew_directory.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "ship0908-local-b",
+        "backend": "clive",
+        "local": false,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-08T11:27:54Z",
+        "completed_at": "2026-09-08T11:31:14.067Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 189,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 200,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "d599982845ca7eac5ce8e4c4bfdc4ebf4eed2c84",
+        "commits": [],
+        "changed_lines": {
+          "added": 5,
+          "removed": 5,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "python -m pytest -p no:cacheprovider -q tests/test_crew_directory.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T112752527143-directory-test-follows-the-published-names/after_test.log",
+          "log_digest": "c88b9bf5c6176614944c46df98c430fe341641be012659656b18fa92444d7795"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "Medium-effort shadow arm of the directory repair reproduced the fix and passed the same gate",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T112752527143-directory-test-follows-the-published-names/manifest.md",
+        "scope_changed": false,
+        "session_id": "e0726dd9-3e0f-4ff9-851b-4222717fde05",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 1329532,
+            "input_tokens_cumulative": 1329532,
+            "output_tokens": 15392,
+            "output_tokens_cumulative": 15392,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-08T11:31:14.067Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": {
+          "configuration": {
+            "inherited": {
+              "launch": "cli",
+              "model": "deepseek-v4-flash",
+              "sandbox": "worktree-full",
+              "time_budget": "25m"
+            },
+            "substituted": {
+              "backend": {
+                "primary": "clive",
+                "shadow": "clive",
+                "via": "backend"
+              },
+              "effort": {
+                "primary": "high",
+                "shadow": "medium",
+                "via": "override"
+              }
+            }
+          },
+          "kind": "shadow",
+          "primary_run_id": "r-20260908T110131352087-directory-test-follows-the-published-names"
+        },
+        "shadow_controlled": false,
+        "shadow_patch": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T112752527143-directory-test-follows-the-published-names/shadow.patch",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 1329532,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 197.267,
+          "generated_tokens": 15392,
+          "generation_seconds": 190.514,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 8.6,
+          "machine_seconds": 6.753,
+          "peak_input_tokens": 87565,
+          "tokens_per_second": 80.79,
+          "wall_tokens_per_second": 78.03
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "shadow",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": "shadow arm; the deliverable is the retained worktree patch and is never merged by construction",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/shadow-r-20260908T110131352087-directory-test-follows-the-published-names-clive/directory-test-follows-the-published-names",
+          "session_id": "e0726dd9-3e0f-4ff9-851b-4222717fde05",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T11:31:14.067Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -79047,6 +79426,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1219
+    "_version": 1223
   }
 }
