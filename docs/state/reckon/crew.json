@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T10:17:15",
+  "updated": "2026-09-08T10:57:47",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -504,6 +504,15 @@
         "created": "2026-09-08"
       },
       {
+        "id": "crew-live-lanes",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-08"
+      },
+      {
         "id": "crew-manifest-keys",
         "harness": "clive",
         "role": "implement",
@@ -516,6 +525,15 @@
         "id": "crew-matrix-currency",
         "harness": "clive",
         "role": "documentation",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-08"
+      },
+      {
+        "id": "crew-met-wait",
+        "harness": "codex",
+        "role": "implement",
         "session_id": null,
         "session_model": null,
         "sessions": {},
@@ -567,6 +585,15 @@
         "session_model": null,
         "sessions": {},
         "created": "2026-09-06"
+      },
+      {
+        "id": "crew-promotion-beat",
+        "harness": "codex-terra",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-08"
       },
       {
         "id": "crew-quota-horizons",
@@ -75874,6 +75901,327 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T081849959911-the-lanes-view-probes-for-a-live-reading",
+        "plan": "crew-observability-truth",
+        "section": "\u00a71",
+        "node": "the-lanes-view-probes-for-a-live-reading",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 654,
+                "cached_input_tokens": 574561,
+                "input_tokens": 575217,
+                "output_tokens": 3404,
+                "reasoning_output_tokens": 718,
+                "total_tokens": 578621,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_lanes_view_is_live.py -q passes, and the lanes view never reports a quota reading as too old to use: it obtains a live reading by probing, and where a probe cannot describe a particular lane's own quota it falls back to that lane's own most recent receipt and names which source answered. WHY THE CURRENT BEHAVIOUR IS WRONG. The view was given a stale state an hour ago because its only input was a per-session receipt file that ages, and reporting an old reading as current would have been worse. That was the right call for the inputs it had and the wrong design for the tool: this surface exists so an orchestrator can ask whether a lane will serve before dispatching, and answering that it does not know is a refusal to do its one job when the means to answer exist. A live probe exists in this repository and the view does not use it. WHAT THE PROBE IS, so you do not have to find it. reckon/_backends.py defines budget_probe for the metered dialect: it launches the harness command's app-server transport and issues an initialize handshake followed by an account rate-limits read, and that read RUNS NO MODEL, so it costs no quota and no tokens. Its answer carries used percentages and reset times for SEVERAL metered windows at once. read_probe currently reduces that answer to a single window, choosing whichever is furthest through. The probe machinery, its caching field and a cache lifetime in the budget policy all already exist; what is missing is the lanes view consulting it. THE ROOT DEFECT THE PROBE ALONE DOES NOT FIX, and this is the part to get right. The probe is keyed to the harness COMMAND, and four configured lanes share one command, so a single account reading is currently attributed to four lanes whose quotas differ. Measured on this host: the budget surface reports all four at an identical utilisation and an identical burn multiple, while one of those lanes has its own separate quota entirely, sitting at 97 percent of a five-hour window and 43 percent of a weekly window that resets about 3.7 hours later than the shared one. So a probe used naively would still describe that lane with another lane's figure, and it would do so with the authority of a fresh reading, which is worse than a stale one. WHAT TO BUILD. Probe for a live reading when composing the view. Key every window the probe returns by its own window_minutes rather than reducing to one, the way the receipt reader already does, and expose each. For every lane, decide which source describes THAT lane and say so on the row: a probe reading whose windows match the lane's own quota structure, or that lane's own most recent receipt where the probe cannot distinguish it. Carry the source name and the observation time on every reading, so a reader can see whether it came from a live probe or from a receipt, and never present a receipt figure as a probe reading. Keep the at-risk band and the exhausted state exactly as they are. Retire the stale state ONLY for lanes the probe can describe; a lane whose only available evidence is an old receipt must still say so rather than pretend, because inventing currency is the failure this whole surface exists to prevent \u2014 the honest form is a fresh-probe row for lanes the probe covers and a receipt-sourced row, with its age, for lanes it does not. DO NOT MAKE THE VIEW SLOW OR FRAGILE. Use the existing cache lifetime rather than a new one, so repeated reads in a short window do not relaunch the probe. A probe that fails, times out or is unavailable must degrade to the receipt path and say that the probe did not answer, never raise and never block the view; a view that cannot be read is worse than one reading from a receipt. Do not probe a lane whose dialect declares no probe. Do not run any model, and do not add a second probe implementation: use budget_probe and read_probe, extending read_probe to keep every window rather than reducing to one if that is what keying requires. WHAT NOT TO TOUCH. Do not change budget admission in this node even though it has the same attribution defect; that is a separate node with a refusal path attached and a followup already recording it. Do not edit reckon/crew/rollout.py, reckon/crew/recovery.py, reckon/crew/ticker.py, reckon/crew/promotion.py or reckon/ledger.py. FALSIFIERS, in tests/test_lanes_view_is_live.py, every probe stubbed rather than launched, no test running a real command, reading the real configuration home or touching a real session file. A lane the stub probe describes reports a probe-sourced reading with the probe's observation time, and does NOT report the stale state even when a receipt for that lane is hours old, asserted with a deliberately ancient receipt present so a lenient implementation cannot pass. A stub probe returning two windows of different lengths yields two readings keyed by their lengths, and the shorter window's utilisation never appears as the longer one's, asserted against the longer one's value directly. A lane whose quota the probe cannot describe reports its receipt as the source, with an age, and is distinguishable from a probe-sourced row by the source field alone. A stub probe that raises, and one that returns nothing, both degrade to the receipt path, say the probe did not answer, and do not raise. Two reads inside the cache lifetime launch the probe once, asserted by counting stub invocations. A lane whose dialect declares no probe is never probed, asserted the same way. The at-risk band and the exhausted state return exactly what they return today for the same utilisations, asserted against figures the test computes from the declared constants. And the existing no-recommendation test still passes unchanged. Report base and head over the new file, tests/test_lanes_view_serving_state.py, tests/test_crew_lanes_view.py and the tests importing reckon.mcp_views, with failure ids either side and none added. Bound the run per file and never run the full suite.",
+          "estimated_hours": 1.5,
+          "goal": "Probe for a live quota reading rather than reporting a stale one, keying every returned window by its length and naming which source describes each lane",
+          "id": "the-lanes-view-probes-for-a-live-reading",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T081849959911-the-lanes-view-probes-for-a-live-reading/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "55m",
+          "write_paths": [
+            "reckon/mcp_views.py",
+            "reckon/_backends.py",
+            "tests/test_lanes_view_is_live.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-live-lanes",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T08:19:02Z",
+        "completed_at": "2026-09-08T08:39:36Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1234,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1234,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "c4033485cc400bb2a81bde8d06f108d2bd20634a",
+        "commits": [
+          "c563a06b6bd2decf8ccf0f80b7af751ef4fecb82"
+        ],
+        "changed_lines": {
+          "added": 498,
+          "removed": 7,
+          "files": 3
+        },
+        "tests_added": 9,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_lanes_view_is_live.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T081849959911-the-lanes-view-probes-for-a-live-reading/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T081849959911-the-lanes-view-probes-for-a-live-reading/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a08019-63a2-7503-a537-bd78a086dca1",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 9662208,
+            "cached_input_tokens_cumulative": 9662208,
+            "input_tokens": 9876910,
+            "input_tokens_cumulative": 9876910,
+            "output_tokens": 33268,
+            "output_tokens_cumulative": 33268,
+            "reasoning_output_tokens": 13615,
+            "reasoning_output_tokens_cumulative": 13615
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-08T08:39:36Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 23.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-08T08:39:36Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 9662208,
+          "cumulative_input_tokens": 19539118,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 46883
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-lanes-view-probes-for-a-live-reading",
+          "session_id": "01a08019-63a2-7503-a537-bd78a086dca1",
+          "session_source": "stream",
+          "retained_at": "2026-09-08T08:39:36Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T082004430590-the-promotion-beat-carries-fleet-state",
+        "plan": "crew-observability-truth",
+        "section": "\u00a71",
+        "node": "the-promotion-beat-carries-fleet-state",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 3848,
+                "cached_input_tokens": 575215,
+                "input_tokens": 579065,
+                "output_tokens": 2329,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 581394,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_promotion_beat_carries_fleet_state.py -q passes, and the result a promotion returns carries a short fleet-state reading beside the quota reading it already carries, so an orchestrator's picture of its own fleet is refreshed at every landing without a separate read. WHY THIS COMPLETES A HALF-BUILT DESIGN. Promotion already attaches a lane quota reading harvested from the client's own receipt, and that half works: the newest promoted row carries quota_state, an observation time, the effective context window and the quota windows keyed by length. What it does not carry is anything about the FLEET, and the fleet is what the orchestrator is about to make its next decision about. So a coordinator that has just landed a node still has to issue a separate read to learn whether anything else is live, whether a run is unreconciled, whether a lane is occupied, or whether a followup is waiting \u2014 at exactly the moment it is already reading a result. The promotion beat is the one moment an orchestrator cannot skip, which is why the reading belongs there rather than on a schedule. WHAT TO ATTACH, and the constraint that matters most is BREVITY. This is a beat, not a report: a handful of scalars an orchestrator can act on without parsing. Include the number of runs still live in this project, the number that are unreconciled, the count of runs whose classification is actionable together with the classifications present, and the number of distinct lanes currently occupied. Include the fleet observation time. Do not attach per-run rows, worktree paths, manifest digests, follower registrations or anything that grows with fleet size: a beat that grows unboundedly stops being read, and every one of those is already available from the views that exist for them. If you find yourself attaching a list whose length is the number of runs, stop and attach its count instead. DERIVE IT, DO NOT RECOMPUTE IT. The counts above are already derived by the existing live-pointer and drain reads; call those rather than reimplementing their logic, so the beat and the views cannot drift into disagreeing about one fleet. That is the whole point of putting the derivation in one place, and a second implementation of a count is the defect this project has repeatedly measured. THREE RULES. The beat is a reading and carries its own observation time, separate from the quota reading's, because the two are taken from different sources and one being fresh says nothing about the other. The beat never fails a promotion: if the fleet state cannot be read, attach an explicit unmeasured marker saying so and let the promotion succeed unchanged, exactly as the quota reading already degrades. And the beat states facts and recommends nothing: no readiness verdict, no next-node suggestion, no capacity judgement, because the orchestrator owns that decision and every other surface built here refuses to make it. Say that in a comment at the composition site. WHAT NOT TO TOUCH. Do not change what promotion does to the run record, the gate, the commit list, the suite delta or the lane quota receipt. Do not add the beat to the ledger row: the ledger is a durable record of one run and a fleet snapshot at that moment does not describe that run, so this belongs on the returned RESULT only, and a test must assert the ledger row is unchanged by it. Do not edit reckon/mcp_views.py, reckon/_backends.py, reckon/crew/recovery.py, reckon/crew/ticker.py or reckon/crew/rollout.py; a peer holds the first two and the rest are settled. FALSIFIERS, in tests/test_promotion_beat_carries_fleet_state.py, using the project's existing promotion fixtures and a synthesised temporary repository, never a real checkout and never the real configuration home or live-pointer directory. A promotion whose fixture fleet holds several live runs returns a beat whose live count equals the number the test constructed, and the same for the unreconciled count and the occupied-lane count, each asserted against a figure the test computes rather than a literal. The beat carries its own observation time, distinct from the quota reading's, asserted by constructing the two at different times and requiring both to appear. THE BEAT IS BOUNDED: assert that its size does not grow with fleet size, by composing it against a fixture with one live run and against one with many and requiring the same set of keys and no list whose length differs; that is the assertion that keeps it a beat. A fixture whose fleet state cannot be read yields the unmeasured marker and a promotion that still succeeds with its other fields unchanged. The committed ledger row is byte-identical with and without the beat, asserted directly, so the durable record is untouched. The beat contains no field naming a recommended, preferred, ready or suggested next action, asserted by scanning its keys and values, pinning the no-recommendation rule the way the lanes view already pins it. Every existing promotion test passes with its assertions unchanged. Report base and head over the new file and the existing promotion tests, with failure ids either side and none added. Bound the run per file and never run the full suite.",
+          "estimated_hours": 1.25,
+          "goal": "Attach a short bounded fleet-state reading to the promotion result beside the quota reading, derived from the existing views and recommending nothing",
+          "id": "the-promotion-beat-carries-fleet-state",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T082004430590-the-promotion-beat-carries-fleet-state/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "codex-terra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "tests/test_promotion_beat_carries_fleet_state.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-promotion-beat",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T08:20:13Z",
+        "completed_at": "2026-09-08T08:28:57Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 524,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 524,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "c4033485cc400bb2a81bde8d06f108d2bd20634a",
+        "commits": [
+          "08326cab2574fb07c35dfe252dfe5902d996466b"
+        ],
+        "changed_lines": {
+          "added": 303,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_promotion_beat_carries_fleet_state.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T082004430590-the-promotion-beat-carries-fleet-state/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T082004430590-the-promotion-beat-carries-fleet-state/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0801a-79c7-73c3-b2d5-36af96ecbaf3",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 4996608,
+            "cached_input_tokens_cumulative": 4996608,
+            "input_tokens": 5202103,
+            "input_tokens_cumulative": 5202103,
+            "output_tokens": 21637,
+            "output_tokens_cumulative": 21637,
+            "reasoning_output_tokens": 8833,
+            "reasoning_output_tokens_cumulative": 8833
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-08T08:28:57Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 22.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-08T08:28:57Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 4996608,
+          "cumulative_input_tokens": 10198711,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 30470
+        },
+        "follow_on_paths": [
+          "tests/test_crew_promotion.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-promotion-beat-carries-fleet-state",
+          "session_id": "01a0801a-79c7-73c3-b2d5-36af96ecbaf3",
+          "session_source": "stream",
+          "retained_at": "2026-09-08T08:28:57Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -76102,6 +76450,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1179
+    "_version": 1184
   }
 }
