@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="every-state-has-a-verb">
   <meta name="plan-title" content="Every State Has A Verb">
   <meta name="plan-summary" content="A run reaches states the crew surface has no command for, so agents invent manual workarounds that the rest of the system guards against.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="12.0">
   <meta name="plan-capability-version" content="1.0">
@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-08">
-<meta name="plan-version" content="48">
-<meta name="plan-impl" content="0.94">
+<meta name="plan-version" content="50">
+<meta name="plan-impl" content="1.0">
 <meta name="plan-commits" content="e5f4ef4">
 </head>
 <body>
@@ -148,38 +148,22 @@
         currency audit</a>.</p>
     </section>
 
-    <h2 id="s6">§6 — The surface answers the question an agent is holding</h2>
-    <p>
-      The four sections above each add a verb. This one is about whether the
-      next agent finds them. Every finding in this plan was discovered by an
-      agent hitting a wall and improvising, not by reading a surface and
-      choosing correctly, and several improvised around capabilities that
-      already existed — a session id recoverable from a stream, a sweep already
-      wired to a loop, a hold already ageing out. <strong>A capability nobody
-      can find is indistinguishable from one that does not exist</strong>, which
-      is this repository's oldest recurring finding wearing a different hat.
-    </p>
-    <p>
-      The unit of discovery is the moment of failure. An agent reads a refusal
-      far more often than it reads a manual, so the refusal is where the verb
-      belongs: a promotion blocked by an undeclared path names the acceptance
-      flag, a dispatch blocked by a held lane names the probe and the sweep, a
-      resume refused for a live process names the stop. Each of these is one
-      sentence in a message that is already being printed.
-    </p>
-    <p>
-      Done when every refusal the crew surface emits names the verb that
-      resolves it or states plainly that none exists; when the command help for
-      each verb says which state it applies to rather than only what it does;
-      when no two commands whose names differ by a word do unrelated things
-      without saying so in the first line of help — the classification command
-      and the sweep currently sit one word apart; and when an agent reading only
-      refusals and help can reach every verb this plan adds. Asserted by
-      collecting the refusal messages the surface can emit and requiring each to
-      name a verb or an explicit absence.
-    </p>
+    <section id="s6" class="section-landed">
+      <header><span class="badge badge-shipped">&#10003; landed 2026-09-08</span>
+        <h2>&#167;6 &mdash; The surface answers the question an agent is holding</h2></header>
+      <p class="landed-summary">All four clauses met. Every refusal now names its verb &mdash; the
+        four command-boundary families emit through the shared formatter, 33 passed with the
+        resolving-action cases growing 18 to 22 and the boundary set empty (<code>d895941</code>).
+        Help names the state each verb applies to and the one-word-apart trio states its
+        distinction, 4 cases over 23 subcommands with no code line touched
+        (<code>22df716</code>). Every refusal remedy resolves to a registered verb, asserted from
+        the registry itself. Two stale fixture contracts fell out on the way: a census measured
+        exactly eleven failures with one cause, repaired to 11 passed (<code>7224a0e</code>).
+        Full record: <a href="/reckon/evidence/archive/every-state-has-a-verb-landed#s6">&#167;6
+        landed</a>.</p>
+    </section>
 
-    <section id="s7" class="section-landed">
+<section id="s7" class="section-landed">
       <header><span class="badge badge-shipped">&#10003; landed 2026-09-04</span>
         <h2>&#167;7 &mdash; A worker can find the worker it needs to talk to</h2></header>
       <p class="landed-summary">One read names every live coordinator across the workstation
@@ -195,50 +179,18 @@
         contract repairs</a>.</p>
     </section>
 
-    <h2 id="s8">&#167;8 &mdash; The peer channel is advertised to the roles that cannot reach it</h2>
-    <p>
-      The worker prompt hands every node a peer-channel client and the client is composed as
-      <code>python -c 'from reckon.crew.dispatch import _peer_command; &hellip;'</code> at
-      <code>reckon/crew/prompts.py:67</code> &mdash; a bare interpreter name with nothing
-      guaranteeing the package is importable. Whether it works depends entirely on where the
-      worker happens to be standing, because <code>python -c</code> puts the working directory on
-      the import path. Measured 2026-09-08 on this host, one command, two locations:
-    </p>
-    <table>
-      <thead><tr><th>Working directory</th><th>Roles standing there</th><th>Result</th></tr></thead>
-      <tbody>
-        <tr><td>the assigned worktree</td><td>full-worktree roles</td>
-          <td>imports, because the worktree <em>is</em> the package source tree</td></tr>
-        <tr><td>the delivery directory</td><td>read-only roles</td>
-          <td><code>ModuleNotFoundError: No module named 'reckon'</code></td></tr>
-      </tbody>
-    </table>
-    <p>
-      So the channel is not broken in general, which is why it survived: the roles that exercise
-      it most while implementing are the ones it happens to work for. It is broken precisely for
-      the roles whose deliverable is a report and whose reason to speak to a peer is strongest,
-      and those are the roles the prompt tells about it in the same words. A capability
-      advertised where it cannot run is worse than an absent one, because the worker spends turns
-      on it before discovering that.
-    </p>
-    <p>
-      The dependence on the working directory is the defect, not the missing path. An interpreter
-      that can import the package is already in hand at composition time &mdash; the process
-      composing the prompt is running from one &mdash; so the client can name it instead of
-      hoping the worker's cwd supplies it. Naming it also removes a second latent failure that
-      has not yet been measured: a worker whose <code>python</code> resolves to a different
-      interpreter than the one reckon is installed into would fail from any directory at all.
-    </p>
-    <p>
-      <em>Done when</em> the composed peer-channel client runs from a working directory that is
-      not the package source tree, proven by executing the exact advertised command from a
-      delivery directory and getting the client's own usage rather than an import error; when the
-      interpreter it names is derived from the composing process rather than resolved from the
-      worker's environment, so no host path is written into the prompt text; when a full-worktree
-      role's client keeps working unchanged; and when a test asserts the composed string does not
-      begin with a bare interpreter name. Asserted by running the advertised command from both
-      directory kinds and requiring the same outcome in each.
-    </p>
+    <section id="s8" class="section-landed">
+      <header><span class="badge badge-shipped">&#10003; landed 2026-09-08</span>
+        <h2>&#167;8 &mdash; The peer channel is advertised to the roles that cannot reach it</h2></header>
+      <p class="landed-summary">The composed peer client names the interpreter the composing
+        process runs under, derived rather than written as a literal path; 6 focused cases and 101
+        passed across the prompt, peer and role gate (<code>50a7ab1</code>). A peer reported the
+        channel broken outright; measuring one command in two locations narrowed it to a
+        working-directory dependence &mdash; it imports from a worktree, which is the package
+        source tree, and raises from a delivery directory, so it failed for exactly the read-only
+        roles whose deliverable is a report. Full record:
+        <a href="/reckon/evidence/archive/every-state-has-a-verb-landed#s8">&#167;8 landed</a>.</p>
+    </section>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -264,7 +216,7 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-esv-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship every-state-has-a-verb §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-esv-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship every-state-has-a-verb §2" data-resolved-at="2026-09-08T20:49:07+00:00" data-resolved-by="">
     <h4 class="r-fu-title">The follower first, because every other fix here is invisible without it</h4>
     <div class="r-fu-body"><p>
             §2 goes first and the ordering is not preference. Every section
@@ -290,6 +242,7 @@
             third option is to share one implementation.
           </p></div>
     <pre class="r-fu-prompt">/reckon-ship every-state-has-a-verb §2</pre>
+    <p class="r-fu-outcome">Plan complete, and the ordering this followup argued for held. It insisted the follower go first because every later section changes behaviour a follower executes, so landing them beneath stale code would ship capabilities the running fleet could not reach. That is what happened: the follower landed first, and a currency audit then found §3, §4, §5 and §7 already present on the primary branch, so they were collapsed rather than reimplemented. §6 was correctly last, since it measures whether every verb the plan added is reachable and could not be asserted until those verbs existed — all four of its clauses now hold, the fourth read from the refusal registry itself. §8 was added today from a peer's report and landed the same session. Both open decisions were settled by the nodes that implemented them, as this followup allowed for the lane-change verb. done — no followup: the plan's declared scope is finished and the two findings its work exposed belong to other live plans, which carry them as sections.</p>
     </article>
 </section>
 
@@ -359,6 +312,12 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-20260908T221501" data-who="reckon-ship" data-when="2026-09-08T22:15:01Z">
     <div class="r-comment-body">dispatch-fixtures-declare-their-level landed — commit 7224a0e, merged and verified present at HEAD; gate passed exit 0; measure: base 0 passed / 11 failed to head 11 passed / 0 failed / 0 errors over the two files, with no assertion weakened, deleted or skipped to reach it. Artifacts: tests/test_crew_dispatch_arming.py, tests/test_crew_dispatch_guard.py. One declaration at each of the two _node() helpers rather than case by case, which is what the census predicted would restore all eleven.\n\nThe eleven were the second of three rows the outgoing coordinator transferred by name, and both are now closed. Worth recording that the census which sized this node was free: it ran on the unmetered lane, cost no quota, and its finding — that the repair was one line rather than substantial — is what let this node run beside the lane fence instead of behind it. The serialisation it was originally given was the right call on the information then available and the wrong call ninety minutes later.</div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20260908T202224188364-command-help-names-the-state-it-applies-to" data-who="ship0908-a" data-when="2026-09-08T20:45:39Z">
+    <div class="r-comment-body"><p>every crew verb's help names the state it applies to, the four near-namesakes state their distinction, and every refusal remedy resolves to a registered verb; 4 passed over 23 subcommands, ruff delta 0</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20260908T224900" data-who="reckon-ship" data-when="2026-09-08T22:49:00Z">
+    <div class="r-comment-body">command-help-names-the-state-it-applies-to landed — commit 22df716, merged and verified present at HEAD; gate passed exit 0; measure: 4 cases over 23 crew subcommands, plus the existing recovery-help case for 5 passed; ruff format clean on both paths and ruff check showing 2 pre-existing findings with zero added. Artifacts: reckon/cli.py, tests/test_crew_help_names_its_state.py. Verified by reading the diff: no code line changed, help text only.\n\nTHIS CLOSES §6, AND THE FOURTH CLAUSE IS WHY THAT IS WORTH STATING. The done-when had four parts and the first one — every refusal names its verb — reads like the whole section, which is how three quarters of it could have been quietly skipped. The fourth is a claim about the surface rather than about any file: an agent reading only refusals and help can reach every verb this plan adds. It is asserted by reading the refusal registry and requiring every remedy named there to resolve to a registered, state-specific command, so the section's own census is the instrument rather than a reviewer's judgement. The one-word-apart trio the section called out now reads as three different answers in its first help line each: live pointers, the session-closure count, and the classification of what an interrupted orchestrator left.\n\nPlan closed at impl 1.0 with §6 and §8 collapsed to landed summaries and the fuller record at docs/evidence/archive/every-state-has-a-verb-landed.html anchors s6 and s8. All eight sections are landed: §2 to §5 and §7 were already built and were collapsed after a currency audit rather than reimplemented, §6 and §8 landed today.</div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260904T044732847265-a-follower-never-runs-stale-code" data-who="codex-b" data-when="2026-09-04T05:04:22Z">
     <div class="r-comment-body"><p>A running follower reloads from the imported installation when its source advances and emits the new behaviour - asserted by patching the formatter and requiring the live process to render the changed output it did not render before - with no event lost or duplicated, the same pid and its registration intact; a re-exec that cannot proceed reports once and keeps delivering.</p></div>
