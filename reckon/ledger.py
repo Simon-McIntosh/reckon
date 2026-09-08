@@ -132,6 +132,7 @@ RECORD_FIELDS = (
     "scope_acceptances",
     "session_id",
     "budget",
+    "lane_receipt",
     "lineage",
     "shadow_controlled",
     "shadow_patch",
@@ -862,6 +863,7 @@ def build_record(
     scope_changed: bool = False,
     session_id: str | None = None,
     budget: Mapping[str, Any] | None = None,
+    lane_receipt: Mapping[str, Any] | None = None,
     throughput: Mapping[str, Any] | None = None,
     budget_fallback: Mapping[str, Any] | None = None,
     lineage: Mapping[str, Any] | None = None,
@@ -962,6 +964,7 @@ def build_record(
         # and a pre-flight that has to make a call to learn headroom spends the
         # very resource it is measuring — most often when it is scarcest.
         "budget": _label_unmetered_cost(budget or {}, backend),
+        "lane_receipt": None if lane_receipt is None else dict(lane_receipt),
         "lineage": stored_lineage,
         "shadow_controlled": stored_shadow_controlled,
         "shadow_patch": str(shadow_patch),
