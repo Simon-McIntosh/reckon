@@ -708,6 +708,16 @@ def _resolved_flight(flight_module, project, checkout_path, overrides):
         raise click.ClickException(str(exc)) from exc
 
 
+def _flight_default_backend_override(flight_module, config, overrides):
+    """Return the resolved default only when the prompt layer supplied it."""
+    if not overrides:
+        return None
+    prompt_layer = flight_module.parse_overrides(overrides)
+    if "default_backend" not in prompt_layer:
+        return None
+    return str(config.get("default_backend") or "").strip() or None
+
+
 def _model_availability_refusal(crew_module, flight_module, config, node):
     """Return a typed refusal when the selected backend does not serve its model."""
     backend_name, backend = crew_module.resolve_role(config, node.role, node.spec_level)
@@ -1031,6 +1041,9 @@ def crew_dispatch(
     """
     crew_module, flight_module = _crew_modules()
     config = _resolved_flight(flight_module, project, checkout_path, overrides)
+    flight_backend_override = _flight_default_backend_override(
+        flight_module, config, overrides
+    )
     if local:
         try:
             config = flight_module.select_local_backend(config)
@@ -1085,6 +1098,7 @@ def crew_dispatch(
                 report_live_conflicts=True,
                 local=local,
                 backend_override=backend,
+                default_backend_override=flight_backend_override,
                 member=member,
             )
         except crew_module.PlanVisibilityError as exc:
@@ -1145,6 +1159,7 @@ def crew_dispatch(
             watch_override=no_watch,
             local=local,
             backend_override=backend,
+            default_backend_override=flight_backend_override,
         )
     except crew_module.PlanVisibilityError as exc:
         _emit(
