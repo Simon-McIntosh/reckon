@@ -502,6 +502,37 @@ def test_complete_report_only_manifest_without_commit_promotes(
     assert not pointer_path(run_id).exists()
 
 
+PROSE_NO_CHANGED_PATHS_VALUES = (
+    "none under the repository; the sole deliverable is the report",
+    "none (the node changed no file under the repository)",
+)
+
+
+@pytest.mark.parametrize("changed_paths", PROSE_NO_CHANGED_PATHS_VALUES)
+def test_complete_manifest_with_prose_none_in_changed_paths_promotes(
+    repository: Path, tmp_path: Path, changed_paths: str
+) -> None:
+    _base, head = _repository_with_candidate(repository)
+    run_id = f"r-report-only-manifest-prose-{len(changed_paths)}"
+    _write_complete_manifest_pointer(
+        repository,
+        tmp_path,
+        run_id,
+        base=head,
+        changed_paths=changed_paths,
+        commits=None,
+    )
+
+    promoted = crew.complete(
+        run_id,
+        gate="passed",
+        root=repository,
+    )
+
+    assert promoted["record"]["commits"] == []
+    assert not pointer_path(run_id).exists()
+
+
 # ── A promotion that would delete a resume path ─────────────────────────────
 #
 # Promotion removes the pointer, and the pointer is where a resume finds its

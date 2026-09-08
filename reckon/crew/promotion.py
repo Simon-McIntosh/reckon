@@ -371,6 +371,25 @@ def _require_gate_evidence(
     )
 
 
+def _prose_changed_paths_name_no_paths(manifest: Mapping[str, Any]) -> bool:
+    """True when the manifest's changed_paths declare none in prose.
+
+    A report-only manifest states ``changed_paths: none under the repository;
+    the sole deliverable is the report`` as free text, and the manifest parser
+    keeps the whole sentence as the field's single item. Like the bare token
+    ``none``, which the parser's none-values set already empties, prose that
+    opens with the word ``none`` and continues declares no repository paths —
+    so the commit-for-changed-manifest guard must not read a path out of it.
+    Only the word ``none`` followed by more text counts: a real path that
+    merely begins with those letters is untouched, and a list that still names
+    a real path is not prose-none.
+    """
+    items = [str(item).strip() for item in (manifest.get("changed_paths") or ())]
+    return bool(items) and all(
+        bool(re.match(r"none(?:\s|$)", item, re.IGNORECASE)) for item in items
+    )
+
+
 def _require_commit_for_changed_manifest(
     run_id: str, record: Mapping[str, Any]
 ) -> None:
@@ -387,6 +406,7 @@ def _require_commit_for_changed_manifest(
     if (
         str(manifest.get("status") or "").strip().lower() != "complete"
         or not manifest.get("changed_paths")
+        or _prose_changed_paths_name_no_paths(manifest)
         or manifest.get("commits")
     ):
         return
