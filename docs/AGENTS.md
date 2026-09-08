@@ -144,6 +144,22 @@ auditing, and run state keep their distinct read-only contracts:
 | `audit` | Schema-conformance audit of every plan in a project + index reindex (WARN/report only — never mutates). Use `view=summary` for counts, `view=detail` for paginated findings, and `view=raw` for the legacy lossless result. Distinct from the CLI `reckon doctor`, which checks infra/skills/mounts, not schema. |
 | `crew` | Read-only run state over seven views. `view="ledger"` and `view="summary"` read committed roster and outcome summaries; `view="records"` returns the lossless committed records; `view="live"` reads the never-committed pointers of runs still in flight, each with the classification `reckon crew recover` would give it; `view="drain"` derives the session-closure count and recorded dispositions from those pointers; `view="flight"` reports resolved routing config with the layer that supplied every value; `view="budget"` reports per-backend headroom and whether a wave may open, read from what earlier runs recorded so it spends nothing. Accepts `checkout_path`. Writes are the CLI's (`reckon crew …`) — this tool never mutates. |
 
+#### MCP wire-name compatibility
+
+Every reckon tool is published under its plain name, so its client-visible form is
+`mcp__reckon__<tool>`: `read_plan`, `edit_plan`, `roadmap`, `audit`, or `crew`.
+This is a breaking change for an already-connected client: reconnect it before
+calling a reckon tool, because its cached old name will return tool-not-found.
+
+| Stale host convention | Stale spelling | Current spelling |
+|---|---|---|
+| One separator before the private name | `mcp__reckon_<tool>` | `mcp__reckon__<tool>` |
+| Three underscores before the private name | `mcp__reckon___<tool>` | `mcp__reckon__<tool>` |
+
+The two stale forms reflected a module-private leading underscore in the
+published name. Python implementation names remain private; only the wire name
+is regular.
+
 **Op vocabulary:** call `read_plan(project, slug, with_schema=True)["op_vocab"]`
 for the full `edit_plan` op grammar (it inlines the set/append/resolve/lock/move
 + create rules alongside the schema).

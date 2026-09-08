@@ -140,14 +140,14 @@ def test_edit_plan_accepts_ops_delivered_as_json_text_identically_to_a_list(setu
     ops_text = json.dumps(ops)
 
     as_list = _call_mcp(
-        "_edit_plan",
+        "edit_plan",
         project=project,
         slug="as-list",
         expected_version=3,
         ops=ops,
     )
     as_text = _call_mcp(
-        "_edit_plan",
+        "edit_plan",
         project=project,
         slug="as-text",
         expected_version=3,
@@ -164,10 +164,10 @@ def test_edit_plan_accepts_ops_delivered_as_json_text_identically_to_a_list(setu
 def test_the_strict_argument_model_parses_every_declared_list_from_json_text():
     """Every list-declared argument is recognised from JSON text, not one named one.
 
-    ``_edit_plan.ops`` and both list arguments on ``_crew`` must parse a JSON-text
+    ``edit_plan.ops`` and both list arguments on ``crew`` must parse a JSON-text
     delivery into exactly the same value as a native list delivery.
     """
-    edit_model = _strict_argument_model("_edit_plan")
+    edit_model = _strict_argument_model("edit_plan")
     ops = [{"op": "append", "target": "comments", "item": {"body": "<p>hi</p>"}}]
     as_list = edit_model.model_validate(
         {"project": "p", "slug": "s", "expected_version": 1, "ops": ops}
@@ -183,7 +183,7 @@ def test_the_strict_argument_model_parses_every_declared_list_from_json_text():
     assert as_text == as_list
     assert as_text["ops"] == ops
 
-    crew_model = _strict_argument_model("_crew")
+    crew_model = _strict_argument_model("crew")
     candidates = [{"run_id": "run-1"}]
     fields = ["project", "view"]
     as_list = crew_model.model_validate(
@@ -207,7 +207,7 @@ def test_json_text_that_parses_to_a_mapping_is_rejected_naming_the_argument(setu
 
     with pytest.raises(Exception, match="ops") as rejected:
         _call_mcp(
-            "_edit_plan",
+            "edit_plan",
             project=project,
             slug="mapping",
             expected_version=3,
@@ -216,7 +216,7 @@ def test_json_text_that_parses_to_a_mapping_is_rejected_naming_the_argument(setu
     assert "Input should be a valid list" in str(rejected.value)
 
     with pytest.raises(Exception, match="ops"):
-        _strict_argument_model("_edit_plan").model_validate(
+        _strict_argument_model("edit_plan").model_validate(
             {"project": "p", "slug": "s", "expected_version": 1, "ops": '{"op": "x"}'}
         )
 
@@ -227,7 +227,7 @@ def test_text_that_does_not_parse_is_rejected_naming_the_argument(setup):
 
     with pytest.raises(Exception, match="ops") as rejected:
         _call_mcp(
-            "_edit_plan",
+            "edit_plan",
             project=project,
             slug="broken",
             expected_version=3,
@@ -242,7 +242,7 @@ def test_a_list_argument_delivered_as_an_integer_is_rejected(setup):
 
     with pytest.raises(Exception, match="ops") as rejected:
         _call_mcp(
-            "_edit_plan",
+            "edit_plan",
             project=project,
             slug="int",
             expected_version=3,
@@ -267,7 +267,7 @@ def test_a_text_argument_whose_value_parses_as_json_is_passed_unchanged(setup):
     old = '<p class="notes">[options: a, b]</p>'
     new = '<p class="notes">[options: c, d]</p>'
     result = _call_mcp(
-        "_edit_plan",
+        "edit_plan",
         project=project,
         slug="authored",
         expected_version=3,
@@ -279,7 +279,7 @@ def test_a_text_argument_whose_value_parses_as_json_is_passed_unchanged(setup):
     assert new in (docs_dir / "authored.html").read_text(encoding="utf-8")
     assert old not in (docs_dir / "authored.html").read_text(encoding="utf-8")
 
-    model = _strict_argument_model("_edit_plan")
+    model = _strict_argument_model("edit_plan")
     dump = model.model_validate(
         {
             "project": "p",
@@ -294,8 +294,8 @@ def test_a_text_argument_whose_value_parses_as_json_is_passed_unchanged(setup):
 def test_an_unknown_parameter_is_still_rejected_with_the_accepted_list():
     """Unknown names are still refused, and the message lists what is accepted."""
     payloads = {
-        "_read_plan": {"document": "x"},
-        "_edit_plan": {
+        "read_plan": {"document": "x"},
+        "edit_plan": {
             "project": "p",
             "slug": "s",
             "expected_version": 1,
@@ -334,9 +334,9 @@ def _declares_array(schema: dict) -> bool:
 
 def test_the_published_schema_still_declares_list_arguments_as_arrays():
     """Wrapping must not change what a client reading the schema sees."""
-    edit_properties = _mcp_tool("_edit_plan").parameters["properties"]
+    edit_properties = _mcp_tool("edit_plan").parameters["properties"]
     assert _declares_array(edit_properties["ops"])
 
-    crew_properties = _mcp_tool("_crew").parameters["properties"]
+    crew_properties = _mcp_tool("crew").parameters["properties"]
     assert _declares_array(crew_properties["candidates"])
     assert _declares_array(crew_properties["fields"])
