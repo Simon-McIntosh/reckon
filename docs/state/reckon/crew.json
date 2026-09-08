@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T17:37:45",
+  "updated": "2026-09-08T18:17:59",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -79198,6 +79198,174 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T112439869922-dispatch-refusals-name-their-remedy",
+        "plan": "every-state-has-a-verb",
+        "section": "\u00a76",
+        "node": "dispatch-refusals-name-their-remedy",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 658,
+                "cached_input_tokens": 341621,
+                "input_tokens": 342281,
+                "output_tokens": 635,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 342916,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "91fbc665-22c6-45fd-9451-3fbf95ca126e",
+            "session_id": "ship-s15-2026-09-08"
+          },
+          "done_when": "Each of the 22 dispatch, shadow and budget families listed in /home/ITER/mcintos/.config/reckon/crew/reports/crew-refusal-verb-census.md either names the reckon crew verb or option that resolves it or carries the one canonical sentence stating that no verb exists, rendered through a single shared formatter that all 22 call rather than per-site prose; a test enumerating those 22 family ids asserts it and exits 0 with its log captured; the typed payload fields every refusal already returns are unchanged, so no caller parsing them breaks; and the recovery, promotion and ledger families are left untouched for their own nodes",
+          "estimated_hours": 1.2,
+          "goal": "Give every dispatch, shadow and budget refusal a resolving action through one shared formatter",
+          "id": "dispatch-refusals-name-their-remedy",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T112439869922-dispatch-refusals-name-their-remedy/manifest.md",
+          "plan": "every-state-has-a-verb",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/refusals.py",
+            "reckon/crew/dispatch.py",
+            "reckon/crew/routing.py",
+            "reckon/crew/node.py",
+            "reckon/budget.py",
+            "tests/test_crew_refusal_visibility.py",
+            "/home/ITER/mcintos/.config/reckon/crew/reports/crew-refusal-verb-census.md"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "ship0908-a",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T11:24:47Z",
+        "completed_at": "2026-09-08T15:57:10Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": null,
+        "worker_seconds_source": "stalled",
+        "wall_seconds": 16343,
+        "stalled": true,
+        "time_budget": "45m",
+        "base_sha": "15004d1a08e50159cbb05aa255c612a7f1b67501",
+        "commits": [
+          "e68a84a73f0bc6d41df8fbeeadcda4d8d2253441"
+        ],
+        "changed_lines": {
+          "added": 396,
+          "removed": 95,
+          "files": 6
+        },
+        "tests_added": 8,
+        "gate": "passed",
+        "gate_check": {
+          "command": "python -m pytest -p no:cacheprovider -q tests/test_crew_refusal_visibility.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T112439869922-dispatch-refusals-name-their-remedy/after-facade-module.log",
+          "log_digest": "057a4f811934a7c8e0413d700e4be6b0e9bcd24fc5edea4612ed45c4e19a021e"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T112439869922-dispatch-refusals-name-their-remedy/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a080c3-7312-7291-8b79-6ffc05da48e5",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 18594432,
+            "cached_input_tokens_cumulative": 18594432,
+            "input_tokens": 18853554,
+            "input_tokens_cumulative": 18853554,
+            "output_tokens": 37470,
+            "output_tokens_cumulative": 37470,
+            "reasoning_output_tokens": 12506,
+            "reasoning_output_tokens_cumulative": 12506
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-08T15:57:10Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 46.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-08T15:57:10Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 18594432,
+          "cumulative_input_tokens": 37447986,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 49976
+        },
+        "follow_on_paths": [
+          "reckon/cli.py;",
+          "tests/test_crew_dispatch_arming.py",
+          "tests/test_crew_dispatch_guard.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-08/dispatch-refusals-name-their-remedy",
+          "session_id": "01a080c3-7312-7291-8b79-6ffc05da48e5",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T15:57:10Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -79426,6 +79594,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1223
+    "_version": 1224
   }
 }
