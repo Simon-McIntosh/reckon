@@ -769,7 +769,9 @@ than prose. Reckon does not infer a relative tier from the coordinator model.
 Choose the override from the node's declared specification level
 (`--spec-level exact|guided|open`) using `references/effort-routing.md` — it
 maps who owns the design to how much worker effort the node still needs, and
-gates the small-model lane. An unproven configuration earns its lane through
+gates the small-model lane. Use `references/lane-routing.md` for named-lane
+selection, roster re-reads, refusal conditions, and selection evidence. An
+unproven configuration earns its lane through
 `reckon crew shadow`, which re-runs a committed node at its recorded base as
 never-merged evidence; it never carries live work.
 Worker prompts reference the live plan and carry only the portable runtime
