@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T08:31:09",
+  "updated": "2026-09-08T08:34:07",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -73381,6 +73381,144 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260908T060439561051-the-weight-scales-with-what-a-run-spent",
+        "plan": "crew-effort-routing",
+        "section": "\u00a71",
+        "node": "the-weight-scales-with-what-a-run-spent",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 704,
+                "cached_input_tokens": 239309,
+                "input_tokens": 240015,
+                "output_tokens": 491,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 240506,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_quota_weight.py -q passes, and the weight the module returns is proportional to what a run actually consumed rather than to its consumption per token, with the long-context surcharge applied to the tokens inside each crossing request rather than to the whole run. WHY THIS IS A REPAIR AND WHOSE FAULT IT IS. You built exactly what the previous contract specified and eleven tests pass; the contract was wrong in two ways and one of its falsifiers was inverted and passed only because of the first error. Both are the coordinator's, not yours. The module, the declared rate table, the strict family ordering and the explicit refusal for an undeclared model are all correct and land unchanged; only the arithmetic and the signature change. THE FIRST ERROR: THE FIGURE IS AN INTENSITY, NOT A COST. The helper divides the weighted token total by the token total, so a run of sixteen million tokens and a run of six hundred thousand tokens on the same model with the same mix return the SAME weight. A figure that cannot distinguish those two cannot rank anything, and ranking runs by consumption is the only reason this module exists. Return a figure proportional to the run's size: the weighted token total itself, unnormalised, still expressed relative to the reference member's rate so it stays dimensionless and is not a currency amount. Keep the reference member's RATE ratio at one; do not keep any run's weight at one. THE SECOND ERROR: THE SURCHARGE CANNOT BE COMPUTED FROM A COUNT. The published rule charges a request whose input exceeds the threshold at twice input and one and a half times output FOR THAT REQUEST. The current model instead multiplies the whole run's tokens by one plus the crossing count, so two crossings charge three times on every token in the run, including the tokens of requests that never crossed. On a sixteen-million-token run with two crossings that overstates by roughly a factor of three. A crossing count carries no information about how many tokens were inside the crossing requests, so no correct arithmetic can be built from it. CHANGE THE SIGNATURE ACCORDINGLY. Take the model identifier and a sequence of per-request figures, each carrying that request's input tokens and output tokens. Sum the run yourself: for each request, if its input exceeds the threshold apply the surcharge multipliers to that request's own input and output, otherwise apply neither, then weight by the model's rate ratio and add it in. Return the total weight, the rate entry used, the number of requests that crossed, and the token totals with and without the surcharge applied so a caller can see the surcharge's size rather than infer it. Do not accept a bare cumulative total plus a crossing count in any form: the point of the change is that the pair is insufficient, and an optional path taking it would be used. THE PER-REQUEST FIGURES EXIST, so this signature is not a burden on the caller. A peer node landing this hour reads the metered client's own per-session receipt file, whose records carry each request's input and output tokens individually; that is where a caller obtains the sequence. Do not import that module and do not read any file yourself \u2014 take plain numbers, so this module stays reviewable on its own \u2014 but name that surface in the docstring as the source of the sequence, so a reader knows the signature is satisfiable. FALSIFIERS, in tests/test_quota_weight.py, every expected figure computed in the test from the declared constants rather than written as a literal. Keep every existing test that still holds: the rate ratios for equal quantities, the strict family ordering, the undeclared-model refusal, the known zero, and the negative-input refusal. Delete the inverted comparison test outright and replace it with the correct direction: a run of sixteen million input tokens across many requests none of which crosses weighs STRICTLY MORE than a run of six hundred thousand input tokens across two requests that both cross, because sixteen million tokens at the plain rate exceeds six hundred thousand at twice the rate, and the previous contract asserted the reverse. THE SCALE FALSIFIER, which is the one that catches the normalisation returning: two runs on the same model with the same per-request mix, one exactly ten times the other in request count, return weights whose ratio is ten, asserted against a ratio the test computes. A normalised implementation returns one and fails this. THE PER-REQUEST ATTRIBUTION FALSIFIER: a run of two requests where only one crosses weighs strictly less than a run of the same two requests where both cross, and strictly more than the same two where neither does, with all three figures computed in the test; and the surcharge applied to a run whose crossing request is a small fraction of its tokens changes the total weight by strictly less than the surcharge applied to a run whose crossing request is most of its tokens, which is the property the count-based model could not express at all. An empty request sequence returns a known zero rather than the undeclared-model unknown. A request with a negative token count raises. A request whose input exactly equals the threshold does NOT cross, since the rule is strictly greater, and assert that boundary directly in both directions at the threshold and at the threshold plus one. Measure base and head over the changed file and the tests that import reckon.crew, report failure ids either side, require none added, bound the run per file, and never run the full suite for this node.",
+          "estimated_hours": 1.0,
+          "goal": "Return a weight proportional to what a run consumed, with the surcharge applied to the tokens inside each crossing request",
+          "id": "the-weight-scales-with-what-a-run-spent",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T060439561051-the-weight-scales-with-what-a-run-spent/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/quota_weight.py",
+            "tests/test_quota_weight.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-quota-weight",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T06:05:03Z",
+        "completed_at": "2026-09-08T06:27:23Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1340,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1340,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "c57d620caeb92905d70c716cb00b82cd789b230c",
+        "commits": [
+          "60fd104f169c0495fab2af34cf3eae1d05abaafb"
+        ],
+        "changed_lines": {
+          "added": 345,
+          "removed": 95,
+          "files": 2
+        },
+        "tests_added": 15,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider tests/test_quota_weight.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T060439561051-the-weight-scales-with-what-a-run-spent/after-test_quota_weight.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T060439561051-the-weight-scales-with-what-a-run-spent/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07f9e-bd12-7af0-84ca-f251c4ad590c",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 9628288,
+            "cached_input_tokens_cumulative": 9628288,
+            "input_tokens": 10006000,
+            "input_tokens_cumulative": 10006000,
+            "output_tokens": 31815,
+            "output_tokens_cumulative": 31815,
+            "reasoning_output_tokens": 10078,
+            "reasoning_output_tokens_cumulative": 10078
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 9628288,
+          "cumulative_input_tokens": 19634288,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 41893
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-weight-scales-with-what-a-run-spent",
+          "session_id": "01a07f9e-bd12-7af0-84ca-f251c4ad590c",
+          "session_source": "stream",
+          "retained_at": "2026-09-08T06:27:23Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -73609,6 +73747,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1150
+    "_version": 1151
   }
 }
