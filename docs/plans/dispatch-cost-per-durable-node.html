@@ -709,13 +709,37 @@
       flag, so the repair is one edit.
     </p>
     <p>
+      <strong>Spreading across the sibling metered lanes relieves nothing, so the refusal has to
+      name an unmetered alternative rather than merely the resolved backend.</strong> Probed by a
+      peer coordinator at 19:46:15Z and reconciled against a reading of this account eleven
+      minutes earlier: all four configured lanes of the metered family reported identical
+      utilisation and an identical reset instant. They are one weekly window, not four. That
+      peer had spread eight nodes across three of them believing it was conserving quota, on
+      per-lane relative-burn figures that say nothing about the account's weekly position. So a
+      coordinator told only which backend it landed on will reach for a sibling lane and believe
+      the problem is solved; a coordinator told which lanes are unmetered cannot make that
+      mistake. One honest limit on the reading: the probe reports the weekly window only, and
+      whether the five-hour windows are per-lane is unmeasured.
+    </p>
+    <p>
+      <strong>A declared lane can still be overridden, and a fence on the undeclared case alone
+      would miss it.</strong> A member's declared harness silently beats an explicitly set
+      default backend, with no refusal and no record &mdash; measured by the same peer across a
+      whole session whose nodes all reached the metered lane while it believed it had redirected
+      them. That is the same resolution line, so a caller who <em>did</em> declare can be
+      overruled by the roster and told nothing, which reproduces the defect one step further
+      along. Both cases belong to this section rather than only the never-declared one.
+    </p>
+    <p>
       <em>Done when</em> a dispatch whose lane resolves to a metered backend without an
       explicit declaration is refused as not-dispatchable, naming the resolved backend, the
       window utilisation read at that moment, and the unmetered backends that would serve;
       when the same dispatch carrying an explicit declaration proceeds unchanged; when a
       dispatch resolving to an unmetered backend is never refused for this reason, proven by
       a local dispatch that still launches with no lane flag; when a member's declared
-      harness no longer supplies a metered lane on its own; and when the run record carries
+      harness neither supplies a metered lane on its own nor silently overrules a lane the caller
+      did declare, disagreement between the two being refused with both named; and when the run
+      record carries
       the declared lane beside the window utilisation observed at dispatch, so the ledger can
       later show what each choice cost. Asserted by dispatching the same node with and
       without a declaration and requiring one refusal and one launch, by requiring the
