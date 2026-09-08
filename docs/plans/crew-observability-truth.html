@@ -24,9 +24,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-08">
-<meta name="plan-version" content="217">
+<meta name="plan-version" content="219">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md">
-<meta name="plan-impl" content="0.96">
+<meta name="plan-impl" content="0.97">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b">
 </head>
 <body>
@@ -1134,6 +1134,12 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260908T044741871468-the-prompt-carries-the-contract" data-who="crew-no-zombies" data-when="2026-09-08T07:36:31.601Z">
     <div class="r-comment-body"><p>The composed worker prompt now carries the contract clauses a worker needs rather than relying on it to infer them from the plan. Twelve focused tests; the importing corpus went from 9 passing at base to 21 at head with zero failures either side. This closes the reason findings were not reaching workers: the composer embedded no protocol reference, so every rule the fleet learned lived only in briefs the coordinator remembered to write. Ran 2.9 hours against a 40-minute budget on the unmetered lane, progressing throughout.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20260908T205800077695-a-landed-run-waits-for-a-second-reader" data-who="ship0908b-a" data-when="2026-09-08T21:44:25Z">
+    <div class="r-comment-body"><p>a terminal run classifies as scoring until an independent review attaches, and names the review dispatch as its next action; 5 new cases, the 98 base failure ids identical at head by set difference, zero added and zero removed</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-20260908T234700" data-who="reckon-ship" data-when="2026-09-08T23:47:00Z">
+    <div class="r-comment-body">a-landed-run-waits-for-a-second-reader landed — commits 0be8b2d, cc749de, 6255c53, e0aab0e, merged and the content verified at HEAD both ways; gate passed on the wide four-file command; measure: 5 new scoring cases, and the 98 pre-existing failure ids identical at base and head by SET DIFFERENCE rather than by count, zero added and zero removed. Scope changed three times and the promotion records it. Artifacts: reckon/crew/recovery.py plus the three test files.\n\nA terminal run carrying a manifest now classifies as scoring rather than promotable, and the state names its own verb: next_action is the review dispatch, composed with role review on the unmetered lane, the node named review-of- its subject, and the review store path as its write scope. So the lifecycle the lead directed exists as far as classification, on top of the prompt, schema, parser and store that landed unwired earlier. What still follows is the promotion read.\n\nBoth falsifiers this section wrote are honoured. The reader does not collapse unreadable review data into absence, so an unparsed review and a missing one stay distinct, which is the same distinction as a stale hold against an honest unknown. And the migrated assertions kept the properties they protected rather than being relaxed: the watch still exits on the first terminal manifest, and the still-working disposition still expires when a run turns terminal — both hold because a scoring run IS terminal, having stopped working and being owed a reader.\n\nTHE SCOPE WAS WRONG THREE TIMES AND EVERY ONE WAS THE COORDINATOR'S. A contract change that renames a state needs every file asserting that state inside one scope, and here they were spread across four: the module's own test, the monitor-output check that reads emitted state names straight out of the source by regex, and the large crew test. Each was found by the worker measuring its delta against a stated base and reporting rather than reaching, which is exactly the behaviour that made three one-message fixes out of what would otherwise have been three surprises at the merged head. The middle one is the sharpest: the worker had emitted the display label as a state name, and adding that label to the routed vocabulary would have made the check pass while leaving one state with two accepted names. Emitting the state and letting the display map render it was the fix, and refusing the easier one is the reason the vocabulary still means something.</div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260908T195809410341-unlanded-worktree-commit-audit" data-who="ship0908-local" data-when="2026-09-08T20:11:52.531Z">
     <div class="r-comment-body"><p>12 commits across 11 worktrees selected by the clean-and-ahead pair over 85 worktrees; 3 land (this session's own, since merged) and 9 discard, each naming its supersession; coordinator corrected the largest row's reasoning, which had the supersession order inverted</p></div>
