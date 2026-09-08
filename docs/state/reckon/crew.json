@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T05:55:10",
+  "updated": "2026-09-08T06:40:53",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -455,6 +455,15 @@
         "session_model": null,
         "sessions": {},
         "created": "2026-09-05"
+      },
+      {
+        "id": "crew-matrix-currency",
+        "harness": "clive",
+        "role": "documentation",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-08"
       },
       {
         "id": "crew-midflight",
@@ -71813,6 +71822,254 @@
           "role": "implement",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260908T035700501510-the-composed-state-carries-its-fixture-rows",
+        "plan": "gif-tab-and-artifact-download",
+        "section": "\u00a72",
+        "node": "the-composed-state-carries-its-fixture-rows",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 629,
+                "cached_input_tokens": 365480,
+                "input_tokens": 366111,
+                "output_tokens": 767,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 366878,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "798e59ac-3d9b-497a-824a-44b7647c524e",
+            "session_id": "ship-s16"
+          },
+          "done_when": "tests/test_spa_vertical_scroll.py passes on this browser-equipped host, both its cases, replacing the current throw 'fixture has no gif reader item' from the rendered probe. Confirm the cause before fixing rather than taking it on report: _composed_state builds a local inventory including one generated row per declared route, then returns a dict spreading the discovery state and overriding project, projects, active_sprints, active_sprint_conflict and plans, but never inventory, so the browser reads the discovery inventory and this project carries no gif artifact of its own, while the sibling non-browser case passes because it asserts on the generator directly. State in the manifest whether that diagnosis held. Also check whether the plans map keyed by bare slug can be reached for a non-plan kind, since the reader resolves those through a prefixed key, and report that as a follow_on rather than changing it if it is latent. Report both case results before and after against base HEAD and add no failures elsewhere in that file.",
+          "estimated_hours": 1.0,
+          "goal": "The browser scroll probe sees the generated artifact fixture rows, so the rendered gif reader case runs instead of throwing.",
+          "id": "the-composed-state-carries-its-fixture-rows",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T035700501510-the-composed-state-carries-its-fixture-rows/manifest.md",
+          "plan": "gif-tab-and-artifact-download",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "tests/test_spa_vertical_scroll.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-a",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T03:57:13Z",
+        "completed_at": "2026-09-08T04:05:54Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 521,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 521,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "85865fb24eb418c8111a77045cd3abe4a77695f3",
+        "commits": [
+          "81b48ed40a207b23e05f15fa5b5f73445d2a0d3a"
+        ],
+        "changed_lines": {
+          "added": 5,
+          "removed": 1,
+          "files": 1
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_vertical_scroll.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/798e59ac-3d9b-497a-824a-44b7647c524e/scratchpad/vscroll-merged.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T035700501510-the-composed-state-carries-its-fixture-rows/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07a9f-12ab-7191-a257-0f59bd481734",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 1656960,
+            "cached_input_tokens_cumulative": 5886080,
+            "input_tokens": 1411705,
+            "input_tokens_cumulative": 5965360,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 12836,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 4050
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 16886,
+          "peak_input_tokens": 11851440
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16/the-composed-state-carries-its-fixture-rows",
+          "session_id": "01a07a9f-12ab-7191-a257-0f59bd481734",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T04:05:54Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
+      },
+      {
+        "run_id": "r-20260908T035207193871-the-durable-write-precedes-the-long-output",
+        "plan": "crew-observability-truth",
+        "section": "\u00a78",
+        "node": "the-durable-write-precedes-the-long-output",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2129,
+                "cached_input_tokens": 831022,
+                "input_tokens": 833153,
+                "output_tokens": 1933,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 835086,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "grep for the phrase durable write in skills/reckon-ship/references/worker-protocol.md and confirm the file states that a worker commits at each deliverable and writes its manifest before beginning any long output or any wait, with the measured reason beside it; then confirm the file still contains its existing manifest-path and delivery sections unchanged by diffing those sections against the previous revision. THE MEASUREMENT, compiled across two fleets on one locally served lane and reported independently by three sessions. Forty runs. On the reporting fleets, small-scope code-changing nodes with a named check landed and scored 9 or 10 out of 10 in independent review, while broad-reading and report-shaped nodes died late with a response that stopped arriving or a request that timed out. One fleet: implement 8 of 8 passed, conformance reviews 7 of 7, investigate scouts 0 of 5. The other: code-changing nodes 5 of 6, report-shaped nodes 3 of 8. THE MECHANISM, AND TWO EARLIER EXPLANATIONS WERE WITHDRAWN BEFORE THIS ONE. A tokens-per-second discriminator held on 14 runs and did not reproduce on 26, where passes ran 1.69 to 6.54 output tokens per second and failures 1.79 to 6.12, so the reporting session retracted it and recommends no rate-based abort rule. A context-accumulation explanation was also withdrawn and inverted by the larger sample: per-turn context was HIGHER in the survivors, 107,000 to 215,000 input tokens per turn against 41,000 to 101,000 in the dead scouts, and the largest run of all passed at 173 turns and 37.1 million cumulative input tokens. Turn count and cumulative input separate nothing. What survives both samples is narrower: the failure is a long single output late in a long session under load. Neither fleet lost a node whose brief made the deliverable a small, early, incremental write. Two partial survivors are the evidence: one wrote its findings into its manifest and then died before its report, so the findings survived; another committed and then died, so the commit survived. Both survived because the durable write came before the long output. Four total losses each had the report as one final generation. WHY THE LANE MAKES THIS WORSE RATHER THAN CAUSING IT. Every stream in both fleets carries a prompt-cache read of zero and a cache creation of zero, so context is re-sent in full every turn; the heaviest node re-sent 37.1 million input tokens across 173 turns. A broad brief on this lane is therefore not merely slower, it is self-terminating. WHAT TO ADD TO THE FILE. State that a worker commits at each deliverable rather than once at the end, and writes its manifest before beginning any long output and before any wait. State the reason as measured rather than as advice: a durable write that precedes the long generation survives the generation failing, and every total loss in forty runs had its deliverable as one final output. State that this is why a node whose deliverable is a report should write that report incrementally to its file as it is produced, rather than composing it in one closing generation. Keep the existing rule that long output goes in the file and the reply is the path, and connect the new text to it rather than restating it. WHAT NOT TO CHANGE. Do not alter the eight node properties or their order. Do not alter the manifest-path section, the delivery section, or the fence descriptions. Do not add a rate-based abort rule, a turn-count limit, or a context-size limit: all three were measured and none discriminates, and the file must not acquire a threshold the data refutes. Do not name a backend, a model or a lane: the property is about where the durable write falls relative to the long output, and a file naming this lane would read as inapplicable on another. Do not state a figure for how long a generation may take. FALSIFIERS. The file states the commit-at-each-deliverable rule and the manifest-before-long-output rule. Each carries its measured reason rather than an assertion. The words tokens per second, turn limit and context limit do not appear as a rule anywhere in the file. No backend or model name appears in the added text. The existing manifest-path and delivery sections are byte-identical to the previous revision, asserted by diffing them. The added text refers to the existing long-output-goes-in-the-file rule rather than duplicating it. The file's front matter and section numbering are unchanged.",
+          "estimated_hours": 0.75,
+          "goal": "State in the worker protocol that a worker commits at each deliverable and writes its manifest before any long output, with the measured reason",
+          "id": "the-durable-write-precedes-the-long-output",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T035207193871-the-durable-write-precedes-the-long-output/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "documentation",
+          "section": "\u00a78",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "write_paths": [
+            "skills/reckon-ship/references/worker-protocol.md"
+          ]
+        },
+        "role": "documentation",
+        "spec_level": "exact",
+        "member": "crew-review-reflex",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-08T03:52:12Z",
+        "completed_at": "2026-09-08T04:01:47.655Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 533,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 575,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "27aae271409eaa5514c400189a3902573e447c9b",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "malformed-node",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T035207193871-the-durable-write-precedes-the-long-output/manifest.md",
+        "scope_changed": false,
+        "session_id": "101a2e59-1329-4475-bdec-56f192938ab7",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no events yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "Stopped before any commit; the brief's stated reason was falsified by a peer measurement while the node ran.",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-durable-write-precedes-the-long-output",
+          "session_id": "101a2e59-1329-4475-bdec-56f192938ab7",
+          "session_source": "stream",
+          "retained_at": "2026-09-08T04:01:47.655Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "documentation",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -72041,6 +72298,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1125
+    "_version": 1128
   }
 }
