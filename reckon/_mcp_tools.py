@@ -70,6 +70,7 @@ class CrewArgs(BaseModel):
         "records",
         "ledger",
         "budget",
+        "lanes",
     ] = "summary"
     checkout_path: str | None = None
     plan: str | None = None

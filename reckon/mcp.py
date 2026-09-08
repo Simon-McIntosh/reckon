@@ -93,6 +93,7 @@ from reckon.mcp_views import (
     ResourceSelector,
     ViewRequestError,
     audit_view,
+    crew_lanes_view,
     discovery_view,
     error_response,
     normalize_selector,
@@ -2915,6 +2916,10 @@ def _crew(
     ``budget`` reports, per backend, whether a wave may open — read from what
     earlier runs recorded, so it spends nothing, and holding only where
     exhaustion was actually reported.
+    ``lanes`` reports which configured endpoints will currently serve a dispatch
+    and how much of each five-hour and weekly quota window remains. Consult it
+    before choosing a lane; it reports availability only and never selects,
+    ranks, or recommends one.
 
     Pass ``session`` — the same id given to ``reckon crew dispatch`` — on
     ``live``: every run row gains ``mine``, and the watcher block reports
@@ -2979,6 +2984,7 @@ def _crew(
         "records",
         "ledger",
         "budget",
+        "lanes",
         "routing",
         "directory",
         "fleet",
@@ -2989,7 +2995,7 @@ def _crew(
             "error": "invalid_view",
             "detail": (
                 "view must be directory, drain, scopes, summary, flight, live, "
-                "records, ledger or budget; routing is the cross-ledger cost "
+                "records, ledger, budget or lanes; routing is the cross-ledger cost "
                 "view, runs is the compact joined view, and fleet is the "
                 "cross-project view"
             ),
@@ -3056,6 +3062,20 @@ def _crew(
                 "ok": True,
                 "view": view,
                 **budget_module.preflight(project, config, root=checkout_path),
+            }
+        if view == "lanes":
+            config = flight_module.resolve(project, checkout_path=checkout_path).config
+            runs = list(ledger_module.runs(project, checkout_path))
+            runs.extend(
+                record
+                for record in crew_module.list_live()
+                if str(record.get("project") or "") == project
+            )
+            return {
+                "ok": True,
+                "project": project,
+                "view": view,
+                **crew_lanes_view(config, runs),
             }
         if view == "routing":
             try:

@@ -5,10 +5,13 @@ from __future__ import annotations
 import base64
 import json
 import re
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from reckon.crew import rollout as rollout_module
 from reckon.doccheck import lifecycle_staleness, modified_age_days
 from reckon.lifecycle import (
     TERMINAL_STATUSES,
@@ -41,6 +44,253 @@ MAX_CURSOR_LENGTH = 256
 MAX_ERROR_TEXT_LENGTH = 512
 MAX_ERROR_COLLECTION_ITEMS = 25
 _SAFE_SEGMENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+
+
+def _unmeasured_reason(value: object) -> str | None:
+    """Return an explicit receipt gap reason, or ``None`` for a measurement."""
+
+    if isinstance(value, rollout_module.Unmeasured):
+        return str(value.value)
+    return None
+
+
+def _receipt_observed_at(run: Mapping[str, Any]) -> str | None:
+    """Return the closest durable timestamp to the selected receipt reading."""
+
+    budget = run.get("budget")
+    if isinstance(budget, Mapping) and budget.get("observed_at"):
+        return str(budget["observed_at"])
+    for key in (
+        "observed_at",
+        "completed_at",
+        "terminal_at",
+        "dispatched_at",
+        "started_at",
+    ):
+        if run.get(key):
+            return str(run[key])
+    return None
+
+
+def _backend_from_run(run: Mapping[str, Any]) -> str:
+    """Read the configured backend identity from either durable run shape."""
+
+    backend = str(run.get("backend") or "").strip()
+    if backend:
+        return backend
+    agent = run.get("agent")
+    if isinstance(agent, Mapping):
+        return str(agent.get("backend") or "").strip()
+    return ""
+
+
+def _latest_backend_runs(
+    runs: Iterable[Mapping[str, Any]],
+) -> dict[str, Mapping[str, Any]]:
+    """Keep the newest session-bearing run for every configured backend."""
+
+    latest: dict[str, Mapping[str, Any]] = {}
+    latest_keys: dict[str, tuple[str, str]] = {}
+    for run in runs:
+        backend = _backend_from_run(run)
+        session_id = str(run.get("session_id") or "").strip()
+        if not backend or not session_id:
+            continue
+        ordering = (
+            _receipt_observed_at(run) or "",
+            str(run.get("run_id") or ""),
+        )
+        if ordering >= latest_keys.get(backend, ("", "")):
+            latest[backend] = run
+            latest_keys[backend] = ordering
+    return latest
+
+
+def _quota_readings(receipt: object) -> Mapping[int, object] | object:
+    """Read all keyed quota horizons, retaining legacy single-window support."""
+
+    readings = getattr(receipt, "quota_readings", None)
+    if readings is not None:
+        return readings
+    window = getattr(receipt, "quota_window_minutes", None)
+    reason = _unmeasured_reason(window)
+    if reason is not None:
+        return window
+    if not isinstance(window, int) or isinstance(window, bool) or window <= 0:
+        return rollout_module.Unmeasured.NO_RATE_LIMIT_VALUE
+    return {
+        window: {
+            "window_minutes": window,
+            "used_percent": getattr(receipt, "quota_used_percent", None),
+            "resets_at": getattr(receipt, "quota_resets_at", None),
+        }
+    }
+
+
+def _reading_value(reading: object, key: str) -> object:
+    if isinstance(reading, Mapping):
+        return reading.get(key)
+    return getattr(reading, key, None)
+
+
+def _measured_or_marker(value: object) -> tuple[object, str | None]:
+    reason = _unmeasured_reason(value)
+    if reason is not None:
+        return "unmeasured", reason
+    if value is None:
+        return "unmeasured", "no_rate_limit_value"
+    return value, None
+
+
+def _quota_rows(
+    readings: Mapping[int, object] | object, observed_at: str | None
+) -> tuple[list[dict[str, Any]], str | None]:
+    reason = _unmeasured_reason(readings)
+    if reason is not None:
+        return [], reason
+    if not isinstance(readings, Mapping) or not readings:
+        return [], "no_rate_limit_value"
+
+    rows: list[dict[str, Any]] = []
+    for raw_window, reading in sorted(readings.items(), key=lambda item: int(item[0])):
+        window = _reading_value(reading, "window_minutes")
+        if not isinstance(window, int) or isinstance(window, bool) or window <= 0:
+            window = raw_window
+        used, used_reason = _measured_or_marker(_reading_value(reading, "used_percent"))
+        reset, reset_reason = _measured_or_marker(_reading_value(reading, "resets_at"))
+        remaining: object = "unmeasured"
+        if isinstance(used, (int, float)) and not isinstance(used, bool):
+            remaining = max(0, 100 - used)
+        row: dict[str, Any] = {
+            "window_minutes": int(window),
+            "used_percent": used,
+            "remaining_percent": remaining,
+            "resets_at": reset,
+            "observed_at": observed_at or "unmeasured",
+        }
+        reasons = {
+            key: value
+            for key, value in (
+                ("used_percent", used_reason),
+                ("remaining_percent", used_reason),
+                ("resets_at", reset_reason),
+                ("observed_at", None if observed_at else "no_observation_time"),
+            )
+            if value is not None
+        }
+        if reasons:
+            row["unmeasured"] = reasons
+        rows.append(row)
+    return rows, None
+
+
+def _serving_state(quota_rows: list[Mapping[str, Any]]) -> str:
+    used = [row.get("used_percent") for row in quota_rows]
+    measured = [
+        value
+        for value in used
+        if isinstance(value, (int, float)) and not isinstance(value, bool)
+    ]
+    if any(value >= 100 for value in measured):
+        return "exhausted"
+    if used and len(measured) == len(used):
+        return "will_serve"
+    return "unmeasured"
+
+
+def crew_lanes_view(
+    config: Mapping[str, Any],
+    runs: Iterable[Mapping[str, Any]],
+    *,
+    receipt_reader: Callable[[str], object] | None = None,
+    composed_at: str | None = None,
+) -> dict[str, Any]:
+    """Compose endpoint availability without selecting or ranking a backend."""
+
+    read_receipt = receipt_reader or rollout_module.read_rollout_receipt
+    composition_time = composed_at or datetime.now(UTC).isoformat().replace(
+        "+00:00", "Z"
+    )
+    latest = _latest_backend_runs(runs)
+    backend_config = config.get("backends")
+    configured = backend_config if isinstance(backend_config, Mapping) else {}
+    lanes: list[dict[str, Any]] = []
+
+    for backend, settings_value in sorted(
+        configured.items(), key=lambda item: str(item[0])
+    ):
+        backend_name = str(backend)
+        settings = settings_value if isinstance(settings_value, Mapping) else {}
+        run = latest.get(backend_name)
+        if run is None:
+            lanes.append(
+                {
+                    "backend": backend_name,
+                    "alias": settings.get("alias"),
+                    "model": settings.get("model"),
+                    "receipt_state": "unused",
+                    "serving_state": "unmeasured",
+                    "observed_at": "unmeasured",
+                    "effective_context_window": "unmeasured",
+                    "quota_windows": [],
+                    "unmeasured": {
+                        "observed_at": "unused",
+                        "effective_context_window": "unused",
+                        "quota_windows": "unused",
+                        "serving_state": "unused",
+                    },
+                }
+            )
+            continue
+
+        session_id = str(run.get("session_id"))
+        receipt = read_receipt(session_id)
+        observed_at = _receipt_observed_at(run)
+        context_value, context_reason = _measured_or_marker(
+            getattr(receipt, "model_context_window", None)
+        )
+        readings = _quota_readings(receipt)
+        quota_rows, quota_reason = _quota_rows(readings, observed_at)
+        receipt_reason = _unmeasured_reason(
+            getattr(receipt, "model_context_window", None)
+        )
+        if receipt_reason not in {"missing_rollout", "unreadable_rollout"}:
+            receipt_reason = _unmeasured_reason(readings)
+        unreadable = receipt_reason in {"missing_rollout", "unreadable_rollout"}
+        lane: dict[str, Any] = {
+            "backend": backend_name,
+            "alias": settings.get("alias"),
+            "model": settings.get("model"),
+            "receipt_state": "unreadable" if unreadable else "readable",
+            "serving_state": _serving_state(quota_rows),
+            "observed_at": observed_at or "unmeasured",
+            "effective_context_window": context_value,
+            "quota_windows": quota_rows,
+        }
+        unmeasured = {
+            key: value
+            for key, value in (
+                ("receipt", receipt_reason if unreadable else None),
+                ("observed_at", None if observed_at else "no_observation_time"),
+                ("effective_context_window", context_reason),
+                ("quota_windows", quota_reason),
+                (
+                    "serving_state",
+                    quota_reason
+                    or (
+                        "incomplete_rate_limit_value"
+                        if lane["serving_state"] == "unmeasured"
+                        else None
+                    ),
+                ),
+            )
+            if value is not None
+        }
+        if unmeasured:
+            lane["unmeasured"] = unmeasured
+        lanes.append(lane)
+
+    return {"composed_at": composition_time, "lanes": lanes}
 
 
 def sprint_metrics(items: list[dict[str, Any]]) -> dict[str, Any]:
