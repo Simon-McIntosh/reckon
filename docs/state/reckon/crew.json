@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T09:48:05",
+  "updated": "2026-09-08T09:54:09",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -75232,6 +75232,157 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T071835082299-promotion-attaches-the-lanes-receipt",
+        "plan": "crew-observability-truth",
+        "section": "\u00a71",
+        "node": "promotion-attaches-the-lanes-receipt",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2865,
+                "cached_input_tokens": 405277,
+                "input_tokens": 408144,
+                "output_tokens": 2508,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 410652,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_promotion_harvests_the_receipt.py -q passes, and promoting a run on a metered lane attaches that lane's quota reading, harvested by the harness from the client's own per-session receipt, to both the promotion result the orchestrator reads and the committed ledger row, marking an unmetered or unreadable lane as unmeasured rather than as zero. WHY THIS SHAPE AND NOT A POLL. An orchestrator needs to know which lanes will serve its next dispatch. A poll has to guess when to look and is stale the moment it returns. A terminal run already holds a first-party reading of exactly the lane it just consumed, taken at the instant it stopped consuming it, and the orchestrator is already reading at that moment because promotion is a beat it cannot skip. So the freshest available reading rides along at no extra call. Two consequences beyond convenience. The quota field is reported in whole numbers, so no single reading can attribute one run's cost, but every terminal run stamps one reading with its own observation time, and many readings across a day recover a per-lane burn rate that no individual reading could; today's fleet would already have produced about twenty. And the availability surface being built alongside this can then read the most recent terminal reading per lane and say how old it is, instead of hunting session files. THE HARNESS HARVESTS IT; THE WORKER MUST NOT REPORT IT. This is the load-bearing constraint and it is not negotiable. Read the receipt in the promotion code path, from the client's own file, keyed by the run's recorded session id. Do not add a manifest field for it, do not read it from anything the worker wrote, and do not ask a worker for it. A metric a worker states about its own run stops being independent evidence of that run: this project has measured a brief that merely named a signature contaminating every stream in a wave and the verification along with it. State that reason in a comment at the harvest site, because the next reader will otherwise think a manifest field would have been simpler. WHERE TO GET IT. Read through reckon.crew.rollout, which already locates a session's receipt by its session id and already returns quota readings keyed by the length of the window they describe, with a weekly accessor and a short-horizon accessor. Attach every horizon the receipt reports, each with its window length, its utilisation, its reset time and the time the reading was observed. Do not select one horizon and do not reduce them to a worst case: they are separate budgets with different reset times, measured four hours apart on one account today, and an orchestrator needs each. Also attach the effective context window the receipt reports, which varies by lane by a factor of two and is the best single predictor of whether a node fits. THREE STATES THAT MUST NOT COLLAPSE. A lane that reports no quota because it is unmetered, a lane whose receipt could not be read, and a lane whose window genuinely reads zero used are three different facts. Mark the first two unmeasured, each distinguishably, and keep a measured zero as zero. This project already nulls and flags an unmetered lane's cost rather than recording it as free, precisely so a free lane cannot rank as the cheapest on a surface that sorts by cost; follow that precedent rather than inventing a second convention. WHAT NOT TO DO. Do not make promotion fail, refuse or warn because a receipt is missing: promotion's job is unchanged and an absent reading is a normal outcome for an unmetered lane. Do not compute headroom, a verdict, an availability judgement or a burn rate here; this attaches a reading. Do not touch reckon/crew/quota_weight.py, reckon/_flight_schema.py, reckon/_mcp_tools.py, reckon/mcp_views.py, reckon/mcp.py or reckon/crew/rollout.py; peers hold the first two and the middle three, and the last is the module you consume rather than change. Add the new record key to the ledger's declared record fields, since a tuple there is now held complete by a test and a key written without being declared is the drift that test exists to catch. FALSIFIERS, in tests/test_promotion_harvests_the_receipt.py, using the project's existing promotion test fixtures and a synthesised temporary repository, never a real checkout and never the real configuration home or live-pointer directory. A promotion of a run whose fixture receipt reports two horizons attaches both, each identifiable by its window length, and the shorter horizon's utilisation never appears as the longer one's, asserted against the longer one's value directly. The attached reading appears on BOTH the promotion result and the committed ledger row, asserted separately, because one without the other is the half-delivery this project has repeatedly measured: a capability that lands in the module owning the mechanism while the surface a reader reaches stays unchanged. A promotion of a run on a lane whose fixture declares it unmetered attaches an unmeasured marker and not a zero, asserted against a fixture whose measured utilisation is genuinely zero so the two cannot compare equal. A promotion whose receipt is absent attaches the unmeasured marker, distinguishably from the unmetered case, and the promotion still succeeds with its existing result unchanged in every other respect. The attached reading carries an observation time. Every existing promotion test passes with its assertions unchanged, which is the pin on promotion's unchanged behaviour, and the record-field completeness test passes with the new key declared. Report base and head over tests/test_promotion_harvests_the_receipt.py, the existing promotion tests, and the record-field completeness test, with failure ids either side and none added. Bound the run per file and never run the full suite.",
+          "estimated_hours": 1.5,
+          "goal": "Attach the lane's quota reading to the promotion result and the ledger row, harvested by the harness from the client receipt, never self-reported by the worker",
+          "id": "promotion-attaches-the-lanes-receipt",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T071835082299-promotion-attaches-the-lanes-receipt/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "55m",
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "reckon/ledger.py",
+            "tests/test_promotion_harvests_the_receipt.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-receipt-harvest",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T07:18:52Z",
+        "completed_at": "2026-09-08T07:53:22Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 2070,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 2070,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "ca2556026824058e223b949c1a6f5b0837bdd0c5",
+        "commits": [
+          "60192aeb67f7194df3739891c46ac399abe32eb4"
+        ],
+        "changed_lines": {
+          "added": 383,
+          "removed": 1,
+          "files": 3
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider tests/test_promotion_harvests_the_receipt.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T071835082299-promotion-attaches-the-lanes-receipt/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T071835082299-promotion-attaches-the-lanes-receipt/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07fe2-4f78-7002-88a4-16528331928b",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 14413440,
+            "cached_input_tokens_cumulative": 14413440,
+            "input_tokens": 14653195,
+            "input_tokens_cumulative": 14653195,
+            "output_tokens": 38993,
+            "output_tokens_cumulative": 38993,
+            "reasoning_output_tokens": 17038,
+            "reasoning_output_tokens_cumulative": 17038
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 14413440,
+          "cumulative_input_tokens": 29066635,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 56031
+        },
+        "follow_on_paths": [
+          "reckon/mcp_views.py",
+          "tests/test_record_fields_declare_every_key.py",
+          "2/2;"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/promotion-attaches-the-lanes-receipt",
+          "session_id": "01a07fe2-4f78-7002-88a4-16528331928b",
+          "session_source": "stream",
+          "retained_at": "2026-09-08T07:53:22Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -75460,6 +75611,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1174
+    "_version": 1175
   }
 }
