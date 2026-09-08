@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T13:06:00",
+  "updated": "2026-09-08T13:11:39",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -2054,9 +2054,11 @@
         "id": "ship0908-local-b",
         "harness": "clive",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "ad4aab06-f903-46c0-a4c5-2db5bc922df3",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "ad4aab06-f903-46c0-a4c5-2db5bc922df3"
+        },
         "created": "2026-09-08"
       },
       {
@@ -77792,6 +77794,184 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T110131352087-directory-test-follows-the-published-names",
+        "plan": "every-state-has-a-verb",
+        "section": "\u00a77",
+        "node": "directory-test-follows-the-published-names",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1739,
+                "cached_input_tokens": 263323,
+                "input_tokens": 265064,
+                "output_tokens": 770,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 265834,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "91fbc665-22c6-45fd-9451-3fbf95ca126e",
+            "session_id": "ship-s15-2026-09-08"
+          },
+          "done_when": "python -m pytest -p no:cacheprovider -q tests/test_crew_directory.py exits 0 with zero failures, its log is captured to the run directory, the expected names are read from the server's own published registry rather than retyped as literals where that is possible, and no production module is edited",
+          "estimated_hours": 0.4,
+          "goal": "Update the directory test expectation to the MCP tool names the server now publishes",
+          "id": "directory-test-follows-the-published-names",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T110131352087-directory-test-follows-the-published-names/manifest.md",
+          "plan": "every-state-has-a-verb",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "tests/test_crew_directory.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "ship0908-local-b",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-08T11:01:35Z",
+        "completed_at": "2026-09-08T11:09:58.700Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 495,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 503,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "d599982845ca7eac5ce8e4c4bfdc4ebf4eed2c84",
+        "commits": [
+          "e48c7729b34b833c41f92b885a1f112cb27efaaf"
+        ],
+        "changed_lines": {
+          "added": 13,
+          "removed": 8,
+          "files": 2
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "python -m pytest -p no:cacheprovider -q tests/test_crew_directory.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T110131352087-directory-test-follows-the-published-names/test_crew_directory-final.log",
+          "log_digest": "558e581a33afea255a8707691e757de77f3d2189d3eda444887a462aa17b901a"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T110131352087-directory-test-follows-the-published-names/manifest.md",
+        "scope_changed": false,
+        "session_id": "ad4aab06-f903-46c0-a4c5-2db5bc922df3",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 4013092,
+            "input_tokens_cumulative": 4013092,
+            "output_tokens": 41888,
+            "output_tokens_cumulative": 41888,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-08T11:09:58.700Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 4013092,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 500.305,
+          "generated_tokens": 41888,
+          "generation_seconds": 473.279,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 12.5,
+          "machine_seconds": 27.026,
+          "peak_input_tokens": 127375,
+          "tokens_per_second": 88.51,
+          "wall_tokens_per_second": 83.72
+        },
+        "follow_on_paths": [
+          "tests/test_fleet_rollup_surfaces.py:127",
+          "/",
+          "tests/test_crew_lane_change.py's",
+          "known/separate."
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": [
+          {
+            "path": "skills/reckon-ship/SKILL.md",
+            "reason": "the derived assertion cannot hold unless the skill carries the published wire names, and the stale line authorized five tools the server no longer publishes"
+          }
+        ],
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-08/directory-test-follows-the-published-names",
+          "session_id": "ad4aab06-f903-46c0-a4c5-2db5bc922df3",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T11:09:58.700Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -78020,6 +78200,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1209
+    "_version": 1211
   }
 }
