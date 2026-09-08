@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T08:52:11",
+  "updated": "2026-09-08T09:14:54",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -457,11 +457,20 @@
         "created": "2026-09-06"
       },
       {
-        "id": "crew-lane-evidence",
+        "id": "crew-lane-disagreement",
         "harness": "codex",
         "role": "implement",
-        "session_id": "01a07fae-cd85-7721-9198-7c0182bc9e54",
-        "session_model": "gpt-5.6-terra",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-08"
+      },
+      {
+        "id": "crew-lane-evidence",
+        "harness": "codex-terra",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
         "sessions": {
           "{\"alias\":\"terra5.6\",\"backend\":\"codex-terra\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-terra\",\"sandbox\":\"worktree-full\"}": "01a07fae-cd85-7721-9198-7c0182bc9e54"
         },
@@ -640,6 +649,15 @@
         "sessions": {
           "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a07fa7-b19e-74f3-9195-b89a942ecf50"
         },
+        "created": "2026-09-08"
+      },
+      {
+        "id": "crew-routing-guidance",
+        "harness": "codex-luna",
+        "role": "documentation",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
         "created": "2026-09-08"
       },
       {
@@ -1028,6 +1046,15 @@
         "session_model": null,
         "sessions": {},
         "created": "2026-09-03"
+      },
+      {
+        "id": "probe-harness-terra",
+        "harness": "codex-terra",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-08"
       },
       {
         "id": "routing-priors",
@@ -74105,6 +74132,300 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T065321448238-lane-evidence-reads-the-locked-discriminators",
+        "plan": "crew-effort-routing",
+        "section": "\u00a71",
+        "node": "lane-evidence-reads-the-locked-discriminators",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 724,
+                "cached_input_tokens": 377039,
+                "input_tokens": 377765,
+                "output_tokens": 699,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 378464,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_lane_evidence.py -q passes, and a function in a new module returns, for a stated node shape, one row per lane carrying the routing discriminators THE PLAN SECTION LOCKS, with the sample size behind each and an explicit insufficient-evidence marker for any figure below a declared floor. READ THE PLAN FOR THE DISCRIMINATORS; THEY ARE NOT RESTATED HERE. Your previous attempt on this node was blocked because the brief named a discriminator the plan had already rejected, and you were right to refuse both positions rather than pick one. The plan section is the semantic authority for which measures route and which do not, for how each is counted, and for the reasons two obvious candidates are excluded. Read it and implement what it locks. Where the plan states a counting rule, follow it exactly rather than a more natural-looking variant: at least one of its rules is deliberately counter-intuitive and is justified in the text beside it. If the plan and this brief appear to disagree again, the plan wins and you should say so in your manifest rather than reconciling it yourself. WHAT THIS BRIEF OWNS, being only the things a plan cannot carry. Create reckon/crew/lane_evidence.py exposing one function that takes the ledger rows and a node shape, meaning the role and the specification level, and returns one row per lane plus the shape it filtered on. Read rows through the existing ledger reader rather than opening any file. One ledger field you will need already exists and is populated: dispute_count, present on 258 rows across the mounted ledgers. Cost per durable node is expressed in the dimensionless lane weight from the existing reckon.crew.quota_weight module, never in currency, because these workers run on a subscription the vendor states is not priced per token; do not recompute any rate and do not import reckon.crew.rollout or reckon.crew.metering, whose figures are not on the rows yet. Report wall seconds per durable node beside the cost, since wall and quota are different scarce things an orchestrator trades against each other. THREE RULES THE PLAN IMPLIES AND THIS BRIEF MAKES BINDING. An unmeasured lane is marked unmeasured and never scored zero, for every figure, because zero reads as a lane that never exhibits the thing rather than one nobody counted. Declare a module-level minimum sample and return an insufficient-evidence marker naming the actual count for any lane below it, rather than a rate: this project has had a lane comparison rest on five rows across three lanes and a determinism result rest on two measurements that were secretly identical, and a surface that refuses is what makes the figures it does publish worth acting on. And the module must NOT select a lane, rank the rows, or emit a recommendation of any kind, and must say so in its docstring, because the orchestrator decides and a module that picks would hide the very decision this surface exists to expose. CONDITION EVERY ROW ON THE SHAPE, because the premise of the surface is that the right lane depends on the work; report the shape back in the result so a reader cannot mistake which population they are looking at. WHAT NOT TO TOUCH. Do not register a command-line entry point in this node: reckon/cli.py is held by a peer this hour and a sequenced follow-up owns the command, stated here so the absence reads as sequencing rather than oversight. Do not edit reckon/crew/dispatch.py, reckon/cli.py, reckon/ledger.py, reckon/crew/quota_weight.py, reckon/crew/rollout.py or reckon/crew/context_budget.py; peers hold all six. FALSIFIERS, in tests/test_lane_evidence.py, every expected figure computed in the test from its own synthesised fixture rows rather than written as a literal, and no fixture read from a real ledger. For each discriminator the plan locks, two fixture lanes that are IDENTICAL on the measures the plan excludes and different on that discriminator return different figures, which is the property the excluded measures cannot express and is the whole reason the column exists. The counting rule the plan states for aggregation is pinned by a fixture that would give a different answer under the natural alternative, so a later reader cannot silently switch it. A lane whose rows carry no token quantities reports cost unmeasured and NOT zero, asserted directly against a lane with real quantities so the two cannot compare equal. A lane below the declared floor returns the insufficient-evidence marker carrying its actual count, and a lane at exactly the floor returns figures, pinning the boundary in both directions. A caller asking for one shape receives nothing derived from another, asserted by including rows of a second shape in the fixture and requiring they contribute to no figure. The result names the shape it filtered on. An empty row set returns insufficient evidence for every lane rather than raising or returning an empty success. State in your manifest which plan clause each falsifier came from, so the next reader can check the implementation against the authority rather than against this brief. Measure base and head over the new file and the tests that import reckon.crew, report failure ids either side, require none added, bound the run per file, and never run the full suite for this node.",
+          "estimated_hours": 1.5,
+          "goal": "Return per-lane routing evidence for a stated node shape using the discriminators the plan locks, refusing any figure below a declared sample floor and recommending nothing",
+          "id": "lane-evidence-reads-the-locked-discriminators",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T065321448238-lane-evidence-reads-the-locked-discriminators/manifest.md",
+          "plan": "crew-effort-routing",
+          "requested_backend": "codex-terra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "55m",
+          "write_paths": [
+            "reckon/crew/lane_evidence.py",
+            "tests/test_lane_evidence.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-lane-evidence",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T06:54:09Z",
+        "completed_at": "2026-09-08T07:01:22Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 433,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 433,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "80ada6e3625a0b19a8d958d19707054597480b62",
+        "commits": [
+          "8d7f6931426dc1d07f935d79013c354a97e9dd5f"
+        ],
+        "changed_lines": {
+          "added": 411,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_lane_evidence.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T065321448238-lane-evidence-reads-the-locked-discriminators/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T065321448238-lane-evidence-reads-the-locked-discriminators/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07fae-cd85-7721-9198-7c0182bc9e54",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3766272,
+            "cached_input_tokens_cumulative": 5046528,
+            "input_tokens": 3933626,
+            "input_tokens_cumulative": 5338461,
+            "output_tokens": 13022,
+            "output_tokens_cumulative": 18230,
+            "reasoning_output_tokens": 5201,
+            "reasoning_output_tokens_cumulative": 6936
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 5046528,
+          "cumulative_input_tokens": 10384989,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 25166
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/lane-evidence-reads-the-locked-discriminators",
+          "session_id": "01a07fae-cd85-7721-9198-7c0182bc9e54",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T07:01:22Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T070109866020-the-orchestrator-can-read-the-routing-rules",
+        "plan": "crew-effort-routing",
+        "section": "\u00a71",
+        "node": "the-orchestrator-can-read-the-routing-rules",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 3938,
+                "cached_input_tokens": 386538,
+                "input_tokens": 390478,
+                "output_tokens": 3584,
+                "reasoning_output_tokens": 931,
+                "total_tokens": 394062,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "skills/reckon-ship/references/lane-routing.md exists and states, for an orchestrator about to dispatch, how to name a lane, what refuses and why, what to check on a roster before trusting it, and where the selection evidence comes from; and the reference is linked from the routing table or scope pointers of the file that already indexes the references beside it, so a session reaches it without knowing the filename. WHY THIS IS THE GAP RATHER THAN MORE CODE. The mechanism landed today: a live dispatch can name its lane, a member's declared harness routes rather than being decorative, an unusable named lane refuses instead of falling back, and the requested lane is recorded beside the resolved one. None of that is written down anywhere an orchestrator reads, and today two peer fleets between them sent five consecutive nodes to one metered lane by omission, maintained rosters whose declarations had no routing authority when they were made, and discovered the working route by reading source. A mechanism nobody knows the rules for is the same defect as a guard that never runs. READ THE PLAN FOR ANYTHING SEMANTIC; DO NOT RESTATE IT. The plan sections named in this node's authority own which measures route, which are excluded and why, and any figure about lane cost or lane quality. Link to them or name them; do not copy a number or a verdict out of them into this reference, because a copy goes stale silently and a node on this very plan was blocked earlier today for exactly that reason. This reference documents the MECHANISM and the OPERATOR PROCEDURE only. WHAT THE REFERENCE MUST COVER, and all of the following is measured on this host today rather than proposed. How to name a lane on a live dispatch, with the option name, and that the same option exists on the shadow and resume commands so one vocabulary covers all three. That a named lane which flight config does not declare, or declares but cannot serve, is refused rather than quietly replaced by the default. That a roster member's declared harness now routes: a member declared for one lane will steer a dispatch to that lane, and the option and the declaration disagreeing is refused with both named. THE ROSTER RE-READ IS THE MOST URGENT PARAGRAPH IN THE FILE: declarations made while the field was decorative now carry routing authority, so a roster built before today steers dispatches it did not steer when it was built, and an orchestrator must list its roster and compare each member's declared harness against the lane it intends before its next wave. Give the command that lists it. Include the measured hazard in the direction that actually bites: one fleet holds roughly forty members declaring an unmetered local lane, and reusing one of those for a metered dispatch would now land on the local lane; the reverse mistake, sending metered work to a metered lane by omission, is the one everyone anticipates and the less likely of the two. That each run records the requested lane beside the resolved one, and that comparing those two fields is how a silent divergence is found in one read rather than by accident. THE PROCEDURE FOR WHEN THE CHOICE IS NOT OBVIOUS, stated as steps rather than as advice. Consult the selection evidence rather than folklore, naming the surfaces that carry it and saying plainly that one of them reports endpoint availability and quota horizons and is worth reading before choosing rather than after a refusal. Say that a lane with too few observations returns an explicit insufficient-evidence marker rather than a figure, that this is deliberate, and that the correct response to it is to generate an observation rather than to guess: dispatch the same node to two lanes and compare, which is what the shadow command exists for. Say that no surface selects a lane and none will, and give the reason in one sentence: the orchestrator owns the decision and a component that picked would hide it. Include the escalation shape as a numbered procedure: route to the cheaper lane first, and when it stops honestly, move the run to a stronger lane with the command that preserves its worktree, advising the successor to commit the inherited diff as a checkpoint before continuing. State that this works only because a lane that reports false completion can never be a first rung, and point at the plan for which measure establishes that. WHAT NOT TO DO. Do not put a model name, a lane ranking, a price, a token figure or a quota percentage in this file: every one of those moves, and a snapshot of a moving number in a reference is a fuse. Refer to lanes by the role they play in a procedure and let the evidence surfaces carry the values. Do not name any plan label, sprint, node, session, run or ticket identifier. Do not edit any file under reckon/ or tests/, and do not edit the plan HTML; four peers hold source this hour and plan state is the coordinator's. Keep it short enough to be read before a dispatch rather than filed: a reference an orchestrator will not finish is one it will not use. FALSIFIERS. The file exists at the stated path and is linked from the file that already indexes its sibling references, verified by finding the link text and following it to the new filename. Every command form the file gives is verified by running it with its validate-only or help form and reporting the exit status verbatim, so no command in the reference is one you did not execute; a form that cannot be validated without launching work must be marked as unverified in your manifest rather than presented as checked. The naming and comment checks the repository mandates before staging are run over the exact path you stage and reported clean, since a reference is where plan labels and version numbers most often leak. No number appears in the file except a command's own literal arguments, asserted by reading the file back and listing any digits you find with their justification. The file names the roster-listing command and the requested-versus-resolved comparison explicitly, since those are the two operator actions the whole reference exists to cause. Report the word count.",
+          "estimated_hours": 1.25,
+          "goal": "Write the operator-facing routing reference: how to name a lane, what refuses, what to re-read on a roster, and where the selection evidence lives",
+          "id": "the-orchestrator-can-read-the-routing-rules",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T070109866020-the-orchestrator-can-read-the-routing-rules/manifest.md",
+          "plan": "crew-effort-routing",
+          "requested_backend": "codex-luna",
+          "requires_decisions": [],
+          "role": "documentation",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "skills/reckon-ship/references/lane-routing.md",
+            "skills/reckon-ship/SKILL.md"
+          ]
+        },
+        "role": "documentation",
+        "spec_level": "exact",
+        "member": "crew-routing-guidance",
+        "backend": "codex-luna",
+        "local": false,
+        "agent": {
+          "alias": "luna5.6",
+          "backend": "codex-luna",
+          "effort": "xhigh",
+          "launch": "cli",
+          "model": "gpt-5.6-luna",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T07:01:46Z",
+        "completed_at": "2026-09-08T07:12:37Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 651,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 651,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "80ada6e3625a0b19a8d958d19707054597480b62",
+        "commits": [
+          "00200c3d0ddd5093243ab7c8194c17acb5940930"
+        ],
+        "changed_lines": {
+          "added": 101,
+          "removed": 1,
+          "files": 2
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_skill_contracts.py",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T070109866020-the-orchestrator-can-read-the-routing-rules/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T070109866020-the-orchestrator-can-read-the-routing-rules/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07fd2-acc8-7912-9bec-08be478e90fe",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 9630976,
+            "cached_input_tokens_cumulative": 9630976,
+            "input_tokens": 9891333,
+            "input_tokens_cumulative": 9891333,
+            "output_tokens": 28013,
+            "output_tokens_cumulative": 28013,
+            "reasoning_output_tokens": 14687,
+            "reasoning_output_tokens_cumulative": 14687
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 9630976,
+          "cumulative_input_tokens": 19522309,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 42700
+        },
+        "follow_on_paths": [
+          "reckon/crew/quota_weight.py:17-19"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "documentation",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-orchestrator-can-read-the-routing-rules",
+          "session_id": "01a07fd2-acc8-7912-9bec-08be478e90fe",
+          "session_source": "stream",
+          "retained_at": "2026-09-08T07:12:37Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -74333,6 +74654,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1157
+    "_version": 1163
   }
 }
