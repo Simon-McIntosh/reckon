@@ -371,6 +371,107 @@ def _require_gate_evidence(
     )
 
 
+_EXIT_RECORD = re.compile(r"EXIT=(-?\d+)")
+
+
+def _recorded_exit_status(log_text: str) -> int | None:
+    """The status a shell capture recorder wrote, read from the log's tail.
+
+    The capture convention this fleet documents is ``> log 2>&1; echo EXIT=$?``,
+    which writes the command's own status as a final ``EXIT=<n>`` line. Only an
+    end-of-log record is read: a status marker buried inside a runner's own
+    output is not this check's evidence, so a passing log that merely mentions
+    the token is left alone.
+    """
+    for raw_line in reversed(log_text.splitlines()):
+        line = raw_line.strip()
+        if not line:
+            continue
+        match = _EXIT_RECORD.fullmatch(line)
+        return int(match.group(1)) if match else None
+    return None
+
+
+def _require_gate_log_agrees(
+    run_id: str,
+    gate_check: Mapping[str, Any] | None,
+    *,
+    verdict: str,
+) -> None:
+    """Refuse a passing gate whose cited log contradicts the asserted check.
+
+    A promotion cites three pieces of evidence for a passing gate — the check
+    command, the exit status the check returned, and the captured log — and
+    verifies none of them against the others. A ledger row whose verdict its
+    own evidence refutes is what every downstream reader and every calibration
+    figure reasons from, so a contradiction is refused here rather than stored.
+    Two such rows are on record: one carried the wrong log for its run, and one
+    asserted exit status zero beside a log whose entire content was a shell
+    command-not-found error at exit two, naming a subcommand that does not
+    exist. Both were caught by a person reading afterwards.
+
+    The check reads the log as text and parses no runner's result format: it
+    never re-runs the command and it recognises no test-output schema, so a
+    log that happens to print a runner's summary is untouched. It refuses on
+    three observable shapes and names which it found:
+
+    * an empty log — a cited log file that resolves to no content evidences
+      nothing, and the empty log itself is the contradiction. A path that
+      cannot be read at promotion time is skipped rather than refused, because
+      promotion may run from a machine the worker's log never reached; an
+      absent log is the unfalsifiable-gate refusal's subject, not this one's.
+    * a recorded exit status that contradicts the asserted one — a log whose
+      terminal ``EXIT=<n>`` capture record differs from the asserted status
+      has filed contradictory evidence.
+    * no evidence the command ran — a line carrying the shell's own
+      command-not-found diagnostic states the command never executed, so the
+      log cannot evidence the pass being asserted.
+    """
+    if verdict != "passed" or not isinstance(gate_check, Mapping):
+        return
+    log_path = str(gate_check.get("log_path") or "").strip()
+    if not log_path:
+        # Only a digest was cited; there is no text to contradict the claim.
+        return
+    try:
+        log_text = Path(log_path).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return
+    if not log_text.strip():
+        raise CrewError(
+            f"run {run_id!r} asserts gate 'passed' but its cited log "
+            f"{log_path!r} is empty: a check that captured nothing evidences "
+            "nothing, and the empty log contradicts the passing verdict. "
+            "Found: an empty log. Re-run the check and cite its full captured "
+            "output with --gate-log-path, or re-promote with the verdict the "
+            "evidence actually records"
+        )
+    recorded = _recorded_exit_status(log_text)
+    asserted = gate_check.get("exit_status")
+    if (
+        recorded is not None
+        and isinstance(asserted, int)
+        and not isinstance(asserted, bool)
+        and recorded != asserted
+    ):
+        raise CrewError(
+            f"run {run_id!r} asserts gate 'passed' with exit status {asserted} "
+            f"but its cited log {log_path!r} records EXIT={recorded}: the log "
+            "contradicts the asserted status. Found: a recorded exit status "
+            "that contradicts the asserted one. Re-run the check and cite its "
+            "log, or re-promote with the verdict the evidence actually shows"
+        )
+    if re.search(r"\bcommand not found\b", log_text):
+        raise CrewError(
+            f"run {run_id!r} asserts gate 'passed' but its cited log "
+            f"{log_path!r} carries the shell's 'command not found' "
+            "diagnostic: the command never ran, so the log is no evidence "
+            "of the pass being asserted. Found: no evidence the command ran. "
+            "Re-run the check and cite its log, or re-promote with the "
+            "verdict the evidence actually shows"
+        )
+
+
 def _prose_changed_paths_name_no_paths(manifest: Mapping[str, Any]) -> bool:
     """True when the manifest's changed_paths declare none in prose.
 
@@ -1230,6 +1331,7 @@ def complete(
             commits=commit_list,
             no_commit_reason=no_commit,
         )
+        _require_gate_log_agrees(run_id, gate_check, verdict=verdict)
         from reckon.crew.recovery import classify_pointer
 
         classified = classify_pointer(record)
