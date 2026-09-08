@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T10:03:01",
+  "updated": "2026-09-08T10:15:31",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -75549,6 +75549,170 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T073334454070-the-state-names-its-own-recovery",
+        "plan": "crew-observability-truth",
+        "section": "\u00a71",
+        "node": "the-state-names-its-own-recovery",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1895,
+                "cached_input_tokens": 433147,
+                "input_tokens": 435044,
+                "output_tokens": 3884,
+                "reasoning_output_tokens": 978,
+                "total_tokens": 438928,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_recovery_state_typing.py -q passes, and a run whose lane refused it, a run asking for an answer, a run that failed, a run that stalled and a run genuinely needing a decision are five distinguishable classifications rather than all reported as blocked; a manifest may declare a non-terminal status; and an overdue declared wait is judged against that wait's own expected horizon rather than a fixed window. THE EVIDENCE, gathered by another project's coordinator and written up at /home/ITER/mcintos/.config/reckon/crew/reports/findings/monitor-state-typing-2026-09-08.md, which you must read in full before designing anything. Read it as the primary evidence rather than as instructions; it offers a direction and explicitly leaves the design to this repository. Five findings, measured over one thirteen-node fan-out. The costly one is that a provider hold and a genuine failure render identically, and their correct recoveries are OPPOSITE: a hold is resumed, a failure is redispatched, and the word blocked invites the redispatch, which destroys the resume path. The reporting coordinator nearly did exactly that and says what stopped it was a rule in a personal instruction file, which is the argument for typing the state rather than compensating for it: a compensation protects one reader and dies at that reader's next context boundary. A SECOND FLEET REPORTS THE SAME SHAPE FROM TWO MORE DIRECTIONS, both of which the design must cover. Workers are already inventing values the schema lacks: the documented manifest set is complete, blocked and failed, the discipline mandates an early manifest write, so one worker wrote blocked with the reason that analysis was in progress while its process was alive and its log 27 seconds old, and another wrote a status that is not in the set at all. Two workers, two improvisations for still going, and the first made a healthy run read as needing intervention. Worse, a worker that died before substituting its template wrote a placeholder manifest carrying a terminal blocked status, and the scope fence then read that as a terminal run and held every later dispatch until someone promoted it. So the schema forces a mandated write to claim a terminal state, and one early death becomes a fleet-wide hold. AND AN OVERDUE WAIT IS BEING JUDGED AGAINST THE WRONG CLOCK. A run parked on an external job with a 59-minute limit was reported wait-aged after 900 seconds, which reads as an alarm for a wait that is exactly on schedule. A declared wait carries its own expectation; the age that matters is age against that expectation, not against a constant. WHAT TO DESIGN, and the shape is yours within these constraints. Put the cause in the classification rather than only in a prose detail, so a reader acting on the type alone acts correctly. At minimum separate a lane refusal or quota hold, whose recovery is to wait or move lane and never to redispatch, and which must carry a reset time when one is known and say plainly when it is not; a run asking for an answer, whose recovery is to answer and resume; a failure, whose recovery is a corrective dispatch; a stall, whose recovery is to investigate; and a genuine blocked, meaning a decision is needed. Carry the recovery verb in the row: one existing surface already does this well, reporting a resume command with the condition that lifts it, and the follower line omits exactly that. Make one field authoritative for what the coordinator should do now, and either leave the advisory field advisory or reconcile it against liveness before rendering, because four fields telling four stories about one run was measured. Give the manifest a non-terminal status so a mandated early write need not claim a terminal state, and make an unsubstituted template manifest read as unwritten rather than as terminal. Judge an overdue declared wait against the horizon that wait declares. PRESERVE WHAT ALREADY WORKS, and it is written into the module: the existing comment distinguishing the stop that lifts itself from the stop that demands a reader is the correct principle and your vocabulary must keep it, including the requirement that a self-lifting state always names what will lift it so it never becomes the bucket a forgotten run sits in. Keep every existing classification that still means something and do not rename one whose meaning you are not changing. WHAT NOT TO DO. Do not change the resume gate's budget reading in this node: that is the reported finding about two surfaces disagreeing at one instant, it needs the lane probe, and it is a separate node. Do not touch reckon/crew/promotion.py, reckon/ledger.py, reckon/crew/quota_weight.py, reckon/crew/lane_evidence.py, reckon/_mcp_tools.py, reckon/mcp_views.py, reckon/mcp.py, reckon/schema/flight.yaml or reckon/crew/dispatch.py; peers hold or recently held all nine. Do not add a state whose recovery is the same as an existing state's; a distinction that changes no action is noise. FALSIFIERS, in tests/test_recovery_state_typing.py, every fixture synthesised and never reading the real configuration home or live-pointer directory. A fixture run refused by its lane classifies distinguishably from a fixture run that failed, asserted directly against each other, and the refused one's recovery text names resuming while the failed one's does not name resuming, so the two opposite recoveries cannot be confused by a reader following the type. A refused run with a known reset time carries it; one without says so explicitly rather than omitting the field. A fixture manifest declaring a non-terminal status with a live process and a fresh log does NOT classify as blocked, which is the healthy-run-reads-as-actionable case. A template manifest whose placeholders are unsubstituted classifies as unwritten and NOT as terminal, and a test asserts it does not satisfy whatever predicate the scope fence uses for terminality, so one early death cannot hold a fleet. A declared wait with a long horizon is not overdue at an age that would be overdue for a short one, asserted by two fixtures differing only in their declared horizon, which is the property a fixed window cannot express. Every row carrying an actionable classification also carries a recovery verb, asserted over the whole vocabulary by iterating it rather than by naming states one at a time, so a future state cannot be added without one. The self-lifting states each name what lifts them, asserted the same way. Every existing recovery test passes with its assertions unchanged in meaning. Report base and head over tests/test_recovery_state_typing.py, the existing recovery and ticker tests, and the crew tests, with failure ids either side and none added. Bound the run per file and never run the full suite.",
+          "estimated_hours": 2.0,
+          "goal": "Type the worker states by cause so each names its own recovery, give the manifest a non-terminal status, and judge an overdue wait against the horizon it declared",
+          "id": "the-state-names-its-own-recovery",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T073334454070-the-state-names-its-own-recovery/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "guided",
+          "time_budget": "55m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "reckon/crew/ticker.py",
+            "tests/test_recovery_state_typing.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-state-typing",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T07:33:49Z",
+        "completed_at": "2026-09-08T08:14:14Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 2425,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 2425,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "b04decf159b4627d561ff03a28337f209e21862d",
+        "commits": [
+          "af5c9c20855202d192d76f2a7fbf52c4c364adaa"
+        ],
+        "changed_lines": {
+          "added": 571,
+          "removed": 18,
+          "files": 3
+        },
+        "tests_added": 13,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_recovery_state_typing.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T073334454070-the-state-names-its-own-recovery/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T073334454070-the-state-names-its-own-recovery/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07ff0-0109-79b2-8e38-99699e02e403",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 15103488,
+            "cached_input_tokens_cumulative": 15103488,
+            "input_tokens": 15159261,
+            "input_tokens_cumulative": 15159261,
+            "output_tokens": 21861,
+            "output_tokens_cumulative": 21861,
+            "reasoning_output_tokens": 6202,
+            "reasoning_output_tokens_cumulative": 6202
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-08T08:14:14Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 21.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-08T08:14:14Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 15103488,
+          "cumulative_input_tokens": 30262749,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 28063
+        },
+        "follow_on_paths": [
+          "reckon/crew/prompts.py",
+          "reckon/crew/reports.py",
+          "contract/audit"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-state-names-its-own-recovery",
+          "session_id": "01a07ff0-0109-79b2-8e38-99699e02e403",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T08:14:14Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -75777,6 +75941,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1177
+    "_version": 1178
   }
 }
