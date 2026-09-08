@@ -392,11 +392,30 @@
       strength of the table above.
     </p>
     <p>
+      <strong>One correction to this section, recorded because the mistake was the section's own
+      to make.</strong> Running the clean-and-ahead pair by hand during a live wave reported four
+      in-flight worktrees as reclaimable: each was clean and at a revision the primary branch
+      already held, because its worker had not committed yet. That is the same trap one step
+      further along &mdash; a tree is clean and reachable both when the work landed and when the
+      work has not started. A hand-rolled predicate carrying only those two conditions would
+      have deleted four live workers' trees.
+    </p>
+    <p>
+      The production scan is not that predicate and does not have that defect: it consults the
+      live claims and withheld all five running trees. The predicate this section asks for
+      therefore needs three conditions rather than two, and the third one already exists. What
+      the scan does <em>not</em> do is say why it withheld: every withheld row carried an empty
+      reason, so a reader sees a refusal with no cause and cannot tell a live run from an
+      unintegrated commit from a dirty tree. That is the gap worth closing here, and it is the
+      same shape as a refusal that names no verb.
+    </p>
+    <p>
       <em>Done when</em> a report names, for each of the nine commits, its subject, its changed
       files, its insertion and deletion counts, whether a probe line unique to the delta is
       absent from the primary branch, and a recommendation of land, re-derive, or discard with
-      the reason; when the reachability pair above is the documented predicate for worktree
-      cleanup, so a sweep refuses a tree that is clean and ahead rather than removing it; and
+      the reason; when the documented predicate for worktree cleanup carries all three conditions, so a sweep
+      refuses a tree that is clean and ahead, and refuses one whose run is still live, rather
+      than removing either; when every withheld row names which condition withheld it; and
       when each commit recommended for landing has been landed under its own audit and gate, or
       recorded as re-derive or discard with that reason on this section. Asserted by the report
       existing with nine rows and a recommendation in every one, by a cleanup dry run naming
