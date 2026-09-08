@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T09:54:09",
+  "updated": "2026-09-08T10:03:01",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -702,9 +702,11 @@
         "id": "crew-state-typing",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a07ff0-0109-79b2-8e38-99699e02e403",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a07ff0-0109-79b2-8e38-99699e02e403"
+        },
         "created": "2026-09-08"
       },
       {
@@ -75383,6 +75385,170 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T071648976640-the-rates-live-beside-the-lanes",
+        "plan": "crew-effort-routing",
+        "section": "\u00a71",
+        "node": "the-rates-live-beside-the-lanes",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1761,
+                "cached_input_tokens": 403516,
+                "input_tokens": 405279,
+                "output_tokens": 2424,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 407703,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_quota_weight.py -q passes, tests/test_skill_contracts.py reports no failure attributable to reckon/crew/quota_weight.py, and that module names no concrete model identifier and encodes no relative ordering between named models; the rates it applies arrive from configuration instead. THE VIOLATION, and it is the coordinator's doing. reckon/crew/quota_weight.py lines 17 to 19 declare three module constants binding a concrete model identifier each, and their names encode a hierarchy between them: one is the reference, one the middle, one the efficient member. A repository contract test fails on this, and the binding rule behind that test is that source, plans, skills and schemas may record task requirements and validation floors but must not prescribe concrete models, model families, or relative model hierarchies. A worker on an unrelated documentation node found the red test, correctly declined to fix it outside its scope, and reported it. The earlier brief for that module asked for exactly this shape, so the module did what it was told and the contract is what was wrong with the instruction. WHY THE RULE IS RIGHT HERE AND NOT MERELY A LINT. Two independent reasons, both of which this module already violates in substance. A rate is a moving number, and a moving number written into source is a fuse: when the vendor reprices, the module lies with no code change and no test failure. And a hierarchy in source makes the code the authority on which lane is stronger, which is a policy question the operator owns and which the surrounding design has deliberately refused to answer anywhere else \u2014 every other component built today reports and declines to rank. WHAT TO CHANGE. Take the rate table from the project's flight configuration through the existing flight reader rather than from module constants, so a lane's rate lives beside that lane's other declarations and a repricing is a configuration edit. Read the rates for the backends configuration declares; where a backend declares no rate, that backend must return the existing explicit unknown, which is the behaviour the module already has for an unrecognised identifier and which must be preserved exactly. Remove the three constants and every name that encodes a position in a hierarchy. Choose a reference for the dimensionless ratio without naming a model in source: derive it from the configuration itself, and state in a comment how the reference is chosen and why the choice cannot be a model name. If the configuration declares no rates at all, every lookup returns the unknown and nothing raises; a module that cannot price anything must say so rather than fall back to a table. ADD THE RATES TO CONFIGURATION AS PART OF THIS NODE, in the flight configuration schema and its declared defaults inside the repository, never in any file outside it: you must not edit anything under the user's home configuration directory. Put the per-million input and output rates alongside each backend's existing declaration in the repository's own schema and example or default configuration, so the shape is documented where a reader configuring a lane will meet it. The three rates currently in the module are the ones to carry across; take them from the module as it stands rather than from any other source, because preserving today's numbers exactly is what makes this a refactor whose behaviour a test can pin. WHAT NOT TO DO. Do not change the weighting arithmetic, the surcharge rule, the threshold constant, the per-request signature, the unknown behaviour, or the zero and negative handling: all six landed correctly an hour ago and are pinned by existing tests that must keep passing unchanged. Do not add a lane ranking, a recommendation or a default rate. Do not touch reckon/crew/lane_evidence.py, which imports this module and whose peer is finished but whose tests must keep passing, and do not touch reckon/crew/promotion.py, reckon/_mcp_tools.py, reckon/mcp_views.py, reckon/mcp.py or reckon/crew/dispatch.py; peers hold or recently held those. FALSIFIERS, in tests/test_quota_weight.py, every expected figure computed in the test from the configured rates rather than written as a literal. Every existing test in that file still passes with its assertions unchanged in meaning, which is the pin on the arithmetic; where a test previously imported a model constant, it now obtains that identifier from a test fixture configuration instead. Grep the module's own source text in a test and assert it contains no string matching a concrete model identifier and no identifier whose name encodes a hierarchy position, so the violation cannot return; state in the test docstring which contract that enforces and why. Three lanes configured with the current rates return weights in the same ratios the module returns today, asserted against ratios the test computes from the fixture configuration. A lane configured with no rate returns the explicit unknown, distinct from a zero and distinct from any priced lane's value. A configuration declaring no rates at all returns the unknown for every lane and raises nothing. The strict ordering property still holds across any three configured lanes whose rates differ, asserted from the fixture rather than from model names, so the property survives without the hierarchy that expressed it. Run tests/test_skill_contracts.py and report its exit status and its pass and fail counts at base and at head, requiring that the failure attributable to this module is gone and that no new failure appears; that test is the reason this node exists, so its result is the headline of your manifest. Also run tests/test_lane_evidence.py, since it imports this module, and report base and head. Bound the run per file and never run the full suite.",
+          "estimated_hours": 1.25,
+          "goal": "Move the lane rates from module constants into configuration so source names no model and encodes no hierarchy, preserving today's arithmetic exactly",
+          "id": "the-rates-live-beside-the-lanes",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T071648976640-the-rates-live-beside-the-lanes/manifest.md",
+          "plan": "crew-effort-routing",
+          "requested_backend": "codex-terra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/crew/quota_weight.py",
+            "reckon/_flight_schema.py",
+            "tests/test_quota_weight.py",
+            "reckon/schema/flight.yaml",
+            "reckon/schema/flight-defaults.yaml",
+            "docs/_shared/flight.schema.json",
+            "tests/test_lane_evidence.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-rate-config",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T07:17:25Z",
+        "completed_at": "2026-09-08T08:01:55Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 2670,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 2670,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "ca2556026824058e223b949c1a6f5b0837bdd0c5",
+        "commits": [
+          "b4988d8d47ddb414abd54bc32c950051225f51b5"
+        ],
+        "changed_lines": {
+          "added": 332,
+          "removed": 98,
+          "files": 7
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_skill_contracts.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T071648976640-the-rates-live-beside-the-lanes/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T071648976640-the-rates-live-beside-the-lanes/manifest.md",
+        "scope_changed": true,
+        "session_id": "01a07fe0-fc7a-7bd0-915e-c08d3df4c3fa",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 12953984,
+            "cached_input_tokens_cumulative": 12953984,
+            "input_tokens": 13000709,
+            "input_tokens_cumulative": 13000709,
+            "output_tokens": 21761,
+            "output_tokens_cumulative": 21761,
+            "reasoning_output_tokens": 4645,
+            "reasoning_output_tokens_cumulative": 4645
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-08T08:01:55Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 20.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-08T08:01:55Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 12953984,
+          "cumulative_input_tokens": 25954693,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 26406
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "Run tests",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "resume",
+        "attempt": 4,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-rates-live-beside-the-lanes",
+          "session_id": "01a07fe0-fc7a-7bd0-915e-c08d3df4c3fa",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T08:01:55Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -75611,6 +75777,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1175
+    "_version": 1177
   }
 }
