@@ -872,7 +872,9 @@ def test_complete_command_promotes_a_blocked_run_without_a_recoverable_session(
     )
 
     assert result.exit_code == 0, result.output
-    assert "resume_waiver" not in json.loads(result.output)["record"]
+    # The record always declares the waiver key for schema stability; a run
+    # that waived nothing carries None rather than an absent key.
+    assert json.loads(result.output)["record"]["resume_waiver"] is None
     assert not pointer_path(run_id).exists()
 
 
@@ -904,7 +906,7 @@ def test_a_blocked_run_with_no_recoverable_session_promotes_unchanged(
     )
 
     assert promoted["pointer_removed"] is True
-    assert "resume_waiver" not in promoted["record"]
+    assert promoted["record"]["resume_waiver"] is None
 
 
 def test_a_passing_gate_promotes_whatever_its_session(
@@ -927,7 +929,7 @@ def test_a_passing_gate_promotes_whatever_its_session(
     )
 
     assert promoted["pointer_removed"] is True
-    assert "resume_waiver" not in promoted["record"]
+    assert promoted["record"]["resume_waiver"] is None
     assert promoted["record"]["session_id"] == "sess-live-3"
 
 
@@ -952,7 +954,7 @@ def test_a_run_terminal_for_another_reason_is_unaffected(
     )
 
     assert promoted["pointer_removed"] is True
-    assert "resume_waiver" not in promoted["record"]
+    assert promoted["record"]["resume_waiver"] is None
 
 
 @pytest.mark.parametrize(
@@ -1086,7 +1088,7 @@ def test_an_unrecoverable_session_releases_its_worktree(
 
     assert promoted["release"]["worktree_released"] is True
     assert not worktree.exists()
-    assert "worktree_retention" not in promoted["record"]
+    assert promoted["record"]["worktree_retention"] is None
 
 
 def test_a_resume_waiver_retains_the_worktree_by_default(
@@ -1152,5 +1154,5 @@ def test_a_resume_waiver_can_explicitly_discard_the_worktree(
 
     assert promoted["release"]["worktree_released"] is True
     assert not worktree.exists()
-    assert "worktree_retention" not in promoted["record"]
+    assert promoted["record"]["worktree_retention"] is None
     assert promoted["record"]["resume_waiver"]["worktree_discarded"] is True
