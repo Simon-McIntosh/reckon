@@ -67,8 +67,6 @@ RECOVERY_CLASSES = (
     "waiting",
     "paused",
     "stopped",
-    "scoring",
-    "promotable",
     "completed_unpromoted",
     "blocked",
     "failed",
@@ -2026,7 +2024,7 @@ def _watch_snapshot(
     # their process is alive, so this reducer consumes that decision instead of
     # deriving a second verdict from the manifest.
     if classification == "scoring":
-        state = "unpromoted"
+        state = "completed_unpromoted"
     elif classification in {"promotable", "completed_unpromoted"}:
         state = "complete"
     elif classification == WAITING_STATUS:
@@ -2177,13 +2175,7 @@ def _watch_snapshot(
 # keeping healthy waits out of both work-in-progress and needs-action figures.
 # Every snapshot belongs to exactly one bucket, so the figures still add up.
 FLEET_WORKING_STATES = ("dispatched", "working", "running")
-FLEET_UNPROMOTED_STATES = (
-    "complete",
-    "completed_unpromoted",
-    "scoring",
-    "promotable",
-    "unpromoted",
-)
+FLEET_UNPROMOTED_STATES = ("complete", "completed_unpromoted")
 FLEET_WAITING_STATES = tuple(sorted(WAITING_STATES))
 # The blocked bucket is the action set minus the waiting family. The action set
 # is the marker set — every state whose row a reader should look at, an overdue

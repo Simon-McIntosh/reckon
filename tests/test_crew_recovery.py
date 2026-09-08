@@ -351,7 +351,7 @@ def test_dead_process_never_counts_as_working_at_any_phase(home) -> None:
 @pytest.mark.parametrize(
     ("status", "stopped_classification", "stopped_state"),
     [
-        ("complete", "scoring", "unpromoted"),
+        ("complete", "scoring", "completed_unpromoted"),
         ("blocked", "blocked", "blocked"),
         ("failed", "failed", "failed"),
     ],
