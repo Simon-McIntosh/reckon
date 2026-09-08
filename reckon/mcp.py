@@ -2995,9 +2995,9 @@ def _crew(
             "error": "invalid_view",
             "detail": (
                 "view must be directory, drain, scopes, summary, flight, live, "
-                "records, ledger, budget or lanes; routing is the cross-ledger cost "
-                "view, runs is the compact joined view, and fleet is the "
-                "cross-project view"
+                "records, ledger or budget; lanes is the endpoint quota view, "
+                "routing is the cross-ledger cost view, runs is the compact "
+                "joined view, and fleet is the cross-project view"
             ),
         }
     try:
