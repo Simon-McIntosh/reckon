@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-07T17:27:37",
+  "updated": "2026-09-08T05:55:10",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -71665,6 +71665,154 @@
           "role": "documentation",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260908T034022502138-reader-chrome-labels-come-from-the-declaration",
+        "plan": "gif-tab-and-artifact-download",
+        "section": "\u00a72",
+        "node": "reader-chrome-labels-come-from-the-declaration",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1260,
+                "cached_input_tokens": 320053,
+                "input_tokens": 321315,
+                "output_tokens": 1431,
+                "reasoning_output_tokens": 511,
+                "total_tokens": 322746,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "798e59ac-3d9b-497a-824a-44b7647c524e",
+            "session_id": "ship-s16"
+          },
+          "done_when": "In docs/ui/shell-titlebar.jsx the reader back control resolves its text from the published route declaration's label, and no kind literal or capitalisation fallback decides it; a browser check reports the back control reading 'Animations' for a gif reader and 'Figures' for a figure reader, and reports zero controls whose text equals a raw kind token across all five kinds. Leave the parent-reference chain and the metadata rows alone: they fall through to the figure-shaped branch, which is already right for an animation because those rows carry for_plan and dims. Separately, and as a read-only measurement over docs/ui, report every remaining site where a kind literal or a capitalisation fallback decides a user-visible label, searching by the pattern rather than by the kind name because a missed site never mentions the new kind; list any outside your write path as follow_ons rather than editing them. Report pass counts for tests/test_spa_reader_provenance.py and tests/test_spa_artifact_routes.py before and after against base HEAD with no new failures.",
+          "estimated_hours": 1.5,
+          "goal": "The reader's back control names its index from the route declaration, so an animation reader offers Animations rather than a capitalised kind token.",
+          "id": "reader-chrome-labels-come-from-the-declaration",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T034022502138-reader-chrome-labels-come-from-the-declaration/manifest.md",
+          "plan": "gif-tab-and-artifact-download",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "docs/ui/shell-titlebar.jsx"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "codex-a",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T03:40:33Z",
+        "completed_at": "2026-09-08T03:53:21Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 768,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 768,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "27aae271409eaa5514c400189a3902573e447c9b",
+        "commits": [
+          "eb1f82fa4257e9e5172d948bf349b2dc5c06fec1"
+        ],
+        "changed_lines": {
+          "added": 3,
+          "removed": 1,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=<worktree> /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_reader_provenance.py tests/test_spa_artifact_routes.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T034022502138-reader-chrome-labels-come-from-the-declaration/ui-kind-label-reviewed-census.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T034022502138-reader-chrome-labels-come-from-the-declaration/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07a9f-12ab-7191-a257-0f59bd481734",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 0,
+            "cached_input_tokens_cumulative": 4229120,
+            "input_tokens": 0,
+            "input_tokens_cumulative": 4553655,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 18170,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 6056
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 24226,
+          "peak_input_tokens": 8782775
+        },
+        "follow_on_paths": [
+          "docs/ui/shell.jsx:27",
+          "docs/ui/shell-plans.jsx:190",
+          "archive-literal/raw-kind",
+          "docs/ui/shell-plans.jsx:194",
+          "docs/ui/plan.jsx:198-200",
+          "kind/label",
+          "docs/ui/plan.jsx:823",
+          "docs/ui/home.jsx:139",
+          "docs/ui/plan.jsx:226",
+          "docs/ui/graph.jsx:784",
+          "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T034022502138-reader-chrome-labels-come-from-the-declaration/ui-kind-label-reviewed-census.md;"
+        ],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16/reader-chrome-labels-come-from-the-declaration",
+          "session_id": "01a07a9f-12ab-7191-a257-0f59bd481734",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T03:53:21Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        }
       }
     ],
     "holds": [
@@ -71893,6 +72041,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1124
+    "_version": 1125
   }
 }
