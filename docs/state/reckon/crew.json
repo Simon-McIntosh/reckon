@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T09:14:54",
+  "updated": "2026-09-08T09:15:57",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -74426,6 +74426,164 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T035038669272-a-short-commit-list-is-reported",
+        "plan": "crew-observability-truth",
+        "section": "\u00a77",
+        "node": "a-short-commit-list-is-reported",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 791,
+                "cached_input_tokens": 827447,
+                "input_tokens": 828240,
+                "output_tokens": 699,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 828939,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_a_short_commit_list_is_reported.py -q passes, and a passing promotion presenting fewer commits than its own manifest declares is reported, naming both counts and the missing revisions. THE MEASUREMENT, arriving independently from three sessions across two fleets. One audited 720 ledger rows carrying both a commits list and a manifest commits line: 534 agree, 62 have a ledger list that is a strict SUBSET of the manifest's, and 124 disagree without being a subset. The worst subset case recorded 31 commits as one; another recorded 8 as 1. The 124 are the opposite defect, a worker manifest quoting a revision the coordinator declined in favour of the verified head, so there the presented list resolves and the manifest's does not. A naive mismatch count returns 186 and conflates the two, which would send a reader to the side whose record resolves on two thirds of the hits. THE CONSEQUENCE IS A DISABLED GUARD, NOT MERELY AN UNDER-RECORD. The out-of-scope boundary check runs against the commits a promotion presents, so an incomplete presentation silently switches it off: one reporting session had a scope extension reach the ledger with an empty acceptance list while the same check fired minutes later on a different node over a one-line test helper. WHAT ALREADY EXISTS AND WHY IT DOES NOT COVER THIS. reckon/crew/promotion.py already guards the commitless case: a passing verdict presenting no commits while the worktree head has moved off its base, and it consults the manifest's own commits line first for exactly this reason, with the measured incident recorded in its docstring. But its condition returns early whenever the presented list is non-empty, so a promotion presenting one commit where the manifest declares eight passes through untouched. The absence is caught and the shortfall is not. WHAT TO CHANGE. Extend that guard so a passing promotion whose presented commits are a strict subset of the manifest's declared commits is reported, naming how many were presented, how many the manifest declared, and which revisions are missing. Reuse the existing manifest commits reader rather than adding a second one. It reports and never refuses. The reporting sessions asked for refuse-or-warn and this node implements the warn half only, for a reason their own data supplies: 124 of their 720 rows have the manifest quoting a revision the coordinator declined in favour of one that resolves, so the manifest is not trustworthy enough to gate on, and a refusal keyed on it would block promotions whose presented list resolves at roughly twice the rate it caught incomplete ones. WHAT NOT TO CHANGE. Do not alter the existing commitless guard's behaviour or its message. Do not refuse any promotion. Do not treat a manifest revision absent from the repository as authoritative: a manifest may quote a revision that does not resolve, so verify each declared revision resolves in the run's repository before naming it as missing, and say nothing about one that does not resolve rather than reporting it as lost work. Do not report the non-subset case: the coordinator's list is right there and reporting it would name the list that resolves, which is the specific confusion the mismatch count causes. FALSIFIERS, asserted in tests/test_a_short_commit_list_is_reported.py against constructed manifests and a temporary repository. A promotion presenting one of three declared commits is reported, and the report names one, three, and the two missing revisions. A promotion presenting all declared commits is silent. A promotion presenting commits the manifest does not declare is silent, because that case is the coordinator having declined a worker's revision, where the presented list is the one that resolves in the repository. A promotion presenting a superset is silent. A manifest with no commits line at all is silent and does not raise. A declared revision that does not resolve in the repository is not named as missing, asserted with a well-formed forty-character revision that resolves to nothing. The existing commitless guard still fires on a passing promotion with an empty list whose worktree head moved off base, asserted unchanged. Nothing is refused: assert the promotion completes in every case above. Measure base and head over the new file plus every test importing reckon.crew.promotion; report failure ids either side and require none added, and bound the run per file rather than issuing one census.",
+          "estimated_hours": 1.0,
+          "goal": "Report a passing promotion that presents fewer commits than its manifest declares, so an incomplete presentation stops silently disabling the boundary check",
+          "id": "a-short-commit-list-is-reported",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T035038669272-a-short-commit-list-is-reported/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "tests/test_a_short_commit_list_is_reported.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-routing-evidence",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-08T03:50:45Z",
+        "completed_at": "2026-09-08T07:13:17.367Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 12105,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 12152,
+        "stalled": true,
+        "time_budget": "45m",
+        "base_sha": "27aae271409eaa5514c400189a3902573e447c9b",
+        "commits": [
+          "8963d3ed3fbcee0ef6ecac70e5c7bebeb25ba62f"
+        ],
+        "changed_lines": {
+          "added": 465,
+          "removed": 36,
+          "files": 2
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_a_short_commit_list_is_reported.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T035038669272-a-short-commit-list-is-reported/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T035038669272-a-short-commit-list-is-reported/manifest.md",
+        "scope_changed": false,
+        "session_id": "2fd9a748-eb46-415c-bb70-29dd5896e7dd",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 8441433,
+            "input_tokens_cumulative": 8441433,
+            "output_tokens": 49648,
+            "output_tokens_cumulative": 49648,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 8583596,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 12148.526,
+          "generated_tokens": 49648,
+          "generation_seconds": 11911.889,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 17.2,
+          "machine_seconds": 236.637,
+          "peak_input_tokens": 175157,
+          "tokens_per_second": 4.17,
+          "wall_tokens_per_second": 4.09
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_a_short_commit_list_is_reported.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-short-commit-list-is-reported",
+          "session_id": "2fd9a748-eb46-415c-bb70-29dd5896e7dd",
+          "session_source": "stream",
+          "retained_at": "2026-09-08T07:13:17.367Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -74654,6 +74812,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1163
+    "_version": 1164
   }
 }
