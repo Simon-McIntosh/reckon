@@ -93,6 +93,9 @@ STATE_HUE = {
         "wait-aged": 130,
         "unknown": 124,
         "unreadable": 124,
+        "unwritten": 124,
+        "held": 97,
+        "needs-help": 124,
         "unpromoted": 30,
     },
     "dark": {
@@ -110,6 +113,9 @@ STATE_HUE = {
         "wait-aged": 179,
         "unknown": 203,
         "unreadable": 203,
+        "unwritten": 203,
+        "held": 104,
+        "needs-help": 203,
         "unpromoted": 80,
     },
 }
@@ -541,7 +547,16 @@ class Ticker:
         the fleet's numbers instead.
         """
         node = str(event.get("node") or event.get("run_id") or "unknown")
-        to_state = _display_state(event.get("to_state") or "unknown")
+        raw_to_state = event.get("to_state") or "unknown"
+        typed_state = str(event.get("recovery_classification") or "")
+        # The compatibility lifecycle state may group several stops as
+        # blocked. The rendered state spells the cause-specific type when the
+        # producer supplied one, so the reader sees the recovery distinction.
+        to_state = _display_state(
+            typed_state
+            if typed_state in {"held", "needs-help", "unwritten"}
+            else raw_to_state
+        )
         baseline = is_baseline(event)
         # A baseline has no source state to show even when the record carries
         # one, because nothing moved: showing a from-state would claim a
@@ -603,18 +618,28 @@ class Ticker:
         entry carries a glyph saying whether a resume can answer it, derived from
         the persisted fact at render time rather than written into the record.
         """
-        explained = NEEDS_ACTION | {"waiting", "wait-aged"}
+        explained = NEEDS_ACTION | {
+            "waiting",
+            "wait-aged",
+            "held",
+            "needs-help",
+            "unwritten",
+        }
         if to_state not in explained or room < MIN_REASON:
             return ""
         detail = event.get("detail")
         if detail is None:
             detail = event.get("reason")
-        if to_state == "blocked":
+        if to_state in {"blocked", "needs-help"}:
             marker = _display_marker(event)
         else:
             marker = "!" if to_state == "wait-aged" else ""
-        reserve = len(marker) + (1 if marker else 0)
+        recovery = str(event.get("recovery") or "").strip()
+        recovery_prefix = f"{recovery}: " if recovery else ""
+        reserve = len(marker) + (1 if marker else 0) + len(recovery_prefix)
         clause = single_clause(detail, limit=max(0, room - reserve))
+        if recovery_prefix:
+            clause = recovery_prefix + clause if clause else recovery_prefix.rstrip()
         if marker and clause:
             return f"{marker} {clause}"
         return marker or clause
