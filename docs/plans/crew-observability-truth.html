@@ -340,6 +340,70 @@
       </tbody>
     </table>
 
+    <h2 id="s9">&#167;9 &mdash; Nine commits are reachable, unlanded, and owned by nobody</h2>
+    <p>
+      Cleanup that gates on reachability alone looks safe and is not. A worktree's HEAD is an
+      ancestor of the primary branch whenever the worker committed <em>and</em> whenever it
+      committed nothing, because the base revision it was created at is an ancestor too. So the
+      check that reads as &ldquo;this work is landed&rdquo; is satisfied identically by work that
+      never started, and a sweep trusting it deletes the difference without reporting anything.
+      The predicate is the same class of error as a guard trusting a registry over the machine:
+      a true statement standing in for the one that was needed.
+    </p>
+    <p>
+      The pair that actually sees the difference is a clean working tree <em>and</em> a nonempty
+      <code>git log main..HEAD</code>. Measured against every worktree of this repository, that
+      pair isolates nine commits across seven trees, none of whose content is on the primary
+      branch:
+    </p>
+    <table>
+      <thead><tr><th>Worktree</th><th>Commits ahead</th><th>Largest known delta</th></tr></thead>
+      <tbody>
+        <tr><td><code>model-and-effort-are-separate-columns</code></td><td>1</td>
+          <td>267 insertions, 86 deletions across the ticker, recovery and a layout test</td></tr>
+        <tr><td><code>liveness-is-derived-not-remembered</code></td><td>1</td>
+          <td>69 insertions, 31 deletions in the run reader</td></tr>
+        <tr><td><code>the-transition-carries-the-role-it-renders</code></td><td>1</td>
+          <td>34 insertions in recovery and its test</td></tr>
+        <tr><td><code>a-spent-lane-judgement-has-a-shelf-life</code></td><td>1</td>
+          <td>25 insertions in the budget reader</td></tr>
+        <tr><td><code>the-working-bucket-counts-only-work</code></td><td>1</td>
+          <td>8 insertions, 6 deletions in recovery</td></tr>
+        <tr><td><code>the-promotion-gate-reads-the-attribution</code></td><td>1</td>
+          <td>5 insertions adding a failure-attribution field</td></tr>
+        <tr><td><code>n-after-capture-evidence</code></td><td>1</td><td>not yet audited</td></tr>
+        <tr><td><code>session-keying-test-expectation</code></td><td>2</td><td>not yet audited</td></tr>
+      </tbody>
+    </table>
+    <p>
+      Every session that produced them has exited, so no coordinator is holding this work and no
+      transfer is pending. That removes the ownership question and leaves only the engineering
+      one, which is why it belongs here as a section rather than as a followup waiting on
+      somebody. It also sets the order: the deltas must be read before any of them is landed and
+      before any sweep is allowed near those trees, because the worktree is currently the only
+      copy of each. The three <code>shadow-</code> trees are dirty by construction and carry
+      nothing landable; they are not in scope.
+    </p>
+    <p>
+      A retained delta is not evidence that it should land. Some of these were superseded by
+      later work on the primary branch, and a delta whose surface has since moved is a repair to
+      re-derive rather than a patch to apply. So the audit reports a recommendation per commit
+      and the landing beat honours it per commit; nothing here is merged as a batch on the
+      strength of the table above.
+    </p>
+    <p>
+      <em>Done when</em> a report names, for each of the nine commits, its subject, its changed
+      files, its insertion and deletion counts, whether a probe line unique to the delta is
+      absent from the primary branch, and a recommendation of land, re-derive, or discard with
+      the reason; when the reachability pair above is the documented predicate for worktree
+      cleanup, so a sweep refuses a tree that is clean and ahead rather than removing it; and
+      when each commit recommended for landing has been landed under its own audit and gate, or
+      recorded as re-derive or discard with that reason on this section. Asserted by the report
+      existing with nine rows and a recommendation in every one, by a cleanup dry run naming
+      every clean-and-ahead tree as retained rather than disposable, and by this section
+      carrying a disposition for all nine.
+    </p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="liveness-source" data-choice="reconcile-on-read" data-by="lead" data-when="2026-09-03T07:38:29+00:00">
