@@ -189,7 +189,7 @@ def test_recover_never_overwrites_a_worker_manifest(
     result = recovery.recover(project="proj")
 
     assert manifest.read_text() == delivered
-    assert result["runs"][0]["classification"] == "completed_unpromoted"
+    assert result["runs"][0]["classification"] == "scoring"
     assert result["runs"][0]["manifest_derived"] is False
     assert "delivery_gap" not in crew.read_pointer(pointer["run_id"])
 
@@ -351,7 +351,7 @@ def test_dead_process_never_counts_as_working_at_any_phase(home) -> None:
 @pytest.mark.parametrize(
     ("status", "stopped_classification", "stopped_state"),
     [
-        ("complete", "completed_unpromoted", "complete"),
+        ("complete", "scoring", "unpromoted"),
         ("blocked", "blocked", "blocked"),
         ("failed", "failed", "failed"),
     ],
@@ -362,7 +362,7 @@ def test_live_process_outranks_every_terminal_manifest_status_until_it_stops(
     # Every status in the worker manifest's terminal vocabulary is provisional
     # while its writer remains alive, then regains its existing meaning once
     # that process stops. The stopped half guards against gaining optimism:
-    # delivered, blocked, and failed reports retain their distinct outcomes.
+    # scoring, blocked, and failed reports retain their distinct outcomes.
     manifest = home / "manifests" / f"r-live-{status}.md"
     manifest.parent.mkdir(parents=True, exist_ok=True)
     manifest.write_text(
@@ -1010,7 +1010,7 @@ def test_the_three_manifest_outcomes_stay_distinct(home) -> None:
         recovery.classify_pointer(p, now_seconds=time.time())["classification"]
         for p in (absent, truncated, readable)
     }
-    assert labels == {"abandoned", "unreadable", "completed_unpromoted"}
+    assert labels == {"abandoned", "unreadable", "scoring"}
 
 
 def test_unreadable_pointer_snapshots_unreadable_in_the_ticker_path(home) -> None:
