@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T08:08:41",
+  "updated": "2026-09-08T08:17:45",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -457,6 +457,15 @@
         "created": "2026-09-06"
       },
       {
+        "id": "crew-ledger-schema",
+        "harness": "codex-spark",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-08"
+      },
+      {
         "id": "crew-manifest-keys",
         "harness": "clive",
         "role": "implement",
@@ -592,6 +601,15 @@
         "session_model": null,
         "sessions": {},
         "created": "2026-09-06"
+      },
+      {
+        "id": "crew-routing-flag",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-08"
       },
       {
         "id": "crew-surface-consistent",
@@ -72845,6 +72863,109 @@
           "role": "documentation",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260908T061035924438-the-record-schema-declares-what-is-written",
+        "plan": "crew-observability-truth",
+        "section": "\u00a71",
+        "node": "the-record-schema-declares-what-is-written",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2043,
+                "cached_input_tokens": 258284,
+                "input_tokens": 260329,
+                "output_tokens": 827,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 261156,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_record_fields_declare_every_key.py -q passes, RECORD_FIELDS in reckon/ledger.py declares every key a promoted ledger row actually carries, and a test fails if a future key is written without being declared. THE EXACT CURRENT STATE, measured, so you do not need to search for it. reckon/ledger.py line 91 opens a module-level tuple named RECORD_FIELDS holding 36 string entries. Grepping the whole package for that name returns exactly one hit, its own definition line: nothing reads it. Meanwhile promoted rows across the mounted project ledgers carry 50 distinct keys, so the tuple that reads as the record schema is fourteen keys behind what is written and nothing would ever have said so. THE FOURTEEN MISSING KEYS, with the number of rows carrying each, which is the complete list and the only list: execution_fit on 2141 rows, attempt_kind on 2105, attempt on 2105, throughput on 705, worktree_retention on 559, no_commit on 303, dispute_count on 258, follow_on_paths on 254, scope_acceptances on 23, resume_waiver on 17, watch_override on 13, predecessor_run on 10, boundary_waiver on 3, commit_resolution on 2. WHAT TO CHANGE, AND IT IS SMALL. Add those fourteen names to the RECORD_FIELDS tuple. Place each one beside the declared key it belongs with rather than appending all fourteen at the end: attempt and attempt_kind near the dispatch identity keys, execution_fit near role and spec_level, throughput near wall_seconds and worker_seconds, no_commit and commit_resolution near commits, scope_acceptances near scope_changed, boundary_waiver and resume_waiver and watch_override and unreconciled_override together as the waivers, follow_on_paths and dispute_count and predecessor_run and worktree_retention near the outcome keys. Grouping is the whole value of the tuple to a reader, so do not sort it and do not append. Add one short comment above the tuple saying what the tuple is for and that a test holds it complete. Do not reorder or rename any key that is already declared. Do not change any other file. WHAT NOT TO DO. Do not delete the tuple even though nothing reads it; the test below is what gives it a job. Do not wire it into serialisation, validation, promotion or any writer: a tuple that starts filtering rows would silently drop any key it does not list, which is a far worse defect than the one you are fixing, and this node must not create it. Do not touch reckon/_backends.py, reckon/crew/quota_weight.py, reckon/crew/rollout.py or reckon/crew/context_budget.py; peers hold all four. Do not rewrite or migrate any ledger file. FALSIFIERS, in tests/test_record_fields_declare_every_key.py. The test reads the real mounted project ledgers, collects the union of keys over every promoted row it finds, and asserts that set is a subset of RECORD_FIELDS, reporting any undeclared key by name in the assertion message so a future failure tells the next reader exactly what to declare. It must PASS after your change and it must be written so that it WOULD HAVE FAILED before it, naming those fourteen: prove that by also asserting each of the fourteen names above is present in RECORD_FIELDS, listed explicitly in the test. Assert RECORD_FIELDS contains no duplicate entries, by comparing its length to the length of a set built from it. Assert every entry is a non-empty string. Assert the count of declared keys is at least fifty, computed from the collected union rather than written as a literal, so the number moves with reality instead of becoming a fuse. When the collected union of keys is empty, meaning no ledger file was opened and parsed, the test calls pytest.skip with a message naming the mount paths it tried, rather than asserting a subset relation over an empty set, which would pass while measuring nothing. Assert the collected union is non-empty before the subset assertion so the skip is the only path that avoids it. Run pytest on the new test file alone and on tests/test_ledger.py, report the exit status and the pass and fail counts for each at base and at head, and require no added failures. Do not run the full suite.",
+          "estimated_hours": 0.4,
+          "goal": "Declare in RECORD_FIELDS the fourteen keys promoted rows already carry, and hold it complete with a test that names any future undeclared key",
+          "id": "the-record-schema-declares-what-is-written",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T061035924438-the-record-schema-declares-what-is-written/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "15m",
+          "write_paths": [
+            "reckon/ledger.py",
+            "tests/test_record_fields_declare_every_key.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-ledger-schema",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T06:10:47Z",
+        "completed_at": "2026-09-08T06:11:19Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 32,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 32,
+        "stalled": false,
+        "time_budget": "15m",
+        "base_sha": "ceae8066ea8503b2ea9e54554392382812dfba52",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "not-run",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T061035924438-the-record-schema-declares-what-is-written/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07fa3-f96b-73c3-9fc0-88828c4c5229",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no events yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "dispute_count": "unknown",
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "Stopped by the coordinator within seconds of launch on discovering it had been routed to the default lane rather than the lane its member declared; no work was attempted and the worktree was still at its base.",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -73073,6 +73194,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1141
+    "_version": 1144
   }
 }
