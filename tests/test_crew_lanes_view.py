@@ -209,6 +209,11 @@ def test_crew_tool_accepts_lanes_and_keeps_unknown_view_refusal(
         "runs",
         lambda *args, **kwargs: lane_fixture["runs"],
     )
+    monkeypatch.setattr(
+        mcp.flight_module,
+        "mounted_project_docs",
+        lambda: {"proj": repository / "docs"},
+    )
     monkeypatch.setattr(mcp.crew_module, "list_live", list)
     monkeypatch.setattr(
         mcp_views.rollout_module,

@@ -3065,12 +3065,18 @@ def _crew(
             }
         if view == "lanes":
             config = flight_module.resolve(project, checkout_path=checkout_path).config
-            runs = list(ledger_module.runs(project, checkout_path))
-            runs.extend(
+            mounted = flight_module.mounted_project_docs()
+            ledger_sources: dict[str, str | None] = {
+                mounted_project: str(docs_dir.parent)
+                for mounted_project, docs_dir in mounted.items()
+            }
+            ledger_sources[project] = checkout_path or ledger_sources.get(project)
+            runs = [
                 record
-                for record in crew_module.list_live()
-                if str(record.get("project") or "") == project
-            )
+                for mounted_project, repository in ledger_sources.items()
+                for record in ledger_module.runs(mounted_project, repository)
+            ]
+            runs.extend(crew_module.list_live())
             return {
                 "ok": True,
                 "project": project,
