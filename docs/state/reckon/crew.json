@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T09:15:57",
+  "updated": "2026-09-08T09:26:13",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -578,9 +578,29 @@
         "created": "2026-09-08"
       },
       {
+        "id": "crew-rate-config",
+        "harness": "codex-terra",
+        "role": "implement",
+        "session_id": "01a07fe0-fc7a-7bd0-915e-c08d3df4c3fa",
+        "session_model": "gpt-5.6-terra",
+        "sessions": {
+          "{\"alias\":\"terra5.6\",\"backend\":\"codex-terra\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-terra\",\"sandbox\":\"worktree-full\"}": "01a07fe0-fc7a-7bd0-915e-c08d3df4c3fa"
+        },
+        "created": "2026-09-08"
+      },
+      {
         "id": "crew-rate-evidence",
         "harness": "codex",
         "role": "documentation",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-08"
+      },
+      {
+        "id": "crew-receipt-harvest",
+        "harness": "codex",
+        "role": "implement",
         "session_id": null,
         "session_model": null,
         "sessions": {},
@@ -74584,6 +74604,156 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T064205307776-the-lanes-view-says-who-will-serve",
+        "plan": "crew-observability-truth",
+        "section": "\u00a71",
+        "node": "the-lanes-view-says-who-will-serve",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 569,
+                "cached_input_tokens": 359027,
+                "input_tokens": 359598,
+                "output_tokens": 2733,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 362331,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_crew_lanes_view.py -q passes, the crew MCP tool accepts a lanes view, and that view returns one entry per configured backend carrying every quota horizon that backend reports with the length of each window, the effective context window, and the time each reading was observed, marking every figure it could not read as unmeasured rather than as zero. WHY THIS IS THE PRIORITY. Orchestrators across thirteen mounted projects choose a lane before every dispatch and currently have no way to see whether a lane will even serve them. The information exists on this machine and is unreachable in practice: it sits in the metered client's per-session receipt file, whose location a caller must know, whose records must be filtered, and whose structure is NOT UNIFORM between endpoint families. Measured within the last hour, on this host, one family reports its weekly window in the block's primary entry with the secondary entry null, while a second family reports its FIVE-HOUR window in primary and its weekly in secondary. So a reader that trusts position publishes a five-hour figure as a weekly one; that mistake was made in this repository today and is being repaired in the receipt module by a peer this hour. A shared read is the structural fix; a shared convention is not, because every session would re-derive it and diverge. Measured figures that make the point concrete: one family sits at 94 percent of a 300-minute window and 42 percent of a 10080-minute window at the same instant, so a dispatch there will be refused within the hour while its weekly budget is ample; and the two families report effective context windows of 258,400 and 121,600, a factor of two, which is the single best predictor of whether a node fits its lane and appears nowhere else. WHERE TO GET THE DATA. Read the receipt through reckon.crew.rollout, never by opening a session file yourself. That module is being changed by a peer this hour to key its quota readings by window length. If it exposes accessors that select a reading by window length, use them. If it does not yet, select from the readings it returns by their own window_minutes value, and never by their position in the block. Take the set of backends to report from the flight configuration through the existing flight reader, so a backend added to config appears without a code change. Do not add a rate, a price, or a token cost to this view; other modules own those. WHAT TO CHANGE, IN THREE PLACES. Add the lanes value to the crew tool's view literal in reckon/_mcp_tools.py. Compose the view in reckon/mcp_views.py alongside the existing view composers. Register or route it in reckon/mcp.py exactly as the sibling views are routed. Follow the existing views' shape rather than inventing a new response envelope. THE TOOL DESCRIPTION IS PART OF THE DELIVERABLE, NOT DOCUMENTATION. The stated purpose is that a session leader reaches for this before dispatch as a reflex, and a tool nobody reads the description of is a tool nobody calls. Write the lanes view's description so it says, in one or two plain sentences, that it reports which endpoints will currently serve a dispatch and how much of each quota window is left, and that it should be consulted before choosing a lane. Name the two horizons explicitly in the description so a caller knows both exist. Do not oversell it and do not describe it as a recommendation. THREE RULES, EACH FROM A MEASURED FAILURE, AND ALL THREE BINDING. Never aggregate the horizons or the families into one figure or one worst case: they are separate budgets with different reset times, measured four hours apart on the same account, and an orchestrator needs each. Every reading carries the time it was observed and the view carries the time it was composed, because a served-versus-held disagreement between two surfaces reading records of different ages was measured on this project today and a live view without a stamp reproduces that defect for a wider audience. And the view reports availability and never selects, ranks or recommends a lane, and must say so in its description, because the orchestrator decides and a view that picks hides the decision this surface exists to expose. AN UNREADABLE LANE IS NOT AN EXHAUSTED LANE AND NEITHER IS AN UNUSED ONE. A backend with no receipt to read, a backend whose receipt carries no rate limits, and a backend whose window genuinely reads zero percent used are three different states. Distinguish all three explicitly. Never report unmeasured as zero and never report it as full, because one invites a dispatch into a wall and the other holds work for no reason. FALSIFIERS, in tests/test_crew_lanes_view.py, every fixture constructed and every expected figure computed in the test rather than written as a literal, and no test may read a real session file or the real configuration home. A fixture backend whose receipt carries the weekly window in the first position and a second fixture backend carrying the identical weekly numbers in the second position report the SAME weekly figure, which is the property that makes position irrelevant and is the defect this view must not inherit. A fixture backend reporting 94 percent on a five-hour window and 42 percent on a weekly one reports both, under labels distinguished by window length, and the five-hour figure never appears as the weekly one, asserted against the weekly value directly. A fixture backend with no receipt reports unmeasured and NOT zero and NOT exhausted, asserted against a fixture backend that genuinely reads zero so the two cannot compare equal. A backend present in the fixture configuration but absent from every receipt still appears in the view, marked unmeasured, so a lane cannot vanish from the list by being idle. Every entry carries an observation time and the envelope carries a composition time. The view contains no field naming a chosen, best, recommended or preferred lane, asserted by scanning the returned keys and values for those words, which pins the no-recommendation rule against a future well-meaning addition. The crew tool accepts the lanes view without error and rejects an unknown view name as it does today. Measure base and head over the changed files and the tests that import reckon.mcp or reckon.mcp_views, report failure ids either side, require none added, bound the run per file, and never run the full suite for this node.",
+          "estimated_hours": 1.5,
+          "goal": "Expose a crew MCP lanes view reporting every endpoint's quota horizons, effective context window and observation time, distinguishing unreadable from unused and recommending nothing",
+          "id": "the-lanes-view-says-who-will-serve",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T064205307776-the-lanes-view-says-who-will-serve/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "55m",
+          "write_paths": [
+            "reckon/_mcp_tools.py",
+            "reckon/mcp_views.py",
+            "reckon/mcp.py",
+            "tests/test_crew_lanes_view.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-lanes-view",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T06:42:16Z",
+        "completed_at": "2026-09-08T07:25:19Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 2583,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 2583,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "07bf9f439ab47fb532593643fcf0fdd71ec73ca3",
+        "commits": [
+          "8fce05ae8d6ebdb0d1d9e3ebcc2ede229b91fa48",
+          "2b0316686f5cd9a5258ee76da32c997f751f68a3",
+          "eec97711208448ec7a5be89615766a1d4fe448b0",
+          "88819c884ddca280cc0a8d3754c8cc1ffb030d24"
+        ],
+        "changed_lines": {
+          "added": 506,
+          "removed": 3,
+          "files": 4
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_crew_lanes_view.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T064205307776-the-lanes-view-says-who-will-serve/live-lanes-probe.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T064205307776-the-lanes-view-says-who-will-serve/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07fc0-cc38-7d11-ac27-20367f582dee",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 20648832,
+            "cached_input_tokens_cumulative": 20648832,
+            "input_tokens": 20905817,
+            "input_tokens_cumulative": 20905817,
+            "output_tokens": 61465,
+            "output_tokens_cumulative": 61465,
+            "reasoning_output_tokens": 22676,
+            "reasoning_output_tokens_cumulative": 22676
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 20648832,
+          "cumulative_input_tokens": 41554649,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 84141
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-lanes-view-says-who-will-serve",
+          "session_id": "01a07fc0-cc38-7d11-ac27-20367f582dee",
+          "session_source": "stream",
+          "retained_at": "2026-09-08T07:25:19Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -74812,6 +74982,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1164
+    "_version": 1168
   }
 }
