@@ -620,9 +620,28 @@
       as a second variable and measures neither cleanly.
     </p>
     <p>
+      <strong>The dispatch path drops an override too, and inverts which one.</strong> Measured
+      on three runs of this session, read off the run records rather than the ticker: two
+      dispatched with <code>--set backends.&lt;name&gt;.effort=medium</code> resolved to
+      <code>high</code>, and one dispatched with
+      <code>--set roles.&lt;role&gt;.by_spec_level.&lt;level&gt;.effort=medium</code> resolved to
+      <code>medium</code>. So on dispatch the role overlay wins and the backend value is dropped,
+      while on shadow the backend value wins and the role overlay is dropped &mdash; mirror
+      images of one defect. Neither path refuses, warns, or records the override it discarded.
+    </p>
+    <p>
+      Which key is dropped decides what a coordinator is charged. The backend key is the one the
+      execution guidance offers as its own example, so a coordinator economising by the obvious
+      route is billed at the higher effort and told nothing; two of this session's three nodes
+      ran that way. That makes the silent drop a spend defect rather than only an attribution
+      one, and it is why the requirement below has to hold on both paths rather than on the
+      shadow alone.
+    </p>
+    <p>
       Done when a shadow resolves effort through the same path a dispatch does, so re-running a
       committed node reproduces its declared effort unless an override says otherwise; when an
-      override that cannot be applied is refused or recorded rather than dropped, since a
+      override that cannot be applied is refused or recorded rather than dropped on either the
+      dispatch or the shadow path, since a
       silently ignored override is indistinguishable from a lane that behaves oddly; when two
       shadows of one primary on one backend can coexist, each keeping its own retained patch, so a
       single-variable contrast is launchable at all; and when the resolved effort and the
