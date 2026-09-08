@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="doc">
   <meta name="plan-slug" content="deploy-matrix">
   <meta name="plan-title" content="The Deploy Matrix — every configured lane, with every cell a dated snapshot or marked unmeasured">
-  <meta name="plan-summary" content="One row per configured worker backend — clive deepseek-v4-flash, clive glm-5.3, codex sol, codex luna, codex terra, codex spark, claude sonnet 5, claude opus 5 — with metering and its binding window, charged tokens per node class, wall and throughput per node class, multimodal capability, the concurrency ceiling and what binds it, failure modes and their recoveries, and best-fit node classes. Every cell is either a dated snapshot with the ledger filter that reproduces it or explicitly marked unmeasured; a lane ceiling is stated to belong to its deployment and to be discovered, never assumed.">
+  <meta name="plan-summary" content="One row per configured worker backend — clive deepseek-v4-flash, withdrawn clive glm-5.3 retained as a measured record, codex sol, codex luna, codex terra, codex spark, claude sonnet 5, claude opus 5 — with metering and its binding window, charged tokens per node class, wall and throughput per node class, multimodal capability, the concurrency ceiling and what binds it, failure modes and their recoveries, and best-fit node classes. Every cell is either a dated snapshot with the ledger filter that reproduces it or explicitly marked unmeasured; a lane ceiling is stated to belong to its deployment and to be discovered, never assumed.">
   <meta name="plan-status" content="reference">
   <meta name="plan-tags" content="routing,backends,dispatch,crew">
   <meta name="plan-informs" content="crew-effort-routing">
@@ -80,7 +80,7 @@
       </thead>
       <tbody>
         <tr><td><code>clive</code></td><td>clive</td><td><code>deepseek-v4-flash</code></td><td>xhigh</td><td>90m (advisory, not enforced)</td><td>no</td><td>default for <code>--local</code></td></tr>
-        <tr><td><code>clive-glm</code></td><td>clive</td><td><code>glm-5.3</code></td><td>xhigh</td><td>25m</td><td>no</td><td>shadow / override only</td></tr>
+        <tr><td><code>clive-glm</code><br><strong>WITHDRAWN 2026-09-08</strong></td><td>clive</td><td><code>glm-5.3</code></td><td>xhigh</td><td>25m</td><td>no</td><td>withdrawn — the model does not fit the serving deployment alongside capacity for other work; the historical row remains as the measured record</td></tr>
         <tr><td><code>codex</code></td><td>codex</td><td><code>gpt-5.6-sol</code></td><td>high</td><td>25m</td><td>yes</td><td>role default / overlay</td></tr>
         <tr><td><code>codex-luna</code></td><td>codex</td><td><code>gpt-5.6-luna</code></td><td>xhigh</td><td>25m</td><td>yes</td><td>shadow / override only</td></tr>
         <tr><td><code>codex-terra</code></td><td>codex</td><td><code>gpt-5.6-terra</code></td><td>xhigh</td><td>25m</td><td>yes</td><td>shadow / override only</td></tr>
@@ -144,24 +144,33 @@
             cost inverts.</td>
         </tr>
         <tr>
-          <td><code>clive-glm</code><br>glm-5.3</td>
-          <td><strong>Unmetered</strong> — same local serving deployment; no provider meter.</td>
+          <td><code>clive-glm</code><br>glm-5.3<br><strong>WITHDRAWN 2026-09-08</strong></td>
+          <td><strong>Unmetered</strong> — same local serving deployment; no provider meter.
+            <strong>Withdrawn 2026-09-08:</strong> the model does not fit this serving deployment
+            alongside capacity for other work. The row remains because a measured lane is a
+            record, even after withdrawal.</td>
           <td><strong>M 2026-09-06</strong> implement 55k median input — understated because every
-            run died early (0/9). Measurement / review node classes: <strong>UNMEASURED</strong>.</td>
+            run died early (0/9). Measurement / review node classes: <strong>UNMEASURED</strong>.
+            <strong>M 2026-09-08 classification:</strong> nine rows, zero passing; six are
+            malformed-node coordinator brief defects and three are infrastructure failures that
+            trace to a window defect on this lane. Two thirds of the sample therefore never tested
+            the lane, and the other third did not produce a clean model result.</td>
           <td><strong>M 2026-09-06</strong> implement wall median 5.2 min, but 0/9 passed — the
-            wall is a death, not a delivery. Measurement / review: <strong>UNMEASURED</strong>.</td>
+            wall is a death, not a delivery. Measurement / review: <strong>UNMEASURED</strong>.
+            <strong>M 2026-09-08:</strong> no clean measurement of glm exists; the honest reading
+            is not that the model performed poorly, but that none of the nine rows measured it
+            cleanly.</td>
           <td><strong>Text-only</strong> — declared served checkpoint family (w4a8). Image
             <code>Read</code> unsupported.</td>
-          <td>Same deployment admission as <code>clive</code>; the binding constraint measured is
-            the serving window — nodes sized beyond the 96k context die (see §6). Routing is
-            shadow / override only, so no fleet ceiling has been exercised. Ceiling for a routed
-            life: <strong>UNMEASURED</strong>.</td>
-          <td>Window-overflow deaths: nodes that do not fit the 96k window are refused without
-            work. Recovery: size the node to the window or do not route here — the lane stays for
-            shadow qualification only, per the effort-routing snapshot (0/9, dated 2026-09-05).</td>
-          <td>None routed today. Shadow-qualification candidate only; its snapshot reads 0/9, every
-            failure a window-overflow death, indicting the node-to-lane pairing rather than the
-            model.</td>
+          <td>Same deployment admission as <code>clive</code>; three infrastructure failures trace
+            to the 96k serving-window defect (M 2026-09-08). No fleet ceiling was exercised before
+            withdrawal, so a routed-lane ceiling remains <strong>UNMEASURED</strong>.</td>
+          <td><strong>M 2026-09-08:</strong> six malformed-node brief defects and three
+            infrastructure failures from the lane's window defect. Recovery is withdrawal, not
+            another routing attempt: preserve the row and do not infer model quality from it.</td>
+          <td><strong>Withdrawn 2026-09-08.</strong> No node class is routed here. The lane did not
+            fit the serving deployment alongside capacity for other work, and its 0/9 record is
+            explicitly not a clean performance measurement.</td>
         </tr>
         <tr>
           <td><code>codex</code><br>gpt-5.6-sol</td>
@@ -224,10 +233,10 @@
         </tr>
         <tr>
           <td><code>codex-spark</code><br>gpt-5.3-codex-spark</td>
-          <td><strong>Metered — its own dedicated small weekly meter</strong>, far smaller than the
-            account's. Measured (dated 2026-08-25): eight runs ≈ 41M input tokens ≈ 60% of the
-            weekly meter — a lane capacity of roughly a dozen runs a week at that profile.
-            <code>budget_check: true</code>.</td>
+          <td><strong>Metered — its own dedicated small weekly meter</strong>, separate from the
+            primary account window. Measured (dated 2026-08-25): eight runs ≈ 41M input tokens ≈
+            60% of that weekly meter. This is one observed profile, not a lane ceiling, and no
+            run-count ceiling is inferred from it. <code>budget_check: true</code>.</td>
           <td><strong>M 2026-09-06</strong> implement 4.1M median input, n=9, every run exact-tier.
             Measurement / review: <strong>UNMEASURED</strong> — the lane never takes a judgment
             role.</td>
@@ -261,8 +270,9 @@
           <td>Overage hold — refuse-with-reset semantics of a metered lane; recovery is holding
             until the window or probing the lane directly. This family serves while the codex
             account is held, which is what made it the fleet-extension lane.</td>
-          <td>Default lane for unnamed dispatches since 2026-09-05 (medium effort); implements fit
-            a medium default. Heavy implementation and measurement are routed onward to
+          <td>Default lane for unnamed dispatches since 2026-09-05, configured at medium effort;
+            this cross-model row supplies no within-model effort comparison. Heavy implementation
+            and measurement are routed onward to
             <code>claude-opus</code> by override; scouts and attribution route to the local lane
             by <code>--local</code>.</td>
         </tr>
@@ -304,7 +314,7 @@
           <text x="140" y="82">claude opus 5</text>
           <text x="140" y="102">codex sol</text>
           <text x="140" y="122">codex-luna (n=2)</text>
-          <text x="140" y="142">clive-glm (0/9 died)</text>
+          <text x="140" y="142">clive-glm (withdrawn; 0/9)</text>
           <text x="140" y="162">clive dsv4-flash</text>
         </g>
         <!-- scale: 1 min = 9 px, cap 55 min; bar ends at bar_x + width, value label sits beside -->
@@ -362,7 +372,7 @@
         <tr><td rowspan="3"><code>clive</code></td><td>implement</td><td>66</td><td>56/66</td><td>24.7 / 74.2 min</td><td>18.4 (n=33)</td><td>5.5M all fresh</td></tr>
         <tr><td>measurement</td><td>6</td><td>6/6</td><td>15.8 min</td><td>UNMEASURED</td><td>4.2M</td></tr>
         <tr><td>review</td><td>3</td><td>0/3</td><td>13.5 min</td><td>UNMEASURED</td><td>3.9M</td></tr>
-        <tr><td rowspan="1"><code>clive-glm</code></td><td>implement</td><td>9</td><td>0/9</td><td>5.2 min (died)</td><td>UNMEASURED</td><td>55k (early death)</td></tr>
+        <tr><td rowspan="1"><code>clive-glm</code><br>withdrawn 2026-09-08</td><td>implement</td><td>9</td><td>0/9</td><td>5.2 min (died)</td><td>UNMEASURED</td><td>55k (early death)</td></tr>
         <tr><td rowspan="3"><code>codex</code></td><td>implement</td><td>451</td><td>409/451</td><td>9.0 / 25.1 min</td><td>UNMEASURED</td><td>6.6M total; split unmeasured</td></tr>
         <tr><td>measurement</td><td>30</td><td>28/30</td><td>8.0 min</td><td>UNMEASURED</td><td>3.9M</td></tr>
         <tr><td>review</td><td>12</td><td>8/12</td><td>8.2 min</td><td>UNMEASURED</td><td>12.8M</td></tr>
@@ -375,6 +385,51 @@
         <tr><td>review</td><td>1</td><td>1/1</td><td>17.5 min</td><td>UNMEASURED</td><td>sample, not a figure</td></tr>
       </tbody>
     </table>
+    <h3 id="s4-effort-durable">Measured 2026-09-08 — effort versus durable unit-of-work cost</h3>
+    <p>
+      The committed ledger's only two-effort sample large enough to compare is the
+      <code>gpt-5.6-sol</code> model. The median and the durable-unit cost must be shown
+      together because <strong>the median inverts the conclusion</strong>: medium finishes the
+      median run sooner, while high produces durable work with substantially less wall per
+      delivered node.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Sol effort</th><th>Runs</th><th>Durable</th><th>Durable rate</th><th>Median wall</th><th>Total wall</th><th>Wall per durable node</th><th>Generated tokens per durable node</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>high</td><td>266</td><td>246</td><td>92%</td><td>568 s</td><td>38.2 h</td><td><strong>558 s</strong></td><td>6.9 thousand</td></tr>
+        <tr><td>medium</td><td>236</td><td>207</td><td>88%</td><td>492 s</td><td>48.6 h</td><td><strong>846 s</strong></td><td>3.6 thousand</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>M 2026-09-08:</strong> medium is faster per run by median and
+      <strong>52 percent dearer per durable node</strong>; it consumed more total wall while
+      producing fewer durable nodes. The finding is that effort trades turns rather than buying
+      quality, and the unit-of-work evidence favours a uniform high effort over a dispatch routing
+      knob. The generated-token counter-figure runs the other way — 6.9 thousand at high against
+      3.6 thousand at medium — but generation is not what the subscription meter charges.
+      Cumulative input per run is not recorded anywhere in the ledger, only a peak, so cumulative
+      input per durable node and exact quota cost per durable node are <strong>UNMEASURED</strong>;
+      wall per durable node is the strongest available evidence and is not a proxy for quota cost.
+    </p>
+    <h3 id="s4-spark-profile">Measured 2026-09-08 — the spark profile is narrow and consistent</h3>
+    <table>
+      <thead>
+        <tr><th>Rows</th><th>Role</th><th>Specification level</th><th>Durable</th><th>Median wall</th><th>Wall per durable node</th><th>Relative to sol/high</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>9</td><td><code>implement</code> only</td><td><code>exact</code> only</td><td>8</td><td>236 s</td><td><strong>249 s</strong></td><td>2.2 times cheaper per durable node than sol at high effort, measured in wall</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>M 2026-09-08:</strong> all nine rows have one role and one specification level.
+      This supports a hypothesis about focused, well-specified implementation work and supports
+      nothing about any other node shape; it is not a lane ceiling. Spark carries its own separate quota window
+      rather than sharing the primary one, which is why this narrow profile is worth
+      measuring rather than merely fast. Spark rows carry no generated-token figures, so its token
+      cost is <strong>UNMEASURED</strong> too.
+    </p>
     <p>
       Two reading traps are stated rather than hidden. First, token totals across lanes are not
       directly comparable: <code>clive</code> is all fresh (the lane has no prompt caching —
@@ -426,11 +481,12 @@
             the admission limit itself moved between 6 and 16 within one day and must be
             re-read, not quoted.</td>
           <td>server admission → 429 backpressure, which sheds a run as blocked/resumable.</td></tr>
-        <tr><td><code>clive-glm</code></td><td>server admission (unmetered) + window bound</td>
-          <td>not routed, so no fleet ceiling exercised — <strong>UNMEASURED</strong> as a routed
-            lane; the measured binding is node size vs the 96k window.</td>
-          <td>node sized past the serving window (window-overflow death); server admission if
-            it were routed.</td></tr>
+        <tr><td><code>clive-glm</code><br>withdrawn 2026-09-08</td><td>server admission (unmetered) + window bound</td>
+          <td><strong>Withdrawn 2026-09-08</strong>, so no fleet ceiling was exercised —
+            <strong>UNMEASURED</strong> as a routed lane. Three infrastructure failures trace to
+            the 96k window defect; the other six rows were malformed-node brief defects.</td>
+          <td>withdrawn because the model does not fit this deployment alongside capacity for
+            other work; its historical rows remain in the matrix.</td></tr>
         <tr><td><code>codex</code></td><td>account rolling window (metered)</td>
           <td>no numeric ceiling recorded — the account's utilisation gates admission; observed
             refusal at high utilisation with a reset days out.</td>
@@ -441,8 +497,9 @@
           <td><strong>UNMEASURED</strong> — defined-not-defaulted, nothing routes to either.</td>
           <td>unmeasured; presumed account window by configuration.</td></tr>
         <tr><td><code>codex-spark</code></td><td>dedicated weekly meter</td>
-          <td>capacity ≈ a dozen runs/week at the measured profile (8 runs ≈ 60% of the weekly
-            meter, M 2026-08-25).</td>
+          <td>8 runs ≈ 60% of the weekly meter (M 2026-08-25), retained as one observed profile
+            rather than converted into a run-count ceiling; the numeric ceiling is
+            <strong>UNMEASURED</strong>.</td>
           <td>the small weekly window — preflight reads real headroom because
             <code>budget_check</code> is on.</td></tr>
         <tr><td><code>claude</code> / <code>claude-opus</code></td><td>subscription overage window</td>
@@ -555,11 +612,14 @@
             <code>unrecognized_model</code> line is boilerplate that appears on healthy runs too.
             Retry exhaustion mid-turn reads as "process gone without a complete manifest" and is
             separated by the retry count, not the sentence.</td></tr>
-        <tr><td><code>clive-glm</code></td>
-          <td>Window-overflow death when a node exceeds the 96k serving window (0/9, every run a
-            size death).</td>
-          <td>Size the node to the window or do not route here; the lane remains shadow-only.</td>
-          <td>Deaths were early (worker med 70 s) — the wall is a refusal, not a delivery.</td></tr>
+        <tr><td><code>clive-glm</code><br><strong>withdrawn 2026-09-08</strong></td>
+          <td><strong>M 2026-09-08:</strong> no clean model measurement exists. Of nine rows with
+            zero passing, six are malformed-node coordinator brief defects and three are
+            infrastructure failures tracing to the lane's 96k window defect.</td>
+          <td>Do not route here. The model does not fit the serving deployment alongside capacity
+            for other work; retain the row as the record of why the lane was withdrawn.</td>
+          <td>Deaths were early (worker med 70 s) — the wall is a refusal, not a delivery, and the
+            0/9 must not be read as poor model performance.</td></tr>
         <tr><td><code>codex</code></td>
           <td>Metered refusal naming a reset.</td>
           <td>Hold until the reset or probe the lane — a stated reset has measured to be wrong by
@@ -600,9 +660,10 @@
     <ul>
       <li><strong>Exact, mechanical, small (≤ 0.5 worker-hour), named check:</strong> the local
         lane (<code>--local</code> → <code>clive</code>) is qualified for it — 39/45 exact on the
-        reckon ledger at 2026-09-06 and 42/44 in the dated cross-project snapshot — and
-        <code>codex-spark</code> covers the same shape when the meter is being saved. Never let an
-        open or under-specified node land on either.</li>
+        reckon ledger at 2026-09-06 and 42/44 in the dated cross-project snapshot. The
+        <code>codex-spark</code> profile is only a hypothesis for focused exact implementation:
+        nine rows, one role, one specification level, eight durable (M 2026-09-08). It supports
+        no claim about another shape and is not a lane ceiling.</li>
       <li><strong>Guided with the measurement handed over:</strong> local lane is permitted only
         with the measurement handed over as established fact; otherwise <code>codex</code> (high)
         or <code>claude-opus</code> by <code>--set</code>.</li>
@@ -612,6 +673,12 @@
       <li><strong>Review:</strong> measured on <code>codex</code> (8/12) and a single
         <code>claude-opus</code> pass; unproven on <code>clive</code> (0/3). Review routing should
         stay on a frontier lane; the local lane has no authority argument yet.</li>
+      <li><strong>Effort within <code>gpt-5.6-sol</code>:</strong> use uniform high effort rather
+        than an effort-routing knob. The dated durable-unit comparison is 558 seconds of wall per
+        durable node at high against 846 seconds at medium, even though the median run is 568
+        seconds at high against 492 at medium (M 2026-09-08).</li>
+      <li><strong><code>clive-glm</code>:</strong> withdrawn 2026-09-08. Its nine historical rows
+        remain visible, but none is a clean model measurement and no node class is routed there.</li>
     </ul>
     <p>
       Two quantities the routing reading must not confuse. <em>Cost ordering:</em> the local lane
