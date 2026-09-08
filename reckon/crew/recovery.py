@@ -14,6 +14,7 @@ from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterator, Mapping
 
+from reckon.crew import review as review_module
 from reckon.crew import runs
 from reckon.crew.node import (
     DEFAULT_WATCH_STALL_WINDOW,
@@ -102,6 +103,8 @@ RECOVERY_VERBS = {
     "stalled": "investigate",
     "blocked": "decide",
     "stopped": "inspect",
+    "scoring": "review",
+    "promotable": "promote",
     "unreadable": "repair",
     "unwritten": "resume",
     "ready": "resume",
@@ -117,6 +120,7 @@ ACTIONABLE_RECOVERY_CLASSIFICATIONS = frozenset(
         "stalled",
         "blocked",
         "stopped",
+        "scoring",
         "unreadable",
         "unwritten",
         "ready",
@@ -124,6 +128,66 @@ ACTIONABLE_RECOVERY_CLASSIFICATIONS = frozenset(
         "wait-aged",
     }
 )
+
+
+def _review_dispatch_action(record: Mapping[str, Any]) -> str:
+    """Return the review dispatch that advances one scoring run."""
+    node = record.get("node") or {}
+    run_id = str(record.get("run_id") or "")
+    project = str(record.get("project") or "")
+    plan = str(node.get("plan") or "")
+    section = str(node.get("section") or "")
+    source_node = str(node.get("id") or run_id)
+    session = str(record.get("session") or "<session>")
+    time_budget = str(node.get("time_budget") or "20m")
+    goal = f"attach an independent review to run {run_id}"
+    done_when = f"the review for {run_id} parses all five score dimensions"
+    return " ".join(
+        (
+            "reckon crew dispatch",
+            f"--project {shlex.quote(project)}",
+            f"--plan {shlex.quote(plan)}",
+            f"--section {shlex.quote(section)}",
+            "--role review --spec-level exact",
+            f"--node {shlex.quote(f'review-of-{source_node}')}",
+            f"--goal {shlex.quote(goal)}",
+            f"--done-when {shlex.quote(done_when)}",
+            f"--write-path {shlex.quote(str(review_module.review_path(project, run_id)))}",
+            f"--time-budget {shlex.quote(time_budget)}",
+            f"--session {shlex.quote(session)} --local",
+        )
+    )
+
+
+def _stored_review(record: Mapping[str, Any]) -> tuple[dict[str, Any] | None, str]:
+    """Read one run's review without collapsing unreadable data into absence."""
+    run_id = str(record.get("run_id") or "")
+    project = str(record.get("project") or "")
+    if not run_id or not project:
+        return None, ""
+    try:
+        review = review_module.read_review(project, run_id)
+    except (OSError, ValueError) as exc:
+        return {}, str(exc)
+    if review is not None and not isinstance(review, dict):
+        return {}, "stored review is not a JSON object"
+    return review, ""
+
+
+def _review_is_complete(review: Mapping[str, Any] | None) -> bool:
+    """Whether a stored review contains every independently scored dimension."""
+    if not review or review.get("status") != "parsed":
+        return False
+    scores = review.get("scores")
+    return (
+        isinstance(scores, Mapping)
+        and set(review_module.REVIEW_DIMENSIONS).issubset(scores)
+        and not review.get("absent")
+        and isinstance(review.get("total"), int)
+        and not isinstance(review.get("total"), bool)
+    )
+
+
 SELF_LIFTING_RECOVERY_CLASSIFICATIONS = frozenset({"waiting", "paused"})
 DEFAULT_LIFTING_CONDITIONS = {
     "waiting": "the declared condition reaches one of its terminal states",
@@ -1124,6 +1188,11 @@ def classify_pointer(
     terminal_at = None
     terminal_age_seconds = None
     deferred_outcome = alive is True and manifest_status in TERMINAL_MANIFEST_STATUSES
+    review: dict[str, Any] | None = None
+    review_error = ""
+    if manifest_status == "complete" and not deferred_outcome:
+        review, review_error = _stored_review(record)
+    review_complete = _review_is_complete(review)
     if manifest_status in TERMINAL_MANIFEST_STATUSES and not deferred_outcome:
         terminal_seconds = manifest.stat().st_mtime
         terminal_at = (
@@ -1150,13 +1219,29 @@ def classify_pointer(
         detail = "the process is alive"
         action = f"reckon crew observe --run {run_id}"
     elif manifest_status == "complete":
-        classification = "completed_unpromoted"
-        detail = (
-            "the worker manifest reports completion and the run is still a "
-            "pointer; promoting it moves the delivered record into the repository ledger"
-        )
-        action = f"reckon crew complete --run {run_id} --gate <verdict>"
-        action += "".join(f" --commit {commit}" for commit in manifest_commits)
+        if review_complete:
+            classification = "promotable"
+            detail = (
+                "the worker manifest reports completion and an independent "
+                "parsed review is attached; the run is ready for promotion"
+            )
+            action = f"reckon crew complete --run {run_id} --gate <verdict>"
+            action += "".join(f" --commit {commit}" for commit in manifest_commits)
+        else:
+            classification = "scoring"
+            if review_error:
+                review_detail = f"the stored review could not be read: {review_error}"
+            elif review is None:
+                review_detail = "no independent review is attached"
+            else:
+                review_detail = (
+                    f"the attached review is {review.get('status') or 'incomplete'}"
+                )
+            detail = (
+                "the worker manifest reports completion, but "
+                f"{review_detail}; an independent review must be produced before promotion"
+            )
+            action = _review_dispatch_action(record)
     elif manifest_status == "blocked":
         classification = "blocked"
         # A blocked transition explains itself from the best source available,
@@ -1582,6 +1667,18 @@ def classify_pointer(
         # no manifest was present or readable, so absence never looks like a
         # digest to compare against.
         "manifest_digest": manifest_digest,
+        # Review presence and readability are separate facts. An emitted review
+        # that did not parse is evidence to repair, never an absent review that
+        # can be silently regenerated without showing what the reviewer wrote.
+        "review_present": review is not None or bool(review_error),
+        "review_status": (
+            "unreadable"
+            if review_error
+            else str(review.get("status") or "") or None
+            if review is not None
+            else None
+        ),
+        "review_error": review_error or None,
         "terminal_at": terminal_at,
         "terminal_age_seconds": terminal_age_seconds,
         "log_age_seconds": age,
@@ -1748,7 +1845,8 @@ def overdue_unreconciled_runs(
         row = classify_pointer(pointer, now_seconds=now_seconds)
         age = row.get("terminal_age_seconds")
         if (
-            row["classification"] in {"completed_unpromoted", "blocked", "paused"}
+            row["classification"]
+            in {"scoring", "promotable", "completed_unpromoted", "blocked", "paused"}
             and isinstance(age, int)
             and age > grace_seconds
         ):
@@ -1925,7 +2023,9 @@ def _watch_snapshot(
     # classifier also defers complete and failed reports while the pointer says
     # their process is alive, so this reducer consumes that decision instead of
     # deriving a second verdict from the manifest.
-    if classification == "completed_unpromoted":
+    if classification == "scoring":
+        state = "completed_unpromoted"
+    elif classification in {"promotable", "completed_unpromoted"}:
         state = "complete"
     elif classification == WAITING_STATUS:
         # A declared external wait stays in the waiting family even when it has
@@ -2521,7 +2621,13 @@ def recover(
         reports.append(report)
     counts = {
         name: sum(1 for item in reports if item["classification"] == name)
-        for name in ("running", "completed_unpromoted", "abandoned")
+        for name in (
+            "running",
+            "scoring",
+            "promotable",
+            "completed_unpromoted",
+            "abandoned",
+        )
     }
     for name in ("waiting", "paused", "stopped", "blocked", "failed", "unreadable"):
         count = sum(1 for item in reports if item["classification"] == name)
