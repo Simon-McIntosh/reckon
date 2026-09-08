@@ -120,6 +120,8 @@ function ReaderChrome({
   onToggleFocus,
 }) {
   const kind = canonicalReaderKind(item?.type);
+  const indexLabel = window.ReckonShell.route.ARTIFACT_ROUTES
+    .find(candidate => candidate.key === kind)?.label;
   const trail = readerSourceTrail(item, state);
   const metadata = readerMetadataRows(item, project);
   const dependencyLabel = dependencyCone
@@ -134,7 +136,7 @@ function ReaderChrome({
   return (
     <>
       <nav className="r-reading-controls" aria-label="Reader controls">
-        <button type="button" className="r-reading-back" onClick={onBack}>← {kind === "figure" ? "Figures" : `${kind[0].toUpperCase()}${kind.slice(1)}`}</button>
+        <button type="button" className="r-reading-back" onClick={onBack}>← {indexLabel}</button>
         <span className="r-reading-paging">
           <button type="button" onClick={() => onStep(-1)} aria-label="Previous item in rendered list" disabled={position.current <= 1}>‹</button>
           <span className="r-reading-position" role="status">{position.current} / {position.total}</span>
