@@ -804,10 +804,27 @@
       fence read the lane as clear; the declaration is already load-bearing there.
     </p>
     <p>
-      <em>Also done when</em> a backend that declares neither a budget check nor an explicit
-      unmetered status is reported at configuration resolution, naming the backend and both
-      declarations it could carry, so meteredness is a stated property of every lane rather than
-      an inference from a list this repository maintains by hand.
+      <strong>The fence covers the lane the orchestrators themselves run on, and that is the
+      strongest form of the argument.</strong> Measured: all three lanes of the interactive
+      family declare the budget check, so an undeclared dispatch there is refused too. A peer's
+      host records why that matters more than the batch case &mdash; that lane is where the
+      coordinators are running, so an unnamed dispatch onto it spends the short window three
+      coordinator sessions are working inside, at a cost no token price shows. It is the one lane
+      where the people doing the fencing bear the cost of not having it.
+    </p>
+    <p>
+      <em>Also done when</em> a backend whose meteredness is unstated is reported, so the
+      property is declared per lane rather than inferred from a list this repository maintains by
+      hand. Two constraints on that, both from measurement rather than preference. There is
+      currently no meteredness key on a backend at all &mdash; the union of every configured
+      backend's keys contains none &mdash; so this needs a declarable field added through the
+      generated-schema path, editing the schema source and regenerating rather than touching the
+      generated module. And the report belongs on the configuration-inspection surface, emitted
+      once where a reader is asking what the routing resolved to, NOT on each dispatch: today the
+      locally served lane and the in-harness backend are both unstated, so a per-dispatch report
+      would fire on every single dispatch on this host until a one-line host-configuration change
+      lands. A correct signal that appears on every dispatch is how a correct signal gets
+      ignored, which is the same failure as a refusal nobody reads.
     </p>
     <p>
       <em>Done when</em> a dispatch whose lane resolves to a metered backend without an
