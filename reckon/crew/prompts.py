@@ -6,6 +6,22 @@ from typing import Iterable, Mapping
 
 from reckon.crew.node import NEEDS_HELP_MARKER, TaskNode
 
+# The commit-and-manifest-early contract, embedded in every composed prompt.
+# It lives here so it reaches a worker who never reads a reference document:
+# the prompt embeds no protocol reference by design, so a discipline carried
+# only by a reference file reaches nobody. Kept as a standalone constant so a
+# test can compose with it masked out and diff against the live prompt, which
+# proves the addition is removable and nothing else changed. The reason states
+# loss recovery, never prevention: a durable write before a long generation
+# survives that generation failing.
+DURABLE_WRITE_CONTRACT = (
+    "CONTRACT — DURABLE WRITES\n"
+    "  Commit each deliverable as it completes rather than once at the end, and\n"
+    "  write your manifest carrying whatever you already hold before beginning\n"
+    "  any long output. This is recovery, not death prevention: a durable write\n"
+    "  preceding a long generation survives that generation failing."
+)
+
 # ── Prompt composition ──────────────────────────────────────────────────────
 
 
@@ -100,6 +116,8 @@ GOAL     {node.goal}
 PLAN     {project}:{node.plan}{section}
 ROLE     {node.role}
 {specification_guidance}{delivery_directory_note}
+
+{DURABLE_WRITE_CONTRACT}
 
 FENCE — SCOPE (exclusive write paths; nothing outside them)
 {scope_lines}
