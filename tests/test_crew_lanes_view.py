@@ -159,18 +159,16 @@ def test_missing_unreadable_unused_and_measured_zero_stay_distinct(
 
     assert missing["receipt_state"] == "unreadable"
     assert missing["effective_context_window"] == "unmeasured"
-    assert missing["serving_state"] == "unmeasured"
     assert missing["quota_windows"] == []
     assert missing["unmeasured"]["receipt"] == str(Unmeasured.MISSING_ROLLOUT.value)
 
     assert idle["receipt_state"] == "unused"
-    assert idle["serving_state"] == "unmeasured"
     assert idle["quota_windows"] == []
     assert idle != missing
 
     assert zero["used_percent"] == lane_fixture["zero_used"]
     assert zero["remaining_percent"] == 100 - lane_fixture["zero_used"]
-    assert lanes["delta"]["serving_state"] == "will_serve"
+    assert zero["serving_state"] == "will_serve"
     assert zero["used_percent"] != missing["effective_context_window"]
 
     assert quota_less["receipt_state"] == "readable"
@@ -188,6 +186,7 @@ def test_view_returns_every_configured_backend_and_no_routing_choice(
     assert {row["backend"] for row in view["lanes"]} == set(
         lane_fixture["config"]["backends"]
     )
+    assert all("serving_state" not in row for row in view["lanes"])
     returned = json.dumps(view).lower()
     for forbidden in ("chosen", "best", "recommended", "preferred"):
         assert forbidden not in returned

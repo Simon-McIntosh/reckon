@@ -167,6 +167,15 @@ def _quota_rows(
             "remaining_percent": remaining,
             "resets_at": reset,
             "observed_at": observed_at or "unmeasured",
+            "serving_state": (
+                "exhausted"
+                if isinstance(used, (int, float))
+                and not isinstance(used, bool)
+                and used >= 100
+                else "will_serve"
+                if isinstance(used, (int, float)) and not isinstance(used, bool)
+                else "unmeasured"
+            ),
         }
         reasons = {
             key: value
@@ -175,6 +184,7 @@ def _quota_rows(
                 ("remaining_percent", used_reason),
                 ("resets_at", reset_reason),
                 ("observed_at", None if observed_at else "no_observation_time"),
+                ("serving_state", used_reason),
             )
             if value is not None
         }
@@ -182,20 +192,6 @@ def _quota_rows(
             row["unmeasured"] = reasons
         rows.append(row)
     return rows, None
-
-
-def _serving_state(quota_rows: list[Mapping[str, Any]]) -> str:
-    used = [row.get("used_percent") for row in quota_rows]
-    measured = [
-        value
-        for value in used
-        if isinstance(value, (int, float)) and not isinstance(value, bool)
-    ]
-    if any(value >= 100 for value in measured):
-        return "exhausted"
-    if used and len(measured) == len(used):
-        return "will_serve"
-    return "unmeasured"
 
 
 def crew_lanes_view(
@@ -229,7 +225,6 @@ def crew_lanes_view(
                     "alias": settings.get("alias"),
                     "model": settings.get("model"),
                     "receipt_state": "unused",
-                    "serving_state": "unmeasured",
                     "observed_at": "unmeasured",
                     "effective_context_window": "unmeasured",
                     "quota_windows": [],
@@ -237,7 +232,6 @@ def crew_lanes_view(
                         "observed_at": "unused",
                         "effective_context_window": "unused",
                         "quota_windows": "unused",
-                        "serving_state": "unused",
                     },
                 }
             )
@@ -262,7 +256,6 @@ def crew_lanes_view(
             "alias": settings.get("alias"),
             "model": settings.get("model"),
             "receipt_state": "unreadable" if unreadable else "readable",
-            "serving_state": _serving_state(quota_rows),
             "observed_at": observed_at or "unmeasured",
             "effective_context_window": context_value,
             "quota_windows": quota_rows,
@@ -274,15 +267,6 @@ def crew_lanes_view(
                 ("observed_at", None if observed_at else "no_observation_time"),
                 ("effective_context_window", context_reason),
                 ("quota_windows", quota_reason),
-                (
-                    "serving_state",
-                    quota_reason
-                    or (
-                        "incomplete_rate_limit_value"
-                        if lane["serving_state"] == "unmeasured"
-                        else None
-                    ),
-                ),
             )
             if value is not None
         }
