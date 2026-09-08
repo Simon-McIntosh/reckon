@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T11:17:04",
+  "updated": "2026-09-08T11:26:48",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -533,6 +533,24 @@
       {
         "id": "crew-mcp-reach",
         "harness": "codex-luna",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-08"
+      },
+      {
+        "id": "crew-mcp-reach-sol",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-08"
+      },
+      {
+        "id": "crew-mcp-reach-terra",
+        "harness": "codex-terra",
         "role": "implement",
         "session_id": null,
         "session_model": null,
@@ -76389,6 +76407,164 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T092202057258-a-dispatched-worker-reaches-its-own-tools-terra",
+        "plan": "crew-observability-truth",
+        "section": "\u00a71",
+        "node": "a-dispatched-worker-reaches-its-own-tools-terra",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2028,
+                "cached_input_tokens": 630594,
+                "input_tokens": 632624,
+                "output_tokens": 2092,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 634716,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "A report file exists at the declared write path stating whether this worker could call the imas-dd MCP server from inside its own dispatched process, naming the tool it called, the version range that tool returned, and the verbatim error if it could not. WHY THIS NODE EXISTS ALONGSIDE A SIBLING THAT ALREADY PASSED. A worker on one model of this family established that a dispatched process reaches its harness's MCP servers, calling the data-dictionary server with no approval required and quoting its response. That settles the harness and the transport for THAT model. It does not settle this one: tool availability is configured per harness and could plausibly differ by model through context limits, tool-count truncation, or a model that simply declines to use a tool it can see. Those are different failures with the same appearance, so the check has to be run per lane rather than generalised from one pass. This node is that check for the model dispatching it. WHAT TO DO. Attempt to call the imas-dd MCP server for the range of IMAS data-dictionary versions it knows about \u2014 the earliest and the latest, and however it expresses the set between them. Discover the tool from the server rather than assuming a name, and record the exact tool name you called. Then write the report. THE REPORT MUST DISTINGUISH FOUR OUTCOMES and stating which one occurred is the deliverable. The server answered and you have a version range. The server was reachable but the call was refused or errored, with the verbatim error. The tools were not present in your process at all. Or the attempt could not be made for another reason you name. Do not collapse any into another and do not report an inability as a version range. THE ANTI-FABRICATION RULE IS THE POINT. You may know something about IMAS data-dictionary versions from training, and a plausible answer from memory would read identically in the report while being worthless as evidence about tool access. So for the successful case the report must carry the tool name and the response as the tool returned it, and must state that the figures came from that call. If you cannot call a tool you must NOT supply a version range from memory, from a file on disk, or from a web page: say the call failed and give the error. A version range without a tool name and a tool response is a failed node even if the numbers are right. Do not read any repository file, environment variable or configuration file to answer the version question. WHAT ELSE TO RECORD. List every MCP tool name visible in your process, and give the count. Report the count as a number and the names as a list, and if the list is empty say so as a list of length zero rather than as prose. NAME THE TOOLS EXACTLY AS YOUR PROCESS PRESENTS THEM, character for character, including every underscore: a coordinator reading a sibling report misjudged this surface by assuming a separator convention and matching a pattern that could not have matched what was there, so the verbatim spelling is itself evidence. Note whether any call required an approval you could not give, since some servers are configured with an approval mode and a non-interactive process cannot answer a prompt \u2014 a tool present but unusable without an approver is a distinct outcome from a tool that is absent, and is the one most likely to be misread. WHAT NOT TO DO. Write nothing outside the declared write path. Do not install, start, configure or edit any MCP server or configuration file. Do not fall back to calling the server over plain HTTP yourself: the question is what the harness gives you, and a manual request answers a different question. Do not run the repository's test suite; this node has no code gate. FALSIFIERS. The report exists at the declared path and names exactly one of the four outcomes. For the successful case it carries the tool name, the tool's own response, and the earliest and latest versions read from that response. For any unsuccessful case it carries the verbatim error text or the empty tool list. The report states the harness and the model it was produced by, read from your own runtime rather than from this brief, so a later reader can tell which lane was tested. Every tool name is quoted exactly as your process presents it. The report contains no version figure not attributable to a named tool response, which you confirm by rereading your own report before finishing and saying in the manifest that you did. State in the manifest the count of MCP tools you could see and whether the data-dictionary call succeeded.",
+          "estimated_hours": 0.5,
+          "goal": "Establish from inside a dispatched worker on this model whether it can call the imas-dd MCP server, naming the tool and its response or the verbatim failure",
+          "id": "a-dispatched-worker-reaches-its-own-tools-terra",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T092202057258-a-dispatched-worker-reaches-its-own-tools-terra/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "codex-terra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "25m",
+          "write_paths": [
+            "docs/evidence/dispatched-worker-tool-reach-terra.md"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-mcp-reach-terra",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T09:22:14Z",
+        "completed_at": "2026-09-08T09:24:52Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 158,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 158,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "f36c38ad4cb42cd37c1f1319cae517e0ec6a53a2",
+        "commits": [
+          "49929784a43ba38c0b217382bd507f38bfc1544d"
+        ],
+        "changed_lines": {
+          "added": 137,
+          "removed": 0,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "reckon audit-doc docs/evidence/dispatched-worker-tool-reach-terra.md",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T092202057258-a-dispatched-worker-reaches-its-own-tools-terra/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T092202057258-a-dispatched-worker-reaches-its-own-tools-terra/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a08053-40d3-7bc0-b7be-551f8029dce0",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 1095168,
+            "cached_input_tokens_cumulative": 1095168,
+            "input_tokens": 1181941,
+            "input_tokens_cumulative": 1181941,
+            "output_tokens": 6544,
+            "output_tokens_cumulative": 6544,
+            "reasoning_output_tokens": 2519,
+            "reasoning_output_tokens_cumulative": 2519
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-08T09:24:52Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 25.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-08T09:24:52Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 1095168,
+          "cumulative_input_tokens": 2277109,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 9063
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-dispatched-worker-reaches-its-own-tools-terra",
+          "session_id": "01a08053-40d3-7bc0-b7be-551f8029dce0",
+          "session_source": "stream",
+          "retained_at": "2026-09-08T09:24:52Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -76617,6 +76793,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1186
+    "_version": 1189
   }
 }
