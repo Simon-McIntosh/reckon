@@ -1300,7 +1300,7 @@ def test_fastmcp_signature_keeps_new_arguments_optional():
     tool = next(
         item
         for item in mcp_module.mcp._tool_manager.list_tools()
-        if item.name == "_read_plan"
+        if item.name == "read_plan"
     )
     required = set(tool.parameters.get("required") or [])
     properties = tool.parameters["properties"]
@@ -1312,7 +1312,7 @@ def test_fastmcp_edit_signature_discriminates_state_and_text_payloads():
     tool = next(
         item
         for item in mcp_module.mcp._tool_manager.list_tools()
-        if item.name == "_edit_plan"
+        if item.name == "edit_plan"
     )
     required = set(tool.parameters.get("required") or [])
     properties = tool.parameters["properties"]

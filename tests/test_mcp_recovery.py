@@ -44,7 +44,7 @@ def _invoke_tool(name: str, **kwargs):
 
 
 def _crew_entry(**kwargs):
-    return _invoke_tool("_crew", **kwargs)
+    return _invoke_tool("crew", **kwargs)
 
 
 @pytest.fixture()
@@ -397,8 +397,8 @@ def test_single_project_roadmap_defaults_to_summary_and_raw_is_explicit(
     monkeypatch.setattr(mcp_module, "list_followups_across", lambda *args, **kwargs: [])
     monkeypatch.setattr(mcp_module, "build_roadmap", lambda *args, **kwargs: raw)
 
-    summary = _invoke_tool("_roadmap", project=PROJECT)
-    lossless = _invoke_tool("_roadmap", project=PROJECT, view="raw")
+    summary = _invoke_tool("roadmap", project=PROJECT)
+    lossless = _invoke_tool("roadmap", project=PROJECT, view="raw")
 
     assert summary["view"] == "summary"
     assert summary["ready"] == 1
@@ -428,7 +428,7 @@ def test_audit_tool_validates_one_document_like_the_cli(
         for item in audit_file(document, project=PROJECT)
     ]
 
-    result = _invoke_tool("_audit", project=PROJECT, path=str(document))
+    result = _invoke_tool("audit", project=PROJECT, path=str(document))
 
     assert result["path"] == str(document)
     assert result["findings"] == expected

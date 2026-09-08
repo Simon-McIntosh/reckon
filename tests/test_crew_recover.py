@@ -549,7 +549,7 @@ def test_resume_ready_is_the_only_cli_spelling_and_matches_the_mcp_action(
     tool = next(
         item
         for item in mcp_module.mcp._tool_manager.list_tools()
-        if item.name == "_crew"
+        if item.name == "crew"
     )
     action = asyncio.run(
         tool.run({"action": "resume-ready", "project": PROJECT, "dry_run": True})

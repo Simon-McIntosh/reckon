@@ -194,7 +194,7 @@ def test_mcp_roadmap_preserves_named_decision_readiness(mounted_project) -> None
 def test_fastmcp_registers_one_edit_tool_and_roadmap() -> None:
     names = {item.name for item in mcp_module.mcp._tool_manager.list_tools()}
 
-    assert {"_roadmap", "_edit_plan"} <= names
+    assert {"roadmap", "edit_plan"} <= names
     assert "_edit_plan_text" not in names
 
 
