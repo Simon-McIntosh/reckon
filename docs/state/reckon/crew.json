@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T12:05:38",
+  "updated": "2026-09-08T12:27:31",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -77080,6 +77080,171 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T095227864758-a-met-wait-is-ready-not-abandoned",
+        "plan": "crew-observability-truth",
+        "section": "\u00a71",
+        "node": "a-met-wait-is-ready-not-abandoned",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2098,
+                "cached_input_tokens": 677970,
+                "input_tokens": 680070,
+                "output_tokens": 1041,
+                "reasoning_output_tokens": 294,
+                "total_tokens": 681111,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_a_met_wait_is_ready_not_abandoned.py -q passes, and a run whose declared wait has already reached one of its terminal states classifies as ready to resume and stays in the collection the resume sweep walks, rather than classifying as a dead worker. THE GAP, measured by another fleet against the code this repository landed an hour ago. That change made a declared wait outrank worker liveness, and it holds for a wait whose external condition is still PENDING: one run with a waiting manifest, a dead process and a running job classifies as waiting and the sweep counts it. It fails for a wait whose condition is already MET: a sibling run with a waiting manifest, all five wait fields well-formed, a dead process and a job that COMPLETED in two minutes classifies as abandoned with the detail that the process is gone without a complete manifest, and the sweep does not count it at all. So the discriminator has moved one step rather than disappearing, and it now falls exactly on the case the sweep exists for \u2014 the job finished, so the run should resume, and instead it leaves the set that would have woken it. A coordinator recovered it by hand. WHY THE EXISTING FALSIFIER DID NOT CATCH IT, which is the lesson to encode rather than just the bug to fix. The landed test asserts one manifest fixture twice, differing only in process liveness, and requires the same classification both ways. That ranges over liveness and NOT over the wait's own condition state, so every fixture it uses has a pending condition and the met case cannot appear. The property under test is two-dimensional and the test covered one dimension. This project has now shipped this same shape three times: a guard whose falsifier ranged over the population where the failure could not occur. WHAT TO CHANGE. When a manifest declares a wait, read the declared condition's state before concluding anything from process liveness, and classify on the pair. A pending condition with a dead process stays waiting, which is today's behaviour and must not regress. A MET condition \u2014 the probe reporting one of the states the manifest's terminal list names \u2014 is a run whose wait is over and whose recovery is to resume; give it the classification whose recovery verb is resume, and make sure it is in whatever collection the resume sweep consumes. Do not invent a new classification if an existing one already carries the resume verb and the right meaning; the vocabulary landed with several, and adding a fourth word for a state one of them already names is noise. Keep the overdue-wait handling and the declared-horizon judgement exactly as they are. THE PROBE IS THE INPUT AND IT MUST NOT BE TRUSTED BLINDLY. The manifest carries the probe as an argv array and the terminal states as a list, so the condition's state is obtainable, but a probe can fail, time out, print nothing, or print something matching no terminal state. Each of those is UNKNOWN, not met and not unmet: a run whose probe cannot answer must stay waiting rather than become abandoned, because a probe failure says nothing about the worker and abandoned is the state this project reserves for proof of death. Say that in a comment. Do not let a probe failure block or slow the classifier: it must remain a cheap read that cannot fail, so bound the probe and degrade to waiting on any fault. WHAT NOT TO TOUCH. Do not edit reckon/mcp_views.py, reckon/_backends.py or reckon/crew/promotion.py; peers hold all three. Do not change the wait field contract, the manifest schema, or the composed prompt. FALSIFIERS, in tests/test_a_met_wait_is_ready_not_abandoned.py, every probe stubbed, no test launching a real command or reading the real configuration home or live-pointer directory. RANGE OVER BOTH DIMENSIONS AS A GRID, which is the whole point: for each combination of process alive and process dead, against each of condition pending, condition met, and condition unknown, assert the classification, and assert it from one manifest fixture varying only those two inputs. Six cells, stated explicitly. A dead process with a met condition classifies to the type whose recovery verb is resume, and NOT to abandoned, asserted against abandoned's own value directly. A dead process with a pending condition still classifies waiting, pinning today's behaviour against regression. A dead process whose probe cannot answer classifies waiting and NOT abandoned. A met condition appears in the collection the resume sweep consumes, asserted by calling that path rather than by inspecting the classification, because the classification being right while the sweep set is wrong is the exact shape that lost two runs today. A probe that raises and a probe that times out both yield the unknown cell and do not raise. The classifier's probe invocation is bounded, asserted by a stub that would hang without a bound. Every existing recovery and state-typing test passes with its assertions unchanged. Report base and head over the new file, tests/test_recovery_state_typing.py, and the recovery and wait and resumption test files, with failure ids either side and none added. Bound the run per file and never run the full suite.",
+          "estimated_hours": 1.5,
+          "goal": "Classify a run whose declared wait has already met its terminal condition as ready to resume, and keep it in the sweep's collection",
+          "id": "a-met-wait-is-ready-not-abandoned",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T095227864758-a-met-wait-is-ready-not-abandoned/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "55m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_a_met_wait_is_ready_not_abandoned.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-met-wait",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T09:52:38Z",
+        "completed_at": "2026-09-08T10:26:29Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 2031,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 2031,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "0f76fc4210d55314bb181390320a8d642dee3590",
+        "commits": [
+          "8d13ba07db64794327f0a91470fcf13b1682f2e5"
+        ],
+        "changed_lines": {
+          "added": 365,
+          "removed": 8,
+          "files": 2
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_a_met_wait_is_ready_not_abandoned.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T095227864758-a-met-wait-is-ready-not-abandoned/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T095227864758-a-met-wait-is-ready-not-abandoned/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0806f-170a-7a81-87a4-bed2d1edca8a",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 20628096,
+            "cached_input_tokens_cumulative": 20628096,
+            "input_tokens": 20871196,
+            "input_tokens_cumulative": 20871196,
+            "output_tokens": 44680,
+            "output_tokens_cumulative": 44680,
+            "reasoning_output_tokens": 15977,
+            "reasoning_output_tokens_cumulative": 15977
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-08T10:26:29Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 30.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-08T10:26:29Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 20628096,
+          "cumulative_input_tokens": 41499292,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 60657
+        },
+        "follow_on_paths": [
+          "tests/test_recovery_state_typing.py::test_resume_sweep_keeps_a_dead_declared_wait_in_its_collection"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-met-wait-is-ready-not-abandoned",
+          "session_id": "01a0806f-170a-7a81-87a4-bed2d1edca8a",
+          "session_source": "stream",
+          "retained_at": "2026-09-08T10:26:29Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -77308,6 +77473,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1196
+    "_version": 1197
   }
 }
