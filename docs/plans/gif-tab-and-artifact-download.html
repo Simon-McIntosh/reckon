@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="gif-tab-and-artifact-download">
   <meta name="plan-title" content="Animations Get A Tab, Artifacts Get A Save">
   <meta name="plan-summary" content="A fifth artifact tab for animations, a save control derived server-side, and one kind list behind every tab instead of three that must agree.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="5.0">
   <meta name="plan-wall-clock-hours" content="2.0">
@@ -24,7 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-08">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="7">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
 <main class="plan-doc">
@@ -137,10 +138,11 @@
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-gtad-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-07" data-recommends-skill="/reckon-ship gif-tab-and-artifact-download" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-gtad-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-07" data-recommends-skill="/reckon-ship gif-tab-and-artifact-download" data-resolved-at="2026-09-08T04:19:14+00:00" data-resolved-by="reckon-ship (ship-s16)">
     <h4 class="r-fu-title">Land the kind-list collapse with the animations tab, then the save control</h4>
     <div class="r-fu-body"><p>Two nodes in series on one member, because both write the reader module and the second needs the first's kind plumbing. The animations tab is how the three-way collapse is demonstrated, so they are one node rather than two. The save control's enabled half is measured at a merged head carrying the peer session's <code>download</code> field; its disabled-everywhere state is correct and verifiable before that field exists. The served surface needs a server restart before either can be seen, because the animation row kind is Python and the running process holds pre-change code.</p></div>
     <pre class="r-fu-prompt">/reckon-ship gif-tab-and-artifact-download</pre>
+    <p class="r-fu-outcome"><p>Landed across five nodes rather than two, with the full record at <a href="/reckon/evidence/archive/gif-tab-and-artifact-download-landed">Animations And Saves: What Landed</a>.</p><p><strong>What the reader has:</strong> an Animations tab beside Figures carrying 51 animations with real dimensions; thumbnails and dimensions in that gallery; a save control on all five readers, enabled on the 495 rows carrying a fetchable file and greyed on 219 document rows by absence of a server value; and a back control reading <code>Animations</code>. Downloading confirmed by the lead.</p><p><strong>The count was the finding.</strong> Three hardcoded kind lists were named at authoring and there were five — two surfaced only after the first three were collapsed, one reported by a peer grepping the pattern and one found by the lead opening the page. A census then produced nine further candidates of which none is live. Collapsing the lists you can see does not tell you how many there are; only the pattern enumerates them, and the pattern over-reports, so each hit needs a judgement rather than an edit.</p><p>Outcome: done — no followup. Two items surfaced that belong in their own plans rather than as followups here, because a followup on a shipped plan is hidden from every open path: the served project index, which recomputes thirteen mounts serially and never warms at 28, 32 and 30 seconds across three calls and which made a working download look broken; and a local backend declaring no usable input window while its comment states the served context, which is a peer session's finding going to its own lead.</p></p>
     </article>
 </section>
 <section data-reckon="comments" id="comments" class="r-comments">
@@ -154,7 +156,10 @@
     <div class="r-comment-body"><p>The index derives thumbnail, dimensions and labels from the route declaration's reader metadata; both kind === figure branches are gone and a source assertion reports zero kind equality tests on that token. A browser check rendered 0 rows lacking an img, a src or dimensions on both indexes, and the label resolved to Animations rather than the raw token. 6 passed and 7 skipped before and after. Stated limit: that browser check ran against fixture state of 58 figure rows and 1 animation row, not the live 495 and 51, because the harness's HTTP navigation path faults on this host; the live rows carry the same href and dims fields, confirmed in the payload, but the rendered live gallery is confirmed only by the lead's own reload. This was a fourth hardcoded kind list outside the fence of the two nodes that collapsed the other three, and both their gates were green above a gallery showing rows with no picture.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260908T034022502138-reader-chrome-labels-come-from-the-declaration" data-who="codex-a" data-when="2026-09-08T03:53:21Z">
-    <div class="r-comment-body"><p>The reader back control resolves its text from the route declaration&#x27;s label: 5/5 labels match their declared route, a gif reader reads Animations, a figure reader reads Figures, zero raw-kind labels, and the capitalisation fallback is gone. 8 passed and 3 skipped before and after, zero added failures. The census it was asked for found nine further candidate sites and the coordinator judged none live for animations: five consult the declaration before their fallback, so an animation already resolves through it, and the remaining raw-token sites render a type badge where a type token is what is meant. So the defect class closes at five sites, three of which were wrong.</p></div>
+    <div class="r-comment-body"><p>The reader back control resolves its text from the route declaration's label: 5/5 labels match their declared route, a gif reader reads Animations, a figure reader reads Figures, zero raw-kind labels, and the capitalisation fallback is gone. 8 passed and 3 skipped before and after, zero added failures. The census it was asked for found nine further candidate sites and the coordinator judged none live for animations: five consult the declaration before their fallback, so an animation already resolves through it, and the remaining raw-token sites render a type badge where a type token is what is meant. So the defect class closes at five sites, three of which were wrong.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260908T035700501510-the-composed-state-carries-its-fixture-rows" data-who="codex-a" data-when="2026-09-08T04:05:54Z">
+    <div class="r-comment-body"><p>The composed test state now returns the inventory it builds, so the rendered probe sees one fixture row per declared route including the animation: 1 passed 1 failed before, 2 passed 0 failed after, failure delta -1, verified by the coordinator at the merged head on a browser-equipped host. The diagnosis given in the brief held exactly and the worker confirmed it rather than assuming: 5 routes, 5 generated rows, 0 discovery gif rows, and the composed inventory was previously the discovery inventary unchanged. It also added a non-browser assertion that every generated slug reaches the composed inventory, so the omission is now detectable where no browser exists, which is the half that was silent. The bare-slug plans map is not latent: readerItem checks the bare key before the prefixed one.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260907T072201293729-save-control-reads-one-server-field" data-who="codex-b" data-when="2026-09-07T07:35:18Z">
     <div class="r-comment-body"><p>One save control per artifact reader, disabled exactly on an absent or empty download href via disabled={!downloadHref} with zero artifact-kind names in the condition; 5/5 agreement on base-shaped rows, 2/2 enabled fixtures saving under the file basename, 3 passed before and after. Verified by the coordinator at the merged head against live rows: 495 of 495 figure and gif rows enable, 219 document rows grey, 11 passed. The lead confirmed a real download; initial slowness was server load, not the control.</p></div>

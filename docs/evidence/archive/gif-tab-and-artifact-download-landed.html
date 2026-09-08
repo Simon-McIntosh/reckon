@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="gif-tab-and-artifact-download-landed">
+  <meta name="plan-title" content="Animations And Saves: What Landed">
+  <meta name="plan-summary" content="Five nodes, five sites of one defect, and every count derived at assertion time because the corpus moved throughout.">
+  <meta name="plan-status" content="done">
+  <meta name="plan-evidence-for" content="gif-tab-and-artifact-download">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="spa">
+  <title>Animations And Saves: What Landed | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<header>
+  <p class="eyebrow">Execution record &middot; 2026-09-07 to 2026-09-08</p>
+  <h1>Animations And Saves: What Landed</h1>
+  <p class="lead">Two features were requested and five nodes were needed, because one defect had five sites and only three were visible when the plan was written. This record carries the measurements, the two claims that were withdrawn, and the counts that moved while the work was in flight.</p>
+</header>
+
+<h2 id="delivered">&#167;1 &mdash; What the reader has</h2>
+<table>
+  <thead><tr><th>Capability</th><th>Measured state</th><th>Commit</th></tr></thead>
+  <tbody>
+    <tr><td>Animations tab beside Figures</td><td>51 animation rows, own kind, real dimensions</td><td><code>4938eb3</code></td></tr>
+    <tr><td>Gallery thumbnail and dimensions</td><td>0 rows lacking an image on either index</td><td><code>fbd50cd</code></td></tr>
+    <tr><td>Save control, figures and animations</td><td>enabled on 495 of 495 rows carrying a fetchable file</td><td><code>dfbcc99</code></td></tr>
+    <tr><td>Save control, documents</td><td>greyed on 219 of 219, by absence of a server value</td><td><code>dfbcc99</code></td></tr>
+    <tr><td>Reader back control</td><td>reads <code>Animations</code>; 0 raw-kind labels across 5 kinds</td><td><code>eb1f82f</code></td></tr>
+    <tr><td>Rendered scroll probe</td><td>2 passed on a browser host; failure delta &minus;1</td><td><code>81b48ed</code></td></tr>
+  </tbody>
+</table>
+<p>The save control's enablement is <code>disabled={!downloadHref}</code> and names no artifact kind, so the greyed state on documents follows from an absent server field rather than from an enumeration in the surface. Whether an artifact can be saved is derived in Python and carried on the row, which is why a later decision about document downloads changes a server value and not the reader.</p>
+
+<h2 id="five-sites">&#167;2 &mdash; One defect, five sites, three wrong</h2>
+<p>A kind literal with a plausible fallback reports nothing and reads as a naming inconsistency rather than an error. Each site failed differently, and the three that were wrong were all found by someone looking at the page rather than by any check that ran.</p>
+<table>
+  <thead><tr><th>Site</th><th>Decided</th><th>Symptom for an animation</th><th>Found by</th></tr></thead>
+  <tbody>
+    <tr><td><code>ARTIFACT_ROUTES</code></td><td>tab rendering</td><td>no tab &mdash; the only honest failure</td><td>authoring</td></tr>
+    <tr><td><code>canvasViewForRoute</code></td><td>canvas selection</td><td>tab renders, opens the home dashboard</td><td>authoring</td></tr>
+    <tr><td><code>readerKindFromHash</code></td><td>item resolution</td><td>resolves a plan whose slug is an image path</td><td>authoring</td></tr>
+    <tr><td>index thumbnail and dimensions</td><td>gallery row chrome</td><td>row with no picture and no dimensions</td><td>the lead, opening the page</td></tr>
+    <tr><td>reader back control</td><td>index label</td><td>reads <code>&larr; Gif</code></td><td>a peer session, grepping the pattern</td></tr>
+  </tbody>
+</table>
+<p>A sixth site sat in the test fixture rather than the product: the scroll probe's composed state built one fixture row per declared route and then returned the discovery inventory instead, so the browser saw no animation row. This repository carries no animation of its own, which is why only the rendered half failed while the sibling assertion on the generator passed.</p>
+<p><strong>The census, and why it over-reports.</strong> A pattern sweep over the surface &mdash; equality tests against a kind variable, title-casing mechanisms, kind-keyed lookups with fallbacks, raw tokens in visible elements &mdash; returned nine further candidates. None is live: five consult the route declaration before their fallback, so an animation resolves through it and the fallback is reachable only for an undeclared kind, and the remainder render a type badge where a type token is what is meant. So the pattern enumerates the sites, because a missed site never mentions the new kind, and then each hit needs a judgement about whether its fallback happens to be right for the new case. Handing a sweep to a worker without that instruction is a licence to break working sites while repairing broken ones.</p>
+
+<h2 id="moving-counts">&#167;3 &mdash; Why nothing asserts a literal</h2>
+<p>The consuming repository was generating animations throughout, so every total moved while the work was specified.</p>
+<table>
+  <thead><tr><th>Reading</th><th>Static figures</th><th>Animations</th><th>Note</th></tr></thead>
+  <tbody>
+    <tr><td>first, 06:33Z</td><td>440</td><td>47</td><td>authoring</td></tr>
+    <tr><td>second</td><td>442</td><td>49</td><td>two landed mid-conversation</td></tr>
+    <tr><td>third</td><td>444</td><td>51</td><td>a peer's independent read</td></tr>
+    <tr><td>served payload</td><td colspan="2">495 figure + animation rows</td><td>0 of 219 document rows carry a download</td></tr>
+  </tbody>
+</table>
+<p>Two sessions' totals agreed at 495 from different components &mdash; 442 + 49 and 444 + 51 &mdash; so a total asserted as a literal would have passed for the wrong reason, which is a worse outcome than failing. Every gate compares a rendered count against a filesystem or discovery count taken at assertion time.</p>
+
+<h2 id="withdrawn">&#167;4 &mdash; Claims withdrawn</h2>
+<p>Recorded because each was stated confidently and each was wrong in a way worth keeping.</p>
+<ul>
+  <li><strong>&ldquo;The server restart broke the project selector.&rdquo;</strong> Attributed a slow selector to a cold cache after a restart. Three consecutive calls measured 28, 32 and 30 seconds: it never warms, so the previous process was equally slow and the restart was not the cause. The real defect is thirteen mounts recomputed serially with no caching, one repository costing 24 seconds by parsing 937 HTML files.</li>
+  <li><strong>&ldquo;Both features are live.&rdquo;</strong> Verified the served JavaScript and the served payload, then composed them into a conclusion about the rendered page. Both halves were true; the index module sat between them and was never read. Two valid facts about adjacent layers do not compose into a fact about the layer between them.</li>
+  <li><strong>&ldquo;The output reservation is a policy constant.&rdquo;</strong> Inferred a quarter from two exact figures on one lane. The sibling lane reserves 3.1 percent, so the reserve is per-model and the roundness was a coincidence. A fraction derived from a correct resolution inherits none of its authority.</li>
+  <li><strong>&ldquo;My context measurement went stale.&rdquo;</strong> Distrusting the five-day-old figure was right; concluding it had drifted was wrong. It named the usable input where the config named the served context, and the gap was exactly the output reservation. The first question is which quantity a figure names, not whether it has moved &mdash; assuming drift locates the error in the world rather than in the reading.</li>
+</ul>
+
+<h2 id="verification">&#167;5 &mdash; How it was verified, and the instrument that was missing</h2>
+<p>Every gate ran in a worker's own worktree; the merged-head checks are the coordinator's, because a worker asserting only its own commit cannot see what a pair does. The save control's greyed half was measured against live rows and its enabled half against a fixture, because its base predated the server field &mdash; the worker reported which half used which rather than claiming both, and the enabled-against-live-data check was the coordinator's.</p>
+<p><strong>The gap worth recording: no automated instrument here reads the rendered page against the live server.</strong> The browser harness's HTTP navigation path faults on this host, so rendered checks run against fixture state. That is why the index fix was verified against 58 figure rows and 1 animation row rather than the live 495 and 51, and why three of the five sites were found by the lead opening the page. A payload read and a source read cannot substitute; they are both producer-side.</p>
+<p>One misclassification is worth its own line. A rendered failure was labelled <code>navigation-never-completed</code> from the harness's stage marker while the browser's own stderr showed navigation completing and the evaluation throwing <code>fixture has no gif reader item</code>. Accepting the label &mdash; a known, pre-existing host fault &mdash; would have merged a broken fixture under cover of an infrastructure excuse. Read the underlying stderr before accepting any classifier's verdict.</p>
+</main>
+</body>
+</html>
