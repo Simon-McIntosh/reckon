@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T00:16:08",
+  "updated": "2026-09-09T00:43:26",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -421,9 +421,11 @@
         "id": "crew-codex-usage",
         "harness": "clive",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "2db00e0d-66e4-4e97-9453-2069dff9fed4",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "2db00e0d-66e4-4e97-9453-2069dff9fed4"
+        },
         "created": "2026-09-06"
       },
       {
@@ -82466,6 +82468,179 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T221718817458-the-twenty-seven-are-closed",
+        "plan": "dispatch-cost-per-durable-node",
+        "section": "\u00a712",
+        "node": "the-twenty-seven-are-closed",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 738,
+                "cached_input_tokens": 611214,
+                "input_tokens": 611954,
+                "output_tokens": 1508,
+                "reasoning_output_tokens": 586,
+                "total_tokens": 613462,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "c97ff0dc-76f9-4d90-a37e-98717f5066f2",
+            "session_id": "ship-s15-2026-09-08b"
+          },
+          "done_when": "one captured run of the five files that carried the regression \u2014 tests/test_a_brief_points_rather_than_quotes.py, tests/test_budget.py, tests/test_crew.py, tests/test_crew_coordinator_spend.py and tests/test_dispatch_names_its_backend.py \u2014 at the current head, reporting per-file passed and failed counts and the count of failures whose text contains the undeclared-lane refusal, which must be zero. Compare against the same command at base 8a18d31a99a28211c4285de79ac60f886014fc79 and report the added-failure count explicitly, saying plainly whether it is zero. Name any failure present at head and absent at base, and treat the large crew file's pre-existing failures as a base set to subtract rather than as a target. The report at /home/ITER/mcintos/.config/reckon/crew/reports/regression-closed-20260909.md is the only deliverable and no repository file changes",
+          "estimated_hours": null,
+          "goal": "confirm the five files that carried the fence regression add no failures against base",
+          "id": "the-twenty-seven-are-closed",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-08T22:17:19Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T221718817458-the-twenty-seven-are-closed/manifest.md",
+          "plan": "dispatch-cost-per-durable-node",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "test",
+          "section": "\u00a712",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/regression-closed-20260909.md"
+          ]
+        },
+        "role": "test",
+        "spec_level": "exact",
+        "member": "crew-codex-usage",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-08T22:17:24Z",
+        "completed_at": "2026-09-08T22:41:50.473Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1457,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1466,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "7a011d5e219e007b21a058635ca06dc71f020636",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=<tree> .venv/bin/python -m pytest -p no:cacheprovider -q <five files>",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/regression-closed-20260909.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T221718817458-the-twenty-seven-are-closed/manifest.md",
+        "scope_changed": false,
+        "session_id": "2db00e0d-66e4-4e97-9453-2069dff9fed4",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6438222,
+            "input_tokens_cumulative": 6438222,
+            "output_tokens": 57935,
+            "output_tokens_cumulative": 57935,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-08T22:41:50.473Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6438222,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 1463.07,
+          "generated_tokens": 57935,
+          "generation_seconds": 600.311,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 15.5,
+          "machine_seconds": 862.759,
+          "peak_input_tokens": 157750,
+          "tokens_per_second": 96.51,
+          "wall_tokens_per_second": 39.6
+        },
+        "follow_on_paths": [
+          "test_crew.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "test",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": "read-only verification role; the deliverable is the report outside the repository and no repository file changed",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-08b/the-twenty-seven-are-closed",
+          "session_id": "2db00e0d-66e4-4e97-9453-2069dff9fed4",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T22:41:50.473Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -82694,6 +82869,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1250
+    "_version": 1252
   }
 }
