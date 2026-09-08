@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T08:17:45",
+  "updated": "2026-09-08T08:19:40",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -72966,6 +72966,144 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260908T053054503710-cumulative-tokens-are-derivable-from-the-stream",
+        "plan": "crew-effort-routing",
+        "section": "\u00a71",
+        "node": "cumulative-tokens-are-derivable-from-the-stream",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2290,
+                "cached_input_tokens": 961062,
+                "input_tokens": 963354,
+                "output_tokens": 4261,
+                "reasoning_output_tokens": 1770,
+                "total_tokens": 967615,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_cumulative_token_accounting.py -q passes, and a function in a new module returns the cumulative input and cumulative output tokens a run consumed, read from that run's own stream, for both stream dialects, distinguishing an unmeasurable stream from a zero. WHY THIS IS THE BLOCKING GAP. Every routing and cost decision this fleet is making rests on tokens per durable node, and the ledger records a PEAK input figure and no cumulative one. Peak is not what a subscription meter charges. Measured across the mounted ledgers: 3,225 rows carry a budget block, 301 carry a real cost figure summing to 2,197 dollars, and not one row carries cumulative input. A peer session derived it by hand from stream records for four runs and produced figures that reversed the conclusion an aggregate had suggested, which is the evidence that the quantity matters and that it is derivable. WHAT THE TWO DIALECTS LOOK LIKE. One dialect reports per-turn usage on assistant messages, carrying input tokens, output tokens and cache-read input tokens as separate counters. The other reports completed items rather than messages and carries its usage in a different shape; a peer's first instrument handled only the first dialect and would have reported every run on the second as having consumed nothing, which is a false zero that would have confirmed the hypothesis it was built to test. Read both. Determine each dialect's shape from real streams under the crew runs directory rather than from an assumption, and state in a comment which record and which field each dialect's figure comes from, so a later reader can reproduce the number without rediscovering the shape. WHAT TO BUILD, IN A NEW MODULE ONLY. Create reckon/crew/metering.py exposing one function that takes a path to a run's stream and returns cumulative input tokens, cumulative output tokens, the count of turns the figures were summed over, and the dialect it detected. Do not wire it into promotion, dispatch, the ledger or any command: promotion is held by another worker and this node's value is the deriver plus its proof. CACHE READS ARE THE TRAP AND MUST BE HANDLED EXPLICITLY. Where a dialect reports cached input separately from fresh input, state in a comment whether the returned cumulative input includes cached tokens and why. The reason to include them is that the meter on at least one metered lane charges total input including cached, which this project has recorded; the reason a reader might expect otherwise is that a cache hit feels free. Return both figures separately as well as the total, so a caller can choose and no caller has to guess which convention was used. AN UNMEASURABLE STREAM IS NOT A ZERO. A missing stream file, an unreadable one, a stream whose records carry no usage at all, and a stream that genuinely reports zero tokens are four different states and the function must not collapse them. Return an explicit unmeasured marker rather than zero for the first three. This project has repeatedly been misled by a zero standing in for an absence, and a cost figure that reads zero for an unmeasured run would understate a lane on every surface that sums it. FALSIFIERS, asserted in tests/test_cumulative_token_accounting.py. A constructed stream in each dialect returns the exact sums of the counters it contains, asserted against figures computed in the test rather than against constants. THE CUMULATIVE INPUT FOR A REAL RUN IS GREATER THAN OR EQUAL TO THAT RUN'S RECORDED PEAK INPUT, asserted against at least three real runs found under the crew runs directory whose ledger rows carry a peak figure; a derivation returning less than the peak is arithmetically impossible and this is the strongest available check that the walk is complete. A run of each dialect returns a positive cumulative input, asserted on real streams, so neither dialect silently returns nothing. A missing stream path returns the unmeasured marker and does not raise. An unreadable stream returns the unmeasured marker and does not raise. A stream whose records carry no usage returns the unmeasured marker rather than zero. A stream genuinely reporting zero returns zero rather than the marker. The turn count returned equals the number of records the figures were summed over, asserted on a constructed stream. Cached and fresh input are returned separately and their sum equals the reported total. Measure base and head over the new file and every test importing reckon.crew; report failure ids either side and require none added, and bound the run per file rather than issuing one census.",
+          "estimated_hours": 1.25,
+          "goal": "Derive a run's cumulative input and output tokens from its own stream in both dialects, distinguishing an unmeasurable stream from a zero",
+          "id": "cumulative-tokens-are-derivable-from-the-stream",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T053054503710-cumulative-tokens-are-derivable-from-the-stream/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/crew/metering.py",
+            "tests/test_cumulative_token_accounting.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-metering",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T05:31:02Z",
+        "completed_at": "2026-09-08T06:17:08Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 2766,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 2766,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "e6242ffc70fc227e36c943b57cf1116997f122fb",
+        "commits": [
+          "ddf90350ad63f516c5e4c2453eff5356f14bc982"
+        ],
+        "changed_lines": {
+          "added": 471,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 10,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_cumulative_token_accounting.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T053054503710-cumulative-tokens-are-derivable-from-the-stream/named-check.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T053054503710-cumulative-tokens-are-derivable-from-the-stream/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07f7f-936c-7f72-b09e-9a6b905eabe7",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 7744896,
+            "cached_input_tokens_cumulative": 7744896,
+            "input_tokens": 7985762,
+            "input_tokens_cumulative": 7985762,
+            "output_tokens": 38292,
+            "output_tokens_cumulative": 38292,
+            "reasoning_output_tokens": 9085,
+            "reasoning_output_tokens_cumulative": 9085
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 7744896,
+          "cumulative_input_tokens": 15730658,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 47377
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "attempt": 3,
+        "attempt_kind": "resume",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/cumulative-tokens-are-derivable-from-the-stream",
+          "session_id": "01a07f7f-936c-7f72-b09e-9a6b905eabe7",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T06:17:08Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_cumulative_token_accounting.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -73194,6 +73332,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1144
+    "_version": 1145
   }
 }
