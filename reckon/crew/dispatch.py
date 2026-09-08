@@ -116,6 +116,171 @@ WATCHER_LOAD_BOUND_SECONDS = 30.0
 WATCH_ARMING_ENV = "RECKON_WATCH_ARMING"
 _PYTEST_TEMPORARY_ROOT = re.compile(r"^(pytest-of-.+|pytest-\d+)$")
 
+# Twenty-two words can still be one compact evidence pointer naming a test
+# path, symbol, unit, and numeric threshold. The twenty-third word is where the
+# text stops being that pointer and becomes a reproduced passage. Report rather
+# than refuse: short shared facts are the desired way to point back to a plan,
+# and making an advisory overlap check block dispatch would invite disabling it.
+DONE_WHEN_PLAN_TEXT_SPAN_WORDS = 23
+
+
+def _normalised_words(text: str) -> tuple[list[str], list[str]]:
+    """Return comparison words and their readable spellings from HTML or prose."""
+    from bs4 import BeautifulSoup
+
+    plain = BeautifulSoup(text, "html.parser").get_text(" ", strip=True)
+    displayed = re.sub(r"\s+", " ", plain).strip().split()
+    return [word.casefold() for word in displayed], displayed
+
+
+def _section_heading_matches(heading: Any, requested: str, ids: set[str]) -> bool:
+    """Return whether one heading identifies the requested authored section."""
+    if str(heading.get("id") or "").casefold() in ids:
+        return True
+    text = re.sub(r"\s+", " ", heading.get_text(" ", strip=True)).casefold()
+    return text == requested or bool(
+        re.match(rf"^{re.escape(requested)}(?:\s|[-—:])", text)
+    )
+
+
+def _plan_section_text(html_text: str, section: str) -> str | None:
+    """Extract one section's visible text without including its successors."""
+    from bs4 import BeautifulSoup
+
+    requested = re.sub(r"\s+", " ", section.strip()).casefold()
+    if not requested:
+        return None
+    ids = {requested.removeprefix("#")}
+    numbered = re.fullmatch(r"§\s*([A-Za-z0-9._-]+)", requested)
+    if numbered:
+        ids.add(f"s{numbered.group(1)}".casefold())
+
+    soup = BeautifulSoup(html_text, "html.parser")
+    identified = next(
+        (
+            tag
+            for tag in soup.find_all(id=True)
+            if str(tag.get("id") or "").casefold() in ids
+        ),
+        None,
+    )
+    if identified is not None and not re.fullmatch(r"h[1-6]", identified.name or ""):
+        return identified.get_text(" ", strip=True)
+
+    heading = identified
+    if heading is None:
+        heading = next(
+            (
+                candidate
+                for candidate in soup.find_all(re.compile(r"^h[1-6]$"))
+                if _section_heading_matches(candidate, requested, ids)
+            ),
+            None,
+        )
+    if heading is None:
+        return None
+
+    level = int(str(heading.name)[1])
+    pieces = [heading.get_text(" ", strip=True)]
+    for sibling in heading.next_siblings:
+        sibling_name = getattr(sibling, "name", None)
+        if (
+            isinstance(sibling_name, str)
+            and re.fullmatch(r"h[1-6]", sibling_name)
+            and int(sibling_name[1]) <= level
+        ):
+            break
+        if hasattr(sibling, "get_text"):
+            text = sibling.get_text(" ", strip=True)
+        else:
+            text = str(sibling).strip()
+        if text:
+            pieces.append(text)
+    return " ".join(pieces)
+
+
+def _resolved_plan_section_text(
+    *,
+    node: TaskNode,
+    project: str,
+    authority: Mapping[str, Any],
+    plan_commit: str,
+) -> str | None:
+    """Read the named section from the resolved plan's committed blob."""
+    from reckon.resources import resolve_resource
+
+    plan_data = authority["plan"]
+    plan_repo = Path(str(plan_data["repository"])).resolve()
+    docs_dir = Path(str(plan_data["docs"])).resolve()
+    resource = resolve_resource(
+        docs_dir, project, node.plan, "plan", include_archived=False
+    )
+    if resource is None:
+        return None
+    relative_path = resource.path.resolve().relative_to(plan_repo)
+    blob = subprocess.run(
+        ["git", "show", f"{plan_commit}:{relative_path.as_posix()}"],
+        cwd=str(plan_repo),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if blob.returncode:
+        return None
+    return _plan_section_text(blob.stdout, node.section)
+
+
+def _longest_contiguous_word_span(left: str, right: str) -> tuple[int, str]:
+    """Return the length and readable text of the longest shared word run."""
+    left_words, left_display = _normalised_words(left)
+    right_words, _right_display = _normalised_words(right)
+    previous = [0] * (len(right_words) + 1)
+    best_length = 0
+    best_end = 0
+    for left_index, left_word in enumerate(left_words, start=1):
+        current = [0] * (len(right_words) + 1)
+        for right_index, right_word in enumerate(right_words, start=1):
+            if left_word != right_word:
+                continue
+            current[right_index] = previous[right_index - 1] + 1
+            if current[right_index] > best_length:
+                best_length = current[right_index]
+                best_end = left_index
+        previous = current
+    start = best_end - best_length
+    return best_length, " ".join(left_display[start:best_end])
+
+
+def _done_when_plan_overlap_warning(
+    *,
+    node: TaskNode,
+    project: str,
+    authority: Mapping[str, Any],
+    plan_commit: str,
+) -> str | None:
+    """Quote copied plan prose while remaining unable to break a dispatch."""
+    try:
+        section_text = _resolved_plan_section_text(
+            node=node,
+            project=project,
+            authority=authority,
+            plan_commit=plan_commit,
+        )
+        if section_text is None:
+            return None
+        length, span = _longest_contiguous_word_span(section_text, node.done_when)
+    except Exception:  # noqa: BLE001 - an advisory report cannot stop dispatch
+        # This report is advisory. The existing visibility guard remains the
+        # authority for dispatchability; failure to produce an extra warning
+        # must not create a new refusal or alter an otherwise valid launch.
+        return None
+    if length < DONE_WHEN_PLAN_TEXT_SPAN_WORDS:
+        return None
+    return (
+        f"done-when reproduces a {length}-word contiguous span from plan "
+        f"{node.plan!r} section {node.section!r}: \u201c{span}\u201d"
+    )
+
 
 def _actionable_budget_hold(
     verdict: Mapping[str, Any],
@@ -1583,6 +1748,14 @@ def plan_dispatch(
             **resolved_authority["plan"],
             "base_sha": plan_commit,
         }
+        overlap_warning = _done_when_plan_overlap_warning(
+            node=node,
+            project=project,
+            authority=resolved_authority,
+            plan_commit=plan_commit,
+        )
+        if overlap_warning is not None:
+            warnings.append(overlap_warning)
         sandbox_write_roots, sandbox_findings = _sandbox_reachability(
             node,
             backend=backend,
