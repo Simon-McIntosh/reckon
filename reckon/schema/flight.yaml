@@ -212,6 +212,22 @@ slots:
       Model identifier passed to this backend. User data; free text so that no
       provider vocabulary is encoded here.
 
+  input_rate_per_million:
+    description: >-
+      Published input-token rate per million tokens used only to derive
+      dimensionless quota comparisons. Optional operator data; absence leaves
+      this backend explicitly unpriced.
+    range: float
+    minimum_value: 0
+
+  output_rate_per_million:
+    description: >-
+      Published output-token rate per million tokens used only to derive
+      dimensionless quota comparisons. Optional operator data; absence leaves
+      this backend explicitly unpriced.
+    range: float
+    minimum_value: 0
+
   alias:
     description: >-
       Display label rendered in the fleet pane in place of this backend's model
@@ -265,6 +281,16 @@ slots:
       deterministic estimate of the node's standing instructions and named
       repository files before creating a worktree. Absence means unbounded,
       never zero: an unknown ceiling cannot justify refusing work.
+    range: integer
+    minimum_value: 1
+
+  max_concurrent_runs:
+    description: >-
+      Maximum live worker runs this backend may carry at once. Dispatch counts
+      the non-terminal live pointers claiming this backend and refuses a new
+      dispatch that would exceed the ceiling, naming the backend, the ceiling,
+      the current count and the occupying run ids. Absent or null means
+      unlimited, the default for every backend that does not declare one.
     range: integer
     minimum_value: 1
 
@@ -445,6 +471,8 @@ classes:
       - catalog
       - environment
       - model
+      - input_rate_per_million
+      - output_rate_per_million
       - alias
       - effort
       - effort_spelling
@@ -452,6 +480,7 @@ classes:
       - session_reuse
       - budget_check
       - usable_input_window
+      - max_concurrent_runs
       - fallback
       - time_budget
 

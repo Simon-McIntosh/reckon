@@ -1,22 +1,70 @@
 from __future__ import annotations
 
+import ast
+import re
 from collections.abc import Sequence
+from itertools import pairwise
+from pathlib import Path
+from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
+from reckon import flight
 from reckon.crew.quota_weight import (
-    EFFICIENT_MODEL,
     INPUT_SURCHARGE_MULTIPLIER,
     LONG_CONTEXT_INPUT_THRESHOLD,
-    MIDDLE_MODEL,
-    MODEL_RATES,
     OUTPUT_SURCHARGE_MULTIPLIER,
-    REFERENCE_MODEL,
+    ModelRate,
     RelativeQuotaWeight,
     RequestTokenUsage,
     UnknownQuotaWeight,
     quota_weight,
 )
+
+
+@pytest.fixture(autouse=True)
+def configured_rates(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Give every test model identifiers and rates through flight configuration."""
+    rate_pairs = ((4.00, 20.00), (2.00, 12.00), (0.20, 1.20))
+    configured_backends = {
+        f"lane-{index}": {
+            "model": f"fixture-model-{index}",
+            "input_rate_per_million": input_rate,
+            "output_rate_per_million": output_rate,
+        }
+        for index, (input_rate, output_rate) in enumerate(rate_pairs)
+    }
+    configured_backends["unpriced"] = {"model": "fixture-model-unpriced"}
+    config = {"backends": configured_backends}
+    monkeypatch.setattr(flight, "resolve", lambda: SimpleNamespace(config=config))
+
+
+def _config() -> dict[str, Any]:
+    return flight.resolve().config
+
+
+def _rates() -> dict[str, ModelRate]:
+    return {
+        str(backend["model"]): ModelRate(
+            input_per_million=float(backend["input_rate_per_million"]),
+            output_per_million=float(backend["output_rate_per_million"]),
+        )
+        for backend in _config()["backends"].values()
+        if "input_rate_per_million" in backend and "output_rate_per_million" in backend
+    }
+
+
+def _models_by_rate() -> list[str]:
+    rates = _rates()
+    return sorted(
+        rates,
+        key=lambda model: (
+            rates[model].input_per_million,
+            rates[model].output_per_million,
+        ),
+        reverse=True,
+    )
 
 
 def _expected_totals(
@@ -67,41 +115,47 @@ def _expected_weight(
         surcharged_output_tokens,
         _,
     ) = _expected_totals(requests)
-    rate = MODEL_RATES[model]
-    reference_rate = MODEL_RATES[REFERENCE_MODEL]
+    rates = _rates()
+    rate = rates[model]
+    normalising_rate = ModelRate(
+        input_per_million=max(item.input_per_million for item in rates.values()),
+        output_per_million=max(item.output_per_million for item in rates.values()),
+    )
     weighted_input = surcharged_input_tokens if apply_surcharge else input_tokens
     weighted_output = surcharged_output_tokens if apply_surcharge else output_tokens
     return weighted_input * (
-        rate.input_per_million / reference_rate.input_per_million
-    ) + weighted_output * (rate.output_per_million / reference_rate.output_per_million)
+        rate.input_per_million / normalising_rate.input_per_million
+    ) + weighted_output * (
+        rate.output_per_million / normalising_rate.output_per_million
+    )
 
 
 def test_equal_quantities_follow_the_declared_rate_ratios() -> None:
     quantity = 12_345
     requests = (RequestTokenUsage(input_tokens=quantity, output_tokens=quantity),)
+    models = _models_by_rate()
+    rates = _rates()
 
-    results = {
-        model: quota_weight(model, requests)
-        for model in (REFERENCE_MODEL, MIDDLE_MODEL, EFFICIENT_MODEL)
-    }
+    results = {model: quota_weight(model, requests) for model in models}
 
     for model, result in results.items():
         assert isinstance(result, RelativeQuotaWeight)
         assert result.weight == pytest.approx(_expected_weight(model, requests))
-        assert result.rate is MODEL_RATES[model]
+        assert result.rate == rates[model]
         assert result.surcharge_applied is False
 
-    reference_rate = MODEL_RATES[REFERENCE_MODEL]
-    reference_input_ratio = (
-        reference_rate.input_per_million / reference_rate.input_per_million
+    model_with_largest_rates = models[0]
+    largest_rate = rates[model_with_largest_rates]
+    input_ratio = largest_rate.input_per_million / max(
+        item.input_per_million for item in rates.values()
     )
-    reference_output_ratio = (
-        reference_rate.output_per_million / reference_rate.output_per_million
+    output_ratio = largest_rate.output_per_million / max(
+        item.output_per_million for item in rates.values()
     )
-    assert results[REFERENCE_MODEL].weight == pytest.approx(
-        quantity * reference_input_ratio + quantity * reference_output_ratio
+    assert results[model_with_largest_rates].weight == pytest.approx(
+        quantity * input_ratio + quantity * output_ratio
     )
-    assert results[REFERENCE_MODEL].weight != reference_input_ratio
+    assert results[model_with_largest_rates].weight != input_ratio
 
 
 @pytest.mark.parametrize(
@@ -114,14 +168,11 @@ def test_declared_family_ordering_is_strict(
     requests = (
         RequestTokenUsage(input_tokens=input_tokens, output_tokens=output_tokens),
     )
-    reference = quota_weight(REFERENCE_MODEL, requests)
-    middle = quota_weight(MIDDLE_MODEL, requests)
-    efficient = quota_weight(EFFICIENT_MODEL, requests)
+    results = [quota_weight(model, requests) for model in _models_by_rate()]
 
-    assert isinstance(reference, RelativeQuotaWeight)
-    assert isinstance(middle, RelativeQuotaWeight)
-    assert isinstance(efficient, RelativeQuotaWeight)
-    assert efficient.weight < middle.weight < reference.weight
+    assert all(isinstance(result, RelativeQuotaWeight) for result in results)
+    weights = [result.weight for result in reversed(results)]
+    assert all(lower < higher for lower, higher in pairwise(weights))
 
 
 def test_surcharge_and_totals_are_attributed_to_each_crossing_request() -> None:
@@ -132,11 +183,12 @@ def test_surcharge_and_totals_are_attributed_to_each_crossing_request() -> None:
         ),
         RequestTokenUsage(input_tokens=73_000, output_tokens=4_000),
     )
-    result = quota_weight(MIDDLE_MODEL, requests)
+    model = _models_by_rate()[1]
+    result = quota_weight(model, requests)
     expected = _expected_totals(requests)
 
     assert isinstance(result, RelativeQuotaWeight)
-    assert result.weight == pytest.approx(_expected_weight(MIDDLE_MODEL, requests))
+    assert result.weight == pytest.approx(_expected_weight(model, requests))
     assert result.input_tokens == expected[0]
     assert result.output_tokens == expected[1]
     assert result.surcharged_input_tokens == pytest.approx(expected[2])
@@ -165,8 +217,9 @@ def test_larger_uncrossed_run_outweighs_two_crossing_requests() -> None:
         for _ in range(crossing_request_count)
     )
 
-    many_small = quota_weight(REFERENCE_MODEL, many_small_requests)
-    two_large = quota_weight(REFERENCE_MODEL, two_large_requests)
+    model = _models_by_rate()[0]
+    many_small = quota_weight(model, many_small_requests)
+    two_large = quota_weight(model, two_large_requests)
 
     assert isinstance(many_small, RelativeQuotaWeight)
     assert isinstance(two_large, RelativeQuotaWeight)
@@ -179,10 +232,10 @@ def test_larger_uncrossed_run_outweighs_two_crossing_requests() -> None:
         for request in two_large_requests
     )
     assert many_small.weight == pytest.approx(
-        _expected_weight(REFERENCE_MODEL, many_small_requests)
+        _expected_weight(model, many_small_requests)
     )
     assert two_large.weight == pytest.approx(
-        _expected_weight(REFERENCE_MODEL, two_large_requests)
+        _expected_weight(model, two_large_requests)
     )
     assert many_small.weight > two_large.weight
 
@@ -197,14 +250,15 @@ def test_weight_scales_with_the_number_of_identical_requests() -> None:
     )
     scale = 10
     scaled_mix = request_mix * scale
-    base = quota_weight(MIDDLE_MODEL, request_mix)
-    scaled = quota_weight(MIDDLE_MODEL, scaled_mix)
+    model = _models_by_rate()[1]
+    base = quota_weight(model, request_mix)
+    scaled = quota_weight(model, scaled_mix)
     expected_ratio = len(scaled_mix) / len(request_mix)
 
     assert isinstance(base, RelativeQuotaWeight)
     assert isinstance(scaled, RelativeQuotaWeight)
-    assert base.weight == pytest.approx(_expected_weight(MIDDLE_MODEL, request_mix))
-    assert scaled.weight == pytest.approx(_expected_weight(MIDDLE_MODEL, scaled_mix))
+    assert base.weight == pytest.approx(_expected_weight(model, request_mix))
+    assert scaled.weight == pytest.approx(_expected_weight(model, scaled_mix))
     assert scaled.weight / base.weight == pytest.approx(expected_ratio)
 
 
@@ -223,16 +277,12 @@ def test_one_crossing_request_lies_between_none_and_both_crossing() -> None:
         RequestTokenUsage(LONG_CONTEXT_INPUT_THRESHOLD + 1, output_tokens),
     )
 
-    results = [
-        quota_weight(REFERENCE_MODEL, requests) for requests in (neither, one, both)
-    ]
+    model = _models_by_rate()[0]
+    results = [quota_weight(model, requests) for requests in (neither, one, both)]
 
     assert all(isinstance(result, RelativeQuotaWeight) for result in results)
     assert [result.weight for result in results] == pytest.approx(
-        [
-            _expected_weight(REFERENCE_MODEL, requests)
-            for requests in (neither, one, both)
-        ]
+        [_expected_weight(model, requests) for requests in (neither, one, both)]
     )
     assert results[0].weight < results[1].weight < results[2].weight
 
@@ -255,36 +305,34 @@ def test_surcharge_delta_tracks_tokens_inside_the_crossing_request() -> None:
         RequestTokenUsage(1, 1),
     )
 
-    small_fraction = quota_weight(REFERENCE_MODEL, small_fraction_run)
-    large_fraction = quota_weight(REFERENCE_MODEL, large_fraction_run)
+    model = _models_by_rate()[0]
+    small_fraction = quota_weight(model, small_fraction_run)
+    large_fraction = quota_weight(model, large_fraction_run)
 
     assert isinstance(small_fraction, RelativeQuotaWeight)
     assert isinstance(large_fraction, RelativeQuotaWeight)
     small_delta = small_fraction.weight - _expected_weight(
-        REFERENCE_MODEL, small_fraction_run, apply_surcharge=False
+        model, small_fraction_run, apply_surcharge=False
     )
     large_delta = large_fraction.weight - _expected_weight(
-        REFERENCE_MODEL, large_fraction_run, apply_surcharge=False
+        model, large_fraction_run, apply_surcharge=False
     )
     assert small_delta == pytest.approx(
-        _expected_weight(REFERENCE_MODEL, small_fraction_run)
-        - _expected_weight(REFERENCE_MODEL, small_fraction_run, apply_surcharge=False)
+        _expected_weight(model, small_fraction_run)
+        - _expected_weight(model, small_fraction_run, apply_surcharge=False)
     )
     assert large_delta == pytest.approx(
-        _expected_weight(REFERENCE_MODEL, large_fraction_run)
-        - _expected_weight(REFERENCE_MODEL, large_fraction_run, apply_surcharge=False)
+        _expected_weight(model, large_fraction_run)
+        - _expected_weight(model, large_fraction_run, apply_surcharge=False)
     )
     assert small_delta < large_delta
 
 
 def test_undeclared_model_returns_an_explicit_unknown_for_consumption() -> None:
-    undeclared_model = "gpt-5.3-codex-spark"
+    undeclared_model = "fixture-model-absent"
     requests = (RequestTokenUsage(input_tokens=100, output_tokens=20),)
     result = quota_weight(undeclared_model, requests)
-    declared = [
-        quota_weight(model, requests)
-        for model in (REFERENCE_MODEL, MIDDLE_MODEL, EFFICIENT_MODEL)
-    ]
+    declared = [quota_weight(model, requests) for model in _models_by_rate()]
 
     assert isinstance(result, UnknownQuotaWeight)
     assert result.model_identifier == undeclared_model
@@ -295,14 +343,47 @@ def test_undeclared_model_returns_an_explicit_unknown_for_consumption() -> None:
     assert all(result.weight != known.weight for known in declared)
 
 
+def test_configured_backend_without_rates_is_unknown_not_zero_or_priced() -> None:
+    unpriced_model = _config()["backends"]["unpriced"]["model"]
+    priced_model = _models_by_rate()[0]
+    requests = (RequestTokenUsage(input_tokens=0, output_tokens=0),)
+
+    unpriced = quota_weight(unpriced_model, requests)
+    priced = quota_weight(priced_model, requests)
+
+    assert isinstance(unpriced, UnknownQuotaWeight)
+    assert isinstance(priced, RelativeQuotaWeight)
+    assert unpriced.weight is None
+    assert priced.weight == 0.0
+    assert unpriced != priced
+
+
+def test_configuration_with_no_rates_returns_unknown_without_raising(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    models = ("fixture-model-one", "fixture-model-two")
+    config = {
+        "backends": {
+            f"lane-{index}": {"model": model} for index, model in enumerate(models)
+        }
+    }
+    monkeypatch.setattr(flight, "resolve", lambda: SimpleNamespace(config=config))
+
+    results = [quota_weight(model, ()) for model in models]
+
+    assert all(isinstance(result, UnknownQuotaWeight) for result in results)
+    assert all(result.weight is None for result in results)
+
+
 def test_empty_request_sequence_is_a_known_zero_weight() -> None:
     requests: tuple[RequestTokenUsage, ...] = ()
-    result = quota_weight(EFFICIENT_MODEL, requests)
+    model = _models_by_rate()[-1]
+    result = quota_weight(model, requests)
     expected_zero = float(sum(request.input_tokens for request in requests))
 
     assert isinstance(result, RelativeQuotaWeight)
     assert result.weight == expected_zero
-    assert result.rate is MODEL_RATES[EFFICIENT_MODEL]
+    assert result.rate == _rates()[model]
     assert result.requests_over_threshold == sum(
         request.input_tokens > LONG_CONTEXT_INPUT_THRESHOLD for request in requests
     )
@@ -310,11 +391,12 @@ def test_empty_request_sequence_is_a_known_zero_weight() -> None:
 
 def test_zero_tokens_for_a_declared_model_is_a_known_zero_weight() -> None:
     requests = (RequestTokenUsage(input_tokens=0, output_tokens=0),)
-    result = quota_weight(EFFICIENT_MODEL, requests)
+    model = _models_by_rate()[-1]
+    result = quota_weight(model, requests)
 
     assert isinstance(result, RelativeQuotaWeight)
-    assert result.weight == pytest.approx(_expected_weight(EFFICIENT_MODEL, requests))
-    assert result.rate is MODEL_RATES[EFFICIENT_MODEL]
+    assert result.weight == pytest.approx(_expected_weight(model, requests))
+    assert result.rate == _rates()[model]
 
 
 @pytest.mark.parametrize(
@@ -328,7 +410,7 @@ def test_negative_token_quantity_is_refused(
         RequestTokenUsage(input_tokens=input_tokens, output_tokens=output_tokens),
     )
     with pytest.raises(ValueError, match="token quantities must be non-negative"):
-        quota_weight(REFERENCE_MODEL, requests)
+        quota_weight(_models_by_rate()[0], requests)
 
 
 def test_threshold_boundary_crosses_only_when_strictly_greater() -> None:
@@ -339,8 +421,9 @@ def test_threshold_boundary_crosses_only_when_strictly_greater() -> None:
     above_threshold_requests = (
         RequestTokenUsage(LONG_CONTEXT_INPUT_THRESHOLD + 1, output_tokens),
     )
-    at_threshold = quota_weight(REFERENCE_MODEL, at_threshold_requests)
-    above_threshold = quota_weight(REFERENCE_MODEL, above_threshold_requests)
+    model = _models_by_rate()[0]
+    at_threshold = quota_weight(model, at_threshold_requests)
+    above_threshold = quota_weight(model, above_threshold_requests)
     at_expected = _expected_totals(at_threshold_requests)
     above_expected = _expected_totals(above_threshold_requests)
 
@@ -351,8 +434,42 @@ def test_threshold_boundary_crosses_only_when_strictly_greater() -> None:
     assert at_threshold.surcharged_input_tokens == pytest.approx(at_expected[2])
     assert above_threshold.surcharged_input_tokens == pytest.approx(above_expected[2])
     assert at_threshold.weight == pytest.approx(
-        _expected_weight(REFERENCE_MODEL, at_threshold_requests)
+        _expected_weight(model, at_threshold_requests)
     )
     assert above_threshold.weight == pytest.approx(
-        _expected_weight(REFERENCE_MODEL, above_threshold_requests)
+        _expected_weight(model, above_threshold_requests)
     )
+
+
+def test_source_contains_no_routing_identifier_or_hierarchy_position_name() -> None:
+    """Configuration owns model identities and ordering, never Python source."""
+    source = (
+        Path(__file__).parents[1] / "reckon" / "crew" / "quota_weight.py"
+    ).read_text()
+    concrete_model = re.compile(
+        r"(gpt|claude|llama|mistral|gemini)[-_ ]?[0-9]|anthropic|openai"
+        r"|\b(sonnet|opus|haiku)\b",
+        re.IGNORECASE,
+    )
+    assert concrete_model.search(source) is None
+
+    tree = ast.parse(source)
+    identifiers = {node.id for node in ast.walk(tree) if isinstance(node, ast.Name)}
+    identifiers.update(
+        node.name
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef))
+    )
+    identifiers.update(
+        argument.arg
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        for argument in (*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs)
+    )
+    hierarchy_positions = {"reference", "middle", "efficient"}
+    offenders = {
+        identifier
+        for identifier in identifiers
+        if hierarchy_positions.intersection(identifier.lower().split("_"))
+    }
+    assert offenders == set()
