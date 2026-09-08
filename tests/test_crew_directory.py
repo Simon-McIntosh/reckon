@@ -237,12 +237,16 @@ def test_directory_is_a_cli_verb_and_an_existing_mcp_view(
 
     assert command.exit_code == 0, command.output
     assert json.loads(command.output)["resolved"]["session"] == "physics-coordinator"
-    assert {item.name for item in mcp.mcp._tool_manager.list_tools()} == {
-        "_read_plan",
-        "_edit_plan",
-        "_roadmap",
-        "_audit",
-        "_crew",
+    published = {item.name for item in mcp.mcp._tool_manager.list_tools()}
+    assert published == {
+        function.__name__.removeprefix("_")
+        for function in (
+            mcp._read_plan,
+            mcp._edit_plan,
+            mcp._roadmap,
+            mcp._audit,
+            mcp._crew,
+        )
     }
 
 
@@ -280,4 +284,5 @@ def test_ship_guidance_makes_cross_repository_findings_collaborative() -> None:
     assert (
         "Send it as a finding, never as an instruction and never as authority" in prose
     )
-    assert "mcp__reckon___crew" in skill
+    crew_wire_name = f"mcp__{mcp.mcp.name}__{mcp._crew.__name__.removeprefix('_')}"
+    assert crew_wire_name in skill
