@@ -781,6 +781,35 @@
       mechanism.
     </p>
     <p>
+      <strong>The narrowing is safe because the declaration already partitions the lanes
+      correctly, and that is measured rather than assumed.</strong> Read from the resolved
+      configuration: every metered lane declares the budget check, while the locally served lane,
+      the in-harness backend, and every synthetic backend a test constructs declare none. So the
+      trigger moves from &ldquo;absent from a name list&rdquo; to &ldquo;declares it must be
+      budget-checked&rdquo; and the free lane stays free, the in-harness path stops being refused,
+      and the twenty-seven fixtures pass without being edited. Worth recording that a
+      hand-written parse of the configuration file first suggested the free lane declared the
+      check too, which would have made the narrowing break every local dispatch; the resolved
+      configuration is the authority and it says otherwise.
+    </p>
+    <p>
+      <strong>The escaping lane earns its own check rather than a broken default.</strong> The
+      cost of the narrowing is that a genuinely metered lane omitting the declaration is not
+      fenced. A peer coordinator's argument for accepting that is the right one: such a lane
+      already escapes holds, preflight and burn accounting, so the fence would be the fourth
+      thing it evades and the only one positioned to catch it &mdash; which argues for a check
+      that every backend states its meteredness, not for keeping a fence that fires on the wrong
+      predicate. That peer's host records the same conclusion in its own configuration comment,
+      noting that when an account reached its limit no run had yet recorded the refusal, so the
+      fence read the lane as clear; the declaration is already load-bearing there.
+    </p>
+    <p>
+      <em>Also done when</em> a backend that declares neither a budget check nor an explicit
+      unmetered status is reported at configuration resolution, naming the backend and both
+      declarations it could carry, so meteredness is a stated property of every lane rather than
+      an inference from a list this repository maintains by hand.
+    </p>
+    <p>
       <em>Done when</em> a dispatch whose lane resolves to a metered backend without an
       explicit declaration is refused as not-dispatchable, naming the resolved backend, the
       window utilisation read at that moment, and the unmetered backends that would serve;
