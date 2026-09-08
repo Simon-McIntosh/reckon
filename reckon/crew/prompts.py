@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from typing import Iterable, Mapping
 
@@ -64,8 +65,15 @@ def compose_prompt(
     peer_channel = Path(
         peer_channel_path or Path(manifest_path).parent / "peer-channel"
     )
+    # The client names the interpreter the composing process runs under, not a
+    # bare name the worker's PATH must resolve: `python -c` puts only the cwd
+    # on the import path, so a bare name works solely for a worker standing in
+    # the package source tree and fails for the report roles whose delivery
+    # directory is elsewhere. The composing interpreter can import the package
+    # from any directory, which is the property being relied on; it is derived
+    # at composition time, never written as a literal path.
     peer_client = (
-        "python -c 'from reckon.crew.dispatch import _peer_command; "
+        f"{sys.executable} -c 'from reckon.crew.dispatch import _peer_command; "
         "raise SystemExit(_peer_command())'"
     )
     scope_lines = "\n".join(f"  {path}" for path in node.write_paths) or "  none"
