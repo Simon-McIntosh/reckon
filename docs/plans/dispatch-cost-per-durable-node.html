@@ -23,8 +23,8 @@
   <title>Dispatch Cost Per Durable Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-06">
-<meta name="plan-version" content="33">
+<meta name="plan-modified" content="2026-09-08">
+<meta name="plan-version" content="34">
 <meta name="plan-commits" content="d5811b204966f31db83bab190b6440a6eb7b9842,db329f84e6eecc232e8cf41f35e828f84365dee8,b99ccdf829c50659c34efdd354642b5a9cba6827,0b146679a6585b480b35fed528801a1bd4acedf8">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-artifacts" content="reckon/crew/node.py,reckon/budget.py,reckon/crew/dispatch.py,reckon/capabilities.py,reckon/mcp.py,reckon/serve.py,tests/test_crew_node.py,tests/test_budget.py,tests/test_crew_coordinator_spend.py,tests/test_routing_surface.py,skills/reckon-ship/SKILL.md,skills/reckon-ship/references/effort-routing.md">
@@ -564,6 +564,53 @@
     alongside it. &sect;6's two halves are one node: the burn multiple and the
     token-budget fence read the same window figures.</p>
 
+    <h2 id="s11">&sect;11 &mdash; The shadow does not resolve effort the way the dispatch did</h2>
+    <p>
+      A shadow exists to re-run a committed node at its recorded base so a candidate
+      configuration can be judged against what actually ran. That comparison is only
+      single-variable if everything except the candidate is reproduced, and effort is not.
+      Measured 2026-09-08 against a node committed the same hour:
+    </p>
+    <table>
+      <thead><tr><th>Path</th><th>Resolved effort</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><code>dispatch</code>, role implement, level guided</td><td><code>high</code></td>
+          <td>the role overlay wins over the backend value, as documented</td></tr>
+        <tr><td><code>shadow</code> of that same committed run</td><td><code>xhigh</code></td>
+          <td>the backend value is taken and the role overlay is not applied</td></tr>
+        <tr><td><code>shadow --set backends.&lt;name&gt;.effort=medium</code></td><td><code>medium</code></td>
+          <td>honoured</td></tr>
+        <tr><td><code>shadow --set roles.implement.by_spec_level.guided.effort=medium</code></td>
+          <td><code>xhigh</code></td><td><strong>silently ignored</strong></td></tr>
+      </tbody>
+    </table>
+    <p>
+      Two defects, and the second is the one that bites without being seen. The first is that a
+      shadow of a node dispatched at <code>high</code> runs at <code>xhigh</code>, so a lane
+      comparison built from shadows differs from its primary in effort as well as in lane &mdash;
+      the instrument moves the variable it is meant to hold still. The second is that
+      <code>--set</code>, whose own help says it always wins over config layers, does not win on
+      this path for the routed-effort key the ship guidance tells a coordinator to use. It does
+      not refuse, warn, or record; it returns a different number.
+    </p>
+    <p>
+      <strong>This gates &sect;7 rather than following it.</strong> The pilot spends a weekly
+      window comparing a candidate lane against the incumbent, and a shadow slice is part of how
+      candidates are screened. Running it on an instrument that silently substitutes an effort
+      level buys a measurement nobody can attribute afterwards, which is the same shape as the
+      ledger seeing one half of the system.
+    </p>
+    <p>
+      Done when a shadow resolves effort through the same path a dispatch does, so re-running a
+      committed node reproduces its declared effort unless an override says otherwise; when an
+      override that cannot be applied is refused or recorded rather than dropped, since a
+      silently ignored override is indistinguishable from a lane that behaves oddly; and when the
+      resolved effort and the overrides that produced it sit on the shadow's own record, so a
+      later reader can tell which arm ran at what. Asserted by resolving the same committed node
+      through both paths and requiring agreement, and by requiring a refusal or a record for an
+      override the path cannot honour.
+    </p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="node-size-bound" data-choice="warn-only" data-by="Simon McIntosh" data-when="2026-09-04T08:10:20+00:00">
@@ -729,7 +776,7 @@
     <div class="r-comment-body"><p>Promotion now settles a finished run's stream before folding it: mtime quiescence with a hard ceiling, engaged only once the process has exited, so a terminal record arriving just after exit is read instead of missed. The fallback survives — a dead run whose stream never produces a terminal record still promotes with completed_at_source stream_mtime and worker_seconds_source wall_fallback — a live process is never waited on, an already-quiet stream costs one mtime read, and an ever-advancing stream returns within the ceiling. The worker also mutation-checked its own test, confirming it fails without the fix, which is the step that separates a test from a description. 6 passed. THE MEASURED CASE IS NOT YET COVERED AND THAT IS MY BRIEF'S FAULT, NOT THE WORKER'S. I wrote that a live process must never be waited on, so the settle engages only after exit. But crew complete does NOT refuse a live run — it promotes and then signals the process group at promotion.py line 1711, while the observation is folded at 1492 and 1587, BEFORE that release. So the common case, a coordinator promoting promptly while the worker is still winding down, still reads the stream and only then ends the writer. On the run that exposed this the gap was 19 seconds against a 2.0 second ceiling, and the process was very likely still alive, so this fix would not have caught it. The right shape is to order promotion as release, settle, then fold — or to re-read once after the release and amend the row — rather than to widen the ceiling, which would only trade a missed record for a slower promotion. A follow-up node owns that; this one is a real improvement to the dead-run path and is not the whole fix.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260906T112317280887-the-receipt-is-folded-after-the-writer-stops" data-who="crew-codex-usage" data-when="2026-09-06T12:37:37.437Z">
-    <div class="r-comment-body"><p>The promotion race is now closed at the case that actually occurs. A live writer that promotion is going to end anyway is signalled BEFORE the fold, then settled within the existing bound, so a prompt promotion records completed_at_source terminal_event with the run&#x27;s token figures rather than reading a stream still being written. 113 passed across the promotion-importing set, 12 at the merged head across both receipt files. IT CHOSE THE HARDER OF THE TWO SHAPES I OFFERED AND GAVE THE REASON: end-then-settle-then-fold over fold-then-amend, because the fold then happens exactly once with final data, so the ledger row, the plan-comment timestamp and the terminal record all agree — the amend shape would need a second ledger write and would leave the comment stamped from the pre-amendment figure. The pre-release is gated identically to the release&#x27;s own signal and placed after the already-promoted early return, so a retry that promotes without folding never signals, and every early end is a process the release would have ended regardless. THE FALSIFIERS ARE THE FULL SET: a released live writer folds from its terminal record with tokens; a run that never emits one keeps the mtime fallback and its recorded source; an already-terminal quiet run is unchanged at a single read; a never-quiescing stream cannot hang, with the two-second ceiling untouched; and a run the release would NOT signal is never ended early. WHAT THIS FIXES AT SCALE: 826 of 1200 ledger rows across three projects took their completion from a file mtime and 798 took worker-seconds from wall clock, because promotion read the stream before its writer finished. That is the ledger every cost-per-durable-node figure is computed from, and on a metered lane those rows lost their token receipt entirely. DISCLOSED, not triaged: a dispatch/watch arming test hangs in isolation in that worktree, reproduced with no peer running so contention is not the cause; it touches no promotion code and sits in another node&#x27;s scope.</p></div>
+    <div class="r-comment-body"><p>The promotion race is now closed at the case that actually occurs. A live writer that promotion is going to end anyway is signalled BEFORE the fold, then settled within the existing bound, so a prompt promotion records completed_at_source terminal_event with the run's token figures rather than reading a stream still being written. 113 passed across the promotion-importing set, 12 at the merged head across both receipt files. IT CHOSE THE HARDER OF THE TWO SHAPES I OFFERED AND GAVE THE REASON: end-then-settle-then-fold over fold-then-amend, because the fold then happens exactly once with final data, so the ledger row, the plan-comment timestamp and the terminal record all agree — the amend shape would need a second ledger write and would leave the comment stamped from the pre-amendment figure. The pre-release is gated identically to the release's own signal and placed after the already-promoted early return, so a retry that promotes without folding never signals, and every early end is a process the release would have ended regardless. THE FALSIFIERS ARE THE FULL SET: a released live writer folds from its terminal record with tokens; a run that never emits one keeps the mtime fallback and its recorded source; an already-terminal quiet run is unchanged at a single read; a never-quiescing stream cannot hang, with the two-second ceiling untouched; and a run the release would NOT signal is never ended early. WHAT THIS FIXES AT SCALE: 826 of 1200 ledger rows across three projects took their completion from a file mtime and 798 took worker-seconds from wall clock, because promotion read the stream before its writer finished. That is the ledger every cost-per-durable-node figure is computed from, and on a metered lane those rows lost their token receipt entirely. DISCLOSED, not triaged: a dispatch/watch arming test hangs in isolation in that worktree, reproduced with no peer running so contention is not the cause; it touches no promotion code and sits in another node's scope.</p></div>
 </div>
 </section>
 </main>
