@@ -46,6 +46,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 
 from reckon import _backends, crew, ledger
+from reckon.crew.refusals import format_refusal
 
 # What a pre-flight is deciding about. The two differ only in whether the resume
 # reserve applies: withholding headroom from a fresh dispatch is the point of the
@@ -999,9 +1000,10 @@ def decide(
         return verdict
     if state.availability == "refused":
         verdict["held"] = True
-        verdict["reason"] = (
+        verdict["reason"] = format_refusal(
+            "D02",
             f"backend {state.backend!r} refused the minimal availability request at "
-            f"{state.availability_observed_at}; that refusal is the current evidence"
+            f"{state.availability_observed_at}; that refusal is the current evidence",
         )
         return verdict
     if state.headroom != "known":
@@ -1047,10 +1049,11 @@ def decide(
     exhausted = [str(status) for status in policy_block.get("exhausted_statuses") or ()]
     if state.threshold_status is not None and str(state.threshold_status) in exhausted:
         verdict["held"] = True
-        verdict["reason"] = (
+        verdict["reason"] = format_refusal(
+            "D02",
             f"backend reports threshold status {state.threshold_status!r}, which "
             f"policy counts as exhausted regardless of utilisation; {_position(state)}"
-            f"{_evidence_note(state)}"
+            f"{_evidence_note(state)}",
         )
         return verdict
 
@@ -1064,9 +1067,10 @@ def decide(
     if utilisation >= limit:
         verdict["held"] = True
         margin = "" if purpose == "resume" else f" (ceiling {ceiling}% less reserve)"
-        verdict["reason"] = (
+        verdict["reason"] = format_refusal(
+            "D02",
             f"{_position(state)} is at or above the {limit}% ceiling for a "
-            f"{purpose}{margin}{_evidence_note(state)}"
+            f"{purpose}{margin}{_evidence_note(state)}",
         )
         return verdict
     verdict["reason"] = (

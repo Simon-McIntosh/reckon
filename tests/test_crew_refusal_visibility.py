@@ -9,6 +9,7 @@ cover the answer, not the sentence.
 
 from __future__ import annotations
 
+import ast
 import importlib
 import json
 import subprocess
@@ -20,6 +21,42 @@ from click.testing import CliRunner
 
 from reckon import _backends, crew, ledger
 from reckon import cli as cli_module
+from reckon.crew import refusals as refusal_module
+from reckon.crew.refusals import (
+    DISPATCH_REFUSAL_REMEDIES,
+    NO_CREW_VERB_SENTENCE,
+    format_refusal,
+)
+
+CONVERTED_REFUSAL_FAMILIES = frozenset(
+    {
+        "D02",
+        "D05",
+        "D07",
+        "D08",
+        "D09",
+        "D10",
+        "D11",
+        "D12",
+        "D13",
+        "D14",
+        "D15",
+        "D16",
+        "D17",
+        "D18",
+        "D19",
+        "D20",
+        "D21",
+        "D22",
+    }
+)
+COMMAND_BOUNDARY_FAMILIES = frozenset({"D01", "D03", "D04", "D06"})
+REFUSAL_SOURCE_PATHS = (
+    "reckon/budget.py",
+    "reckon/crew/dispatch.py",
+    "reckon/crew/node.py",
+    "reckon/crew/routing.py",
+)
 
 CONFIG = {
     "default_backend": "worker",
@@ -40,6 +77,54 @@ CONFIG = {
     },
     "fences": {"time_budget": "20m", "needs_help_after_failures": 2},
 }
+
+
+def _formatter_family_calls() -> set[str]:
+    root = Path(__file__).resolve().parents[1]
+    families: set[str] = set()
+    for relative_path in REFUSAL_SOURCE_PATHS:
+        tree = ast.parse((root / relative_path).read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call) or not node.args:
+                continue
+            if not isinstance(node.func, ast.Name) or node.func.id != "format_refusal":
+                continue
+            family = node.args[0]
+            if isinstance(family, ast.Constant) and isinstance(family.value, str):
+                families.add(family.value)
+    return families
+
+
+def test_the_dispatch_refusal_census_is_partitioned_without_gaps() -> None:
+    expected = {f"D{number:02d}" for number in range(1, 23)}
+
+    assert set(DISPATCH_REFUSAL_REMEDIES) == expected
+    assert expected == CONVERTED_REFUSAL_FAMILIES | COMMAND_BOUNDARY_FAMILIES
+    assert CONVERTED_REFUSAL_FAMILIES.isdisjoint(COMMAND_BOUNDARY_FAMILIES)
+
+
+@pytest.mark.parametrize("family_id", sorted(CONVERTED_REFUSAL_FAMILIES))
+def test_each_reachable_refusal_names_its_resolving_action(family_id: str) -> None:
+    rendered = format_refusal(family_id, "the operation was refused")
+
+    assert "`reckon crew" in rendered
+    assert rendered.count("Resolve with ") == 1
+    assert format_refusal(family_id, rendered) == rendered
+
+
+def test_every_reachable_family_calls_the_shared_formatter() -> None:
+    called_families = _formatter_family_calls()
+
+    assert called_families == CONVERTED_REFUSAL_FAMILIES
+
+
+def test_the_absence_sentence_is_canonical(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setitem(refusal_module.DISPATCH_REFUSAL_REMEDIES, "D02", None)
+
+    rendered = format_refusal("D02", "the operation was refused")
+
+    assert rendered.endswith(NO_CREW_VERB_SENTENCE)
+    assert format_refusal("D02", rendered) == rendered
 
 
 @pytest.fixture()

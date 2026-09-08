@@ -43,6 +43,7 @@ from reckon.crew.node import (
     validate_node,
 )
 from reckon.crew.prompts import compose_prompt
+from reckon.crew.refusals import format_refusal
 from reckon.crew.routing import (
     _agent_configuration,
     _budget_verdict,
@@ -385,10 +386,13 @@ def _refuse_over_concurrency_ceiling(
         sorted(str(pointer.get("run_id") or "unknown") for pointer in occupying)
     )
     raise CrewError(
-        f"node is not dispatchable — backend {backend_name!r} is at its "
-        f"concurrency ceiling ({len(occupying)} live runs of {ceiling} max); "
-        f"the runs occupying its slots: {run_ids}. Wait for one to finish, "
-        f"or raise max_concurrent_runs for this backend."
+        format_refusal(
+            "D09",
+            f"node is not dispatchable — backend {backend_name!r} is at its "
+            f"concurrency ceiling ({len(occupying)} live runs of {ceiling} max); "
+            f"the runs occupying its slots: {run_ids}. Wait for one to finish, "
+            f"or raise max_concurrent_runs for this backend.",
+        )
     )
 
 
@@ -611,11 +615,14 @@ def _refuse_arming_under_a_throwaway_home(project: str) -> None:
     if root is None:
         return
     raise CrewError(
-        f"refusing to arm the watch producer for {project}: the resolved "
-        f"configuration home {home} lies under the throwaway test directory "
-        f"{root}, so a detached producer would outlive the run that armed it "
-        f"and poll a deleted home. Set {WATCH_ARMING_ENV}=on for a caller "
-        "that reaps the producer it starts, or waive the watch instead."
+        format_refusal(
+            "D18",
+            f"refusing to arm the watch producer for {project}: the resolved "
+            f"configuration home {home} lies under the throwaway test directory "
+            f"{root}, so a detached producer would outlive the run that armed it "
+            f"and poll a deleted home. Set {WATCH_ARMING_ENV}=on for a caller "
+            "that reaps the producer it starts, or waive the watch instead.",
+        )
     )
 
 
@@ -627,7 +634,9 @@ def _watch_executable() -> str:
     executable = shutil.which("reckon")
     if executable:
         return executable
-    raise CrewError("cannot start the project watcher: reckon is not on PATH")
+    raise CrewError(
+        format_refusal("D19", "cannot start the project watcher: reckon is not on PATH")
+    )
 
 
 def _start_watch_producer(project: str) -> subprocess.Popen[bytes]:
@@ -1663,14 +1672,20 @@ def plan_dispatch(
         )
         if roster_member is None:
             raise CrewError(
-                f"project {project!r} has no crew member {member!r}; register it "
-                "with `reckon crew member add` before dispatching to it"
+                format_refusal(
+                    "D14",
+                    f"project {project!r} has no crew member {member!r}; register it "
+                    "with `reckon crew member add` before dispatching to it",
+                )
             )
         member_harness = str(roster_member.get("harness") or "").strip()
         if requested_backend and member_harness and requested_backend != member_harness:
             raise CrewError(
-                f"dispatch requests backend {requested_backend!r}, but crew member "
-                f"{member!r} declares harness {member_harness!r}"
+                format_refusal(
+                    "D15",
+                    f"dispatch requests backend {requested_backend!r}, but crew member "
+                    f"{member!r} declares harness {member_harness!r}",
+                )
             )
         requested_backend = requested_backend or member_harness
     # Only a dispatch with no caller or roster request may fall through to role
@@ -1686,8 +1701,11 @@ def plan_dispatch(
     launch_kind = backend.get("launch")
     if launch_kind not in ("cli", "in-harness"):
         raise CrewError(
-            f"backend {backend_name!r} declares launch {launch_kind!r}; "
-            "expected 'cli' or 'in-harness'"
+            format_refusal(
+                "D22",
+                f"backend {backend_name!r} declares launch {launch_kind!r}; "
+                "expected 'cli' or 'in-harness'",
+            )
         )
     default_budget = resolved_time_budget(config, backend)
     budget_ceiling = resolved_time_ceiling(config)
@@ -1767,6 +1785,17 @@ def plan_dispatch(
                 ok=False,
                 findings=[*verdict.findings, *sandbox_findings],
             )
+    if not verdict.ok:
+        verdict = NodeValidation(
+            ok=False,
+            findings=[
+                {
+                    **finding,
+                    "detail": format_refusal("D07", str(finding["detail"])),
+                }
+                for finding in verdict.findings
+            ],
+        )
     resolution = DispatchPlan(
         run_id=resolved_run_id,
         backend=backend_name,
@@ -1829,40 +1858,62 @@ def shadow_source(
     ]
     if not matches:
         raise CrewError(
-            f"run {run_id!r} is not a committed ledger record in repository {repo_root}"
+            format_refusal(
+                "D20",
+                f"run {run_id!r} is not a committed ledger record in repository "
+                f"{repo_root}",
+            )
         )
     if len(matches) > 1:
         raise CrewError(
-            f"run {run_id!r} appears in more than one project ledger in {repo_root}"
+            format_refusal(
+                "D20",
+                f"run {run_id!r} appears in more than one project ledger in "
+                f"{repo_root}",
+            )
         )
     project, primary = matches[0]
     lineage = primary.get("lineage")
     if isinstance(lineage, Mapping) and lineage.get("kind") == "shadow":
         raise CrewError(
-            f"run {run_id!r} is itself a shadow and cannot be a shadow parent"
+            format_refusal(
+                "D20",
+                f"run {run_id!r} is itself a shadow and cannot be a shadow parent",
+            )
         )
     agent = primary.get("agent")
     if not isinstance(agent, Mapping) or not agent:
         raise CrewError(
-            f"committed run {run_id!r} has no recorded agent configuration; "
-            "the shadow cannot inherit a configuration without guessing"
+            format_refusal(
+                "D20",
+                f"committed run {run_id!r} has no recorded agent configuration; "
+                "the shadow cannot inherit a configuration without guessing",
+            )
         )
     definition = primary.get("node_definition")
     if not isinstance(definition, Mapping):
         raise CrewError(
-            f"committed run {run_id!r} has no stored node definition and cannot "
-            "be shadowed without re-authoring its contract"
+            format_refusal(
+                "D20",
+                f"committed run {run_id!r} has no stored node definition and cannot "
+                "be shadowed without re-authoring its contract",
+            )
         )
     required = ("id", "goal", "plan", "done_when", "write_paths")
     missing = [name for name in required if not definition.get(name)]
     if missing:
         raise CrewError(
-            f"committed run {run_id!r} has an incomplete stored node definition: "
-            + ", ".join(missing)
+            format_refusal(
+                "D20",
+                f"committed run {run_id!r} has an incomplete stored node definition: "
+                + ", ".join(missing),
+            )
         )
     base_sha = str(primary.get("base_sha") or "")
     if not base_sha:
-        raise CrewError(f"committed run {run_id!r} records no base_sha")
+        raise CrewError(
+            format_refusal("D20", f"committed run {run_id!r} records no base_sha")
+        )
     node = TaskNode(
         id=str(definition["id"]),
         goal=str(definition["goal"]),
@@ -1897,8 +1948,11 @@ def _shadow_dispatch_config(
     resolved_backend, candidate = resolve_role(config, node.role, node.spec_level)
     if resolved_backend != candidate_backend:
         raise CrewError(
-            f"candidate backend {candidate_backend!r} resolved to "
-            f"{resolved_backend!r}; route the node explicitly to the candidate"
+            format_refusal(
+                "D21",
+                f"candidate backend {candidate_backend!r} resolved to "
+                f"{resolved_backend!r}; route the node explicitly to the candidate",
+            )
         )
 
     explicit = {str(config_key) for config_key in configuration_overrides}
@@ -2106,7 +2160,11 @@ def dispatch(
         else None
     )
     if lineage_override is not None and shadow_lineage is None:
-        raise CrewError("only shadow lineage may be supplied explicitly at dispatch")
+        raise CrewError(
+            format_refusal(
+                "D20", "only shadow lineage may be supplied explicitly at dispatch"
+            )
+        )
     authority = resolve_dispatch_authority(project, repo_root)
     ledger_root = resolve_dispatch_ledger_root(authority)
     # Captured before plan_dispatch fills in per-backend defaults, so a budget
@@ -2285,8 +2343,11 @@ def dispatch(
     if named_member:
         if roster_member is None:
             raise CrewError(
-                f"project {project!r} has no crew member {member!r}; register it "
-                "with `reckon crew member add` before dispatching to it"
+                format_refusal(
+                    "D14",
+                    f"project {project!r} has no crew member {member!r}; register it "
+                    "with `reckon crew member add` before dispatching to it",
+                )
             )
     if roster_member is not None:
         for pointer in list_live(project=project):
@@ -2355,7 +2416,9 @@ def dispatch(
             None,
         )
         if primary is None:
-            raise CrewError("shadow lineage names no committed primary run")
+            raise CrewError(
+                format_refusal("D20", "shadow lineage names no committed primary run")
+            )
         attempt = int(primary.get("attempt") or 1)
     elif prior_node_runs:
         previous = prior_node_runs[-1]
@@ -2408,11 +2471,14 @@ def dispatch(
         directory.mkdir(parents=True, exist_ok=True)
         working_directory = worktree["path"]
         if launch_kind == "cli":
-            working_directory = _backends.launch_working_directory(
-                backend=backend,
-                worktree=worktree["path"],
-                manifest_path=node.manifest_path,
-            )
+            try:
+                working_directory = _backends.launch_working_directory(
+                    backend=backend,
+                    worktree=worktree["path"],
+                    manifest_path=node.manifest_path,
+                )
+            except _backends.BackendError as exc:
+                raise CrewError(format_refusal("D22", str(exc))) from exc
         prompt = compose_prompt(
             node=node,
             project=project,
@@ -2524,23 +2590,26 @@ def dispatch(
         }
 
         if launch_kind == "cli":
-            plan = _backends.launch_plan(
-                backend_name=backend_name,
-                backend=backend,
-                prompt=prompt,
-                worktree=worktree["path"],
-                manifest_path=node.manifest_path,
-                writable_directories=resolution.sandbox_write_roots or (),
-                final_message_path=str(final_path),
-                resume_session=reuse_session,
-            )
-            spawn = launcher or _spawn
-            spawned_pid = spawn(
-                plan,
-                log_path=log_path,
-                stderr_path=stderr_path,
-                prompt_path=prompt_path,
-            )
+            try:
+                plan = _backends.launch_plan(
+                    backend_name=backend_name,
+                    backend=backend,
+                    prompt=prompt,
+                    worktree=worktree["path"],
+                    manifest_path=node.manifest_path,
+                    writable_directories=resolution.sandbox_write_roots or (),
+                    final_message_path=str(final_path),
+                    resume_session=reuse_session,
+                )
+                spawn = launcher or _spawn
+                spawned_pid = spawn(
+                    plan,
+                    log_path=log_path,
+                    stderr_path=stderr_path,
+                    prompt_path=prompt_path,
+                )
+            except (_backends.BackendError, OSError) as exc:
+                raise CrewError(format_refusal("D22", str(exc))) from exc
             spawned_start_time = _process_start_time(spawned_pid)
             record.update(
                 {
