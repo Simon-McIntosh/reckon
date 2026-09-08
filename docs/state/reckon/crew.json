@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T08:34:07",
+  "updated": "2026-09-08T08:39:10",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -540,6 +540,15 @@
         "session_model": null,
         "sessions": {},
         "created": "2026-09-06"
+      },
+      {
+        "id": "crew-quota-horizons",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-08"
       },
       {
         "id": "crew-quota-weight",
@@ -73519,6 +73528,144 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260908T055204955978-the-stream-says-how-often-we-compacted",
+        "plan": "crew-effort-routing",
+        "section": "\u00a71",
+        "node": "the-stream-says-how-often-we-compacted",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 3544,
+                "cached_input_tokens": 180331,
+                "input_tokens": 183877,
+                "output_tokens": 3337,
+                "reasoning_output_tokens": 753,
+                "total_tokens": 187214,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_context_budget.py -q passes, and a function in a new module reports, for one run's stream, how many times that run's history was compacted and the largest context size the stream reveals it reached, distinguishing a run that never compacted because it was short from one that never reached the ceiling from one whose stream cannot answer. WHY THIS IS WORTH A NODE. The metered family this fleet dispatches to documents a window near one million tokens while the client ships a much lower tuned default, so until an hour ago every worker here compacted at roughly a third of the model's capability. That default has now been raised in the host configuration. Two things are now unknown and both are decision-relevant. First, whether the raise is honoured at all: published guidance warns that some subscription accounts hit an effective ceiling near 360,000 tokens REGARDLESS of the configured value, and that figure is suspiciously close to the client's own default effective window, so it may describe accounts whose config never took effect rather than a server cap. If our account is capped, a client that believes it has a million tokens will not compact and the request will fail at the server instead, which is worse than compacting. Second, how often we were compacting before, because compaction costs turns and a re-oriented worker re-reads files, and this project has measured that burn is steps multiplied by context. Neither figure exists anywhere today. WHAT THE STREAM MIGHT CARRY, AND YOU MUST DETERMINE IT RATHER THAN ASSUME IT. A peer established this morning that this dialect's streams carry many completed-item records with no usage on them and exactly one aggregate usage record for the whole turn, so per-request token figures are not available. What is NOT yet established is whether the client emits anything when it compacts history, or when it approaches or hits a context ceiling. Find out from real streams under the crew runs directory: there are hundreds, spanning short runs and runs of many hours, and the long ones must have compacted repeatedly under the old default. Search for records whose type or content concerns compaction, context, history, truncation, summarisation or a token limit, and read the actual records rather than matching on a word. If such a record exists it is the most valuable thing in this node, because the context size at the moment of compaction is the ONLY route this dialect offers to a per-request-scale figure, and that figure is what settles the ceiling question. WHAT TO BUILD, IN A NEW MODULE ONLY. Create reckon/crew/context_budget.py exposing one function taking a path to a run's stream and returning the number of compactions observed, the largest context size the stream reveals, the record type each figure was read from, and an explicit unmeasured marker for any figure the stream does not support. Do not wire it into promotion, dispatch, the ledger, the CLI or any surface. Do not read or modify any configuration file. Do not edit reckon/_backends.py, reckon/crew/metering.py, reckon/crew/quota_weight.py, reckon/crew/promotion.py, reckon/crew/prompts.py or docs/research/deploy-matrix.html; peers hold all six this hour. IF THE STREAM CARRIES NO SUCH RECORD, THAT IS THE FINDING AND YOU DELIVER IT. Return the unmeasured marker for both figures on this dialect, state in a comment which record types you searched and how many records of each you examined, and give the count of streams and records you looked at so a later reader can judge the search rather than repeat it. A negative result stated with its search breadth is a real deliverable here; a negative result stated without it is worthless. Do not substitute the aggregate turn usage for a context size \u2014 a peer blocked correctly this morning rather than make exactly that substitution, because relabelling a run total as a per-request figure is the defect this work exists to remove. RANGE THE FALSIFIERS OVER THE DOMAIN, NOT OVER THE STREAMS YOU FIND. Every real stream available to you was produced under the OLD configuration, so a test asserting only against real streams ranges over a population in which the new behaviour cannot appear, and this project has shipped a fail-open past a clean suite for exactly that reason. So construct streams for the cases reality cannot yet supply. FALSIFIERS, asserted in tests/test_context_budget.py, every expected figure computed in the test rather than written as a literal. A constructed stream containing three compaction records returns three, and one containing none returns zero rather than the unmeasured marker, so a run that genuinely did not compact is distinguishable from a stream that cannot say. A constructed stream carrying no record of any relevant type returns the unmeasured marker for both figures and does not raise. A missing stream path and an unreadable stream both return the unmeasured marker and do not raise. A constructed stream whose compaction records carry differing context sizes returns the largest, not the first, not the last and not their sum. The largest context size returned is never equal to a cumulative or aggregate total present in the same constructed stream, asserted directly by placing a much larger aggregate figure in the fixture and requiring the returned figure to be the smaller per-compaction one, so the substitution that blocked the peer node cannot pass here either. Run the function over at least twenty real streams of varying length and assert it raises on none of them and returns a coherent result for each, which is a robustness check and not a claim about the figures. Measure base and head over the new file and the tests that import reckon.crew, report failure ids either side, require none added, bound the run per file, and never run the full suite for this node.",
+          "estimated_hours": 1.25,
+          "goal": "Report a run's compaction count and the largest context it reached, or state the negative result with the breadth of the search that found nothing",
+          "id": "the-stream-says-how-often-we-compacted",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T055204955978-the-stream-says-how-often-we-compacted/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/crew/context_budget.py",
+            "tests/test_context_budget.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-context-budget",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T05:52:12Z",
+        "completed_at": "2026-09-08T06:38:17Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 2765,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 2765,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "e6242ffc70fc227e36c943b57cf1116997f122fb",
+        "commits": [
+          "c9941c535fbd0a7fffc17f9280e02436d6eedbe4"
+        ],
+        "changed_lines": {
+          "added": 207,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_context_budget.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T055204955978-the-stream-says-how-often-we-compacted/measured-real-stream.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T055204955978-the-stream-says-how-often-we-compacted/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07f92-f777-7950-a52e-50602081c4b5",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 30231808,
+            "cached_input_tokens_cumulative": 30231808,
+            "input_tokens": 30491131,
+            "input_tokens_cumulative": 30491131,
+            "output_tokens": 50650,
+            "output_tokens_cumulative": 50650,
+            "reasoning_output_tokens": 22308,
+            "reasoning_output_tokens_cumulative": 22308
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 30231808,
+          "cumulative_input_tokens": 60722939,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 72958
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/the-stream-says-how-often-we-compacted",
+          "session_id": "01a07f92-f777-7950-a52e-50602081c4b5",
+          "session_source": "stream",
+          "retained_at": "2026-09-08T06:38:17Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -73747,6 +73894,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1151
+    "_version": 1153
   }
 }
