@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T12:56:24",
+  "updated": "2026-09-08T12:59:20",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -2032,9 +2032,11 @@
         "id": "ship0908-local",
         "harness": "clive",
         "role": "investigate",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "bf419b9b-e7f7-4024-a496-7b7f480435da",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"read-only\",\"usable_input_window\":1016576}": "bf419b9b-e7f7-4024-a496-7b7f480435da"
+        },
         "created": "2026-09-08"
       },
       {
@@ -77438,6 +77440,168 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T103940662229-effort-reaches-the-loop-precondition",
+        "plan": "clive-local-workers",
+        "section": "\u00a710",
+        "node": "effort-reaches-the-loop-precondition",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1126,
+                "cached_input_tokens": 220572,
+                "input_tokens": 221700,
+                "output_tokens": 639,
+                "reasoning_output_tokens": 71,
+                "total_tokens": 222339,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "91fbc665-22c6-45fd-9451-3fbf95ca126e",
+            "session_id": "ship-s15-2026-09-08"
+          },
+          "done_when": "The report at /home/ITER/mcintos/.config/reckon/crew/reports/local-lane-effort-observable.md gives per model and per declared effort the number of runs measured, the emitted thinking-block count per run, and the total thinking character volume per run, all read from the stream files under /home/ITER/mcintos/.config/reckon/crew/runs/ with the record field each figure came from named beside it, lists every pair of runs sharing a node id and base revision while differing in declared effort, and closes with a verdict of distinguishable, indistinguishable, or corpus-insufficient carrying the counts that support it",
+          "estimated_hours": 0.6,
+          "goal": "Report whether declared effort changes what the local lane emits, measured as thinking blocks and their character volume in run streams already on disk",
+          "id": "effort-reaches-the-loop-precondition",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T103940662229-effort-reaches-the-loop-precondition/manifest.md",
+          "plan": "clive-local-workers",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "investigate",
+          "section": "\u00a710",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/local-lane-effort-observable.md"
+          ]
+        },
+        "role": "investigate",
+        "spec_level": "guided",
+        "member": "ship0908-local",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "read-only",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-08T10:39:47Z",
+        "completed_at": "2026-09-08T10:53:06.850Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 791,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 799,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "21fa8383905c6ac1a9b18af42440990ab9395776",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "python3 /home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T103940662229-effort-reaches-the-loop-precondition/coordinator-recount.py local-flag-merge-review",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T103940662229-effort-reaches-the-loop-precondition/coordinator-recount.log",
+          "log_digest": "9c7e2fc68a49aadfe9fa6ff163c50bcf35e16236c89d44f9e9c53e82f77debb7"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T103940662229-effort-reaches-the-loop-precondition/manifest.md",
+        "scope_changed": false,
+        "session_id": "bf419b9b-e7f7-4024-a496-7b7f480435da",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6986935,
+            "input_tokens_cumulative": 6986935,
+            "output_tokens": 66169,
+            "output_tokens_cumulative": 66169,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-08T10:53:06.850Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6986935,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 796.069,
+          "generated_tokens": 66169,
+          "generation_seconds": 645.489,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 16.8,
+          "machine_seconds": 150.58,
+          "peak_input_tokens": 170335,
+          "tokens_per_second": 102.51,
+          "wall_tokens_per_second": 83.12
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "investigate",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": "report-only investigate node measuring existing streams; no source changed and the deliverable is a file outside the repository",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-08/effort-reaches-the-loop-precondition",
+          "session_id": "bf419b9b-e7f7-4024-a496-7b7f480435da",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T10:53:06.850Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -77666,6 +77830,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1203
+    "_version": 1205
   }
 }
