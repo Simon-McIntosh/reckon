@@ -86,8 +86,8 @@ _MAX_RETRY_DELAY_SECONDS = 0.05
 # flight.yaml's local_backend documentation for the concrete host mapping.
 UNMETERED_BACKENDS = frozenset({"clive", "clive-glm"})
 
-# Fields every completed record carries. Named here so a test can assert the
-# calibration inputs exist rather than trusting each writer to remember them.
+# Declared schema for completed ledger rows; tests ensure every key a promoted row
+# writes is declared here before merging new measurements.
 RECORD_FIELDS = (
     "run_id",
     "plan",
@@ -96,6 +96,9 @@ RECORD_FIELDS = (
     "node_definition",
     "role",
     "spec_level",
+    "execution_fit",
+    "attempt_kind",
+    "attempt",
     "member",
     "backend",
     "local",
@@ -103,13 +106,16 @@ RECORD_FIELDS = (
     "dispatched_at",
     "completed_at",
     "completed_at_source",
+    "wall_seconds",
+    "throughput",
     "worker_seconds",
     "worker_seconds_source",
-    "wall_seconds",
     "stalled",
     "time_budget",
     "base_sha",
     "commits",
+    "no_commit",
+    "commit_resolution",
     "changed_lines",
     "tests_added",
     "gate",
@@ -117,13 +123,21 @@ RECORD_FIELDS = (
     "suite_delta",
     "failure_classification",
     "outcome",
+    "worktree_retention",
+    "dispute_count",
+    "follow_on_paths",
+    "predecessor_run",
     "manifest_path",
     "scope_changed",
+    "scope_acceptances",
     "session_id",
     "budget",
     "lineage",
     "shadow_controlled",
     "shadow_patch",
+    "boundary_waiver",
+    "resume_waiver",
+    "watch_override",
     "unreconciled_override",
 )
 
@@ -981,6 +995,26 @@ def build_record(
         record["predecessor_run"] = str(predecessor_run)
     if dispute_count is not None:
         record["dispute_count"] = dispute_count
+    record.setdefault("execution_fit", None)
+    record.setdefault("attempt_kind", None)
+    record.setdefault("attempt", None)
+    record.setdefault("throughput", None)
+    record.setdefault("no_commit", None)
+    record.setdefault("commit_resolution", None)
+    record.setdefault("worktree_retention", None)
+    record.setdefault("scope_acceptances", None)
+    record.setdefault("boundary_waiver", None)
+    record.setdefault("resume_waiver", None)
+    record.setdefault("watch_override", None)
+    if follow_on_paths is None:
+        record.setdefault("follow_on_paths", None)
+    else:
+        record.setdefault(
+            "follow_on_paths",
+            [str(path) for path in follow_on_paths],
+        )
+    record.setdefault("dispute_count", None)
+    record.setdefault("predecessor_run", None)
     return record
 
 
@@ -1049,6 +1083,9 @@ def append_run(
     if not run_id:
         raise LedgerError("a run record must carry a run_id")
     ledger_root = _run_ledger_root(project, root)
+    stored_record = dict(record)
+    if stored_record.get("throughput") is None and str(stored_record.get("manifest_path") or ""):
+        stored_record.pop("throughput", None)
     last: LedgerError | None = None
     for _attempt in range(max(1, attempts)):
         data, version = load(project, ledger_root)
@@ -1061,7 +1098,7 @@ def append_run(
                 f"(completed {existing.get('completed_at')!r}); promoting it twice "
                 "would double-count its measurements"
             )
-        data["runs"] = data["runs"] + [dict(record)]
+        data["runs"] = data["runs"] + [stored_record]
         try:
             new_version = write(project, data, version, ledger_root)
         except LedgerError as exc:
@@ -1071,7 +1108,7 @@ def append_run(
         return {
             "path": str(ledger_path(project, ledger_root)),
             "version": new_version,
-            "run": dict(record),
+            "run": dict(stored_record),
         }
     raise LedgerError(
         f"ledger for {project!r} was rewritten on every attempt — {last}"
