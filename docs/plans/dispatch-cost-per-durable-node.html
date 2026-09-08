@@ -632,6 +632,69 @@
       honour, and by launching two arms of one pair and requiring both to exist afterwards.
     </p>
 
+    <h2 id="s12">&sect;12 &mdash; A metered lane is chosen, never inherited</h2>
+    <p>
+      Nothing in dispatch asks a coordinator which lane it wants. Resolution ends at
+      <code>reckon/crew/dispatch.py</code> with
+      <code>requested_backend = requested_backend or member_harness</code>, so a call that
+      declares no backend silently takes whichever one the chosen roster member happens to
+      carry. 125 of the 220 registered members declare the metered harness, which makes
+      picking a member by convenience the same act as spending a shared weekly window &mdash;
+      an act nothing refuses, warns about, or records as a decision.
+    </p>
+    <p>
+      The window is per account, not per session, and four coordinators drew on it today.
+      Measured on 2026-09-08, one weekly window, reset <code>2026-09-15T02:28:53Z</code>:
+    </p>
+    <table>
+      <thead><tr><th>Read at</th><th>Window used</th><th>Burn multiple</th><th>Projected exhaustion</th></tr></thead>
+      <tbody>
+        <tr><td>15:57Z</td><td>46%</td><td>5.7&times;</td><td>2026-09-09T18:54Z</td></tr>
+        <tr><td>19:35Z</td><td>52%</td><td>5.1&times;</td><td>2026-09-10T01:08Z</td></tr>
+      </tbody>
+    </table>
+    <p>
+      Six points in three and a half hours, against a sustainable 0.35 points per hour, and
+      an exhaustion date five days ahead of the reset. In the same interval a peer coordinator
+      dispatched four consecutive implement nodes to the same metered model at high effort
+      inside three and a half minutes, each one routed by member inheritance rather than by a
+      stated choice.
+    </p>
+    <p>
+      <strong>The fence belongs at dispatch because that is the only layer every session
+      passes through.</strong> A coordinator that economises cannot hold an account-wide
+      window while three peers inherit their way onto it, so guidance addressed to
+      coordinators cannot reach the mechanism &mdash; and the mechanism is one line of
+      fall-through. This is also the precedent &sect;5 already locked: an undeclared
+      specification level is refused rather than defaulted, because a silent default
+      reproduces the failure where 965 runs became invisible to calibration, and silence is
+      the failure that costs most because it looks like success. An undeclared lane is the
+      same property one field over.
+    </p>
+    <p>
+      The refusal is narrow by construction: it fires only where the resolved lane is
+      metered. <code>ledger.is_unmetered_backend</code> already answers that, so a locally
+      served or otherwise unmetered dispatch is never refused for this reason and the free
+      lanes stay the path of least resistance &mdash; which is the routing outcome wanted
+      anyway. The cost accepted is that every existing caller relying on member inheritance
+      onto a metered lane is refused once and has to state its choice; the refusal names the
+      flag, so the repair is one edit.
+    </p>
+    <p>
+      <em>Done when</em> a dispatch whose lane resolves to a metered backend without an
+      explicit declaration is refused as not-dispatchable, naming the resolved backend, the
+      window utilisation read at that moment, and the unmetered backends that would serve;
+      when the same dispatch carrying an explicit declaration proceeds unchanged; when a
+      dispatch resolving to an unmetered backend is never refused for this reason, proven by
+      a local dispatch that still launches with no lane flag; when a member's declared
+      harness no longer supplies a metered lane on its own; and when the run record carries
+      the declared lane beside the window utilisation observed at dispatch, so the ledger can
+      later show what each choice cost. Asserted by dispatching the same node with and
+      without a declaration and requiring one refusal and one launch, by requiring the
+      refusal text to name the backend, the figure and an alternative, and by reading the
+      recorded utilisation back off the run.
+    </p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="node-size-bound" data-choice="warn-only" data-by="Simon McIntosh" data-when="2026-09-04T08:10:20+00:00">
