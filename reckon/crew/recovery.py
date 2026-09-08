@@ -12,7 +12,7 @@ import time
 from contextlib import contextmanager
 from datetime import UTC, datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Iterator, Mapping
+from typing import Any, Callable, Iterable, Iterator, Mapping
 
 from reckon.crew import review as review_module
 from reckon.crew import runs
@@ -1821,6 +1821,28 @@ def closure_disposition_valid(disposition: str, classification: str) -> bool:
     return disposition == "handed-off" or (
         disposition == "still-working" and classification == "running"
     )
+
+
+def _partition_session_rows(
+    rows: Iterable[Mapping[str, Any]], session: str | None
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Separate one coordinator's rows from visible peer-session rows.
+
+    Omitting a session preserves the project-wide interpretation: every row is
+    counted and there is no peer partition. Supplying one uses the dispatching
+    session already persisted on each pointer, so aiming the fence adds no
+    ownership state of its own. A legacy row with no recorded owner remains in
+    the counted set: absence cannot prove that a live pointer belongs to a peer.
+    """
+    copied = [dict(row) for row in rows]
+    if session is None:
+        return copied, []
+    own: list[dict[str, Any]] = []
+    peers: list[dict[str, Any]] = []
+    for row in copied:
+        owner = str(row.get("session") or "")
+        (own if not owner or owner == session else peers).append(row)
+    return own, peers
 
 
 def overdue_unreconciled_runs(

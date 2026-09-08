@@ -2925,8 +2925,10 @@ def _crew(
     ``live``: every run row gains ``mine``, and the watcher block reports
     ``session_attached`` plus the session-scoped ``attach_line``. Without it the
     answer is project-wide, which says a producer exists and says nothing about
-    whether this session will hear its own runs finish. On ``runs``, ``session``
-    filters the worker session identity carried by each compact row.
+    whether this session will hear its own runs finish. On ``drain``, it counts
+    only that session toward closure and reports peer rows separately. On
+    ``runs``, ``session`` filters the worker session identity carried by each
+    compact row.
 
     ``checkout_path`` follows the same worktree-routing contract as
     ``read_plan``: with it, the ledger and the routing project layer resolve
@@ -3133,7 +3135,7 @@ def _crew(
             return {
                 "ok": True,
                 "view": view,
-                **crew_module.drain(project),
+                **crew_module.drain(project, session=session),
             }
         if view == "ledger":
             data, version = ledger_module.load(project, checkout_path)
