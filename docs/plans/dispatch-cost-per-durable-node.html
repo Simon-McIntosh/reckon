@@ -620,22 +620,31 @@
       as a second variable and measures neither cleanly.
     </p>
     <p>
-      <strong>The dispatch path drops an override too, and inverts which one.</strong> Measured
-      on three runs of this session, read off the run records rather than the ticker: two
-      dispatched with <code>--set backends.&lt;name&gt;.effort=medium</code> resolved to
-      <code>high</code>, and one dispatched with
+      <strong>The two paths honour opposite keys, and only one of them is behaving as
+      documented.</strong> Measured on three runs, read off the run records rather than the
+      ticker: two dispatched with <code>--set backends.&lt;name&gt;.effort=medium</code> resolved
+      to <code>high</code>, and one dispatched with
       <code>--set roles.&lt;role&gt;.by_spec_level.&lt;level&gt;.effort=medium</code> resolved to
-      <code>medium</code>. So on dispatch the role overlay wins and the backend value is dropped,
-      while on shadow the backend value wins and the role overlay is dropped &mdash; mirror
-      images of one defect. Neither path refuses, warns, or records the override it discarded.
+      <code>medium</code>. Set beside the shadow readings above, the picture is an inversion: on
+      dispatch the role overlay is authoritative and the backend key loses, on shadow the backend
+      key is authoritative and the role key is dropped.
     </p>
     <p>
-      Which key is dropped decides what a coordinator is charged. The backend key is the one the
-      execution guidance offers as its own example, so a coordinator economising by the obvious
-      route is billed at the higher effort and told nothing; two of this session's three nodes
-      ran that way. That makes the silent drop a spend defect rather than only an attribution
-      one, and it is why the requirement below has to hold on both paths rather than on the
-      shadow alone.
+      They are two rows rather than one, because the severities differ and collapsing them hides
+      the worse half. On dispatch, precedence behaved exactly as the flag's own help describes
+      &mdash; the routed-effort key overlays the backend one &mdash; so the defect is the
+      <em>silence</em>: an override the path deliberately subordinates is discarded without a
+      refusal, a warning, or a record. On shadow the key the execution guidance tells a
+      coordinator to use does nothing at all, against a flag claiming it always wins, which is
+      undocumented and simply wrong.
+    </p>
+    <p>
+      The silent half still costs money, which is why it is recorded here rather than filed as a
+      documentation nit. The backend key is the one the execution guidance offers as its own
+      example, so a coordinator economising by the obvious route is billed at the higher effort
+      and told nothing; two of this session's three nodes ran that way. That is the case for
+      requiring a refusal or a record on both paths below, even where precedence itself is
+      correct.
     </p>
     <p>
       Done when a shadow resolves effort through the same path a dispatch does, so re-running a
