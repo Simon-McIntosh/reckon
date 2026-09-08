@@ -1,9 +1,32 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from types import SimpleNamespace
 
+import pytest
+
+from reckon import flight
 from reckon.crew.lane_evidence import MINIMUM_LANE_SAMPLE, lane_evidence
-from reckon.crew.quota_weight import REFERENCE_MODEL, RequestTokenUsage, quota_weight
+from reckon.crew.quota_weight import RequestTokenUsage, quota_weight
+
+
+@pytest.fixture(autouse=True)
+def configured_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Declare the test model and its rates through the flight configuration."""
+    config = {
+        "backends": {
+            "fixture-lane": {
+                "model": "fixture-model",
+                "input_rate_per_million": 4.00,
+                "output_rate_per_million": 20.00,
+            },
+        }
+    }
+    monkeypatch.setattr(flight, "resolve", lambda: SimpleNamespace(config=config))
+
+
+def _configured_model_identifier() -> str:
+    return next(iter(flight.resolve().config["backends"].values()))["model"]
 
 
 def _run(
@@ -25,7 +48,7 @@ def _run(
         "dispute_count": dispute_count,
         "wall_seconds": wall_seconds,
         "commits": [f"{lane}-{node}"] if durable else [],
-        "agent": {"model": REFERENCE_MODEL},
+        "agent": {"model": _configured_model_identifier()},
         "gate": "passed",
     }
     if requests is not None:
@@ -55,7 +78,9 @@ def _weights(rows: Iterable[dict[str, object]]) -> float:
         requests = row["quota_requests"]
         assert isinstance(requests, list)
         usage = [RequestTokenUsage(**request) for request in requests]
-        result = quota_weight(REFERENCE_MODEL, usage)
+        agent = row["agent"]
+        assert isinstance(agent, dict)
+        result = quota_weight(agent["model"], usage)
         total += result.weight
     return total
 

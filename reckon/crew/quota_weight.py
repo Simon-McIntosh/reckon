@@ -1,22 +1,11 @@
-"""Published token rates yield a dimensionless weight relative to a reference.
-
-The reference member's input and output rate ratios remain one, but a run's
-weight scales with the tokens it consumed. The result is never a dollar amount,
-because subscription workers are not priced per token and the rates are used
-only as ratios. The subscription's per-window message allowances for the three
-declared members are roughly one to two to twenty, agreeing in direction and
-order of magnitude with the independent token-rate ratios.
-"""
+"""Configured token rates yield a dimensionless quota-consumption weight."""
 
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from types import MappingProxyType
 
-REFERENCE_MODEL = "gpt-5.6-sol"
-MIDDLE_MODEL = "gpt-5.6-terra"
-EFFICIENT_MODEL = "gpt-5.6-luna"
+from reckon import flight
 
 LONG_CONTEXT_INPUT_THRESHOLD = 272_000
 # The published rule charges an entire request whose input exceeds the threshold
@@ -34,15 +23,29 @@ class ModelRate:
     output_per_million: float
 
 
-# These published values are declared data because a guessed or silently
-# defaulted rate would misroute every later comparison that consumes the weight.
-MODEL_RATES: Mapping[str, ModelRate] = MappingProxyType(
-    {
-        REFERENCE_MODEL: ModelRate(input_per_million=4.00, output_per_million=20.00),
-        MIDDLE_MODEL: ModelRate(input_per_million=2.00, output_per_million=12.00),
-        EFFICIENT_MODEL: ModelRate(input_per_million=0.20, output_per_million=1.20),
-    }
-)
+def _configured_rates() -> dict[str, ModelRate]:
+    """Return complete model-rate pairs from the resolved flight configuration.
+
+    No rate is shipped by default: until a host declares one, every model stays
+    explicitly unpriced rather than inheriting a moving number that can go stale.
+    """
+    rates: dict[str, ModelRate] = {}
+    backends = flight.resolve().config.get("backends") or {}
+    if not isinstance(backends, Mapping):
+        return rates
+    for backend in backends.values():
+        if not isinstance(backend, Mapping):
+            continue
+        model_identifier = backend.get("model")
+        input_rate = backend.get("input_rate_per_million")
+        output_rate = backend.get("output_rate_per_million")
+        if not model_identifier or input_rate is None or output_rate is None:
+            continue
+        rates[str(model_identifier)] = ModelRate(
+            input_per_million=float(input_rate),
+            output_per_million=float(output_rate),
+        )
+    return rates
 
 
 @dataclass(frozen=True, slots=True)
@@ -121,7 +124,8 @@ def quota_weight(
             surcharged_output_tokens += request.output_tokens
 
     surcharge_applied = requests_over_threshold > 0
-    rate = MODEL_RATES.get(model_identifier)
+    rates = _configured_rates()
+    rate = rates.get(model_identifier)
     if rate is None:
         return UnknownQuotaWeight(
             model_identifier=model_identifier,
@@ -146,11 +150,17 @@ def quota_weight(
             surcharge_applied=False,
         )
 
-    reference_rate = MODEL_RATES[REFERENCE_MODEL]
+    # Each component is normalised by the largest rate configuration declares.
+    # The reference cannot be a model name: model identities are operator data,
+    # and source must remain neutral when configured backends change.
+    normalising_rate = ModelRate(
+        input_per_million=max(item.input_per_million for item in rates.values()),
+        output_per_million=max(item.output_per_million for item in rates.values()),
+    )
     weighted_tokens = surcharged_input_tokens * (
-        rate.input_per_million / reference_rate.input_per_million
+        rate.input_per_million / normalising_rate.input_per_million
     ) + surcharged_output_tokens * (
-        rate.output_per_million / reference_rate.output_per_million
+        rate.output_per_million / normalising_rate.output_per_million
     )
     return RelativeQuotaWeight(
         model_identifier=model_identifier,
