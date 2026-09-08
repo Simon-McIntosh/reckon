@@ -7,10 +7,11 @@ import json
 import re
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from reckon import ledger
 from reckon.crew import rollout as rollout_module
 from reckon.doccheck import lifecycle_staleness, modified_age_days
 from reckon.lifecycle import (
@@ -45,6 +46,20 @@ MAX_ERROR_TEXT_LENGTH = 512
 MAX_ERROR_COLLECTION_ITEMS = 25
 _SAFE_SEGMENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
+# Quota readings are whole percentages, so a 94% threshold leaves six
+# distinguishable percentage points before exhaustion rather than treating
+# quantisation noise as a dispatchable margin.
+AT_RISK_USED_PERCENT = 94
+# Forty-seven minutes is less than one sixth of the shortest reported
+# 300-minute window; older evidence cannot support a claim about serving now.
+QUOTA_READING_STALE_AFTER = timedelta(minutes=47)
+
+AMPLE_SERVING_STATE = "will_serve"
+AT_RISK_SERVING_STATE = "at_risk"
+STALE_SERVING_STATE = "stale"
+EXHAUSTED_SERVING_STATE = "exhausted"
+UNMEASURED = "unmeasured"
+
 
 def _unmeasured_reason(value: object) -> str | None:
     """Return an explicit receipt gap reason, or ``None`` for a measurement."""
@@ -70,6 +85,42 @@ def _receipt_observed_at(run: Mapping[str, Any]) -> str | None:
         if run.get(key):
             return str(run[key])
     return None
+
+
+def _parsed_observation(value: str | None) -> datetime | None:
+    """Parse a receipt observation stamp without treating malformed text as fresh."""
+
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return None
+    return parsed.astimezone(UTC)
+
+
+def _serving_state(
+    used_percent: object,
+    observed_at: str | None,
+    composed_at: str,
+) -> str:
+    """State only what a measured quota reading supports at composition time."""
+
+    if not isinstance(used_percent, (int, float)) or isinstance(used_percent, bool):
+        return UNMEASURED
+    observed = _parsed_observation(observed_at)
+    composed = _parsed_observation(composed_at)
+    if observed is None or composed is None:
+        return UNMEASURED
+    if composed - observed > QUOTA_READING_STALE_AFTER:
+        return STALE_SERVING_STATE
+    if used_percent >= 100:
+        return EXHAUSTED_SERVING_STATE
+    if used_percent >= AT_RISK_USED_PERCENT:
+        return AT_RISK_SERVING_STATE
+    return AMPLE_SERVING_STATE
 
 
 def _backend_from_run(run: Mapping[str, Any]) -> str:
@@ -143,7 +194,9 @@ def _measured_or_marker(value: object) -> tuple[object, str | None]:
 
 
 def _quota_rows(
-    readings: Mapping[int, object] | object, observed_at: str | None
+    readings: Mapping[int, object] | object,
+    observed_at: str | None,
+    composed_at: str,
 ) -> tuple[list[dict[str, Any]], str | None]:
     reason = _unmeasured_reason(readings)
     if reason is not None:
@@ -166,16 +219,8 @@ def _quota_rows(
             "used_percent": used,
             "remaining_percent": remaining,
             "resets_at": reset,
-            "observed_at": observed_at or "unmeasured",
-            "serving_state": (
-                "exhausted"
-                if isinstance(used, (int, float))
-                and not isinstance(used, bool)
-                and used >= 100
-                else "will_serve"
-                if isinstance(used, (int, float)) and not isinstance(used, bool)
-                else "unmeasured"
-            ),
+            "observed_at": observed_at or UNMEASURED,
+            "serving_state": _serving_state(used, observed_at, composed_at),
         }
         reasons = {
             key: value
@@ -184,7 +229,14 @@ def _quota_rows(
                 ("remaining_percent", used_reason),
                 ("resets_at", reset_reason),
                 ("observed_at", None if observed_at else "no_observation_time"),
-                ("serving_state", used_reason),
+                (
+                    "serving_state",
+                    used_reason
+                    if used_reason is not None
+                    else "no_observation_time"
+                    if _parsed_observation(observed_at) is None
+                    else None,
+                ),
             )
             if value is not None
         }
@@ -238,25 +290,46 @@ def crew_lanes_view(
             continue
 
         session_id = str(run.get("session_id"))
+        if ledger.is_unmetered_backend(backend_name):
+            lanes.append(
+                {
+                    "backend": backend_name,
+                    "alias": settings.get("alias"),
+                    "model": settings.get("model"),
+                    "receipt_state": "unmetered",
+                    "observed_at": UNMEASURED,
+                    "effective_context_window": UNMEASURED,
+                    "quota_windows": [],
+                    "unmeasured": {
+                        "receipt": "unmetered",
+                        "observed_at": "unmetered",
+                        "effective_context_window": "unmetered",
+                        "quota_windows": "unmetered",
+                    },
+                }
+            )
+            continue
+
         receipt = read_receipt(session_id)
         observed_at = _receipt_observed_at(run)
         context_value, context_reason = _measured_or_marker(
             getattr(receipt, "model_context_window", None)
         )
         readings = _quota_readings(receipt)
-        quota_rows, quota_reason = _quota_rows(readings, observed_at)
+        quota_rows, quota_reason = _quota_rows(readings, observed_at, composition_time)
         receipt_reason = _unmeasured_reason(
             getattr(receipt, "model_context_window", None)
         )
         if receipt_reason not in {"missing_rollout", "unreadable_rollout"}:
             receipt_reason = _unmeasured_reason(readings)
         unreadable = receipt_reason in {"missing_rollout", "unreadable_rollout"}
+        receipt_observed_at = None if unreadable else observed_at
         lane: dict[str, Any] = {
             "backend": backend_name,
             "alias": settings.get("alias"),
             "model": settings.get("model"),
             "receipt_state": "unreadable" if unreadable else "readable",
-            "observed_at": observed_at or "unmeasured",
+            "observed_at": receipt_observed_at or UNMEASURED,
             "effective_context_window": context_value,
             "quota_windows": quota_rows,
         }
@@ -264,7 +337,14 @@ def crew_lanes_view(
             key: value
             for key, value in (
                 ("receipt", receipt_reason if unreadable else None),
-                ("observed_at", None if observed_at else "no_observation_time"),
+                (
+                    "observed_at",
+                    "no_receipt_observation"
+                    if unreadable
+                    else None
+                    if receipt_observed_at
+                    else "no_observation_time",
+                ),
                 ("effective_context_window", context_reason),
                 ("quota_windows", quota_reason),
             )
