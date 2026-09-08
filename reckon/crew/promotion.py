@@ -371,6 +371,32 @@ def _require_gate_evidence(
     )
 
 
+def _require_commit_for_changed_manifest(
+    run_id: str, record: Mapping[str, Any]
+) -> None:
+    """Refuse completed repository work whose manifest omits its commit."""
+    manifest_present, fresh = _manifest_freshness(record)
+    if not manifest_present or not fresh:
+        return
+    try:
+        manifest = parse_manifest(
+            Path(str(record["manifest_path"])).read_text(encoding="utf-8")
+        )
+    except (OSError, KeyError, ValueError):
+        return
+    if (
+        str(manifest.get("status") or "").strip().lower() != "complete"
+        or not manifest.get("changed_paths")
+        or manifest.get("commits")
+    ):
+        return
+    raise CrewError(
+        f"run {run_id!r} has a complete manifest with changed_paths, but the "
+        "manifest field 'commits' is missing. Promotion cannot verify changed "
+        "repository paths without the commit that contains them"
+    )
+
+
 def _resolve_commits(*, cwd: Path, revisions: Iterable[str], run_id: str) -> list[str]:
     """Resolve every recorded revision to its canonical commit object id."""
     commits = []
@@ -1172,6 +1198,7 @@ def complete(
     commit_list = tuple(str(sha) for sha in commits if str(sha).strip())
     with _pointer_lock(run_id):
         record = read_pointer(run_id)
+        _require_commit_for_changed_manifest(run_id, record)
         if _is_shadow(record) and commit_list:
             raise CrewError(
                 f"shadow run {run_id!r} is commitless evidence; --commit is refused"
