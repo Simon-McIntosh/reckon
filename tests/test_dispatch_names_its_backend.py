@@ -139,8 +139,11 @@ def _invoke(
     node: str,
     extra: list[str] | None = None,
     dry_run: bool = True,
+    default_backend: str | None = None,
 ):
     config = deepcopy(CONFIG)
+    if default_backend is not None:
+        config["default_backend"] = default_backend
     monkeypatch.setattr(cli_module, "_resolved_flight", lambda *_a, **_k: config)
     monkeypatch.setattr(
         cli_module, "_model_availability_refusal", lambda *_a, **_k: None
@@ -245,27 +248,41 @@ def test_member_harness_and_named_backend_must_agree(
     assert "agent" not in payload
 
 
-def test_unknown_member_harness_does_not_declare_the_lane(
+def test_member_backend_without_budget_check_dispatches_without_lane_flag(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     ledger.register_member("proj", "worker", harness="beta", root=dispatch_repo)
-    _observe_window(monkeypatch)
     _config, result = _invoke(
         dispatch_repo,
         monkeypatch,
-        node="metered-member-backend",
-        extra=["--member", "worker"],
+        node="member-backend-without-budget-check",
+        extra=["--member", "worker", "--no-watch"],
         dry_run=False,
     )
 
     payload = _payload(result)
-    assert result.exit_code == 2
-    assert payload["error"] == "not-dispatchable"
-    assert "beta" in payload["detail"]
-    assert "not known to be unmetered" in payload["detail"]
-    assert "is metered" not in payload["detail"]
-    assert "52%" in payload["detail"]
-    assert "clive" in payload["detail"]
+    assert result.exit_code == 0
+    assert payload["backend"] == "beta"
+    assert payload["launch"] == "in-harness"
+
+
+def test_in_harness_default_without_budget_check_dispatches_without_lane_flag(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _config, result = _invoke(
+        dispatch_repo,
+        monkeypatch,
+        node="in-harness-default-without-budget-check",
+        extra=["--no-watch"],
+        dry_run=False,
+        default_backend="gamma",
+    )
+
+    payload = _payload(result)
+    assert result.exit_code == 0
+    assert payload["requested_backend"] is None
+    assert payload["backend"] == "gamma"
+    assert payload["launch"] == "in-harness"
 
 
 def test_unmetered_member_harness_dispatches_without_a_lane_flag(
@@ -338,25 +355,23 @@ def test_undeclared_metered_default_refuses_with_window_and_free_alternative(
     assert "is metered" in payload["detail"]
 
 
-def test_unknown_backend_still_requires_an_explicit_lane(
+def test_unknown_backend_without_budget_check_dispatches_without_lane_flag(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     ledger.register_member("proj", "worker", harness="gamma", root=dispatch_repo)
-    _observe_window(monkeypatch)
     _config, result = _invoke(
         dispatch_repo,
         monkeypatch,
-        node="unknown-member-backend",
-        extra=["--member", "worker"],
+        node="unknown-member-backend-without-budget-check",
+        extra=["--member", "worker", "--no-watch"],
         dry_run=False,
     )
 
     payload = _payload(result)
-    assert result.exit_code == 2
-    assert payload["error"] == "not-dispatchable"
-    assert "not known to be unmetered" in payload["detail"]
-    assert "is metered" not in payload["detail"]
-    assert "--backend gamma" in payload["detail"]
+    assert result.exit_code == 0
+    assert payload["requested_backend"] == "gamma"
+    assert payload["backend"] == "gamma"
+    assert payload["launch"] == "in-harness"
 
 
 def test_run_record_pairs_declared_lane_with_dispatch_window(
@@ -367,23 +382,23 @@ def test_run_record_pairs_declared_lane_with_dispatch_window(
         dispatch_repo,
         monkeypatch,
         node="recorded-backend",
-        extra=["--backend", "beta", "--no-watch"],
+        extra=["--backend", "alpha", "--no-watch"],
         dry_run=False,
     )
 
     payload = _payload(result)
     pointer = crew.read_pointer(payload["run_id"])
     assert result.exit_code == 0
-    assert pointer["requested_backend"] == "beta"
-    assert pointer["backend"] == "beta"
-    assert pointer["agent"]["backend"] == "beta"
-    assert pointer["node"]["requested_backend"] == "beta"
+    assert pointer["requested_backend"] == "alpha"
+    assert pointer["backend"] == "alpha"
+    assert pointer["agent"]["backend"] == "alpha"
+    assert pointer["node"]["requested_backend"] == "alpha"
     expected_lane = {
-        "backend": "beta",
+        "backend": "alpha",
         "headroom": "known",
         "metered": True,
         "observed_at": "2026-09-08T19:35:00Z",
-        "resolved_backend": "beta",
+        "resolved_backend": "alpha",
         "utilisation_pct": 52.0,
         "read_at": pointer["lane_declaration"]["read_at"],
     }
@@ -398,6 +413,6 @@ def test_run_record_pairs_declared_lane_with_dispatch_window(
         backend=pointer["backend"],
         agent=pointer["agent"],
     )
-    assert durable_record["backend"] == "beta"
-    assert durable_record["node_definition"]["requested_backend"] == "beta"
+    assert durable_record["backend"] == "alpha"
+    assert durable_record["node_definition"]["requested_backend"] == "alpha"
     assert durable_record["node_definition"]["lane_declaration"] == expected_lane
