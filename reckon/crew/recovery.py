@@ -886,7 +886,7 @@ def external_wait(
 ) -> dict[str, Any] | None:
     """Read a fresh external-wait declaration from one live pointer."""
     manifest = Path(str(record.get("manifest_path") or ""))
-    _present, fresh = _manifest_freshness(record)
+    _present, fresh = _run_chain_manifest_freshness(record)
     if not fresh:
         return None
     try:
@@ -905,6 +905,37 @@ def external_wait(
 def _reading_host() -> str:
     """The host this reader runs on, for gating process-table lookups."""
     return socket.gethostname()
+
+
+def _run_chain_manifest_freshness(record: Mapping[str, Any]) -> tuple[bool, bool]:
+    """Judge delivery against the first dispatch across the attempt chain."""
+    try:
+        attempt = int(record.get("attempt") or 1)
+        attempt_baseline = int(record["manifest_baseline_mtime_ns"])
+        first_dispatch = datetime.fromisoformat(str(record.get("created_at") or ""))
+    except (KeyError, TypeError, ValueError):
+        return _manifest_freshness(record)
+    if attempt <= 1:
+        return _manifest_freshness(record)
+    if first_dispatch.tzinfo is None:
+        first_dispatch = first_dispatch.replace(tzinfo=UTC)
+    first_dispatch_ns = (
+        int(first_dispatch.timestamp()) * 1_000_000_000
+        + first_dispatch.microsecond * 1_000
+    )
+    if attempt_baseline <= first_dispatch_ns:
+        return _manifest_freshness(record)
+
+    # Every attempt in one run shares the first dispatch as its time boundary.
+    # A manifest written by any attempt is newer than that boundary and remains
+    # readable as a handover, whatever status it carries. A manifest predating
+    # the run stays older, so the freshness gate still rejects an unrelated
+    # artifact instead of crediting it as this run's outcome. The resumed
+    # attempt's own start time cannot serve here: the handover necessarily
+    # predates the attempt that inherits it.
+    chain_record = dict(record)
+    chain_record["manifest_baseline_mtime_ns"] = first_dispatch_ns
+    return _manifest_freshness(chain_record)
 
 
 def classify_pointer(
@@ -928,7 +959,7 @@ def classify_pointer(
     run_id = str(record.get("run_id") or "")
     phase = str(record.get("phase") or "")
     manifest = Path(str(record.get("manifest_path") or ""))
-    manifest_file_present, manifest_present = _manifest_freshness(record)
+    manifest_file_present, manifest_present = _run_chain_manifest_freshness(record)
     manifest_data: dict[str, Any] = {}
     manifest_error = ""
     manifest_digest: str | None = None
