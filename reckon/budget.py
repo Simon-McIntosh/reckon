@@ -689,6 +689,132 @@ def state_for(
     return state
 
 
+# The shared account-weekly window every metered lane can report. A lane whose
+# keyed quota windows name another length has its own quota horizon, and the
+# budget view must report that one rather than the shared figure: one lane read
+# 97% of its own 300-minute window while the report beside it showed 21% on the
+# general weekly, so the nearly-exhausted lane looked clear for dispatch.
+_SHARED_WEEKLY_MINUTES = 7 * 24 * 60
+
+
+def _quota_windows(block: Mapping[str, Any]) -> dict[int, Mapping[str, Any]]:
+    """Normalise the keyed-by-window quota map a block may carry.
+
+    The account-surface probe records a mapping from window length to a row;
+    the fleet-state reader records a list of rows each naming its own window.
+    Both shapes are accepted, because either may be the freshest witness of a
+    lane's own horizon.
+    """
+    raw = block.get("quota_windows")
+    if isinstance(raw, Mapping):
+        rows: dict[int, Mapping[str, Any]] = {}
+        for raw_window, row in raw.items():
+            if not isinstance(row, Mapping):
+                continue
+            window = row.get("window_minutes")
+            if not isinstance(window, int) or isinstance(window, bool) or window <= 0:
+                try:
+                    window = int(raw_window)
+                except (TypeError, ValueError):
+                    continue
+            rows[int(window)] = row
+        return rows
+    if isinstance(raw, list):
+        rows = {}
+        for row in raw:
+            if not isinstance(row, Mapping):
+                continue
+            window = row.get("window_minutes")
+            if not isinstance(window, int) or isinstance(window, bool) or window <= 0:
+                continue
+            rows[int(window)] = row
+        return rows
+    return {}
+
+
+def _own_window_selection(
+    block: Mapping[str, Any],
+) -> tuple[str, int | None, Mapping[str, Any] | None]:
+    """Classify the windows a block declares for the budget view.
+
+    Returns a ``(status, window_minutes, row)`` triple:
+
+    - ``"shared"`` — no window other than the shared account weekly is named,
+      so the shared figure is the lane's own; the row is None.
+    - ``"own"`` — an own (non-weekly) horizon is named and at least one of the
+      lane's windows is measurable. The returned reading is the binding one
+      across every measured keyed window — the own horizon and the shared
+      weekly alike — keyed by its own length, because that is the window a
+      wave would actually run into first. Reporting the more-exhausted window
+      never hides an alarm; the measured defect was the reverse, a low shared
+      weekly figure standing in for a lane 97% through its own 300-minute
+      window, which read the lane as clear for dispatch.
+    - ``"own-unmeasured"`` — an own horizon is named but none of its windows
+      carries a numeric utilisation, so no figure can be read without
+      substituting the shared weekly.
+    """
+    windows = _quota_windows(block)
+    own = {
+        window: row
+        for window, row in windows.items()
+        if window != _SHARED_WEEKLY_MINUTES
+    }
+    if not own:
+        return ("shared", None, None)
+
+    def numeric(row: Mapping[str, Any]) -> float | None:
+        used = row.get("used_percent")
+        if isinstance(used, (int, float)) and not isinstance(used, bool):
+            return float(used)
+        return None
+
+    if not any(numeric(row) is not None for row in own.values()):
+        return ("own-unmeasured", None, None)
+    measured = [
+        (window, row) for window, row in windows.items() if numeric(row) is not None
+    ]
+    window, row = max(measured, key=lambda item: numeric(item[1]))
+    return ("own", window, row)
+
+
+def _effective_quota_block(block: Mapping[str, Any]) -> dict[str, Any]:
+    """Re-base a budget block onto a lane's own quota window when it has one.
+
+    A block may carry the shared account-weekly figure in its compatibility
+    fields while its keyed quota windows show the lane's own horizon, and the
+    two can disagree badly: a lane 97% of the way through its own 300-minute
+    window read clear beside a general weekly at 21%. When the block names a
+    window other than the shared weekly, the report re-bases on that own
+    window. When its own figure cannot be read, the report is unmeasured
+    rather than silently substituting the shared number.
+    """
+    status, window_minutes, row = _own_window_selection(block)
+    if status == "own":
+        effective = dict(block)
+        effective["utilisation_pct"] = row.get("used_percent")
+        effective["rate_limit_period_minutes"] = window_minutes
+        if row.get("resets_at"):
+            effective["resets_at"] = row["resets_at"]
+        if row.get("rate_limit_type"):
+            effective["rate_limit_type"] = row["rate_limit_type"]
+        effective["headroom"] = "known"
+        return effective
+    if status == "own-unmeasured":
+        effective = dict(block)
+        effective["headroom"] = "unknown"
+        effective["utilisation_pct"] = None
+        effective["rate_limit_period_minutes"] = None
+        effective["resets_at"] = None
+        detail = str(effective.get("detail") or "")
+        clause = (
+            "the lane's own quota window could not be read, so its figure was "
+            "not substituted from the shared weekly"
+        )
+        effective["detail"] = f"{detail}; {clause}".strip("; ") if detail else clause
+        return effective
+    return dict(block)
+
+
 def _from_block(
     backend_name: str,
     block: Mapping[str, Any],
@@ -705,6 +831,7 @@ def _from_block(
     describes nothing. It degrades to unknown, which never blocks — the honest
     answer, since the next run will measure it again.
     """
+    block = _effective_quota_block(block)
     resets_at = block.get("resets_at")
     reset_moment = _parse_stamp(resets_at) if resets_at else None
     remaining: int | None = None
