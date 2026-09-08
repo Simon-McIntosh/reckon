@@ -896,10 +896,10 @@ class _CodexDialect(Dialect):
     def read_probe(self, response: Mapping[str, Any]) -> dict[str, Any]:
         """Turn an account-limits answer into utilisation and a reset time.
 
-        Several metered windows can be reported at once, and the binding one is
-        whichever is furthest through — that is the window a wave would run into,
-        and its reset is the moment the hold lifts. Only the single-bucket view
-        is read: the per-bucket map keys on identifiers this module must not
+        Several metered windows can be reported at once. They remain keyed by
+        their own duration for readers that need every horizon, while the
+        compatibility fields still describe whichever window is furthest
+        through. The per-bucket map keys on identifiers this module must not
         record.
         """
         result = response.get("result")
@@ -918,6 +918,19 @@ class _CodexDialect(Dialect):
         window_type, binding = max(
             windows, key=lambda item: float(item[1]["usedPercent"])
         )
+        quota_windows = {
+            int(window["windowDurationMins"]): {
+                "window_minutes": int(window["windowDurationMins"]),
+                "used_percent": float(window["usedPercent"]),
+                "resets_at": _epoch_to_iso(window.get("resetsAt")),
+                "rate_limit_type": kind,
+            }
+            for kind, window in windows
+            if isinstance(window.get("windowDurationMins"), (int, float))
+            and not isinstance(window.get("windowDurationMins"), bool)
+            and float(window["windowDurationMins"]).is_integer()
+            and int(window["windowDurationMins"]) > 0
+        }
         budget = unknown_budget("")
         budget.update(
             {
@@ -927,6 +940,7 @@ class _CodexDialect(Dialect):
                 "rate_limit_period_minutes": binding.get("windowDurationMins"),
                 "resets_at": _epoch_to_iso(binding.get("resetsAt")),
                 "threshold_status": snapshot.get("rateLimitReachedType"),
+                "quota_windows": quota_windows,
                 "detail": "backend's account surface reports utilisation and reset time",
             }
         )
