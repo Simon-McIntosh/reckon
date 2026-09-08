@@ -543,8 +543,10 @@ def _coordinator_runtime() -> tuple[str | None, str | None, Path | None]:
             / f"{runtime_session}.jsonl"
         )
         search_root = user_home / ".claude" / "projects"
-        transcript = direct if direct.is_file() else _latest_transcript(
-            search_root.glob(f"*/{runtime_session}.jsonl")
+        transcript = (
+            direct
+            if direct.is_file()
+            else _latest_transcript(search_root.glob(f"*/{runtime_session}.jsonl"))
         )
     else:
         search_root = user_home / ".codex" / "sessions"
@@ -2110,16 +2112,6 @@ def _shadow_dispatch_config(
 
     explicit = {str(config_key) for config_key in configuration_overrides}
     effective = dict(candidate)
-    if "effort" in explicit:
-        backend = config.get("backends", {}).get(candidate_backend, {})
-        role = config.get("roles", {}).get(node.role, {})
-        # The CLI accepts both candidate-backend and direct-role spellings. Its
-        # routing overlays may otherwise hide either value before this point,
-        # so recover the explicitly named setting from its owning layer.
-        if "effort" in role:
-            effective["effort"] = role["effort"]
-        elif "effort" in backend:
-            effective["effort"] = backend["effort"]
     for config_key in ("effort", "sandbox"):
         if config_key not in explicit:
             effective[config_key] = primary_agent.get(config_key)
@@ -2150,6 +2142,29 @@ def _shadow_dispatch_config(
         else:
             inherited[config_key] = after
 
+    override_evidence: dict[str, dict[str, Any]] = {}
+    backend_layer = config.get("backends", {}).get(candidate_backend, {})
+    role_layer = config.get("roles", {}).get(node.role, {})
+    level_layer = (
+        role_layer.get("by_spec_level", {}).get(node.spec_level, {})
+        if isinstance(role_layer, Mapping)
+        else {}
+    )
+    for config_key in sorted(explicit):
+        layers = {
+            name: layer[config_key]
+            for name, layer in (
+                ("backend", backend_layer),
+                ("role", role_layer),
+                ("spec_level", level_layer),
+            )
+            if isinstance(layer, Mapping) and config_key in layer
+        }
+        override_evidence[config_key] = {
+            "layers": layers,
+            "resolved": shadow_agent.get(config_key, effective.get(config_key)),
+        }
+
     shadow_config = dict(config)
     backends = dict(config.get("backends") or {})
     backends[candidate_backend] = effective
@@ -2157,7 +2172,12 @@ def _shadow_dispatch_config(
     roles = dict(config.get("roles") or {})
     roles[node.role] = {"backend": candidate_backend}
     shadow_config["roles"] = roles
-    return shadow_config, {"substituted": substituted, "inherited": inherited}
+    return shadow_config, {
+        "substituted": substituted,
+        "inherited": inherited,
+        "overrides": override_evidence,
+        "resolved": {"effort": shadow_agent.get("effort")},
+    }
 
 
 def shadow(
@@ -2210,9 +2230,22 @@ def shadow(
                 "value": role_time_budget,
             }
         }
+    comparison["resolved"]["time_budget"] = node.time_budget
+    if "time_budget" in explicit:
+        backend_layer = config.get("backends", {}).get(candidate_backend, {})
+        comparison["overrides"]["time_budget"] = {
+            "layers": (
+                {"backend": backend_layer["time_budget"]}
+                if isinstance(backend_layer, Mapping) and "time_budget" in backend_layer
+                else {}
+            ),
+            "resolved": node.time_budget,
+        }
+    worktree_component = uuid.uuid4().hex[:12]
     lineage = {
         "kind": "shadow",
         "primary_run_id": run_id,
+        "worktree_component": worktree_component,
         "configuration": comparison,
     }
     if dry_run:
@@ -2224,6 +2257,7 @@ def shadow(
             project=project,
             repo=repo,
             base=base_sha,
+            backend_override=_backend_name,
         )
         return {
             "dry_run": True,
@@ -2238,13 +2272,14 @@ def shadow(
         project=project,
         repo=repo,
         config=shadow_config,
-        session=shadow_worktree_session(run_id, _backend_name),
+        session=shadow_worktree_session(run_id, _backend_name, worktree_component),
         base=base_sha,
         locked_decisions=node.requires_decisions,
         peer_scopes={},
         member=member,
         launcher=launcher,
         lineage_override=lineage,
+        backend_override=_backend_name,
     )
 
 

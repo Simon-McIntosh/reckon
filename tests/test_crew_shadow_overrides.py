@@ -50,7 +50,7 @@ def _config() -> dict:
     }
 
 
-def test_candidate_backend_effort_override_survives_role_overlay() -> None:
+def test_backend_effort_hidden_by_specification_overlay_is_recorded() -> None:
     resolved, lineage = _shadow_dispatch_config(
         config=_config(),
         node=_node(),
@@ -61,12 +61,17 @@ def test_candidate_backend_effort_override_survives_role_overlay() -> None:
 
     backend, agent = crew.resolve_role(resolved, "implement", "guided")
     assert backend == "clive"
-    assert agent["effort"] == "xhigh"
+    assert agent["effort"] == "medium"
     assert lineage["substituted"]["effort"] == {
         "primary": "medium",
-        "shadow": "xhigh",
+        "shadow": "medium",
         "via": "override",
     }
+    assert lineage["overrides"]["effort"] == {
+        "layers": {"backend": "xhigh", "spec_level": "medium"},
+        "resolved": "medium",
+    }
+    assert lineage["resolved"]["effort"] == "medium"
     assert "effort" not in lineage["inherited"]
 
 
@@ -83,11 +88,14 @@ def test_shadow_without_effort_override_inherits_primary_effort() -> None:
     assert agent["effort"] == "medium"
     assert lineage["inherited"]["effort"] == "medium"
     assert "effort" not in lineage["substituted"]
+    assert lineage["overrides"] == {}
+    assert lineage["resolved"]["effort"] == "medium"
 
 
 def test_direct_role_effort_override_is_honoured() -> None:
     config = _config()
     config["backends"]["clive"]["effort"] = "medium"
+    config["roles"]["implement"].pop("by_spec_level")
     config["roles"]["implement"]["effort"] = "xhigh"
 
     resolved, lineage = _shadow_dispatch_config(
@@ -104,6 +112,10 @@ def test_direct_role_effort_override_is_honoured() -> None:
         "primary": "medium",
         "shadow": "xhigh",
         "via": "override",
+    }
+    assert lineage["overrides"]["effort"] == {
+        "layers": {"backend": "medium", "role": "xhigh"},
+        "resolved": "xhigh",
     }
 
 
@@ -127,3 +139,4 @@ def test_backend_and_model_change_while_effort_is_inherited() -> None:
         },
     }
     assert lineage["inherited"]["effort"] == "medium"
+    assert lineage["resolved"]["effort"] == "medium"

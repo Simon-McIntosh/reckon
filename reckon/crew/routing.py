@@ -476,16 +476,18 @@ def _ledgered_run_ids(repo: Path, project: str | None) -> set[str]:
     }
 
 
-def shadow_worktree_session(primary_run_id: str, candidate_backend: str) -> str:
+def shadow_worktree_session(
+    primary_run_id: str, candidate_backend: str, component: str = ""
+) -> str:
     """Return the session token a shadow worktree lives under.
 
-    Named by its primary run and its candidate backend so several candidates can
-    shadow one primary concurrently; the candidate is what stops a second shadow
-    from colliding with the first. The dispatcher passes this same token when it
-    provisions the worktree, so routing can reconstruct the location from a
-    committed record without re-deriving the format by inspection.
+    New shadows add a recorded unique component beyond the primary run and
+    candidate backend, allowing repeated arms on one backend to retain separate
+    worktrees. A missing component preserves the single legacy location for
+    records written before repeated arms were supported.
     """
-    return f"shadow-{primary_run_id}-{candidate_backend}"
+    stem = f"shadow-{primary_run_id}-{candidate_backend}"
+    return f"{stem}-{component}" if component else stem
 
 
 def _shadow_patch_retained(record: Mapping[str, Any]) -> bool:
@@ -513,11 +515,12 @@ def _shadow_worktree_records(
         # The candidate backend comes from the committed record, not current
         # flight config: the record is what says which candidate actually ran.
         candidate = str(record.get("backend") or "").strip()
+        component = str(lineage.get("worktree_component") or "").strip()
         # A record that predates the candidate-named path (or never named one)
         # still resolves its single legacy worktree; only one candidate could
         # have produced a shadow before the candidate entered the path.
         session = (
-            shadow_worktree_session(primary_run_id, candidate)
+            shadow_worktree_session(primary_run_id, candidate, component)
             if candidate
             else f"shadow-{primary_run_id}"
         )

@@ -27,6 +27,8 @@ from reckon.crew.routing import (
     _git,
     _inspect_workspace,
     _repository_tree_snapshot,
+    _shadow_patch_retained,
+    _shadow_worktree_records,
     _signal_process_group,
 )
 from reckon.crew.runs import (
@@ -282,9 +284,7 @@ def _require_gate_evidence(
         except (OSError, KeyError, ValueError):
             delivered = {}
     declared = [
-        str(sha).strip()
-        for sha in (delivered.get("commits") or [])
-        if str(sha).strip()
+        str(sha).strip() for sha in (delivered.get("commits") or []) if str(sha).strip()
     ]
 
     presented = [str(sha).strip() for sha in commits if str(sha).strip()]
@@ -641,6 +641,9 @@ def _repository_tree_boundary_violations(
     declared_roots = _repository_scope_paths(
         declared, worktree=own_tree, repository=repository
     )
+    terminal_shadows = _shadow_worktree_records(
+        repository, str(record.get("project") or "") or None
+    )
     violations: list[str] = []
     for before in before_trees:
         if not isinstance(before, Mapping):
@@ -650,6 +653,17 @@ def _repository_tree_boundary_violations(
             continue
         path = Path(raw_path).resolve()
         if path == own_tree:
+            continue
+        shadow_record = terminal_shadows.get(path)
+        if (
+            shadow_record is not None
+            and _is_shadow(shadow_record)
+            and _shadow_patch_retained(shadow_record)
+        ):
+            # Committed shadow records are terminal, and their retained patch
+            # is the durable form of the worktree changes. The worktree may
+            # therefore keep that evidence without impersonating a live peer
+            # edit at the same declared path.
             continue
         after = after_by_path.get(str(path))
         if after is None or not after.get("available", False):
