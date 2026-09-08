@@ -1286,6 +1286,8 @@ class DispatchPlan:
     authority: dict[str, Any] | None = None
     live_conflicts: list[dict[str, Any]] | None = None
     sandbox_write_roots: tuple[Path, ...] | None = None
+    requested_backend: str | None = None
+    default_backend: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
         agent = _stamp_agent_display(
@@ -1297,10 +1299,12 @@ class DispatchPlan:
         payload = {
             "agent": agent,
             "backend": self.backend,
+            "default_backend": self.default_backend,
             "execution_fit": self.execution_fit.as_dict(),
             "launch": self.launch,
             "local": self.local,
             "node": self.node.as_dict(),
+            "requested_backend": self.requested_backend,
             "run_id": self.run_id,
             "sandbox": {
                 "tier": self.backend_settings.get("sandbox"),
@@ -1448,6 +1452,7 @@ def plan_dispatch(
     report_live_conflicts: bool = False,
     local: bool = False,
     backend_override: str | None = None,
+    member: str = "",
 ) -> DispatchPlan:
     """Resolve routing and defaults for one node and judge it. No side effects.
 
@@ -1473,9 +1478,41 @@ def plan_dispatch(
     # documented job is to validate the call, cannot report a dispatchable
     # node that the real dispatch then refuses on a missing precondition.
     _fleet_script()
-    if backend_override:
+    requested_backend = str(backend_override or "").strip()
+    # The command passes an empty string when its option is omitted. ``None``
+    # belongs to internal callers that did not invoke that routing surface.
+    if member and backend_override is not None:
+        if repo is None:
+            raise CrewError(
+                f"crew member {member!r} cannot be resolved without a repository"
+            )
+        member_authority = dict(
+            authority or resolve_dispatch_authority(project, Path(repo).resolve())
+        )
+        roster_member = ledger.member(
+            project,
+            member,
+            root=resolve_dispatch_ledger_root(member_authority),
+        )
+        if roster_member is None:
+            raise CrewError(
+                f"project {project!r} has no crew member {member!r}; register it "
+                "with `reckon crew member add` before dispatching to it"
+            )
+        member_harness = str(roster_member.get("harness") or "").strip()
+        if requested_backend and member_harness and requested_backend != member_harness:
+            raise CrewError(
+                f"dispatch requests backend {requested_backend!r}, but crew member "
+                f"{member!r} declares harness {member_harness!r}"
+            )
+        requested_backend = requested_backend or member_harness
+    # Only a dispatch with no caller or roster request may fall through to role
+    # and default routing. A wrong lane that announces itself costs one
+    # redispatch; a wrong lane that reports success can look merely quiet
+    # indefinitely.
+    if requested_backend:
         backend_name, backend = resolve_role_override(
-            config, node.role, node.spec_level, backend_override
+            config, node.role, node.spec_level, requested_backend
         )
     else:
         backend_name, backend = resolve_role(config, node.role, node.spec_level)
@@ -1567,6 +1604,8 @@ def plan_dispatch(
         local=local,
         warnings=warnings,
         authority=resolved_authority,
+        requested_backend=requested_backend or None,
+        default_backend=str(config.get("default_backend") or "") or None,
     )
     if verdict.ok and repo is not None:
         resolution.competence = _competence_verdict(
@@ -1847,6 +1886,7 @@ def dispatch(
     watch_override: bool = False,
     lineage_override: Mapping[str, Any] | None = None,
     local: bool = False,
+    backend_override: str | None = None,
 ) -> dict[str, Any]:
     """Validate, prepare and launch one node; return its run record.
 
@@ -1909,6 +1949,8 @@ def dispatch(
         execution_override=execution_override,
         authority=authority,
         local=local,
+        backend_override=backend_override,
+        member=member,
     )
     if not resolution.validation.ok:
         raise CrewError(
@@ -1964,6 +2006,7 @@ def dispatch(
 
     budget_warnings: list[str] = []
     budget_fallback: dict[str, Any] | None = None
+    requested_backend = resolution.requested_backend
     if check_budget:
         # Before the worktree, not after: a hold that had already cut a worktree
         # would leave write scope claimed by a node nobody is running.
@@ -2010,6 +2053,7 @@ def dispatch(
                 run_id=resolution.run_id,
                 backend_override=fallback_name,
             )
+            resolution.requested_backend = requested_backend
             if not resolution.validation.ok:
                 raise CrewError(
                     f"node is not dispatchable on budget fallback {fallback_name!r} — "
@@ -2221,6 +2265,7 @@ def dispatch(
         final_path = directory / "final.txt"
         coordinator = _coordinator_accounting(session)
         node_definition = node.as_dict()
+        node_definition["requested_backend"] = resolution.requested_backend
         # Promotion deliberately rebuilds the committed row from selected live
         # fields. The authored node definition is one of those durable fields,
         # so attribution lives there as well as at the pointer's top level.
@@ -2236,6 +2281,7 @@ def dispatch(
             "node": node_definition,
             "role": node.role,
             "backend": backend_name,
+            "requested_backend": resolution.requested_backend,
             "local": local,
             "execution_fit": resolution.execution_fit.as_dict(),
             "launch": launch_kind,

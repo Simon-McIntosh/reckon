@@ -881,6 +881,11 @@ def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, 
 @click.option("--section", default="", help="Plan section the node implements.")
 @click.option("--role", default="implement", show_default=True, help="Routing role.")
 @click.option(
+    "--backend",
+    default="",
+    help="Backend name resolved through flight config.",
+)
+@click.option(
     "--spec-level",
     type=click.Choice(["exact", "guided", "open"]),
     default=None,
@@ -992,6 +997,7 @@ def crew_dispatch(
     plan_slug,
     section,
     role,
+    backend,
     spec_level,
     node_id,
     goal,
@@ -1078,6 +1084,8 @@ def crew_dispatch(
                 execution_override=allow_execution_mismatch,
                 report_live_conflicts=True,
                 local=local,
+                backend_override=backend,
+                member=member,
             )
         except crew_module.PlanVisibilityError as exc:
             _emit(
@@ -1136,6 +1144,7 @@ def crew_dispatch(
             watch_required=True,
             watch_override=no_watch,
             local=local,
+            backend_override=backend,
         )
     except crew_module.PlanVisibilityError as exc:
         _emit(
