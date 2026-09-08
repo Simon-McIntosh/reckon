@@ -5,13 +5,15 @@ from __future__ import annotations
 import base64
 import json
 import re
+import threading
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from reckon import ledger
+from reckon import _backends, ledger
+from reckon import budget as budget_module
 from reckon.crew import rollout as rollout_module
 from reckon.doccheck import lifecycle_staleness, modified_age_days
 from reckon.lifecycle import (
@@ -59,6 +61,9 @@ AT_RISK_SERVING_STATE = "at_risk"
 STALE_SERVING_STATE = "stale"
 EXHAUSTED_SERVING_STATE = "exhausted"
 UNMEASURED = "unmeasured"
+
+_PROBE_CACHE_LOCK = threading.Lock()
+_PROBE_CACHE: dict[tuple[int, str], tuple[object, datetime, dict[str, Any]]] = {}
 
 
 def _unmeasured_reason(value: object) -> str | None:
@@ -121,6 +126,14 @@ def _serving_state(
     if used_percent >= AT_RISK_USED_PERCENT:
         return AT_RISK_SERVING_STATE
     return AMPLE_SERVING_STATE
+
+
+def _observation_age_seconds(observed_at: str | None, composed_at: str) -> int | str:
+    observed = _parsed_observation(observed_at)
+    composed = _parsed_observation(composed_at)
+    if observed is None or composed is None:
+        return UNMEASURED
+    return max(0, int((composed - observed).total_seconds()))
 
 
 def _backend_from_run(run: Mapping[str, Any]) -> str:
@@ -197,6 +210,8 @@ def _quota_rows(
     readings: Mapping[int, object] | object,
     observed_at: str | None,
     composed_at: str,
+    *,
+    source: str,
 ) -> tuple[list[dict[str, Any]], str | None]:
     reason = _unmeasured_reason(readings)
     if reason is not None:
@@ -220,6 +235,8 @@ def _quota_rows(
             "remaining_percent": remaining,
             "resets_at": reset,
             "observed_at": observed_at or UNMEASURED,
+            "age_seconds": _observation_age_seconds(observed_at, composed_at),
+            "source": source,
             "serving_state": _serving_state(used, observed_at, composed_at),
         }
         reasons = {
@@ -229,6 +246,7 @@ def _quota_rows(
                 ("remaining_percent", used_reason),
                 ("resets_at", reset_reason),
                 ("observed_at", None if observed_at else "no_observation_time"),
+                ("age_seconds", None if observed_at else "no_observation_time"),
                 (
                     "serving_state",
                     used_reason
@@ -246,11 +264,131 @@ def _quota_rows(
     return rows, None
 
 
+def _run_budget_probe(
+    backend_name: str, settings: Mapping[str, Any]
+) -> Mapping[str, Any] | None:
+    return _backends.probe_budget(backend_name=backend_name, backend=settings)
+
+
+def _declared_probe_command(settings: Mapping[str, Any]) -> tuple[str | None, str]:
+    command = str(settings.get("command") or "").strip()
+    if not command:
+        return None, "backend declares no probe command"
+    try:
+        dialect = _backends.dialect_for(settings)
+        probe = dialect.budget_probe(command)
+    except (_backends.BackendError, OSError, ValueError) as exc:
+        return None, f"dialect declares no quota probe — {exc}"
+    if probe is None:
+        return None, "dialect declares no quota probe"
+    return command, "quota probe declared"
+
+
+def _cached_probe_reading(
+    command: str,
+    backend_name: str,
+    settings: Mapping[str, Any],
+    *,
+    reader: Callable[[str, Mapping[str, Any]], Mapping[str, Any] | None],
+    observed_at: str,
+    cache_seconds: float,
+) -> dict[str, Any]:
+    moment = _parsed_observation(observed_at) or datetime.now(UTC)
+    cache_key = (id(reader), command)
+    with _PROBE_CACHE_LOCK:
+        cached = _PROBE_CACHE.get(cache_key)
+        if cached is not None and cached[0] is reader and cache_seconds > 0:
+            age = (moment - cached[1]).total_seconds()
+            if 0 <= age <= cache_seconds:
+                return {**cached[2], "cached": True}
+
+    try:
+        answer = reader(backend_name, settings)
+    except Exception as exc:  # noqa: BLE001 - a view survives any probe failure
+        observation = {
+            "status": "unavailable",
+            "observed_at": observed_at,
+            "detail": f"probe did not answer — {exc}",
+            "quota_windows": {},
+            "cached": False,
+        }
+    else:
+        windows = answer.get("quota_windows") if isinstance(answer, Mapping) else None
+        if isinstance(windows, Mapping) and windows:
+            observation = {
+                "status": "answered",
+                "observed_at": observed_at,
+                "detail": str(answer.get("detail") or "quota probe answered"),
+                "quota_windows": windows,
+                "cached": False,
+            }
+        else:
+            detail = (
+                str(answer.get("detail") or "probe returned no quota windows")
+                if isinstance(answer, Mapping)
+                else "probe returned no result"
+            )
+            observation = {
+                "status": "unavailable",
+                "observed_at": observed_at,
+                "detail": f"probe did not answer — {detail}",
+                "quota_windows": {},
+                "cached": False,
+            }
+
+    with _PROBE_CACHE_LOCK:
+        _PROBE_CACHE[cache_key] = (reader, moment, observation)
+    return observation
+
+
+def _reset_moment(value: object) -> datetime | None:
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        try:
+            return datetime.fromtimestamp(float(value), tz=UTC)
+        except (OverflowError, OSError, ValueError):
+            return None
+    return _parsed_observation(str(value)) if isinstance(value, str) else None
+
+
+def _quota_signature(
+    readings: Mapping[int, object] | object,
+) -> dict[int, datetime] | None:
+    if not isinstance(readings, Mapping) or not readings:
+        return None
+    signature: dict[int, datetime] = {}
+    for raw_window, reading in readings.items():
+        window = _reading_value(reading, "window_minutes")
+        if not isinstance(window, int) or isinstance(window, bool) or window <= 0:
+            window = raw_window
+        try:
+            window_minutes = int(window)
+        except (TypeError, ValueError):
+            return None
+        reset = _reset_moment(_reading_value(reading, "resets_at"))
+        if window_minutes <= 0 or reset is None:
+            return None
+        signature[window_minutes] = reset
+    return signature
+
+
+def _probe_describes_receipt(
+    probe_readings: Mapping[int, object] | object,
+    receipt_readings: Mapping[int, object] | object,
+) -> bool:
+    """Require both window lengths and reset schedules to identify one quota."""
+
+    probe_signature = _quota_signature(probe_readings)
+    receipt_signature = _quota_signature(receipt_readings)
+    return probe_signature is not None and probe_signature == receipt_signature
+
+
 def crew_lanes_view(
     config: Mapping[str, Any],
     runs: Iterable[Mapping[str, Any]],
     *,
     receipt_reader: Callable[[str], object] | None = None,
+    probe_reader: Callable[[str, Mapping[str, Any]], Mapping[str, Any] | None]
+    | None = None,
     composed_at: str | None = None,
 ) -> dict[str, Any]:
     """Compose endpoint availability without selecting or ranking a backend."""
@@ -262,6 +400,32 @@ def crew_lanes_view(
     latest = _latest_backend_runs(runs)
     backend_config = config.get("backends")
     configured = backend_config if isinstance(backend_config, Mapping) else {}
+    read_probe = probe_reader or _run_budget_probe
+    cache_seconds = float(
+        budget_module.policy(config).get("availability_probe_cache_seconds", 0)
+    )
+    command_by_backend: dict[str, str | None] = {}
+    probe_detail_by_backend: dict[str, str] = {}
+    probe_by_command: dict[str, dict[str, Any]] = {}
+    for backend, settings_value in sorted(
+        configured.items(), key=lambda item: str(item[0])
+    ):
+        backend_name = str(backend)
+        settings = settings_value if isinstance(settings_value, Mapping) else {}
+        if ledger.is_unmetered_backend(backend_name):
+            continue
+        command, detail = _declared_probe_command(settings)
+        command_by_backend[backend_name] = command
+        probe_detail_by_backend[backend_name] = detail
+        if command is not None and command not in probe_by_command:
+            probe_by_command[command] = _cached_probe_reading(
+                command,
+                backend_name,
+                settings,
+                reader=read_probe,
+                observed_at=composition_time,
+                cache_seconds=cache_seconds,
+            )
     lanes: list[dict[str, Any]] = []
 
     for backend, settings_value in sorted(
@@ -285,6 +449,12 @@ def crew_lanes_view(
                         "effective_context_window": "unused",
                         "quota_windows": "unused",
                     },
+                    "quota_source": UNMEASURED,
+                    "probe_status": (
+                        probe_by_command[command_by_backend[backend_name]]["status"]
+                        if command_by_backend.get(backend_name) is not None
+                        else "not_declared"
+                    ),
                 }
             )
             continue
@@ -306,6 +476,8 @@ def crew_lanes_view(
                         "effective_context_window": "unmetered",
                         "quota_windows": "unmetered",
                     },
+                    "quota_source": UNMEASURED,
+                    "probe_status": "not_declared",
                 }
             )
             continue
@@ -316,7 +488,6 @@ def crew_lanes_view(
             getattr(receipt, "model_context_window", None)
         )
         readings = _quota_readings(receipt)
-        quota_rows, quota_reason = _quota_rows(readings, observed_at, composition_time)
         receipt_reason = _unmeasured_reason(
             getattr(receipt, "model_context_window", None)
         )
@@ -324,14 +495,52 @@ def crew_lanes_view(
             receipt_reason = _unmeasured_reason(readings)
         unreadable = receipt_reason in {"missing_rollout", "unreadable_rollout"}
         receipt_observed_at = None if unreadable else observed_at
+        selected_readings = readings
+        selected_observed_at = receipt_observed_at
+        quota_source = "receipt"
+        command = command_by_backend.get(backend_name)
+        probe = probe_by_command.get(command) if command is not None else None
+        if probe is None:
+            probe_status = "not_declared"
+            probe_detail = probe_detail_by_backend.get(
+                backend_name, "dialect declares no quota probe"
+            )
+            probe_cached = False
+        elif probe["status"] != "answered":
+            probe_status = "unavailable"
+            probe_detail = str(probe["detail"])
+            probe_cached = bool(probe["cached"])
+        elif _probe_describes_receipt(probe["quota_windows"], readings):
+            probe_status = "answered"
+            probe_detail = str(probe["detail"])
+            probe_cached = bool(probe["cached"])
+            selected_readings = probe["quota_windows"]
+            selected_observed_at = str(probe["observed_at"])
+            quota_source = "probe"
+        else:
+            probe_status = "unmatched"
+            probe_detail = (
+                "probe answered, but its quota windows do not match this lane's receipt"
+            )
+            probe_cached = bool(probe["cached"])
+        quota_rows, quota_reason = _quota_rows(
+            selected_readings,
+            selected_observed_at,
+            composition_time,
+            source=quota_source,
+        )
         lane: dict[str, Any] = {
             "backend": backend_name,
             "alias": settings.get("alias"),
             "model": settings.get("model"),
             "receipt_state": "unreadable" if unreadable else "readable",
-            "observed_at": receipt_observed_at or UNMEASURED,
+            "observed_at": selected_observed_at or UNMEASURED,
             "effective_context_window": context_value,
             "quota_windows": quota_rows,
+            "quota_source": quota_source if quota_rows else UNMEASURED,
+            "probe_status": probe_status,
+            "probe_detail": probe_detail,
+            "probe_cached": probe_cached,
         }
         unmeasured = {
             key: value
