@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T08:40:17",
+  "updated": "2026-09-08T08:52:11",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -465,6 +465,15 @@
         "sessions": {
           "{\"alias\":\"terra5.6\",\"backend\":\"codex-terra\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-terra\",\"sandbox\":\"worktree-full\"}": "01a07fae-cd85-7721-9198-7c0182bc9e54"
         },
+        "created": "2026-09-08"
+      },
+      {
+        "id": "crew-lanes-view",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
         "created": "2026-09-08"
       },
       {
@@ -73805,6 +73814,297 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260908T063612713659-a-quota-reading-is-keyed-by-its-window",
+        "plan": "crew-effort-routing",
+        "section": "\u00a71",
+        "node": "a-quota-reading-is-keyed-by-its-window",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 682,
+                "cached_input_tokens": 340573,
+                "input_tokens": 341257,
+                "output_tokens": 4220,
+                "reasoning_output_tokens": 1507,
+                "total_tokens": 345477,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_rollout_receipt.py -q passes, and the quota figures the receipt reader returns are keyed by the length of the window they describe rather than by the position they appear in, so a five-hour reading can never be reported as a weekly one. THE DEFECT, measured on this host within the last hour on freshly landed code. reckon/crew/rollout.py reads the rate limit block's primary entry and returns it as the run's quota position. That was written from a sample of one endpoint family, where primary carries the weekly window and secondary is null. A second family on the same account reports the OPPOSITE: primary carries used_percent 94.0 with window_minutes 300, which is five hours, and secondary carries used_percent 42.0 with window_minutes 10080, which is a week. Both entries were present and populated in one record. So the position in the block does not identify the window, and the current reader would publish a nearly exhausted five-hour figure as though it were a weekly one, understating the weekly by more than a factor of two while overstating urgency on the wrong horizon. This is the same shape of defect as a field that means a maximum on one dialect and a sum on another, and it is being reported here rather than discovered later because the code is new. WHAT THE RECORD ACTUALLY CARRIES, verified, so you need not guess: the rate limit block holds limit_id, limit_name, primary, secondary, credits, individual_limit, spend_control_reached, plan_type and rate_limit_reached_type. Each of primary and secondary, when present, holds used_percent, window_minutes and resets_at. Either may be null. WHAT TO CHANGE. Return the quota readings keyed by window length, not by position: read both primary and secondary wherever present, and expose each reading with its own window_minutes, used_percent and reset time, so a caller asks for the window it cares about rather than trusting an ordering. Provide a named accessor for the five-hour horizon and one for the weekly horizon that select by window length, and make each return the explicit unmeasured marker when no entry of that length is present, never the other entry and never a zero. Do not hardcode the two lengths as the only possibilities: select the weekly reading as the entry whose window is a week and the short-horizon reading as the entry whose window is materially shorter, and if the record ever carries a length matching neither, expose it under its own length rather than dropping it, because a silently dropped horizon is how this defect arose. Also return the effective context window already read, and the plan type, both of which vary by family and are decision-relevant: the two families measured here report 258,400 and 121,600 respectively. Keep every existing absence marker and keep a measured zero used_percent as zero. WHAT NOT TO DO. Do not aggregate the two horizons into a single number or a single worst-case figure: they are separate budgets with different reset times and an orchestrator needs both. Do not compute headroom, a verdict, or an availability judgement of any kind; this module reads a receipt. Do not read or modify any configuration file, and do not touch reckon/crew/dispatch.py, reckon/cli.py, reckon/crew/lane_evidence.py, reckon/crew/quota_weight.py, reckon/crew/metering.py or reckon/crew/context_budget.py; peers hold all six. FALSIFIERS, in tests/test_rollout_receipt.py, every fixture constructed and every expected figure computed in the test rather than written as a literal. Keep every existing test that still holds. A constructed record whose primary is a weekly window and whose secondary is null returns the weekly figure under the weekly accessor and the unmeasured marker under the short-horizon accessor. A constructed record whose primary is a five-hour window and whose secondary is weekly returns the SAME weekly figure under the weekly accessor as the previous fixture did, asserted by giving both fixtures identical weekly numbers in different positions and requiring identical results, which is the property that makes position irrelevant and is the exact defect being fixed. That same fixture returns the five-hour figure under the short-horizon accessor and NOT under the weekly one, asserted against the weekly value so the two can never be confused. A record whose two entries are both present and whose short-horizon utilisation is far higher than its weekly one returns both faithfully, so an exhausted short window does not mask an ample weekly budget or the reverse. A record carrying a window length matching neither horizon still exposes that reading under its own length and is not dropped, asserted by looking for the length in the result. A record with both entries null returns the unmeasured marker for both accessors and does not raise. A record whose weekly used_percent is zero returns zero under the weekly accessor and not the unmeasured marker. Range one falsifier over the real population: run the reader over at least twelve real session ids drawn from this project's ledger rows, assert it raises on none, and assert that for every reading returned the window length is positive and the utilisation lies between zero and one hundred inclusive; report how many distinct window lengths and how many distinct effective context windows you observed, since more than one of either is the finding this node exists to handle. Measure base and head over the changed file and the tests that import reckon.crew, report failure ids either side, require none added, bound the run per file, and never run the full suite for this node.",
+          "estimated_hours": 1.25,
+          "goal": "Key the receipt's quota readings by window length rather than by position, so a five-hour figure can never be published as a weekly one",
+          "id": "a-quota-reading-is-keyed-by-its-window",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T063612713659-a-quota-reading-is-keyed-by-its-window/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "write_paths": [
+            "reckon/crew/rollout.py",
+            "tests/test_rollout_receipt.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-quota-horizons",
+        "backend": "codex-luna",
+        "local": false,
+        "agent": {
+          "alias": "luna5.6",
+          "backend": "codex-luna",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-luna",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T06:36:28Z",
+        "completed_at": "2026-09-08T06:43:37Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 429,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 429,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "e71c2f4111e53650962c772b8e28212e03d5abe8",
+        "commits": [
+          "ef95dc53cd6733137902fa4e54330f6098a3790d"
+        ],
+        "changed_lines": {
+          "added": 252,
+          "removed": 20,
+          "files": 2
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_rollout_receipt.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T063612713659-a-quota-reading-is-keyed-by-its-window/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T063612713659-a-quota-reading-is-keyed-by-its-window/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07fbb-8001-73a3-82b0-a824d84e34c9",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2411008,
+            "cached_input_tokens_cumulative": 2411008,
+            "input_tokens": 2535020,
+            "input_tokens_cumulative": 2535020,
+            "output_tokens": 19488,
+            "output_tokens_cumulative": 19488,
+            "reasoning_output_tokens": 7135,
+            "reasoning_output_tokens_cumulative": 7135
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 2411008,
+          "cumulative_input_tokens": 4946028,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 26623
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-quota-reading-is-keyed-by-its-window",
+          "session_id": "01a07fbb-8001-73a3-82b0-a824d84e34c9",
+          "session_source": "stream",
+          "retained_at": "2026-09-08T06:43:37Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T061432503361-a-dispatch-can-name-its-lane",
+        "plan": "crew-observability-truth",
+        "section": "\u00a71",
+        "node": "a-dispatch-can-name-its-lane",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2421,
+                "cached_input_tokens": 273751,
+                "input_tokens": 276174,
+                "output_tokens": 703,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 276877,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_dispatch_names_its_backend.py -q passes, reckon crew dispatch, given a --backend option carrying a backend name declared in flight config, puts a live node on that backend, and a roster member declaring a harness that the dispatch does not route to is refused rather than silently sent elsewhere. THE MEASURED DEFECT, so there is nothing to discover. reckon/crew/dispatch.py line 1481 resolves the backend as resolve_role(config, node.role, node.spec_level): role and spec level are the only inputs and default_backend catches everything else. The function dispatch_node already accepts a backend_override parameter at line 1450 and already re-resolves the role overlay through resolve_role_override when it is truthy at lines 1476 to 1479, but that parameter is passed from exactly two internal call sites, a budget hold's declared fallback at line 2011 and a redispatch destination at line 3080. The command-line surface exposes no flag for it. So a live node cannot be routed at all, while `crew shadow` already offers both --backend and --set. Measured consequence: a roster member registered with a spark harness, dispatched an exact-spec node, produced a run whose agent block reads backend codex and model gpt-5.6-sol, with no refusal and no warning. A member's declared harness reaches only _harness_default_model for session reuse and never reaches backend selection, so the field reads as routing and routes nothing. WHAT TO CHANGE, IN TWO PLACES ONLY. First, add a --backend option to the crew dispatch command and thread its value into the existing backend_override parameter. Do not add a second resolution path, do not re-implement any check, and do not touch resolve_role or resolve_role_override: the whole point of using the existing parameter is that the override inherits execution fit, sandbox reachability and write-path scope from the one code path that already performs them. Second, make a roster member's declared harness participate: when the member declares one and the caller passed no --backend, resolve through the override with the member's harness. When the member declares one and the caller named a different backend, REFUSE with a message naming both, because a caller who names a backend and a member who declares another disagree about something the harness cannot settle. THE REFUSAL IS THE POINT, NOT THE FLAG. A named or declared backend that is absent from flight config, or present but unusable, must refuse with a message naming the backend and saying why. It must never fall back to default_backend. State that rule in a comment where the fallback would otherwise sit, with the reason: a wrong lane that announces itself costs one redispatch, and a wrong lane that reports success is what left one lane at twelve rows for a month while every reader assumed it was merely quiet. Use the project's existing refusal mechanism and exit-code vocabulary rather than inventing one; look at how an undispatchable node and a budget hold already refuse and match that shape. WHAT NOT TO DO. Do not change default_backend behaviour when neither a flag nor a member harness is present; an unrouted dispatch keeps resolving exactly as it does today, and a test must prove that. Do not edit ~/.config/reckon/flight.yaml or any file outside the repository. Do not touch reckon/_backends.py, reckon/crew/quota_weight.py, reckon/crew/rollout.py, reckon/crew/context_budget.py or reckon/ledger.py; peers hold all five. Do not add a --set style flight override in this node; one flag, one refusal rule. FALSIFIERS, in tests/test_dispatch_names_its_backend.py, using the project's existing dispatch test fixtures and a synthesised temporary repository, never a real checkout and never the real live-pointer or config directories. A dry-run dispatch naming a backend that flight config declares resolves to that backend, asserted on the resolved agent block rather than on the absence of an error. A dry-run dispatch naming a backend absent from flight config REFUSES, and the message contains the backend name it was given; assert on the name appearing, so the refusal is diagnosable and not merely a failure. A dry-run dispatch naming a declared backend for a member whose harness names a DIFFERENT declared backend refuses, and the message names both. A dry-run dispatch for a member whose harness names a declared backend, with no flag given, resolves to the member's harness and not to default_backend, asserted by naming a member harness that differs from default_backend so the two cannot be confused. A dry-run dispatch with neither a flag nor a member harness resolves to exactly what it resolves to today, asserted against the value resolve_role returns for that role and spec level rather than against a literal backend name, so the test cannot rot when config changes. RANGE ONE FALSIFIER OVER THE FALLBACK, deliberately, because that is where the defect lived: assert that for a backend name that is absent from config, the resolved agent block is never populated at all \u2014 not populated with the default. A test that only checks an exception was raised would pass against an implementation that raises after having already fallen back somewhere else. Measure base and head over the changed files and the tests that import reckon.crew.dispatch, report failure ids either side, require none added, bound the run per file, and never run the full suite for this node.",
+          "estimated_hours": 1.5,
+          "goal": "Let a live dispatch name its backend through the override that already exists, and refuse rather than silently fall back when a named or declared backend is unusable",
+          "id": "a-dispatch-can-name-its-lane",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T061432503361-a-dispatch-can-name-its-lane/manifest.md",
+          "plan": "crew-observability-truth",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "55m",
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "reckon/cli.py",
+            "tests/test_dispatch_names_its_backend.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-routing-flag",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T06:14:50Z",
+        "completed_at": "2026-09-08T06:49:34Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 2084,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 2084,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "ceae8066ea8503b2ea9e54554392382812dfba52",
+        "commits": [
+          "bc6249026c12d02c6ddf2f56918303575f5b0827"
+        ],
+        "changed_lines": {
+          "added": 361,
+          "removed": 2,
+          "files": 3
+        },
+        "tests_added": 8,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_dispatch_names_its_backend.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T061432503361-a-dispatch-can-name-its-lane/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T061432503361-a-dispatch-can-name-its-lane/manifest.md",
+        "scope_changed": true,
+        "session_id": "01a07fa7-b19e-74f3-9195-b89a942ecf50",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 14857728,
+            "cached_input_tokens_cumulative": 14857728,
+            "input_tokens": 14981739,
+            "input_tokens_cumulative": 14981739,
+            "output_tokens": 39666,
+            "output_tokens_cumulative": 39666,
+            "reasoning_output_tokens": 16764,
+            "reasoning_output_tokens_cumulative": 16764
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 14857728,
+          "cumulative_input_tokens": 29839467,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 56430
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-dispatch-can-name-its-lane",
+          "session_id": "01a07fa7-b19e-74f3-9195-b89a942ecf50",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T06:49:34Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -74033,6 +74333,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1154
+    "_version": 1157
   }
 }

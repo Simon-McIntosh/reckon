@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-08">
-<meta name="plan-version" content="81">
+<meta name="plan-version" content="82">
 <meta name="plan-impl" content="1.0">
 <meta name="plan-commits" content="dbb81e0,2a10c38,6767cd5,b625b88,e016572,f049be9,d079949,1aa4215,9fa38fe,f65ea4c,4656c7a,0d92346,cc4c686,134d770,72ef099,9f3e8dc,39d7a28,cc03efe,492d498,8476b70">
 <meta name="plan-artifacts" content="docs/figures/crew-effort-routing/spec-level-slices.png,~/.config/reckon/crew/reports/model-id-probe.md,~/.config/reckon/crew/reports/shadow-prior-art-scout.md,~/.config/reckon/crew/reports/second-checkpoint-slices.md,~/.config/reckon/flight.yaml,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md">
@@ -1119,6 +1119,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260908T055204955978-the-stream-says-how-often-we-compacted" data-who="crew-context-budget" data-when="2026-09-08T06:38:17Z">
     <div class="r-comment-body"><p>Compaction count and largest observed context are readable on the per-message dialect from system/compact_boundary and its pre_tokens field, and are honestly unmeasured on the turn-level dialect, which carries no compaction or per-request context record; the aggregate turn usage is never substituted. The census is the finding: across 3,428 streams and 4,876,735 records, twelve boundaries in five streams, largest pre-compaction context 167,077 tokens. So compaction is close to nonexistent in practice, which is a third independent instrument agreeing that raising the context ceiling would buy headroom typical work never reaches. Side finding worth a follow-up: 21 compaction attempts produced 12 successes and 8 failures. Ranged over 24 real streams from empty to 27 MB with zero exceptions.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260908T063612713659-a-quota-reading-is-keyed-by-its-window" data-who="crew-quota-horizons" data-when="2026-09-08T06:43:37Z">
+    <div class="r-comment-body"><p>Quota readings are keyed by window length rather than by position, with a weekly accessor and a short-horizon accessor selecting by that length. Weekly selection is invariant to whether the weekly entry sits first or second, which is the exact defect: one endpoint family reports weekly first with the second entry null, another reports its five-hour window first and weekly second. An unrecognised window length stays in the readings rather than being dropped. Null entries return the unmeasured marker and a measured zero stays zero. Ranged over 12 real sessions read without exception, observing 2 distinct effective context windows.</p></div>
 </div>
 </section>
 </main>
