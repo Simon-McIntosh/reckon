@@ -187,6 +187,23 @@ context.
 
 Binding on every worker, and embedded verbatim in every dispatch prompt:
 
+**A durable write is for loss recovery, not death prevention.** A worker
+commits at each deliverable rather than once at the end, and writes its
+manifest before beginning any long output. A durable write made before a long
+generation remains recoverable if that generation fails; in the measured
+total-loss cases, every worker had never written its declared deliverable at
+all. Measure writes to the declared deliverable: counting every write would
+misclassify a worker that writes ten scratch scripts and no report as
+incremental.
+
+This rule does not prevent worker deaths and is not expected to.
+`score-pfs-session-wall-group` wrote its declared deliverable entirely in the
+final six percent of its run (normalised span 0.94 to 1.00) and landed cleanly.
+That result shows the discriminator is whether a worker reaches its writing
+phase, not how it writes once there. The delivery fence in §2 already defines
+the route for long output and the reply; this timing rule makes an earlier
+durable result recoverable if later generation fails.
+
 1. Work only in the assigned detached worktree. Do not create, checkout or
    switch branches.
 2. Never use `git stash`, `rebase`, `clean`, `reset --hard`, or destructive path
