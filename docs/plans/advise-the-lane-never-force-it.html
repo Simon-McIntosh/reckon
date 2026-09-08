@@ -4,25 +4,27 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="advise-the-lane-never-force-it">
-  <meta name="plan-title"     content="Advise The Lane, Never Force It">
-  <meta name="plan-summary"   content="A lane's capacity is shared across sessions and two lanes exhaust in opposite ways, only one of them audibly. Advise at the moment of choice; never override.">
-  <meta name="plan-status"    content="draft">
-  <meta name="plan-roi"       content="high">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="advise-the-lane-never-force-it">
+  <meta name="plan-title" content="Advise The Lane, Never Force It">
+  <meta name="plan-summary" content="A lane&#x27;s capacity is shared across sessions and two lanes exhaust in opposite ways, only one of them audibly. Advise at the moment of choice; never override.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="12.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
   <meta name="plan-capability-risk" content="moderate">
-  <meta name="plan-sprint"    content="S17">
-  <meta name="plan-owner"     content="Simon McIntosh">
-  <meta name="plan-tags"      content="reckon-tooling,crew">
+  <meta name="plan-sprint" content="S17">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-depends-on" content="dispatch-cost-per-durable-node,clive-local-workers">
   <title>Advise The Lane, Never Force It | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-08">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -198,56 +200,67 @@
     </p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">&#167;</span> Decisions</h2>
-      <div class="r-dec" data-key="advisory-delivery-point" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">Where is the advisory emitted, given that it must arrive unasked?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="dispatch-payload">on the dispatch payload only</button>
-          <button class="r-opt" data-value="dispatch-and-follower">on the dispatch payload and as a follower line</button>
-          <button class="r-opt" data-value="dispatch-and-preflight">on the dispatch payload and in the pre-flight summary</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-      <div class="r-dec" data-key="local-lane-scarcity-signal" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">What does the local lane publish as its scarcity signal, once measured?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="concurrency-ceiling">a measured concurrency ceiling</button>
-          <button class="r-opt" data-value="in-flight-requests">instantaneous in-flight requests against an admission figure</button>
-          <button class="r-opt" data-value="latency-curve">a measured latency-degradation curve</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-      <div class="r-dec" data-key="shared-window-source" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">How does a coordinator learn that peers are drawing on its window?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="directory-derived">derived from the live coordinator directory</button>
-          <button class="r-opt" data-value="ledger-derived">derived from recent promoted runs across mounted ledgers</button>
-          <button class="r-opt" data-value="both">the directory for who, the ledgers for how much</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="advisory-delivery-point" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Where is the advisory emitted, given that it must arrive unasked?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="dispatch-payload">on the dispatch payload only</button>
+      <button class="r-opt" data-value="dispatch-and-follower">on the dispatch payload and as a follower line</button>
+      <button class="r-opt" data-value="dispatch-and-preflight">on the dispatch payload and in the pre-flight summary</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="local-lane-scarcity-signal" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">What does the local lane publish as its scarcity signal, once measured?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="concurrency-ceiling">a measured concurrency ceiling</button>
+      <button class="r-opt" data-value="in-flight-requests">instantaneous in-flight requests against an admission figure</button>
+      <button class="r-opt" data-value="latency-curve">a measured latency-degradation curve</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="shared-window-source" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">How does a coordinator learn that peers are drawing on its window?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="directory-derived">derived from the live coordinator directory</button>
+      <button class="r-opt" data-value="ledger-derived">derived from recent promoted runs across mounted ledgers</button>
+      <button class="r-opt" data-value="both">the directory for who, the ledgers for how much</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="advisory-trigger-point" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">advisory-trigger-point</p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="speed-enters-routing" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">speed-enters-routing</p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">&#167;</span> Followups</h2>
-      <article class="r-fu" data-id="f-atl-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-08">
-        <h4 class="r-fu-title">Start with the advisory and the local measurement together</h4>
-        <div class="r-fu-body">
-          <p>&#167;2 and &#167;5 are independent and should run in the same wave. &#167;2 is
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-atl-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-08" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Start with the advisory and the local measurement together</h4>
+    <div class="r-fu-body"><p>§2 and §5 are independent and should run in the same wave. §2 is
           buildable now, because the projected exhaustion it reports is already computed by the
           pre-flight and needs no new probe, and the metered window is where quota is being
-          spent today. &#167;5 gates any advice that points work at the local lane, and until
+          spent today. §5 gates any advice that points work at the local lane, and until
           its curve exists an advisory can say a lane is cheap but not whether it is free.</p>
-          <p>&#167;3 follows &#167;2, since there is nothing to record until an advisory
-          exists. &#167;4 needs &#167;2's payload to carry the count. &#167;6 goes last: it
+<p>§3 follows §2, since there is nothing to record until an advisory
+          exists. §4 needs §2's payload to carry the count. §6 goes last: it
           replaces the advisory's recommendation clause with a ledger-derived one, which is
           only worth doing once the clause has a shape. Settle the delivery point before
-          &#167;2 is dispatched; the other two decisions can be settled by the nodes that
-          implement them.</p>
-        </div>
-        <pre class="r-fu-prompt">/reckon-ship advise-the-lane-never-force-it §2</pre>
-      </article>
-    </section>
-  </main>
+          §2 is dispatched; the other two decisions can be settled by the nodes that
+          implement them.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship advise-the-lane-never-force-it §2</pre>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s6" data-id="c-20260908T171000" data-who="reckon-create" data-when="2026-09-08T17:10:00Z">
+    <div class="r-comment-body">THE RECOMMENDATION HAS THREE AXES, NOT TWO, AND ONLY TWO ARE CURRENTLY MEASURABLE. Quality is answered by rework charged per durable node, which the ledger already derives and which discriminates where pass rate cannot: measured 2026-09-08, the local lane runs 0.51 rework on implement work against the metered lane's 0.23, while both sit at zero on read-and-report work. Burn is answered by utilisation against a window, with a rate and a projected exhaustion the pre-flight already computes. Speed is the axis with no honest instrument yet: wall clock on a worker is dominated by local suite execution rather than by inference, so a median that mixes them ranks the machine rather than the model. The paired measurement taken today makes that concrete — one node ran 131 seconds on a loaded lane and 133 on a free one, so at small node sizes there is nothing to recover and a speed recommendation derived from wall clock would have been noise. Until tool time is recorded separately from generation, speed should be reported and not recommended on, which is what the speed-enters-routing decision has to settle.</div>
+</div>
+</section>
+</main>
 </body>
 </html>
