@@ -998,14 +998,6 @@ def build_record(
     record.setdefault("execution_fit", None)
     record.setdefault("attempt_kind", None)
     record.setdefault("attempt", None)
-    record.setdefault("throughput", None)
-    record.setdefault("no_commit", None)
-    record.setdefault("commit_resolution", None)
-    record.setdefault("worktree_retention", None)
-    record.setdefault("scope_acceptances", None)
-    record.setdefault("boundary_waiver", None)
-    record.setdefault("resume_waiver", None)
-    record.setdefault("watch_override", None)
     if follow_on_paths is None:
         record.setdefault("follow_on_paths", None)
     else:
@@ -1013,8 +1005,16 @@ def build_record(
             "follow_on_paths",
             [str(path) for path in follow_on_paths],
         )
+    record.setdefault("throughput", None)
+    record.setdefault("scope_acceptances", None)
+    record.setdefault("no_commit", None)
+    record.setdefault("commit_resolution", None)
+    record.setdefault("worktree_retention", None)
     record.setdefault("dispute_count", None)
     record.setdefault("predecessor_run", None)
+    record.setdefault("boundary_waiver", None)
+    record.setdefault("resume_waiver", None)
+    record.setdefault("watch_override", None)
     return record
 
 
