@@ -861,7 +861,7 @@ def _peer_scopes(values) -> dict:
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, pretty):
-    """Decide, per backend, whether a wave may open — spending nothing to do it.
+    """Report whether backend budget state allows a wave to open, without spending it.
 
     Reads the budget signal that earlier runs already recorded, so the check
     costs no worker budget; a backend whose config sets ``budget_check`` also has
@@ -1044,7 +1044,7 @@ def crew_dispatch(
     dry_run,
     pretty,
 ):
-    """Validate a node, resolve routing, and launch or prepare its worker.
+    """Launch a node whose contract, routing, budget, watcher, and scope allow it.
 
     One instruction covers every backend. Which harness runs, at what model,
     effort and sandbox tier, is resolved from flight config — so this command
@@ -1299,7 +1299,7 @@ def crew_dispatch(
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_shadow(run_id, backend, overrides, member, dry_run, pretty):
-    """Re-run a committed node at its original base as isolated evidence."""
+    """Re-run a committed run at its original base as isolated evidence."""
     from reckon.crew.dispatch import shadow, shadow_source
 
     crew_module, flight_module = _crew_modules()
@@ -1396,7 +1396,7 @@ def crew_shadow(run_id, backend, overrides, member, dry_run, pretty):
 @click.option("--task", required=True, help="The harness's own task identifier.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_attach(run_id, task, pretty):
-    """Bind an in-harness dispatch to its prepared run record."""
+    """Bind a prepared in-harness run to the task executing it."""
     crew_module, _ = _crew_modules()
     try:
         record = crew_module.attach(run_id, task)
@@ -1428,7 +1428,7 @@ def _resolved_session(run_id, record=None) -> dict[str, Any]:
 @click.option("--project", default=None, help="Project whose flight layer applies.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_observe(run_id, project, pretty):
-    """Fold a run's stream, manifest and liveness back into its record.
+    """Refresh a live run record from its stream, manifest, and process state.
 
     Reports the phase, the resolved session id and whatever budget signal the
     backend emitted — which may legitimately read ``unknown``. Absence of a
@@ -1946,7 +1946,7 @@ def crew_follow(
     theme,
     no_color,
 ):
-    """Follow one session's runs without acquiring the project's watcher seat.
+    """Follow one session's live runs without acquiring the project watcher seat.
 
     The seat is project-global and this delivery is session-local, so a
     follower is what a coordinator arms to be woken about its own fleet. Arm it
@@ -2088,7 +2088,7 @@ def crew_watch(
     theme,
     no_color,
 ):
-    """Follow a fleet through reconciliation, or return after one event.
+    """Watch project-wide live runs as the single producer through reconciliation.
 
     Following is the default because the watcher seat is what
     ``reckon crew dispatch`` requires. A seat released after every landing has
@@ -2132,7 +2132,7 @@ def crew_watch(
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_resume_ready(project, dry_run, pretty):
-    """Resume runs whose provider hold or declared external wait has ended.
+    """Resume when a provider hold or declared external wait has ended; sweep all blocked runs, answer none with advice.
 
     Idempotent and cheap: eligibility is computed from records already on disk,
     so nothing is spent to discover it and a second pass over the same fleet
@@ -2154,7 +2154,7 @@ def crew_resume_ready(project, dry_run, pretty):
 @click.option("--project", required=True, help="Project whose watcher to stop.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_unwatch(project, pretty):
-    """Stop one project's registered watcher and release its claim."""
+    """Stop the registered project watcher and release its live seat."""
     from reckon.crew.node import CrewError
     from reckon.crew.recovery import unwatch
 
@@ -2176,7 +2176,7 @@ def crew_unwatch(project, pretty):
 @click.option("--mine", is_flag=True, help="Return only rows this --session owns.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_list(project, phase, session, mine, pretty):
-    """List matching live run pointers, so a fresh session can pick them up.
+    """List live run pointers, not roster members or session-closure state.
 
     Every row names its owning session and, when one is supplied, whether that
     session owns it. The first question a recovering orchestrator asks is which
@@ -2252,7 +2252,7 @@ def crew_list(project, phase, session, mine, pretty):
 @click.option("--node", "node_id", default=None, help="Resolve one live node's owner.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_directory(project, run_id, node_id, pretty):
-    """Name live coordinators, what they are shipping, and where."""
+    """List live coordinator ownership across repositories, not individual run state."""
     from reckon.crew.directory import DirectoryError, directory
 
     try:
@@ -2276,7 +2276,7 @@ def crew_directory(project, run_id, node_id, pretty):
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_drain(project, leaves, pretty):
-    """Report the session-closure drain over current live run pointers."""
+    """Report the session-closure count and dispositions for live run pointers."""
     crew_module, _ = _crew_modules()
     requested = []
     for leave in leaves:
@@ -2360,7 +2360,7 @@ def crew_drain(project, leaves, pretty):
 def crew_gc(
     repo, project, integrated_into, retention_days, apply, confirm_cross_repo, pretty
 ):
-    """Report disposable crew workspaces, applying removals only on request."""
+    """Report workspaces whose integrated state makes them disposable; remove on request."""
     crew_module, flight_module = _crew_modules()
     try:
         repo_root = _resolved_gc_repo(
@@ -2398,7 +2398,7 @@ def crew_gc(
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_resume(run_id, advice, backend, reason, print_only, pretty):
-    """Continue a blocked run, retaining its session when the backend can.
+    """Continue one blocked run with advice; do not sweep all newly ready runs.
 
     Without a backend override, the resumed turn carries the prior context.
     A cross-harness move reports that it must start a fresh session.
@@ -2492,7 +2492,7 @@ def crew_resume(run_id, advice, backend, reason, print_only, pretty):
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_redispatch(run_id, backend, reason, advice, print_only, pretty):
-    """Move a working run to another backend without replacing its identity."""
+    """Move one working run to another backend without replacing its identity."""
     crew_module, flight_module = _crew_modules()
     try:
         record = crew_module.read_pointer(run_id)
@@ -2532,7 +2532,7 @@ def crew_redispatch(run_id, backend, reason, advice, print_only, pretty):
 @click.option("--run", "run_id", required=True, help="Run id to stop.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_stop(run_id, pretty):
-    """Stop a spawned run's process group and record that it was stopped."""
+    """Stop one running spawned worker and record its stopped state."""
     crew_module, _ = _crew_modules()
     try:
         record = crew_module.terminate(run_id)
@@ -2545,7 +2545,7 @@ def crew_stop(run_id, pretty):
 @click.option("--run", "run_id", required=True, help="Run id to discard.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_discard(run_id, pretty):
-    """Remove a non-running live pointer without promoting it."""
+    """Remove one non-running live pointer without recording promoted evidence."""
     crew_module, _ = _crew_modules()
     try:
         result = crew_module.discard(run_id)
@@ -2701,7 +2701,7 @@ def crew_complete(
     accepted_paths,
     pretty,
 ):
-    """Promote a finished run into the owning repository's committed ledger.
+    """Promote one finished run into the owning repository's committed ledger.
 
     The ledger append happens before the pointer is deleted, so an interruption
     between them leaves a recoverable pointer rather than a lost record. A
@@ -2766,7 +2766,7 @@ def crew_complete(
 @click.option("--project", default=None, help="Limit to one project's runs.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_recover(project, pretty):
-    """Classify pointers an interrupted orchestrator left; never launch, resume, or promote work.
+    """Classify live pointers left by an interrupted orchestrator; never launch, resume, or promote work.
 
     Reports running, completed-but-unpromoted (with its manifest path) and
     abandoned runs. It repairs the record only: no worktree is removed, no
@@ -2802,7 +2802,7 @@ def crew_member():
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_member_add(project, member_id, harness, role, session, checkout_path, pretty):
-    """Register a member, or update one already on the roster."""
+    """Register a missing roster member or update an existing member; launch no work."""
     ledger_module = _ledger_module()
     try:
         entry = ledger_module.register_member(
@@ -2828,7 +2828,7 @@ def crew_member_add(project, member_id, harness, role, session, checkout_path, p
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_member_list(project, checkout_path, pretty):
-    """List the project's roster, with the session each member reuses."""
+    """List roster members and reusable sessions, not live run pointers."""
     ledger_module = _ledger_module()
     try:
         roster = ledger_module.members(project, checkout_path)
@@ -2854,7 +2854,7 @@ def crew_member_list(project, checkout_path, pretty):
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_ledger(project, view, checkout_path, pretty):
-    """Read the committed record of how this project's plans were implemented."""
+    """Read committed run records, not live run pointers."""
     ledger_module = _ledger_module()
     try:
         if view == "records":
@@ -2886,7 +2886,7 @@ def crew_ledger(project, view, checkout_path, pretty):
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_repair_completion(project, write_changes, checkout_path, pretty):
-    """Repair historical completion measurements from surviving run streams."""
+    """Repair historical completion measurements missing from surviving run streams."""
 
     ledger_module = _ledger_module()
     try:
