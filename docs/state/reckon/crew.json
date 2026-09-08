@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T22:47:48",
+  "updated": "2026-09-08T22:55:11",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -81059,6 +81059,185 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T202053181058-schedule-horizon-declares-its-width",
+        "plan": "concurrency-and-schedule-visibility",
+        "section": "\u00a78",
+        "node": "schedule-horizon-declares-its-width",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1019,
+                "cached_input_tokens": 358623,
+                "input_tokens": 359644,
+                "output_tokens": 673,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 360317,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "c97ff0dc-76f9-4d90-a37e-98717f5066f2",
+            "session_id": "ship-s15-2026-09-08b"
+          },
+          "done_when": "reckon roadmap reports schedule_readiness.configured true with window_sprints 3 for this project, and its deferred set is empty today because three sprints hold open work; a test proves that with a declared width of 3 and a fourth open sprint present, the fourth appears in the deferred set naming the sprint it sits behind, and that with the key absent the axis reports configured false exactly as it does now. Record the roadmap reading before and after, and the test file's pass total, in the manifest tests line",
+          "estimated_hours": null,
+          "goal": "the project declares a schedule horizon width of three sprints and the axis enforces it",
+          "id": "schedule-horizon-declares-its-width",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-08T20:20:53Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T202053181058-schedule-horizon-declares-its-width/manifest.md",
+          "plan": "concurrency-and-schedule-visibility",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "exact",
+          "time_budget": "25m",
+          "write_paths": [
+            "docs/state/reckon/index.json",
+            "tests/test_schedule_horizon_width.py",
+            "docs/state/reckon/project.json"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "ship0908-local-a",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-08T20:20:59Z",
+        "completed_at": "2026-09-08T20:53:31.038Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1934,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1952,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "a561797ad78e7b241e9f0105a55ed0fbe414d4cb",
+        "commits": [
+          "6272fef20b6007d31c81a339ae36dc60e6c300a8"
+        ],
+        "changed_lines": {
+          "added": 18,
+          "removed": 6,
+          "files": 3
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=\"$PWD\" .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_schedule_horizon_width.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T202053181058-schedule-horizon-declares-its-width/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T202053181058-schedule-horizon-declares-its-width/manifest.md",
+        "scope_changed": true,
+        "session_id": "12b8a2d9-410c-4d17-9554-e800734f2502",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 0,
+            "input_tokens_cumulative": 3091985,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 10164,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-08T20:53:31.038Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 3091985,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 430.539,
+          "generated_tokens": 10164,
+          "generation_seconds": 415.832,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 20.8,
+          "machine_seconds": 14.707,
+          "peak_input_tokens": 211474,
+          "tokens_per_second": 24.44,
+          "wall_tokens_per_second": 23.61
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-08b/schedule-horizon-declares-its-width",
+          "session_id": "12b8a2d9-410c-4d17-9554-e800734f2502",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T20:53:31.038Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -81287,6 +81466,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1239
+    "_version": 1240
   }
 }
