@@ -823,8 +823,8 @@ def test_project_watch_exits_on_the_first_terminal_manifest(home) -> None:
 
     assert result["event"] == "terminal"
     assert result["run_id"] == "r-beta"
-    assert result["classification"] == "completed_unpromoted"
-    assert result["next_action"].startswith("reckon crew complete --run r-beta")
+    assert result["classification"] == "scoring"
+    assert result["next_action"].startswith("reckon crew dispatch --project proj")
 
 
 def test_project_watch_exits_when_a_stream_exceeds_the_stall_window(home) -> None:
@@ -2872,7 +2872,7 @@ def test_still_working_disposition_expires_when_the_run_turns_terminal(
     report = crew.drain("proj")
 
     assert report["unreconciled_runs"] == 1
-    assert report["runs"][0]["classification"] == "completed_unpromoted"
+    assert report["runs"][0]["classification"] == "scoring"
     assert report["runs"][0]["disposition_valid"] is False
 
 
