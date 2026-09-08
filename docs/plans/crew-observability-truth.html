@@ -23,8 +23,8 @@
   <title>A Fleet Display That Cannot Lie | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-08">
-<meta name="plan-version" content="219">
+<meta name="plan-modified" content="2026-09-09">
+<meta name="plan-version" content="220">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md">
 <meta name="plan-impl" content="0.97">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b">
@@ -462,6 +462,40 @@
       failure; and when the check reads the log as text without parsing any runner's result
       format. Asserted by promoting the two recorded contradictory pairs and requiring a refusal
       for each, and by promoting an agreeing pair and requiring it to land unchanged.
+    </p>
+
+    <h2 id="s11">&#167;11 &mdash; A refusal names the allowlist it checked as if it were the repository</h2>
+    <p>
+      The scope guard for a read-only role builds a list of delivery roots &mdash; the run
+      directory, the reports directory, and an absolute manifest path &mdash; and treats every
+      other absolute path as a repository path. The refusal it then emits says those paths
+      &ldquo;resolve inside the repository&rdquo;. For a path that genuinely is outside the
+      repository and outside the delivery roots, that sentence is false.
+    </p>
+    <p>
+      Measured 2026-09-09 while dispatching a verification node: a report path under the
+      session's own scratch directory was refused with that wording, and the path is not inside
+      the repository by the same containment test the code elsewhere uses &mdash; it simply is
+      not one of the three delivery roots. The directory's name happens to encode the
+      repository's path as a flattened string, which is what makes the message read plausibly.
+    </p>
+    <p>
+      The decision is right and only the sentence is wrong, which is what makes this worth
+      writing down rather than arguing about. A verifier should write to its delivery roots and
+      nowhere else, so refusing was correct; the refusal asserts a fact it never checked instead
+      of the one it did. That is the third instance in one session of a guard reporting
+      &ldquo;absent from my list&rdquo; as &ldquo;is the thing my list is about&rdquo;, after a
+      lane fence and a worktree predicate, and this plan exists because that shape keeps
+      arriving in new places.
+    </p>
+    <p>
+      <em>Done when</em> the refusal for a role that may not write repository paths names what it
+      actually established &mdash; that the declared path is not one of the delivery roots this
+      role may write &mdash; and lists those roots, so a caller can correct the path in one edit;
+      when a declared path that IS inside the repository still says so, since that case is real
+      and more serious; and when the two cases are distinguishable in the message. Asserted by
+      declaring a path outside both the repository and the delivery roots and requiring the
+      first wording, and a path inside the repository and requiring the second.
     </p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
@@ -1140,6 +1174,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20260908T234700" data-who="reckon-ship" data-when="2026-09-08T23:47:00Z">
     <div class="r-comment-body">a-landed-run-waits-for-a-second-reader landed — commits 0be8b2d, cc749de, 6255c53, e0aab0e, merged and the content verified at HEAD both ways; gate passed on the wide four-file command; measure: 5 new scoring cases, and the 98 pre-existing failure ids identical at base and head by SET DIFFERENCE rather than by count, zero added and zero removed. Scope changed three times and the promotion records it. Artifacts: reckon/crew/recovery.py plus the three test files.\n\nA terminal run carrying a manifest now classifies as scoring rather than promotable, and the state names its own verb: next_action is the review dispatch, composed with role review on the unmetered lane, the node named review-of- its subject, and the review store path as its write scope. So the lifecycle the lead directed exists as far as classification, on top of the prompt, schema, parser and store that landed unwired earlier. What still follows is the promotion read.\n\nBoth falsifiers this section wrote are honoured. The reader does not collapse unreadable review data into absence, so an unparsed review and a missing one stay distinct, which is the same distinction as a stale hold against an honest unknown. And the migrated assertions kept the properties they protected rather than being relaxed: the watch still exits on the first terminal manifest, and the still-working disposition still expires when a run turns terminal — both hold because a scoring run IS terminal, having stopped working and being owed a reader.\n\nTHE SCOPE WAS WRONG THREE TIMES AND EVERY ONE WAS THE COORDINATOR'S. A contract change that renames a state needs every file asserting that state inside one scope, and here they were spread across four: the module's own test, the monitor-output check that reads emitted state names straight out of the source by regex, and the large crew test. Each was found by the worker measuring its delta against a stated base and reporting rather than reaching, which is exactly the behaviour that made three one-message fixes out of what would otherwise have been three surprises at the merged head. The middle one is the sharpest: the worker had emitted the display label as a state name, and adding that label to the routed vocabulary would have made the check pass while leaving one state with two accepted names. Emitting the state and letting the display map render it was the fix, and refusing the easier one is the reason the vocabulary still means something.</div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20260908T205927072465-merged-head-carries-no-new-failures" data-who="crew-backpressure" data-when="2026-09-08T21:58:56.624Z">
+    <div class="r-comment-body"><p>gate not-run: an environmental suite stall after ~660 of 3938 tests means full-suite totals are not established and zero-added cannot be claimed. It nonetheless delivered the session&#x27;s most important finding — 27 tests fail at the merged head and pass at base, every one attributed to the metered lane fence, across four files none of which were in that node&#x27;s write scope</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260908T195809410341-unlanded-worktree-commit-audit" data-who="ship0908-local" data-when="2026-09-08T20:11:52.531Z">
     <div class="r-comment-body"><p>12 commits across 11 worktrees selected by the clean-and-ahead pair over 85 worktrees; 3 land (this session's own, since merged) and 9 discard, each naming its supersession; coordinator corrected the largest row's reasoning, which had the supersession order inverted</p></div>
