@@ -195,6 +195,51 @@
         contract repairs</a>.</p>
     </section>
 
+    <h2 id="s8">&#167;8 &mdash; The peer channel is advertised to the roles that cannot reach it</h2>
+    <p>
+      The worker prompt hands every node a peer-channel client and the client is composed as
+      <code>python -c 'from reckon.crew.dispatch import _peer_command; &hellip;'</code> at
+      <code>reckon/crew/prompts.py:67</code> &mdash; a bare interpreter name with nothing
+      guaranteeing the package is importable. Whether it works depends entirely on where the
+      worker happens to be standing, because <code>python -c</code> puts the working directory on
+      the import path. Measured 2026-09-08 on this host, one command, two locations:
+    </p>
+    <table>
+      <thead><tr><th>Working directory</th><th>Roles standing there</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>the assigned worktree</td><td>full-worktree roles</td>
+          <td>imports, because the worktree <em>is</em> the package source tree</td></tr>
+        <tr><td>the delivery directory</td><td>read-only roles</td>
+          <td><code>ModuleNotFoundError: No module named 'reckon'</code></td></tr>
+      </tbody>
+    </table>
+    <p>
+      So the channel is not broken in general, which is why it survived: the roles that exercise
+      it most while implementing are the ones it happens to work for. It is broken precisely for
+      the roles whose deliverable is a report and whose reason to speak to a peer is strongest,
+      and those are the roles the prompt tells about it in the same words. A capability
+      advertised where it cannot run is worse than an absent one, because the worker spends turns
+      on it before discovering that.
+    </p>
+    <p>
+      The dependence on the working directory is the defect, not the missing path. An interpreter
+      that can import the package is already in hand at composition time &mdash; the process
+      composing the prompt is running from one &mdash; so the client can name it instead of
+      hoping the worker's cwd supplies it. Naming it also removes a second latent failure that
+      has not yet been measured: a worker whose <code>python</code> resolves to a different
+      interpreter than the one reckon is installed into would fail from any directory at all.
+    </p>
+    <p>
+      <em>Done when</em> the composed peer-channel client runs from a working directory that is
+      not the package source tree, proven by executing the exact advertised command from a
+      delivery directory and getting the client's own usage rather than an import error; when the
+      interpreter it names is derived from the composing process rather than resolved from the
+      worker's environment, so no host path is written into the prompt text; when a full-worktree
+      role's client keeps working unchanged; and when a test asserts the composed string does not
+      begin with a bare interpreter name. Asserted by running the advertised command from both
+      directory kinds and requiring the same outcome in each.
+    </p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="follower-freshness-mechanism" data-choice="self-reexec" data-by="reckon-ship (deduced from the landed implementation)" data-when="2026-09-04T10:32:40+00:00">
