@@ -1780,8 +1780,11 @@ def test_dispatch_refuses_every_unreconciled_run_past_the_grace(home, repo) -> N
 
     assert [row["run_id"] for row in excinfo.value.runs] == list(run_ids)
     for run_id in run_ids:
-        expected = f"reckon crew complete --run {run_id} --gate <verdict> --commit HEAD"
-        assert f"- {run_id}: {expected}" in str(excinfo.value)
+        expected = (
+            f"- {run_id}: reckon crew dispatch --project proj --plan plan-a "
+            "--section '' --role review --spec-level exact"
+        )
+        assert expected in str(excinfo.value)
     listed = subprocess.run(
         ["git", "worktree", "list"],
         cwd=repo,
@@ -1885,7 +1888,10 @@ def test_cli_dispatch_reports_unreconciled_runs_on_its_own_exit_code(
     assert result.exit_code == 6
     assert payload["error"] == "unreconciled-runs"
     assert payload["runs"][0]["run_id"] == old_run
-    assert f"reckon crew complete --run {old_run}" in payload["detail"]
+    assert (
+        f"- {old_run}: reckon crew dispatch --project proj --plan plan-a "
+        "--section '' --role review --spec-level exact" in payload["detail"]
+    )
 
 
 def test_dispatch_refuses_work_above_the_selected_configuration_horizon(
@@ -3044,10 +3050,13 @@ def test_only_a_complete_manifest_returns_promotion_advice(home, repo) -> None:
 
     row = crew.classify_pointer(crew.observe(record["run_id"]))
 
-    assert row["classification"] == "completed_unpromoted"
+    assert row["classification"] == "scoring"
     assert row["manifest_status"] == "complete"
     assert row["manifest_commits"] == ["HEAD"]
-    assert row["next_action"].endswith("--commit HEAD")
+    assert row["next_action"].startswith(
+        "reckon crew dispatch --project proj --plan plan-a --section '§3' "
+        "--role review --spec-level exact"
+    )
 
 
 def test_crew_read_and_recovery_command_share_classification(home, repo) -> None:
