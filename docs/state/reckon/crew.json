@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T23:29:52",
+  "updated": "2026-09-08T23:33:01",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -81594,6 +81594,186 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T205703464085-a-lane-with-its-own-quota-reports-its-own",
+        "plan": "crew-observability-truth",
+        "section": "\u00a76",
+        "node": "a-lane-with-its-own-quota-reports-its-own",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1251,
+                "cached_input_tokens": 453394,
+                "input_tokens": 454647,
+                "output_tokens": 109,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 454756,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "c97ff0dc-76f9-4d90-a37e-98717f5066f2",
+            "session_id": "ship-s15-2026-09-08b"
+          },
+          "done_when": "a test proves the budget view reports, for a backend whose configuration declares its own quota horizon, that backend's own window rather than the account-wide weekly figure, and that a backend with no separate horizon still reports the shared one; and that where a lane's own figure cannot be read the view reports it as unmeasured rather than substituting the shared number. Record, from the live view before and after, the utilisation and window reported for the lane that has its own quota beside one that does not, and the test file pass total, in the manifest tests line",
+          "estimated_hours": null,
+          "goal": "the budget view stops reporting the shared weekly figure for a lane that has its own quota",
+          "id": "a-lane-with-its-own-quota-reports-its-own",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-08T20:57:03Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T205703464085-a-lane-with-its-own-quota-reports-its-own/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/budget.py",
+            "tests/test_lane_quota_attribution.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-attention",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-08T20:57:10Z",
+        "completed_at": "2026-09-08T21:29:35.688Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1922,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1945,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "27d1ba85acc0cebe36d376b95440dbb760e8c02a",
+        "commits": [
+          "79cf4592560033eff514c33bc192fefd63ed9d30"
+        ],
+        "changed_lines": {
+          "added": 374,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=\"$PWD\" .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_lane_quota_attribution.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T205703464085-a-lane-with-its-own-quota-reports-its-own/logs/after_budget2.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T205703464085-a-lane-with-its-own-quota-reports-its-own/manifest.md",
+        "scope_changed": false,
+        "session_id": "a610799a-5781-46cd-9c72-4110a2528ddb",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 14382257,
+            "input_tokens_cumulative": 18159484,
+            "output_tokens": 60517,
+            "output_tokens_cumulative": 74997,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-08T21:29:35.688Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 18159484,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 1942.302,
+          "generated_tokens": 74997,
+          "generation_seconds": 1898.73,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 32.6,
+          "machine_seconds": 43.572,
+          "peak_input_tokens": 331498,
+          "tokens_per_second": 39.5,
+          "wall_tokens_per_second": 38.61
+        },
+        "follow_on_paths": [
+          "dispatch-path/lane-concurrency"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-08b/a-lane-with-its-own-quota-reports-its-own",
+          "session_id": "a610799a-5781-46cd-9c72-4110a2528ddb",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T21:29:35.688Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -81822,6 +82002,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1243
+    "_version": 1244
   }
 }
