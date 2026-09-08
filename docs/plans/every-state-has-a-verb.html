@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-08">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="30">
 <meta name="plan-impl" content="0.7">
 <meta name="plan-commits" content="e5f4ef4">
 </head>
@@ -424,6 +424,12 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260904T073440247788-a-run-changes-lane-and-keeps-its-identity" data-who="codex-m" data-when="2026-09-04T07:51:53Z">
     <div class="r-comment-body"><p>A run moves between backends keeping its node id, worktree and ledger identity; a held destination is named and changes nothing; a cross-harness move reports a fresh start rather than losing context silently; and both entry points call one shared operation.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260908T110128323524-lane-change-fixture-declares-its-level" data-who="ship0908-local-a" data-when="2026-09-08T11:04:44.855Z">
+    <div class="r-comment-body"><p>Lane-change fixture declares a specification level: 1 passed / 3 errors at base becomes 4 passed at head, one line in the test fixture, no production path touched</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260908T110700" data-who="reckon-ship" data-when="2026-09-08T11:07:00Z">
+    <div class="r-comment-body">lane-change-fixture-declares-its-level landed — commit f4aa07a, merged at c53b0ae; gate passed. Measure: tests/test_crew_lane_change.py goes from 1 passed with 3 errors at base d599982 to 4 passed at head, exit 1 to exit 0. The three cases were erroring before any assertion ran, because dispatch now refuses a node declaring no specification level and the fixture's node declared none — so the section's production path was never the defect. One line in the test fixture, no production code touched, ruff clean with no new findings. The section's capability itself was already present on main; impl for this plan is held until the four audited sections are collapsed together in one beat rather than moved per repair.</div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260908T103627528081-open-sections-currency-map" data-who="ship0908-scout" data-when="2026-09-08T10:52:20Z">
     <div class="r-comment-body"><p>Currency map: 4 of 5 open sections already present on main, 1 partial; no absent capability</p></div>
