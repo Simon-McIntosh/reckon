@@ -96,6 +96,7 @@ def dispatched_run(tmp_path: Path, monkeypatch) -> tuple[Path, dict]:
         goal="keep one run identity while its execution backend changes",
         plan="fixture",
         section="movement",
+        spec_level="guided",
         done_when="pytest reports the backend movement assertions passing",
         write_paths=["package/target.py"],
         time_budget="20m",
