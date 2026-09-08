@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T07:18:20",
+  "updated": "2026-09-08T08:02:30",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -412,6 +412,15 @@
         "created": "2026-09-06"
       },
       {
+        "id": "crew-context-budget",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-08"
+      },
+      {
         "id": "crew-drain-fence",
         "harness": "clive",
         "role": "implement",
@@ -466,6 +475,17 @@
         "created": "2026-09-08"
       },
       {
+        "id": "crew-metering",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": "01a07f7f-936c-7f72-b09e-9a6b905eabe7",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a07f7f-936c-7f72-b09e-9a6b905eabe7"
+        },
+        "created": "2026-09-08"
+      },
+      {
         "id": "crew-midflight",
         "harness": "clive",
         "role": "implement",
@@ -500,6 +520,24 @@
         "session_model": null,
         "sessions": {},
         "created": "2026-09-06"
+      },
+      {
+        "id": "crew-quota-weight",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-08"
+      },
+      {
+        "id": "crew-rate-evidence",
+        "harness": "codex",
+        "role": "documentation",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-08"
       },
       {
         "id": "crew-resume-evidence",
@@ -538,6 +576,15 @@
         "created": "2026-09-05"
       },
       {
+        "id": "crew-rollout-receipt",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-08"
+      },
+      {
         "id": "crew-routing-evidence",
         "harness": "clive",
         "role": "implement",
@@ -572,6 +619,17 @@
         "session_model": null,
         "sessions": {},
         "created": "2026-09-05"
+      },
+      {
+        "id": "crew-token-quantities",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": "01a07f86-8a87-72e1-a1fb-6d206c4f02d2",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"worktree-full\"}": "01a07f86-8a87-72e1-a1fb-6d206c4f02d2"
+        },
+        "created": "2026-09-08"
       },
       {
         "id": "dispatch-repair",
@@ -72374,6 +72432,143 @@
           "role": "documentation",
           "status": "no-execution-measure"
         }
+      },
+      {
+        "run_id": "r-20260908T053953533092-a-lane-carries-its-own-quota-weight",
+        "plan": "crew-effort-routing",
+        "section": "\u00a71",
+        "node": "a-lane-carries-its-own-quota-weight",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2767,
+                "cached_input_tokens": 143218,
+                "input_tokens": 145987,
+                "output_tokens": 3208,
+                "reasoning_output_tokens": 744,
+                "total_tokens": 149195,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_quota_weight.py -q passes, and a function in a new module converts a run's model identity and its token quantities into a relative quota weight that discriminates the members of one metered model family, refusing rather than defaulting for a model it has no declared rate for. WHY. This fleet routes almost everything to one member of a metered family and is struggling with its weekly ceiling, while two cheaper members of the same family are measured as finishing comparable nodes. Nothing in the harness records how much quota a run actually consumed relative to another, so every routing argument is currently made on wall clock, which is not what a quota is spent in. The figures below were read from the vendor's published rate card and must be carried in the module as a declared table with the reason beside it, because a rate this table gets wrong silently misroutes every future node. THE DECLARED RATES, per million tokens, as published. The family's strongest member: input 4.00, output 20.00. Its middle member: input 2.00, output 12.00. Its efficient member: input 0.20, output 1.20. So relative to the strongest member, the middle member costs half on input and three fifths on output, and the efficient member costs one twentieth on input and six hundredths on output. There is a fourth, smaller member this project also dispatches to, on a separate quota, for which NO published rate was found; it must return the explicit refusal below rather than be assigned a plausible number. THE SURCHARGE, which is the part no surface here models. A request whose input exceeds 272,000 tokens is charged at twice input and one and a half times output FOR THE WHOLE REQUEST, not for the tokens above the line. So the weight depends on how many of a run's requests crossed that line, which is not derivable from a cumulative total: eighty requests of 200,000 tokens sum to sixteen million and cross nothing, two requests of 300,000 sum to 600,000 and cross twice. Take the threshold and both multipliers as named module-level constants with the published rule in a comment. WHAT TO BUILD, IN A NEW MODULE ONLY. Create reckon/crew/quota_weight.py exposing one function taking a model identifier, cumulative input tokens, cumulative output tokens, and the number of requests whose input crossed the threshold, and returning the relative weight together with the rate entry it used and whether the surcharge was applied. Do not import from reckon.crew.metering, which a peer is writing this hour; take plain numbers so this module is testable and reviewable on its own. Do not wire it into promotion, dispatch, the ledger, the CLI or any surface. Do not read any ledger file. THE UNIT MUST BE STATED AND MUST NOT BE DOLLARS. This project's workers run on a subscription, and the vendor states explicitly that a subscription is not priced per token; the published rates are the token-denominated billing surface and are being used here only as a RATIO between family members. So the function returns a dimensionless weight relative to the family's strongest member at one, never a currency amount, and the module docstring must say that in one sentence and say why. A corroborating figure worth recording in the same docstring: the subscription's own per-window message allowances for these three members stand in a ratio of roughly one to two to twenty, which agrees in direction and in order of magnitude with the token ratio, so the two independent denominations do not contradict each other. AN UNDECLARED MODEL IS A REFUSAL, NOT A DEFAULT. A model identifier absent from the declared table returns an explicit unknown carrying the identifier it could not price, and the caller can see that it was not priced. Never fall back to the strongest member's rate, never fall back to an average, and never return zero: this project has a standing rule that a free or unmeasured lane recorded as zero cost makes it look like the dearest or the cheapest lane on any surface that ranks by cost, and the existing ledger deliberately nulls and flags such a value rather than imputing it. Follow that precedent. FALSIFIERS, asserted in tests/test_quota_weight.py, every expected figure computed in the test from the declared constants rather than written as a literal. Equal token quantities across the three declared members return weights in the published ratio, with the strongest member's weight exactly one. THE ORDERING IS STRICT: for any identical non-zero token quantities the middle member's weight is strictly less than the strongest member's and the efficient member's is strictly less than the middle member's, so a future rate edit that accidentally inverts the family is caught. A run with zero requests over the threshold and a run with one differ by exactly the surcharge the constants declare, and the surcharged weight is strictly greater. A run whose cumulative input is sixteen million across many small requests, with zero crossings, weighs LESS than a run whose cumulative input is six hundred thousand across two crossing requests on the same model, asserted against figures the test computes, because this is the case a cumulative-only reading gets backwards and the whole reason the crossing count is a parameter. An undeclared model identifier returns the unknown marker, carries the identifier, and does not raise. An undeclared model does not return zero and does not return the same value as any declared member, asserted directly. Zero tokens on a declared model returns zero weight, since nothing was consumed, and this is distinguishable from the undeclared unknown. A negative token count raises rather than returning a negative weight. Measure base and head over the new file and the tests that import reckon.crew, report failure ids either side, require none added, bound the run per file, and never run the full suite for this node.",
+          "estimated_hours": 1.0,
+          "goal": "Convert a run's model and token quantities into a relative quota weight that discriminates one metered family's members and refuses for an undeclared model",
+          "id": "a-lane-carries-its-own-quota-weight",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T053953533092-a-lane-carries-its-own-quota-weight/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/quota_weight.py",
+            "tests/test_quota_weight.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-quota-weight",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T05:40:12Z",
+        "completed_at": "2026-09-08T05:59:51Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1179,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1179,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "e6242ffc70fc227e36c943b57cf1116997f122fb",
+        "commits": [
+          "2d681122cb68c8868120bb1f83c0ad1d87284ceb"
+        ],
+        "changed_lines": {
+          "added": 273,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 11,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_quota_weight.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T053953533092-a-lane-carries-its-own-quota-weight/head-quota-weight.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T053953533092-a-lane-carries-its-own-quota-weight/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07f87-fc7b-7c02-9441-ede4f40ddfdd",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 7746688,
+            "cached_input_tokens_cumulative": 7746688,
+            "input_tokens": 7887243,
+            "input_tokens_cumulative": 7887243,
+            "output_tokens": 29520,
+            "output_tokens_cumulative": 29520,
+            "reasoning_output_tokens": 13100,
+            "reasoning_output_tokens_cumulative": 13100
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 42620,
+          "peak_input_tokens": 15633931
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-04/a-lane-carries-its-own-quota-weight",
+          "session_id": "01a07f87-fc7b-7c02-9441-ede4f40ddfdd",
+          "session_source": "stream",
+          "retained_at": "2026-09-08T05:59:51Z"
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -72602,6 +72797,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1130
+    "_version": 1139
   }
 }
