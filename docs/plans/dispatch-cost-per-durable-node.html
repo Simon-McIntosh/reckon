@@ -741,6 +741,25 @@
       the requirement below speaks only to the undeclared case.
     </p>
     <p>
+      <strong>The fence states a fact it does not have, and it over-fires.</strong> Meteredness
+      is decided by an allowlist of unmetered names, so anything absent from that list is
+      declared metered: measured, the configured metered lanes classify correctly, the locally
+      served lane classifies correctly, and the synthetic names <code>beta</code>,
+      <code>worker</code> and an invented custom alias all classify as metered too. Default-deny
+      is the right precedence for a spend fence &mdash; an unrecognised lane should ask for a
+      declaration rather than be spent silently &mdash; so the behaviour is correct and the
+      sentence is not. A host whose own free lane carries a name this repository has never heard
+      of is told that lane is metered, and offered the one alternative the list does know.
+    </p>
+    <p>
+      That is the confident wrong answer this fleet keeps producing in new places, and the repair
+      is to say the weaker true thing: this lane is not known to be unmetered, so declare it. The
+      immediate cost is one red test at the merged head, which asserted the retired inheritance
+      behaviour through a synthetic backend name and now meets the refusal instead &mdash;
+      reported by the implementing worker from a static read rather than found by its gate,
+      because the file sat outside its write scope. It was right to report rather than reach.
+    </p>
+    <p>
       <em>Done when</em> a dispatch whose lane resolves to a metered backend without an
       explicit declaration is refused as not-dispatchable, naming the resolved backend, the
       window utilisation read at that moment, and the unmetered backends that would serve;
