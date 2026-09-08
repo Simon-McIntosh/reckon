@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T08:29:20",
+  "updated": "2026-09-08T08:31:09",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -460,9 +460,11 @@
         "id": "crew-lane-evidence",
         "harness": "codex",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "01a07fae-cd85-7721-9198-7c0182bc9e54",
+        "session_model": "gpt-5.6-terra",
+        "sessions": {
+          "{\"alias\":\"terra5.6\",\"backend\":\"codex-terra\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-terra\",\"sandbox\":\"worktree-full\"}": "01a07fae-cd85-7721-9198-7c0182bc9e54"
+        },
         "created": "2026-09-08"
       },
       {
@@ -73253,6 +73255,132 @@
           "role": "implement",
           "status": "compatible"
         }
+      },
+      {
+        "run_id": "r-20260908T062227723113-the-lane-evidence-refuses-to-choose",
+        "plan": "crew-effort-routing",
+        "section": "\u00a71",
+        "node": "the-lane-evidence-refuses-to-choose",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2330,
+                "cached_input_tokens": 298901,
+                "input_tokens": 301233,
+                "output_tokens": 3698,
+                "reasoning_output_tokens": 898,
+                "total_tokens": 304931,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "72a3a18b-a229-494a-aed5-99d277991aec",
+            "session_id": "ship-s15-2026-09-04"
+          },
+          "done_when": "pytest tests/test_lane_evidence.py -q passes, and a function in a new module returns, for a stated node shape, one row per lane carrying the three metrics that discriminate lanes plus the sample size behind each, refusing to report any figure whose sample is below a declared floor. WHY THESE THREE AND NOT THE OBVIOUS ONE. An orchestrator choosing a lane today has wall clock and folklore. The obvious metric, gate pass rate, CANNOT route and must be excluded with its reason stated in the module docstring: the worker writes its own gate, so the rate is saturated between 0.93 and 1.00 across every lane measured in this project and carries almost no information. Three metrics do discriminate and all three are derivable from the ledger rows this project already commits. FIRST, REWORK. A durable node is one whose run promoted with a commit. A node is reworked when a LATER run re-touches any path the earlier run declared as a write path. Measured previously in this project, rework discriminates about eight times more strongly than gate pass and reverses the cost ordering: one lane looks 34 percent cheaper on gate pass and is 22 percent dearer per durable node once rework is counted. Compute rework by comparing declared write paths across rows ordered by dispatch time, and exclude a row's own attempts and its own shadows from counting as rework of itself, since a retry of one node is not the next node redoing it. SECOND, OVERCLAIM, which is the metric today's evidence most needs and which nothing computes. A row overclaims when the worker's manifest reported a terminal success while the coordinator's recorded outcome says the done-when was not met. The rows carry both: the manifest status, and the promoted outcome and failure classification. Count a row as overclaiming when its manifest status was complete or passed and its promoted classification is work-rejected, or when its outcome text records that a named part of the done-when was absent, unexecuted or not delivered. Do not attempt to judge the work yourself and do not parse the done-when; read only what the coordinator recorded. This is the metric that separates a lane that stops and says so from a lane that stops and reports complete, and those two failure shapes need opposite handling from an orchestrator. THIRD, COST PER DURABLE NODE, expressed in the dimensionless lane weight this project already declares rather than in currency, since the workers run on a subscription that is not priced per token. Take the weight from the existing reckon.crew.quota_weight module; do not recompute any rate and do not import reckon.crew.rollout or reckon.crew.metering, whose figures are not yet on the rows. Where a row carries no token quantities, the cost for that row is unmeasured and it must not be counted as zero, because a lane with unmeasured rows would otherwise rank as the cheapest. Report wall seconds per durable node beside it as the fourth column, since wall and quota are different scarce things and an orchestrator trades them against each other. CONDITION EVERY ROW ON NODE SHAPE, because the premise of the whole surface is that the best lane depends on the work. Take the shape as the role and the specification level, and return only rows matching them, so a caller asking about exact implementation nodes is not shown an aggregate dominated by open-ended documentation work. Report the shape back in the result so a reader cannot mistake which population they are looking at. THE SAMPLE FLOOR IS THE DESIGN, NOT A GUARD. Declare a module-level minimum sample and return, for any lane below it, an explicit insufficient-evidence marker naming the count it has, rather than a figure. State in the docstring that a rate over three rows is not evidence and that publishing one invites a decision the data cannot support; this project has already had a lane comparison rest on five rows across three lanes and a determinism result rest on two measurements that were secretly identical. A surface that refuses is what makes the numbers it does report trustworthy. WHAT TO BUILD AND WHAT NOT TO. Create reckon/crew/lane_evidence.py exposing one function taking the ledger rows, a role and a specification level, and returning the rows described above plus the shape it filtered on. Read rows through the existing ledger reader rather than opening any file yourself. Do NOT register a command-line entry point in this node: reckon/cli.py is held by a peer this hour and a sequenced follow-up owns the command, which is stated here so the absence reads as sequencing rather than oversight. Do not select a lane, rank the rows, or emit a recommendation of any kind: the orchestrator decides and this surface informs, and a module that picks would hide exactly the decision this design exists to expose. Say that in the docstring. Do not touch reckon/crew/dispatch.py, reckon/cli.py, reckon/ledger.py, reckon/crew/quota_weight.py, reckon/crew/rollout.py or reckon/crew/context_budget.py; peers hold all six. FALSIFIERS, in tests/test_lane_evidence.py, every expected figure computed in the test from its own fixture rows rather than written as a literal, and every fixture synthesised rather than read from a real ledger. Two lanes with identical gate outcomes but different rework counts return different rework rates, which is the property gate pass cannot express. A later row re-touching an earlier row's declared write path counts as rework of that earlier row; a retry attempt of the same node does not; a shadow of the same node does not. A row whose manifest said complete and whose promoted classification is work-rejected counts as an overclaim, and a row that blocked and said so does not, asserted side by side so the two failure shapes are provably distinguished. A lane whose rows carry no token quantities reports its cost as unmeasured and NOT as zero, asserted directly against a lane with real quantities so the two cannot compare equal. A lane with fewer rows than the declared floor returns the insufficient-evidence marker carrying its actual count, and a lane at exactly the floor returns figures, so the boundary is pinned in both directions. A caller asking for one role and specification level receives no row derived from any other shape, asserted by including rows of a second shape in the fixture and requiring they contribute nothing to any figure. The returned result names the shape it filtered on. An empty row set returns insufficient evidence for every lane rather than raising or returning an empty success. Measure base and head over the new file and the tests that import reckon.crew, report failure ids either side, require none added, bound the run per file, and never run the full suite for this node.",
+          "estimated_hours": 1.5,
+          "goal": "Return per-lane rework, overclaim and cost-per-durable-node for a stated node shape, refusing any figure below a declared sample floor and recommending nothing",
+          "id": "the-lane-evidence-refuses-to-choose",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T062227723113-the-lane-evidence-refuses-to-choose/manifest.md",
+          "plan": "crew-effort-routing",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "exact",
+          "time_budget": "55m",
+          "write_paths": [
+            "reckon/crew/lane_evidence.py",
+            "tests/test_lane_evidence.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-lane-evidence",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-08T06:22:36Z",
+        "completed_at": "2026-09-08T06:30:31Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 475,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 475,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "4e4cde06b125f183638320bd57957e101522983b",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "not-run",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T062227723113-the-lane-evidence-refuses-to-choose/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07fae-cd85-7721-9198-7c0182bc9e54",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 1280256,
+            "cached_input_tokens_cumulative": 1280256,
+            "input_tokens": 1404835,
+            "input_tokens_cumulative": 1404835,
+            "output_tokens": 5208,
+            "output_tokens_cumulative": 5208,
+            "reasoning_output_tokens": 1735,
+            "reasoning_output_tokens_cumulative": 1735
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 1280256,
+          "cumulative_input_tokens": 2685091,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 6943
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "no_commit": "Blocked on a contradiction between the node brief and the plan, with no source or test changes made, which is the correct action rather than a shortfall.",
+        "resume_waiver": {
+          "session_id": "01a07fae-cd85-7721-9198-7c0182bc9e54",
+          "source": "pointer",
+          "reason": "The coordinator removed the run's worktree while it was blocked, before reconciling it, so resume raises FileNotFoundError instead of continuing. The session is being discarded because it cannot be resumed, not because resuming was judged unnecessary."
+        },
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run the full suite",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        }
       }
     ],
     "holds": [
@@ -73481,6 +73609,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1148
+    "_version": 1150
   }
 }
