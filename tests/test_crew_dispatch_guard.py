@@ -114,6 +114,7 @@ def _node(config_home: Path, name: str) -> crew.TaskNode:
         goal="record watcher state for one dispatch",
         plan="fixture",
         section="guard",
+        spec_level="guided",
         done_when="pytest reports one passing watcher guard case",
         write_paths=[f"src/{name}.py"],
         time_budget="20m",
@@ -171,7 +172,12 @@ def test_occupied_project_reuses_the_watcher_armed_by_the_first_dispatch(
 
     assert accepted["watch"]["watcher_live"] is True
     assert accepted["watch"]["watcher"]["pid"] == owner["watch"]["watcher"]["pid"]
-    assert crew.list_live(project="sample") == [owner, accepted]
+    # list_live attaches a read-side liveness re-derivation to each row without
+    # writing it to the pointer, so compare the pointer fields dispatch defines.
+    assert [
+        {key: value for key, value in row.items() if key != "process_alive"}
+        for row in crew.list_live(project="sample")
+    ] == [owner, accepted]
     worktrees = subprocess.run(
         ["git", "worktree", "list"],
         cwd=repo,

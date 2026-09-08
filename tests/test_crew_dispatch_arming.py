@@ -97,6 +97,7 @@ def _node(config_home: Path, name: str) -> crew.TaskNode:
         goal="record one producer-backed dispatch",
         plan="fixture",
         section="arming",
+        spec_level="guided",
         done_when="pytest reports one live watcher for every dispatch",
         write_paths=[f"src/{name}.py"],
         time_budget="20m",
