@@ -1462,6 +1462,7 @@ class DispatchPlan:
     sandbox_write_roots: tuple[Path, ...] | None = None
     requested_backend: str | None = None
     default_backend: str | None = None
+    lane_declaration: dict[str, Any] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         agent = _stamp_agent_display(
@@ -1477,6 +1478,9 @@ class DispatchPlan:
             "execution_fit": self.execution_fit.as_dict(),
             "launch": self.launch,
             "local": self.local,
+            "lane_declaration": (
+                None if self.lane_declaration is None else dict(self.lane_declaration)
+            ),
             "node": self.node.as_dict(),
             "requested_backend": self.requested_backend,
             "run_id": self.run_id,
@@ -1500,6 +1504,105 @@ class DispatchPlan:
         if self.live_conflicts is not None:
             payload["live_conflicts"] = [dict(item) for item in self.live_conflicts]
         return payload
+
+
+def _dispatch_lane_observation(
+    project: str,
+    *,
+    root: str | Path | None,
+    config: Mapping[str, Any],
+    backend_name: str,
+    backend: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Read the quota position used to admit one metered dispatch.
+
+    This is deliberately the read-only half of the budget gate. A dry run must
+    make the same lane-declaration decision as a real dispatch without writing
+    a preflight history row merely because a caller asked what would happen.
+    """
+    from reckon import budget as budget_module
+
+    try:
+        recorded = budget_module.latest_recorded(project, root=root, config=config)
+        state = budget_module.state_for(
+            backend_name,
+            backend,
+            recorded=recorded.get(backend_name),
+            unattributed=recorded.unattributed,
+        )
+    except (OSError, TypeError, ValueError) as exc:
+        return {
+            "headroom": "unknown",
+            "utilisation_pct": None,
+            "observed_at": None,
+            "detail": f"the dispatch-time budget reading was unavailable: {exc}",
+        }
+    return state.as_dict()
+
+
+def _unmetered_dispatch_alternatives(
+    config: Mapping[str, Any], *, role: str, spec_level: str
+) -> list[str]:
+    """Name configured unmetered backends that can resolve this node."""
+    alternatives: list[str] = []
+    for candidate in sorted((config.get("backends") or {}), key=str):
+        candidate_name = str(candidate)
+        if not ledger.is_unmetered_backend(candidate_name):
+            continue
+        try:
+            _resolved_name, settings = resolve_role_override(
+                config, role, spec_level, candidate_name
+            )
+        except CrewError:
+            continue
+        if settings.get("launch") in ("cli", "in-harness"):
+            alternatives.append(candidate_name)
+    return alternatives
+
+
+def _lane_declaration_evidence(
+    *,
+    declared_backend: str,
+    resolved_backend: str,
+    observation: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    """Pair the caller's lane choice with the position read at dispatch."""
+    measured = observation or {}
+    return {
+        "backend": declared_backend or None,
+        "resolved_backend": resolved_backend,
+        "metered": not ledger.is_unmetered_backend(resolved_backend),
+        "utilisation_pct": measured.get("utilisation_pct"),
+        "observed_at": measured.get("observed_at"),
+        "read_at": _utc_now(),
+        "headroom": measured.get("headroom"),
+    }
+
+
+def _lane_declaration_finding(
+    *,
+    backend_name: str,
+    observation: Mapping[str, Any],
+    alternatives: Iterable[str],
+) -> dict[str, str]:
+    """Explain how to make an inherited metered route explicit."""
+    utilisation = observation.get("utilisation_pct")
+    figure = (
+        "unknown"
+        if not isinstance(utilisation, (int, float)) or isinstance(utilisation, bool)
+        else f"{float(utilisation):g}%"
+    )
+    candidates = ", ".join(repr(name) for name in alternatives) or "none configured"
+    return {
+        "property": "fully-specified",
+        "detail": (
+            f"resolved backend {backend_name!r} is metered, but the caller declared "
+            f"no lane; window utilisation read at dispatch is {figure}; unmetered "
+            f"backends that would serve this node: {candidates}. Pass --backend "
+            f"{backend_name} to declare this metered lane, or name one of the "
+            "unmetered alternatives"
+        ),
+    }
 
 
 def _path_is_tmpfs(path: str | Path) -> bool:
@@ -1627,6 +1730,7 @@ def plan_dispatch(
     local: bool = False,
     backend_override: str | None = None,
     default_backend_override: str | None = None,
+    declared_backend: str | None = None,
     member: str = "",
 ) -> DispatchPlan:
     """Resolve routing and defaults for one node and judge it. No side effects.
@@ -1653,6 +1757,9 @@ def plan_dispatch(
     # node that the real dispatch then refuses on a missing precondition.
     _fleet_script()
     requested_backend = str(backend_override or default_backend_override or "").strip()
+    caller_declared_backend = str(
+        requested_backend if declared_backend is None else declared_backend
+    ).strip()
     # The command passes an empty string when its option is omitted. ``None``
     # belongs to internal callers that did not invoke that routing surface.
     if member and (
@@ -1785,6 +1892,43 @@ def plan_dispatch(
                 ok=False,
                 findings=[*verdict.findings, *sandbox_findings],
             )
+    lane_declaration: dict[str, Any] | None = None
+    if verdict.ok:
+        ledger_root = (
+            resolve_dispatch_ledger_root(resolved_authority)
+            if resolved_authority is not None
+            else None
+        )
+        observation = (
+            None
+            if ledger.is_unmetered_backend(backend_name)
+            else _dispatch_lane_observation(
+                project,
+                root=ledger_root,
+                config=config,
+                backend_name=backend_name,
+                backend=backend,
+            )
+        )
+        lane_declaration = _lane_declaration_evidence(
+            declared_backend=caller_declared_backend,
+            resolved_backend=backend_name,
+            observation=observation,
+        )
+        if observation is not None and not caller_declared_backend:
+            verdict = NodeValidation(
+                ok=False,
+                findings=[
+                    *verdict.findings,
+                    _lane_declaration_finding(
+                        backend_name=backend_name,
+                        observation=observation,
+                        alternatives=_unmetered_dispatch_alternatives(
+                            config, role=node.role, spec_level=node.spec_level
+                        ),
+                    ),
+                ],
+            )
     if not verdict.ok:
         verdict = NodeValidation(
             ok=False,
@@ -1810,6 +1954,7 @@ def plan_dispatch(
         authority=resolved_authority,
         requested_backend=requested_backend or None,
         default_backend=str(config.get("default_backend") or "") or None,
+        lane_declaration=lane_declaration,
     )
     if verdict.ok and repo is not None:
         resolution.competence = _competence_verdict(
@@ -2287,6 +2432,11 @@ def dispatch(
                 local=local,
                 run_id=resolution.run_id,
                 backend_override=fallback_name,
+                declared_backend=(
+                    str(resolution.lane_declaration.get("backend") or "")
+                    if resolution.lane_declaration is not None
+                    else ""
+                ),
             )
             resolution.requested_backend = requested_backend
             if not resolution.validation.ok:
@@ -2509,6 +2659,7 @@ def dispatch(
         coordinator = _coordinator_accounting(session)
         node_definition = node.as_dict()
         node_definition["requested_backend"] = resolution.requested_backend
+        node_definition["lane_declaration"] = resolution.lane_declaration
         # Promotion deliberately rebuilds the committed row from selected live
         # fields. The authored node definition is one of those durable fields,
         # so attribution lives there as well as at the pointer's top level.
@@ -2525,6 +2676,7 @@ def dispatch(
             "role": node.role,
             "backend": backend_name,
             "requested_backend": resolution.requested_backend,
+            "lane_declaration": resolution.lane_declaration,
             "local": local,
             "execution_fit": resolution.execution_fit.as_dict(),
             "launch": launch_kind,
