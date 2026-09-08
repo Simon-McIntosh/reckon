@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-08T12:27:31",
+  "updated": "2026-09-08T12:56:24",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -2009,6 +2009,44 @@
           "{\"backend\":\"clive\",\"effort\":\"medium\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\"}": "3c03edc0-2541-4530-b218-3ad2f9c0871d"
         },
         "created": "2026-09-03"
+      },
+      {
+        "id": "ship0908-a",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-08"
+      },
+      {
+        "id": "ship0908-b",
+        "harness": "codex",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-08"
+      },
+      {
+        "id": "ship0908-local",
+        "harness": "clive",
+        "role": "investigate",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-08"
+      },
+      {
+        "id": "ship0908-scout",
+        "harness": "codex",
+        "role": "investigate",
+        "session_id": "01a08097-4a01-7f22-a2ff-e147c5da736d",
+        "session_model": "gpt-5.6-sol",
+        "sessions": {
+          "{\"alias\":\"sol5.6\",\"backend\":\"codex\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"gpt-5.6-sol\",\"sandbox\":\"read-only\"}": "01a08097-4a01-7f22-a2ff-e147c5da736d"
+        },
+        "created": "2026-09-08"
       },
       {
         "id": "skill-contract-count",
@@ -77245,6 +77283,161 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260908T103627528081-open-sections-currency-map",
+        "plan": "every-state-has-a-verb",
+        "section": "",
+        "node": "open-sections-currency-map",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1841,
+                "cached_input_tokens": 200588,
+                "input_tokens": 202431,
+                "output_tokens": 982,
+                "reasoning_output_tokens": 450,
+                "total_tokens": 203413,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "91fbc665-22c6-45fd-9451-3fbf95ca126e",
+            "session_id": "ship-s15-2026-09-08"
+          },
+          "done_when": "The report at /home/ITER/mcintos/.config/reckon/crew/reports/every-state-has-a-verb-currency.md gives each of s3 s4 s5 s6 s7 a verdict of present, partial or absent, cites at least one file:line under reckon/ or tests/ for every present or partial verdict, quotes the command output establishing that verdict, names for every absent verdict the nearest existing machinery a node would extend, and reads the plan from docs/plans/every-state-has-a-verb.html on disk rather than through an MCP tool",
+          "estimated_hours": 0.5,
+          "goal": "Write a reuse map stating for each open section of every-state-has-a-verb whether its capability already exists on main",
+          "id": "open-sections-currency-map",
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T103627528081-open-sections-currency-map/manifest.md",
+          "plan": "every-state-has-a-verb",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "investigate",
+          "section": "",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/every-state-has-a-verb-currency.md"
+          ]
+        },
+        "role": "investigate",
+        "spec_level": "guided",
+        "member": "ship0908-scout",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "read-only"
+        },
+        "dispatched_at": "2026-09-08T10:36:33Z",
+        "completed_at": "2026-09-08T10:52:20Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 947,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 947,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "21fa8383905c6ac1a9b18af42440990ab9395776",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "/usr/bin/bash -lc 'PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-08/open-sections-currency-map /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_external_wait.py tests/test_worker_wait_contract.py tests/test_follow_sweep_cadence.py tests/test_crew_lane_change.py::test_both_commands_call_the_shared_lane_change_operation tests/test_lane_change_reads_the_worktree.py tests/test_crew_promotion_scope.py::test_complete_command_accepts_reasoned_companion_path tests/test_crew_promotion_scope.py::test_complete_help_describes_the_refused_state_acceptance_resolves tests/test_crew_promotion_scope.py::test_existing_waivers_do_not_accept_an_undeclared_companion tests/test_crew_promotion_scope.py::test_complete_command_refuses_companion_path_without_a_reason tests/test_crew_promotion_scope.py::test_companion_path_acceptance_refuses_another_live_run_claim tests/test_crew_refusal_visibility.py tests/test_crew_recover.py::test_recovery_command_help_names_the_state_and_the_boundary tests/test_crew_directory.py::test_one_read_names_every_coordinator_across_repositories tests/test_crew_directory.py::test_project_and_human_node_resolve_the_right_owner tests/test_crew_directory.py::test_activity_and_transport_are_reported_only_from_observation tests/test_crew_directory.py::test_directory_probes_dispatch_pids_before_classifying_runs tests/test_crew_directory.py::test_a_sessionless_pointer_is_visible_but_is_not_a_coordinator tests/test_crew_directory.py::test_ship_guidance_makes_cross_repository_findings_collaborative tests/test_crew_peers.py > /home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T103627528081-open-sections-currency-map/reuse-map-diagnostic.log 2>&1; echo EXIT=$?'",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T103627528081-open-sections-currency-map/reuse-map-diagnostic.log",
+          "log_digest": "ece27b0ff915ad9241179bf0c15a6dc1008cc35855a050bf8c69b10e9ce272e8"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260908T103627528081-open-sections-currency-map/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a08097-4a01-7f22-a2ff-e147c5da736d",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 8681856,
+            "cached_input_tokens_cumulative": 8681856,
+            "input_tokens": 8879920,
+            "input_tokens_cumulative": 8879920,
+            "output_tokens": 23185,
+            "output_tokens_cumulative": 23185,
+            "reasoning_output_tokens": 7750,
+            "reasoning_output_tokens_cumulative": 7750
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-08T10:52:20Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 31.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-08T10:52:20Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 8681856,
+          "cumulative_input_tokens": 17561776,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 30935
+        },
+        "follow_on_paths": [
+          "tests/test_crew_lane_change.py",
+          "tests/test_crew_directory.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "investigate",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": "report-only investigate node; its deliverable is a file outside the repository and no source changed",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-08/open-sections-currency-map",
+          "session_id": "01a08097-4a01-7f22-a2ff-e147c5da736d",
+          "session_source": "pointer",
+          "retained_at": "2026-09-08T10:52:20Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -77473,6 +77666,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1197
+    "_version": 1203
   }
 }
