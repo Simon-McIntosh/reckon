@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="worker-spend-is-legible-in-the-pane">
+  <meta name="plan-title"     content="What Each Worker Cost, On Its Own Row">
+  <meta name="plan-summary"   content="Time, tokens, rate and notional cost on every monitor row, cumulative across restarts, with the codex model span finally measured.">
+  <meta name="plan-status"    content="draft">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort-hours" content="16.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint"    content="S16">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-tags"      content="crew,reckon-tooling">
+  <meta name="plan-depends-on" content="dispatch-cost-per-durable-node">
+  <meta name="plan-blocks"    content="burn-is-visible-before-it-bites">
+  <meta name="plan-north-star" content="state-that-tells-the-truth">
+  <title>What Each Worker Cost, On Its Own Row | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">The fleet pane &middot; five cells, and the measurement behind them</p>
+      <h1>What Each Worker Cost, On Its Own Row</h1>
+      <p class="lead">
+        The monitor says which worker, what state, and how many are still running. It does not
+        say what any of them cost. A coordinator choosing where to send the next node reads
+        the pane, and then guesses &mdash; because the figures that would answer it are either
+        unpopulated, unpriced, or reset on every restart. This plan puts wall time, model time,
+        charged tokens, generation rate and a notional dollar figure on every row, accumulated
+        across restarts, and fixes the three measurements underneath that currently cannot
+        support them.
+      </p>
+    </header>
+
+    <h2 id="s1">&sect;1 &mdash; The vocabulary already exists and is not populated</h2>
+    <p>
+      Nothing in this plan invents a quantity. <code>_backends.py</code>'s
+      <code>throughput_block</code> already defines every figure the pane needs, and defines
+      them with the distinction that matters: <code>generation_seconds</code> is time inside
+      model requests, <code>machine_seconds</code> is <code>elapsed &minus; generation</code>
+      &mdash; the test runs, the SLURM waits, the tool execution &mdash; and
+      <code>tokens_per_second</code> is deliberately <em>generated over generation</em> rather
+      than over wall. Someone designed this correctly. The block is then populated on almost
+      nothing.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Pane cell</th><th>Existing field</th><th>Populated</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>wall</td><td><code>elapsed_seconds</code></td><td>88.8%</td></tr>
+        <tr><td>model</td><td><code>generation_seconds</code></td><td><strong>3.4%</strong></td></tr>
+        <tr><td>tokens</td><td><code>cumulative_input_tokens</code> + <code>generated_tokens</code></td><td>93.5%</td></tr>
+        <tr><td>tok/s</td><td><code>tokens_per_second</code></td><td><strong>3.4%</strong></td></tr>
+        <tr><td>usd</td><td><code>budget.cost_usd</code></td><td><strong>8.4%</strong>, and wrong where present</td></tr>
+        <tr><td>&mdash;</td><td><code>machine_seconds</code> (the excluded time, as its own fact)</td><td><strong>3.4%</strong></td></tr>
+      </tbody>
+    </table>
+    <p>
+      Coverage figures are <a href="/reckon/dispatch-cost-per-durable-node">dispatch-cost-per-durable-node</a>
+      &sect;1b's own measurement over 2,582 committed runs, and they are the reason this plan
+      leads with population rather than with layout. A cell reading a field populated on 3.4%
+      of runs is blank on nineteen rows in twenty, and a reader takes a blank cell as a quiet
+      worker rather than as an unrecorded one. Shipping the columns without the measurements
+      would make the pane worse than silent: it would make it wrong.
+    </p>
+    <p>
+      The <code>generation_seconds</code> gap has a specific cause, and it is not difficulty.
+      <code>_backends.py</code> sets it to <code>None</code> for codex <em>on purpose</em>,
+      commenting that the harness &ldquo;separates neither inference from tool wait nor the
+      turn from the run, so claiming a generation span would be inventing one&rdquo;. That is
+      true of the exec stream it reads and false of the client rollout, which carries a
+      timestamp on all 4,985 records of the file measured for this plan &mdash; and which
+      <code>crew/rollout.py</code> already parses, in the same package, for quota. So the field
+      is empty because the measurement reads the wrong file, with codex accounting for 2,280 of
+      those 2,582 runs.
+    </p>
+
+    <h2 id="s2">&sect;2 &mdash; Five cells, between the effort cell and the counters</h2>
+    <p>
+      The cells sit after the model and effort pair and before the fleet counters. That
+      placement is forced rather than chosen: everything before the reason must be
+      fixed-width, because the pane clips its own right edge and the reason is the elastic
+      tail. Putting the figures after the counters would let a width read one column too wide
+      eat them silently.
+    </p>
+<pre>10:14:59  implement    cank-thomson-forward   dispatched &rarr; blocked   sol5.6   high   1:47:22  52:14  6.4M   38  3.41   7w&middot;1b&middot;2u  ! all_debug&hellip;
+10:16:12  investigate  ucc-reuse-map-scout      complete &rarr; promoted  dsv4     xhigh  2:04:11  18:02  1.5M   44     &ndash;   7w&middot;1b&middot;1u
+10:18:03  implement    bob-terminal-hash        complete &rarr; promoted  luna5.6  high     23:41   9:37  890k   52  0.12   7w&middot;0b&middot;0u
+                                                                              wall    model   tok  /s   usd</pre>
+    <p>
+      The node column is shown narrowed above so the sample fits this page without wrapping;
+      in the pane it keeps its full 36 columns and the five cells sit further right.
+    </p>
+    <p>
+      Widths are fixed and every cell is right-aligned, so the right edge never moves as
+      figures change: wall 7, model 6, tokens 4, rate 4, dollars 5, single-space separators,
+      27 columns including the leading gap. <code>MIN_WIDTH</code> moves from 128 to 155. On
+      the 208-column pane this workstation measures, the reason field goes from 79 columns to
+      52 &mdash; comfortably above the 12-column floor below which a clause is not worth
+      reading. At the 180-column default it falls to 25, which still clears the floor; the
+      ticker's own header anticipated this, noting that &ldquo;the 52 at the default is what a
+      later added column spends first&rdquo;.
+    </p>
+    <p>
+      <strong>The wall-and-model pair is the cell that earns its width.</strong> A row showing
+      much wall against little model is a worker sitting in a test suite or a SLURM queue, and
+      a row showing the two close together is a worker actually thinking. That is legible at a
+      glance from the two figures side by side and requires no arithmetic, which is the whole
+      reason both are shown rather than one. The tokens cell counts total charged input
+      including cache reads, plus output, because that is what the meter and the weekly quota
+      charge; the rate cell is generated tokens over model seconds, which is the familiar
+      generation rate. The two therefore do not divide into each other, deliberately: each
+      answers its own question, and a rate computed over charged input would read in thousands
+      and mean nothing a reader could act on.
+    </p>
+    <p>
+      <strong>An unmeasured cell renders a dim en-dash, never a zero.</strong> A zero and an
+      unknown are different facts, and this fleet has large populations of both: 131 rows of
+      one lane whose dollar figure must be suppressed, and 96.6% of runs with no model span.
+      Rendering either as <code>0</code> asserts a measurement that was never taken, and a
+      reader cannot tell it from a worker that genuinely spent nothing.
+    </p>
+
+    <h2 id="s3">&sect;3 &mdash; Cumulative means along the lineage chain, and never across a shadow</h2>
+    <p>
+      A worker restarted several times must show figures that add up rather than start over.
+      Today nothing does, because <code>log_path</code> is <em>repointed</em> on every resume
+      &mdash; <code>stream.jsonl</code>, then <code>resume-1.jsonl</code>, then
+      <code>resume-2.jsonl</code>. One run measured for this plan holds eight such files under
+      a single run id. Any figure read from <code>log_path</code> alone resets each time a
+      coordinator answers a blocked worker, which is precisely the behaviour this plan exists
+      to remove.
+    </p>
+    <p>
+      How a restart is recorded depends on which kind it was, and the three kinds are not
+      interchangeable. A <strong>resume</strong> keeps the run id and adds a stream file. A
+      <strong>redispatch</strong> and a <strong>lane change</strong> mint a new run id and
+      chain to the old one. A <strong>shadow</strong> also mints a new run id and is
+      <em>not a further attempt at all</em> &mdash; it is a separate measurement of a different
+      configuration against the same node, run so the two can be compared. Folding a shadow
+      into its primary destroys the comparison the run corpus exists to make.
+    </p>
+    <table>
+      <thead>
+        <tr><th><code>lineage.kind</code></th><th>Rows</th><th><code>primary_run_id</code></th><th><code>root_run_id</code></th><th><code>previous_run_id</code></th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>shadow</code></td><td>21</td><td><strong>21/21</strong></td><td>0/21</td><td>0/21</td></tr>
+        <tr><td><code>redispatch</code></td><td>14</td><td>0/14</td><td><strong>14/14</strong></td><td><strong>14/14</strong></td></tr>
+        <tr><td><code>lane-change</code></td><td>2</td><td>0/2</td><td><strong>2/2</strong></td><td>0/2</td></tr>
+      </tbody>
+    </table>
+    <p>
+      Measured over the 797 committed rows of this project's ledger, 37 of them
+      lineage-bearing. <code>lineage.kind</code> is set on 37 of 37; the top-level
+      <code>predecessor_run</code> is set on <strong>2 of 797</strong> and cannot carry a chain
+      it is almost never written on. Both lane-change rows are self-rooted, so they begin a
+      chain rather than continuing one. So the accumulation branches on the kind and then reads
+      the field that kind actually populates:
+    </p>
+<pre>durable(run)     := not (lineage and lineage["kind"] == "shadow")
+accumulation_key := run_id                          if kind == "shadow"
+                    lineage.root_run_id or run_id   otherwise</pre>
+    <p>
+      <strong>Durability names the exclusion rather than enumerating the inclusions</strong>,
+      and that is not a style preference. An earlier draft of this predicate read
+      <code>lineage is None or kind == "redispatch"</code>, which silently dropped
+      <code>lane-change</code> &mdash; a kind whose work does merge &mdash; and would have
+      dropped every kind added after it. The accumulation key branches on <code>kind</code>
+      explicitly for the same reason: <code>root_run_id or run_id</code> returns the right
+      answer on all 37 rows today only because no shadow happens to carry that field, so it is
+      correct by accident and folds a shadow into its primary the day one does.
+    </p>
+    <p>
+      This predicate is exported under a name and has two callers. The wave-cost row in
+      <a href="/reckon/crew-observability-truth">crew-observability-truth</a> &sect;13 needs the
+      same exclusion, because a wave's durable cost must not charge it for evidence that never
+      merged; that section will call this predicate rather than restate it, since two copies of
+      an exclusion rule is how the wave figure and the pane cell drift apart while both look
+      correct.
+    </p>
+
+    <h2 id="s4">&sect;4 &mdash; A rate ledger, and the currency decision this reverses</h2>
+    <p>
+      The dollar figure is a <strong>notional cost computed from public API rates</strong> for
+      the model actually served. It is not a claim about what any subscription was billed, and
+      it deliberately does not try to be one. Its purpose is comparison: a coordinator deciding
+      between lanes needs to know that one node's work would have cost four times another's,
+      and a dimensionless weight cannot answer that across two different subscriptions.
+    </p>
+    <p>
+      This reverses a decision recorded in three places, and the reversal is deliberate and
+      owner-approved. <code>flight.yaml</code>'s per-backend rate comments state the rates are
+      &ldquo;used only to derive a dimensionless quota comparison between lanes &mdash; never a
+      currency charged to this subscription&rdquo;; the schema descriptions for
+      <code>input_rate_per_million</code> and <code>output_rate_per_million</code> say the same;
+      and <a href="/reckon/dispatch-cost-per-durable-node">dispatch-cost-per-durable-node</a>
+      &sect;1b rules <code>budget.cost_usd</code> &ldquo;never surfaced&rdquo;. All three texts
+      change in the same commit as the code, because a config comment that contradicts the
+      behaviour is worse than no comment &mdash; the next reader trusts it.
+    </p>
+    <p>
+      What &sect;1b was right about survives intact, and it is the reason the figure must be
+      computed rather than read. <code>budget.cost_usd</code> comes from the harness, which
+      prices whatever model name it was told to speak. On the locally-served lane it therefore
+      reports a real-looking figure for a model that was never billed: one deepseek run
+      measured for this plan reports <code>total_cost_usd: 34.34</code> with
+      <code>costBasis: "unknown"</code>, and across four ledgers that free lane totals the
+      highest spend of any backend. A pane rendering that field raw ranks free hardware as the
+      most expensive thing on the workstation. So the cell reads a figure derived from declared
+      rates and measured tokens, never the harness's own.
+    </p>
+    <p>
+      <strong>The ledger has to be refreshable, and every rate has to carry its own date.</strong>
+      Rates move; a rate written down once and never revisited is the fuse this repository
+      already knows about under &ldquo;a snapshot of a moving number&rdquo;. So each rate is
+      stored with an <code>as_of</code> date, a rate older than a declared staleness horizon
+      reports its age rather than quietly pricing at last year's number, and a model with no
+      declared rate stays explicitly unpriced rather than inheriting a neighbour's. Three
+      backends carry rates today; the rest must either gain one or be visibly unpriced.
+    </p>
+
+    <h2 id="s5">&sect;5 &mdash; The receipt a coordinator reads before dispatching</h2>
+    <p>
+      The pane cell answers &ldquo;what did this worker cost&rdquo;. Choosing where to send the
+      next node also needs &ldquo;how much room is left, and until when&rdquo;, and that is a
+      per-lane fact rather than a per-row one. <code>crew/rollout.py</code> already produces
+      most of it: <code>RolloutReceipt</code> carries cumulative tokens, the largest request,
+      the context window, <code>plan_type</code>, and a <code>QuotaReading</code> per window
+      holding <code>window_minutes</code>, <code>used_percent</code> and
+      <code>resets_at</code>. The ledger already has a <code>lane_receipt</code> field to hold
+      it. What is missing is the notional cost beside the quota, so the two can be read
+      together.
+    </p>
+    <p>
+      So the receipt gains the imputed spend for the run, and the notional value of the
+      headroom remaining in each window, each labelled with the window's own duration and its
+      reset time. Every window is named from the payload rather than assumed &mdash; a
+      five-hour figure is another provider's concept, and a surface that renders one for an
+      account reporting only a weekly window is displaying state that account never sent.
+    </p>
+    <p>
+      <strong>One soundness limit travels with it and must be stated on the surface, not only
+      here.</strong> <code>rollout.py</code>'s own header records that the client's
+      <code>used_percent</code> is quantised to whole percentage points, so a run consuming
+      four tenths of a point is indistinguishable from one consuming nothing: per-run
+      attribution from quota movement is not sound, while aggregates over many runs are. That
+      is why per-worker spend is derived from token counts and rates, and quota is used only
+      for the remaining-and-reset half. A receipt that presented both with equal confidence
+      would misrepresent the weaker one, which is how a reader comes to distrust every figure
+      on a surface once one of them proves soft.
+    </p>
+
+    <h2 id="s6">&sect;6 &mdash; What was refuted while designing this</h2>
+    <p>
+      Two candidate mechanisms failed measurement during design, and both are recorded because
+      each would have shipped a plausible wrong number rather than an obvious one.
+    </p>
+    <p>
+      <strong>The first was this plan's own proposed rule for codex model time.</strong> The
+      idea was to attribute each interval ending at a <code>token_count</code> event to model
+      time, since such an event marks a completed request. Measured against one real rollout it
+      yields <strong>62 seconds of model time across a 20.03-hour span and 818 requests</strong>
+      &mdash; 76 milliseconds per request, a 0.1% model share. Not credible, so the rule is
+      wrong: those events evidently land adjacent to the record before them rather than at a
+      request boundary. The workable direction is the inverse &mdash; bound the tool spans and
+      subtract them from wall &mdash; and because the rule is not yet established, &sect;7's
+      first node carries a falsifier rather than an algorithm.
+    </p>
+    <p>
+      <strong>The second is that the codex rollout's cumulative token field is not monotonic.</strong>
+      In the same file, <code>info.total_token_usage.input_tokens</code> reads
+      <strong>24,495,394</strong> at its maximum and <strong>744,077</strong> at the end,
+      because the counter resets at each of the file's three <code>compacted</code> markers. So
+      reading the last value under-reports by 33&times;, and reading the maximum is wrong the
+      moment a session compacts twice. Any cumulative codex figure must sum per-segment deltas
+      across those boundaries. Both readings are wrong in different directions and neither
+      announces itself.
+    </p>
+    <p>
+      A third field was checked and deliberately left alone. <code>peak_input_tokens</code>
+      carries two different quantities depending on lane &mdash; a cumulative sum on codex
+      against a per-request peak elsewhere, medians differing by two orders of magnitude &mdash;
+      and a resumed run records one turn while the two blocks hold different values. Nothing in
+      this plan reads it.
+    </p>
+
+    <h2 id="s7">&sect;7 &mdash; Execution order</h2>
+    <p>
+      The measurements come before the cells, because a cell reading an unpopulated field is
+      worse than an absent cell. Nodes 1 and 2 are independent and open together; node 3 is
+      independent of both. Node 4 follows node 1 because both write
+      <code>crew/rollout.py</code> and a containing path claim is refused rather than merged.
+      Node 5 follows 1&ndash;4, since it renders what they produce. Node 6 measures the merged
+      head, which is the only place the combination can be measured at all.
+    </p>
+    <p>
+      <strong>Every measure below is phrased with <em>carries</em> or <em>does</em>, never with
+      <em>can</em> or <em>supports</em>.</strong> A measure phrased permissively is satisfied by
+      a capability nobody exercises: a sibling section's gate read &ldquo;every run <em>can</em>
+      join a wave&rdquo;, and it passed five tests against a field that was empty on 797 of 797
+      rows. Each measure below also ranges over a fixture population containing the cases where
+      the property can actually fail &mdash; a resumed run, a redispatched run and a shadow
+      &mdash; rather than over whatever the current inventory happens to hold.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>codex-model-span</code></td>
+          <td>A codex run reports a measured model span and a monotonic cumulative token total, both derived from the client rollout rather than the exec stream.</td>
+          <td><code>generation_seconds</code> and <code>machine_seconds</code> are non-null for a codex run, and the derived model share of wall falls strictly between 1% and 99% on at least three real rollouts of differing length &mdash; the falsifier being that a share at either extreme refutes the rule rather than revealing an unusual worker. Cumulative input is summed per segment across <code>compacted</code> markers and reproduces neither 744,077 nor 24,495,394 for the rollout named in &sect;6. A rollout carrying no bounded tool spans reports the explicit unmeasured state, asserted as a returned marker rather than as a null.</td>
+          <td><code>reckon/crew/rollout.py</code>, <code>reckon/_backends.py</code>, <code>tests/test_rollout_receipt.py</code>, <code>tests/test_backend_observation.py</code>, <code>tests/test_input_token_quantities.py</code></td>
+          <td>guided &middot; local</td>
+        </tr>
+        <tr>
+          <td><code>lineage-accumulator</code></td>
+          <td>Cumulative figures accumulate along the lineage chain and exclude never-merged evidence, under one exported predicate.</td>
+          <td><code>uv run pytest tests/test_cumulative_token_accounting.py -q</code> passes with cases covering: a run with eight attempt files totalling all eight rather than the last; a redispatch folding into its <code>root_run_id</code>; a <code>lane-change</code> row counted as durable; a shadow keyed to itself and absent from its primary's total; and a shadow that carries a <code>root_run_id</code> still keyed to itself, which the accidental form fails. The durability predicate is exported under a name and its docstring states that it names the exclusion so an unknown kind is durable by default. Durability and contamination are asserted <em>separately</em>, with a case for a contaminated non-shadow row proving the predicate does not absorb the contamination question &mdash; every contaminated row in the current corpus happens to be a shadow, so a composed predicate is accidentally correct and would pass a test that never separated them.</td>
+          <td><code>reckon/crew/metering.py</code>, <code>tests/test_cumulative_token_accounting.py</code></td>
+          <td>guided &middot; local</td>
+        </tr>
+        <tr>
+          <td><code>rate-ledger</code></td>
+          <td>A refreshable per-model rate ledger, each rate dated, with the currency decision reversed in config and schema text.</td>
+          <td>Every backend in the resolved flight configuration either carries a rate pair with an <code>as_of</code> date or is reported explicitly unpriced, asserted over the resolved config rather than over a fixture. A rate older than the declared staleness horizon is returned with its age attached. The three <code>flight.yaml</code> rate comments and both schema descriptions no longer state the rates are never a currency, and <code>scripts/regen_flight_schema.py</code> has been run so <code>_flight_schema.py</code> and <code>flight.schema.json</code> match the source schema. <code>uv run pytest tests/test_flight.py tests/test_quota_weight.py -q</code> passes.</td>
+          <td><code>reckon/schema/flight.yaml</code>, <code>reckon/_flight_schema.py</code>, <code>docs/_shared/flight.schema.json</code>, <code>reckon/crew/quota_weight.py</code>, <code>tests/test_flight.py</code>, <code>tests/test_quota_weight.py</code></td>
+          <td>guided &middot; local</td>
+        </tr>
+        <tr>
+          <td><code>receipt-carries-spend</code></td>
+          <td>The lane receipt carries notional spend beside the quota position, per window, each labelled with its own duration and reset.</td>
+          <td>A receipt for a run on a rated lane carries a notional spend figure derived from declared rates and measured tokens, and a receipt on an unrated lane carries the explicit unpriced marker rather than zero. Each quota window in the receipt is labelled with the duration the payload reported, and an account reporting one window yields exactly one, asserted by the absence of any second window rather than by its text. The quantisation limit is stated in the returned structure, not only in a docstring. <code>uv run pytest tests/test_rollout_receipt.py tests/test_promotion_harvests_the_receipt.py tests/test_lane_quota_attribution.py -q</code> passes.</td>
+          <td><code>reckon/crew/rollout.py</code>, <code>reckon/ledger.py</code>, <code>tests/test_rollout_receipt.py</code>, <code>tests/test_promotion_harvests_the_receipt.py</code>, <code>tests/test_lane_quota_attribution.py</code></td>
+          <td>guided &middot; local, after <code>codex-model-span</code></td>
+        </tr>
+        <tr>
+          <td><code>pane-carries-the-figures</code></td>
+          <td>Every monitor row carries the five cells at fixed alignment, and the transition record carries them as facts.</td>
+          <td>Every transition record for a live run <em>carries</em> a measured or explicitly-unmeasured value in all five cells, asserted over a fixture fleet containing a resumed run, a redispatched run and a shadow. A rendered line is exactly the requested width with no wrapping at 155, 180 and 208 columns; the five cells occupy the same screen column on every row of a multi-row fixture; an unmeasured cell renders the dim marker and a measured zero renders a zero, asserted as distinct strings. <code>Ticker._stats</code> is unmodified, verified by diff. <code>uv run pytest tests/test_crew_ticker.py tests/test_crew_ticker_layout.py tests/test_crew_monitor_output.py tests/test_crew_watch_stream.py tests/test_crew_recovery.py tests/test_fleet_counter_coverage.py tests/test_recovery_state_typing.py tests/test_crew_session_delivery.py tests/test_external_wait.py tests/test_follow_observes_other_sessions.py tests/test_follow_sweep_cadence.py -q</code> passes &mdash; all eleven files that assert on a rendered line, fenced with the source because a narrower fence reads a clean delta while the merged head is red.</td>
+          <td><code>reckon/crew/ticker.py</code>, <code>reckon/crew/recovery.py</code>, and the eleven test files named in the measure</td>
+          <td>guided &middot; local, after nodes 1&ndash;4</td>
+        </tr>
+        <tr>
+          <td><code>merged-head-attribution</code></td>
+          <td>The combination is measured where it exists, and any failure is attributed to the node that caused it.</td>
+          <td>The full suite runs at the merged head with every node's commit present, its failure set is compared against the recorded base revision, and each added failure is attributed to a named node. A suite that cannot complete is recorded with the verdict <code>not-run</code> and still delivers the attribution for the prefix it reached; it is never recorded as passed. The pane is rendered once against the live fleet at the real pane width and the capture is attached.</td>
+          <td><code>docs/evidence/worker-spend-is-legible-in-the-pane-landed.html</code></td>
+          <td>guided &middot; local, last</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      The gate for this plan, recorded when the measure runs: against this workstation's live
+      fleet the pane renders all five cells populated or explicitly unmeasured on every row, at
+      the measured pane width, with no wrapped line; a resumed worker's figures exceed those of
+      its first attempt alone; and a shadow's figures appear on the shadow's own row and nowhere
+      in its primary's. Its evidence is a rendered capture of the live pane beside the run
+      records the figures were derived from.
+    </p>
+
+    <h2 id="s8">&sect;8 &mdash; What this plan does not do</h2>
+    <p>
+      <strong>No wave cell.</strong> The field exists &mdash; <code>wave</code>, a string at the
+      live pointer's top level, with <code>--wave</code> options on both dispatch and shadow
+      &mdash; and it is populated on nothing: 3 of 11 live pointers carry the key and all three
+      hold the empty string, while the committed ledger lacks it on 797 of 797 rows. A column
+      blank on every row reads as broken rather than as unrecorded. The owning session is making
+      dispatch assign a wave by default; the cell lands when the field does, sized from the id's
+      own shape. Both absences &mdash; empty string and missing key &mdash; mean not-in-a-wave
+      and neither may be grouped.
+    </p>
+    <p>
+      <strong>No change to <code>Ticker._stats</code>.</strong> A concurrent session needs that
+      function for a fourth counter cell. The five cells sit between the effort cell and the
+      counters precisely so the two changes touch different functions in one file, and the
+      shared surface is <code>Ticker.render</code>, which is serialised by agreement rather than
+      by refusal.
+    </p>
+    <p>
+      <strong>No SPA meter.</strong> Position, burn and projected exhaustion on one mark belong
+      to <a href="/reckon/burn-is-visible-before-it-bites">burn-is-visible-before-it-bites</a>,
+      which is blocked on exactly the derivation this plan lands and will consume it rather than
+      compute a second copy in JSX. <strong>No burn fence</strong> either: showing a reader where
+      they stand is a different act from refusing a dispatch, and the fence belongs to the
+      prerequisite plan.
+    </p>
+    <p>
+      <strong>No claim about subscription spend.</strong> The dollar figure is notional, computed
+      from public rates, and is never presented as what an account was billed. A per-run figure
+      derived from quota movement is explicitly out, for the quantisation reason in &sect;5.
+    </p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">&sect;</span> Decisions</h2>
+      <div class="r-dec" data-key="cost-basis" data-choice="public-api-rates" data-by="Simon McIntosh" data-when="2026-09-09">
+        <p class="r-dec-q">What grounds the dollar figure?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="public-api-rates">Public API rates for the model served, in a refreshable dated ledger</button>
+          <button class="r-opt" data-value="subscription-share">A share of each subscription's plan price</button>
+          <button class="r-opt" data-value="harness-reported">The harness's own <code>total_cost_usd</code></button>
+        </p>
+        <p class="r-dec-rat">
+          A notional figure from public rates is consistent and comparable across two different
+          subscriptions, which is the decision it has to support; it needs no plan price and
+          makes no claim about actual billing. The harness figure is disqualified by measurement
+          rather than by preference &mdash; it prices whatever model name it was told to speak,
+          so the free local lane totals the highest spend of any backend and a ranking built on
+          it inverts. A subscription share would require declaring each plan's price and would
+          still not compare across providers.
+        </p>
+      </div>
+      <div class="r-dec" data-key="time-cells" data-choice="wall-and-model" data-by="Simon McIntosh" data-when="2026-09-09">
+        <p class="r-dec-q">Wall time, model time, or both?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="wall-and-model">Both, as two cells</button>
+          <button class="r-opt" data-value="wall-only">Wall only, with the rate's denominator hidden</button>
+          <button class="r-opt" data-value="model-only">Model only, so the three cells divide into each other</button>
+        </p>
+        <p class="r-dec-rat">
+          The gap between the two is itself the signal: much wall against little model is a
+          worker stuck in a test suite or a SLURM queue, and neither figure alone shows it. Wall
+          alone hides the rate's denominator and cannot distinguish a slow worker from a busy
+          one; model alone lets a twelve-hour node read forty minutes with nothing on the row
+          saying how long it actually ran. The cost is eight columns of reason field, which the
+          measured pane can afford.
+        </p>
+      </div>
+      <div class="r-dec" data-key="unmeasured-rendering" data-choice="explicit-absence" data-by="Simon McIntosh" data-when="2026-09-09">
+        <p class="r-dec-q">How does a cell with no measurement render?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="explicit-absence">A dim absence marker, distinct from zero</button>
+          <button class="r-opt" data-value="zero">Zero, so the column is always full</button>
+          <button class="r-opt" data-value="blank">Blank whitespace</button>
+        </p>
+        <p class="r-dec-rat">
+          A zero asserts a measurement that was never taken, and this fleet has large
+          populations of both facts at once &mdash; an unpriced lane really did spend nothing
+          chargeable, while an unobserved run's tokens are simply unknown. Blank whitespace
+          takes the right edge ragged, which is the defect the fixed grid exists to prevent.
+        </p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">&sect;</span> Followups</h2>
+      <article class="r-fu" data-id="f-wslp-001" data-status="open"
+               data-capability-version="1.0" data-capability-class="orchestrator"
+               data-written-by="reckon-create" data-written-at="2026-09-09"
+               data-recommends-skill="/reckon-ship worker-spend-is-legible-in-the-pane">
+        <h4 class="r-fu-title">Open the measurement nodes together, then the cells</h4>
+        <div class="r-fu-body">
+          <p>
+            &sect;7 nodes 1, 2 and 3 are independent and open in one wave: the codex model span,
+            the lineage accumulator and the rate ledger touch disjoint files and none depends on
+            another's output. Node 4 waits on node 1 because both write
+            <code>crew/rollout.py</code>. Node 5 waits on all four, since a cell reading an
+            unpopulated field is the defect &sect;1 measures.
+          </p>
+          <p>
+            Two constraints belong in every dispatch. The three decisions above are locked, so no
+            node re-opens them. And the eleven test files asserting on a rendered line are fenced
+            <em>with</em> <code>ticker.py</code> in node 5 rather than left outside it &mdash; a
+            narrower fence lets a worker report a clean delta while the merged head is red, which
+            has happened repeatedly on this file.
+          </p>
+        </div>
+        <pre class="r-fu-prompt">/reckon-ship worker-spend-is-legible-in-the-pane</pre>
+      </article>
+    </section>
+
+    <section data-reckon="research" id="research" class="r-research-list">
+      <h2><span class="sec">&sect;</span> Research</h2>
+      <div class="r-research" data-id="r-rollout-refutation" data-type="measurement">
+        <span class="r-research-title">The rollout measured for &sect;6: 4,985 timestamped records over 20.03 hours, eight attempts, three compaction markers, cumulative input reading 24,495,394 at maximum against 744,077 at the end.</span>
+      </div>
+      <div class="r-research" data-id="r-lineage-census" data-type="measurement">
+        <span class="r-research-title">The lineage census for &sect;3: 797 committed rows, 37 lineage-bearing, kind populated on 37 of 37 and the top-level predecessor field on 2 of 797.</span>
+      </div>
+      <div class="r-research" data-id="r-coverage" data-type="measurement">
+        <span class="r-research-title">Field coverage for &sect;1, from dispatch-cost-per-durable-node &sect;1b over 2,582 committed runs across four ledgers.</span>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
