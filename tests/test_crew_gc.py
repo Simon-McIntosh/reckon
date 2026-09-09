@@ -126,14 +126,17 @@ def ledger_run_directory(
     run_id: str,
     *,
     now: datetime,
-    orientation_input_tokens: bool = False,
-    tool_steps: bool = False,
+    orientation_input_tokens: bool | None = False,
+    tool_steps: bool | None = False,
     extra: dict[str, Any] | None = None,
 ) -> Path:
     """Create a run directory whose row records whichever derived figures are named.
 
-    The directory's mtime is set well past a 30-day retention window, so the
-    only thing deciding whether gc removes it is the recorded figures.
+    ``True`` records a measured number, ``None`` records the key present with
+    an explicit absence (the derivation ran and found the stream gone), and
+    ``False`` (the default) leaves the key absent so the figure reads as never
+    derived. The directory's mtime is set well past a 30-day retention window,
+    so the only thing deciding whether gc removes it is the recorded figures.
     """
     run_dir = home / "crew" / "runs" / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -145,10 +148,14 @@ def ledger_run_directory(
         node="node-a",
         manifest_path=str(run_dir / "stream.jsonl"),
     )
-    if orientation_input_tokens:
+    if orientation_input_tokens is True:
         record["orientation_input_tokens"] = 128_000.0
-    if tool_steps:
+    elif orientation_input_tokens is None:
+        record["orientation_input_tokens"] = None
+    if tool_steps is True:
         record["tool_steps"] = 7.0
+    elif tool_steps is None:
+        record["tool_steps"] = None
     for key, value in (extra or {}).items():
         record[key] = value
     ledger.append_run("test", record, root=repo)
@@ -638,3 +645,200 @@ def test_gc_reads_the_declared_field_set_so_a_new_figure_protects_the_source(
     assert rows["run-figures-pending"]["action"] == "withheld"
     assert "input_tokens" in rows["run-figures-pending"]["reason"]
     assert run_dir.exists()
+
+
+def test_gc_reaps_a_run_directory_whose_figures_were_derived_and_found_absent(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A null figure does not withhold: the derivation already recorded the
+    stream as unrecoverable, so the directory holds nothing that could produce
+    the figure and withholding it forever protects nothing."""
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    repo = repository(tmp_path)
+    now = datetime(2026, 9, 1, tzinfo=UTC)
+    run_dir = ledger_run_directory(
+        repo,
+        home,
+        "run-unrecoverable",
+        now=now,
+        orientation_input_tokens=None,
+        tool_steps=None,
+    )
+
+    report = routing.garbage_collect(repo=repo, now=now, retention_days=30)
+    row = next(item for item in report["run_directories"])
+    assert row["run_id"] == "run-unrecoverable"
+    assert row["action"] == "prune"
+    assert row["figure_status"] == {
+        "orientation_input_tokens": "explicitly-absent",
+        "tool_steps": "explicitly-absent",
+    }
+    assert row["explicitly_absent_figures"] == [
+        "orientation_input_tokens",
+        "tool_steps",
+    ]
+    assert run_dir.exists()  # dry run did not touch it
+
+    applied = routing.garbage_collect(repo=repo, now=now, retention_days=30, apply=True)
+    applied_row = next(item for item in applied["run_directories"])
+    assert applied_row["action"] == "prune"
+    assert applied_row["removed"] is True
+    assert not run_dir.exists()
+
+
+def test_gc_reaps_a_run_whose_figures_are_partly_measured_and_partly_absent(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Each declared figure is judged on its own: a measured figure beside an
+    explicit absence does not smuggle the directory into the withheld set."""
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    repo = repository(tmp_path)
+    now = datetime(2026, 9, 1, tzinfo=UTC)
+    ledger_run_directory(
+        repo,
+        home,
+        "run-mixed",
+        now=now,
+        orientation_input_tokens=True,
+        tool_steps=None,
+    )
+
+    report = routing.garbage_collect(repo=repo, now=now, retention_days=30)
+    row = next(item for item in report["run_directories"])
+    assert row["action"] == "prune"
+    assert row["figure_status"] == {
+        "orientation_input_tokens": "recorded",
+        "tool_steps": "explicitly-absent",
+    }
+
+
+def test_gc_withholds_only_a_never_derived_figure_and_names_the_condition(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The withheld report names which condition holds rather than one
+    undifferentiated reason: a key absent because the derivation has not run
+    withholds, while a key present with an explicit absence and a recorded
+    zero both reap, so the reader sees why each row stands."""
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    repo = repository(tmp_path)
+    now = datetime(2026, 9, 1, tzinfo=UTC)
+    never = ledger_run_directory(repo, home, "never-derived", now=now)
+    unrecoverable = ledger_run_directory(
+        repo,
+        home,
+        "explicit-absent",
+        now=now,
+        orientation_input_tokens=None,
+        tool_steps=None,
+    )
+    zeros = ledger_run_directory(
+        repo,
+        home,
+        "zero-measured",
+        now=now,
+        extra={"orientation_input_tokens": 0.0, "tool_steps": 0.0},
+    )
+
+    report = routing.garbage_collect(repo=repo, now=now, retention_days=30, apply=True)
+    rows = {item["run_id"]: item for item in report["run_directories"]}
+
+    held = rows["never-derived"]
+    assert held["action"] == "withheld"
+    assert held["withheld"] == "missing-derived-figure"
+    assert held["figure_status"]["orientation_input_tokens"] == "missing"
+    assert "keys are absent" in held["reason"]
+    assert never.exists()
+
+    for run_id in ("explicit-absent", "zero-measured"):
+        assert rows[run_id]["action"] == "prune"
+        assert rows[run_id]["removed"] is True
+    assert not unrecoverable.exists()
+    assert not zeros.exists()
+
+
+def test_gc_counts_the_directories_reaped_with_an_explicitly_absent_figure(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The reaper states, as a number, how much the new distinction reclaims:
+    only the directory whose null figure records a prior, unrecoverable derive
+    counts, beside one reaped on measured figures and one still withheld."""
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    repo = repository(tmp_path)
+    now = datetime(2026, 9, 1, tzinfo=UTC)
+    ledger_run_directory(
+        repo,
+        home,
+        "unrecoverable",
+        now=now,
+        orientation_input_tokens=None,
+        tool_steps=None,
+    )
+    ledger_run_directory(
+        repo,
+        home,
+        "measured",
+        now=now,
+        orientation_input_tokens=True,
+        tool_steps=True,
+    )
+    ledger_run_directory(repo, home, "undeclared", now=now)
+
+    report = routing.garbage_collect(repo=repo, now=now, retention_days=30, apply=True)
+
+    assert isinstance(
+        report["run_directories_reaped_with_explicitly_absent_figures"], int
+    )
+    assert report["run_directories_reaped_with_explicitly_absent_figures"] == 1
+    assert report["run_directories_withheld"] == 1
+
+
+def test_a_declared_figure_added_later_inherits_both_retention_behaviours(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The rule lives on the declared field set, so a figure added to the
+    derivation later inherits both behaviours with the check unedited: a row
+    that records the new figure explicitly absent stays reapable, while a row
+    that has never recorded it becomes withheld."""
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    repo = repository(tmp_path)
+    now = datetime(2026, 9, 1, tzinfo=UTC)
+    absent_on_row = ledger_run_directory(
+        repo,
+        home,
+        "explicit-absent-new",
+        now=now,
+        orientation_input_tokens=True,
+        tool_steps=True,
+        extra={"input_tokens": None},
+    )
+    never_recorded = ledger_run_directory(
+        repo,
+        home,
+        "never-derived-new",
+        now=now,
+        orientation_input_tokens=True,
+        tool_steps=True,
+    )
+    before = routing.garbage_collect(repo=repo, now=now, retention_days=30)
+    assert all(item["action"] == "prune" for item in before["run_directories"])
+
+    monkeypatch.setattr(
+        routing,
+        "STREAM_DERIVED_FIELDS",
+        ("orientation_input_tokens", "tool_steps", "input_tokens"),
+    )
+    after = routing.garbage_collect(repo=repo, now=now, retention_days=30)
+    rows = {item["run_id"]: item for item in after["run_directories"]}
+    assert rows["explicit-absent-new"]["action"] == "prune"
+    assert rows["explicit-absent-new"]["figure_status"]["input_tokens"] == (
+        "explicitly-absent"
+    )
+    assert rows["never-derived-new"]["action"] == "withheld"
+    assert rows["never-derived-new"]["figure_status"]["input_tokens"] == "missing"
+    assert absent_on_row.exists()
+    assert never_recorded.exists()

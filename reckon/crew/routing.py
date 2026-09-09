@@ -594,14 +594,37 @@ def _measured_number(value: Any) -> float | None:
     return measured if math.isfinite(measured) and measured >= 0 else None
 
 
-def _missing_stream_derived_figures(record: Mapping[str, Any]) -> tuple[str, ...]:
-    """The declared stream-derived figures a ledger row does not yet record."""
+def _figure_retention(record: Mapping[str, Any], field: str) -> str:
+    """How a declared stream-derived figure already stands on a ledger row.
 
-    blocks = _recorded_figure_blocks(record)
+    One of ``"recorded"`` — a measured number sits where the derivation reads
+    it, so the stream is no longer needed; ``"explicitly-absent"`` — the row
+    itself carries the key, but without a measured value, meaning the
+    derivation ran when the stream was already gone and recorded the figure as
+    unrecoverable, so a surviving run directory holds nothing that could
+    produce it; or ``"missing"`` — the key is absent everywhere, so the
+    derivation has never run and the stream is the last copy of an unrecorded
+    figure. The last two are told apart by key presence rather than value
+    truthiness, so a recorded zero is a measurement and still permits reaping
+    while an absent key does not.
+    """
+    if any(
+        _measured_number(block.get(field)) is not None
+        for block in _recorded_figure_blocks(record)
+    ):
+        return "recorded"
+    if field in record:
+        return "explicitly-absent"
+    return "missing"
+
+
+def _explicitly_absent_figures(record: Mapping[str, Any]) -> tuple[str, ...]:
+    """The declared stream-derived figures recorded as unrecoverable."""
+
     return tuple(
         field
         for field in STREAM_DERIVED_FIELDS
-        if not any(_measured_number(block.get(field)) is not None for block in blocks)
+        if _figure_retention(record, field) == "explicitly-absent"
     )
 
 
@@ -704,8 +727,18 @@ def garbage_collect(
             )
             if modified > cutoff:
                 continue
-            missing = _missing_stream_derived_figures(
-                ledgered_records.get(directory.name, {})
+            record = ledgered_records.get(directory.name, {})
+            figure_status = {
+                field: _figure_retention(record, field)
+                for field in STREAM_DERIVED_FIELDS
+            }
+            missing = tuple(
+                field for field, state in figure_status.items() if state == "missing"
+            )
+            absent = tuple(
+                field
+                for field, state in figure_status.items()
+                if state == "explicitly-absent"
             )
             if missing:
                 report = {
@@ -716,10 +749,13 @@ def garbage_collect(
                     "withheld": "missing-derived-figure",
                     "reason": (
                         "the run is past its retention window but the figures "
-                        "derived from its stream are not all recorded; reaping "
-                        "it would destroy the only copy of " + ", ".join(missing)
+                        "derived from its stream were never recorded; their "
+                        "keys are absent from the ledger row, so the derivation "
+                        "has not run and reaping would destroy the only copy of "
+                        + ", ".join(missing)
                     ),
                     "missing_figures": list(missing),
+                    "figure_status": figure_status,
                 }
                 run_reports.append(report)
                 continue
@@ -728,6 +764,8 @@ def garbage_collect(
                 "path": str(directory),
                 "action": "prune",
                 "removed": False,
+                "explicitly_absent_figures": list(absent),
+                "figure_status": figure_status,
             }
             if apply:
                 if any(
@@ -774,9 +812,19 @@ def garbage_collect(
     )
     # The withholding count is a payload number, not only printed text: a
     # corpus that stops shrinking is legible to a caller that never renders
-    # prose, and the dry-run/apply split reads the same either way.
+    # prose, and the dry-run/apply split reads the same either way. Beside it
+    # sits the number a reaper would now reclaim that the pre-existing rule
+    # withheld forever — directories whose figures were derived and recorded as
+    # explicitly absent, because the stream those figures would come from is
+    # already gone — so the difference this makes is stated rather than
+    # inferred by a reader.
     run_directories_withheld = sum(
         1 for item in run_reports if item.get("action") == "withheld"
+    )
+    run_directories_reaped_with_explicitly_absent_figures = sum(
+        1
+        for item in run_reports
+        if item.get("action") == "prune" and item.get("explicitly_absent_figures")
     )
     return {
         "dry_run": not apply,
@@ -789,6 +837,9 @@ def garbage_collect(
         "pointers": pointer_reports,
         "run_directories": run_reports,
         "run_directories_withheld": run_directories_withheld,
+        "run_directories_reaped_with_explicitly_absent_figures": (
+            run_directories_reaped_with_explicitly_absent_figures
+        ),
     }
 
 
