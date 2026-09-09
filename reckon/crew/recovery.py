@@ -904,8 +904,15 @@ def _manifest_wait(
     started = None
     started_value = str(manifest_data.get("wait_started_at") or "").strip()
     if started_value:
+        timestamp_value = started_value
+        if (
+            len(timestamp_value) >= 2
+            and timestamp_value[0] == timestamp_value[-1]
+            and timestamp_value[0] in {"'", '"'}
+        ):
+            timestamp_value = timestamp_value[1:-1]
         try:
-            started = datetime.fromisoformat(started_value)
+            started = datetime.fromisoformat(timestamp_value)
         except ValueError:
             missing.append("readable wait_started_at")
         else:
