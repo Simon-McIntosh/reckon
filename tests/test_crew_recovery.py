@@ -1688,3 +1688,198 @@ def test_one_stored_new_line_renders_differently_at_two_display_settings(home) -
     assert "medium" in wide
     assert "dsv4-flash" in narrow
     assert "dsv4-flash" in wide
+
+
+def _spend_columns() -> list[tuple[int, int]]:
+    """The (start, width) of the five spend cells on a plain rendered line."""
+    module = ticker_module
+    prefix = (
+        module.CLOCK
+        + module.GAP
+        + module.ROLE
+        + module.GAP
+        + module.NODE
+        + module.GAP
+        + (module.STATE * 2 + 3)
+        + module.GAP
+        + module.MODEL
+        + module.PAIR_GAP
+        + module.EFFORT
+        + module.SPEND_GAP
+    )
+    columns: list[tuple[int, int]] = []
+    for width in (module.WALL, module.MODEL_SECS, module.TOKENS, module.RATE, module.DOLLARS):
+        columns.append((prefix, width))
+        prefix += width + module.SPEND_GAP
+    return columns
+
+
+# ── What a transition carries about a run's cumulative spend ──────────────
+#
+# The pane's five cost cells read the transition record's own numeric facts,
+# so the record must carry them as separate values — never as pre-formatted
+# strings — and an unmeasured chain must carry the explicit absence state
+# (None), not a zero that asserts a measurement never taken.
+
+
+def _spend_snapshot(run_id: str, **overrides: Any) -> dict:
+    """A snapshot whose only moving parts are the facts a spend test varies."""
+    snapshot = {
+        "run_id": run_id,
+        "node": f"n-{run_id}",
+        "state": "working",
+        "recovery_classification": "working",
+        "backend": "claude",
+        "model": "deepseek-v4-flash",
+        "alias": "dsv4-flash",
+        "effort": "medium",
+        "role": "implement",
+        "session": "",
+        "lineage": None,
+        "detail": "",
+    }
+    snapshot.update(overrides)
+    return snapshot
+
+
+def _codex_stream(path: Path, input_tokens: int, output_tokens: int, *, cached: int = 0) -> Path:
+    path.write_text(
+        json.dumps(
+            {
+                "type": "turn.completed",
+                "usage": {
+                    "input_tokens": input_tokens,
+                    "cached_input_tokens": cached,
+                    "output_tokens": output_tokens,
+                    "reasoning_output_tokens": 0,
+                },
+            }
+        )
+        + "\n"
+    )
+    return path
+
+
+def _spend_facts_transition(
+    *,
+    run_id: str,
+    rows: list[dict[str, Any]],
+    streams_root: Path,
+    snapshot: dict,
+) -> dict:
+    return recovery._watch_transition(
+        "proj",
+        kind="transition",
+        snapshot=snapshot,
+        previous="dispatched",
+        current="working",
+        counts={"working": 1, "blocked": 0, "unpromoted": 0},
+        spend_runs=rows,
+        rate_statuses={},
+        streams_root=streams_root,
+    )
+
+
+def test_the_transition_carries_cumulative_spend_as_separate_numeric_facts(
+    tmp_path: Path,
+) -> None:
+    run_dir = tmp_path / "runs" / "r-spend"
+    run_dir.mkdir(parents=True)
+    stream = _codex_stream(run_dir / "stream.jsonl", 3_000, 500, cached=1_000)
+    rows = [
+        {
+            "run_id": "r-spend",
+            "log_path": str(stream),
+            "throughput": {"elapsed_seconds": 900.0, "generation_seconds": 300.0},
+        }
+    ]
+    transition = _spend_facts_transition(
+        run_id="r-spend",
+        rows=rows,
+        streams_root=tmp_path / "runs",
+        snapshot=_spend_snapshot("r-spend"),
+    )
+
+    # Separate facts, never pre-formatted strings: the record carries the
+    # numeric quantities and the renderer shapes them into cells.
+    assert transition["spend_wall_seconds"] == 900.0
+    assert transition["spend_model_seconds"] == 300.0
+    assert transition["spend_machine_seconds"] == 600.0
+    # Charged input (3,000 fresh + 1,000 cached) plus output (500).
+    assert transition["spend_charged_tokens"] == 4_500
+    assert transition["spend_generation_rate"] == pytest.approx(500 / 300)
+    assert isinstance(transition["spend_wall_seconds"], (int, float))
+    assert isinstance(transition["spend_charged_tokens"], int)
+    assert not isinstance(transition["spend_charged_tokens"], str)
+    assert transition["spend_folded_run_count"] == 1
+    assert transition["spend_measured_stream_count"] == 1
+
+
+def test_an_unmeasured_chain_is_carried_as_absence_not_zero() -> None:
+    snapshot = _spend_snapshot("r-absent")
+    transition = _spend_facts_transition(
+        run_id="r-absent",
+        rows=[],
+        streams_root=Path("/nonexistent"),
+        snapshot=snapshot,
+    )
+
+    assert transition["spend_wall_seconds"] is None
+    assert transition["spend_model_seconds"] is None
+    assert transition["spend_charged_tokens"] is None
+    assert transition["spend_generation_rate"] is None
+    assert transition["spend_notional_cost_usd"] is None
+    assert transition["spend_measured_stream_count"] == 0
+
+
+def test_a_resumed_runs_line_carries_measured_values_not_markers(
+    tmp_path: Path,
+) -> None:
+    """The accumulator exists; a reader sees it only through this call.
+
+    The wall, model and token cells of a resumed run's rendered line must carry
+    the measured figures rather than the absence marker — nothing reaches a
+    reader until this call site exists, so this is the positive control for the
+    wiring.
+    """
+    run_dir = tmp_path / "runs" / "r-resumed"
+    run_dir.mkdir(parents=True)
+    stream = _codex_stream(run_dir / "stream.jsonl", 4_200, 640, cached=1_100)
+    rows = [
+        {
+            "run_id": "r-resumed",
+            "log_path": str(stream),
+            "throughput": {"elapsed_seconds": 7_200.0, "generation_seconds": 1_200.0},
+        }
+    ]
+    measured = _spend_facts_transition(
+        run_id="r-resumed",
+        rows=rows,
+        streams_root=tmp_path / "runs",
+        snapshot=_spend_snapshot("r-resumed"),
+    )
+    absent = _spend_facts_transition(
+        run_id="r-resumed",
+        rows=[],
+        streams_root=tmp_path / "runs",
+        snapshot=_spend_snapshot("r-resumed"),
+    )
+
+    measured_line = ticker_module.Ticker(width=180).render(measured)
+    absent_line = ticker_module.Ticker(width=180).render(absent)
+
+    # Charged tokens: 4,200 input + 1,100 cached + 640 output = 5,940 -> "6k".
+    columns = dict(zip(("wall", "model", "tokens"), _spend_columns()))
+    assert measured_line[columns["wall"][0] : columns["wall"][0] + columns["wall"][1]] == "2:00:00"
+    assert (
+        measured_line[columns["model"][0] : columns["model"][0] + columns["model"][1]]
+        == " 20:00"
+    )
+    assert (
+        measured_line[columns["tokens"][0] : columns["tokens"][0] + columns["tokens"][1]]
+        == "  6k"
+    )
+    # The same run without a measured chain renders the absence marker instead.
+    for name in ("wall", "model", "tokens"):
+        start, width = columns[name]
+        assert absent_line[start : start + width].strip() == "\N{EN DASH}"
