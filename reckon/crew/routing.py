@@ -556,6 +556,53 @@ RUN_DIRECTORY_EXTRACTION_REASON = (
     "a plain extraction with no git directory, so it has no commit to judge "
     "by containment; it is never removed, only reported"
 )
+# Figures the routing derivation reads from raw run streams when the ledger
+# row carries no recorded measurement. A run source may be reaped only once
+# every such figure is recorded on its row, because a reaped stream is the
+# last copy of the unrecorded figure. The check reads this declaration rather
+# than a hardcoded pair, so a figure added to the derivation later is
+# protected by the same rule without editing the reaper: extending this tuple
+# automatically extends what must be recorded before a source is removed.
+STREAM_DERIVED_FIELDS = ("orientation_input_tokens", "tool_steps")
+
+
+def _recorded_figure_blocks(
+    record: Mapping[str, Any],
+) -> tuple[Mapping[str, Any], ...]:
+    """The places a stream-derived figure may already be recorded on a row.
+
+    Order matches the preference order the routing derivation reads in
+    ``capabilities`` — the row itself first, then the measurement blocks the
+    warm functions consult for a recorded value — so the reaper and the
+    derivation agree on when a figure exists without either re-walking the
+    stream.
+    """
+    blocks: list[Mapping[str, Any]] = [record]
+    for name in ("throughput", "budget"):
+        block = record.get(name)
+        if isinstance(block, Mapping):
+            blocks.append(block)
+    return tuple(blocks)
+
+
+def _measured_number(value: Any) -> float | None:
+    """Return a finite non-negative measurement, without treating a bool as one."""
+
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return None
+    measured = float(value)
+    return measured if math.isfinite(measured) and measured >= 0 else None
+
+
+def _missing_stream_derived_figures(record: Mapping[str, Any]) -> tuple[str, ...]:
+    """The declared stream-derived figures a ledger row does not yet record."""
+
+    blocks = _recorded_figure_blocks(record)
+    return tuple(
+        field
+        for field in STREAM_DERIVED_FIELDS
+        if not any(_measured_number(block.get(field)) is not None for block in blocks)
+    )
 
 
 def garbage_collect(
@@ -625,11 +672,12 @@ def garbage_collect(
             removed.append(str(path))
         _git(repo_root, "worktree", "prune")
 
-    ledgered = {
-        str(record.get("run_id") or "")
+    ledgered_records = {
+        str(record.get("run_id") or ""): record
         for record in _ledgered_records(repo_root, project)
         if record.get("run_id")
     }
+    ledgered = set(ledgered_records)
     pointer_reports: list[dict[str, Any]] = []
     for record in list_live():
         run_id = str(record.get("run_id") or "")
@@ -655,6 +703,25 @@ def garbage_collect(
                 directory.stat().st_mtime, tz=timezone.utc
             )
             if modified > cutoff:
+                continue
+            missing = _missing_stream_derived_figures(
+                ledgered_records.get(directory.name, {})
+            )
+            if missing:
+                report = {
+                    "run_id": directory.name,
+                    "path": str(directory),
+                    "action": "withheld",
+                    "removed": False,
+                    "withheld": "missing-derived-figure",
+                    "reason": (
+                        "the run is past its retention window but the figures "
+                        "derived from its stream are not all recorded; reaping "
+                        "it would destroy the only copy of " + ", ".join(missing)
+                    ),
+                    "missing_figures": list(missing),
+                }
+                run_reports.append(report)
                 continue
             report = {
                 "run_id": directory.name,
@@ -705,6 +772,12 @@ def garbage_collect(
             for name in _gc_projects(repo_root, project)
         }
     )
+    # The withholding count is a payload number, not only printed text: a
+    # corpus that stops shrinking is legible to a caller that never renders
+    # prose, and the dry-run/apply split reads the same either way.
+    run_directories_withheld = sum(
+        1 for item in run_reports if item.get("action") == "withheld"
+    )
     return {
         "dry_run": not apply,
         "repo": str(repo_root),
@@ -715,6 +788,7 @@ def garbage_collect(
         "removed_worktrees": removed,
         "pointers": pointer_reports,
         "run_directories": run_reports,
+        "run_directories_withheld": run_directories_withheld,
     }
 
 
