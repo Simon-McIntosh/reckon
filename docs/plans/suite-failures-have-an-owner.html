@@ -4,23 +4,25 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="suite-failures-have-an-owner">
-  <meta name="plan-title"     content="Every Suite Failure Has An Owner">
-  <meta name="plan-summary"   content="Give the suite's standing failures an owner and a cause, so a delta is readable without measuring the base twice">
-  <meta name="plan-status"    content="draft">
-  <meta name="plan-roi"       content="mid">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="suite-failures-have-an-owner">
+  <meta name="plan-title" content="Every Suite Failure Has An Owner">
+  <meta name="plan-summary" content="Give the suite&#x27;s standing failures an owner and a cause, so a delta is readable without measuring the base twice">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
-  <meta name="plan-sprint"    content="S17">
-  <meta name="plan-owner"     content="Simon McIntosh">
-  <meta name="plan-tags"      content="reckon-tooling,crew">
+  <meta name="plan-sprint" content="S17">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
   <title>Every Suite Failure Has An Owner | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-09">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -174,27 +176,27 @@
     reading a fallout count and re-deriving it.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="stale-expectation-authority" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">When a test's expectation and the shipped behaviour disagree, and the behaviour was changed deliberately, which side moves?</p>
-        <p class="r-dec-ctx">The two diagnosed failures in §4 assert a refusal's text without a remedy clause added on purpose at e68a84a. Updating the test blesses whatever shipped; reverting the behaviour blesses whatever was asserted first. The choice sets the default for every future instance of this shape, of which the ledger six may contain more.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="test-follows-behaviour-with-a-pin">Update the test to the shipped text, and pin the clause so a future removal fails loudly</button>
-          <button class="r-opt" data-value="behaviour-follows-test">Treat the assertion as the contract and revert the behaviour change</button>
-          <button class="r-opt" data-value="case-by-case">Decide per instance, recording the reason each time</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="stale-expectation-authority" data-choice="test-follows-behaviour-with-a-pin" data-by="reckon-ship (coordinator; revisitable by the lead)" data-when="2026-09-09T10:50:47+00:00">
+    <p class="r-dec-q">When a test&#x27;s expectation and the shipped behaviour disagree, and the behaviour was changed deliberately, which side moves?</p>
+    <p class="r-dec-ctx">The two diagnosed failures in §4 assert a refusal&#x27;s text without a remedy clause added on purpose at e68a84a. Updating the test blesses whatever shipped; reverting the behaviour blesses whatever was asserted first. The choice sets the default for every future instance of this shape, of which the ledger six may contain more.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="test-follows-behaviour-with-a-pin">Update the test to the shipped text, and pin the clause so a future removal fails loudly</button>
+      <button class="r-opt" data-value="behaviour-follows-test">Treat the assertion as the contract and revert the behaviour change</button>
+      <button class="r-opt" data-value="case-by-case">Decide per instance, recording the reason each time</button>
+      </p>
+    <p class="r-dec-rat">Locked to match the measure this plan already authored, because the two were in conflict and a plan whose measure presumes an unlocked decision cannot be dispatched against. The evidence is one-sided on the instance: the remedy clause was added deliberately at e68a84a, it tells an operator what to do about a refusal rather than merely that one happened, and reverting it would remove a working affordance to satisfy an assertion written before it existed. The pin is what makes this safe as a default rather than a licence: the clause becomes asserted in its own right, so a future removal fails loudly instead of quietly narrowing what a refusal says. Case-by-case was rejected as a default because it is what the repository already does implicitly, and it is why two stale expectations sat red long enough to become someone else&#x27;s red base. Recorded as a coordinator lock rather than a lead lock, and cheap to reverse: it governs which side of a disagreement moves, and the instances it governs are all test-side edits.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-sfo-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-09">
-        <h4 class="r-fu-title">Take the two diagnosed failures first, then diagnose the two groups of six</h4>
-        <div class="r-fu-body"><p>§4's two are the only rows with a named cause, they are cheap, and landing them settles the decision that governs every later row &mdash; so they go first even though they are the smallest.</p><p>Then §2 and §3, and <strong>diagnosis before repair in both</strong>: the plan's measures refuse a repair that turns a test green without naming whether the assertion or the behaviour was wrong, because those two readings license opposite actions and six tests repaired under one assumed cause is how half a repair passes review. §3's recovery pair is the sharpest instance, since the classification vocabulary it asserts on genuinely moved this week.</p><p>Re-measure before acting on any inventory row. An earlier count of this same population read 20 rather than 14 because it included six failures observed at a different base; a failure set belongs to a revision, not to the repository.</p></div>
-        <pre class="r-fu-prompt">/reckon-ship suite-failures-have-an-owner §4</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-sfo-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-09" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Take the two diagnosed failures first, then diagnose the two groups of six</h4>
+    <div class="r-fu-body"><p>§4's two are the only rows with a named cause, they are cheap, and landing them settles the decision that governs every later row — so they go first even though they are the smallest.</p><p>Then §2 and §3, and <strong>diagnosis before repair in both</strong>: the plan's measures refuse a repair that turns a test green without naming whether the assertion or the behaviour was wrong, because those two readings license opposite actions and six tests repaired under one assumed cause is how half a repair passes review. §3's recovery pair is the sharpest instance, since the classification vocabulary it asserts on genuinely moved this week.</p><p>Re-measure before acting on any inventory row. An earlier count of this same population read 20 rather than 14 because it included six failures observed at a different base; a failure set belongs to a revision, not to the repository.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship suite-failures-have-an-owner §4</pre>
+    </article>
+</section>
 
   </main>
 </body>
