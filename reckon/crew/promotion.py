@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from reckon import _backends, _store, ledger
+from reckon import _backends, _store, capabilities, ledger
 from reckon.crew import rollout
 from reckon.crew.dispatch import _backend_settings, _capture_member_session
 from reckon.crew.node import (
@@ -2450,6 +2450,12 @@ def _complete_locked(
         contamination = _shadow_stream_contamination(record, ledger_data["runs"], tree)
         if contamination:
             run["shadow_contaminated"] = contamination
+    # A terminal run's stream is immutable, so its two figures are computed once
+    # here, from the run's own stream, and recorded on the row; a later derive
+    # then reads the ledger instead of reopening the stream. A stream that is
+    # already gone records each figure as absent rather than as zero, so a
+    # missing measurement never reads as a free run.
+    run.update(capabilities.derive_run_figures(run))
     already_promoted = False
     try:
         written = ledger.append_run(project, run, root=ledger_root)

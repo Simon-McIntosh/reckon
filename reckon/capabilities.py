@@ -501,6 +501,30 @@ def _tool_steps(run: Mapping[str, Any]) -> float | None:
     return float(completed_items or tool_use_blocks)
 
 
+def run_stream_path(run: Mapping[str, Any]) -> Path | None:
+    """Return the run's primary stream, or None when it is no longer on disk."""
+
+    return _stream_path(run)
+
+
+def derive_run_figures(run: Mapping[str, Any]) -> dict[str, float | None]:
+    """Extract the immutable per-run figures a finished run's stream evidences.
+
+    A terminal run's stream never changes, so the charged input consumed before
+    the first declared-path write and the completed tool interaction count are
+    computed once, when the run ends, and recorded on its ledger row; every
+    later derive reads the row instead of reopening the stream. Both figures
+    prefer a recorded measurement and fall back to the stream only when the row
+    predates this recording, so promotion and the backfill share this single
+    extractor with the derivation that consumes the figures.
+    """
+
+    return {
+        "tool_steps": _tool_steps(run),
+        "orientation_input_tokens": _orientation_input_tokens(run),
+    }
+
+
 def _write_paths(run: Mapping[str, Any]) -> tuple[str, ...]:
     """Return normalised declared paths from the durable node definition."""
 
