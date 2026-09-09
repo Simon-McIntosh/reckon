@@ -852,13 +852,32 @@ def _run_wait_condition_probe(
     }
 
 
+_WAIT_HORIZON_FIELDS = (
+    "wait_expected_seconds",
+    "wait_expected",
+    "wait_horizon",
+)
+_WAIT_DECLARATION_SCALAR_FIELDS = (
+    *_WAIT_HORIZON_FIELDS,
+    "wait_started_at",
+)
+
+
+def _unquote_wait_declaration_scalar(value: Any) -> str:
+    """Return a scalar value after removing one matched pair of quotes."""
+    text = str(value or "").strip()
+    if len(text) >= 2 and text[0] == text[-1] and text[0] in {"'", '"'}:
+        return text[1:-1]
+    return text
+
+
 def _wait_expected_seconds(
     manifest_data: Mapping[str, Any], *, default_seconds: int
 ) -> tuple[int, str]:
     """Read a declared wait horizon, retaining the existing default if absent."""
     field = ""
     value: Any = None
-    for candidate in ("wait_expected_seconds", "wait_expected", "wait_horizon"):
+    for candidate in _WAIT_HORIZON_FIELDS:
         if candidate in manifest_data:
             field = candidate
             value = manifest_data.get(candidate)
@@ -869,7 +888,7 @@ def _wait_expected_seconds(
         if field == "wait_expected_seconds" and not isinstance(value, str):
             seconds = int(value)
         else:
-            seconds = parse_duration(str(value or ""))
+            seconds = parse_duration(_unquote_wait_declaration_scalar(value))
     except (CrewError, TypeError, ValueError):
         return int(default_seconds), f"readable positive {field}"
     if seconds <= 0:
@@ -904,13 +923,7 @@ def _manifest_wait(
     started = None
     started_value = str(manifest_data.get("wait_started_at") or "").strip()
     if started_value:
-        timestamp_value = started_value
-        if (
-            len(timestamp_value) >= 2
-            and timestamp_value[0] == timestamp_value[-1]
-            and timestamp_value[0] in {"'", '"'}
-        ):
-            timestamp_value = timestamp_value[1:-1]
+        timestamp_value = _unquote_wait_declaration_scalar(started_value)
         try:
             started = datetime.fromisoformat(timestamp_value)
         except ValueError:
