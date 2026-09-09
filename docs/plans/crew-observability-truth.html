@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-09">
-<meta name="plan-version" content="222">
+<meta name="plan-version" content="226">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md">
 <meta name="plan-impl" content="0.97">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b">
@@ -620,6 +620,32 @@
     as a passing gate written by the worker being judged. The summary compiles receipts and states
     the disposition split; the decision stays with the coordinator.</p>
 
+    <p><strong>A closure signal that only looks backward reads as completion.</strong> Every
+    measure below describes the wave's own members. Run that against the halt this section was
+    directed after: at 06:08:30Z a coordinator landed a wave, wrote a full account of it, and its
+    turn ended; the next event in that session is the lead asking why implementation had stopped,
+    70 minutes and 48 seconds later, with nine plans pending. Its wave was <em>genuinely
+    complete</em> &mdash; every member promoted, none unpromoted, none blocked &mdash; so the
+    disposition split reports it complete and is right to. The wave was never the ambiguous thing.
+    The remainder was.</p>
+
+    <p><strong>So the closing line carries what remains beside what landed, and the figure must
+    differ before and after the wave.</strong> That falsifier is the whole of the constraint,
+    because a counter reading identically across a wave cannot discriminate a wave that exhausted
+    the work from a wave that was one of many &mdash; which is exactly the discrimination that
+    failed. Plan-level readiness fails it by construction: on the same session <code>roadmap</code>
+    returned <code>ready: 7</code> before the wave, 7 after it landed green, and 7 after twelve
+    promoted nodes, because a plan stays ready until it is wholly done. Emitting that number would
+    have confirmed the stop while giving it the authority of having been derived, which is worse
+    than the silence it replaces.</p>
+
+    <p>The remainder therefore has to be counted per executable section, and nothing counts them
+    today: <code>plan_section_anchors</code> derives its anchors from gates and comments, never from
+    authored headings, so seven sections authored mid-session across two plans moved no number
+    anywhere. <a href="#s14">§14</a> owns that inventory and is a prerequisite for the row below
+    rather than a follow-on &mdash; shipping the closure signal first produces a confident terminal
+    line, and then the line has been checked.</p>
+
     <table>
       <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
       <tbody>
@@ -628,6 +654,64 @@
         <tr><td>The signal names the disposition split, never <em>finished</em></td><td>The closing line carries promoted, unpromoted and blocked counts separately, and a wave whose members are all terminal with one unpromoted is reported as needing attention rather than as complete. Asserted by test on that exact mix, since terminal-unpromoted is the state a coordinator misreads as done.</td></tr>
         <tr><td>Unstaffed works, staffed adds synthesis</td><td>A wave with no agent assigned still opens, seals and emits its closure signal; a staffed wave additionally produces one overview artifact enumerating every member's gate, quantitative measure, artifacts and follow-on entries. Asserted separately, so the signal is never contingent on staffing.</td></tr>
         <tr><td>Wave cost is readable from the ledger</td><td>Committed rows carry the wave they belonged to, and a calibration read reports node count, worker seconds and input tokens per wave without joining by timestamp. Asserted against the committed ledger rather than a fixture.</td></tr>
+        <tr><td>The closing line carries what remains, not only what landed</td><td>The closure signal states the executable remainder for the coordinator's target beside the disposition split, sourced from <a href="#s14">§14</a>'s inventory. Asserted by a test that the figure differs across a wave which leaves work behind: a value identical before and after fails the gate, because it cannot discriminate an exhausting wave from one of many. Asserted with plan-level readiness as the negative control, which read 7 before, during and after twelve promoted nodes.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s14">§14 — A section authored mid-session is invisible to every readiness surface</h2>
+
+    <p>Directed by the lead 2026-09-09, from the same halt as <a href="#s13">§13</a> and supplying
+    the remainder that section's closing line has to carry. The two are one mechanism read from two
+    ends: §13 owns the signal, this owns the number, and the number does not exist yet.</p>
+
+    <p><code>plan_section_anchors</code> in <code>_schema.py</code> derives a plan's section
+    identities from its gates and its comment keys, and its docstring says why &mdash; the derived
+    identities let graph consumers validate staged refs &ldquo;without adding another persisted
+    field to plan state.&rdquo; The consequence is that an authored heading nothing has yet written
+    against is not a section as far as this system is concerned. Measured on the halted session:
+    seven sections were authored mid-flight, six across two section families on one plan and a new
+    leading section on another, and every one entered the working set because its author remembered
+    writing it. None moved a number anywhere. The only surface a section touches is
+    <code>plan-impl</code>, which the coordinator sets by hand, so its denominator is an opinion
+    rather than a count &mdash; a plan can gain three executable sections and report progress going
+    up.</p>
+
+    <p><strong>The executable set is declared once, at DAG build, and the declaration is the
+    coordinator's own classification written back.</strong> <code>reckon-ship</code> already
+    requires reading the complete plan and classifying every section as implementable, deferred or
+    done before it dispatches anything; today that classification is discarded the moment it is
+    used. Persisting it costs one field and binds the count to a step that always happens, which is
+    the property the alternatives lack.</p>
+
+    <p>The zero-new-field alternative was measured rather than argued away. Taking the remainder as
+    authored anchors minus evidence-anchored comments agrees with the hand-set fraction on
+    <code>clive-local-workers</code> &mdash; ten authored sections, evidence on all but one,
+    against <code>impl</code> 0.887 &mdash; and it needs no authoring change at all. It fails at
+    the tail, which is precisely where a coordinator decides whether to stop: on
+    <code>binding-rules-need-bound-checks</code> both sections it calls unstarted are §1's
+    diagnosis and §5's out-of-scope note, neither executable, and on
+    <code>execution-orchestration-hardening</code> it reads three of four unstarted against an
+    <code>impl</code> of 0.6. Over-counting is harmless in the middle of a plan and poisonous at
+    the end, because a remainder that can never reach zero is a nag, and a nag is waived and then
+    ignored. A declared set cannot over-count, and the gap between what is declared and what is
+    authored is not noise &mdash; it is the mid-session signal the lead asked for.</p>
+
+    <p>Two independent repairs travel with it, both cheap and neither covered by §13. The view the
+    closure fence actually names, <code>crew(view="drain")</code>, carries
+    <code>live_pointers</code>, <code>disposed_runs</code>, <code>unreconciled_runs</code>,
+    <code>dispositions</code> and <code>runs</code> &mdash; no ready-work field of any kind &mdash;
+    so a mandatory drain-time check on it would have passed at the moment of the halt. And
+    <code>reckon-ship</code> §7c states that both zeros are the termination condition; that
+    sentence is true as written, and it is the sentence the halted coordinator was following.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>The executable set is declared at DAG build</td><td>A plan whose sections were classified carries the declared set, and a later reader derives the same remainder that classification implied. Asserted with the negative that matters more: a plan with <em>no</em> declared set reports an unknown remainder, never zero, since a missing declaration must not read as nothing-left.</td></tr>
+        <tr><td>Drift between declared and authored is the mid-session signal</td><td>A section authored after the DAG was built raises drift and enters the remainder without anyone declaring it. Asserted on a plan whose declared set predates the section, which is the shape of the measured incident. Negative: a section collapsed after shipping leaves the remainder rather than appearing as drift, so shipping is never reported as new work.</td></tr>
+        <tr><td>The remainder decrements when a node is promoted</td><td>Promoting a node against a declared section lowers the count by one in the same beat the plan state is written &mdash; the falsifier §13's row is asserted against, proven end to end here rather than at the signal. Negative: promoting a node that lands no section evidence does not decrement, so the count tracks landed work rather than dispatch activity.</td></tr>
+        <tr><td>The view the closure fence names can fail it</td><td><code>crew(view="drain")</code> carries the executable remainder beside <code>unreconciled_runs</code>. Asserted by reading the view at a reconstruction of the premature stop and requiring a non-zero remainder, because the current field set is incapable of contradicting one. Negative: <code>unreconciled_runs: 0</code> beside a non-zero remainder does not read as drained.</td></tr>
+        <tr><td>The termination condition carries a third zero</td><td>The closure ledger's line reads <code>foldable-remaining: 0   unreconciled-runs: 0   executable-remaining: 0</code>, and §7c no longer names two zeros as the condition. Asserted against the skill text and a ledger fixture. Negative, and the one no existing rule catches: an <em>empty</em> ledger beside a non-zero remainder is an unfinished drain rather than a tidy stop &mdash; §7c's &ldquo;folded with no node id&rdquo; rule catches a falsified row, and the halted session's ledger had no rows at all.</td></tr>
       </tbody>
     </table>
 
@@ -661,6 +745,11 @@
       <button class="r-opt" data-value="opus-default">Opus default; sonnet for mechanical work</button>
       </p>
     <p class="r-dec-rat">Locked 2026-09-03 by the lead. This ratifies default_backend already pointing at the sonnet lane and puts the frontier tier where the evidence says it earns its cost rather than everywhere: on open-level nodes, the least-specified work, which is where opus caught two traps its specification did not name. Sonnet is 8 of 8 at a 228-second median against opus 2 of 2 at 753 seconds, so speed decides the common case on the larger sample. Reaching opus explicitly per dispatch was rejected because it leaves &#x27;route an open node to the frontier tier&#x27; as a rule with no bound check, which is this sprint&#x27;s own thesis about what decays. Opus as default was rejected as paying 3.3 times the wall clock on every node for depth the larger sample does not show is needed. The accepted coupling is that this choice is not fully expressible until §5&#x27;s by_spec_level-names-a-backend measure lands, and degrades to per-dispatch selection until it does.</p>
+    </div>
+<div class="r-dec" data-key="executable-remainder-source" data-choice="declared-at-dag-build" data-by="Simon McIntosh" data-when="2026-09-09T07:50:30+00:00">
+    <p class="r-dec-q">executable-remainder-source</p>
+    <p class="r-dec-ctx">§13&#x27;s closing line must carry a remainder whose figure differs before and after a wave. Plan-level readiness cannot: it read 7 before the wave, 7 after it landed green, and 7 after twelve promoted nodes.</p>
+    <p class="r-dec-rat">reckon-ship already classifies every section as implementable, deferred or done before dispatching, then discards it; persisting that classification costs one field and binds the count to a step that always happens. The zero-new-field alternative was measured, not argued away: authored anchors minus evidence-anchored comments agrees with the hand-set fraction on clive-local-workers (ten sections, evidence on all but one, impl 0.887), but over-counts exactly at the tail where a coordinator decides whether to stop — on binding-rules-need-bound-checks both sections it calls unstarted are a diagnosis section and an out-of-scope note, and on execution-orchestration-hardening it reads three of four unstarted against impl 0.6. A remainder that can never reach zero is a nag, and a nag is waived and then ignored. The per-heading attribute is precise but needs a backfill across 73 plans before the count is trustworthy anywhere, and an unmarked new section defaults wrong. Accepted cost: one new persisted field, which the plan_section_anchors docstring had deliberately avoided — that avoidance is why no section inventory exists. Bonus the alternatives lack: drift between the declared set and the authored headings is the mid-session-section signal the lead asked for, free.</p>
     </div>
 </section>
 
