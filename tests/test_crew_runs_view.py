@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
 
-from reckon import crew, ledger, mcp
+from reckon import cli, crew, ledger, mcp
 
 PROJECT = "proj"
 DEFAULT_FIELDS = {
@@ -80,6 +82,40 @@ def _write_ledger(repository: Path, run_id: str, *, node: str) -> None:
             commits=["fedcba"],
         ),
         root=repository,
+    )
+
+
+def _write_plan(
+    home: Path,
+    repository: Path,
+    *,
+    slug: str,
+    declarations: dict[str, str] | None = None,
+) -> None:
+    plans = repository / "docs" / "plans"
+    plans.mkdir(parents=True, exist_ok=True)
+    declaration_meta = ""
+    if declarations is not None:
+        declaration_meta = (
+            '<meta name="plan-section-declarations" content="'
+            + json.dumps(declarations).replace('"', "&quot;")
+            + '">'
+        )
+    sections = "".join(
+        f'<h2 id="{section}">{section}</h2>'
+        for section in (declarations or {"s1": "implementable"})
+    )
+    (plans / f"{slug}.html").write_text(
+        "<!doctype html><html><head>"
+        f'<meta name="docs-project" content="{PROJECT}">'
+        '<meta name="reckon-type" content="plan">'
+        f'<meta name="plan-slug" content="{slug}">'
+        f"{declaration_meta}"
+        f"</head><body>{sections}</body></html>",
+        encoding="utf-8",
+    )
+    (home / "mounts.json").write_text(
+        json.dumps({PROJECT: str(repository / "docs")}), encoding="utf-8"
     )
 
 
@@ -273,3 +309,103 @@ def test_runs_view_rejects_invalid_bounds(repository: Path) -> None:
     assert invalid_source["error"] == "crew_error"
     assert invalid_limit["error"] == "crew_error"
     assert invalid_field["error"] == "crew_error"
+
+
+def test_drain_surfaces_share_a_nonzero_remainder_for_a_reconciled_stop(
+    isolated_reckon_home: Path,
+    repository: Path,
+) -> None:
+    _write_plan(
+        isolated_reckon_home,
+        repository,
+        slug="plan-a",
+        declarations={"s1": "implementable", "s2": "implementable"},
+    )
+    _write_live(isolated_reckon_home, "r-reconciled", node="node-a")
+    crew.record_run_disposition("r-reconciled", "handed-off", project=PROJECT)
+
+    command = CliRunner().invoke(cli.main, ["crew", "drain", "--project", PROJECT])
+    command_payload = json.loads(command.output)
+    tool_payload = mcp._crew(PROJECT, view="drain")
+
+    assert command.exit_code == 0, command.output
+    for payload in (command_payload, tool_payload):
+        assert payload["unreconciled_runs"] == 0
+        assert payload["executable_remainder"] == 2
+        assert payload["drained"] is False
+    assert (
+        command_payload["executable_remainder"] == tool_payload["executable_remainder"]
+    )
+
+
+def test_drain_reports_an_undeclared_plan_as_unknown(
+    isolated_reckon_home: Path,
+    repository: Path,
+) -> None:
+    _write_plan(isolated_reckon_home, repository, slug="plan-a")
+
+    report = crew.drain(PROJECT)
+
+    assert report["executable_remainder"] is None
+    assert report["executable_remainder"] != 0
+    assert report["drained"] is False
+
+
+def test_drain_reports_zero_for_a_fully_done_declaration(
+    isolated_reckon_home: Path,
+    repository: Path,
+) -> None:
+    _write_plan(
+        isolated_reckon_home,
+        repository,
+        slug="plan-a",
+        declarations={"s1": "done", "s2": "deferred"},
+    )
+
+    report = crew.drain(PROJECT)
+
+    assert report["unreconciled_runs"] == 0
+    assert report["executable_remainder"] == 0
+    assert report["drained"] is True
+
+
+def test_drain_keeps_unreconciled_pointer_count_independent_of_remainder(
+    isolated_reckon_home: Path,
+    repository: Path,
+) -> None:
+    _write_plan(
+        isolated_reckon_home,
+        repository,
+        slug="plan-a",
+        declarations={"s1": "done"},
+    )
+    _write_live(isolated_reckon_home, "r-unreconciled", node="node-a")
+
+    report = crew.drain(PROJECT)
+
+    assert report["unreconciled_runs"] == 1
+    assert report["executable_remainder"] == 0
+    assert report["drained"] is False
+
+
+def test_drain_sums_declared_remainders_across_project_plans(
+    isolated_reckon_home: Path,
+    repository: Path,
+) -> None:
+    _write_plan(
+        isolated_reckon_home,
+        repository,
+        slug="plan-a",
+        declarations={"s1": "implementable", "s2": "done"},
+    )
+    _write_plan(
+        isolated_reckon_home,
+        repository,
+        slug="plan-b",
+        declarations={"s1": "implementable", "s2": "implementable"},
+    )
+
+    report = crew.drain(PROJECT)
+
+    assert report["executable_remainder"] == 3
+    assert report["drained"] is False
