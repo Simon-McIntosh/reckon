@@ -319,6 +319,21 @@ accumulation_key := run_id                          if kind == "shadow"
       account reporting only a weekly window is displaying state that account never sent.
     </p>
     <p>
+      <strong>Spend is per run; remaining budget is per account, and conflating them multiplies
+      the headroom a reader believes in.</strong> Measured on this workstation: all four codex
+      lanes &mdash; <code>codex</code>, <code>codex-luna</code>, <code>codex-spark</code> and
+      <code>codex-terra</code> &mdash; report an identical 85% used, 15% remaining and the same
+      <code>resets_at</code> of 2026-09-15T02:28:53Z. They are one account behind four aliases.
+      The shipped <code>lanes</code> view already renders them as four independent rows with no
+      grouping, so a reader adding up what each row claims sees roughly four times the headroom
+      that exists, in the figure a coordinator would act on. So this plan's per-row dollar cell
+      is a <em>spend</em> figure and is correctly per run, while any remaining-budget figure is
+      keyed on the account and must be stated once for the group rather than repeated per lane.
+      The window also moved two points in about thirty-five minutes under load, which is why a
+      remaining <em>percentage</em> is a weak instrument on its own: 15% remaining reads as
+      survivable and at that rate is not.
+    </p>
+    <p>
       <strong>One soundness limit travels with it and must be stated on the surface, not only
       here.</strong> <code>rollout.py</code>'s own header records that the client's
       <code>used_percent</code> is quantised to whole percentage points, so a run consuming
