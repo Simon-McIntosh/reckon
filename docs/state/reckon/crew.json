@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T10:38:26",
+  "updated": "2026-09-09T10:40:05",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -85573,6 +85573,185 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T075440225916-clw-capabilities-publishes-a-truthful-row",
+        "plan": "clive-local-workers",
+        "section": "\u00a716",
+        "node": "clw-capabilities-publishes-a-truthful-row",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 977,
+                "cached_input_tokens": 444644,
+                "input_tokens": 445623,
+                "output_tokens": 2566,
+                "reasoning_output_tokens": 1454,
+                "total_tokens": 448189,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "d605a9b0-7fe6-4816-b993-dad99ec68f17",
+            "session_id": "ship-clw-2026-09-09"
+          },
+          "done_when": "pytest over tests/test_capabilities.py reports 0 added failures against base HEAD stated as a number, and new cases assert that the command emits a row per configuration carrying competence horizon, speed mean, speed median and sample size as numbers, that --project narrows the rows to one project and exits 0, and that a row whose backing cache is behind its project ledger states so with both version numbers so a stale figure is never indistinguishable from a measured one",
+          "estimated_hours": null,
+          "goal": "Make reckon capabilities publish one truthful row per configuration and accept a project selector",
+          "id": "clw-capabilities-publishes-a-truthful-row",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-09T07:54:40Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T075440225916-clw-capabilities-publishes-a-truthful-row/manifest.md",
+          "plan": "clive-local-workers",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a716",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/capabilities.py",
+            "reckon/cli.py",
+            "tests/test_capabilities.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-midflight",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-09T07:54:51Z",
+        "completed_at": "2026-09-09T08:36:09.726Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2440,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2478,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "e3055c970e9d3cce2a39b866ee8fe51d238d6137",
+        "commits": [
+          "ee68b0e635035ac39b65852132e725a20d751ce6"
+        ],
+        "changed_lines": {
+          "added": 384,
+          "removed": 17,
+          "files": 3
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_capabilities.py tests/test_routing_surface.py tests/test_calibration.py at base and at the worktree, plus exercising reckon capabilities --project reckon after merge",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T075440225916-clw-capabilities-publishes-a-truthful-row/coordinator-verification.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T075440225916-clw-capabilities-publishes-a-truthful-row/manifest.md",
+        "scope_changed": false,
+        "session_id": "cbd19988-9613-4cbf-93fb-01ffd04eb0d1",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6939287,
+            "input_tokens_cumulative": 6939287,
+            "output_tokens": 53181,
+            "output_tokens_cumulative": 53181,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-09T08:36:09.726Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6939287,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 2475.247,
+          "generated_tokens": 53181,
+          "generation_seconds": 2444.538,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 15.4,
+          "machine_seconds": 30.709,
+          "peak_input_tokens": 156325,
+          "tokens_per_second": 21.76,
+          "wall_tokens_per_second": 21.49
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest over",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-clw-2026-09-09/clw-capabilities-publishes-a-truthful-row",
+          "session_id": "cbd19988-9613-4cbf-93fb-01ffd04eb0d1",
+          "session_source": "pointer",
+          "retained_at": "2026-09-09T08:36:09.726Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -85801,6 +85980,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1283
+    "_version": 1284
   }
 }
