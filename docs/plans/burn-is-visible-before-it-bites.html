@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="A quota meter and a burn rate answer different questions; shown apart they reproduce the blindness that spent a lane at thirteen percent used.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-effort-hours" content="9.0">
   <meta name="plan-wall-clock-hours" content="4.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
@@ -26,6 +26,8 @@
   <title>Where You Are, And How Fast | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-09">
+<meta name="plan-version" content="2">
 </head>
 <body>
 <main class="plan-doc">
@@ -133,56 +135,98 @@
 <p>The derivation itself, which belongs to <code>dispatch-cost-per-durable-node</code> and is this plan's declared prerequisite: the rate computation lives in Python so a CLI and MCP caller reach the same figures, and this plan only renders what that read returns. Building a second computation in the surface would be the defect the repository's invariant exists to prevent. The burn fence that refuses a dispatch is also that plan's, and is a different act from showing a reader where they stand. No cache-hit figure, for the measured reason above. And no alerting: a surface that shows the projection is not the same as a mechanism that interrupts someone, and the second is a decision about attention that this plan does not make.</p>
 <p><strong>Two neighbouring surfaces are deliberately not built here, and the reason is sequencing rather than scope.</strong> &ldquo;Is this run costing more than it should&rdquo; needs a calibrated expectation per configuration, and &ldquo;which backend returns most work per token&rdquo; needs a ranking that charges for rework. Both are <code>crew(view="routing")</code> in the prerequisite plan's own section, which does not exist yet, and its coordinator column lands before that ranking deliberately &mdash; without it a ranking scores work transferred from a worker to its coordinator as a saving. So this surface consumes that view when it arrives rather than deriving either figure now: a ranking built in JSX from sparse fields would be wrong twice over, once from the coverage above and once from the missing column.</p>
 
+<h2 id="s5">&#167;5 &mdash; A lane whose probe says nothing still has limits, and only its refusals can say where</h2>
+<p><strong>Directed by the lead 2026-09-09.</strong> This plan's thesis is that a meter and a rate answer different questions. One configured lane has <em>neither</em>: <code>codex-spark</code> reports no quota reading at all, and the figure the surface currently shows for it belongs to a different account. A meter that displays a borrowed number is worse than one that displays nothing, because nothing is legible as nothing.</p>
+
+<p><strong>Measured, and the shape of the absence matters more than its size.</strong></p>
+<table>
+  <thead><tr><th>observation</th><th>value</th></tr></thead>
+  <tbody>
+    <tr><td>spark runs in the committed ledger</td><td>10</td></tr>
+    <tr><td>&hellip; carrying <code>headroom</code></td><td><strong>0</strong> &mdash; all <code>unknown</code>, detail <em>"backend reports token usage but no headroom"</em></td></tr>
+    <tr><td>&hellip; carrying a recorded refusal</td><td><strong>0</strong> &mdash; all <code>refusal</code> null or false</td></tr>
+    <tr><td><code>rate_limit_event</code> records across all 10 spark streams</td><td><strong>0</strong></td></tr>
+    <tr><td>what the <code>lanes</code> view shows for spark</td><td>85% used &mdash; <em>the shared account probe, i.e. sol's figure</em></td></tr>
+  </tbody>
+</table>
+
+<p><strong>Why the surface cannot distinguish it, established in source rather than inferred.</strong> The probe issues <code>account/rateLimits/read</code>, an account-level call, and all four codex backends declare <code>command: codex</code>. So identical readings across them prove they were <em>probed identically</em>, never that they share a budget. Identical <code>resets_at</code> is therefore not a usable discriminator, and <strong>the grouping has to be declared in configuration rather than inferred from any observable the surface has.</strong></p>
+
+<p><strong>The survivorship trap, which is the reason those ten clean rows mean nothing.</strong> A rate-limit refusal kills the run. A killed run never promotes. So no ledger row is written, and the single event that proves a limit exists is the one event guaranteed not to reach the ledger. Ten rows reading <code>refusal: false</code> are ten runs that were <em>served</em>; they are evidence about the survivors and say nothing whatever about headroom. Any future reader tempted to conclude that spark has never been limited should read that sentence first.</p>
+
+<p><strong>What the lead states, and it is not checkable from here:</strong> spark resets weekly on the same cadence as the main codex account, with a five-hour window inside it. Nothing in the probe, the stream or the ledger can confirm that today, which is precisely the argument for deriving it from refusals instead of waiting for a signal that does not come.</p>
+
+<p><strong>The mechanism.</strong> Stamp a rate-limit refusal when it happens &mdash; the time of refusal and the time the refusal itself says the lane could return &mdash; somewhere durable. Durable here has a specific meaning forced by the trap above: <em>not</em> the run directory, which is reclaimable, and <em>not</em> the ledger row, which will not exist. Then the inference the lead names: <strong>two refusals separated by roughly five hours indicate the weekly window is binding rather than the five-hour one</strong>, because the short window reset in between and the lane refused anyway.</p>
+
+<p><strong>Only spark needs the inference, and that bounds this section's work.</strong> The metered lanes already emit both horizons directly &mdash; a real record on disk carries <code>unifiedWindows.five_hour</code> and <code>unifiedWindows.seven_day</code>, each with its own <code>utilization</code> and <code>resetsAt</code>. Measured across the workstation: <strong>3,200 such records in 324 stream files, and 0 of 818 ledger rows carrying any window period at all.</strong> So for sol, luna and terra the two-window picture is already measured three thousand times and merely unread, which is this plan's existing subject rather than a new one. Spark is the only lane where the reading has to be constructed.</p>
+
+<p><strong>One reading that must not be used, recorded because it has already cost a working guard.</strong> The same record carries a top-level <code>utilization</code> beside <code>rateLimitType: overage</code>. That is the account's calendar-month position, it reads above 1 for weeks at a time, and it does not gate a request. <code>unifiedWindows.&lt;period&gt;.utilization</code> against its own <code>resetsAt</code> is what does. A fence keyed on the top-level figure holds every wave for weeks while the real window sits near empty, and one guard in this repository was written that could not fire at any utilisation because a ratio was assigned into a field named for a percentage.</p>
+
+<table>
+  <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+  <tbody>
+    <tr><td>A refusal outlives the run it killed</td><td>A rate-limit refusal is stamped with its own time and the return time it states, in a store outside both the run directory and the ledger row, and the stamp is still readable after the run directory is reclaimed. Asserted by writing a stamp, reclaiming the directory, and reading it back.</td></tr>
+    <tr><td>The binding window is inferred, and says when it cannot be</td><td>Two stamped refusals about five hours apart report the weekly window as binding; two far apart report the short window; a single refusal reports <em>undetermined</em> rather than guessing. Asserted in all three states, because the third is the one a surface is most tempted to fake.</td></tr>
+    <tr><td>A borrowed figure is never shown as the lane's own</td><td>A backend whose quota reading came from a shared account probe is rendered as <em>unobserved</em> rather than carrying the probed account's number. Asserted against spark specifically, whose row shows another account's utilisation today.</td></tr>
+    <tr><td>Grouping is declared, not inferred</td><td>Backends sharing a budget are named by configuration, and a shared <code>resets_at</code> alone never groups them. Asserted with spark in its own group despite reading identically to its siblings.</td></tr>
+    <tr><td>The month figure cannot be mistaken for the gate</td><td>A reader of this surface cannot reach the top-level overage utilisation where a window utilisation is meant; asserted by a case in which overage exceeds 1 while the five-hour window is near empty, and the surface reports the lane as open.</td></tr>
+  </tbody>
+</table>
+
 <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="meter-and-rate-together" data-choice="one-bar-with-a-projection" data-by="reckon-ship (from the handed-over measurement, 2026-09-04)" data-when="2026-09-04">
     <p class="r-dec-q">How are position and rate presented?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="one-bar-with-a-projection">One bar carrying position, reset and projected exhaustion</button>
+      <button class="r-opt chosen" data-value="one-bar-with-a-projection">One bar carrying position, reset and projected exhaustion</button>
       <button class="r-opt" data-value="two-adjacent-tiles">Two adjacent tiles, a meter and a rate</button>
       <button class="r-opt" data-value="rate-only">The rate alone, since it is what predicts</button>
-    </p>
+      </p>
     <p class="r-dec-rat">Two tiles are what the fleet effectively had on 2026-09-03: the lane read thirteen percent used, the reader relaxed, and the burn that settled it was seven and a half times sustainable. The rate alone cries wolf, because the same corpus reads 10.3 at one hour and 1.7 at a week. Only the projection against the reset turns two figures into a decision.</p>
-</div>
+    </div>
 <div class="r-dec" data-key="window-label-source" data-choice="from-the-payload-or-no-meter" data-by="reckon-ship (from the account probe)" data-when="2026-09-04">
     <p class="r-dec-q">Where does the window period on the meter come from?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="from-the-payload-or-no-meter">The payload's own duration; no window reported means no meter</button>
+      <button class="r-opt chosen" data-value="from-the-payload-or-no-meter">The payload&#x27;s own duration; no window reported means no meter</button>
       <button class="r-opt" data-value="assume-a-standard-period">A standard period the surface knows</button>
-    </p>
+      </p>
     <p class="r-dec-rat">The codex account reports one window of 10080 minutes and a null secondary, so a five-hour meter would display a period that account never reported. A surface that assumes a period is inventing state, which is the failure this repository has spent the day removing.</p>
-</div>
+    </div>
 <div class="r-dec" data-key="rate-window-count" data-choice="at-least-two-always" data-by="reckon-ship (from the four-window measurement)" data-when="2026-09-04">
     <p class="r-dec-q">How many rate windows are shown?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="at-least-two-always">At least two, a short beside a long</button>
+      <button class="r-opt chosen" data-value="at-least-two-always">At least two, a short beside a long</button>
       <button class="r-opt" data-value="one-configurable">One, chosen by the reader</button>
-    </p>
+      </p>
     <p class="r-dec-rat">One number is unreadable without its neighbour: 10.3 and 1.7 come from the same corpus at different horizons, and either alone misleads in a different direction. A reader-chosen single window guarantees somebody reads the alarming one in isolation.</p>
-</div>
-<div class="r-dec" data-key="derived-rate-confidence" data-choice="marked-as-an-upper-bound" data-by="reckon-ship (from the measurement's own caveat)" data-when="2026-09-04">
+    </div>
+<div class="r-dec" data-key="derived-rate-confidence" data-choice="marked-as-an-upper-bound" data-by="reckon-ship (from the measurement&#x27;s own caveat)" data-when="2026-09-04">
     <p class="r-dec-q">Are the derived rates presented with the same confidence as the meter?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="marked-as-an-upper-bound">No — the meter is authority, the rate is a marked upper bound</button>
+      <button class="r-opt chosen" data-value="marked-as-an-upper-bound">No — the meter is authority, the rate is a marked upper bound</button>
       <button class="r-opt" data-value="equal-weight">Yes, both are figures</button>
-    </p>
+      </p>
     <p class="r-dec-rat">A resumed session records its whole accumulated context on every turn, so run-level input tokens over-count. Presenting a trend indicator as a measurement is how a reader comes to distrust every figure on the surface once one of them proves soft.</p>
-</div>
+    </div>
 </section>
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-bvb-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship burn-is-visible-before-it-bites" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Render the meter once its derivation is readable, then capture all three states</h4>
-    <div class="r-fu-body"><p>&#167;2 waits on the prerequisite plan making the rate computation readable from Python, since building a second one in the surface is the defect the invariant prevents. &#167;3 captures afterwards, and the no-window case matters as much as the two rate cases because it is the state a surface is most tempted to fake.</p></div>
+    <div class="r-fu-body"><p>§2 waits on the prerequisite plan making the rate computation readable from Python, since building a second one in the surface is the defect the invariant prevents. §3 captures afterwards, and the no-window case matters as much as the two rate cases because it is the state a surface is most tempted to fake.</p></div>
     <pre class="r-fu-prompt">/reckon-ship burn-is-visible-before-it-bites</pre>
-</article>
+    </article>
 </section>
 
 <section data-reckon="research" id="research" class="r-research-list">
 <h2><span class="sec">§</span> Research</h2>
-<div class="r-research" data-id="r1" data-type="measurement" data-url="dispatch-cost-measurement">
-  <span class="r-research-title">The measurement this plan is designed from: the account probe showing one window and a null secondary, the four rolling burn horizons, the cache-charging finding, and the method with its exclusion rules.</span>
+<div class="r-research" data-id="r1" data-type="measurement" data-source="" data-added-by="" data-when="" data-url="dispatch-cost-measurement">
+    <span class="r-research-title"><a href="dispatch-cost-measurement">The measurement this plan is designed from: the account probe showing one window and a null secondary, the four rolling burn horizons, the cache-charging finding, and the method with its exclusion rules.</a></span></div>
+</section>
+<section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s5" data-id="c-20260909-spark-section-provenance" data-who="reckon-ship" data-when="2026-09-09T16:20:00Z">
+    <div class="r-comment-body"><p><strong>Authored here rather than on either plan that found it, and the routing is worth recording because two sessions got it wrong first.</strong> The measurements came from <code>ship-clw-2026-09-09</code> while shipping <a href="/reckon/plans/clive-local-workers">clive-local-workers</a>, and the corpus count from <code>ship-worker-spend-20260909</code>. Neither plan owns it. The spend plan owns a <em>pricing store</em> &mdash; dated public rates and a notional per-run figure &mdash; and its coordinator declined this correctly on the grounds that quota observation is a different subject with a different lifetime, which is the same argument it had made for keeping burn out of the rate ledger. The local-workers plan owns one lane and this is about another. This plan already owns the two-window meter and its summary already says that a meter and a rate answer different questions, so the work belongs where the thesis already is.</p><p><strong>Effort raised from 6 to 9 hours</strong> for the added section; the five measures are one durable store, one inference with three asserted states, and three display properties.</p><p>One sequencing note for whoever ships it: &#167;2 was waiting on the rate derivation being readable from Python, and that landed in the prerequisite plan today, so the original blocker is gone. &#167;5 does not depend on it at all &mdash; a refusal stamp needs no rate computation &mdash; so it can run first if the dependency edge is still closed.</p></div>
 </div>
 </section>
 </main>
