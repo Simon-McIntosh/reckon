@@ -4,6 +4,7 @@ import json
 
 import pytest
 
+from reckon import ledger
 from reckon.calibration import (
     CalibrationFigure,
     agent_configuration_key,
@@ -257,3 +258,43 @@ def test_invalid_duration_is_excluded_without_changing_figures() -> None:
     assert result.plan_estimates["work"].value == 2.0
     assert result.agent_speed_factors["worker"].value == 1.0
     assert result.excluded["invalid_measurement"] == 1
+
+
+def test_exclusion_reason_outside_the_fixed_set_counts_instead_of_crashing(
+    monkeypatch,
+) -> None:
+    """An exclusion reason the loops do not emit themselves must count under
+    its own key, never raise a KeyError.
+
+    The ledger's exclusion function decides which records feed duration
+    consumers and is free to add reasons beyond the ones this module seeds:
+    a contaminated shadow is one such reason. The loops stay correct when the
+    reason set grows, holding the unknown record apart from the figures.
+    """
+    original = ledger.measurement_exclusion_reason
+
+    def reason_for(run):
+        if run.get("run_id") == "contaminated":
+            return "contaminated"
+        return original(run)
+
+    monkeypatch.setattr(ledger, "measurement_exclusion_reason", reason_for)
+    runs = [
+        {**_run("work", "worker", 50.0), "run_id": "contaminated"},
+        {**_run("work", "worker", 2.0), "run_id": "clean"},
+    ]
+
+    speed = calibrate_agent_speeds(runs, plan_estimates={"work": 1.0})
+    effort = calibrate_plan_estimates(
+        runs,
+        plan_estimates={"work": 1.0},
+        agent_speed_factors={"worker": 1.0},
+    )
+
+    assert speed.included_runs == effort.included_runs == 1
+    assert speed.excluded["contaminated"] == effort.excluded["contaminated"] == 1
+    assert speed.excluded["scope_changed"] == effort.excluded["scope_changed"] == 0
+    assert speed.excluded_worker_hours["contaminated"] == pytest.approx(50.0)
+    assert effort.excluded_worker_hours["contaminated"] == pytest.approx(50.0)
+    assert speed.agent_speed_factors["worker"].value == 0.5
+    assert effort.plan_estimates["work"].value == 2.0

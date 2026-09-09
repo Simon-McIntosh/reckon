@@ -869,12 +869,19 @@ def derive_capabilities(
         lambda: defaultdict(int)
     )
     shadow_observations: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
-    excluded = {
-        "scope_changed": 0,
-        "stalled": 0,
-        "unusable_completion": 0,
-        "invalid": 0,
-    }
+    # Seeded with every reason this function emits itself so an unreported
+    # zero is stable output, then left open to any reason the ledger's
+    # exclusion function returns: a new reason must count under its own key,
+    # never crash an accumulator that only knew the old set.
+    excluded: dict[str, int] = defaultdict(int)
+    excluded.update(
+        {
+            "scope_changed": 0,
+            "stalled": 0,
+            "unusable_completion": 0,
+            "invalid": 0,
+        }
+    )
     source_versions: dict[str, int] = {}
     for project, raw_docs in sorted(mounted_docs.items()):
         docs_dir = Path(raw_docs).expanduser().resolve()
