@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -289,8 +290,12 @@ def _accumulate(
     runs: list[dict[str, object]],
     run_id: str,
     streams_root: Path,
+    *,
+    now_seconds: float | None = None,
 ) -> AccumulatedRunSpend:
-    result = accumulate_run_spend(runs, run_id, streams_root=streams_root)
+    result = accumulate_run_spend(
+        runs, run_id, streams_root=streams_root, now_seconds=now_seconds
+    )
     assert isinstance(result, AccumulatedRunSpend)
     return result
 
@@ -525,3 +530,216 @@ def test_run_streams_returns_the_original_before_numbered_resumes(
 
     assert run_streams(run_dir / "resume-10.jsonl") == expected
     assert run_streams(Path("")) == []
+
+
+# ── Wall for a live run, derived from the pointer's own stamps ─────────────
+
+
+def _epoch(iso: str) -> float:
+    """Epoch seconds of an ISO-8601 ``Z`` stamp, parsed as the source parses it."""
+    return datetime.fromisoformat(iso).timestamp()
+
+
+def test_a_live_run_reports_wall_measured_from_its_stamps(tmp_path: Path) -> None:
+    """A run still in flight has no throughput block, so wall is derived.
+
+    The pointer's own creation stamp is the measured base and now the end of
+    the span, so the wall cell renders a figure rather than the unmeasured
+    marker. ``now_seconds`` pins the observation the fixture's elapsed derives.
+    """
+    run_dir = tmp_path / "r-live"
+    run_dir.mkdir(parents=True)
+    _codex_stream(run_dir / "stream.jsonl", 400)
+    rows = [
+        _record(
+            "r-live",
+            log_path=str(run_dir / "stream.jsonl"),
+            created_at="2026-09-09T10:00:00Z",
+            attempt_started_at="2026-09-09T10:00:00Z",
+        )
+    ]
+
+    result = _accumulate(
+        rows, "r-live", tmp_path, now_seconds=_epoch("2026-09-09T12:00:00Z")
+    )
+
+    assert result.elapsed_seconds == 7200.0
+    assert result.elapsed_from_stamps is True
+
+
+def test_a_resumed_live_run_sums_its_attempts_spans(tmp_path: Path) -> None:
+    """A resumed run's wall counts every attempt, not only the current one.
+
+    ``created_at`` is the original dispatch and ``attempt_started_at`` the
+    current attempt, so the summed span reaches back to the creation stamp;
+    measuring to the current attempt alone would report the 3,600 seconds
+    since the resume instead of the 7,200 seconds since dispatch.
+    """
+    run_dir = tmp_path / "r-resumed-live"
+    run_dir.mkdir(parents=True)
+    _codex_stream(run_dir / "stream.jsonl", 500)
+    rows = [
+        _record(
+            "r-resumed-live",
+            log_path=str(run_dir / "stream.jsonl"),
+            created_at="2026-09-09T10:00:00Z",
+            attempt_started_at="2026-09-09T11:00:00Z",
+            attempt=2,
+        )
+    ]
+
+    result = _accumulate(
+        rows,
+        "r-resumed-live",
+        tmp_path,
+        now_seconds=_epoch("2026-09-09T12:00:00Z"),
+    )
+
+    current_attempt_only = _epoch("2026-09-09T12:00:00Z") - _epoch(
+        "2026-09-09T11:00:00Z"
+    )
+    assert result.elapsed_seconds > current_attempt_only
+    assert result.elapsed_seconds == _epoch("2026-09-09T12:00:00Z") - _epoch(
+        "2026-09-09T10:00:00Z"
+    )
+
+
+def test_a_completed_row_folds_its_block_even_when_stamps_exist(
+    tmp_path: Path,
+) -> None:
+    """The stamp path is never used where a throughput block exists.
+
+    A record may carry both a block and creation stamps; the block is the
+    recorded span and must win. This test fails if the stamp derivation is
+    applied to a row that already measured its elapsed.
+    """
+    run_dir = tmp_path / "r-both"
+    run_dir.mkdir(parents=True)
+    _codex_stream(run_dir / "stream.jsonl", 300)
+    rows = [
+        _record(
+            "r-both",
+            log_path=str(run_dir / "stream.jsonl"),
+            created_at="2026-09-09T10:00:00Z",
+            attempt_started_at="2026-09-09T11:00:00Z",
+            throughput={"elapsed_seconds": 900.0, "generation_seconds": 300.0},
+        )
+    ]
+
+    result = _accumulate(rows, "r-both", tmp_path)
+
+    assert result.elapsed_seconds == 900.0
+    assert result.elapsed_from_stamps is False
+    assert result.generation_seconds == 300.0
+
+
+def test_live_wall_is_marked_derived_not_folded(tmp_path: Path) -> None:
+    """A derived live figure carries its provenance apart from a folded span.
+
+    A completed row folds its throughput block (a different measurement
+    source), so a reader comparing rows must be able to tell the two apart
+    rather than guess which figure each came from.
+    """
+    live_dir = tmp_path / "r-live-mark"
+    live_dir.mkdir(parents=True)
+    _codex_stream(live_dir / "stream.jsonl", 100)
+    live = _accumulate(
+        [
+            _record(
+                "r-live-mark",
+                log_path=str(live_dir / "stream.jsonl"),
+                created_at="2026-09-09T10:00:00Z",
+                attempt_started_at="2026-09-09T10:00:00Z",
+            )
+        ],
+        "r-live-mark",
+        tmp_path,
+        now_seconds=_epoch("2026-09-09T12:00:00Z"),
+    )
+    folded = _accumulate(
+        [
+            _record(
+                "r-complete",
+                throughput={"elapsed_seconds": 900.0, "generation_seconds": 300.0},
+            )
+        ],
+        "r-complete",
+        tmp_path,
+    )
+
+    assert live.elapsed_from_stamps is True
+    assert folded.elapsed_from_stamps is False
+    assert folded.elapsed_seconds == 900.0
+
+
+def test_model_and_rate_stay_unmeasured_while_a_run_is_live(tmp_path: Path) -> None:
+    """A live run has no inference span, so model and rate stay unmeasured.
+
+    The wall is derived from the pointer's stamps, but no generation span
+    exists until a terminal record or a bounded-tool-span rollout does, so
+    leaving the cell unmeasured is correct rather than a gap and a zero would
+    invent a measurement that was never taken.
+    """
+    run_dir = tmp_path / "r-live-model"
+    run_dir.mkdir(parents=True)
+    _codex_stream(run_dir / "stream.jsonl", 600)
+    rows = [
+        _record(
+            "r-live-model",
+            log_path=str(run_dir / "stream.jsonl"),
+            created_at="2026-09-09T10:00:00Z",
+            attempt_started_at="2026-09-09T10:00:00Z",
+        )
+    ]
+
+    result = _accumulate(
+        rows,
+        "r-live-model",
+        tmp_path,
+        now_seconds=_epoch("2026-09-09T12:00:00Z"),
+    )
+
+    assert result.elapsed_seconds == 7200.0
+    assert result.generation_seconds is None
+    assert result.machine_seconds is None
+
+
+def test_mixed_chain_does_not_fabricate_machine_for_the_live_segment(
+    tmp_path: Path,
+) -> None:
+    """Machine time is not invented for a live segment whose model span is unknown.
+
+    The chain's completed row measured its own generation, and the live row's
+    derived wall joins the total, but subtracting a model figure that covers
+    only part of the wall would attribute zero model time to the segment that
+    is still running.
+    """
+    completed_dir = tmp_path / "r-c"
+    completed_dir.mkdir(parents=True)
+    live_dir = tmp_path / "r-l"
+    live_dir.mkdir(parents=True)
+    _codex_stream(completed_dir / "stream.jsonl", 100)
+    _codex_stream(live_dir / "stream.jsonl", 100)
+    rows = [
+        _record(
+            "r-c",
+            log_path=str(completed_dir / "stream.jsonl"),
+            throughput={"elapsed_seconds": 600.0, "generation_seconds": 200.0},
+        ),
+        _record(
+            "r-l",
+            log_path=str(live_dir / "stream.jsonl"),
+            created_at="2026-09-09T10:00:00Z",
+            attempt_started_at="2026-09-09T10:00:00Z",
+            lineage={"kind": "redispatch", "root_run_id": "r-c"},
+        ),
+    ]
+
+    result = _accumulate(
+        rows, "r-c", tmp_path, now_seconds=_epoch("2026-09-09T12:00:00Z")
+    )
+
+    assert result.elapsed_seconds == 600.0 + 7200.0
+    assert result.generation_seconds == 200.0
+    assert result.machine_seconds is None
+    assert result.elapsed_from_stamps is True
