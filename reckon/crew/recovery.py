@@ -229,6 +229,88 @@ def _stream_completion_stamp(record: Mapping[str, Any]) -> str | None:
     return _terminal_stream_data(record).completed_at
 
 
+def _declared_token_budget(record: Mapping[str, Any]) -> int | None:
+    """The run's token-denominated allowance, or None when none is set.
+
+    The budget lives on the node block as dispatch resolves and records it;
+    a top-level mirror is accepted as a fallback so a hand-built or imported
+    record that carries the value at the pointer root still reads it. A value
+    that does not coerce to a positive integer is treated as unset rather
+    than as a charge surface, so a malformed declaration degrades to the
+    wall-clock behaviour instead of refusing to measure.
+    """
+    node = record.get("node")
+    value = node.get("token_budget") if isinstance(node, Mapping) else None
+    if value is None:
+        value = record.get("token_budget")
+    if value is None or value == "":
+        return None
+    try:
+        budget = int(value)
+    except (TypeError, ValueError):
+        return None
+    return budget if budget > 0 else None
+
+
+def _generated_tokens(record: Mapping[str, Any]) -> int | None:
+    """The run's recorded generated output tokens, or None when unmeasured.
+
+    observe() folds the stream's measured throughput block into the pointer,
+    so a run that has been observed carries its token total here. Absence is
+    not a verdict: an unmeasured run is charged nothing, matching how a run
+    with no stream is never called an overrun on elapsed either.
+    """
+    throughput = record.get("throughput")
+    if not isinstance(throughput, Mapping):
+        return None
+    value = throughput.get("generated_tokens")
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _token_budget_timing(
+    token_budget: int,
+    generated_tokens: int | None,
+    *,
+    budget_seconds: int | None,
+    elapsed_seconds: int | None,
+) -> dict[str, Any]:
+    """Measure a run against a token budget, keeping the seconds ceiling.
+
+    The worker's own budget is denominated in generated tokens — the quantity
+    the same task needs regardless of what else the lane is doing — so a slow
+    lane inside its token budget is not an overrun however long it took, and
+    a lane that delivered more tokens than the allowance is charged for the
+    work. Wall clock cannot bound a process that stopped producing, so the
+    seconds allowance survives here under its own name as the ceiling that
+    still refuses such a run; the two verdicts never share a name.
+    """
+    wall_overrun = (
+        max(0, int(elapsed_seconds) - int(budget_seconds))
+        if elapsed_seconds is not None and budget_seconds is not None
+        else 0
+    )
+    if generated_tokens is None:
+        token_overrun = 0
+    else:
+        token_overrun = max(0, generated_tokens - token_budget)
+    return {
+        "budget_seconds": budget_seconds,
+        "elapsed_seconds": elapsed_seconds,
+        "budget_overrun": generated_tokens is not None and token_overrun > 0,
+        "budget_overrun_seconds": wall_overrun,
+        "budget_tokens": token_budget,
+        "generated_tokens": generated_tokens,
+        "budget_overrun_tokens": token_overrun,
+        "hang_ceiling_seconds": budget_seconds,
+        "ceiling_overrun": wall_overrun > 0,
+    }
+
+
 def _budget_timing(
     record: Mapping[str, Any], *, now_seconds: float | None = None
 ) -> dict[str, Any]:
@@ -240,8 +322,14 @@ def _budget_timing(
     wall-clock ceiling that protects the fleet from a hang is untouched because
     a live process still anchors here. A reader resolving a run late therefore
     reports the worker's own time, not the coordinator's wait to promote it.
+
+    When the run carries a token budget, the budget verdict is denominated in
+    generated tokens (the worker is charged for the work, not the queue) and
+    the wall-clock allowance becomes the separately named hang ceiling. Without
+    one, the wall-clock overrun is the only verdict, unchanged.
     """
     node = record.get("node") or {}
+    token_budget = _declared_token_budget(record)
     try:
         if "attempt_budget_seconds" in record:
             budget_seconds = int(record["attempt_budget_seconds"])
@@ -253,6 +341,13 @@ def _budget_timing(
             ).replace("Z", "+00:00")
         )
     except (CrewError, TypeError, ValueError):
+        if token_budget is not None:
+            return _token_budget_timing(
+                token_budget,
+                _generated_tokens(record),
+                budget_seconds=None,
+                elapsed_seconds=None,
+            )
         return {
             "budget_seconds": None,
             "elapsed_seconds": None,
@@ -281,6 +376,13 @@ def _budget_timing(
         elapsed = max(0, int(moment - started.timestamp()))
     else:
         elapsed = max(0, int(elapsed_to - started.timestamp()))
+    if token_budget is not None:
+        return _token_budget_timing(
+            token_budget,
+            _generated_tokens(record),
+            budget_seconds=budget_seconds,
+            elapsed_seconds=elapsed,
+        )
     overrun = max(0, elapsed - budget_seconds)
     return {
         "budget_seconds": budget_seconds,

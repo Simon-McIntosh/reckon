@@ -9,7 +9,7 @@ import re
 import subprocess
 import time
 from collections.abc import Mapping
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -1892,3 +1892,293 @@ def test_a_resumed_runs_line_carries_measured_values_not_markers(
     for name in ("wall", "model", "tokens"):
         start, width = columns[name]
         assert absent_line[start : start + width].strip() == "\N{EN DASH}"
+
+
+# ── The budget fence charges tokens, the hang ceiling stays wall clock ──────
+
+
+def _token_record(
+    run_id: str,
+    *,
+    started: datetime,
+    token_budget: int,
+    time_budget: str,
+    generated_tokens: int | None,
+) -> dict[str, Any]:
+    """A cli run record carrying a token budget and a measured throughput."""
+    record: dict[str, Any] = {
+        "run_id": run_id,
+        "project": "proj",
+        "node": {
+            "id": run_id,
+            "plan": "plan-a",
+            "time_budget": time_budget,
+            "token_budget": token_budget,
+        },
+        "backend": "clive",
+        "launch": "cli",
+        "argv": ["claude"],
+        "log_path": Path("/nonexistent/stream.jsonl"),
+        "created_at": started.isoformat(),
+        "attempt_started_at": started.isoformat(),
+        "process_alive": False,
+    }
+    if generated_tokens is not None:
+        record["throughput"] = {"generated_tokens": generated_tokens}
+    return record
+
+
+def test_a_run_inside_its_token_budget_is_not_an_overrun_however_long_it_took() -> None:
+    """A slow lane under contention is not charged for the queue.
+
+    The budget verdict is a function of generated tokens alone: a run that
+    produced 40k of its 50k allowance is not an overrun at 3,600s — six times
+    its 600s seconds allowance — and the verdict does not move with wall clock.
+    The seconds allowance keeps its own name as the hang ceiling, so the same
+    run that blew past it reports ceiling_overrun separately, never
+    budget_overrun.
+    """
+    started = datetime(2026, 9, 9, 12, 0, 0, tzinfo=UTC)
+    record = _token_record(
+        "r-slow",
+        started=started,
+        token_budget=50_000,
+        time_budget="10m",
+        generated_tokens=40_000,
+    )
+
+    at_3600 = recovery._budget_timing(
+        record, now_seconds=(started + timedelta(seconds=3600)).timestamp()
+    )
+    at_600 = recovery._budget_timing(
+        record, now_seconds=(started + timedelta(seconds=600)).timestamp()
+    )
+
+    # Inside the token budget at both observation times: the charge is the
+    # work delivered, not the seconds the lane took to deliver it.
+    assert at_3600["budget_overrun"] is False
+    assert at_600["budget_overrun"] is False
+    assert at_3600["budget_overrun_tokens"] == 0
+    assert at_3600["generated_tokens"] == 40_000
+    # The seconds allowance still reports itself, under the ceiling's own name.
+    assert at_3600["hang_ceiling_seconds"] == 600
+    assert at_3600["ceiling_overrun"] is True
+    assert at_600["ceiling_overrun"] is False
+
+
+def test_a_run_exceeding_its_token_budget_is_over_it() -> None:
+    """More generated tokens than the allowance is a charge, wall clock aside.
+
+    Within the seconds ceiling delivered tokens still decide: 60k against a
+    50k allowance is an overrun at 300s just as it is at 3,600s, because a run
+    that produced more tokens than its budget did more work than it was
+    allowed, however fast the lane was.
+    """
+    started = datetime(2026, 9, 9, 12, 0, 0, tzinfo=UTC)
+    record = _token_record(
+        "r-over",
+        started=started,
+        token_budget=50_000,
+        time_budget="10m",
+        generated_tokens=60_000,
+    )
+
+    at_300 = recovery._budget_timing(
+        record, now_seconds=(started + timedelta(seconds=300)).timestamp()
+    )
+    at_3600 = recovery._budget_timing(
+        record, now_seconds=(started + timedelta(seconds=3600)).timestamp()
+    )
+
+    assert at_300["budget_overrun"] is True
+    assert at_300["budget_overrun_tokens"] == 10_000
+    assert at_300["ceiling_overrun"] is False
+    assert at_3600["budget_overrun"] is True
+    assert at_3600["ceiling_overrun"] is True
+
+
+def test_a_run_that_stopped_producing_is_caught_by_the_wall_clock_ceiling_under_its_own_name() -> None:
+    """A hang is refused by the ceiling, never by tokens, and never the reverse.
+
+    A run parked on a wait generates a whisper of tokens, so the token fence
+    cannot see it — its own distinct wall-clock ceiling under its own name is
+    the only verdict that catches it. And while inside both bounds the run is
+    untouched: the negative half of the hang guard.
+    """
+    started = datetime(2026, 9, 9, 12, 0, 0, tzinfo=UTC)
+    record = _token_record(
+        "r-hung",
+        started=started,
+        token_budget=50_000,
+        time_budget="10m",
+        generated_tokens=1_000,
+    )
+
+    at_3600 = recovery._budget_timing(
+        record, now_seconds=(started + timedelta(seconds=3600)).timestamp()
+    )
+    within = recovery._budget_timing(
+        record, now_seconds=(started + timedelta(seconds=300)).timestamp()
+    )
+
+    # Tokens say fine; the ceiling, under its own name, says the process hung.
+    assert at_3600["budget_overrun"] is False
+    assert at_3600["ceiling_overrun"] is True
+    assert at_3600["hang_ceiling_seconds"] == 600
+    # Inside both bounds neither verdict fires.
+    assert within["budget_overrun"] is False
+    assert within["ceiling_overrun"] is False
+
+
+def test_token_budget_set_in_flight_config_reaches_the_run_record_via_dispatch(
+    home, tmp_path: Path, monkeypatch
+) -> None:
+    """The config value lands on the run record through dispatch, not a resolve.
+
+    The record returned by dispatch carries the fence's token budget on the
+    node block — the same block recovery reads — and the persisted live pointer
+    agrees. A config without the key records None, so the legacy wall-clock
+    verdict survives as the default.
+    """
+    root = tmp_path / "repo"
+    (root / "skills" / "reckon-ship" / "scripts").mkdir(parents=True)
+    (root / "docs" / "plans").mkdir(parents=True)
+    fleet_source = (
+        Path(__file__).parents[1]
+        / "skills"
+        / "reckon-ship"
+        / "scripts"
+        / "worktree_fleet.py"
+    )
+    (root / "skills" / "reckon-ship" / "scripts" / "worktree_fleet.py").write_text(
+        fleet_source.read_text()
+    )
+    (root / "docs" / "plans" / "plan-a.html").write_text(
+        """<!doctype html>
+<html><head>
+<meta name="docs-project" content="proj">
+<meta name="reckon-type" content="plan">
+<meta name="plan-slug" content="plan-a">
+</head><body><h2 id="s3">§3 — Dispatch</h2></body></html>
+"""
+    )
+    (root / "seed.txt").write_text("seed\n")
+    for args in (
+        ["init", "-q", "-b", "main"],
+        ["config", "user.email", "worker@example.invalid"],
+        ["config", "user.name", "Worker"],
+        ["add", "seed.txt", "skills", "docs/plans/plan-a.html"],
+        ["commit", "-q", "-m", "chore: seed dispatch fixture"],
+    ):
+        subprocess.run(["git", *args], cwd=root, check=True, capture_output=True)
+    monkeypatch.setenv("RECKON_WORKTREE_ROOT", str(tmp_path / "worktrees"))
+
+    def _node(**overrides) -> crew.TaskNode:
+        fields = {
+            "id": "token-node",
+            "goal": "record the launch matrix for one backend",
+            "plan": "plan-a",
+            "section": "§3",
+            "done_when": "uv run pytest tests/test_backends.py reports 34 passed",
+            "write_paths": ["reckon/_backends.py"],
+            "time_budget": "20m",
+            "manifest_path": str(tmp_path / "token-node-manifest.md"),
+            "spec_level": "guided",
+        }
+        fields.update(overrides)
+        return crew.TaskNode(**fields)
+
+    fenced = {
+        "default_backend": "alpha",
+        "backends": {
+            "alpha": {
+                "launch": "cli",
+                "command": "codex",
+                "model": "some-model",
+                "effort": "high",
+                "sandbox": "worktree-full",
+                "session_reuse": True,
+                "time_budget": "25m",
+            }
+        },
+        "roles": {"implement": {}},
+        "fences": {"time_budget": "25m", "token_budget": 50_000},
+    }
+    record = crew.dispatch(
+        node=_node(),
+        project="proj",
+        repo=root,
+        config=fenced,
+        session="token-session",
+        launcher=lambda *args, **kwargs: 0,
+    )
+
+    assert record["node"]["token_budget"] == 50_000
+    pointer = crew.read_pointer(record["run_id"])
+    assert (pointer.get("node") or {}).get("token_budget") == 50_000
+
+    unfenced = {
+        "default_backend": "alpha",
+        "backends": dict(fenced["backends"]),
+        "roles": {"implement": {}},
+        "fences": {"time_budget": "25m"},
+    }
+    plain = crew.dispatch(
+        node=_node(
+            id="plain-node",
+            write_paths=["reckon/other.py"],
+            manifest_path=str(tmp_path / "plain-manifest.md"),
+        ),
+        project="proj",
+        repo=root,
+        config=unfenced,
+        session="plain-session",
+        launcher=lambda *args, **kwargs: 0,
+    )
+
+    assert plain["node"]["token_budget"] is None
+
+
+def test_watchdog_still_stops_a_live_over_grace_worker_with_a_token_budget(
+    monkeypatch,
+) -> None:
+    """The ceiling enforces under the token denomination too.
+
+    A token budget charges the work, and a live worker that has stopped the
+    wall clock has no token signal to charge — so the opt-in watchdog that
+    stops an over-grace live CLI worker must still act on the wall-clock
+    ceiling, never wait for a token verdict that will not come.
+    """
+    started = datetime.now(tz=timezone.utc) - timedelta(seconds=21)
+    record: dict[str, Any] = {
+        "run_id": "r-watchdog-token",
+        "launch": "cli",
+        "backend": "alpha",
+        "argv": ["claude"],
+        "pid": 4242,
+        "pid_start_time": "start",
+        "phase": "working",
+        "created_at": started.isoformat(),
+        "attempt_started_at": started.isoformat(),
+        "node": {
+            "id": "slow-node",
+            "plan": "plan-a",
+            "time_budget": "10s",
+            "token_budget": 50_000,
+        },
+        "process_alive": True,
+        "log_path": str(Path("/nonexistent/stream.jsonl")),
+    }
+    signalled: list[int] = []
+    monkeypatch.setattr(
+        recovery, "_signal_process_group", lambda pid, started_at: signalled.append(pid)
+    )
+    config = {"fences": {"enforce_budget_watchdog": True, "budget_grace_multiple": 2.0}}
+
+    recovery._apply_budget_watchdog(record, config)
+
+    assert signalled == [4242]
+    assert record["phase"] == "stopped"
+    assert record["watchdog_enforced"] is True
+    assert record["budget_tokens"] == 50_000
+    assert record["ceiling_overrun"] is True

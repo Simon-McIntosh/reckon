@@ -1455,6 +1455,7 @@ class DispatchPlan:
     budget_ceiling: str
     validation: NodeValidation
     execution_fit: capability.ExecutionFit
+    token_budget: int | None = None
     local: bool = False
     warnings: list[str] = field(default_factory=list)
     competence: dict[str, Any] | None = None
@@ -1494,6 +1495,7 @@ class DispatchPlan:
                 ),
             },
             "time_budget": self.node.time_budget,
+            "token_budget": self.token_budget,
             "validation": self.validation.as_dict(),
             "write_paths": list(self.node.write_paths),
             "warnings": list(self.warnings),
@@ -1505,6 +1507,32 @@ class DispatchPlan:
         if self.live_conflicts is not None:
             payload["live_conflicts"] = [dict(item) for item in self.live_conflicts]
         return payload
+
+
+def _resolved_token_budget(
+    config: Mapping[str, Any], backend: Mapping[str, Any]
+) -> int | None:
+    """Return a node's default token budget: role overlay first, fence fallback.
+
+    Mirrors the time-budget resolution: the backend argument is the effective
+    settings after the role and spec-level overlays are folded in, so the first
+    candidate already carries any overlay-declared value. A value that does
+    not coerce to a positive integer is unset rather than a refusal, so a bad
+    declaration degrades to the wall-clock fence instead of blocking dispatch.
+    """
+    for candidate in (
+        backend.get("token_budget"),
+        (config.get("fences") or {}).get("token_budget"),
+    ):
+        if candidate is None or candidate == "":
+            continue
+        try:
+            budget = int(candidate)
+        except (TypeError, ValueError):
+            continue
+        if budget > 0:
+            return budget
+    return None
 
 
 def _dispatch_lane_observation(
@@ -1817,6 +1845,7 @@ def plan_dispatch(
         )
     default_budget = resolved_time_budget(config, backend)
     budget_ceiling = resolved_time_ceiling(config)
+    default_token_budget = _resolved_token_budget(config, backend)
     node.time_budget = node.time_budget or default_budget
     node.section = normalize_section(node.section)
     resolved_run_id = run_id or new_run_id(node.id)
@@ -1948,6 +1977,7 @@ def plan_dispatch(
         backend_settings=backend,
         node=node,
         budget_ceiling=budget_ceiling,
+        token_budget=default_token_budget,
         validation=verdict,
         execution_fit=execution_fit,
         local=local,
@@ -2752,6 +2782,11 @@ def dispatch(
         node_definition = node.as_dict()
         node_definition["requested_backend"] = resolution.requested_backend
         node_definition["lane_declaration"] = resolution.lane_declaration
+        # The token budget is resolved here, at dispatch, so the run record is
+        # authoritative and a later config edit cannot silently re-charge a run
+        # that launched under another allowance. It rides the node block beside
+        # time_budget, which is where recovery reads both allowances back.
+        node_definition["token_budget"] = resolution.token_budget
         # Promotion deliberately rebuilds the committed row from selected live
         # fields. The authored node definition is one of those durable fields,
         # so attribution lives there as well as at the pointer's top level.

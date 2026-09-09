@@ -815,6 +815,34 @@ def test_malformed_time_budget_is_rejected(layers):
     assert excinfo.value.key_path == "fences.time_budget"
 
 
+def test_token_budget_resolves_with_leaf_provenance(layers):
+    """A token-denominated fence validates and reports which layer set it."""
+    write(
+        layers["host"],
+        "fences:\n  time_budget: 60m\n  token_budget: 50000\n"
+        "backends:\n  alpha:\n    launch: cli\n    command: alpha-cli\n"
+        "    token_budget: 40000\n",
+    )
+    write(
+        layers["project"],
+        "default_backend: alpha\nroles:\n  implement:\n    backend: alpha\n",
+    )
+    resolved = resolve_files(layers)
+
+    assert resolved.config["fences"]["token_budget"] == 50000
+    assert resolved.config["backends"]["alpha"]["token_budget"] == 40000
+    assert resolved.origin("fences.token_budget") == "host"
+    assert resolved.origin("backends.alpha.token_budget") == "host"
+
+
+def test_a_non_positive_token_budget_is_rejected(layers):
+    """A token budget below one output token would refuse to bound anything."""
+    write(layers["host"], "fences:\n  token_budget: 0\n")
+    with pytest.raises(FlightConfigError) as excinfo:
+        resolve_files(layers)
+    assert excinfo.value.key_path == "fences.token_budget"
+
+
 def test_unparseable_yaml_names_the_file(layers):
     write(layers["host"], "backends: [unclosed\n")
     with pytest.raises(FlightConfigError) as excinfo:

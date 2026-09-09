@@ -2250,6 +2250,15 @@ def crew_list(project, phase, session, mine, pretty):
                 "log_age_seconds": classified.get("log_age_seconds"),
                 "budget_seconds": classified.get("budget_seconds"),
                 "budget_overrun": classified.get("budget_overrun"),
+                # The token allowance and the separately named wall-clock
+                # ceiling are distinct: the budget verdict is denominated in
+                # generated tokens when a token budget is set, while
+                # ceiling_overrun catches a hang under the ceiling's own name.
+                "budget_tokens": classified.get("budget_tokens"),
+                "generated_tokens": classified.get("generated_tokens"),
+                "budget_overrun_tokens": classified.get("budget_overrun_tokens"),
+                "hang_ceiling_seconds": classified.get("hang_ceiling_seconds"),
+                "ceiling_overrun": classified.get("ceiling_overrun"),
                 "manifest_status": classified.get("manifest_status"),
                 "next_action": classified.get("next_action"),
             }
