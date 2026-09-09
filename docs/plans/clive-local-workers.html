@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-09">
-<meta name="plan-version" content="175">
+<meta name="plan-version" content="177">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/local-lane-reuse-map.md,~/.config/reckon/crew/reports/shadowable-node-census.md,~/.config/reckon/crew/reports/local-effort-probe.md,~/.config/reckon/crew/reports/read-only-tier-delivery-discriminator.md,~/.config/reckon/crew/reports/test-attribution-reuse-map.md,~/.config/reckon/crew/reports/context-fit-reuse-map.md,reckon/crew/recovery.py,tests/test_crew_recovery.py,docs/state/reckon/flight.yaml,skills/reckon-ship/references/effort-routing.md,docs/evidence/archive/clive-local-workers-landed.html,docs/figures/clive-local-workers/local-lane-model-outcomes.svg,~/.config/reckon/crew/reports/clw-local-readonly-lane-qualification-read.md,~/.config/reckon/crew/reports/clw-effort-override-key-per-path.md,~/.config/reckon/crew/reports/clw-local-capability-horizon-read.md,~/.config/reckon/crew/reports/clw-thinking-block-observable-census.md">
 <meta name="plan-impl" content="0.903">
 <meta name="plan-commits" content="a91abe9,a56eae9,42a339f,a2e488b,ca6288d,0226835,e099fc5,5dc92ce,8b80bdc,8abc064,6f99ac2,7f41635,1908947,da054f7,1a77ce8,3ff87b2,5717d69,1badb66,1b7e72e,9b609d9,34e1d10,73ed06d,31d4e8d,7572d83,ee68b0e,eedec7b,dfe14da">
@@ -221,6 +221,7 @@
         <tr><td>Effort reaches the loop, or does not</td><td>Emitted thinking blocks and their character volume, per turn, from the streams of paired real-node runs at two declared efforts per model. A verdict either way, stated with the counts.</td></tr>
         <tr><td>Paired, single-variable</td><td>Each pair shares node, base revision, time budget, sandbox and prompt, differing only in declared effort, with the run records showing effort substituted and everything else inherited. A fresh session per arm.</td></tr>
         <tr><td>Enough to read</td><td>At least three paired nodes per model, spanning a small mechanical node and a node requiring design, since the prior is that effort pays most where reasoning is actually required.</td></tr>
+        <tr><td><strong>Paired before either arm merges</strong></td><td>Added 2026-09-09, and it changes this section's method rather than adding to it. A pair produced by shadowing an <em>already-landed</em> primary is unsound: the shadow shares the object store with the integration branch and can read the landed diff, which is how the first design-requiring attempt matched the canonical commit to the insertion in 13 minutes against 69 and was voided. The &#167;7 fence <em>detects</em> that and cannot prevent it, so detection alone leaves every post-merge pair suspect rather than sound. So both arms of a pair must run <strong>concurrently, before either is merged</strong>, differing only in declared effort through the role overlay key &mdash; which is clean by construction rather than clean on inspection. The three existing sound pairs predate the finding and survive it, verified individually.</td></tr>
         <tr><td>Compared against the incumbent</td><td>The same nodes have committed frontier-model records, so each local arm is reported beside its primary's gate, diff and tests-added rather than in isolation.</td></tr>
       </tbody>
     </table>
@@ -973,6 +974,62 @@
 <div class="r-comment" data-section="s1" data-id="c-20260909-impl-corrected" data-who="reckon-ship" data-when="2026-09-09T05:52:30Z">
     <div class="r-comment-body"><p><strong><code>plan-impl</code> corrected downward from 1.0 to 0.966, deliberately and against the monotonic convention.</strong> The plan carried 1.0 while §10 and §5 were both open, which is the shape the lifecycle rule warns about: a completed-looking plan is where discovered work goes to be lost. The count is the plan's own record — <strong>56 distinct nodes carry a promotion comment</strong>, and two executable sections remain open, so 56 of 58. The two sections held on the GLM re-entry trigger (§2 and §15) are excluded from the denominator as not currently executable rather than counted as incomplete.</p><p>Monotonicity exists to stop a percentage churning as a denominator grows; it is not a reason to keep a figure that is factually wrong. Stated here rather than adjusted silently.</p></div>
 </div>
+<div class="r-comment" data-section="s1" data-id="c-20260909-drain-ledger" data-who="reckon-ship" data-when="2026-09-09T10:15:00Z">
+    <div class="r-comment-body"><pre>DRAIN LEDGER — clive-local-workers @ 2026-09-09T10:15:00Z (session ship-clw-2026-09-09)
+
+PLAN FOLLOWUPS
+  f-clw-004  measure the local lane                     resolved → outcome recorded
+  f-clw-005  scan + read fence + surface                carries-the-chain (required by the
+                                                        landing boundary; its executable work is
+                                                        authored as §10, not held in the followup)
+
+MANIFEST FOLLOW-ONS, in the order they were raised
+  exclusion accounting raises KeyError on a new reason
+                                                        folded → clw-exclusion-accounting-tolerates-any-reason
+  capabilities takes no --project                        folded → clw-capabilities-publishes-a-truthful-row
+  a stale cache reads as a measured figure               folded → clw-capabilities-publishes-a-truthful-row
+  §10 method unsound for an already-landed primary        folded → §10 measure added this beat
+                                                        (coordinator plan write; the campaign it
+                                                        governs is open §10 scope, not a queue row)
+  capabilities cache stale for reckon + 5 projects        authority-required → a rebuild spans 13
+                                                        mounted projects and changes other live
+                                                        sessions' dispatch admission; not this
+                                                        plan's authority to spend
+  crew/reviews is not an authorised delivery root, so
+    the scoring lifecycle's own next_action is refused    foreign-owner → crew-observability-truth
+                                                        (reported; peer dispatched the repair)
+  review arm has no capability evidence at n=3            foreign-owner → crew-observability-truth
+                                                        (the scoring lifecycle now composes a review
+                                                        per landing, so the sample fills there)
+  19 of 350 local streams lack effort attribution         foreign-owner → crew-observability-truth
+  one run declared local was served by claude-opus-5      foreign-owner → crew-observability-truth
+  retroactive marking of already-promoted contaminated
+    rows (2 genuine commit-reads + path-reads)            foreign-owner → crew-observability-truth
+                                                        (a re-derivation pass over committed rows,
+                                                        the shape of completion repair)
+  --local flag's exact overlay layer path unmeasured      folded → recorded on §10 as settled: both
+                                                        paths honour the role overlay key, measured
+  test-role worker minutes dominated by suite execution   folded → recorded on §5 and §14 as the
+                                                        confound, not a model figure
+  effort prior in config disagrees with the locked one    folded → recorded on §4 as supersession
+
+  20 PRE-EXISTING SUITE FAILURES, exact nodeids recorded in the run records:
+    6 tests/test_crew_session_keying.py                   NO NAMED OWNER — a plan is owed
+    6 tests/test_ledger.py                                NO NAMED OWNER — a plan is owed
+    6 tests/test_crew_promotion.py (resume/retention)      NO NAMED OWNER — a plan is owed
+    2 tests/test_crew.py (stale expectation from e68a84a)  NO NAMED OWNER — a plan is owed
+  Not dispositioned as foreign-owner, because the rule is explicit: a followup that cannot name
+  its owning plan is hiding work, and a plan is what is owed. Surfaced to the lead rather than
+  parked in a category that would make it look tracked. None was caused by this session; each
+  was measured identically at base and at head.
+
+  ---
+  rows: 16   foldable-remaining: 0   unreconciled-runs: 0
+  worktrees: 8 created, 8 removed, 0 refused; 9 shadow worktrees retained (patches are evidence)
+  waivers spent: 1 × --allow-unreconciled-runs, on a backlog whose reconciliation command the
+                 tool itself refused; the row it named was promoted minutes later
+</pre></div>
+</div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260902T133132431763-silent-delivery-becomes-a-repairable-row" data-who="harness-manifest" data-when="2026-09-02T13:54:04Z">
     <div class="r-comment-body"><p>Recovery derives a non-delivered manifest from a terminal run's final message and worktree diff; abandoned classification and the refusal to advise promotion preserved. Focused 8/8, full suite 2656 passed 0 failed in 710s, ruff finding delta 0.</p></div>
 </div>
@@ -1400,7 +1457,7 @@
     <div class="r-comment-body"><p>both exclusion accumulators now count any reason the ledger returns, seeding a defaultdict with the same stable zero keys so no reported key is lost; the contaminated reason counts instead of raising, proven at the merged head carrying the detector as well. Merged tolerance-first so main was never in the crashing state; 12 failed / 174 passed at that head against the identical pre-existing 12, zero added by either commit</p></div>
 </div>
 <div class="r-comment" data-section="s16" data-id="c-20260909-both-halves-merged-and-proven-together" data-who="reckon-ship" data-when="2026-09-09T10:09:00Z">
-    <div class="r-comment-body"><p><strong>The repair landed as <code>eedec7b</code> and both halves are now on main, merged tolerance-first so main was never in the crashing state.</strong> Both exclusion accumulators seed a <code>defaultdict</code> with the same stable zero keys as before, so every previously reported reason still reports at zero when unseen while an unknown one counts under its own key. The reproduction that raised <code>KeyError: 'contaminated'</code> before the repair now reads <code>contaminated: 1</code> with <code>scope_changed</code>, <code>stalled</code> and the rest still present at zero &mdash; so the fix added tolerance without dropping the seed, which is the failure a bare <code>defaultdict()</code> would have introduced.</p><p><strong>Proven at the combined head rather than half by half.</strong> Merged-head attribution across the wave's whole surface &mdash; calibration, capabilities, routing surface, shadow contamination, shadow paths, shadow overrides, crew promotion, ledger, session keying &mdash; reads <strong>12 failed and 174 passed</strong>, the identical pre-existing 6-plus-6 measured twice earlier today, so <strong>zero added by either commit, together or apart</strong>. Neither worker could have established that: each saw only its own base.</p><p>Two notes on how the verification was aimed. The negative check looked at the <em>container</em>, not the line: <code>excluded[observation] += 1</code> is unchanged and still present exactly once, and only what it increments moved &mdash; a check for that line's absence would have reported a regression that is not one. And the worker covered <strong>both</strong> calibration loops where the brief named only the eligibility pass, while correctly leaving <code>derive_routing</code> alone because it already used a defaultdict; the aperture was wider than the instruction, which is the right direction for it to err.</p></div>
+    <div class="r-comment-body"><p><strong>The repair landed as <code>eedec7b</code> and both halves are now on main, merged tolerance-first so main was never in the crashing state.</strong> Both exclusion accumulators seed a <code>defaultdict</code> with the same stable zero keys as before, so every previously reported reason still reports at zero when unseen while an unknown one counts under its own key. The reproduction that raised <code>KeyError: 'contaminated'</code> before the repair now reads <code>contaminated: 1</code> with <code>scope_changed</code>, <code>stalled</code> and the rest still present at zero — so the fix added tolerance without dropping the seed, which is the failure a bare <code>defaultdict()</code> would have introduced.</p><p><strong>Proven at the combined head rather than half by half.</strong> Merged-head attribution across the wave's whole surface — calibration, capabilities, routing surface, shadow contamination, shadow paths, shadow overrides, crew promotion, ledger, session keying — reads <strong>12 failed and 174 passed</strong>, the identical pre-existing 6-plus-6 measured twice earlier today, so <strong>zero added by either commit, together or apart</strong>. Neither worker could have established that: each saw only its own base.</p><p>Two notes on how the verification was aimed. The negative check looked at the <em>container</em>, not the line: <code>excluded[observation] += 1</code> is unchanged and still present exactly once, and only what it increments moved — a check for that line's absence would have reported a regression that is not one. And the worker covered <strong>both</strong> calibration loops where the brief named only the eligibility pass, while correctly leaving <code>derive_routing</code> alone because it already used a defaultdict; the aperture was wider than the instruction, which is the right direction for it to err.</p></div>
 </div>
 </section>
 </main>
