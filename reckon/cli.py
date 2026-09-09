@@ -962,7 +962,11 @@ def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, 
     help="Roster member to run this node, reusing its long-lived session.",
 )
 @click.option("--session", required=True, help="Opaque session id grouping worktrees.")
-@click.option("--wave", default="", help="Optional open wave id grouping this run.")
+@click.option(
+    "--wave",
+    default="",
+    help="Open wave id override; otherwise joins this session's open wave.",
+)
 @click.option("--base", default="HEAD", show_default=True, help="Worktree base ref.")
 @click.option(
     "--repo",
@@ -1289,7 +1293,11 @@ def crew_dispatch(
 @click.option(
     "--session", required=True, help="Dispatching session that owns this shadow."
 )
-@click.option("--wave", default="", help="Optional open wave id grouping this shadow.")
+@click.option(
+    "--wave",
+    default="",
+    help="Open wave id override; otherwise joins this session's open wave.",
+)
 @click.option(
     "--backend",
     required=True,

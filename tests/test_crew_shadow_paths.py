@@ -186,6 +186,29 @@ def test_shadow_pointer_keeps_the_dispatching_session_and_wave(home, repo) -> No
     assert not {"contamination", "excluded", "exclusion"}.intersection(pointer)
 
 
+def test_shadow_joins_its_session_default_wave(home, repo) -> None:
+    primary = _completed_primary(home, repo)
+    current = crew.dispatch(
+        node=_node(str(home / "current-manifest.md")),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="dispatching-session",
+        launcher=lambda *args, **kwargs: 0,
+        backend_override="alpha",
+    )
+
+    shadow = _shadow(
+        str(primary["run_id"]),
+        "candidate-a",
+        repo,
+        session="dispatching-session",
+    )
+
+    assert current["wave"]
+    assert shadow["wave"] == current["wave"]
+
+
 def test_many_candidates_shadow_one_primary_without_colliding(home, repo) -> None:
     primary = _completed_primary(home, repo)
     primary_id = str(primary["run_id"])

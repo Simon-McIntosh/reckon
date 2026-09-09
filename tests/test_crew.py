@@ -634,6 +634,145 @@ def test_dispatch_cli_accepts_and_persists_a_wave(home, repo, monkeypatch) -> No
     assert crew.read_pointer(payload["run_id"])["wave"] == "wave-a"
 
 
+def test_dispatch_cli_opens_a_wave_without_a_flag(home, repo, monkeypatch) -> None:
+    config = json.loads(json.dumps(CONFIG))
+    config["backends"]["alpha"]["launch"] = "in-harness"
+    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: config)
+    node = _node()
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "dispatch",
+            "--project",
+            "proj",
+            "--plan",
+            "plan-a",
+            "--section",
+            node.section,
+            "--spec-level",
+            node.spec_level,
+            "--node",
+            node.id,
+            "--goal",
+            node.goal,
+            "--done-when",
+            node.done_when,
+            "--write-path",
+            node.write_paths[0],
+            "--session",
+            "cli-session",
+            "--repo",
+            str(repo),
+            "--no-watch",
+        ],
+    )
+    payload = json.loads(result.output)
+
+    assert result.exit_code == 0
+    assert payload["wave"]
+    assert crew.read_pointer(payload["run_id"])["wave"] == payload["wave"]
+
+
+def test_two_live_dispatches_share_their_default_wave(home, repo) -> None:
+    first = crew.dispatch(
+        node=_node(id="node-a", manifest_path=""),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="shared-session",
+        launcher=lambda *args, **kwargs: 0,
+    )
+    ledger.register_member("proj", "worker-b", harness="alpha", root=repo)
+    second = crew.dispatch(
+        node=_node(id="node-b", write_paths=["reckon/other.py"], manifest_path=""),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="shared-session",
+        member="worker-b",
+        launcher=lambda *args, **kwargs: 0,
+    )
+
+    assert first["wave"]
+    assert second["wave"] == first["wave"]
+
+
+def test_closed_default_wave_is_replaced_for_the_next_dispatch(home, repo) -> None:
+    first = crew.dispatch(
+        node=_node(id="node-a", manifest_path=""),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="next-wave-session",
+        launcher=lambda *args, **kwargs: 0,
+    )
+    crew.complete(first["run_id"], gate="passed")
+
+    second = crew.dispatch(
+        node=_node(id="node-b", write_paths=["reckon/other.py"], manifest_path=""),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="next-wave-session",
+        launcher=lambda *args, **kwargs: 0,
+    )
+
+    assert second["wave"]
+    assert second["wave"] != first["wave"]
+
+
+def test_explicit_wave_overrides_the_default_wave(home, repo) -> None:
+    default = crew.dispatch(
+        node=_node(id="node-a", manifest_path=""),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="override-session",
+        launcher=lambda *args, **kwargs: 0,
+    )
+    ledger.register_member("proj", "worker-b", harness="alpha", root=repo)
+    explicit = crew.dispatch(
+        node=_node(id="node-b", write_paths=["reckon/other.py"], manifest_path=""),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="override-session",
+        wave="named-wave",
+        member="worker-b",
+        launcher=lambda *args, **kwargs: 0,
+    )
+
+    assert default["wave"] != "named-wave"
+    assert explicit["wave"] == "named-wave"
+
+
+def test_empty_and_missing_legacy_waves_do_not_group_default_dispatch(
+    home, repo
+) -> None:
+    runs._write_json(
+        crew.pointer_path("r-legacy-empty"),
+        {"project": "proj", "session": "legacy-session", "wave": ""},
+    )
+    runs._write_json(
+        crew.pointer_path("r-legacy-missing"),
+        {"project": "proj", "session": "legacy-session"},
+    )
+
+    record = crew.dispatch(
+        node=_node(manifest_path=""),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="legacy-session",
+        launcher=lambda *args, **kwargs: 0,
+    )
+
+    assert record["wave"]
+    assert record["wave"] != ""
+
+
 def test_local_dry_run_selects_the_declared_backend(home, repo, monkeypatch) -> None:
     config = flight.deep_merge(
         CONFIG,
