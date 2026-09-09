@@ -2308,6 +2308,18 @@ def _session_unreconciled_refusal(
     return refusal
 
 
+def _resolved_wave_id(project: str, session: str, requested: str) -> str:
+    """Return an explicit wave or the newest non-empty wave in this session."""
+    if requested:
+        return requested
+    for record in reversed(list_live(project=project)):
+        if str(record.get("session") or "") != session:
+            continue
+        if wave := str(record.get("wave") or ""):
+            return wave
+    return f"wave-{uuid.uuid4().hex}"
+
+
 def dispatch(
     *,
     node: TaskNode,
@@ -2691,6 +2703,7 @@ def dispatch(
     )
     gates = config.get("gates") or {}
     suite_command = str(gates.get("suite_command") or "").strip() or None
+    wave_id = _resolved_wave_id(project, session, wave)
 
     worktree = _create_worktree(repo_root, worktree_identity, node.id, base)
     spawned_pid: int | None = None
@@ -2750,7 +2763,7 @@ def dispatch(
             "repo": str(repo_root),
             "authority": resolution.authority,
             "session": session,
-            "wave": wave,
+            "wave": wave_id,
             "coordinator": coordinator,
             "node": node_definition,
             "role": node.role,
