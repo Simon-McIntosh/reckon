@@ -2,14 +2,17 @@ from __future__ import annotations
 
 import inspect
 import json
+import os
 import subprocess
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 from click.testing import CliRunner
 
 from reckon import cli, ledger
-
+from reckon.crew import routing
 
 SCRIPT = (
     Path(__file__).parents[1]
@@ -115,6 +118,43 @@ def record_shadow(
         root=repo,
     )
     return artifact
+
+
+def ledger_run_directory(
+    repo: Path,
+    home: Path,
+    run_id: str,
+    *,
+    now: datetime,
+    orientation_input_tokens: bool = False,
+    tool_steps: bool = False,
+    extra: dict[str, Any] | None = None,
+) -> Path:
+    """Create a run directory whose row records whichever derived figures are named.
+
+    The directory's mtime is set well past a 30-day retention window, so the
+    only thing deciding whether gc removes it is the recorded figures.
+    """
+    run_dir = home / "crew" / "runs" / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+    (run_dir / "stream.jsonl").write_text("{}\n")
+    record = ledger.build_record(
+        run_id=run_id,
+        plan="plan-a",
+        gate="passed",
+        node="node-a",
+        manifest_path=str(run_dir / "stream.jsonl"),
+    )
+    if orientation_input_tokens:
+        record["orientation_input_tokens"] = 128_000.0
+    if tool_steps:
+        record["tool_steps"] = 7.0
+    for key, value in (extra or {}).items():
+        record[key] = value
+    ledger.append_run("test", record, root=repo)
+    stale = (now - timedelta(days=60)).timestamp()
+    os.utime(run_dir, (stale, stale))
+    return run_dir
 
 
 def test_gc_dry_run_itemizes_worktrees_without_touching_them(
@@ -494,3 +534,107 @@ def test_gc_result_names_the_repository_and_the_ledger_it_read(
     assert payload["ledger"] == [
         str((repo / "docs" / "state" / "test" / "crew.json").resolve())
     ]
+
+
+def test_gc_retains_a_run_directory_whose_derived_figures_are_not_recorded(
+    tmp_path: Path, monkeypatch
+) -> None:
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    repo = repository(tmp_path)
+    now = datetime(2026, 9, 1, tzinfo=UTC)
+    run_dir = ledger_run_directory(repo, home, "run-unmeasured", now=now)
+
+    report = routing.garbage_collect(repo=repo, now=now, retention_days=30)
+
+    rows = {item["run_id"]: item for item in report["run_directories"]}
+    assert rows["run-unmeasured"]["action"] == "withheld"
+    assert rows["run-unmeasured"]["removed"] is False
+    assert rows["run-unmeasured"]["withheld"] == "missing-derived-figure"
+    assert "orientation_input_tokens" in rows["run-unmeasured"]["reason"]
+    assert "tool_steps" in rows["run-unmeasured"]["reason"]
+    assert run_dir.exists()
+
+
+def test_gc_removes_a_run_directory_once_its_derived_figures_are_recorded(
+    tmp_path: Path, monkeypatch
+) -> None:
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    repo = repository(tmp_path)
+    now = datetime(2026, 9, 1, tzinfo=UTC)
+    run_dir = ledger_run_directory(
+        repo,
+        home,
+        "run-measured",
+        now=now,
+        orientation_input_tokens=True,
+        tool_steps=True,
+    )
+
+    report = routing.garbage_collect(repo=repo, now=now, retention_days=30, apply=True)
+
+    rows = {item["run_id"]: item for item in report["run_directories"]}
+    assert rows["run-measured"]["action"] == "prune"
+    assert rows["run-measured"]["removed"] is True
+    assert not run_dir.exists()
+
+
+def test_gc_reports_the_withheld_count_as_a_payload_number(
+    tmp_path: Path, monkeypatch
+) -> None:
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    repo = repository(tmp_path)
+    now = datetime(2026, 9, 1, tzinfo=UTC)
+    held = ledger_run_directory(repo, home, "held-run", now=now)
+    reapable = ledger_run_directory(
+        repo,
+        home,
+        "reapable-run",
+        now=now,
+        orientation_input_tokens=True,
+        tool_steps=True,
+    )
+
+    report = routing.garbage_collect(repo=repo, now=now, retention_days=30, apply=True)
+
+    assert isinstance(report["run_directories_withheld"], int)
+    assert report["run_directories_withheld"] == 1
+    by_id = {item["run_id"]: item for item in report["run_directories"]}
+    assert by_id["held-run"]["action"] == "withheld"
+    assert by_id["reapable-run"]["action"] == "prune"
+    assert held.exists()
+    assert not reapable.exists()
+
+
+def test_gc_reads_the_declared_field_set_so_a_new_figure_protects_the_source(
+    tmp_path: Path, monkeypatch
+) -> None:
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    repo = repository(tmp_path)
+    now = datetime(2026, 9, 1, tzinfo=UTC)
+    run_dir = ledger_run_directory(
+        repo,
+        home,
+        "run-figures-pending",
+        now=now,
+        orientation_input_tokens=True,
+        tool_steps=True,
+    )
+    # The row carries every figure the derivation declares today, so it is
+    # reapable; adding a third declared field with no recorded value flips it.
+    before = routing.garbage_collect(repo=repo, now=now, retention_days=30)
+    assert before["run_directories"][0]["action"] == "prune"
+
+    monkeypatch.setattr(
+        routing,
+        "STREAM_DERIVED_FIELDS",
+        ("orientation_input_tokens", "tool_steps", "input_tokens"),
+    )
+    after = routing.garbage_collect(repo=repo, now=now, retention_days=30)
+    rows = {item["run_id"]: item for item in after["run_directories"]}
+    assert rows["run-figures-pending"]["action"] == "withheld"
+    assert "input_tokens" in rows["run-figures-pending"]["reason"]
+    assert run_dir.exists()
