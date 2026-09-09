@@ -2324,3 +2324,113 @@ def test_a_run_that_was_never_handed_over_omits_the_fallback_key(home, repo) -> 
     crew.complete(record["run_id"], gate="passed")
 
     assert "budget_fallback" not in _row_from_disk(repo, record["run_id"])
+
+
+# ── The backfill entry point fills rows the recording predates ───────────────
+#
+# Rows promoted before the two per-run figures were recorded at promotion are
+# recovered by a re-runnable extractor that fills them from the streams still
+# on disk, reporting rows filled and rows skipped for a missing stream as
+# separate numbers, and recording absent (never zero) for a stream that is
+# gone. Proven against a synthetic ledger; the repository ledger is not touched.
+
+
+def _backfill_figure_stream_text() -> str:
+    events = [
+        {
+            "type": "assistant",
+            "message": {
+                "id": "probe",
+                "content": [{"type": "text", "text": "reading"}],
+                "usage": {
+                    "input_tokens": 2,
+                    "cache_creation_input_tokens": 30,
+                    "cache_read_input_tokens": 68,
+                },
+            },
+        },
+        {
+            "type": "assistant",
+            "message": {
+                "id": "write",
+                "content": [
+                    {
+                        "type": "tool_use",
+                        "name": "Write",
+                        "input": {"file_path": "src/fig.py"},
+                    },
+                    {
+                        "type": "tool_use",
+                        "name": "Edit",
+                        "input": {"file_path": "src/fig.py"},
+                    },
+                ],
+                "usage": {
+                    "input_tokens": 2,
+                    "cache_creation_input_tokens": 20,
+                    "cache_read_input_tokens": 98,
+                },
+            },
+        },
+    ]
+    return "\n".join(json.dumps(event) for event in events) + "\n"
+
+
+def test_backfill_fills_two_figures_and_reports_missing_streams_as_skipped(
+    home: Path, repo: Path
+) -> None:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    try:
+        from derive_run_figures import backfill_run_figures
+    finally:
+        sys.path.pop(0)
+
+    filled_dir = home / "crew" / "runs" / "r-fillable"
+    filled_dir.mkdir(parents=True)
+    filled_stream = filled_dir / "stream.jsonl"
+    filled_stream.write_text(_backfill_figure_stream_text(), encoding="utf-8")
+    filled = ledger.build_record(
+        run_id="r-fillable",
+        plan="work",
+        gate="passed",
+        node_definition={"id": "r-fillable", "write_paths": ["src/fig.py"]},
+        spec_level="guided",
+        role="implement",
+        agent={"model": "fig-model", "effort": "medium"},
+        completed_at_source="provided",
+        changed_lines={"added": 4, "removed": 0, "files": 1},
+        manifest_path=str(filled_dir / "manifest.md"),
+    )
+    missing = ledger.build_record(
+        run_id="r-missing",
+        plan="work",
+        gate="passed",
+        node_definition={"id": "r-missing", "write_paths": ["src/fig.py"]},
+        spec_level="guided",
+        role="implement",
+        agent={"model": "fig-model", "effort": "medium"},
+        completed_at_source="provided",
+        changed_lines={"added": 4, "removed": 0, "files": 1},
+        manifest_path=str(home / "crew" / "runs" / "r-missing" / "manifest.md"),
+    )
+    for record in (filled, missing):
+        ledger.append_run(PROJECT, record, root=repo)
+
+    result = backfill_run_figures(PROJECT, root=repo)
+
+    assert result["rows_filled"] == 1
+    assert result["rows_skipped"] == 1
+    data, _version = ledger.load(PROJECT, root=repo)
+    rows = {row["run_id"]: row for row in data["runs"]}
+    assert rows["r-fillable"]["tool_steps"] == 2.0
+    assert rows["r-fillable"]["orientation_input_tokens"] == 220.0
+    # A missing stream records each figure as absent, never as zero: an
+    # unmeasured run must not read as a free one.
+    assert rows["r-missing"]["tool_steps"] is None
+    assert rows["r-missing"]["orientation_input_tokens"] is None
+    assert rows["r-missing"]["tool_steps"] != 0
+    assert rows["r-missing"]["orientation_input_tokens"] != 0
+
+    again = backfill_run_figures(PROJECT, root=repo)
+    assert again["rows_filled"] == 0
+    assert again["rows_skipped"] == 0

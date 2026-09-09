@@ -1156,3 +1156,108 @@ def test_a_resume_waiver_can_explicitly_discard_the_worktree(
     assert not worktree.exists()
     assert promoted["record"]["worktree_retention"] is None
     assert promoted["record"]["resume_waiver"]["worktree_discarded"] is True
+
+
+# ── A promoted run's own stream fixes its figures on the ledger row ───────────
+#
+# A terminal run's stream is immutable, so its two figures are computed once at
+# promotion and recorded on the row; a later derive reads the ledger and never
+# reopens the stream. Asserted end to end by promoting a run and reading the
+# committed row back, not by unit-testing the extractor.
+
+
+def test_promotion_records_stream_figures_on_the_committed_row(
+    repository: Path, tmp_path: Path
+) -> None:
+    _base, head = _repository_with_candidate(repository)
+    run_id = "r-20260909T155900000000-figured"
+    run_directory = tmp_path / "config" / "crew" / "runs" / run_id
+    run_directory.mkdir(parents=True)
+    stream = run_directory / "stream.jsonl"
+    events = [
+        {
+            "type": "assistant",
+            "session_id": "figures-session",
+            "message": {
+                "id": "probe",
+                "content": [{"type": "text", "text": "reading"}],
+                "usage": {
+                    "input_tokens": 2,
+                    "cache_creation_input_tokens": 30,
+                    "cache_read_input_tokens": 68,
+                },
+            },
+        },
+        {
+            "type": "assistant",
+            "session_id": "figures-session",
+            "message": {
+                "id": "first-write",
+                "content": [
+                    {
+                        "type": "tool_use",
+                        "name": "Write",
+                        "input": {"file_path": "result.txt"},
+                    },
+                    {
+                        "type": "tool_use",
+                        "name": "Edit",
+                        "input": {"file_path": "result.txt"},
+                    },
+                ],
+                "usage": {
+                    "input_tokens": 2,
+                    "cache_creation_input_tokens": 20,
+                    "cache_read_input_tokens": 98,
+                },
+            },
+        },
+        {"type": "result", "result": "ok"},
+    ]
+    stream.write_text(
+        "".join(json.dumps(event) + "\n" for event in events), encoding="utf-8"
+    )
+    manifest = tmp_path / "manifests" / f"{run_id}.md"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text(
+        "node: node-a\nstatus: complete\nchanged_paths: none\n"
+        "tests: focused promotion check passed\n",
+        encoding="utf-8",
+    )
+    _write_json(
+        pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": PROJECT,
+            "repo": str(repository),
+            "worktree": str(repository),
+            "base_sha": head,
+            "launch": "cli",
+            "role": "implement",
+            "member": "worker-a",
+            "backend": "beta",
+            "created_at": "2026-09-09T11:00:00Z",
+            "manifest_path": str(manifest),
+            "log_path": str(stream),
+            "argv": ["claude", "-p"],
+            "node": {
+                "id": "node-a",
+                "plan": PLAN,
+                "section": "§2",
+                "time_budget": "25m",
+                "write_paths": ["result.txt"],
+            },
+        },
+    )
+
+    promoted = crew.complete(run_id, gate="passed", root=repository)
+
+    data, _version = ledger.load(PROJECT, root=repository)
+    row = next(item for item in data["runs"] if item["run_id"] == run_id)
+    # The stream fixes both figures: one charged probe turn and one write turn
+    # carrying two tool-use blocks. The committed row carries them as numbers,
+    # so nothing downstream needs to reopen the stream.
+    assert promoted["record"]["tool_steps"] == 2.0
+    assert promoted["record"]["orientation_input_tokens"] == 220.0
+    assert row["tool_steps"] == 2.0
+    assert row["orientation_input_tokens"] == 220.0
