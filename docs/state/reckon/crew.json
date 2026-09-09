@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T12:51:39",
+  "updated": "2026-09-09T12:55:00",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -2296,9 +2296,11 @@
         "id": "spend-accumulator",
         "harness": "clive",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "855a3018-3718-48f0-9b1d-cae6e72f9487",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "855a3018-3718-48f0-9b1d-cae6e72f9487"
+        },
         "created": "2026-09-09"
       },
       {
@@ -87764,6 +87766,184 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T102112657800-wslp-lineage-accumulator",
+        "plan": "worker-spend-is-legible-in-the-pane",
+        "section": "\u00a77",
+        "node": "wslp-lineage-accumulator",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1694,
+                "cached_input_tokens": 387546,
+                "input_tokens": 389242,
+                "output_tokens": 954,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 390196,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3e7dcff5-8cdd-4a76-bdc7-a5c7cca53e79",
+            "session_id": "ship-worker-spend-20260909"
+          },
+          "done_when": "pytest tests/test_cumulative_token_accounting.py passes with new cases covering all of: a run whose directory holds stream.jsonl plus resume-1 through resume-7 totalling all eight attempt files rather than only the file named by log_path; a redispatch folding into lineage.root_run_id; a lane-change row counted as durable; a shadow keyed to its own run_id and absent from its primary's total; and a synthetic shadow row that also carries a root_run_id still keyed to itself. Durability is exported as a named predicate whose rule is 'not (lineage and lineage kind is shadow)' so an unrecognised future kind is durable by default, and its docstring states that it names the exclusion rather than enumerating the inclusions. Durability and contamination are asserted in separate test cases, including one contaminated non-shadow row, proving the predicate does not absorb the contamination question. measure_stream_tokens is wired into the observation path and a test proves the wiring by asserting a non-null token total on a fixture run, because at the base revision that function has no production caller at all.",
+          "estimated_hours": null,
+          "goal": "Cumulative token and time figures that accumulate along the lineage chain and exclude never-merged shadow evidence, behind one exported predicate",
+          "id": "wslp-lineage-accumulator",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-09T10:21:13Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T102112657800-wslp-lineage-accumulator/manifest.md",
+          "plan": "worker-spend-is-legible-in-the-pane",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/metering.py",
+            "tests/test_cumulative_token_accounting.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "spend-accumulator",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-09T10:21:18Z",
+        "completed_at": "2026-09-09T10:52:40.920Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1871,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1882,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "36c6adb0a36813364f0d57a04d41ae14c362078b",
+        "commits": [
+          "12b75380769b7cb5c0c12addb01526cc99e4d02b"
+        ],
+        "changed_lines": {
+          "added": 540,
+          "removed": 2,
+          "files": 2
+        },
+        "tests_added": 11,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD python -m pytest -p no:cacheprovider tests/test_cumulative_token_accounting.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T102112657800-wslp-lineage-accumulator/after-suite.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T102112657800-wslp-lineage-accumulator/manifest.md",
+        "scope_changed": false,
+        "session_id": "855a3018-3718-48f0-9b1d-cae6e72f9487",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6686293,
+            "input_tokens_cumulative": 6686293,
+            "output_tokens": 51246,
+            "output_tokens_cumulative": 51246,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-09T10:52:40.920Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6686293,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 1879.136,
+          "generated_tokens": 51246,
+          "generation_seconds": 1859.043,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 15.3,
+          "machine_seconds": 20.093,
+          "peak_input_tokens": 155596,
+          "tokens_per_second": 27.57,
+          "wall_tokens_per_second": 27.27
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_cumulative_token_accounting.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-worker-spend-20260909/wslp-lineage-accumulator",
+          "session_id": "855a3018-3718-48f0-9b1d-cae6e72f9487",
+          "session_source": "pointer",
+          "retained_at": "2026-09-09T10:52:40.920Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -87992,6 +88172,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1303
+    "_version": 1305
   }
 }
