@@ -102,6 +102,7 @@ STATUS_ENUM = [
     "historical",
     "reference",
 ]
+SECTION_DECLARATION_ENUM = ["implementable", "deferred", "done"]
 PERSISTABLE_STATUS_ENUM = [status for status in STATUS_ENUM if status != "blocked"]
 ROI_ENUM = ["high", "mid", "low"]
 EFFORT_ENUM = ["S", "M", "L", "XL"]
@@ -336,6 +337,47 @@ def plan_section_anchors(plan: Mapping[str, Any]) -> frozenset[str]:
             and _RESOURCE_SEGMENT_RE.fullmatch(value)
         )
     return frozenset(anchors)
+
+
+EXECUTABLE_REMAINDER_UNKNOWN = None
+
+
+def plan_executable_remainder(plan: Mapping[str, Any]) -> int | None:
+    """Return declared implementable sections without landing evidence.
+
+    ``None`` is the deliberate unknown sentinel for plans that have not
+    persisted a classification. An empty declaration is therefore known zero,
+    while a missing or malformed declaration can never be mistaken for no work.
+    Promotion records landing evidence as a non-empty section comment.
+    """
+
+    declarations = plan.get("section_declarations")
+    if not isinstance(declarations, Mapping):
+        return EXECUTABLE_REMAINDER_UNKNOWN
+
+    implementable: set[str] = set()
+    for raw_section, raw_classification in declarations.items():
+        section = str(raw_section or "").strip()
+        classification = str(raw_classification or "").strip()
+        if (
+            not _RESOURCE_SEGMENT_RE.fullmatch(section)
+            or classification not in SECTION_DECLARATION_ENUM
+        ):
+            return EXECUTABLE_REMAINDER_UNKNOWN
+        if classification == "implementable":
+            implementable.add(section)
+
+    comments = plan.get("comments") or {}
+    if not isinstance(comments, Mapping):
+        comments = {}
+    landed = {
+        str(section).strip()
+        for section, entries in comments.items()
+        if str(section).strip() != "_top"
+        and _RESOURCE_SEGMENT_RE.fullmatch(str(section).strip())
+        and bool(entries)
+    }
+    return len(implementable - landed)
 
 
 def split_refs(
@@ -614,6 +656,19 @@ class PlanState(BaseModel):
         json_schema_extra={"deprecated": True},
     )
     owner: str = ""
+    section_declarations: dict[str, str] = Field(
+        default_factory=dict,
+        description=(
+            "DAG-build classification keyed by authored section identity; only "
+            "implementable entries form the executable denominator"
+        ),
+        json_schema_extra={
+            "additionalProperties": {
+                "type": "string",
+                "enum": SECTION_DECLARATION_ENUM,
+            }
+        },
+    )
 
     # ── Visibility flags ──
     archived: str | None = None  # "1" hides from default inventory
@@ -753,6 +808,7 @@ class PlanState(BaseModel):
                 "depends_on",
                 "blocks",
                 "impl",
+                "section_declarations",
             ):
                 data.pop(field, None)
         return data
@@ -817,6 +873,19 @@ class PlanState(BaseModel):
             errors.extend(
                 validate_capability(self.capability.model_dump(by_alias=True))
             )
+        if self.type == "plan":
+            for section, classification in self.section_declarations.items():
+                if not _RESOURCE_SEGMENT_RE.fullmatch(section):
+                    errors.append(
+                        "section_declarations: section identities must match "
+                        f"{_RESOURCE_SEGMENT_RE.pattern}; got {section!r}"
+                    )
+                if classification not in SECTION_DECLARATION_ENUM:
+                    errors.append(
+                        "section_declarations: "
+                        f"{section!r} has classification {classification!r}; "
+                        f"expected one of {SECTION_DECLARATION_ENUM}"
+                    )
         if self.type and self.type not in TYPE_ENUM:
             errors.append(f"type: {self.type!r} not in {TYPE_ENUM}")
         for tag in self.tags:
@@ -839,6 +908,7 @@ class PlanState(BaseModel):
                 "impl": (0, 0.0, None),
                 "depends_on": ([],),
                 "blocks": ([],),
+                "section_declarations": ({},),
             }
             for field, allowed in neutral.items():
                 value = getattr(self, field)
