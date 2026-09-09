@@ -4,25 +4,28 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="worker-spend-is-legible-in-the-pane">
-  <meta name="plan-title"     content="What Each Worker Cost, On Its Own Row">
-  <meta name="plan-summary"   content="Time, tokens, rate and notional cost on every monitor row, cumulative across restarts, with the codex model span finally measured.">
-  <meta name="plan-status"    content="draft">
-  <meta name="plan-roi"       content="high">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="worker-spend-is-legible-in-the-pane">
+  <meta name="plan-title" content="What Each Worker Cost, On Its Own Row">
+  <meta name="plan-summary" content="Time, tokens, rate and notional cost on every monitor row, cumulative across restarts, with the codex model span finally measured.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="16.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
-  <meta name="plan-sprint"    content="S15">
-  <meta name="plan-owner"     content="Simon McIntosh">
-  <meta name="plan-tags"      content="crew,reckon-tooling">
-  <meta name="plan-blocks"    content="burn-is-visible-before-it-bites">
+  <meta name="plan-sprint" content="S15">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-blocks" content="burn-is-visible-before-it-bites">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <title>What Each Worker Cost, On Its Own Row | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-09">
+<meta name="plan-impl" content="0.0">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -409,95 +412,86 @@ accumulation_key := run_id                          if kind == "shadow"
     </p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">&sect;</span> Decisions</h2>
-      <div class="r-dec" data-key="cost-basis" data-choice="public-api-rates" data-by="Simon McIntosh" data-when="2026-09-09">
-        <p class="r-dec-q">What grounds the dollar figure?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="public-api-rates">Public API rates for the model served, in a refreshable dated ledger</button>
-          <button class="r-opt" data-value="subscription-share">A share of each subscription's plan price</button>
-          <button class="r-opt" data-value="harness-reported">The harness's own <code>total_cost_usd</code></button>
-        </p>
-        <p class="r-dec-rat">
-          A notional figure from public rates is consistent and comparable across two different
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="cost-basis" data-choice="public-api-rates" data-by="Simon McIntosh" data-when="2026-09-09">
+    <p class="r-dec-q">What grounds the dollar figure?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="public-api-rates">Public API rates for the model served, in a refreshable dated ledger</button>
+      <button class="r-opt" data-value="subscription-share">A share of each subscription&#x27;s plan price</button>
+      <button class="r-opt" data-value="harness-reported">The harness&#x27;s own total_cost_usd</button>
+      </p>
+    <p class="r-dec-rat">A notional figure from public rates is consistent and comparable across two different
           subscriptions, which is the decision it has to support; it needs no plan price and
           makes no claim about actual billing. The harness figure is disqualified by measurement
-          rather than by preference &mdash; it prices whatever model name it was told to speak,
+          rather than by preference — it prices whatever model name it was told to speak,
           so the free local lane totals the highest spend of any backend and a ranking built on
-          it inverts. A subscription share would require declaring each plan's price and would
-          still not compare across providers.
-        </p>
-      </div>
-      <div class="r-dec" data-key="time-cells" data-choice="wall-and-model" data-by="Simon McIntosh" data-when="2026-09-09">
-        <p class="r-dec-q">Wall time, model time, or both?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="wall-and-model">Both, as two cells</button>
-          <button class="r-opt" data-value="wall-only">Wall only, with the rate's denominator hidden</button>
-          <button class="r-opt" data-value="model-only">Model only, so the three cells divide into each other</button>
-        </p>
-        <p class="r-dec-rat">
-          The gap between the two is itself the signal: much wall against little model is a
+          it inverts. A subscription share would require declaring each plan&#x27;s price and would
+          still not compare across providers.</p>
+    </div>
+<div class="r-dec" data-key="time-cells" data-choice="wall-and-model" data-by="Simon McIntosh" data-when="2026-09-09">
+    <p class="r-dec-q">Wall time, model time, or both?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="wall-and-model">Both, as two cells</button>
+      <button class="r-opt" data-value="wall-only">Wall only, with the rate&#x27;s denominator hidden</button>
+      <button class="r-opt" data-value="model-only">Model only, so the three cells divide into each other</button>
+      </p>
+    <p class="r-dec-rat">The gap between the two is itself the signal: much wall against little model is a
           worker stuck in a test suite or a SLURM queue, and neither figure alone shows it. Wall
-          alone hides the rate's denominator and cannot distinguish a slow worker from a busy
+          alone hides the rate&#x27;s denominator and cannot distinguish a slow worker from a busy
           one; model alone lets a twelve-hour node read forty minutes with nothing on the row
           saying how long it actually ran. The cost is eight columns of reason field, which the
-          measured pane can afford.
-        </p>
-      </div>
-      <div class="r-dec" data-key="unmeasured-rendering" data-choice="explicit-absence" data-by="Simon McIntosh" data-when="2026-09-09">
-        <p class="r-dec-q">How does a cell with no measurement render?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="explicit-absence">A dim absence marker, distinct from zero</button>
-          <button class="r-opt" data-value="zero">Zero, so the column is always full</button>
-          <button class="r-opt" data-value="blank">Blank whitespace</button>
-        </p>
-        <p class="r-dec-rat">
-          A zero asserts a measurement that was never taken, and this fleet has large
-          populations of both facts at once &mdash; an unpriced lane really did spend nothing
-          chargeable, while an unobserved run's tokens are simply unknown. Blank whitespace
-          takes the right edge ragged, which is the defect the fixed grid exists to prevent.
-        </p>
-      </div>
-    </section>
+          measured pane can afford.</p>
+    </div>
+<div class="r-dec" data-key="unmeasured-rendering" data-choice="explicit-absence" data-by="Simon McIntosh" data-when="2026-09-09">
+    <p class="r-dec-q">How does a cell with no measurement render?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="explicit-absence">A dim absence marker, distinct from zero</button>
+      <button class="r-opt" data-value="zero">Zero, so the column is always full</button>
+      <button class="r-opt" data-value="blank">Blank whitespace</button>
+      </p>
+    <p class="r-dec-rat">A zero asserts a measurement that was never taken, and this fleet has large
+          populations of both facts at once — an unpriced lane really did spend nothing
+          chargeable, while an unobserved run&#x27;s tokens are simply unknown. Blank whitespace
+          takes the right edge ragged, which is the defect the fixed grid exists to prevent.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">&sect;</span> Followups</h2>
-      <article class="r-fu" data-id="f-wslp-001" data-status="open"
-               data-capability-version="1.0" data-capability-class="orchestrator"
-               data-written-by="reckon-create" data-written-at="2026-09-09"
-               data-recommends-skill="/reckon-ship worker-spend-is-legible-in-the-pane">
-        <h4 class="r-fu-title">Open the measurement nodes together, then the cells</h4>
-        <div class="r-fu-body">
-          <p>
-            &sect;7 nodes 1, 2 and 3 are independent and open in one wave: the codex model span,
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-wslp-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-09-09" data-recommends-skill="/reckon-ship worker-spend-is-legible-in-the-pane" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Open the measurement nodes together, then the cells</h4>
+    <div class="r-fu-body"><p>
+            §7 nodes 1, 2 and 3 are independent and open in one wave: the codex model span,
             the lineage accumulator and the rate ledger touch disjoint files and none depends on
             another's output. Node 4 waits on node 1 because both write
             <code>crew/rollout.py</code>. Node 5 waits on all four, since a cell reading an
-            unpopulated field is the defect &sect;1 measures.
+            unpopulated field is the defect §1 measures.
           </p>
-          <p>
+<p>
             Two constraints belong in every dispatch. The three decisions above are locked, so no
             node re-opens them. And the eleven test files asserting on a rendered line are fenced
-            <em>with</em> <code>ticker.py</code> in node 5 rather than left outside it &mdash; a
+            <em>with</em> <code>ticker.py</code> in node 5 rather than left outside it — a
             narrower fence lets a worker report a clean delta while the merged head is red, which
             has happened repeatedly on this file.
-          </p>
-        </div>
-        <pre class="r-fu-prompt">/reckon-ship worker-spend-is-legible-in-the-pane</pre>
-      </article>
-    </section>
+          </p></div>
+    <pre class="r-fu-prompt">/reckon-ship worker-spend-is-legible-in-the-pane</pre>
+    </article>
+</section>
 
     <section data-reckon="research" id="research" class="r-research-list">
-      <h2><span class="sec">&sect;</span> Research</h2>
-      <div class="r-research" data-id="r-rollout-refutation" data-type="measurement">
-        <span class="r-research-title">The rollout measured for &sect;6: 4,985 timestamped records over 20.03 hours, eight attempts, three compaction markers, cumulative input reading 24,495,394 at maximum against 744,077 at the end.</span>
-      </div>
-      <div class="r-research" data-id="r-lineage-census" data-type="measurement">
-        <span class="r-research-title">The lineage census for &sect;3: 797 committed rows, 37 lineage-bearing, kind populated on 37 of 37 and the top-level predecessor field on 2 of 797.</span>
-      </div>
-      <div class="r-research" data-id="r-coverage" data-type="measurement">
-        <span class="r-research-title">Field coverage for &sect;1, from dispatch-cost-per-durable-node &sect;1b over 2,582 committed runs across four ledgers.</span>
-      </div>
-    </section>
-  </main>
+<h2><span class="sec">§</span> Research</h2>
+<div class="r-research" data-id="r-rollout-refutation" data-type="measurement" data-source="" data-added-by="" data-when="">
+    <span class="r-research-title">The rollout measured for §6: 4,985 timestamped records over 20.03 hours, eight attempts, three compaction markers, cumulative input reading 24,495,394 at maximum against 744,077 at the end.</span></div>
+<div class="r-research" data-id="r-lineage-census" data-type="measurement" data-source="" data-added-by="" data-when="">
+    <span class="r-research-title">The lineage census for §3: 797 committed rows, 37 lineage-bearing, kind populated on 37 of 37 and the top-level predecessor field on 2 of 797.</span></div>
+<div class="r-research" data-id="r-coverage" data-type="measurement" data-source="" data-added-by="" data-when="">
+    <span class="r-research-title">Field coverage for §1, from dispatch-cost-per-durable-node §1b over 2,582 committed runs across four ledgers.</span></div>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s7" data-id="c-20260909-denominator" data-who="reckon-ship" data-when="2026-09-09T10:12:00Z">
+    <div class="r-comment-body"><p>Executable denominator for this plan is <strong>six nodes</strong>, all declared in this section's table. Sections 1 to 6 and 8 carry rationale, measurement and exclusions rather than executable work, so they are not part of the denominator. Recorded here as a comment because the engine refuses a <code>section_declarations</code> set path that the ship skill mandates &mdash; the skill names a write the code does not implement, which is the fourth existence-without-availability gap found while planning this work and belongs in the skill's own repair rather than in this plan.</p><p>Wave one dispatches nodes 1 to 3, which touch disjoint files and hold no live path claim. Node 4 is held deliberately: it writes <code>ledger.py</code>, and a concurrent coordinator session holds roughly 105 uncommitted lines there against a contamination fix that is deliberately off main. Write exclusivity is enforced against dispatched runs and not against coordinators, so the scope validator would clear that node and the collision would land anyway.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
