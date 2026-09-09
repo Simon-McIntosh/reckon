@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T12:19:31",
+  "updated": "2026-09-09T12:31:37",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -87257,6 +87257,176 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T101659243387-cotd-a-run-joins-a-wave-by-default",
+        "plan": "crew-observability-truth",
+        "section": "\u00a713",
+        "node": "cotd-a-run-joins-a-wave-by-default",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 821,
+                "cached_input_tokens": 582410,
+                "input_tokens": 583233,
+                "output_tokens": 1163,
+                "reasoning_output_tokens": 566,
+                "total_tokens": 584396,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "29187761-681d-4f4d-85ae-fc3d7adc250b",
+            "session_id": "ship-cot-drain-20260909"
+          },
+          "done_when": "The verb is the gate and it is deliberate: assert the pointer CARRIES a wave, never that dispatch CAN accept one \u2014 the existing opt-in flag already satisfies can, which is why the field is empty on all 3 live pointers that hold the key and absent from 797 of 797 committed rows. Focused coverage exits 0 with at least 5 added cases: a dispatch with NO wave flag writes a non-empty wave on its pointer; two dispatches in one session join the same open wave and share its id; a third after that wave closes joins a new one; an explicit --wave still wins over the default; and crew shadow defaults identically, since shadow is the surface that had no signal at all. The migration is asserted, not left to be discovered: an empty-string wave and an absent wave key both mean not-in-a-wave and neither may be grouped, so only a non-empty id forms a wave \u2014 a rollup gathering the empties would render one wave of eight unrelated nodes, indistinguishable from a real one. Judge by DELTA, never absolute green: run tests/test_crew.py and tests/test_crew_shadow_paths.py with --deselect tests/test_crew.py::test_first_dispatch_proceeds_with_a_freshly_armed_project_watch, record that deselection and its cause, and require zero ADDED failures against base. Note tests/test_crew.py::test_redispatch_does_not_inherit_a_terminal_delivery is measured flaky, failing 2 of 3 runs at base, so treat a single appearance as pre-existing rather than caused",
+          "estimated_hours": null,
+          "goal": "every dispatched run carrying a non-empty wave id without anyone passing a flag",
+          "id": "cotd-a-run-joins-a-wave-by-default",
+          "lane_declaration": {
+            "backend": "codex-terra",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-09T10:16:59Z",
+            "read_at": "2026-09-09T10:17:00Z",
+            "resolved_backend": "codex-terra",
+            "utilisation_pct": 71.0
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T101659243387-cotd-a-run-joins-a-wave-by-default/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "codex-terra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a713",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/cli.py",
+            "reckon/crew/dispatch.py",
+            "tests/test_crew.py",
+            "tests/test_crew_shadow_paths.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "implement-terra-c",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-09T10:17:09Z",
+        "completed_at": "2026-09-09T10:29:36Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 747,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 747,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "e1672bd39af167b80f29f4ce6e0faca56e5770e9",
+        "commits": [
+          "9bc1e76b06d179eade62e8111e9a62259b711c00"
+        ],
+        "changed_lines": {
+          "added": 186,
+          "removed": 3,
+          "files": 4
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew.py tests/test_crew_shadow_paths.py --deselect the known deadlock",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T101659243387-cotd-a-run-joins-a-wave-by-default/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T101659243387-cotd-a-run-joins-a-wave-by-default/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a085ab-e2ae-7663-a2fa-1cc0799db5ea",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 8765440,
+            "cached_input_tokens_cumulative": 8765440,
+            "input_tokens": 8986292,
+            "input_tokens_cumulative": 8986292,
+            "output_tokens": 23802,
+            "output_tokens_cumulative": 23802,
+            "reasoning_output_tokens": 7463,
+            "reasoning_output_tokens_cumulative": 7463
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-09T10:29:36Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 72.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-09T10:29:36Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 8765440,
+          "cumulative_input_tokens": 17751732,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 31265
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "run tests",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cot-drain-20260909/cotd-a-run-joins-a-wave-by-default",
+          "session_id": "01a085ab-e2ae-7663-a2fa-1cc0799db5ea",
+          "session_source": "stream",
+          "retained_at": "2026-09-09T10:29:36Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -87485,6 +87655,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1300
+    "_version": 1301
   }
 }

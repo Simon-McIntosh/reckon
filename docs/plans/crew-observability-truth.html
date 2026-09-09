@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-09">
-<meta name="plan-version" content="254">
+<meta name="plan-version" content="255">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md">
 <meta name="plan-impl" content="0.97">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b">
@@ -1543,6 +1543,9 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20260909T084255234922-cotd-every-run-joins-a-wave" data-who="implement-terra-c" data-when="2026-09-09T09:15:02Z">
     <div class="r-comment-body"><p>both dispatch surfaces accept a wave id; ordinary and shadow pointers persist the same wave; a shadow retains the supplied dispatching session while a distinct internal worktree identity preserves isolation; resume keeps its run id and redispatch mints a new run carrying its predecessor; attribution writes no contamination or exclusion field. Delta measured with the independently-confirmed deadlocking watcher test deselected and its cause recorded: 8 identical failure ids at base and head, zero added, 5 new passing cases</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20260909T101659243387-cotd-a-run-joins-a-wave-by-default" data-who="implement-terra-c" data-when="2026-09-09T10:29:36Z">
+    <div class="r-comment-body"><p>normal and shadow dispatches default to the latest non-empty live wave in their session, otherwise mint a new opaque id; explicit --wave wins; missing and empty legacy values are skipped so the three-population migration window is closed by the same commit that opens the default. 6 added cases, identical 8 failure ids at base and head with the known deadlock deselected and its cause recorded. Coordinator note: the dry-run payload carries no wave key, so a dry run cannot confirm the default and its silence is not evidence of failure</p></div>
 </div>
 <div class="r-comment" data-section="s14" data-id="c-run-r-20260909T080628871143-cotd-declared-executable-set" data-who="session-9e2222f55dd848415c74" data-when="2026-09-09T08:29:52Z">
     <div class="r-comment-body"><p>section_declarations persisted and round-tripped; plan_executable_remainder returns the unknown sentinel for an absent or malformed declaration and known zero only for an explicit empty one; deferred and done never enter the denominator; 12 tests, four-file delta zero added at both revisions; schema and model in one commit</p></div>
