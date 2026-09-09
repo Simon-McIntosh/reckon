@@ -15,10 +15,9 @@
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
-  <meta name="plan-sprint"    content="S16">
+  <meta name="plan-sprint"    content="S15">
   <meta name="plan-owner"     content="Simon McIntosh">
   <meta name="plan-tags"      content="crew,reckon-tooling">
-  <meta name="plan-depends-on" content="dispatch-cost-per-durable-node">
   <meta name="plan-blocks"    content="burn-is-visible-before-it-bites">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <title>What Each Worker Cost, On Its Own Row | reckon</title>
@@ -68,7 +67,13 @@
     <p>
       Coverage figures are <a href="/reckon/dispatch-cost-per-durable-node">dispatch-cost-per-durable-node</a>
       &sect;1b's own measurement over 2,582 committed runs, and they are the reason this plan
-      leads with population rather than with layout. A cell reading a field populated on 3.4%
+      leads with population rather than with layout. That is a borrowed
+      <em>measurement</em> and not a prerequisite: it is already readable, and no node here
+      waits on that plan closing &mdash; the edge was authored as a hard dependency and
+      removed once each node was checked against it individually. The one real coupling is
+      that &sect;7's fourth node writes <code>ledger.py</code>, which a concurrent session
+      holds; that is a dispatch-time scope claim, enforced by the validator, rather than a
+      relationship between plans. A cell reading a field populated on 3.4%
       of runs is blank on nineteen rows in twenty, and a reader takes a blank cell as a quiet
       worker rather than as an unrecorded one. Shipping the columns without the measurements
       would make the pane worse than silent: it would make it wrong.
