@@ -29,10 +29,10 @@ def test_declared_implementable_sections_establish_the_denominator() -> None:
         "comments": {"s1": [{"id": "landing"}]},
     }
 
-    assert plan_executable_remainder(state) == 2
+    assert plan_executable_remainder(state) == 3
 
 
-def test_each_section_with_landing_evidence_decrements_once() -> None:
+def test_landing_evidence_does_not_decrement_the_remainder() -> None:
     state = {
         "section_declarations": {"s1": "implementable", "s2": "implementable"},
         "comments": {
@@ -41,7 +41,61 @@ def test_each_section_with_landing_evidence_decrements_once() -> None:
         },
     }
 
-    assert plan_executable_remainder(state) == 0
+    assert plan_executable_remainder(state) == 2
+
+
+def test_five_declared_sections_with_three_landings_all_remain() -> None:
+    state = {
+        "section_declarations": {
+            "s1": "implementable",
+            "s2": "implementable",
+            "s3": "implementable",
+            "s4": "implementable",
+            "s5": "implementable",
+        },
+        "comments": {
+            "s1": [{"id": "landing-one"}],
+            "s3": [{"id": "landing-two"}],
+            "s5": [{"id": "landing-three"}],
+        },
+    }
+
+    assert plan_executable_remainder(state) == 5
+
+
+def test_done_reclassification_lowers_the_remainder_by_exactly_one() -> None:
+    state = {
+        "section_declarations": {
+            "s1": "implementable",
+            "s2": "implementable",
+            "s3": "implementable",
+            "s4": "implementable",
+            "s5": "implementable",
+        }
+    }
+    before = plan_executable_remainder(state)
+    state["section_declarations"]["s3"] = "done"
+
+    assert before == 5
+    assert plan_executable_remainder(state) == before - 1
+
+
+def test_later_landing_evidence_does_not_reopen_a_done_section() -> None:
+    state = {
+        "section_declarations": {"s1": "done", "s2": "implementable"},
+        "comments": {"s1": [{"id": "later-landing"}]},
+    }
+
+    assert plan_executable_remainder(state) == 1
+
+
+def test_malformed_declaration_stays_unknown_even_with_landing_evidence() -> None:
+    state = {
+        "section_declarations": {"s1": "queued"},
+        "comments": {"s1": [{"id": "landing"}]},
+    }
+
+    assert plan_executable_remainder(state) is EXECUTABLE_REMAINDER_UNKNOWN
 
 
 def test_empty_comment_collection_is_not_landing_evidence() -> None:

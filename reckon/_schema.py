@@ -343,12 +343,14 @@ EXECUTABLE_REMAINDER_UNKNOWN = None
 
 
 def plan_executable_remainder(plan: Mapping[str, Any]) -> int | None:
-    """Return declared implementable sections without landing evidence.
+    """Return declared sections that remain implementable.
 
     ``None`` is the deliberate unknown sentinel for plans that have not
     persisted a classification. An empty declaration is therefore known zero,
     while a missing or malformed declaration can never be mistaken for no work.
-    Promotion records landing evidence as a non-empty section comment.
+    Landing evidence records a node outcome; it does not close the section.
+    Only an explicit ``done`` reclassification removes declared work from the
+    remainder.
     """
 
     declarations = plan.get("section_declarations")
@@ -367,17 +369,7 @@ def plan_executable_remainder(plan: Mapping[str, Any]) -> int | None:
         if classification == "implementable":
             implementable.add(section)
 
-    comments = plan.get("comments") or {}
-    if not isinstance(comments, Mapping):
-        comments = {}
-    landed = {
-        str(section).strip()
-        for section, entries in comments.items()
-        if str(section).strip() != "_top"
-        and _RESOURCE_SEGMENT_RE.fullmatch(str(section).strip())
-        and bool(entries)
-    }
-    return len(implementable - landed)
+    return len(implementable)
 
 
 def split_refs(

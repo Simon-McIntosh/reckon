@@ -227,7 +227,8 @@ def test_write_path_makes_executable_remainder_reachable(setup):
 
     assert result["ok"] is True
     reread = mcp_module._read_plan(project, "plan-a")
-    assert plan_executable_remainder(reread["data"]) == 1
+    # The remainder is implementable declarations minus those reclassified done.
+    assert plan_executable_remainder(reread["data"]) == 2
 
 
 def test_edit_plan_selects_duplicate_leaf_by_doc_type(setup):
