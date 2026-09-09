@@ -348,6 +348,7 @@ def test_drain_reports_an_undeclared_plan_as_unknown(
 
     assert report["executable_remainder"] is None
     assert report["executable_remainder"] != 0
+    assert report["uncovered_plans"] == 1
     assert report["drained"] is False
 
 
@@ -366,6 +367,7 @@ def test_drain_reports_zero_for_a_fully_done_declaration(
 
     assert report["unreconciled_runs"] == 0
     assert report["executable_remainder"] == 0
+    assert report["uncovered_plans"] == 0
     assert report["drained"] is True
 
 
@@ -408,4 +410,118 @@ def test_drain_sums_declared_remainders_across_project_plans(
     report = crew.drain(PROJECT)
 
     assert report["executable_remainder"] == 3
+    assert report["uncovered_plans"] == 0
+    assert report["drained"] is False
+
+
+def test_drain_reports_a_declared_lower_bound_with_uncovered_plans(
+    isolated_reckon_home: Path,
+    repository: Path,
+) -> None:
+    _write_plan(
+        isolated_reckon_home,
+        repository,
+        slug="declared",
+        declarations={"s1": "implementable", "s2": "done"},
+    )
+    _write_plan(isolated_reckon_home, repository, slug="undeclared")
+    _write_plan(
+        isolated_reckon_home,
+        repository,
+        slug="invalid",
+        declarations={"s1": "queued"},
+    )
+
+    report = crew.drain(PROJECT)
+
+    assert report["executable_remainder"] == 1
+    assert report["uncovered_plans"] == 2
+    assert report["drained"] is False
+
+
+def test_drain_does_not_convert_only_undeclared_scope_to_zero(
+    isolated_reckon_home: Path,
+    repository: Path,
+) -> None:
+    _write_plan(isolated_reckon_home, repository, slug="undeclared")
+
+    report = crew.drain(PROJECT)
+
+    assert report["executable_remainder"] is None
+    assert report["executable_remainder"] != 0
+    assert report["uncovered_plans"] == 1
+    assert report["drained"] is False
+
+
+def test_drain_requires_complete_declaration_coverage(
+    isolated_reckon_home: Path,
+    repository: Path,
+) -> None:
+    _write_plan(
+        isolated_reckon_home,
+        repository,
+        slug="complete",
+        declarations={"s1": "done"},
+    )
+    _write_plan(isolated_reckon_home, repository, slug="undeclared")
+
+    report = crew.drain(PROJECT)
+
+    assert report["executable_remainder"] == 0
+    assert report["uncovered_plans"] == 1
+    assert report["drained"] is False
+
+
+def test_drain_cli_and_mcp_share_lower_bound_and_coverage(
+    isolated_reckon_home: Path,
+    repository: Path,
+) -> None:
+    _write_plan(
+        isolated_reckon_home,
+        repository,
+        slug="declared",
+        declarations={"s1": "implementable"},
+    )
+    _write_plan(isolated_reckon_home, repository, slug="undeclared")
+
+    command = CliRunner().invoke(cli.main, ["crew", "drain", "--project", PROJECT])
+    command_payload = json.loads(command.output)
+    tool_payload = mcp._crew(PROJECT, view="drain")
+
+    assert command.exit_code == 0, command.output
+    for payload in (command_payload, tool_payload):
+        assert payload["executable_remainder"] == 1
+        assert payload["uncovered_plans"] == 1
+        assert payload["drained"] is False
+    assert (
+        command_payload["executable_remainder"] == tool_payload["executable_remainder"]
+    )
+    assert command_payload["uncovered_plans"] == tool_payload["uncovered_plans"]
+
+
+def test_drain_reports_an_unreadable_inventory_as_unknown(
+    isolated_reckon_home: Path,
+    repository: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _write_plan(
+        isolated_reckon_home,
+        repository,
+        slug="declared",
+        declarations={"s1": "implementable"},
+    )
+    target = repository / "docs" / "plans" / "declared.html"
+    original_read_text = Path.read_text
+
+    def unreadable(path: Path, *args: object, **kwargs: object) -> str:
+        if path == target:
+            raise OSError("inventory unavailable")
+        return original_read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", unreadable)
+
+    report = crew.drain(PROJECT)
+
+    assert report["executable_remainder"] is None
+    assert report["uncovered_plans"] is None
     assert report["drained"] is False
