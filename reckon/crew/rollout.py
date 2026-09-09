@@ -11,6 +11,14 @@ run that consumed four tenths of a point is indistinguishable from one that
 consumed nothing.  Per-run attribution from this field is not sound; aggregates
 over many runs are.  This module returns the raw quota reading and deliberately
 does not compute a per-run delta.
+
+The notional spend a receipt can carry is a different measurement: it is
+derived from the declared per-million rates and the run's measured tokens,
+never from quota movement and never from the harness's own cost figure.  The
+surcharge rule belongs to :mod:`reckon.crew.quota_weight`, which this module
+calls rather than restating.  The figure is deliberately read beside the rate
+pair that produced it, and a lane without a dated rate is explicitly unpriced
+rather than priced at a number that can go stale.
 """
 
 from __future__ import annotations
@@ -19,9 +27,11 @@ import json
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from enum import StrEnum, auto
 from pathlib import Path
+
+from reckon.crew.quota_weight import RequestTokenUsage, UnknownQuotaWeight, quota_weight
 
 CLIENT_SESSIONS_DIR = Path.home() / ".codex" / "sessions"
 
@@ -43,18 +53,44 @@ class Unmeasured(StrEnum):
     NO_RATE_LIMITS = auto()
     NO_RATE_LIMIT_VALUE = auto()
     NO_BOUNDED_TOOL_SPANS = auto()
+    NO_MODEL_IDENTIFIER = auto()
+    NO_DATED_RATE = auto()
 
 
 WEEKLY_WINDOW_MINUTES = 7 * 24 * 60
 
 
 @dataclass(frozen=True, slots=True)
+class RateBasis:
+    """The dated rate pair a notional spend figure was derived from.
+
+    A reader who wants to recompute the figure, or to judge how current it is,
+    holds the same pair the figure was priced at: the per-million input and
+    output rates and the date they were published.  Only a priced lane carries
+    a basis; a lane without a dated rate carries the unmeasured marker instead,
+    so the basis never pretends a figure was computed when none was.
+    """
+
+    model_identifier: str
+    input_per_million: float
+    output_per_million: float
+    as_of: date
+
+
+@dataclass(frozen=True, slots=True)
 class QuotaReading:
-    """One quota window, retained with the dimensions that identify it."""
+    """One quota window, retained with the dimensions that identify it.
+
+    The quantisation limit is carried on the reading itself, not only in this
+    module's docstring: ``used_percent`` reports whole percentage points, so a
+    run consuming four tenths of a point is indistinguishable from one
+    consuming nothing, and a surface reading the figure must be able to say so.
+    """
 
     window_minutes: int
     used_percent: int | float | Unmeasured
     resets_at: int | float | Unmeasured
+    used_percent_quantisation: float = 1.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,6 +107,13 @@ class RolloutReceipt:
     plan_type: str | Unmeasured
     generation_seconds: float | Unmeasured
     machine_seconds: float | Unmeasured
+    # Notional spend derived from declared per-million rates and the run's
+    # measured tokens. The name is deliberately distinct from the ledger's
+    # cost_usd_imputed flag, which marks a figure nulled because its lane is
+    # unmetered: a computed figure must never be tagged with the flag whose
+    # consumers read it as a reason to discard the cost.
+    notional_cost_usd: float | Unmeasured = Unmeasured.NO_MODEL_IDENTIFIER
+    rate_basis: RateBasis | Unmeasured = Unmeasured.NO_MODEL_IDENTIFIER
 
     def quota_for_window(self, window_minutes: int) -> QuotaReading | Unmeasured:
         """Return the reading for one window length without positional lookup."""
@@ -254,7 +297,49 @@ def _bounded_tool_span(
     return wall, machine, generation
 
 
-def read_rollout_receipt(session_id: str) -> RolloutReceipt:
+def _notional_price(
+    request_usage: Sequence[RequestTokenUsage],
+    model_identifier: str | None,
+) -> tuple[float | Unmeasured, RateBasis | Unmeasured]:
+    """Derive a notional spend figure and its rate basis for one rollout.
+
+    The figure is surcharge-aware by delegating to :func:`quota_weight`, the
+    same application lane evidence uses, rather than restating its rule: a
+    request with input above the long-context threshold is charged at the
+    published whole-request multipliers, and the declared per-million rates
+    price the surcharged quantities.  An absent model identity is ``None``
+    only when the caller did not supply one; a lane whose rate pair carries no
+    ``as_of`` date is explicitly unpriced.  Neither absence is ever a zero.
+    """
+    if model_identifier is None:
+        marker = Unmeasured.NO_MODEL_IDENTIFIER
+        return marker, marker
+    if not request_usage:
+        marker = Unmeasured.NO_REQUEST_TOKEN_USAGE
+        return marker, marker
+    priced = quota_weight(model_identifier, request_usage)
+    if isinstance(priced, UnknownQuotaWeight):
+        marker = Unmeasured.NO_DATED_RATE
+        return marker, marker
+    rate = priced.rate
+    usd = (
+        priced.surcharged_input_tokens * rate.input_per_million
+        + priced.surcharged_output_tokens * rate.output_per_million
+    ) / 1_000_000
+    return (
+        round(usd, 4),
+        RateBasis(
+            model_identifier=model_identifier,
+            input_per_million=rate.input_per_million,
+            output_per_million=rate.output_per_million,
+            as_of=rate.as_of,
+        ),
+    )
+
+
+def read_rollout_receipt(
+    session_id: str, *, model_identifier: str | None = None
+) -> RolloutReceipt:
     """Return the measured client receipt values for one crew session.
 
     The cumulative fields are rebuilt per segment across every reset of the
@@ -267,6 +352,13 @@ def read_rollout_receipt(session_id: str) -> RolloutReceipt:
     every measured ``last_token_usage`` object.  Missing, unreadable,
     tokenless, span-less, and quota-less rollouts retain distinct unmeasured
     reasons; a measured zero is never used as a missing-value substitute.
+
+    ``model_identifier`` names the lane the run was served on.  When it names
+    a model whose declared rate pair carries an ``as_of`` date, the receipt
+    also carries the run's notional spend derived from those per-million rates
+    and the run's measured tokens; a lane without a dated rate is explicitly
+    unpriced, and a caller that supplies no model gets the explicit no-model
+    marker rather than a fabricated figure.
     """
     path = _locate_rollout(str(session_id))
     if path is None:
@@ -277,6 +369,7 @@ def read_rollout_receipt(session_id: str) -> RolloutReceipt:
     total_cached: list[int] = []
     total_outputs: list[int] = []
     request_inputs: list[int] = []
+    request_usage: list[RequestTokenUsage] = []
     latest_context_window: int | None = None
     latest_rate_limits: Mapping[str, object] | None = None
     earliest: datetime | None = None
@@ -327,6 +420,13 @@ def read_rollout_receipt(session_id: str) -> RolloutReceipt:
                             request_input = _integer(request.get("input_tokens"))
                             if request_input is not None:
                                 request_inputs.append(request_input)
+                                request_output = _integer(
+                                    request.get("output_tokens")
+                                )
+                                if request_output is not None:
+                                    request_usage.append(
+                                        RequestTokenUsage(request_input, request_output)
+                                    )
                         context_window = _integer(info.get("model_context_window"))
                         if context_window is not None:
                             latest_context_window = context_window
@@ -404,6 +504,8 @@ def read_rollout_receipt(session_id: str) -> RolloutReceipt:
         else Unmeasured.NO_TOTAL_TOKEN_USAGE
     )
 
+    notional_cost_usd, rate_basis = _notional_price(request_usage, model_identifier)
+
     return RolloutReceipt(
         cumulative_input_tokens=cumulative_input,
         cumulative_cached_input_tokens=cumulative_cached,
@@ -415,6 +517,8 @@ def read_rollout_receipt(session_id: str) -> RolloutReceipt:
         plan_type=_quota_text(latest_rate_limits, "plan_type"),
         generation_seconds=generation_seconds,
         machine_seconds=machine_seconds,
+        notional_cost_usd=notional_cost_usd,
+        rate_basis=rate_basis,
     )
 
 
@@ -422,6 +526,7 @@ __all__ = [
     "REQUEST_INPUT_CROSSING_THRESHOLD",
     "WEEKLY_WINDOW_MINUTES",
     "QuotaReading",
+    "RateBasis",
     "RolloutReceipt",
     "Unmeasured",
     "read_rollout_receipt",

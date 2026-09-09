@@ -206,10 +206,23 @@ def _coordinator_input_tokens(run: Mapping[str, Any]) -> float | None:
 
 
 def _cost_usd(run: Mapping[str, Any]) -> float | None:
-    """Read a run's recorded dollar cost, excluding one already flagged imputed."""
+    """Read a run's recorded dollar cost, preferring a computed notional figure.
+
+    The notional figure is derived from declared per-million rates and the
+    run's measured tokens, so it prices whatever model the lane actually
+    served and is absent where no dated rate exists — unlike the harness's own
+    ``cost_usd``, which prices whatever model name the harness was told to
+    speak and can make a free lane read as the dearest one.  A figure already
+    flagged imputed (``cost_usd_imputed``, a null inserted because the lane is
+    unmetered) is excluded exactly as before, whatever else the block carries:
+    the flag's meaning does not change under the new field.
+    """
     budget = run.get("budget")
     if not isinstance(budget, Mapping) or budget.get("cost_usd_imputed"):
         return None
+    notional = _measured_number(budget.get("notional_cost_usd"))
+    if notional is not None:
+        return notional
     return _measured_number(budget.get("cost_usd"))
 
 

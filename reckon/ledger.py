@@ -816,6 +816,14 @@ def _label_unmetered_cost(budget: Mapping[str, Any], backend: str) -> dict[str, 
     Recording it verbatim would make a free lane look like the dearest one
     on any surface that ranks by cost, silently. Nulling it and flagging the
     null keeps the absence visible instead.
+
+    The computed ``notional_cost_usd`` — derived from declared per-million
+    rates, never read from the harness — is deliberately outside this flag's
+    reach.  An unmetered lane has no dated rate, so no notional figure can
+    exist for it, and a figure already present is preserved rather than
+    nulled.  ``capabilities._cost_usd`` treats ``cost_usd_imputed`` as
+    authoritative over either field, so the flag keeps exactly the meaning it
+    has today: a nulled figure, not a computed one.
     """
     result = dict(budget)
     if not is_unmetered_backend(backend):
