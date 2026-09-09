@@ -11,6 +11,7 @@ from __future__ import annotations
 import importlib
 import json
 import os
+import shlex
 import subprocess
 import sys
 import threading
@@ -24,7 +25,7 @@ from click.testing import CliRunner
 from reckon import cli as cli_module
 from reckon import crew, flight, ledger
 from reckon.calibration import agent_configuration_key
-from reckon.crew import recovery, runs
+from reckon.crew import recovery, review, runs
 from reckon.crew.dispatch import shadow as dispatch_shadow
 
 CONFIG = {
@@ -1226,7 +1227,9 @@ def test_dispatch_refuses_a_write_outside_the_mounted_authority_set(
     _assert_no_dispatch_artifacts(repo)
 
 
-@pytest.mark.parametrize("delivery_root", [crew.runs_dir, crew.reports_dir])
+@pytest.mark.parametrize(
+    "delivery_root", [crew.runs_dir, crew.reports_dir, review.review_store_root]
+)
 def test_non_repository_delivery_directories_are_valid_exclusive_scopes(
     home, repo, delivery_root
 ) -> None:
@@ -1259,8 +1262,8 @@ def test_write_path_outside_repository_and_delivery_directories_is_refused(
 
     detail = str(excinfo.value)
     assert str(outside) in detail
-    assert str(crew.runs_dir()) in detail
-    assert str(crew.reports_dir()) in detail
+    for root in runs.delivery_roots():
+        assert str(root) in detail
 
 
 @pytest.mark.parametrize(
@@ -3099,7 +3102,9 @@ def test_failed_manifest_is_not_promotable(home, repo) -> None:
     assert "complete --run" not in row["next_action"]
 
 
-def test_only_a_complete_manifest_returns_promotion_advice(home, repo) -> None:
+def test_a_complete_manifest_emits_an_authorised_review_dispatch(
+    home, repo, monkeypatch
+) -> None:
     manifest = home / "complete-manifest.md"
     record = _dispatched(
         home,
@@ -3118,6 +3123,21 @@ def test_only_a_complete_manifest_returns_promotion_advice(home, repo) -> None:
         "reckon crew dispatch --project proj --plan plan-a --section '§3' "
         "--role review --spec-level exact"
     )
+
+    configured = {**CONFIG, "local_backend": "alpha"}
+    monkeypatch.setattr(
+        cli_module,
+        "_dispatch_resolved_flight",
+        lambda *_args, **_kwargs: configured,
+    )
+    command = shlex.split(row["next_action"])
+    result = CliRunner().invoke(
+        cli_module.main,
+        [*command[1:], "--repo", str(repo), "--dry-run"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output)["ok"] is True
 
 
 def test_crew_read_and_recovery_command_share_classification(home, repo) -> None:
