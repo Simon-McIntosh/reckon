@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T10:31:11",
+  "updated": "2026-09-09T10:33:46",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -85226,6 +85226,180 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T080628871143-cotd-declared-executable-set",
+        "plan": "crew-observability-truth",
+        "section": "\u00a714",
+        "node": "cotd-declared-executable-set",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1125,
+                "cached_input_tokens": 322154,
+                "input_tokens": 323281,
+                "output_tokens": 192,
+                "reasoning_output_tokens": 40,
+                "total_tokens": 323473,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "29187761-681d-4f4d-85ae-fc3d7adc250b",
+            "session_id": "ship-cot-drain-20260909"
+          },
+          "done_when": "pytest tests/test_executable_remainder.py -q exits 0 with at least 8 tests covering: a plan declaring N implementable sections reports remainder N minus those carrying landed evidence; a plan with NO section_declarations reports the remainder as the unknown sentinel and never 0; a declared entry classified deferred or done is excluded from the denominator; and a write_state then read_state round trip preserves the field byte-identically. The reader a coordinator reaches is named and covered, not only the schema: reckon-ship SKILL.md instructs the DAG-build step to persist its classification, and pytest tests/test_skill_contracts.py -q exits 0 asserting that instruction is present. plan_section_anchors keeps its current behaviour, so the base-versus-head delta on tests/test_roadmap.py, tests/test_ready_set_composition.py, tests/test_spa_composition.py and tests/test_spa_owed_captures.py adds zero failures; if that delta is non-zero, block and report rather than editing outside the write scope. Cite the reuse map at /home/ITER/mcintos/.config/reckon/crew/reports/cot-wave-signal-reuse-map.md and state why any new machinery is not one of its named candidates",
+          "estimated_hours": null,
+          "goal": "the executable remainder derived from a typed section_declarations field that round-trips through plan HTML",
+          "id": "cotd-declared-executable-set",
+          "lane_declaration": {
+            "backend": "codex-terra",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-09T08:06:29Z",
+            "read_at": "2026-09-09T08:06:30Z",
+            "resolved_backend": "codex-terra",
+            "utilisation_pct": 62.0
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T080628871143-cotd-declared-executable-set/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "codex-terra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a714",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/_schema.py",
+            "reckon/_plan_html.py",
+            "skills/reckon-ship/SKILL.md",
+            "tests/test_schema.py",
+            "tests/test_skill_contracts.py",
+            "tests/test_executable_remainder.py",
+            "docs/_shared/plan.schema.json"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "session-9e2222f55dd848415c74",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-09T08:06:39Z",
+        "completed_at": "2026-09-09T08:29:52Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1393,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1393,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "24085ce7589ed07d1b299f198480dcebc42d979e",
+        "commits": [
+          "05da7486715b12d0431a1fc1efd894c571e42fad",
+          "ab90fcbb112e209c865c677eaded94e515c0971a"
+        ],
+        "changed_lines": {
+          "added": 299,
+          "removed": 3,
+          "files": 7
+        },
+        "tests_added": 12,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_executable_remainder.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T080628871143-cotd-declared-executable-set/executable-remainder.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T080628871143-cotd-declared-executable-set/manifest.md",
+        "scope_changed": true,
+        "session_id": "01a08534-699b-7d71-babb-b1995b1e8288",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 11619712,
+            "cached_input_tokens_cumulative": 11619712,
+            "input_tokens": 11818983,
+            "input_tokens_cumulative": 11818983,
+            "output_tokens": 22352,
+            "output_tokens_cumulative": 22352,
+            "reasoning_output_tokens": 5837,
+            "reasoning_output_tokens_cumulative": 5837
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-09T08:29:52Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 64.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-09T08:29:52Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 11619712,
+          "cumulative_input_tokens": 23438695,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 28189
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_executable_remainder.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cot-drain-20260909/cotd-declared-executable-set",
+          "session_id": "01a08534-699b-7d71-babb-b1995b1e8288",
+          "session_source": "pointer",
+          "retained_at": "2026-09-09T08:29:52Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -85454,6 +85628,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1280
+    "_version": 1281
   }
 }
