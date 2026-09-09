@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="spa-surface-contract-health">
   <meta name="plan-title" content="Eleven Surface Failures That Are Not The Browser">
   <meta name="plan-summary" content="Of 26 failing surface tests, 15 are the known host navigation fault; separate and repair the 10 stale contracts and the 1 real defect hiding behind them">
-  <meta name="plan-status" content="draft">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="5.0">
   <meta name="plan-wall-clock-hours" content="5.0">
@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-09">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -173,7 +173,7 @@
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-ssch-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-09-09" data-recommends-skill="/reckon-ship spa-surface-contract-health §2" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Separate the two leaning cases before the sweep, not during it</h4>
-    <div class="r-fu-body"><p>&#167;2 is one mechanical sweep across six files and &#167;3 is one defect, so they are independent and can run together. The ordering that matters is inside &#167;2: <strong>settle the two leaning-stale cases first, in a read-only step.</strong> A pager reading two of three where the test asserts three of three, and a lane count of one where the test asserts two, are each consistent with the code having moved deliberately and with the code being wrong. Migrating them on the lean would convert a possible defect into a passing test, which is the one outcome worse than leaving the red.</p><p>The other eight are safe to sweep in one node: four compiled-source substrings, two stylesheet rule sets, and two rendered-text or exported-surface expectations, all deterministic and all with the new value already established by the census.</p><p><strong>Do not fold the fifteen rendered gates into this.</strong> They are the diagnosed host navigation fault and belong to <code>rendered-evidence-on-this-host</code>; the leaked-browser and inotify explanations are excluded by counts taken before and after the census, so nothing here reaches them.</p><p>The census carrying every per-case classification and its evidence is at <code>~/.config/reckon/crew/reports/spa-test-health-census-20260909.md</code>. Judge the sweep by failure delta against the revision this plan was authored at, not by an absolute count: the suite carries pre-existing reds this plan deliberately does not own.</p></div>
+    <div class="r-fu-body"><p>§2 is one mechanical sweep across six files and §3 is one defect, so they are independent and can run together. The ordering that matters is inside §2: <strong>settle the two leaning-stale cases first, in a read-only step.</strong> A pager reading two of three where the test asserts three of three, and a lane count of one where the test asserts two, are each consistent with the code having moved deliberately and with the code being wrong. Migrating them on the lean would convert a possible defect into a passing test, which is the one outcome worse than leaving the red.</p><p>The other eight are safe to sweep in one node: four compiled-source substrings, two stylesheet rule sets, and two rendered-text or exported-surface expectations, all deterministic and all with the new value already established by the census.</p><p><strong>Do not fold the fifteen rendered gates into this.</strong> They are the diagnosed host navigation fault and belong to <code>rendered-evidence-on-this-host</code>; the leaked-browser and inotify explanations are excluded by counts taken before and after the census, so nothing here reaches them.</p><p>The census carrying every per-case classification and its evidence is at <code>~/.config/reckon/crew/reports/spa-test-health-census-20260909.md</code>. Judge the sweep by failure delta against the revision this plan was authored at, not by an absolute count: the suite carries pre-existing reds this plan deliberately does not own.</p></div>
     <pre class="r-fu-prompt">/reckon-ship spa-surface-contract-health §2</pre>
     </article>
 </section>
