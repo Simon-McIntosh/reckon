@@ -6,16 +6,22 @@ import json
 from collections.abc import Mapping
 
 from reckon import _backends
+from reckon.crew.rollout import RolloutReceipt
 
 CODEX = {"launch": "cli", "command": "codex"}
 CLAUDE = {"launch": "cli", "command": "claude"}
 
 
-def _observe(backend: Mapping[str, str], events: list[dict[str, object]]):
+def _observe(
+    backend: Mapping[str, str],
+    events: list[dict[str, object]],
+    receipt: object | None = None,
+):
     return _backends.observe_stream(
         backend_name="probe",
         backend=backend,
         lines=[json.dumps(event) for event in events],
+        receipt=receipt,
     )
 
 
@@ -175,6 +181,80 @@ def test_claude_request_peak_is_the_largest_prompt_not_the_run_total() -> None:
     assert throughput["peak_input_tokens"] != sum(prompt_sizes)
     assert throughput["cumulative_input_tokens"] == sum(prompt_sizes)
     assert throughput["cumulative_cached_input_tokens"] == totals["cached_input_tokens"]
+
+
+def _measured_receipt(cumulative_input: int) -> RolloutReceipt:
+    return RolloutReceipt(
+        cumulative_input_tokens=cumulative_input,
+        cumulative_cached_input_tokens=cumulative_input // 2,
+        cumulative_output_tokens=40_000,
+        maximum_request_input_tokens=200_000,
+        requests_over_threshold=0,
+        model_context_window=258_400,
+        quota_readings={},
+        plan_type="metered",
+        generation_seconds=120.0,
+        machine_seconds=45.0,
+    )
+
+
+def test_codex_receipt_cumulative_authoritative_over_the_turn_stream() -> None:
+    """A compressing codex run is counted by its client rollout, not its turns.
+
+    The exec stream reports per-turn totals that reset with the session; the
+    client rollout carries the per-request record from which the reset-aware
+    cumulative is rebuilt.  When the rollout has been read, its cumulative is
+    the figure the run reports.
+    """
+    turns = [
+        {"input_tokens": 100, "cached_input_tokens": 20},
+        {"input_tokens": 200, "cached_input_tokens": 30},
+        {"input_tokens": 300, "cached_input_tokens": 40},
+    ]
+    events = [{"type": "turn.completed", "usage": usage} for usage in turns]
+    stream_sum = sum(
+        usage["input_tokens"] + usage["cached_input_tokens"] for usage in turns
+    )
+    rollout_sum = 1_000_000
+    assert rollout_sum != stream_sum
+
+    observation = _observe(
+        CODEX,
+        events,
+        receipt=_measured_receipt(rollout_sum),
+    )
+
+    assert observation.throughput["cumulative_input_tokens"] == rollout_sum
+    assert observation.throughput["cumulative_cached_input_tokens"] == rollout_sum // 2
+    assert observation.throughput["cumulative_input_tokens"] != stream_sum
+
+
+def test_codex_receipt_generation_span_is_reported_non_null() -> None:
+    """A codex run with a read rollout reports its measured model span.
+
+    The span is derived from the rollout's bounded tool time — the mechanism
+    the falsifier demands — and is non-null in the throughput block, unlike
+    the stream-alone notation that could not separate inference from tool wait.
+    """
+    observation = _observe(
+        CODEX,
+        [
+            {"type": "thread.started", "thread_id": "thread-receipt"},
+            {"type": "turn.completed", "usage": {"output_tokens": 7}},
+        ],
+        receipt=_measured_receipt(1_000_000),
+    )
+
+    throughput = observation.throughput
+    assert throughput["generation_seconds"] is not None
+    assert throughput["machine_seconds"] is not None
+    # the model share of the measured wall stays inside the documented bounds
+    share = (
+        100
+        * throughput["generation_seconds"]
+        / (throughput["generation_seconds"] + throughput["machine_seconds"])
+    )
+    assert 1 < share < 99
 
 
 def test_unknown_and_measured_throughput_blocks_have_the_same_keys() -> None:
