@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T10:50:44",
+  "updated": "2026-09-09T11:02:31",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -85929,6 +85929,176 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T085045476703-cotd-quote-tolerance-spans-the-declaration",
+        "plan": "crew-observability-truth",
+        "section": "\u00a71",
+        "node": "cotd-quote-tolerance-spans-the-declaration",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2485,
+                "cached_input_tokens": 476364,
+                "input_tokens": 478851,
+                "output_tokens": 2277,
+                "reasoning_output_tokens": 1167,
+                "total_tokens": 481128,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "29187761-681d-4f4d-85ae-fc3d7adc250b",
+            "session_id": "ship-cot-drain-20260909"
+          },
+          "done_when": "Judge by DELTA: record base failure ids for tests/test_wait_declaration_parses_both_forms.py, tests/test_a_met_wait_is_ready_not_abandoned.py, tests/test_a_resume_does_not_inherit_its_baseline.py and tests/test_worker_wait_contract.py and require zero ADDED. Focused coverage: pytest tests/test_external_wait.py -q exits 0 with at least 3 added cases. Reproduce this measured failure first: _wait_expected_seconds({'wait_expected': '\\\"30m\\\"'}) currently returns 900 with error 'readable positive wait_expected' where the bare '30m' returns 1800 with no error, and that single error invalidates the entire declaration so the row reads unreadable. Range the falsifier over the DOMAIN rather than the field: parameterise across every wait-declaration key a direct parser reads \u2014 the horizon under each of its accepted names and the started stamp \u2014 so the test FAILS if a future parsed field is added without quote tolerance. That generality is the point of this node: the timestamp was fixed alone earlier today and the identical rejection survived one field over. Negative: a genuinely unparseable value still reports its own field name, so the repair narrows the rejection without blunting the diagnosis",
+          "estimated_hours": null,
+          "goal": "every wait-declaration value a direct parser reads tolerating matched surrounding quotes",
+          "id": "cotd-quote-tolerance-spans-the-declaration",
+          "lane_declaration": {
+            "backend": "codex-terra",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-09T08:50:45Z",
+            "read_at": "2026-09-09T08:50:47Z",
+            "resolved_backend": "codex-terra",
+            "utilisation_pct": 66.0
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T085045476703-cotd-quote-tolerance-spans-the-declaration/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "codex-terra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_external_wait.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "implement-terra-d",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-09T08:50:54Z",
+        "completed_at": "2026-09-09T08:58:49Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 475,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 475,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "f0f7c36f00694cdfd3e0fefc36f2de9bb0be379c",
+        "commits": [
+          "1dae000e527e57fd9dfcd0e7109121f44d0e19c7"
+        ],
+        "changed_lines": {
+          "added": 55,
+          "removed": 11,
+          "files": 2
+        },
+        "tests_added": 8,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_external_wait.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T085045476703-cotd-quote-tolerance-spans-the-declaration/logs/focused-external-wait.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T085045476703-cotd-quote-tolerance-spans-the-declaration/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0855c-ee45-7193-a5b2-bcfc91764c11",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3398656,
+            "cached_input_tokens_cumulative": 3398656,
+            "input_tokens": 3524468,
+            "input_tokens_cumulative": 3524468,
+            "output_tokens": 17535,
+            "output_tokens_cumulative": 17535,
+            "reasoning_output_tokens": 6631,
+            "reasoning_output_tokens_cumulative": 6631
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-09T08:58:49Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 66.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-09T08:58:49Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 3398656,
+          "cumulative_input_tokens": 6923124,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 24166
+        },
+        "follow_on_paths": [
+          "tests/test_ledger.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_external_wait.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cot-drain-20260909/cotd-quote-tolerance-spans-the-declaration",
+          "session_id": "01a0855c-ee45-7193-a5b2-bcfc91764c11",
+          "session_source": "stream",
+          "retained_at": "2026-09-09T08:58:49Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -86157,6 +86327,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1286
+    "_version": 1287
   }
 }
