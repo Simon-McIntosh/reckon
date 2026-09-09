@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="history-persists-as-detail-washes-out">
+  <meta name="plan-title" content="History Persists As Detail Washes Out">
+  <meta name="plan-summary" content="Move the run ledger to a queryable store keeping long-term history while detail ages out, swapped in live beside the committed file">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="14.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S17">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-depends-on" content="dispatch-cost-per-durable-node,crew-run-ledger">
+  <title>History Persists As Detail Washes Out | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">&sect;1 &mdash; One file, parsed whole, by everything that asks anything</h2>
+
+    <p>The run ledger is a single JSON document. Measured at authoring:
+    <strong>4,311,619 bytes</strong> holding <strong>818 run records</strong>,
+    <strong>236 roster members</strong> and <strong>16 holds</strong>, with
+    <strong>542 non-merge commits</strong> touching it. Every question anyone asks
+    of run history &mdash; what a member last ran, which runs are unreconciled, what a
+    configuration's competence horizon is, whether a node's write scope collides
+    with a live claim &mdash; is answered by parsing all of it.</p>
+
+    <p>That is affordable today and it is the wrong shape for three reasons, each
+    of which is already costing something measurable:</p>
+
+    <ul>
+      <li><strong>Every read is a full read.</strong> Seven modules reach the
+      store: the ledger module itself, promotion, dispatch, routing, the CLI, the
+      MCP surface and the native-agent guard. A question about one run costs the
+      whole document. There is no index, so there is no cheaper answer available
+      even in principle.</li>
+      <li><strong>Nothing can age out.</strong> A JSON array has one lifetime for
+      every field in it. Detail worth keeping for a week &mdash; the per-run stream
+      pointers, the gate check payload, the suite observation &mdash; is kept for the
+      same duration as the summary rows that are worth keeping forever, because
+      the file has no mechanism to hold them for different durations. So the only
+      available retention policy is deleting whole rows, which is exactly the
+      policy that makes a historical figure permanently unrecoverable.</li>
+      <li><strong>Concurrent appends are a text merge.</strong> Eleven live runs
+      promoting into one array is a read-modify-write race resolved by git on
+      indentation. It has already produced a 41-row append rendering as 35,000
+      changed lines when the indentation did not match, and 44 rows landing in
+      four untracked foreign checkouts when a cross-repository dispatch wrote to
+      the worker's tree rather than the project's registered one.</li>
+    </ul>
+
+    <p>The derivation that reads it is the sharpest illustration. A capabilities
+    derive takes <strong>26.3 s</strong>, of which <strong>99.7%</strong> is
+    computation over <strong>502 stream files</strong> totalling
+    <strong>3.68 GB</strong> &mdash; 195 times the ledger's own size. Reading the ledger
+    alone costs <strong>0.09 s</strong>. The corpus is being re-read because the
+    figures derived from it are not stored, which the companion work is fixing;
+    once they are stored, the remaining cost is entirely the shape of the store
+    they are stored in.</p>
+
+    <h2 id="s2">&sect;2 &mdash; What the store is, and what washing out means</h2>
+
+    <p>An embedded SQLite database in the crew config home, one file, no server,
+    already available in the standard library. Three properties are the whole
+    reason for choosing it over the current file:</p>
+
+    <ul>
+      <li><strong>An append is an append.</strong> A promoting run inserts one
+      row under a transaction. It does not read, rewrite or serialise the other
+      817. The concurrent-promotion race disappears rather than being defended
+      against.</li>
+      <li><strong>A question can be asked without reading everything.</strong>
+      Indexed on run id, member, node, project, and completion time &mdash; the five
+      keys every current reader scans linearly for.</li>
+      <li><strong>Rows can hold their fields for different durations.</strong>
+      This is what makes rotation possible at all: the durable summary of a run
+      &mdash; its identity, member, configuration, gate verdict, commit, and the
+      derived figures &mdash; is a narrow row that is never deleted, while the wide
+      detail hanging off it is a separate table that ages out. History persists;
+      the detail washes out. Deleting a run's gate-check payload after ninety
+      days does not delete the fact that the run happened, what it cost, or what
+      it produced, which is the thing every long-horizon measurement actually
+      needs.</li>
+    </ul>
+
+    <p>The durable half is small: at the current corpus it is on the order of a
+    kilobyte per run, so ten thousand runs of permanent history is a file smaller
+    than today's 818-run document.</p>
+
+    <h2 id="s3">&sect;3 &mdash; The swap is hot, because reads and writes flip independently</h2>
+
+    <p>There is no quiet window in this, and asserting there was one was wrong.
+    The reason it is safe to do live is specific to how this codebase deploys:
+    <strong>the CLI is current on every invocation</strong>. A promotion happens
+    in a freshly started <code>reckon crew complete</code> process, so there is no
+    population of long-lived writers holding stale code, and therefore no window
+    in which some writers use the new store and some use the old. The cold
+    surfaces &mdash; the served docs process and the MCP &mdash; are readers, and a stale
+    reader reading the file that is still being written is correct rather than
+    dangerous.</p>
+
+    <p>So the swap runs as expand, dual-write, verify, cut over one reader at a
+    time, and only then contract. At every stage both stores hold the same rows,
+    which is what makes every stage individually reversible by changing which one
+    is read.</p>
+
+    <table>
+    <thead>
+      <tr><th>Stage</th><th>Writes reach</th><th>Reads come from</th><th>Reverting means</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Expand</strong></td>
+        <td>the file; the database as a shadow whose failure is recorded, never raised</td>
+        <td>the file</td>
+        <td>deleting a file nothing reads</td>
+      </tr>
+      <tr>
+        <td><strong>Dual-write</strong></td>
+        <td>both, with the existing 818 rows imported once</td>
+        <td>the file</td>
+        <td>deleting a file nothing reads</td>
+      </tr>
+      <tr>
+        <td><strong>Verify</strong></td>
+        <td>both</td>
+        <td>the file; the database is read only by the equality check</td>
+        <td>deleting a file nothing reads</td>
+      </tr>
+      <tr>
+        <td><strong>Cut over</strong></td>
+        <td>both</td>
+        <td>the database, one reader at a time, most expensive first</td>
+        <td>pointing that one reader back at the file</td>
+      </tr>
+      <tr>
+        <td><strong>Contract</strong></td>
+        <td>the database; the file becomes an export (&sect;4)</td>
+        <td>the database</td>
+        <td>rebuilding the file from the database, which the export path already does</td>
+      </tr>
+    </tbody>
+    </table>
+
+    <p><strong>Verify is a standing measurement, not a one-off.</strong> "Demonstrated
+    stable" has to be a number or it is a feeling. The check reads both stores and
+    asserts row-for-row identity &mdash; same run ids, same field values, same count &mdash;
+    and runs on every promotion, which is cheap because it is one indexed count and
+    one digest. What is wanted before any reader is cut over is a stated count of
+    promotions with zero divergences, and coverage of every shape that has
+    historically diverged: a shadow run, a refused run, a resumed run, and a
+    cross-repository dispatch, since that last one is the case that stranded 44
+    rows in checkouts nobody was reading.</p>
+
+    <p><strong>Cut over the most expensive reader first, not the safest.</strong>
+    The derivation is the one whose failure is loudest and most contained: a wrong
+    capability verdict shows up immediately as a refused or wrongly-admitted
+    dispatch, and is undone by pointing one reader back. Cutting over the cheap
+    readers first buys confidence about the case that was never in doubt.</p>
+
+    <h2 id="s4">&sect;4 &mdash; The committed file does not go away; it becomes the export</h2>
+
+    <p>The 542 commits are the point. That file is not only a store, it is the
+    transport by which run history reaches another checkout, another host, and
+    the reader who has no crew config home at all. A SQLite database cannot be
+    merged by git, so retiring the committed file is a separate decision from
+    adopting the database, and conflating them is what would have forced a quiet
+    window.</p>
+
+    <p>Keeping both is not a compromise, it is the shape the split already wants:
+    the database is the local, queryable, rotating store holding full detail; the
+    committed file is the durable narrow export &mdash; the same summary half that never
+    ages out &mdash; written whenever it changes. That export is small, it merges
+    line-by-line because it is one row per run in a stable order, and it is
+    reconstructible from the database at any time, which is what makes the
+    contract stage reversible.</p>
+
+    <h2 id="s5">&sect;5 &mdash; Rotation is the last switch, and it is gated</h2>
+
+    <p>Everything above is reversible because both stores hold everything.
+    Rotation is the one step that is not: a washed-out field is gone. So it is
+    enabled last, after the cutover has held, and it inherits the same invariant
+    the reaper is being given for run directories &mdash; nothing is removed before the
+    figures derived from it exist. The retention work and the record-at-promotion
+    work in the companion plan are prerequisites in the strict sense: without
+    them, rotation deletes detail whose derived value was never computed, and the
+    row becomes permanently unmeasurable. One row in the current corpus has
+    already crossed that line.</p>
+
+    <section data-reckon="gates" id="gates" class="r-gates">
+    <h2><span class="sec">&sect;</span> Evidence gates</h2>
+    <table>
+    <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>The shadow write cannot break a promotion</td>
+        <td>A promotion whose database write raises still commits its file row and
+        reports the failure, asserted by injecting the failure rather than by
+        inspecting the guard.</td>
+      </tr>
+      <tr>
+        <td>The two stores agree, over a stated number of promotions</td>
+        <td>The equality check reports zero divergences across a stated count of
+        real promotions, that count including at least one shadow run, one refused
+        run, one resumed run, and one cross-repository dispatch, each named.</td>
+      </tr>
+      <tr>
+        <td>Concurrent appends stop racing</td>
+        <td>N concurrent promotions produce N rows with no lost update, asserted at
+        a concurrency at or above the highest live-run count observed on this
+        machine, against the file store failing the same assertion.</td>
+      </tr>
+      <tr>
+        <td>A cut-over reader is identical, not merely faster</td>
+        <td>The derivation reading the database returns a horizon equal to the one
+        it returns reading the file, over the same corpus, before any timing figure
+        is quoted.</td>
+      </tr>
+      <tr>
+        <td>Reverting a reader is one change and is exercised</td>
+        <td>A cut-over reader is pointed back at the file and returns its former
+        answer, asserted rather than asserted-to-be-possible.</td>
+      </tr>
+      <tr>
+        <td>The export reconstructs</td>
+        <td>The committed file rebuilt from the database is byte-identical in
+        content to the one dual-writing produced, and merges cleanly against a
+        concurrent append.</td>
+      </tr>
+      <tr>
+        <td>Rotation removes nothing that is still needed</td>
+        <td>A run whose derived figures are absent is not rotated, and the count
+        withheld is reported as a number; asserted by adding a required figure and
+        requiring an already-rotatable run to become retained.</td>
+      </tr>
+    </tbody>
+    </table>
+    </section>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+    <h2><span class="sec">&sect;</span> Decisions</h2>
+    <div class="r-dec" data-key="detail-horizon">
+      <p class="r-dec-q">How long is per-run detail kept before it washes out (&sect;2)?</p>
+      <p class="r-dec-opts">
+        <button class="r-opt" data-value="30d">30d</button>
+        <button class="r-opt" data-value="90d">90d</button>
+        <button class="r-opt" data-value="by-count">by-count</button>
+      </p>
+      <p class="r-dec-rat">Open. The run directories the detail points at are
+      currently reaped at 30 days, so a detail horizon longer than that keeps
+      pointers to files that are gone. by-count holds a fixed number of recent runs
+      regardless of elapsed time, which is the option that behaves the same in a
+      quiet week and a busy one.</p>
+    </div>
+    <div class="r-dec" data-key="committed-export-scope">
+      <p class="r-dec-q">What does the committed file carry after cutover (&sect;4)?</p>
+      <p class="r-dec-opts">
+        <button class="r-opt" data-value="durable-rows">durable-rows</button>
+        <button class="r-opt" data-value="everything">everything</button>
+        <button class="r-opt" data-value="retire">retire</button>
+      </p>
+      <p class="r-dec-rat">Open. durable-rows is the narrow permanent half, which
+      is what makes the export small enough to merge line-by-line. everything keeps
+      today's content and today's merge cost. retire makes cross-checkout history
+      unavailable to any reader without the config home and is listed to be
+      rejected explicitly rather than by omission.</p>
+    </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+    <h2><span class="sec">&sect;</span> Followups</h2>
+    <article class="r-fu" data-id="f-hpdw-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-09" data-recommends-skill="/reckon-ship history-persists-as-detail-washes-out">
+      <h4 class="r-fu-title">Expand and dual-write before anything reads the database &mdash; &sect;3</h4>
+      <div class="r-fu-body">Execution order is forced by the reversibility argument
+      rather than by preference: the expand and dual-write stages must both hold before
+      the equality check can measure anything, and the check must report a stated
+      count of clean promotions before any reader is cut over. The two prerequisite
+      sections in <code>dispatch-cost-per-durable-node</code> &mdash; the retention invariant
+      and the per-run figures recorded at promotion &mdash; gate &sect;5 only; &sect;3's earlier
+      stages do not wait on them. Both decisions are open and neither blocks the
+      expand stage.</div>
+      <pre class="r-fu-prompt">/reckon-ship history-persists-as-detail-washes-out</pre>
+    </article>
+    </section>
+
+  </main>
+</body>
+</html>
