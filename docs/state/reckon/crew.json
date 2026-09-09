@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T09:50:27",
+  "updated": "2026-09-09T10:07:30",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -2038,6 +2038,17 @@
           "{\"backend\":\"clive\",\"effort\":\"medium\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\"}": "3c03edc0-2541-4530-b218-3ad2f9c0871d"
         },
         "created": "2026-09-03"
+      },
+      {
+        "id": "session-9e2222f55dd848415c74",
+        "harness": "codex-terra",
+        "role": "investigate",
+        "session_id": "01a08529-31aa-7d00-9bba-f5574c9fe0d7",
+        "session_model": "gpt-5.6-terra",
+        "sessions": {
+          "{\"alias\":\"terra5.6\",\"backend\":\"codex-terra\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"model\":\"gpt-5.6-terra\",\"sandbox\":\"read-only\"}": "01a08529-31aa-7d00-9bba-f5574c9fe0d7"
+        },
+        "created": "2026-09-09"
       },
       {
         "id": "ship0908-a",
@@ -84693,6 +84704,167 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T075411587782-cotd-reuse-map-scout",
+        "plan": "crew-observability-truth",
+        "section": "\u00a713",
+        "node": "cotd-reuse-map-scout",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 986,
+                "cached_input_tokens": 273582,
+                "input_tokens": 274570,
+                "output_tokens": 1188,
+                "reasoning_output_tokens": 528,
+                "total_tokens": 275758,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "29187761-681d-4f4d-85ae-fc3d7adc250b",
+            "session_id": "ship-cot-drain-20260909"
+          },
+          "done_when": "the report holds a measure table of exactly 11 rows, one per measure in \u00a713 and \u00a714, and grep -c on the row marker returns 11 while grep -c on rows whose reuse cell is empty returns 0; every row's reuse cell carries either a path:line symbol reference or the literal verdict no-candidate followed by the grep command that established it, and every row carries a write-scope cell naming repository-relative paths with colliding pairs marked serialise-or-split",
+          "estimated_hours": null,
+          "goal": "a reuse map for the eleven measures in \u00a713 and \u00a714 naming the existing reckon machinery each one extends, with the exclusive write scope that implies",
+          "id": "cotd-reuse-map-scout",
+          "lane_declaration": {
+            "backend": "codex-terra",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-09T07:54:12Z",
+            "read_at": "2026-09-09T07:54:13Z",
+            "resolved_backend": "codex-terra",
+            "utilisation_pct": 60.0
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T075411587782-cotd-reuse-map-scout/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "codex-terra",
+          "requires_decisions": [],
+          "role": "investigate",
+          "section": "\u00a713",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/cot-wave-signal-reuse-map.md"
+          ]
+        },
+        "role": "investigate",
+        "spec_level": "guided",
+        "member": "session-9e2222f55dd848415c74",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "xhigh",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "read-only"
+        },
+        "dispatched_at": "2026-09-09T07:54:24Z",
+        "completed_at": "2026-09-09T08:04:12Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 588,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 588,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "e3055c970e9d3cce2a39b866ee8fe51d238d6137",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "grep -c MEASURE-ROW on the report, plus a coordinator anchor-existence check over all 23 path:line references",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T075411587782-cotd-reuse-map-scout/gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T075411587782-cotd-reuse-map-scout/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a08529-31aa-7d00-9bba-f5574c9fe0d7",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 6756864,
+            "cached_input_tokens_cumulative": 6756864,
+            "input_tokens": 7045629,
+            "input_tokens_cumulative": 7045629,
+            "output_tokens": 24243,
+            "output_tokens_cumulative": 24243,
+            "reasoning_output_tokens": 8152,
+            "reasoning_output_tokens_cumulative": 8152
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-09T08:04:12Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 61.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-09T08:04:12Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 6756864,
+          "cumulative_input_tokens": 13802493,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 32395
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "investigate",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": "an investigate node whose deliverable is a report outside the repository; nothing was landed in the tree by design",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cot-drain-20260909/cotd-reuse-map-scout",
+          "session_id": "01a08529-31aa-7d00-9bba-f5574c9fe0d7",
+          "session_source": "pointer",
+          "retained_at": "2026-09-09T08:04:12Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -84921,6 +85093,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1270
+    "_version": 1273
   }
 }

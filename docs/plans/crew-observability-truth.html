@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-09">
-<meta name="plan-version" content="228">
+<meta name="plan-version" content="229">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md">
 <meta name="plan-impl" content="0.97">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b">
@@ -1413,6 +1413,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-20260908T230800" data-who="reckon-ship" data-when="2026-09-08T23:08:00Z">
     <div class="r-comment-body">gate-evidence-must-not-contradict-its-verdict landed — commit 941fc6d, merged and verified present at HEAD; gate passed; measure: 9 of 9 new cases, added failures 0 against base 6a23e59, the file's 6 pre-existing failures identical at base and head. Artifacts: reckon/crew/promotion.py, tests/test_crew_gate_log_agrees.py.\n\nThe instrument is aimed, which is what makes it safe to run on every promotion. It reads the recorded exit status only from an end-of-log capture record matched whole on the last non-empty line, so a status token printed inside a runner's own output is not mistaken for evidence — the same discrimination that separates a real signal from a node whose subject merely quotes one. It parses no runner result format and never re-runs the command. Three shapes refuse and the refusal names which was found: an empty cited log, a recorded status contradicting the asserted one, and a line carrying the shell's own command-not-found diagnostic, which is the shape of the second recorded instance.\n\nOne deliberate boundary, documented at the code rather than left implicit: a log path that cannot be read at promotion time is skipped rather than refused, because promotion may run from a machine the worker's log never reached, and an absent log belongs to the unfalsifiable-gate subject rather than this one. Two residuals the worker reported rather than silently absorbing: the command-not-found scan is whole-log and could in principle match a legitimate log that prints the phrase, and a stricter reading could refuse a missing path once promotion's tolerance for non-durable paths is revisited.\n\nAND THE NODE REPRODUCED THE DEFECT ITS SIBLING FINDING DESCRIBES, WHICH IS WORTH RECORDING. Its manifest cited all five gate logs under /tmp — ephemeral, on a fleet where a prior audit already measured 57 of 1,535 promoted rows citing a log there. So the node that makes promotion verify gate evidence filed its own evidence somewhere that will not survive. The coordinator copied all five into the durable run directory before promoting and cited that path, so this row's evidence is readable later; the general repair is not this node's and remains open. The new check would not have caught it either: an unreadable path is skipped by design, so a row citing a vanished log stays acceptable. That is the boundary above, seen from the other side.</div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20260909T075411587782-cotd-reuse-map-scout" data-who="session-9e2222f55dd848415c74" data-when="2026-09-09T08:04:12Z">
+    <div class="r-comment-body"><p>reuse map for all eleven measures: 11 rows, every reuse cell a real path:line, four serialisation lanes derived, and lane 4 named as prerequisite to the closing-line consumer</p></div>
 </div>
 </section>
 </main>
