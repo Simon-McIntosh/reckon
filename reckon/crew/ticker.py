@@ -388,7 +388,7 @@ def local_clock(observed: Any) -> str:
 
 def _clock(seconds: float) -> str:
     """Render a duration as h:mm:ss (or m:ss under an hour), seconds rounded."""
-    total = max(0, int(round(seconds)))
+    total = max(0, round(seconds))
     hours, remainder = divmod(total, 3600)
     minutes, secs = divmod(remainder, 60)
     if hours:
@@ -716,6 +716,7 @@ class Ticker:
         measured zero stays a zero. The cells read the record's own figures and
         shape them only here, so the persisted event stays re-renderable.
         """
+
         def cell(value: Any, formatter: Callable[[float], str]) -> tuple[str, Any]:
             if isinstance(value, Real):
                 return formatter(float(value)), None

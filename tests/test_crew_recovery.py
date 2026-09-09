@@ -530,7 +530,10 @@ def test_observe_and_watch_render_failure_only_after_the_process_stops(
     assert terminal_event["event"] == "terminal"
     assert terminal_event["classification"] == "failed"
 
-    rendered = [recovery.format_watch_transition(event) for event in events]
+    wide = ticker_module.Ticker(width=208, color=False)
+    rendered = [
+        recovery.format_watch_transition(event, ticker=wide) for event in events
+    ]
     assert "working" in rendered[0]
     assert "failed" in rendered[1]
     assert "implementation and required evidence" in rendered[1]
@@ -1144,8 +1147,12 @@ def test_a_complete_needs_help_report_becomes_the_reason_with_a_question_marker(
         transition["detail"] == "the schema rejects an enum value the config file needs"
     )
 
-    # The glyph is derived at render time from the persisted fact.
-    line = recovery.format_watch_transition(transition)
+    # The glyph is derived at render time from the persisted fact. Rendered at
+    # the widened pane the workstation measures, where the reason keeps enough
+    # room for the clause in full.
+    line = recovery.format_watch_transition(
+        transition, ticker=ticker_module.Ticker(width=208, color=False)
+    )
     assert "?" in line
     assert "the schema rejects an enum value" in line
 
@@ -1643,7 +1650,9 @@ def test_legacy_log_line_renders_and_new_line_renders_two_cells(home) -> None:
         "unpromoted": 0,
         "working": 0,
     }
-    legacy_line = recovery.format_watch_transition(legacy)
+    legacy_line = recovery.format_watch_transition(
+        legacy, ticker=ticker_module.Ticker(width=208, color=False)
+    )
     assert "gpt-5.6-sol" in legacy_line
     assert "medium" in legacy_line
     assert legacy_line.index("gpt-5.6-sol") < legacy_line.index("medium")

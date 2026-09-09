@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -243,13 +244,18 @@ def test_resume_sweep_keeps_a_dead_declared_wait_in_its_collection(
 ) -> None:
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
     pointer = _pointer(tmp_path, "parked-for-sweep", alive=False)
+    # A recent wait start keeps the fixture inside its declared horizon, so the
+    # sweep's decision never depends on the calendar day the suite runs.
+    recent_start = (datetime.now(UTC) - timedelta(minutes=10)).isoformat(
+        timespec="seconds"
+    )
     _manifest(
         pointer,
         "status: waiting\n"
         "wait_condition: scheduler job 42\n"
         'wait_probe: ["scheduler-status", "--job", "42"]\n'
         'wait_terminal: ["COMPLETED", "FAILED"]\n'
-        "wait_started_at: 2026-09-08T07:42:00+00:00\n"
+        f"wait_started_at: {recent_start}\n"
         "wait_expected: 59m\n"
         "resume_brief: collect the scheduler result\n",
     )

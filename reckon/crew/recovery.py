@@ -2518,7 +2518,11 @@ def _generation_rate(
     only a strictly positive span rates a denominator; an unmeasured chain never
     fabricates a rate from a zero it did not observe.
     """
-    if not measured or spend.generation_seconds is None or spend.generation_seconds <= 0:
+    if (
+        not measured
+        or spend.generation_seconds is None
+        or spend.generation_seconds <= 0
+    ):
         return None
     return spend.cumulative_output_tokens / spend.generation_seconds
 

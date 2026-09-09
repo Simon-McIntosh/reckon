@@ -139,8 +139,11 @@ def test_ticker_emits_only_changes_and_ends_after_the_last_promotion(home) -> No
         ("new-node", None, "dispatched"),
         ("new-node", "dispatched", "working"),
         ("new-node", "working", "blocked"),
-        ("new-node", "blocked", "complete"),
-        ("new-node", "complete", "promoted"),
+        # A completed manifest without an independent review sits as
+        # completed_unpromoted until the review lands, which is the state a
+        # departure then leaves.
+        ("new-node", "blocked", "completed_unpromoted"),
+        ("new-node", "completed_unpromoted", "promoted"),
         ("existing-node", "dispatched", "promoted"),
     ]
     # Each triple is the fleet after that transition, and the three buckets
@@ -164,7 +167,9 @@ def test_ticker_emits_only_changes_and_ends_after_the_last_promotion(home) -> No
         == "dependency unavailable; retry after configuration changes"
     )
     assert "reason" not in transitions[2]
-    rendered = recovery.format_watch_transition(transitions[2])
+    rendered = recovery.format_watch_transition(
+        transitions[2], ticker=ticker_module.Ticker(width=208, color=False)
+    )
     assert "dependency unavailable" in rendered
     assert "retry after configuration" not in rendered
     assert sleeps == 7
@@ -537,7 +542,10 @@ def test_only_a_state_needing_action_keeps_the_clause_explaining_it(
         moment=recovery._utc_seconds(),
         stall_seconds=900,
     )
-    assert snapshot["state"] == "complete"
+    # A completed manifest without an independent review sits as
+    # completed_unpromoted, outside the explained set, so it still renders
+    # without a reason.
+    assert snapshot["state"] == "completed_unpromoted"
     assert snapshot["detail"] == ""
 
 
