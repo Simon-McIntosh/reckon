@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import sqlite3
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -2434,3 +2435,126 @@ def test_backfill_fills_two_figures_and_reports_missing_streams_as_skipped(
     again = backfill_run_figures(PROJECT, root=repo)
     assert again["rows_filled"] == 0
     assert again["rows_skipped"] == 0
+
+
+# ── The run store exists beside the committed file ─────────────────────────
+#
+# The expand stage of the store swap: every promotion writes one durable row
+# and its detail into an embedded SQLite store as a shadow, and no shadow
+# failure may turn a committed file row into a failed promotion. The store is
+# deliberately unread by every existing reader, so deleting it leaves every
+# existing answer identical.
+
+
+def _real_store_path() -> Path:
+    xdg = Path.home() / ".config" / "reckon"
+    config_home = xdg if xdg.exists() else Path.home() / "docs-server"
+    return config_home / "crew" / "run_store.db"
+
+
+def test_append_run_writes_the_shadow_store_beside_the_file(home, repo) -> None:
+    from reckon import run_store
+
+    real_store = _real_store_path()
+    was_present = real_store.exists()
+    record = ledger.build_record(
+        run_id="r-store-echo",
+        plan="plan-a",
+        gate="passed",
+        member_id="worker-a",
+        completed_at="2026-09-09T00:00:00Z",
+    )
+
+    result = ledger.append_run(PROJECT, record, root=repo)
+
+    assert result["store"] == {"status": "written"}
+    store_location = run_store.store_path()
+    assert store_location.is_file()
+    with sqlite3.connect(str(store_location)) as connection:
+        durable = connection.execute(
+            'SELECT * FROM "runs" WHERE "run_id" = ?', ("r-store-echo",)
+        ).fetchone()
+        assert durable is not None
+        detail = json.loads(
+            connection.execute(
+                'SELECT "detail" FROM "run_details" WHERE "run_id" = ?',
+                ("r-store-echo",),
+            ).fetchone()[0]
+        )
+    durable_by_name = dict(
+        zip([name for name, _ in run_store.DURABLE_FIELDS], durable, strict=True)
+    )
+    assert durable_by_name["run_id"] == "r-store-echo"
+    assert durable_by_name["project"] == PROJECT
+    assert durable_by_name["member"] == "worker-a"
+    assert durable_by_name["node"] == ""
+    assert durable_by_name["gate"] == "passed"
+    assert durable_by_name["completed_at"] == "2026-09-09T00:00:00Z"
+    assert detail["run_id"] == "r-store-echo"
+    # The real crew config home was not written to.
+    assert real_store.exists() == was_present
+
+
+def test_a_raising_store_write_is_recorded_and_never_propagated(
+    home, repo, monkeypatch
+) -> None:
+    from reckon import run_store
+
+    record = ledger.build_record(run_id="r-store-fail", plan="plan-a", gate="passed")
+    real_store = _real_store_path()
+    was_present = real_store.exists()
+
+    def broken_append(_project: str, _record_entry: dict) -> None:
+        raise RuntimeError("injected store failure")
+
+    monkeypatch.setattr(run_store, "append", broken_append)
+
+    result = ledger.append_run(PROJECT, record, root=repo)
+
+    assert result["store"]["status"] == "failed"
+    assert "RuntimeError" in result["store"]["error"]
+    # The committed file row landed regardless of the shadow failure.
+    assert [entry["run_id"] for entry in ledger.runs(PROJECT, repo)] == ["r-store-fail"]
+    assert real_store.exists() == was_present
+
+
+def test_existing_readers_are_identical_with_the_store_present_and_deleted(
+    home, repo
+) -> None:
+    from reckon import run_store
+
+    for suffix, gate, member in (("one", "passed", "m-a"), ("two", "failed", "m-b")):
+        record = ledger.build_record(
+            run_id=f"r-reader-{suffix}",
+            plan="plan-a",
+            gate=gate,
+            member_id=member,
+            completed_at=f"2026-09-09T00:0{suffix}1:00Z",
+        )
+        ledger.append_run(PROJECT, record, root=repo)
+    ledger.register_member(PROJECT, "m-a", harness="native", root=repo)
+    ledger.register_member(PROJECT, "m-b", harness="native", root=repo)
+
+    def snapshot() -> dict:
+        data, version = ledger.load(PROJECT, repo)
+        return {
+            "load_runs": [entry["run_id"] for entry in data["runs"]],
+            "load_members": sorted(
+                entry["id"] for entry in ledger.members(PROJECT, repo)
+            ),
+            "member_lookup": ledger.member(PROJECT, "m-a", root=repo)["id"],
+            "read_records": [
+                entry["run_id"] for entry in ledger.read_records(PROJECT, root=repo)[0]
+            ],
+            "runs": [entry["run_id"] for entry in ledger.runs(PROJECT, repo)],
+            "summary_gates": ledger.summary(PROJECT, root=repo)["gates"],
+            "version": version,
+        }
+
+    with_store = snapshot()
+    store_file = run_store.store_path()
+    assert store_file.is_file()
+    store_file.unlink()
+    assert not store_file.exists()
+
+    assert snapshot() == with_store

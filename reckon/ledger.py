@@ -1342,6 +1342,24 @@ def per_run_budget(
     return result
 
 
+def _shadow_store_append(project: str, record: Mapping[str, Any]) -> dict[str, Any]:
+    """Write one run to the queryable store, recording rather than raising.
+
+    The store is a shadow nothing reads yet, so its failure must never turn a
+    committed file row into a failed promotion: the file row is already
+    written before this runs, and any store exception is returned on the
+    payload rather than propagated. ``append_run``'s callers — promotion
+    included — receive the outcome on the returned payload.
+    """
+    from reckon import run_store
+
+    try:
+        run_store.append(project, dict(record))
+    except Exception as exc:  # noqa: BLE001 — a shadow failure is recorded, never raised
+        return {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
+    return {"status": "written"}
+
+
 def append_run(
     project: str,
     record: Mapping[str, Any],
@@ -1383,10 +1401,13 @@ def append_run(
             last = exc
             _retry_backoff(_attempt)
             continue
+        # The file row is committed; the store is a shadow whose failure is
+        # recorded on the returned payload, never raised here.
         return {
             "path": str(ledger_path(project, ledger_root)),
             "version": new_version,
             "run": dict(stored_record),
+            "store": _shadow_store_append(project, stored_record),
         }
     raise LedgerError(
         f"ledger for {project!r} was rewritten on every attempt — {last}"
