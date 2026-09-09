@@ -199,6 +199,46 @@ def test_redispatch_keeps_the_run_node_and_worktree(
     )
 
 
+def test_redispatch_continues_a_stream_resolved_session_and_records_its_source(
+    dispatched_run: tuple[Path, dict], monkeypatch
+) -> None:
+    _repo, before = dispatched_run
+    stream = Path(before["log_path"])
+    fixture = Path(__file__).parent / "fixtures" / "backends" / "codex-turn.jsonl"
+    stream.write_text(fixture.read_text(encoding="utf-8"), encoding="utf-8")
+    pointer = {**before, "session_id": None}
+    crew._write_json(crew.pointer_path(before["run_id"]), pointer)
+
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    monkeypatch.setattr(dispatch_module, "process_alive", lambda pid: pid == 41001)
+    monkeypatch.setattr(dispatch_module, "_signal_process_group", lambda *args: None)
+    monkeypatch.setattr(dispatch_module, "_spawn", lambda *args, **kwargs: 42002)
+    _resolve_config(monkeypatch)
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "redispatch",
+            "--run",
+            before["run_id"],
+            "--backend",
+            "beta",
+            "--reason",
+            "the original lane is spent",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    after = crew.read_pointer(before["run_id"])
+    change = after["lane_changes"][-1]
+    assert change["session"] == "continued"
+    assert change["session_id"] == "019ff509-8a60-7723-94fd-65942a6d8faa"
+    assert change["session_source"] == "stream"
+    assert after["session_id"] == change["session_id"]
+    assert after["argv"][after["argv"].index("resume") + 1] == change["session_id"]
+
+
 def test_resume_backend_override_reports_a_cross_harness_fresh_start(
     dispatched_run: tuple[Path, dict], monkeypatch
 ) -> None:

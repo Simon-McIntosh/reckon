@@ -8,6 +8,7 @@ reaches a network.
 
 from __future__ import annotations
 
+import importlib
 import json
 import os
 import subprocess
@@ -3176,6 +3177,7 @@ def test_opt_in_budget_watchdog_stops_and_records_the_run_phase(
 def test_resume_answers_in_the_same_session(home, repo) -> None:
     """Advice only makes sense to a worker that remembers what it tried."""
     record = _dispatched(home, repo, "codex-turn.jsonl")
+    crew.observe(record["run_id"])
     plan = crew.resume_plan(record["run_id"], "take the second option")
     subcommand = plan.argv.index("resume")
     assert plan.argv[subcommand + 1] == "019ff509-8a60-7723-94fd-65942a6d8faa"
@@ -3183,6 +3185,36 @@ def test_resume_answers_in_the_same_session(home, repo) -> None:
     assert crew.read_pointer(record["run_id"])["session_id"] == (
         "019ff509-8a60-7723-94fd-65942a6d8faa"
     )
+
+
+def test_resume_resolves_a_stream_session_without_observation_writeback(
+    home, repo, monkeypatch
+) -> None:
+    """Resume reads the stream authority without mutating the pointer cache."""
+    record = _dispatched(home, repo, "codex-turn.jsonl")
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+
+    def observation_must_not_run(*args, **kwargs):
+        raise AssertionError("resume must not observe merely to resolve a session")
+
+    monkeypatch.setattr(dispatch_module, "observe", observation_must_not_run)
+
+    plan = crew.resume_plan(record["run_id"], "continue from the retained worktree")
+
+    resume_index = plan.argv.index("resume")
+    assert plan.argv[resume_index + 1] == "019ff509-8a60-7723-94fd-65942a6d8faa"
+    assert crew.read_pointer(record["run_id"])["session_id"] is None
+
+
+def test_resume_refuses_when_no_session_authority_resolves(home, repo) -> None:
+    """A pointer cache miss remains a refusal only after all authorities answer."""
+    record = _dispatched(home, repo)
+
+    with pytest.raises(crew.CrewError) as excinfo:
+        crew.resume_plan(record["run_id"], "advice")
+
+    assert "no session id in any authority" in str(excinfo.value)
+    assert "all three were consulted" in str(excinfo.value)
 
 
 def test_resumed_attempt_owns_its_stream_phase_and_manifest(home, repo) -> None:
@@ -3329,7 +3361,7 @@ def test_resume_without_a_session_in_the_stream_names_the_missing_evidence(
     record = _dispatched(home, repo)
     with pytest.raises(crew.CrewError) as excinfo:
         crew.resume_plan(record["run_id"], "advice")
-    assert "no session id in its current stream" in str(excinfo.value)
+    assert "no session id in any authority" in str(excinfo.value)
 
 
 # ── Prompt composition ──────────────────────────────────────────────────────

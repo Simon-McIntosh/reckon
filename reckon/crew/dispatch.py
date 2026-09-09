@@ -3465,12 +3465,22 @@ def resume_plan(
         raise CrewError(
             f"run {run_id!r} still has a live process; observe or stop it before resuming"
         )
-    session_id = record.get("session_id")
-    if not session_id:
-        record = observe(run_id, config=config)
-        session_id = record.get("session_id")
-    if not session_id:
-        raise CrewError(f"run {run_id!r} has no session id in its current stream")
+    # The pointer is a cache. A stream may already carry the captured session
+    # while the next observation has not folded it into that cache yet.
+    from reckon.crew.resumption import resolve_session
+
+    session = resolve_session(
+        run_id,
+        record=record,
+        project=str(record.get("project") or ""),
+        root=record.get("repo"),
+    )
+    session_id = str(session.get("session_id") or "")
+    if not session["resolved"]:
+        raise CrewError(
+            f"run {run_id!r} has no session id in any authority: "
+            f"{session.get('detail') or 'no session authority resolved'}"
+        )
     backend = _backend_settings(record, config)
     verdict = _budget_verdict(
         project=str(record.get("project") or ""),
@@ -3762,9 +3772,17 @@ def change_lane(
     target_harness = target_launch
     if target_launch == "cli":
         target_harness = _backends.dialect_for(backend).name
-    session_id = str(record.get("session_id") or "")
+    from reckon.crew.resumption import resolve_session
+
+    session = resolve_session(
+        run_id,
+        record=record,
+        project=str(record.get("project") or ""),
+        root=record.get("repo"),
+    )
+    session_id = str(session.get("session_id") or "")
     continued = bool(
-        session_id
+        session["resolved"]
         and source_launch == target_launch == "cli"
         and source_harness == target_harness
     )
@@ -3783,6 +3801,8 @@ def change_lane(
         "from_harness": source_harness,
         "to_harness": target_harness,
         "session": "continued" if continued else "fresh",
+        "session_id": session_id or None,
+        "session_source": session.get("source"),
         "detail": (
             f"continued session {session_id!r} on harness {target_harness!r}"
             if continued
