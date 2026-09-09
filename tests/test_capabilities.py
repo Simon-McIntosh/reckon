@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import json
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -82,6 +83,13 @@ def _derive(root: Path, **kwargs) -> dict:
     return capabilities.derive_capabilities(
         {root.name: root / "docs"},
         **kwargs,
+    )
+
+
+def _mount(home: Path, roots: Sequence[Path]) -> None:
+    """Register project roots so the CLI's mounts read resolves them."""
+    (home / "mounts.json").write_text(
+        json.dumps({root.name: str(root / "docs") for root in roots})
     )
 
 
@@ -505,6 +513,211 @@ def test_capabilities_cli_inspects_and_rebuilds_off_dispatch(home) -> None:
     assert payload["rebuilt"] is True
     assert payload["configurations"] == 0
     assert capabilities.capabilities_path().is_file()
+
+
+def test_capabilities_cli_publishes_one_row_per_configuration(home, tmp_path) -> None:
+    root = _project(tmp_path, "alpha")
+    _plan(root, "work", 2.0)
+    _run(root, "plain", "work", 1.0)
+    _run(
+        root,
+        "aliased",
+        "work",
+        1.0,
+        agent={
+            "backend": "worker",
+            "model": "concrete",
+            "effort": "high",
+            "alias": "display-label",
+        },
+    )
+    _run(
+        root,
+        "windowed",
+        "work",
+        1.0,
+        agent={
+            "backend": "worker",
+            "model": "concrete",
+            "effort": "high",
+            "usable_input_window": 999999,
+        },
+    )
+    _mount(home, [root])
+
+    rebuilt = CliRunner().invoke(cli_module.main, ["capabilities", "--rebuild"])
+
+    assert rebuilt.exit_code == 0
+    payload = json.loads(rebuilt.output)
+    rows = payload["rows"]
+    assert len(rows) == 1
+    row = rows[0]
+    assert isinstance(row["sample_size"], int)
+    assert isinstance(row["competence_horizon_hours"], float)
+    assert isinstance(row["speed_mean"], float)
+    assert isinstance(row["speed_median"], float)
+    assert row["sample_size"] == 3
+    assert row["competence_horizon"]["status"] == "measured"
+    assert row["stale"] is False
+    assert payload["stale"] is False
+    assert set(payload) >= {
+        "rebuilt",
+        "project",
+        "rows",
+        "configurations",
+        "cached_ledger_versions",
+        "current_ledger_versions",
+    }
+
+
+def test_capabilities_cli_project_narrows_rows_and_exits_zero(home, tmp_path) -> None:
+    alpha = _project(tmp_path, "alpha")
+    beta = _project(tmp_path, "beta")
+    for root in (alpha, beta):
+        _plan(root, "work", 2.0)
+        _run(
+            root,
+            f"{root.name}-run",
+            "work",
+            1.0,
+            agent={
+                "backend": "worker",
+                "model": f"m-{root.name}",
+                "effort": "high",
+            },
+        )
+    _mount(home, [alpha, beta])
+    rebuilt = CliRunner().invoke(cli_module.main, ["capabilities", "--rebuild"])
+    assert json.loads(rebuilt.output)["configurations"] == 2
+
+    narrowed = CliRunner().invoke(
+        cli_module.main, ["capabilities", "--project", "alpha"]
+    )
+
+    assert narrowed.exit_code == 0
+    payload = json.loads(narrowed.output)
+    rows = payload["rows"]
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["projects"] == ["alpha"]
+    assert row["configuration"]["model"] == "m-alpha"
+    assert payload["project"] == "alpha"
+    assert payload["configurations"] == 1
+
+
+def test_capabilities_cli_refuses_an_unmounted_project(home) -> None:
+    invoked = CliRunner().invoke(
+        cli_module.main, ["capabilities", "--project", "nowhere"]
+    )
+
+    assert invoked.exit_code != 0
+    assert "nowhere" in invoked.output
+
+
+def test_capabilities_cli_marks_a_stale_row_naming_both_versions(
+    home, tmp_path
+) -> None:
+    root = _project(tmp_path, "alpha")
+    _plan(root, "work", 2.0)
+    _run(root, "one", "work", 1.0)
+    _mount(home, [root])
+    rebuilt = CliRunner().invoke(cli_module.main, ["capabilities", "--rebuild"])
+    assert rebuilt.exit_code == 0
+
+    fresh = json.loads(rebuilt.output)
+    fresh_row = fresh["rows"][0]
+    assert fresh_row["stale"] is False
+    assert fresh["stale"] is False
+
+    _run(root, "two", "work", 1.0)
+    after = CliRunner().invoke(cli_module.main, ["capabilities"])
+    assert after.exit_code == 0
+    payload = json.loads(after.output)
+    row = payload["rows"][0]
+    assert row["stale"] is True
+    assert payload["stale"] is True
+    assert "alpha" in row["stale_projects"]
+    detail = row["stale_projects"]["alpha"]
+    assert "cached_ledger_version" in detail and "current_ledger_version" in detail
+    assert detail["cached_ledger_version"] != detail["current_ledger_version"]
+    assert detail["cached_ledger_version"] == payload["cached_ledger_versions"]["alpha"]
+    assert (
+        detail["current_ledger_version"] == payload["current_ledger_versions"]["alpha"]
+    )
+
+
+def test_published_horizon_legibility_distinguishes_the_states(home, tmp_path) -> None:
+    root = _project(tmp_path, "alpha")
+    _plan(root, "work", 2.0)
+    _run(root, "one", "work", 1.0)
+    _mount(home, [root])
+
+    cache_path = home / "cache" / "capabilities.json"
+    cache_path.parent.mkdir(parents=True)
+    cache_path.write_text(
+        json.dumps(
+            {
+                "ledger_versions": {"alpha": 1},
+                "configurations": [
+                    {
+                        "key": json.dumps({"model": "measured-zero"}),
+                        "configuration": {"model": "measured-zero"},
+                        "runs": 3,
+                        "competence_horizon_hours": 0.0,
+                        "speed": {"samples": 3, "mean": 1.0, "median": 1.0},
+                        "observations": [{"project": "alpha"}],
+                    },
+                    {
+                        "key": json.dumps({"model": "withheld"}),
+                        "configuration": {"model": "withheld"},
+                        "runs": 3,
+                        "competence_horizon_hours": None,
+                        "speed": {"samples": 3, "mean": 1.0, "median": 1.0},
+                        "observations": [{"project": "alpha"}],
+                    },
+                    {
+                        "key": json.dumps({"model": "under-sampled"}),
+                        "configuration": {"model": "under-sampled"},
+                        "runs": 1,
+                        "competence_horizon_hours": None,
+                        "speed": {"samples": 1, "mean": 1.0, "median": 1.0},
+                        "observations": [{"project": "alpha"}],
+                    },
+                    {
+                        "key": json.dumps({"model": "unmeasured"}),
+                        "configuration": {"model": "unmeasured"},
+                        "runs": 0,
+                        "competence_horizon_hours": None,
+                        "speed": None,
+                        "observations": [],
+                    },
+                ],
+            }
+        )
+    )
+
+    published = capabilities.publish_capabilities(path=cache_path)
+
+    by_model = {
+        row["configuration"]["model"]: row["competence_horizon"]
+        for row in published["rows"]
+    }
+    assert by_model["measured-zero"] == {"status": "measured", "hours": 0.0}
+    assert by_model["withheld"] == {"status": "withheld", "hours": None}
+    assert by_model["under-sampled"] == {
+        "status": "insufficient_sample",
+        "hours": None,
+    }
+    assert by_model["unmeasured"] == {"status": "not_measured", "hours": None}
+    assert {
+        by_model[key]["status"]
+        for key in ("measured-zero", "withheld", "under-sampled", "unmeasured")
+    } == {
+        "measured",
+        "withheld",
+        "insufficient_sample",
+        "not_measured",
+    }
 
 
 def test_scope_changed_and_proxy_completion_records_are_excluded(tmp_path) -> None:

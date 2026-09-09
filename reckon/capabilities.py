@@ -18,6 +18,11 @@ from reckon._store import _config_home, _mounts_path
 from reckon.calibration import calibration_configuration_key
 
 _ORIENTATION_MINIMUM_SAMPLES = 2
+# Smallest usable-observation depth at which a competence horizon may be
+# claimed at all. Below this a null horizon is an under-sampled one, which
+# must read differently from a horizon withheld on a full sample and from a
+# genuinely measured zero.
+_HORIZON_MINIMUM_SAMPLES = 2
 _RESUMED_INPUT_OUTLIER_LIMIT = 60_000_000
 _WRITE_TOOL_NAMES = frozenset(
     {"applypatch", "edit", "multiedit", "notebookedit", "write"}
@@ -1058,6 +1063,19 @@ def load_capabilities(path: str | Path | None = None) -> dict[str, Any]:
     return data
 
 
+def _current_ledger_versions(
+    mounts: Mapping[str, str | Path],
+) -> dict[str, int]:
+    """Read the current ledger version of every mounted project once."""
+
+    versions: dict[str, int] = {}
+    for project, raw_docs in sorted(mounts.items()):
+        docs_dir = Path(raw_docs).expanduser().resolve()
+        _data, version = ledger.load(str(project), root=docs_dir.parent)
+        versions[str(project)] = version
+    return versions
+
+
 def inspect_capabilities(
     *,
     mounted_docs: Mapping[str, str | Path] | None = None,
@@ -1077,11 +1095,7 @@ def inspect_capabilities(
         cached_versions = {}
     routing = cached.get("routing")
     routing_rows = routing.get("rows") if isinstance(routing, Mapping) else None
-    current_versions: dict[str, int] = {}
-    for project, raw_docs in sorted(mounts.items()):
-        docs_dir = Path(raw_docs).expanduser().resolve()
-        _data, version = ledger.load(str(project), root=docs_dir.parent)
-        current_versions[str(project)] = version
+    current_versions = _current_ledger_versions(mounts)
     changed = sorted(
         project
         for project in set(current_versions) | set(cached_versions)
@@ -1096,6 +1110,139 @@ def inspect_capabilities(
         "current_ledger_versions": current_versions,
         "configurations": len(cached.get("configurations") or []),
         "routing_rows": len(routing_rows) if isinstance(routing_rows, list) else 0,
+    }
+
+
+def _row_source_projects(configuration: Mapping[str, Any]) -> tuple[str, ...]:
+    """Return the distinct projects whose ledgers fed one configuration."""
+
+    projects: list[str] = []
+    seen: set[str] = set()
+    for observation in configuration.get("observations") or []:
+        if not isinstance(observation, Mapping):
+            continue
+        project = str(observation.get("project") or "").strip()
+        if project and project not in seen:
+            seen.add(project)
+            projects.append(project)
+    return tuple(sorted(projects))
+
+
+def _horizon_publication(configuration: Mapping[str, Any]) -> dict[str, Any]:
+    """Publish a competence horizon with an explicit legibility state.
+
+    A bare null hour figure carries no reason, so rendering it alone lets a
+    reader mistake a withheld horizon for a measured-zero figure or an
+    under-sampled one. The state names why the figure is what it is:
+      measured - a value was derived; a zero here is a genuinely measured one
+      withheld - enough usable observations, but none met the success
+                 threshold, so no horizon is claimed
+      insufficient_sample - usable observations exist but sit below the
+                 minimum depth a horizon claim needs
+      not_measured - the configuration holds no usable observations
+    """
+
+    hours = _measured_number(configuration.get("competence_horizon_hours"))
+    samples = int(configuration.get("runs") or 0)
+    speed = configuration.get("speed")
+    if hours is not None:
+        return {"status": "measured", "hours": hours}
+    if samples == 0 or not isinstance(speed, Mapping) or not speed.get("samples"):
+        return {"status": "not_measured", "hours": None}
+    if samples < _HORIZON_MINIMUM_SAMPLES:
+        return {"status": "insufficient_sample", "hours": None}
+    return {"status": "withheld", "hours": None}
+
+
+def _published_row(
+    configuration: Mapping[str, Any],
+    cached_versions: Mapping[str, Any],
+    current_versions: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Flatten one cached configuration into a legible published row.
+
+    The row carries the figures the surface is asked for as numbers, an
+    explicit horizon legibility state, and per-project freshness: a row whose
+    backing cache is behind its project's ledger names both versions so a
+    stale figure is never indistinguishable from a measured one.
+    """
+
+    source_projects = _row_source_projects(configuration)
+    stale_projects: dict[str, dict[str, Any]] = {}
+    for project in source_projects:
+        cached = cached_versions.get(project)
+        current = current_versions.get(project)
+        if cached != current:
+            stale_projects[project] = {
+                "cached_ledger_version": cached,
+                "current_ledger_version": current,
+            }
+    speed = configuration.get("speed")
+    speed_block = speed if isinstance(speed, Mapping) else {}
+    horizon = _horizon_publication(configuration)
+    return {
+        "configuration": configuration.get("configuration"),
+        "sample_size": int(configuration.get("runs") or 0),
+        "speed_mean": _measured_number(speed_block.get("mean")),
+        "speed_median": _measured_number(speed_block.get("median")),
+        "speed_samples": int(speed_block.get("samples") or 0),
+        "competence_horizon_hours": horizon["hours"],
+        "competence_horizon": horizon,
+        "projects": list(source_projects),
+        "stale": bool(stale_projects),
+        "stale_projects": stale_projects,
+    }
+
+
+def publish_capabilities(
+    *,
+    mounted_docs: Mapping[str, str | Path] | None = None,
+    path: str | Path | None = None,
+    project: str | None = None,
+) -> dict[str, Any]:
+    """Publish one legible row per worker configuration from the cache.
+
+    Reads the disposable cache rather than deriving fresh figures, because
+    dispatch reads that same cache: a cache left behind by a moved ledger
+    is shown stale rather than silently refreshed, which is the only way a
+    router's view and a reader's view ever disagree legibly. When ``project``
+    is given the rows are narrowed to configurations drawing from that
+    project's ledger, and an unmounted name is refused rather than silently
+    returning an empty result.
+    """
+
+    mounts = mounted_docs if mounted_docs is not None else _mounted_docs()
+    if project is not None and project not in mounts:
+        raise ValueError(f"project {project!r} is not mounted")
+    cached = load_capabilities(path)
+    cached_versions = cached.get("ledger_versions")
+    if not isinstance(cached_versions, Mapping):
+        cached_versions = {}
+    current_versions = _current_ledger_versions(mounts)
+
+    rows: list[dict[str, Any]] = []
+    configurations = cached.get("configurations")
+    if isinstance(configurations, list):
+        for configuration in configurations:
+            if not isinstance(configuration, Mapping):
+                continue
+            if project is not None and project not in _row_source_projects(
+                configuration
+            ):
+                continue
+            rows.append(
+                _published_row(configuration, cached_versions, current_versions)
+            )
+
+    return {
+        "cache_status": str(cached.get("cache_status") or "present"),
+        "path": str(Path(path) if path is not None else capabilities_path()),
+        "project": project,
+        "stale": any(bool(row["stale"]) for row in rows),
+        "configurations": len(rows),
+        "rows": rows,
+        "cached_ledger_versions": dict(cached_versions),
+        "current_ledger_versions": current_versions,
     }
 
 
