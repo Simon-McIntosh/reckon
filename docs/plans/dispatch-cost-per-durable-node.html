@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-09">
-<meta name="plan-version" content="52">
+<meta name="plan-version" content="53">
 <meta name="plan-commits" content="d5811b204966f31db83bab190b6440a6eb7b9842,db329f84e6eecc232e8cf41f35e828f84365dee8,b99ccdf829c50659c34efdd354642b5a9cba6827,0b146679a6585b480b35fed528801a1bd4acedf8">
 <meta name="plan-impl" content="0.97">
 <meta name="plan-artifacts" content="reckon/crew/node.py,reckon/budget.py,reckon/crew/dispatch.py,reckon/capabilities.py,reckon/mcp.py,reckon/serve.py,tests/test_crew_node.py,tests/test_budget.py,tests/test_crew_coordinator_spend.py,tests/test_routing_surface.py,skills/reckon-ship/SKILL.md,skills/reckon-ship/references/effort-routing.md">
@@ -842,6 +842,89 @@
       refusal text to name the backend, the figure and an alternative, and by reading the
       recorded utilisation back off the run.
     </p>
+
+    <h2 id="s13">&#167;13 &mdash; Nothing is reaped before the figures derived from it exist</h2>
+    <p><strong>This section has a clock, which is why it comes before the one that follows it.</strong>
+    The routing derivation does not read the ledger for its expensive part &mdash; it re-parses raw
+    run streams. Measured 2026-09-09: <code>derive_routing</code> is <strong>22.9 s of a 23 s
+    derive</strong>, almost all of it inside <code>_tool_steps</code> and
+    <code>_orientation_input_tokens</code> over <strong>502 stream files</strong>, calling
+    <code>_event_write_targets</code> <strong>1,005,919 times</strong>. The corpus those functions
+    read is <strong>3,661 stream directories totalling 3.68&nbsp;GB</strong>, against a committed
+    ledger of 18.9&nbsp;MB &mdash; a ratio of 195 to 1.</p>
+
+    <p><strong>And <code>crew gc</code> reaps that corpus on age alone.</strong> Its retention
+    default is 30 days and it makes no check on whether anything was ever derived from a stream
+    before removing it. The current distribution:</p>
+    <table>
+      <thead><tr><th>stream age</th><th>files</th><th>size</th></tr></thead>
+      <tbody>
+        <tr><td>0&ndash;6 days</td><td>1,328</td><td>2.18 GB</td></tr>
+        <tr><td>7&ndash;13 days</td><td>621</td><td>0.39 GB</td></tr>
+        <tr><td><strong>14&ndash;20 days</strong></td><td><strong>1,238</strong></td><td>0.90 GB</td></tr>
+        <tr><td>21&ndash;27 days</td><td>468</td><td>0.20 GB</td></tr>
+        <tr><td>28&ndash;34 days</td><td>5</td><td>reaping now</td></tr>
+      </tbody>
+    </table>
+    <p>So <strong>1,238 files reach the reaper in roughly ten days</strong>, and the figures this
+    plan's metric depends on have never been extracted from any of them. One row has already
+    crossed: of 818 reckon rows, one has no stream on disk <em>and</em> no derived figure, so that
+    run can never contribute a competence horizon again. One is a warning; 1,238 is the loss.</p>
+
+    <p><strong>The invariant is what removes the deadline, which is why it is worth more than the
+    backfill it protects.</strong> A source may be reaped only once the figures derived from it are
+    recorded. Stated that way it holds for every future field as well as the two named here &mdash;
+    a later figure added to the derivation inherits the protection instead of starting a new clock.
+    Note the shape: this is the same defect as a record nobody can read, one step earlier, where the
+    record is destroyed before anyone tries.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>An unextracted source is not reaped</td><td>A run directory older than the retention window whose row lacks a derived figure is retained, and is named in the result with the reason. Asserted by test against a synthetic run past the window in both states: figures present, it is removed; figures absent, it is kept and reported.</td></tr>
+        <tr><td>The refusal is visible, not silent</td><td>A retention pass that withholds removals reports how many it withheld and why, so a corpus that stops shrinking is legible rather than merely stubborn. Asserted on a mixed set where some are reapable and some are not.</td></tr>
+        <tr><td>The rule is on the field set, not on two field names</td><td>The check reads the derivation's declared inputs rather than a hardcoded pair, so a figure added later is protected without editing gc. Asserted by adding a third required field to the declaration and requiring an already-reapable run to become retained.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s14">&#167;14 &mdash; A per-run figure is computed once, when the run ends</h2>
+    <p><strong>The fast path is already designed, already coded, and never populated.</strong> Both
+    hot functions open by preferring a ledgered measurement:
+    <code>_orientation_input_tokens</code> returns <code>run["orientation_input_tokens"]</code> when
+    present, and <code>_tool_steps</code> checks <code>run["tool_steps"]</code> and then
+    <code>throughput.tool_steps</code> and <code>budget.tool_steps</code>. Measured over the reckon
+    ledger: <strong>0 of 818 rows carry any of the three.</strong> So the stream walk is not the
+    design, it is the fallback, and it is currently doing 100% of the work.</p>
+
+    <p>These figures are <strong>immutable once a run is terminal</strong> &mdash; a finished run's
+    stream never changes &mdash; so recomputing them on every derive is pure waste. Recorded once at
+    promotion, the derive stops reading streams at all and falls back to the ledger read, which was
+    measured at <strong>0.09 s</strong> against the derive's 26.3 s. That is the same treatment the
+    throughput span already receives, applied to two more fields on the same record.</p>
+
+    <p><strong>Two halves, and the second one is the one with the deadline.</strong> Recording at
+    promotion fixes every future run. It does nothing for the <strong>817 existing rows</strong>,
+    whose figures must be extracted from streams that are still on disk &mdash; which is why
+    &#167;13 comes first: with the retention invariant in place the backfill is unhurried, and
+    without it the backfill is racing a reaper.</p>
+
+    <p><strong>What follows once both halves land, stated so it can be checked rather than assumed:
+    the capabilities cache stops being necessary.</strong> It exists because the derivation is
+    expensive; the derivation is expensive because it re-reads streams. A derive that reads only the
+    ledger can run on demand, and a cache that can go three days stale while silently disarming the
+    competence gate is a liability rather than an optimisation. The exact staleness signal already
+    costs <strong>0.09 s</strong> by ledger version, or 0.0001 s by mtime, so even an interim
+    invalidation needs no clock and no schedule &mdash; key it on the thing that moves.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>The figures are on the row</td><td>A promoted run carries <code>tool_steps</code> and <code>orientation_input_tokens</code> as numbers, computed from its own stream at promotion. Asserted end to end by promoting a run and reading the committed row back, not by unit-testing the extractor.</td></tr>
+        <tr><td>The derive stops reading streams</td><td>With the fields present, a derivation over that corpus opens no stream file, asserted by counting opens rather than by timing; and the derived horizon is identical to the one the stream walk produced, so the fast path is proven equivalent rather than merely faster.</td></tr>
+        <tr><td>The existing corpus is recovered</td><td>The 817 rows whose streams are still on disk carry both figures afterwards, with the count of rows backfilled and the count skipped for a missing stream both stated as numbers.</td></tr>
+        <tr><td>A missing stream is not a zero</td><td>A row whose stream is already gone records the figure as absent rather than as 0, and the derivation excludes it rather than averaging it in. Asserted against the one row that has already crossed.</td></tr>
+      </tbody>
+    </table>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
