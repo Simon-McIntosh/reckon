@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="spa-surface-contract-health">
+  <meta name="plan-title" content="Eleven Surface Failures That Are Not The Browser">
+  <meta name="plan-summary" content="Of 26 failing surface tests, 15 are the known host navigation fault; separate and repair the 10 stale contracts and the 1 real defect hiding behind them">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="mid">
+  <meta name="plan-effort-hours" content="5.0">
+  <meta name="plan-wall-clock-hours" content="5.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint" content="S16">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,spa">
+  <meta name="plan-informs" content="">
+  <title>Eleven Surface Failures That Are Not The Browser | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-09">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">&#167;1 &mdash; Why this exists, and why it is not one subject</h2>
+    <p>
+      A figure of roughly two dozen failing surface tests was carried between three
+      coordinator sessions as a single item of work, and it was never measured. Measured on
+      2026-09-09 across the 41 surface and SPA test files: <strong>26 failures, 241 passes, no
+      skips and no errors</strong> in 726 seconds. The count was right. Treating it as one
+      subject was not.
+    </p>
+    <p>
+      The census that produced this plan classified every failure by cause with the evidence
+      for each, and the three causes have three different owners. That is the finding, and it
+      is why authoring a plan before measuring would have produced the wrong plan:
+    </p>
+    <table>
+      <thead><tr><th>Cause</th><th>Count</th><th>Owner</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>A rendered gate whose navigation never completes on this host</td>
+          <td>15</td>
+          <td>Already owned by
+            <a href="/reckon/plans/rendered-evidence-on-this-host">rendered-evidence-on-this-host</a>,
+            whose remaining debt needs the host's browser runtime repaired</td>
+        </tr>
+        <tr><td>A stale contract asserting behaviour the code no longer produces</td><td>10</td>
+          <td>This plan, &#167;2</td></tr>
+        <tr><td>A genuine defect in surface code</td><td>1</td><td>This plan, &#167;3</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>The environmental explanations are excluded by measurement rather than by
+      argument.</strong> A rendered gate on this host times out for two known reasons, and one
+      of them is a leak: browser processes held open by earlier runs exhaust the inotify
+      instance limit. Counted before the census and after it: <strong>zero leaked browser
+      processes both times, and inotify at 31 then 34 of 128</strong>. So the browser gates
+      clean up after themselves and the ceiling was never approached. The fifteen are the
+      diagnosed navigation fault, which stops inside the browser's network service above
+      stream-socket creation, and no amount of test repair reaches them.
+    </p>
+    <p>
+      The remaining eleven are worth separating precisely because the fifteen are not fixable
+      here. A suite carrying 26 reds where 15 are permanently blocked teaches every reader to
+      ignore the colour, and the eleven that <em>are</em> actionable disappear into that habit.
+      One of them is a real defect in a surface a user reads.
+    </p>
+
+    <h2 id="s2">&#167;2 &mdash; Ten contracts that assert what the code used to do</h2>
+    <p>
+      Each of these fails on a deterministic assertion against current code whose behaviour has
+      moved. They are not regressions and they are not flaky; the expectation predates a
+      refactor or an intentional change, and the code produces the new value correctly. This is
+      the fifth instance of this family recorded in this repository within a day, after eleven
+      dispatch fixtures, one lane-change fixture, three recovery expectations, six promotion
+      contracts and five remedy expectations.
+    </p>
+    <p>They fall into three shapes, which matters because the repair differs:</p>
+    <table>
+      <thead><tr><th>Shape</th><th>Cases</th><th>What moved</th></tr></thead>
+      <tbody>
+        <tr><td>A compiled-source substring the test searches for</td><td>4</td>
+          <td>Modules were refactored, so an extracted anchor or a derivation string no longer
+            appears in the source the test greps</td></tr>
+        <tr><td>A hard-coded expected stylesheet rule set</td><td>2</td>
+          <td>Two surfaces now set a zero minimum height, which the expected dictionaries do
+            not list</td></tr>
+        <tr><td>A rendered-text or exported-surface expectation</td><td>4</td>
+          <td>A public surface gained three exports; a topbar gained a project picker; a pager
+            and a lane emission changed what they render</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>Two of the ten are marked as leaning stale rather than proven stale</strong>, and
+      they must not be migrated on the lean alone. One reads a pager position of two of three
+      where the test asserts three of three; one probes a lane count of one where the test
+      asserts two. Each is consistent with the code having moved deliberately <em>and</em> with
+      the code being wrong, and nothing in the census separates those. Establish which before
+      touching either assertion: if the current behaviour is correct, migrate; if it is not,
+      the case belongs in &#167;3 and the assertion was right all along.
+    </p>
+    <p>
+      <em>Done when</em> one captured run of the surface and SPA test files reports zero
+      failures of this family, with the count of failures whose cause is a stale contract
+      falling from ten to zero; when every migrated assertion asserts the value the code now
+      produces and states in one line what moved, keeping the property the case was protecting;
+      when no assertion is deleted, skipped, or widened to accept either the old or the new
+      value; and when the two leaning cases are each resolved by a stated finding about whether
+      current behaviour is correct, not by assuming it. Asserted by the run's failure delta
+      against the revision this plan was authored at, which must show ten fewer failures and
+      none added.
+    </p>
+
+    <h2 id="s3">&#167;3 &mdash; The graph does not mount on a page that loads</h2>
+    <p>
+      One failure is a defect in surface code, and it is separable from the fifteen by a
+      property the census established rather than assumed: <strong>it is a file-scheme render,
+      not a served one.</strong> Inlined documents load on this host in about four tenths of a
+      second, which is why the host fault does not explain it. The page loads, and then the
+      graph never populates &mdash; the readiness selectors for a node card and a handle token
+      never appear.
+    </p>
+    <p>
+      So the document arrives and the component does not mount. That is a different failure
+      from every other red in the suite, and it is the only one of the 26 where a reader
+      looking at the surface would see something wrong.
+    </p>
+    <p>
+      <em>Done when</em> the file-scheme graph probe renders a populated graph repeatably, with
+      the readiness selectors present and the probe's own repeat assertion passing; when the
+      cause is stated as a mechanism rather than as a symptom, naming why the component did not
+      mount on a document that loaded; and when the fix is verified on the file-scheme path
+      without depending on a served navigation, since that path does not work on this host.
+      Asserted by the probe passing twice in isolation and by the stated mechanism being
+      checkable against the code.
+    </p>
+
+    <h2 id="s4">&#167;4 &mdash; What this plan does not do</h2>
+    <p>
+      It does not touch the fifteen rendered gates. They belong to
+      <a href="/reckon/plans/rendered-evidence-on-this-host">rendered-evidence-on-this-host</a>,
+      whose own record diagnosed the boundary to the socket level and whose remaining debt is
+      explicitly authority-required: only the owner of this host's browser runtime can repair
+      or replace it, and the acceptance gate there requires both controls rather than one.
+      Those tests will report themselves the moment the runtime works.
+    </p>
+    <p>
+      It also does not rewrite the surface tests into a different style, add coverage, or
+      migrate the harness. The work is to make eleven assertions true again or to show that the
+      code they describe is wrong, and to leave the suite's colour meaningful.
+    </p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="leaning-cases" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">How are the two leaning-stale cases resolved before their assertions are touched?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="investigate-first">Establish current-behaviour correctness in a read-only step, then migrate or reclassify</button>
+      <button class="r-opt" data-value="migrate-with-note">Migrate both and record the uncertainty in the commit</button>
+      <button class="r-opt" data-value="split-node">Give each its own node so the finding and the change are separable</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-ssch-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-09-09" data-recommends-skill="/reckon-ship spa-surface-contract-health §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Separate the two leaning cases before the sweep, not during it</h4>
+    <div class="r-fu-body"><p>&#167;2 is one mechanical sweep across six files and &#167;3 is one defect, so they are independent and can run together. The ordering that matters is inside &#167;2: <strong>settle the two leaning-stale cases first, in a read-only step.</strong> A pager reading two of three where the test asserts three of three, and a lane count of one where the test asserts two, are each consistent with the code having moved deliberately and with the code being wrong. Migrating them on the lean would convert a possible defect into a passing test, which is the one outcome worse than leaving the red.</p><p>The other eight are safe to sweep in one node: four compiled-source substrings, two stylesheet rule sets, and two rendered-text or exported-surface expectations, all deterministic and all with the new value already established by the census.</p><p><strong>Do not fold the fifteen rendered gates into this.</strong> They are the diagnosed host navigation fault and belong to <code>rendered-evidence-on-this-host</code>; the leaked-browser and inotify explanations are excluded by counts taken before and after the census, so nothing here reaches them.</p><p>The census carrying every per-case classification and its evidence is at <code>~/.config/reckon/crew/reports/spa-test-health-census-20260909.md</code>. Judge the sweep by failure delta against the revision this plan was authored at, not by an absolute count: the suite carries pre-existing reds this plan deliberately does not own.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship spa-surface-contract-health §2</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>
