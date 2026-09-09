@@ -134,6 +134,8 @@ def _shadow(
     *,
     config: dict | None = None,
     configuration_overrides: set[str] | None = None,
+    session: str = "",
+    wave: str = "",
 ) -> dict:
     return dispatch_shadow(
         primary_run_id,
@@ -141,6 +143,8 @@ def _shadow(
         config=config or _candidate_config(backend_name),
         repo=repo,
         configuration_overrides=configuration_overrides or set(),
+        session=session,
+        wave=wave,
         launcher=lambda *args, **kwargs: 0,
     )
 
@@ -163,6 +167,23 @@ def _commit_shadow_record(repo, home, *, run_id, lineage, backend) -> Path:
         root=repo,
     )
     return artifact
+
+
+def test_shadow_pointer_keeps_the_dispatching_session_and_wave(home, repo) -> None:
+    primary = _completed_primary(home, repo)
+
+    shadow = _shadow(
+        str(primary["run_id"]),
+        "candidate-a",
+        repo,
+        session="dispatching-session",
+        wave="wave-a",
+    )
+    pointer = crew.read_pointer(shadow["run_id"])
+
+    assert pointer["session"] == shadow["session"] == "dispatching-session"
+    assert pointer["wave"] == shadow["wave"] == "wave-a"
+    assert not {"contamination", "excluded", "exclusion"}.intersection(pointer)
 
 
 def test_many_candidates_shadow_one_primary_without_colliding(home, repo) -> None:

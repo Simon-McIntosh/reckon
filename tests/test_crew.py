@@ -590,6 +590,49 @@ def test_dry_run_payload_reports_the_resolved_write_paths(
     _assert_no_dispatch_artifacts(repo)
 
 
+def test_dispatch_cli_accepts_and_persists_a_wave(home, repo, monkeypatch) -> None:
+    config = json.loads(json.dumps(CONFIG))
+    config["backends"]["alpha"]["launch"] = "in-harness"
+    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *args, **kwargs: config)
+    node = _node()
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "dispatch",
+            "--project",
+            "proj",
+            "--plan",
+            "plan-a",
+            "--section",
+            node.section,
+            "--spec-level",
+            node.spec_level,
+            "--node",
+            node.id,
+            "--goal",
+            node.goal,
+            "--done-when",
+            node.done_when,
+            "--write-path",
+            node.write_paths[0],
+            "--session",
+            "cli-session",
+            "--wave",
+            "wave-a",
+            "--repo",
+            str(repo),
+            "--no-watch",
+        ],
+    )
+    payload = json.loads(result.output)
+
+    assert result.exit_code == 0
+    assert payload["wave"] == "wave-a"
+    assert crew.read_pointer(payload["run_id"])["wave"] == "wave-a"
+
+
 def test_local_dry_run_selects_the_declared_backend(home, repo, monkeypatch) -> None:
     config = flight.deep_merge(
         CONFIG,
@@ -2153,6 +2196,23 @@ def test_dispatch_launches_a_cli_backend_and_records_the_run(home, repo) -> None
     assert launched["cwd"] == record["worktree"]
     # The record is on disk, so a fresh session can pick the run up.
     assert json.loads(crew.pointer_path(record["run_id"]).read_text()) == record
+
+
+def test_dispatch_pointer_persists_a_wave_without_exclusion_fields(home, repo) -> None:
+    record = crew.dispatch(
+        node=_node(manifest_path=""),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="dispatching-session",
+        wave="wave-a",
+        launcher=lambda *args, **kwargs: 0,
+    )
+    pointer = crew.read_pointer(record["run_id"])
+
+    assert pointer["wave"] == record["wave"] == "wave-a"
+    assert pointer["session"] == "dispatching-session"
+    assert not {"contamination", "excluded", "exclusion"}.intersection(pointer)
 
 
 def test_read_only_dispatch_runs_in_delivery_directory_and_explains_scope(
@@ -3834,6 +3894,44 @@ def test_shadow_cli_routes_the_candidate_and_derives_the_node(
     assert crew.list_live() == []
 
 
+def test_shadow_cli_accepts_and_persists_session_and_wave(
+    home, repo, monkeypatch
+) -> None:
+    primary_pointer = _dispatched(home, repo, spec_level="guided")
+    primary = crew.complete(primary_pointer["run_id"], gate="passed")["record"]
+
+    def resolve(_flight, project, checkout_path, overrides):
+        assert project == "proj"
+        assert checkout_path == repo
+        config = _candidate_config()
+        config["backends"]["candidate"]["launch"] = "in-harness"
+        return config
+
+    monkeypatch.chdir(repo)
+    monkeypatch.setattr(cli_module, "_resolved_flight", resolve)
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "shadow",
+            "--run",
+            primary["run_id"],
+            "--session",
+            "shadow-session",
+            "--wave",
+            "wave-a",
+            "--backend",
+            "candidate",
+        ],
+    )
+    payload = json.loads(result.output)
+    pointer = crew.read_pointer(payload["run_id"])
+
+    assert result.exit_code == 0
+    assert pointer["session"] == "shadow-session"
+    assert pointer["wave"] == "wave-a"
+
+
 # ── Promotion measurements ─────────────────────────────────────────────────
 
 
@@ -3950,6 +4048,43 @@ def test_redispatched_node_records_its_run_lineage(home, repo) -> None:
     assert (
         crew.complete(second["run_id"], gate="passed")["record"]["lineage"] == expected
     )
+
+
+def test_wave_keeps_resumption_and_redispatch_identity_separate(home, repo) -> None:
+    first = crew.dispatch(
+        node=_node(manifest_path=""),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="first",
+        wave="wave-a",
+        launcher=lambda *args, **kwargs: 0,
+    )
+    resumed = crew.record_resumption(
+        first["run_id"],
+        pid=0,
+        turn=1,
+        log_path=crew.run_dir(first["run_id"]) / "resume-1.jsonl",
+        stderr_path=crew.run_dir(first["run_id"]) / "resume-1.stderr.log",
+    )
+
+    assert resumed["run_id"] == first["run_id"]
+    assert resumed["wave"] == "wave-a"
+    crew.complete(first["run_id"], gate="passed")
+
+    redispatch = crew.dispatch(
+        node=_node(manifest_path=""),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="second",
+        wave="wave-a",
+        launcher=lambda *args, **kwargs: 0,
+    )
+
+    assert redispatch["run_id"] != first["run_id"]
+    assert redispatch["wave"] == "wave-a"
+    assert redispatch["lineage"]["previous_run_id"] == first["run_id"]
 
 
 def test_redispatch_does_not_inherit_a_terminal_delivery(home, repo) -> None:

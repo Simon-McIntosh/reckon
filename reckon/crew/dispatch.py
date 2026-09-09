@@ -95,7 +95,6 @@ from reckon.crew.runs import (
     watch_stream_path,
 )
 
-
 _INOTIFY_EVENTS = 0x00000100 | 0x00000008 | 0x00000080
 # Process startup and registration may receive only one scheduler slice in six
 # while two CPU-bound jobs share a loaded host. Keep every watcher condition
@@ -2178,6 +2177,8 @@ def shadow(
     candidate_backend: str,
     config: Mapping[str, Any],
     repo: str | Path,
+    session: str = "",
+    wave: str = "",
     member: str = "",
     configuration_overrides: Iterable[str] = (),
     dry_run: bool = False,
@@ -2189,6 +2190,14 @@ def shadow(
     node = source["node"]
     base_sha = source["base_sha"]
     primary = source["primary"]
+    dispatching_session = str(session or primary.get("session") or "")
+    if not dispatching_session:
+        raise CrewError(
+            format_refusal(
+                "D20", "shadow needs a dispatching session on its request or primary"
+            )
+        )
+    wave_id = str(wave or primary.get("wave") or "")
     primary_agent = primary["agent"]
     explicit = {str(config_key) for config_key in configuration_overrides}
     shadow_config, comparison = _shadow_dispatch_config(
@@ -2264,7 +2273,11 @@ def shadow(
         project=project,
         repo=repo,
         config=shadow_config,
-        session=shadow_worktree_session(run_id, _backend_name, worktree_component),
+        session=dispatching_session,
+        wave=wave_id,
+        worktree_session=shadow_worktree_session(
+            run_id, _backend_name, worktree_component
+        ),
         base=base_sha,
         locked_decisions=node.requires_decisions,
         peer_scopes={},
@@ -2302,6 +2315,7 @@ def dispatch(
     repo: str | Path,
     config: Mapping[str, Any],
     session: str,
+    wave: str = "",
     base: str = "HEAD",
     locked_decisions: Iterable[str] = (),
     peer_scopes: Mapping[str, Iterable[str]] | None = None,
@@ -2314,6 +2328,7 @@ def dispatch(
     watch_required: bool = False,
     watch_override: bool = False,
     lineage_override: Mapping[str, Any] | None = None,
+    worktree_session: str | None = None,
     local: bool = False,
     backend_override: str | None = None,
     default_backend_override: str | None = None,
@@ -2353,6 +2368,7 @@ def dispatch(
     liveness observed at the dispatch gate.
     """
     repo_root = Path(repo).resolve()
+    worktree_identity = str(worktree_session or session)
     shadow_lineage = (
         dict(lineage_override)
         if isinstance(lineage_override, Mapping)
@@ -2551,7 +2567,7 @@ def dispatch(
         idle_window=str(fences.get("member_idle_window") or DEFAULT_MEMBER_IDLE_WINDOW),
     )
     named_member = bool(member)
-    effective_member = member or _session_member_id(session)
+    effective_member = member or _session_member_id(worktree_identity)
     roster_member = ledger.member(project, effective_member, root=ledger_root)
     if named_member:
         if roster_member is None:
@@ -2676,7 +2692,7 @@ def dispatch(
     gates = config.get("gates") or {}
     suite_command = str(gates.get("suite_command") or "").strip() or None
 
-    worktree = _create_worktree(repo_root, session, node.id, base)
+    worktree = _create_worktree(repo_root, worktree_identity, node.id, base)
     spawned_pid: int | None = None
     spawned_start_time: str | None = None
     wired_peer_run_ids: list[str] = []
@@ -2734,6 +2750,7 @@ def dispatch(
             "repo": str(repo_root),
             "authority": resolution.authority,
             "session": session,
+            "wave": wave,
             "coordinator": coordinator,
             "node": node_definition,
             "role": node.role,

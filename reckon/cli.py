@@ -962,6 +962,7 @@ def crew_preflight(project, roles, backends, purpose, checkout_path, overrides, 
     help="Roster member to run this node, reusing its long-lived session.",
 )
 @click.option("--session", required=True, help="Opaque session id grouping worktrees.")
+@click.option("--wave", default="", help="Optional open wave id grouping this run.")
 @click.option("--base", default="HEAD", show_default=True, help="Worktree base ref.")
 @click.option(
     "--repo",
@@ -1040,6 +1041,7 @@ def crew_dispatch(
     manifest,
     member,
     session,
+    wave,
     base,
     repo,
     checkout_path,
@@ -1177,6 +1179,7 @@ def crew_dispatch(
             repo=_repo_root(repo),
             config=config,
             session=session,
+            wave=wave,
             base=base,
             locked_decisions=locked_decisions,
             peer_scopes=node.peer_scopes,
@@ -1284,6 +1287,10 @@ def crew_dispatch(
 @crew.command(name="shadow")
 @click.option("--run", "run_id", required=True, help="Committed primary run id.")
 @click.option(
+    "--session", default="", help="Dispatching session that owns this shadow."
+)
+@click.option("--wave", default="", help="Optional open wave id grouping this shadow.")
+@click.option(
     "--backend",
     required=True,
     help="Candidate backend name resolved through flight config.",
@@ -1306,7 +1313,7 @@ def crew_dispatch(
     help="Validate and resolve only: no worktree, process or live pointer.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_shadow(run_id, backend, overrides, member, dry_run, pretty):
+def crew_shadow(run_id, session, wave, backend, overrides, member, dry_run, pretty):
     """Re-run a committed run at its original base as isolated evidence."""
     from reckon.crew.dispatch import shadow, shadow_source
 
@@ -1356,6 +1363,8 @@ def crew_shadow(run_id, backend, overrides, member, dry_run, pretty):
             candidate_backend=backend,
             config=config,
             repo=repo,
+            session=session,
+            wave=wave,
             member=member,
             configuration_overrides=configuration_overrides,
             dry_run=dry_run,
