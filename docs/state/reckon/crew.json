@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T19:42:38",
+  "updated": "2026-09-09T19:50:53",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -93672,6 +93672,185 @@
         "watch_override": null,
         "tool_steps": 93.0,
         "orientation_input_tokens": 4896629.0
+      },
+      {
+        "run_id": "r-20260909T173332076847-dcdn-the-existing-corpus-carries-its-figures",
+        "plan": "dispatch-cost-per-durable-node",
+        "section": "\u00a714",
+        "node": "dcdn-the-existing-corpus-carries-its-figures",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 857,
+                "cached_input_tokens": 274928,
+                "input_tokens": 275787,
+                "output_tokens": 1503,
+                "reasoning_output_tokens": 725,
+                "total_tokens": 277290,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "d605a9b0-7fe6-4816-b993-dad99ec68f17",
+            "session_id": "ship-clw-2026-09-09"
+          },
+          "done_when": "The backfill entry point in scripts/derive_run_figures.py has been run against this project's own committed crew ledger, resolved by the script from the project name rather than by any path you type, and: rows filled, rows skipped for a missing stream, and rows unmeasurable are each reported as a separate number in the manifest; a second immediate run reports zero of all three, proving idempotence on the real data rather than on a fixture; every row skipped or unmeasurable carries both keys present with no measured value and never a zero, verified by reading the committed file back programmatically rather than from the script's return value; the count of rows carrying at least one measured figure afterwards is stated and reconciled against the total row count; the ledger is re-read immediately before the write so the window against concurrent promotion is minimal, and it is committed alone in its own commit touching no other path; and reckon crew gc --project reckon is run afterwards with run_directories_withheld and run_directories_reaped_with_explicitly_absent_figures both reported as numbers. The ledger is 4.3 MB and exceeds this context window on its own, so NEVER open it as a file: read and write it only programmatically, through the script and through json in a subprocess. Its write is granted for this node although it is not in the declared list, because naming it would make this dispatch unfenceable",
+          "estimated_hours": null,
+          "goal": "Fill the two per-run figures on every ledger row recorded before promotion computed them, so the derivation stops reading streams for the existing corpus",
+          "id": "dcdn-the-existing-corpus-carries-its-figures",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-09T17:33:32Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T173332076847-dcdn-the-existing-corpus-carries-its-figures/manifest.md",
+          "plan": "dispatch-cost-per-durable-node",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a714",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "scripts/derive_run_figures.py",
+            "docs/state/reckon/crew.json"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-elapsed",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-09T17:33:37Z",
+        "completed_at": "2026-09-09T17:48:53.855Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 909,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 916,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "486d235c9032c4afba013ecad365f784d30f8a94",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "scripts/derive_run_figures.py --project reckon, run twice under srun on all_debug",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T173332076847-dcdn-the-existing-corpus-carries-its-figures/backfill_node.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T173332076847-dcdn-the-existing-corpus-carries-its-figures/manifest.md",
+        "scope_changed": false,
+        "session_id": "b3b6d834-540c-4e59-a915-97439a76d446",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6165673,
+            "input_tokens_cumulative": 6165673,
+            "output_tokens": 69185,
+            "output_tokens_cumulative": 69185,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-09T17:48:53.855Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6165673,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 913.485,
+          "generated_tokens": 69185,
+          "generation_seconds": 733.785,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 15.7,
+          "machine_seconds": 179.7,
+          "peak_input_tokens": 159726,
+          "tokens_per_second": 94.29,
+          "wall_tokens_per_second": 75.74
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": "an execution node: the script was already merged and ran unchanged, so the deliverable is the filled ledger, committed by the coordinator alone as 2ffd2ba",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-clw-2026-09-09/dcdn-the-existing-corpus-carries-its-figures",
+          "session_id": "b3b6d834-540c-4e59-a915-97439a76d446",
+          "session_source": "stream",
+          "retained_at": "2026-09-09T17:48:53.855Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 69.0,
+        "orientation_input_tokens": null
       }
     ],
     "holds": [
@@ -93900,6 +94079,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1349
+    "_version": 1350
   }
 }
