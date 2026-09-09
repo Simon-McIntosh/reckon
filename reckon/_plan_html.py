@@ -22,17 +22,18 @@ yields a valid record (slug from filename, title from <title>, status=draft).
 from __future__ import annotations
 
 import html as _htmlmod
+import json
 import re
 from html.parser import HTMLParser
 from pathlib import Path
 
 from bs4 import BeautifulSoup
 
+from reckon._schema import LEGACY_EFFORT_HOURS
 from reckon.capability import (
     CAPABILITY_SCHEMA_VERSION,
     from_legacy_tier,
 )
-from reckon._schema import LEGACY_EFFORT_HOURS
 from reckon.tags import normalise_tag
 
 
@@ -144,6 +145,7 @@ _PLAN_ONLY_METAS = (
     "plan-depends-on",
     "plan-blocks",
     "plan-impl",
+    "plan-section-declarations",
 )
 
 _DEFAULTS = {
@@ -278,6 +280,22 @@ def read_state(html_text: str) -> dict:
                 pass
 
     warnings: list[str] = []
+    raw_declarations = meta_values.get("plan-section-declarations")
+    if raw_declarations is not None:
+        try:
+            declarations = json.loads(raw_declarations)
+        except (TypeError, ValueError):
+            declarations = None
+        if isinstance(declarations, dict) and all(
+            isinstance(section, str) and isinstance(classification, str)
+            for section, classification in declarations.items()
+        ):
+            st["section_declarations"] = declarations
+        else:
+            warnings.append(
+                "section_declarations: plan-section-declarations must be a JSON "
+                "object mapping section identities to classifications"
+            )
     capability = _capability_from_values(
         meta_values,
         prefix="plan-capability-",
@@ -831,6 +849,13 @@ def write_state(html_text: str, state: dict) -> str:
         out = _set_meta(out, "plan-impl", state["impl"])
     if "version" in state:
         out = _set_meta(out, "plan-version", int(state.get("version") or 0))
+    if artifact_type == "plan" and "section_declarations" in state:
+        declarations = state.get("section_declarations") or {}
+        out = _set_meta(
+            out,
+            "plan-section-declarations",
+            json.dumps(declarations, ensure_ascii=True, separators=(",", ":")),
+        )
     for sid in SECTION_IDS:
         if sid in state:
             _reject_emptying_unparsed_section(out, sid, state[sid])

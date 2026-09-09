@@ -25,18 +25,19 @@ from jsonschema import Draft202012Validator
 from jsonschema.exceptions import ValidationError
 
 from reckon._plan_html import from_html, read_state, to_html, write_state
-from reckon.capability import CAPABILITY_CLASSES, CAPABILITY_SCHEMA_VERSION
 from reckon._schema import (
     EFFORT_ENUM,
     LEGACY_EFFORT_HOURS,
-    PlanState,
     ROI_ENUM,
+    SECTION_DECLARATION_ENUM,
     STATUS_ENUM,
     IndexData,
     IndexState,
+    PlanState,
     gen_json_schema,
     schema_path,
 )
+from reckon.capability import CAPABILITY_CLASSES, CAPABILITY_SCHEMA_VERSION
 from reckon.resources import iter_resources
 
 # ── Fixtures / sample plan HTML ──────────────────────────────────────────────
@@ -68,6 +69,7 @@ FULL_PLAN = (
     '<meta name="plan-modified" content="2026-05-29">\n'
     '<meta name="plan-depends-on" content="dep-a,dep-b">\n'
     '<meta name="plan-blocks" content="blk-c">\n'
+    '<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;}">\n'
     "<title>Sample | reckon</title>\n"
     '</head>\n<body>\n<main class="plan-doc">\n'
     '<section data-reckon="decisions" id="decisions" class="r-decisions">\n'
@@ -243,6 +245,7 @@ def test_state_round_trip():
     assert len(state["questions"]) == 2
     assert state["research"] and state["comments"]
     assert state["impl"] == 0.5 and state["version"] == 3  # server-owned scalars
+    assert state["section_declarations"] == {"s1": "done", "s2": "implementable"}
 
     rendered = write_state(FULL_PLAN, state)
     expected = {k: v for k, v in state.items() if k != "compatibility_warnings"}
@@ -352,6 +355,36 @@ def test_write_state_ignores_project_meta():
 def test_validate_for_write_accepts_complete_state():
     ps = PlanState(project="reckon", slug="x", title="X", status="active")
     assert ps.validate_for_write() is ps
+
+
+def test_section_declarations_are_typed_and_published():
+    state = PlanState.model_validate(
+        {"section_declarations": {"s1": "implementable", "s2": "deferred"}}
+    )
+
+    assert state.section_declarations == {
+        "s1": "implementable",
+        "s2": "deferred",
+    }
+    assert (
+        gen_json_schema()["properties"]["section_declarations"]["additionalProperties"][
+            "enum"
+        ]
+        == SECTION_DECLARATION_ENUM
+    )
+
+
+def test_section_declarations_reject_invalid_write_values():
+    state = PlanState(
+        project="reckon",
+        slug="sample",
+        title="Sample",
+        status="active",
+        section_declarations={"bad section": "queued", "s2": "queued"},
+    )
+
+    with pytest.raises(ValueError, match="section_declarations"):
+        state.validate_for_write()
 
 
 def test_validate_for_write_rejects_milestone_placeholder():

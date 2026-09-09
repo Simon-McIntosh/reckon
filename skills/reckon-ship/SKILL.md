@@ -364,6 +364,12 @@ Audit for <slug>:
 Dispatch plan: §2 fleet of 3 → §3 fleet of 2 (§3 depends on §2 output)
 ```
 
+Persist that DAG-build classification before dispatch with one version-safe
+`edit_plan` write to `section_declarations`, mapping every authored section id
+to `implementable`, `deferred`, or `done`. Re-read the plan and require the
+field to match the complete audit. This declaration establishes the executable
+denominator; omitting it means the remainder is unknown, never zero.
+
 ### 3. Scope allocation
 
 List **exclusive write paths** per item. If two items share a file, serialise them or split it (`test_a.py` / `test_b.py`).
@@ -572,6 +578,7 @@ crew(project, view="summary")   roster, gate outcomes, measured time against dec
 crew(project, view="flight")    resolved routing, and which layer supplied each value
 crew(project, view="records")   lossless committed run records for detailed audit
 crew(project, view="budget")    backend headroom, hold state, reset time, and dispatch ceiling
+crew(project, view="lanes")     backend lane identities, aliases, and account grouping
 ```
 
 `reckon crew ledger --project <project> [--view summary|records]` answers what

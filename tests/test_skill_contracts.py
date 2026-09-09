@@ -619,6 +619,15 @@ def test_ship_advances_implementation_for_every_node_landing() -> None:
     assert "never wait for section closure to record earlier nodes" in ship
 
 
+def test_ship_persists_the_dag_build_section_classification() -> None:
+    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+
+    assert "Persist that DAG-build classification before dispatch" in ship
+    assert "`section_declarations`" in ship
+    assert "`implementable`, `deferred`, or `done`" in ship
+    assert "remainder is unknown, never zero" in ship
+
+
 def test_ship_landing_state_carries_commit_and_gate_measure_with_impl() -> None:
     ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
     reference = normalized(
