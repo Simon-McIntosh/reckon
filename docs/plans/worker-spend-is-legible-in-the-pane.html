@@ -397,14 +397,25 @@ accumulation_key := run_id                          if kind == "shadow"
 
     <h2 id="s8">&sect;8 &mdash; What this plan does not do</h2>
     <p>
-      <strong>No wave cell.</strong> The field exists &mdash; <code>wave</code>, a string at the
-      live pointer's top level, with <code>--wave</code> options on both dispatch and shadow
-      &mdash; and it is populated on nothing: 3 of 11 live pointers carry the key and all three
-      hold the empty string, while the committed ledger lacks it on 797 of 797 rows. A column
-      blank on every row reads as broken rather than as unrecorded. The owning session is making
-      dispatch assign a wave by default; the cell lands when the field does, sized from the id's
-      own shape. Both absences &mdash; empty string and missing key &mdash; mean not-in-a-wave
-      and neither may be grouped.
+      <strong>No wave cell yet, and when it comes it will not carry the id.</strong> The
+      <code>wave</code> field on the live pointer began defaulting mid-session: it went from
+      empty on every pointer to 8 of 14 carrying the key, two with real ids, six holding the
+      empty string and six predating it entirely, while the committed ledger still lacks it
+      on 797 of 797 rows. So three populations coexist, and both absences &mdash; empty string
+      and missing key &mdash; mean not-in-a-wave; neither may ever be grouped, or a rollup
+      renders one plausible-looking wave containing every ungrouped node.
+    </p>
+    <p>
+      The id is <code>wave-</code> followed by 32 hex characters, <strong>37 columns</strong>.
+      That is wider than the node cell at 36 and wider than all five cells of &sect;2 together
+      at 27, so it cannot go in the grid. The precedent is already in the file: the owner cell
+      is deliberately one glyph, its comment reading that a run id spelled in full &ldquo;spends
+      eighteen columns saying it&rdquo; &mdash; an argument that applies roughly twice over at
+      37. So the pane will render a short per-pane wave index assigned in order of first
+      appearance, exactly as <code>Ticker.hue</code> hands out node colours and for the same
+      recorded reason: identity only has to hold within the pane a reader is watching. The
+      full id stays on the transition record, where a reader correlating against a ledger row
+      can use it. The grid gets the discriminator; the record keeps the identifier.
     </p>
     <p>
       <strong>No change to <code>Ticker._stats</code>.</strong> A concurrent session needs that
