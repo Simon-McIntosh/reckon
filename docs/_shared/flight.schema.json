@@ -11,6 +11,14 @@
                         "null"
                     ]
                 },
+                "as_of": {
+                    "description": "Date on which this backend's per-million rates were published. A rate is priced only when dated: one whose `as_of` is older than the declared staleness horizon is returned with its age attached rather than silently priced as current. Optional operator data; a backend declaring rates without a date stays explicitly unpriced.",
+                    "format": "date",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
                 "auth_check": {
                     "description": "Argument vector run to test whether this backend is authenticated, as an exit status. Optional, and user data: it is how a provider-specific credential check reaches reckon without reckon knowing any provider. Availability probing reports the result and never acts on it.",
                     "items": {
@@ -103,7 +111,7 @@
                     ]
                 },
                 "input_rate_per_million": {
-                    "description": "Published input-token rate per million tokens used only to derive dimensionless quota comparisons. Optional operator data; absence leaves this backend explicitly unpriced.",
+                    "description": "Public input-token price per million tokens for the model this backend serves, as published on the backend's `as_of` date. Together with the output price it is the basis of a notional per-run cost from measured tokens, and of the quota weight comparison. Optional operator data; absence leaves this backend explicitly unpriced.",
                     "minimum": 0,
                     "type": [
                         "number",
@@ -134,7 +142,7 @@
                     "type": "string"
                 },
                 "output_rate_per_million": {
-                    "description": "Published output-token rate per million tokens used only to derive dimensionless quota comparisons. Optional operator data; absence leaves this backend explicitly unpriced.",
+                    "description": "Public output-token price per million tokens for the model this backend serves, as published on the backend's `as_of` date. Together with the input price it is the basis of a notional per-run cost from measured tokens, and of the quota weight comparison. Optional operator data; absence leaves this backend explicitly unpriced.",
                     "minimum": 0,
                     "type": [
                         "number",
@@ -186,6 +194,14 @@
                         "null"
                     ]
                 },
+                "as_of": {
+                    "description": "Date on which this backend's per-million rates were published. A rate is priced only when dated: one whose `as_of` is older than the declared staleness horizon is returned with its age attached rather than silently priced as current. Optional operator data; a backend declaring rates without a date stays explicitly unpriced.",
+                    "format": "date",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
                 "auth_check": {
                     "description": "Argument vector run to test whether this backend is authenticated, as an exit status. Optional, and user data: it is how a provider-specific credential check reaches reckon without reckon knowing any provider. Availability probing reports the result and never acts on it.",
                     "items": {
@@ -278,7 +294,7 @@
                     ]
                 },
                 "input_rate_per_million": {
-                    "description": "Published input-token rate per million tokens used only to derive dimensionless quota comparisons. Optional operator data; absence leaves this backend explicitly unpriced.",
+                    "description": "Public input-token price per million tokens for the model this backend serves, as published on the backend's `as_of` date. Together with the output price it is the basis of a notional per-run cost from measured tokens, and of the quota weight comparison. Optional operator data; absence leaves this backend explicitly unpriced.",
                     "minimum": 0,
                     "type": [
                         "number",
@@ -309,7 +325,7 @@
                     "type": "string"
                 },
                 "output_rate_per_million": {
-                    "description": "Published output-token rate per million tokens used only to derive dimensionless quota comparisons. Optional operator data; absence leaves this backend explicitly unpriced.",
+                    "description": "Public output-token price per million tokens for the model this backend serves, as published on the backend's `as_of` date. Together with the input price it is the basis of a notional per-run cost from measured tokens, and of the quota weight comparison. Optional operator data; absence leaves this backend explicitly unpriced.",
                     "minimum": 0,
                     "type": [
                         "number",

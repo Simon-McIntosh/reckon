@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from datetime import date
 from types import SimpleNamespace
 
 import pytest
@@ -12,13 +13,14 @@ from reckon.crew.quota_weight import RequestTokenUsage, quota_weight
 
 @pytest.fixture(autouse=True)
 def configured_model(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Declare the test model and its rates through the flight configuration."""
+    """Declare the test model and its dated rates through the flight configuration."""
     config = {
         "backends": {
             "fixture-lane": {
                 "model": "fixture-model",
                 "input_rate_per_million": 4.00,
                 "output_rate_per_million": 20.00,
+                "as_of": date(2026, 1, 1),
             },
         }
     }
