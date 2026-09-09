@@ -202,3 +202,80 @@ def test_a_crash_without_a_wait_declaration_stays_abandoned(
     assert snapshot["state"] == "abandoned"
     assert counts == {"working": 0, "blocked": 1, "unpromoted": 0}
     assert "waiting" not in counts
+
+
+@pytest.mark.parametrize("quote", ["'", '"'])
+def test_a_quoted_local_offset_wait_stays_waiting_and_sweep_eligible(
+    home: Path, tmp_path: Path, quote: str
+) -> None:
+    pointer = _waiting_run(
+        tmp_path,
+        f"r-quoted-offset-{ord(quote)}",
+        started_at=f"{quote}2026-09-09T10:15:30+02:00{quote}",
+    )
+
+    row = recovery.classify_pointer(pointer)
+    pending = sweep(
+        PROJECT,
+        launcher=_Launcher(),
+        condition_test=lambda pointer, wait: {"terminal": False, "observed": "RUNNING"},
+    )
+
+    assert row["classification"] == "waiting"
+    assert row["manifest_error"] is None
+    assert pending["resumed"] == []
+    assert pending["skipped"][0]["run_id"] == pointer["run_id"]
+    assert pending["skipped"][0]["reason"] == "condition-pending"
+
+
+def test_a_quoted_local_offset_uses_the_same_epoch_as_bare_utc(
+    tmp_path: Path,
+) -> None:
+    manifest = tmp_path / "manifest.md"
+    manifest.write_text("status: waiting\n", encoding="utf-8")
+    local = "2026-09-09T10:15:30+02:00"
+    utc = "2026-09-09T08:15:30+00:00"
+    now = datetime(2026, 9, 9, 9, 15, 30, tzinfo=UTC).timestamp()
+    wait_fields = {
+        "status": "waiting",
+        "wait_condition": "cluster job 7788",
+        "wait_probe": ["scheduler-status", "--job", "7788"],
+        "wait_terminal": ["COMPLETED"],
+        "resume_brief": "inspect the job result and finish",
+    }
+
+    quoted_wait = recovery._manifest_wait(
+        {**wait_fields, "wait_started_at": f"'{local}'"},
+        manifest,
+        now_seconds=now,
+        stale_after_seconds=3600,
+    )
+    bare_wait = recovery._manifest_wait(
+        {**wait_fields, "wait_started_at": utc},
+        manifest,
+        now_seconds=now,
+        stale_after_seconds=3600,
+    )
+
+    assert quoted_wait is not None and bare_wait is not None
+    assert (
+        datetime.fromisoformat(local).timestamp()
+        == datetime.fromisoformat(utc).timestamp()
+    )
+    assert quoted_wait["age_seconds"] == bare_wait["age_seconds"]
+
+
+def test_an_invalid_quoted_wait_stamp_stays_unreadable_and_names_its_field(
+    home: Path, tmp_path: Path
+) -> None:
+    pointer = _waiting_run(
+        tmp_path,
+        "r-invalid-quoted-stamp",
+        started_at='"not-a-timestamp"',
+    )
+
+    row = recovery.classify_pointer(pointer)
+
+    assert row["classification"] == "unreadable"
+    assert "wait_started_at" in row["manifest_error"]
+    assert "wait_started_at" in row["detail"]
