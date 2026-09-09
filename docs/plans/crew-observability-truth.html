@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-09">
-<meta name="plan-version" content="229">
+<meta name="plan-version" content="230">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md">
 <meta name="plan-impl" content="0.97">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b">
@@ -712,6 +712,47 @@
         <tr><td>The remainder decrements when a node is promoted</td><td>Promoting a node against a declared section lowers the count by one in the same beat the plan state is written &mdash; the falsifier §13's row is asserted against, proven end to end here rather than at the signal. Negative: promoting a node that lands no section evidence does not decrement, so the count tracks landed work rather than dispatch activity.</td></tr>
         <tr><td>The view the closure fence names can fail it</td><td><code>crew(view="drain")</code> carries the executable remainder beside <code>unreconciled_runs</code>. Asserted by reading the view at a reconstruction of the premature stop and requiring a non-zero remainder, because the current field set is incapable of contradicting one. Negative: <code>unreconciled_runs: 0</code> beside a non-zero remainder does not read as drained.</td></tr>
         <tr><td>The termination condition carries a third zero</td><td>The closure ledger's line reads <code>foldable-remaining: 0   unreconciled-runs: 0   executable-remaining: 0</code>, and §7c no longer names two zeros as the condition. Asserted against the skill text and a ledger fixture. Negative, and the one no existing rule catches: an <em>empty</em> ledger beside a non-zero remainder is an unfinished drain rather than a tidy stop &mdash; §7c's &ldquo;folded with no node id&rdquo; rule catches a falsified row, and the halted session's ledger had no rows at all.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s15">§15 — Dispatch's refusal surface is neither predictable nor expressible</h2>
+
+    <p>Measured 2026-09-09 while coordinating the two sections above. Both halves cost a
+    wrong belief before anyone measured them, and both are this plan's own subject: a
+    surface answering the half of a question it can reach, without saying which half.</p>
+
+    <p><strong>A dry run clears a node it would refuse.</strong> The ship skill presents
+    <code>reckon crew dispatch --dry-run</code> as the way to check a node before it enters
+    the ready queue, and lists <code>scope-conflict</code> beside the eight contract
+    properties in the same refusal table. The natural reading is that a clean dry run
+    predicts a clean dispatch. It does not: the dry run evaluates the eight node-contract
+    properties and nothing else. Established with a positive control rather than inferred. A
+    node declaring <code>reckon/cli.py</code> while a peer coordinator's live run held that
+    claim returned <code>ok: true</code> with the <code>scoped</code> property passing; and
+    to rule out the reading that only <em>foreign</em> claims are skipped, a second probe
+    declaring <code>reckon/_schema.py</code> &mdash; held by this session's own live run
+    &mdash; also returned <code>ok: true</code>. So the claim registry is consulted at
+    dispatch and never at dry run. A coordinator planning a wave against dry-run verdicts
+    gets a subset of the refusal set and no indication that it is a subset.</p>
+
+    <p><strong>A granted scope extension has no verb.</strong> A worker that blocks with a
+    <code>NEEDS-HELP:</code> asking for one more path is behaving exactly as the protocol
+    intends, and the orchestrator has no command with which to say yes. None of
+    <code>crew</code>'s verbs grants scope; <code>--scope-changed</code> on
+    <code>complete</code> records that scope moved but does not waive the write-scope
+    validator, so it answers a later and different question. The grant is therefore a
+    hand-edit of the live pointer's <code>write_paths</code> followed by <code>crew
+    resume</code> &mdash; a state the surface cannot express, which is the defect
+    <code>every-state-has-a-verb</code> is named for, reappearing in the coordinator's half
+    of the protocol rather than the worker's. Measured here on one node that blocked for a
+    generated-schema artifact the repository's own gate requires be regenerated alongside
+    the model it describes.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>A dry run names what it did not check</td><td>The dry-run payload either states that live path claims were not evaluated, or evaluates them and names the owning run. Asserted both ways round, because the property is a distinction and not a field: a node whose paths are free and a node whose paths are held by another live run must be tellable apart from the dry-run payload alone. Negative: a dry run must not report a conflict dispatch would not raise, since one false refusal teaches coordinators to stop running the check.</td></tr>
+        <tr><td>Granting a scope extension is a command</td><td>One verb records an additional exclusive path on a live run, refuses when a peer holds that path, and leaves the widening on the promoted row. Asserted by granting, promoting, and then reading the widened scope off the <em>committed record</em> rather than the pointer, since the pointer is deleted at promotion and an audit trail that dies with it is the same defect as a note nobody can fetch.</td></tr>
       </tbody>
     </table>
 
