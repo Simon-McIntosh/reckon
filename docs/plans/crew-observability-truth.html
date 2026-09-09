@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-09">
-<meta name="plan-version" content="261">
+<meta name="plan-version" content="262">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md">
 <meta name="plan-impl" content="0.97">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b">
@@ -1585,6 +1585,9 @@
 </div>
 <div class="r-comment" data-section="s14" data-id="c-run-r-20260909T103207684731-cotd-the-drain-view-can-refute-a-stop" data-who="implement-terra-d" data-when="2026-09-09T10:39:22Z">
     <div class="r-comment-body"><p>the drain view carries executable_remainder and a drained verdict requiring both zeros, derived once in runs.py so the CLI and MCP readers return the same figure; 5 added cases, 0 failures both sides. Coordinator measured the corpus behaviour my gate did not specify: the project derivation returns None if ANY plan lacks a declaration, so with 1 of 73 declared it is permanently unknown and the fence moved from a false zero to an unknown that never holds. The fixture had every plan declared, so the node met its stated measure exactly; the missing requirement was a lower bound, which is what actually refutes a premature stop</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20260909T104316645612-cotd-the-remainder-is-a-lower-bound" data-who="implement-terra-b" data-when="2026-09-09T10:49:31Z">
+    <div class="r-comment-body"><p>the remainder is a lower bound with coverage beside it: on the live reckon project it reads executable_remainder 6, uncovered_plans 74, drained false, where the base revision read None. 36 tests, 0 failures both sides. Coordinator verified one truth two readers by calling the merged MCP code and the CLI: identical on all three fields. The running MCP server still serves pre-merge code, so a reader through the stale server sees the old shape until it reconnects</p></div>
 </div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20260909T095850548462-cotd-delivery-roots-come-from-one-definition" data-who="implement-terra-c" data-when="2026-09-09T10:10:47Z">
     <div class="r-comment-body"><p>one delivery_roots helper in crew/runs.py returning three roots, sourcing the reviews root from its existing definition; both enforcement sites call it; neither refusal message indexes elements any more, verified by a refusal that now enumerates all three. Coordinator measured the one added suite failure as pre-existing and flaky: test_redispatch_does_not_inherit_a_terminal_delivery failed 2 of 3 runs on main WITHOUT this commit. Coordinator also found the authority layer is not the only gate — a reviews-rooted path now passes authorisation and is refused by the read-only sandbox tier, which enumerates its writable grants separately; that is a second node, not a defect in this one</p></div>

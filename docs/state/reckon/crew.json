@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T12:41:53",
+  "updated": "2026-09-09T12:51:39",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -87596,6 +87596,174 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T104316645612-cotd-the-remainder-is-a-lower-bound",
+        "plan": "crew-observability-truth",
+        "section": "\u00a714",
+        "node": "cotd-the-remainder-is-a-lower-bound",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 829,
+                "cached_input_tokens": 624666,
+                "input_tokens": 625497,
+                "output_tokens": 971,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 626468,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "29187761-681d-4f4d-85ae-fc3d7adc250b",
+            "session_id": "ship-cot-drain-20260909"
+          },
+          "done_when": "Reproduce the measured inertness first: on this repository's own project the drain view returns executable_remainder None, because _project_executable_remainder returns unknown when ANY plan lacks a declaration and one plan of seventy-three carries one. Unknown never holds a fence, so the view cannot contradict a premature stop and the earlier false zero has simply become an unknown. Change the shape: sum the remainder over plans that carry a valid declaration, report the count of plans that do not beside it, and let the drained verdict hold on the bound being non-zero rather than on the total being known. Focused coverage exits 0 with at least 5 added cases: one declared plan among many undeclared ones yields a non-zero bound, an honest coverage count, and drained false; every plan declared and fully done yields a zero bound with zero uncovered and drained true; and the CLI and MCP readers return identical figures for one fixture, since the derivation stays in runs.py. Two negatives, both required: an undeclared plan contributes ZERO to the sum and never a zero remainder, because contributing zero is the false-zero this plan exists to prevent; and a project whose plan inventory cannot be read at all still reports unknown rather than a bound, since an unreadable inventory is not a measured absence. Judge by DELTA: record base failure ids for tests/test_crew_runs_view.py and tests/test_executable_remainder.py and require zero ADDED",
+          "estimated_hours": null,
+          "goal": "an executable remainder reported as a lower bound with its declaration coverage beside it",
+          "id": "cotd-the-remainder-is-a-lower-bound",
+          "lane_declaration": {
+            "backend": "codex-terra",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-09T10:43:17Z",
+            "read_at": "2026-09-09T10:43:18Z",
+            "resolved_backend": "codex-terra",
+            "utilisation_pct": 73.0
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T104316645612-cotd-the-remainder-is-a-lower-bound/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "codex-terra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a714",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/runs.py",
+            "tests/test_crew_runs_view.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "implement-terra-b",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-09T10:43:31Z",
+        "completed_at": "2026-09-09T10:49:31Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 360,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 360,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "dc52c8d5880b2921327cb8fca31f561a7a34f63d",
+        "commits": [
+          "017ca40a39f852d3e70136a843e02d3711cb609a"
+        ],
+        "changed_lines": {
+          "added": 137,
+          "removed": 11,
+          "files": 2
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_runs_view.py tests/test_executable_remainder.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T104316645612-cotd-the-remainder-is-a-lower-bound/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T104316645612-cotd-the-remainder-is-a-lower-bound/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a085c4-08f2-7113-8500-ea9fce6a91c4",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 2217984,
+            "cached_input_tokens_cumulative": 2217984,
+            "input_tokens": 2318470,
+            "input_tokens_cumulative": 2318470,
+            "output_tokens": 15213,
+            "output_tokens_cumulative": 15213,
+            "reasoning_output_tokens": 7370,
+            "reasoning_output_tokens_cumulative": 7370
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-09T10:49:31Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 73.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-09T10:49:31Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 2217984,
+          "cumulative_input_tokens": 4536454,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 22583
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cot-drain-20260909/cotd-the-remainder-is-a-lower-bound",
+          "session_id": "01a085c4-08f2-7113-8500-ea9fce6a91c4",
+          "session_source": "stream",
+          "retained_at": "2026-09-09T10:49:31Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -87824,6 +87992,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1302
+    "_version": 1303
   }
 }
