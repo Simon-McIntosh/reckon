@@ -7,12 +7,12 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="clive-local-workers-landed">
   <meta name="plan-title" content="Local workers on the clive backend — cumulative execution-evidence record">
-  <meta name="plan-summary" content="Thirty-three run-outcomes recorded against reckon:clive-local-workers, one stable anchor each, each naming its commit sha and the quantitative measure the run reported. Covers the local-lane qualification (deepseek-v4-flash, GLM 5.3), five silent-failure repairs in the crew harness, the worktree-boundary refusal and its correction, and the session-reuse and test-role landings.">
+  <meta name="plan-summary" content="Run-outcomes recorded against reckon:clive-local-workers, one stable anchor per material result, each naming its commit sha and the quantitative measure the run reported. Covers the local-lane qualification (deepseek-v4-flash, GLM 5.3), five silent-failure repairs in the crew harness, the worktree-boundary refusal and its correction, and the session-reuse and test-role landings.">
   <meta name="plan-evidence-for" content="clive-local-workers">
-  <meta name="plan-verifies" content="clive-local-workers#s2,clive-local-workers#s3,clive-local-workers#s4,clive-local-workers#s5,clive-local-workers#s6,clive-local-workers#s7,clive-local-workers#s9,clive-local-workers#s12,clive-local-workers#s13">
-  <meta name="plan-recorded-at" content="2026-09-03">
+  <meta name="plan-verifies" content="clive-local-workers#s2,clive-local-workers#s3,clive-local-workers#s4,clive-local-workers#s5,clive-local-workers#s6,clive-local-workers#s7,clive-local-workers#s9,clive-local-workers#s10,clive-local-workers#s12,clive-local-workers#s13,clive-local-workers#s16">
+  <meta name="plan-recorded-at" content="2026-09-09">
   <meta name="plan-verdict" content="pass">
-  <meta name="plan-environment" content="Linux workstation; git worktrees; local backend clive (deepseek-v4-flash, glm-5.3) alongside codex (gpt-5.6-sol) and Claude (claude-sonnet-5, claude-opus-5) lanes">
+  <meta name="plan-environment" content="Linux workstation; git worktrees; local backend clive (deepseek-v4-flash; glm-5.3 withdrawn 2026-09-09) alongside codex (gpt-5.6-sol) and Claude (claude-sonnet-5, claude-opus-5) lanes">
   <title>Local workers on the clive backend — cumulative execution-evidence record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -21,8 +21,10 @@
 <main class="plan-doc">
   <header class="plan-header">
     <h1>Local workers on the clive backend — cumulative execution-evidence record</h1>
-    <p class="plan-summary">Thirty-three run-outcomes recorded against
-    <code>clive-local-workers</code>, one stable anchor per anchor below. Each names the commit
+    <p class="plan-summary">Run-outcomes recorded against
+    <code>clive-local-workers</code>, one stable anchor per material result below. The count is
+    deliberately not written down here: it moves with every landing, and a snapshot of a moving
+    number is a fuse rather than a record. Each names the commit
     that landed it (or states that the run was commitless or interrupted by design) and preserves
     the quantitative measure the run itself reported, rather than restating it as a bare pass.
     Coupled results from one wave — an interrupted attempt and its re-cut, or a defective landing
@@ -532,6 +534,189 @@
     deletes its manifest, reloads the committed ledger through <code>ledger.runs</code>, and
     recovers the pre-existing failure set, the one added failure, and its exact broken
     candidate commit among several clean merges.</p>
+  </section>
+
+  <section id="s5">
+    <h2>&#167;5 &mdash; local-lane qualification, closed for the one served model</h2>
+    <p><strong>Recorded 2026-09-09. Three measures, none of which needed a campaign.</strong>
+    The shadow sample reached <strong>10 usable pairs of 12 dispatched</strong> against
+    implementation primaries &mdash; 8 passed, 2 <code>work-rejected</code>, 2
+    <code>not-run</code> &mdash; median 945&nbsp;s on the passing arms. Both non-passing usable rows
+    classify as capability rather than fence failures, which reverses the lane's early history
+    where both failures were fence failures; the harness work is what moved it, and it means the
+    ledger has begun measuring the model instead of the scaffolding.</p>
+    <p>The live read-only lane stands at <strong>11 promoted investigate-plus-review runs against
+    the 10 required</strong>. Per role, local against incumbent: investigate <strong>8/8 at pass
+    1.00, median 795.5&nbsp;s</strong> against <strong>0.94 at 481.5&nbsp;s</strong>; review
+    <strong>0/3</strong> against 0.67; test <strong>2/4 at 2504.5&nbsp;s</strong> against 0.85 at
+    309.5&nbsp;s. The review arm is <em>unmeasured rather than failed</em>: its three rows are two
+    work-rejected and one infrastructure-failure with two sharing a node id, so n=3 cannot separate
+    capability from classification. The test median is dominated by two merged-head census suites
+    at 9657&nbsp;s and 3552&nbsp;s, which is suite execution and not inference.</p>
+    <p>The competence horizon is <strong>16.0&nbsp;h at n=54</strong> &mdash; measured, not an
+    insufficient sample. The <code>0.0</code> first read was the stale-cache branch, the cache
+    sitting at reckon ledger 1079 against a then-current 1259. Every figure above was reproduced by
+    the coordinator from the committed ledger independently of the worker's arithmetic before the
+    gate was accepted. Ledger rows 1257, 1260, 1267, 1268; commitless by design, the deliverables
+    being reports outside the git tree.</p>
+  </section>
+
+  <section id="s16">
+    <h2>&#167;16 &mdash; one configuration, one row, and a surface that publishes it</h2>
+    <p><strong>Recorded 2026-09-09; found by verifying a worker rather than by reading code.</strong>
+    Two incumbent rows carried identical <code>backend</code>, <code>model</code>,
+    <code>effort</code> and <code>sandbox</code> and differed only in whether a display
+    <code>alias</code> field was present: <strong>n=70, speed mean 48.86, horizon 18.0&nbsp;h</strong>
+    against <strong>n=144, speed mean 71.25, horizon 26.0&nbsp;h</strong>. So one configuration held
+    two horizons eight hours apart and which a reader got depended on a cosmetic label. Every
+    configuration on both sides split in two: <strong>11 published local rows were 6 real
+    configurations, 7 incumbent rows were 4</strong>.</p>
+    <p>It decided a routing verdict rather than merely untidying one. Comparing the local lane
+    against the larger fragment gives a speed ratio of 0.72 and reads as <em>1.4&times;
+    slower</em>; against the smaller, 0.95 and <em>no slower at all</em>. Pooled on the
+    behavioural fields the honest figure is <strong>1.25&times; slower by mean and 2.14&times; by
+    median</strong>, the median corroborating the 2.3&times; recorded from the six shadow pairs of
+    2026-08-26 which the mean had flattered. Speed is <code>estimated_hours / actual_hours</code>,
+    confirmed by recomputing the published flagship row exactly.</p>
+    <p><strong>Landed in two commits.</strong> <code>7572d83</code> gives calibration its own
+    identity via <code>calibration_configuration_key</code>, pooling <code>alias</code>,
+    <code>usable_input_window</code> and <code>local</code>, while
+    <code>agent_configuration_key</code> is untouched and keeps session reuse on the full
+    configuration &mdash; one function had been serving two purposes with opposite requirements.
+    Producer and consumer moved together: <code>derive_capabilities</code> pools and
+    <code>routing._competence_verdict</code> looks up by the same pooled key, without which every
+    horizon lookup would have missed and the capability gate would have read
+    <code>no-measured-horizon</code> for every backend, from a change whose own tests would still
+    have passed. <code>ee68b0e</code> makes <code>reckon capabilities</code> publish one row per
+    configuration carrying horizon, speed mean and median and sample size as numbers, accept
+    <code>--project</code>, and print cached against current ledger versions so a stale figure
+    cannot read as a measured one.</p>
+    <p>Verified against the consumers outside each node's write fence, since
+    <code>capabilities</code> is imported by <code>routing</code> and the CLI: <strong>41 passed at
+    base against 46 at head, 0 failures either side, 11 cases added</strong>. The explicit-
+    <code>agent_key</code> early return was checked against real data rather than reasoned about
+    &mdash; <strong>0 of 783 ledger rows carry one</strong> &mdash; so it cannot bypass the pooling on
+    the existing corpus. Ledger rows 1264 and 1284.</p>
+  </section>
+
+  <section id="glm-lane-withdrawn">
+    <h2>The GLM lane was withdrawn, and four measures narrowed with it</h2>
+    <p><strong>Measured 2026-09-09.</strong> <code>clive --list</code> publishes exactly one route,
+    <code>deepseek-v4-flash@4xh200 &middot; fp4+fp8 &middot; 1024k ctx</code>. The
+    <code>clive-glm</code> backend entry is gone from the host flight layer, replaced by a comment
+    recording the reason &mdash; the model does not fit the 8xH200 deployment with capacity left for
+    other work &mdash; the re-entry trigger, and an instruction to keep the name in
+    <code>ledger.UNMETERED_BACKENDS</code> so historical nulled costs are not reread as measurable.
+    The ledger holds <strong>9 <code>glm-5.3</code> rows, all gate failed</strong>, the last
+    2026-09-03.</p>
+    <p>So &#167;2 is closed by an external decision rather than by execution, and every
+    <em>per local model</em> measure &mdash; &#167;5's shadow pairs, &#167;7's paired comparison,
+    &#167;10's per-model arms &mdash; plus &#167;15's whole premise that the lane is a family, is held
+    on that trigger rather than failed. The surviving lane's window is <strong>1,016,576</strong>
+    tokens, against which the standing instruction floor of 50,392 is 5% rather than the 68% it was
+    on GLM's 73,728.</p>
+  </section>
+
+  <section id="effort-override-key">
+    <h2>Only the role overlay moves effort, on both dispatch and shadow paths</h2>
+    <p><strong>Measured 2026-09-09 across four dry runs, two per path, differing only in the
+    override key.</strong> <code>--set backends.clive.effort=medium</code> resolves
+    <code>agent.effort: high</code> on both paths;
+    <code>--set roles.implement.by_spec_level.guided.effort=medium</code> resolves
+    <code>medium</code> on both. So <strong>2 of 4 resolve medium</strong> and the rule is one rule:
+    resolution runs backend, then role overlay, then level overlay, last wins, so a backend-level
+    effort is <em>masked</em> rather than dropped at merge. The baseline pair with no override
+    resolved high on both paths, which is what makes the two medium results attributable to the
+    key.</p>
+    <p>An earlier reading had the two paths honouring <em>opposite</em> keys; they do not, and the
+    defect is narrower and purely one of visibility. The shadow record names the discarded layer in
+    <code>lineage.configuration.overrides.effort.layers</code> &mdash;
+    <code>{backend: medium, spec_level: high}</code>, <code>resolved: high</code> &mdash; while the
+    dispatch payload carries only the masked value. The remedy is therefore to make dispatch record
+    what shadow already records, or to refuse an override that cannot be honoured; not to reconcile
+    two resolution orders. Independently reported from the metered lane by session
+    <code>ship-s15-2026-09-08b</code> the same night. Ledger row 1258, commitless by design.</p>
+  </section>
+
+  <section id="effort-reaches-the-loop">
+    <h2>Declared effort does reach this checkpoint, on real agentic work</h2>
+    <p><strong>Measured 2026-09-09 over 330 local-family streams on disk: 327 carry thinking
+    blocks, 16,436 blocks, 42,365,824 characters.</strong> Three effort-substituted pairs now exist
+    where a prior census over 303 runs and 14,504 blocks found <em>none</em> &mdash; all three landed
+    2026-09-08 between 11:01 and 11:29, after that census ran, so the earlier zero was correct when
+    written rather than contradicted.</p>
+    <table>
+      <thead><tr><th>Pair (same node, same base, fresh session per arm)</th><th>high</th><th>medium</th></tr></thead>
+      <tbody>
+        <tr><td><code>directory-test-follows-the-published-names</code></td><td>34 blocks / 128,873 chars</td><td>14 / 43,267</td></tr>
+        <tr><td><code>lane-change-fixture-declares-its-level</code></td><td>17 / 13,206</td><td>11 / 6,372</td></tr>
+        <tr><td><code>fleet-rollup-test-follows-the-published-names</code></td><td>12 / 7,643</td><td>10 / <strong>12,205</strong></td></tr>
+      </tbody>
+    </table>
+    <p>All three were confirmed in the committed ledger by node, base and
+    <code>lineage.configuration.substituted.effort</code>, and the strongest pair was recounted from
+    both raw streams: 34/128,873 against 14/43,267, exact. So the declared effort is
+    <strong>not inert</strong> on this checkpoint &mdash; 2.4&times; the blocks and 3.0&times; the
+    characters on identical work &mdash; which retires the earlier conclusion, drawn from a one-step
+    arithmetic probe, that the lane has no effort dimension at all. It is <em>not</em> a verdict:
+    n=3, the fleet-rollup pair reverses direction on characters and its arms took different roster
+    members, and whether the deliberation <em>pays</em> is unmeasured. Two data-quality findings
+    carried forward: one run declared local was in fact served by <code>claude-opus-5</code> and was
+    excluded, and 19 of 350 local-served streams (5.4%) have no trustworthy effort attribution.
+    Ledger row 1262, commitless by design.</p>
+  </section>
+
+  <section id="shadow-reads-its-answer">
+    <h2>A shadow can read the answer it is being measured against</h2>
+    <p><strong>Measured 2026-09-09 by verifying a pair rather than accepting it.</strong> A medium
+    arm shadowing a landed primary produced a patch of <strong>247 insertions and 7 deletions
+    matching the canonical commit exactly</strong>, 41 tests passing, in <strong>13 minutes against
+    the primary's 69</strong> &mdash; and its own manifest named that commit, which an arm at the
+    recorded base cannot know exists. Its stream shows two calls of the form
+    <code>cd &lt;main-checkout&gt; &amp;&amp; git show &lt;landed-sha&gt; -- &lt;paths&gt;</code>, once
+    for the source and once for the tests.</p>
+    <p>Three properties compose into it, which is why it is structural rather than a lapse: a
+    worktree <em>shares the object store</em> with the integration branch; the
+    <code>worktree-full</code> tier is advisory, so leaving the worktree is unobstructed; and the
+    boundary check refuses a run whose footprint <em>changed</em> a path outside its scope, while a
+    read leaves no footprint. So the one guard built for this boundary is blind to this crossing,
+    and the ladder's central act &mdash; putting a candidate against an already-landed node &mdash; is
+    the act that exposes the answer. Every shadow dispatched after its primary merged is therefore
+    potentially void, and <strong>the ledger row cannot say which; only the stream can</strong>.</p>
+    <p><strong>The control changed the conclusion and is the method worth keeping.</strong> A broad
+    predicate &mdash; did the run enter the main checkout &mdash; flagged <em>all three</em> earlier
+    effort pairs. Aimed at each primary's own changed file it returned <strong>0, 0 and 0</strong>:
+    they were reading unrelated source and running one ruff invocation. So the three pairs are sound
+    and the effort result above stands; stopping at the broad predicate would have retracted a
+    correct finding and discarded the only real evidence in the section. Recorded as gate
+    <em>failed</em>, classification <code>infrastructure-failure</code>, so it charges the harness
+    and not the model. Ledger row 1270.</p>
+  </section>
+
+  <section id="manifest-status-run-on">
+    <h2>A complete run reported dead, with a redispatch offered</h2>
+    <p><strong>Measured 2026-09-09.</strong> A run whose work was committed at
+    <code>ee68b0e</code>, worktree clean, manifest carrying <code>status: complete</code> on line 8,
+    was classified <code>abandoned</code> with <code>next_action</code> reading <em>redispatch if
+    needed</em>. The classifier's own detail gives the cause: it read the status as
+    <code>complete, &#96;reckon/capabilities.py&#96;: new &#96;publish_capabilities()&#96; reads the
+    disposable, &#96;reckon/cli.py&#96;: &#96;capabilities&#96; command gains &#96;--project&#96;
+    (previously, &hellip;</code> and refused it as <em>not usable</em>. The prose bullets beneath the
+    status line, each containing <code>": "</code>, were absorbed into the status value as
+    continuation.</p>
+    <p>The obvious structural hypothesis is <strong>refuted</strong> and is recorded so it is not
+    re-derived: it is not blank-line count. The manifest from
+    <code>clw-local-capability-horizon-read</code> carries one blank line between its orientation
+    block and <code>node:</code> and parsed correctly; this one carries two. The trigger is
+    value-continuing <code>": "</code> prose beneath the status key.</p>
+    <p>Two things make this the more dangerous half of a class already recorded one field over. The
+    wrong verdict is <code>abandoned</code>, whose remedy is redispatch, so acting on it duplicates
+    a merged commit. And <strong>the same file's <code>manifest_commits</code> parsed cleanly</strong>
+    to one sha beside the unusable status &mdash; a terminal phase carrying a parsed commit and an
+    unusable status is an unambiguous detector needing no new instrument. Reached independently from
+    the outside by session <code>ship-cot-drain-20260909</code>, and owned by the observability plan
+    rather than by this one. What made the difference here was inspecting the worktree before acting
+    on the classification.</p>
   </section>
 </main>
 </body>
