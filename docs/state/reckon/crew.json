@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T11:09:05",
+  "updated": "2026-09-09T11:56:44",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -545,9 +545,11 @@
         "id": "crew-manifest-keys",
         "harness": "clive",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "bdc501a0-3d34-4140-a3f4-4c1908a6192c",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "bdc501a0-3d34-4140-a3f4-4c1908a6192c"
+        },
         "created": "2026-09-05"
       },
       {
@@ -86271,6 +86273,180 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T084255234922-cotd-every-run-joins-a-wave",
+        "plan": "crew-observability-truth",
+        "section": "\u00a713",
+        "node": "cotd-every-run-joins-a-wave",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2858,
+                "cached_input_tokens": 446997,
+                "input_tokens": 449857,
+                "output_tokens": 485,
+                "reasoning_output_tokens": 332,
+                "total_tokens": 450342,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "29187761-681d-4f4d-85ae-fc3d7adc250b",
+            "session_id": "ship-cot-drain-20260909"
+          },
+          "done_when": "Judge by DELTA against the base revision, never absolute green: tests/test_crew.py carries pre-existing failures and the combined three-file set measured 14 at base earlier today, so record the base failure ids and require zero ADDED. On top of that, focused new coverage exits 0 with at least 5 added cases: crew dispatch and crew shadow both accept a wave id; a shadow run's pointer carries the dispatching session rather than a minted synthetic id; and both pointers carry the same wave id. Attribution groups and never judges, so one added case asserts a known-clean run stays unmarked by any predicate keyed on the new fields \u2014 a location predicate flagged all three clean effort pairs in a measured session while a content predicate returned zero on each, and this node must not reintroduce provenance as a basis for exclusion. The wave id must not disturb run identity: assert a resume keeps the same run id and a fresh dispatch after a terminal attempt mints a new one carrying predecessor_run, since a peer's cumulative metrics accumulate along that chain and 28 of 28 multi-run node ids span a primary and a shadow. Cite the map at /home/ITER/mcintos/.config/reckon/crew/reports/cot-wave-signal-reuse-map.md",
+          "estimated_hours": null,
+          "goal": "a wave id accepted on both dispatch surfaces and persisted on ordinary and shadow pointers alike",
+          "id": "cotd-every-run-joins-a-wave",
+          "lane_declaration": {
+            "backend": "codex-terra",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-09T08:42:55Z",
+            "read_at": "2026-09-09T08:42:56Z",
+            "resolved_backend": "codex-terra",
+            "utilisation_pct": 65.0
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T084255234922-cotd-every-run-joins-a-wave/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "codex-terra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a713",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/cli.py",
+            "reckon/crew/dispatch.py",
+            "tests/test_crew_shadow_paths.py",
+            "tests/test_crew.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "implement-terra-c",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-09T08:43:04Z",
+        "completed_at": "2026-09-09T09:15:02Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1918,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1918,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "31d98e7b3db6367ca2d302a04b493cc8434a1034",
+        "commits": [
+          "090dba66de83093a11146577c0fb86f8fa73b811",
+          "21a73e3889f9cd356cf87ef583a761dab3fb1c12"
+        ],
+        "changed_lines": {
+          "added": 207,
+          "removed": 12,
+          "files": 4
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q the focused wave cases",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T084255234922-cotd-every-run-joins-a-wave/focused-wave.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T084255234922-cotd-every-run-joins-a-wave/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a08555-c007-7653-96cb-09b92f912542",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 9653120,
+            "cached_input_tokens_cumulative": 9653120,
+            "input_tokens": 9894942,
+            "input_tokens_cumulative": 9894942,
+            "output_tokens": 18718,
+            "output_tokens_cumulative": 18718,
+            "reasoning_output_tokens": 5333,
+            "reasoning_output_tokens_cumulative": 5333
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-09T09:15:02Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 68.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-09T09:15:02Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 9653120,
+          "cumulative_input_tokens": 19548062,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 24051
+        },
+        "follow_on_paths": [
+          "tests/test_crew.py::test_first_dispatch_proceeds_with_a_freshly_armed_project_watch",
+          "reckon/crew/runs.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cot-drain-20260909/cotd-every-run-joins-a-wave",
+          "session_id": "01a08555-c007-7653-96cb-09b92f912542",
+          "session_source": "stream",
+          "retained_at": "2026-09-09T09:15:02Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -86499,6 +86675,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1288
+    "_version": 1290
   }
 }
