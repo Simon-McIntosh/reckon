@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T17:19:18",
+  "updated": "2026-09-09T18:24:13",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -550,7 +550,8 @@
         "session_id": "bdc501a0-3d34-4140-a3f4-4c1908a6192c",
         "session_model": "deepseek-v4-flash",
         "sessions": {
-          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "bdc501a0-3d34-4140-a3f4-4c1908a6192c"
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "bdc501a0-3d34-4140-a3f4-4c1908a6192c",
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "c9c5efee-9878-41cc-a722-f9a02cca5635"
         },
         "created": "2026-09-05"
       },
@@ -2307,6 +2308,17 @@
         "session_model": "deepseek-v4-flash",
         "sessions": {
           "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "855a3018-3718-48f0-9b1d-cae6e72f9487"
+        },
+        "created": "2026-09-09"
+      },
+      {
+        "id": "spend-livewall",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": "0cb86775-f01a-4c63-a116-28344ca08645",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "0cb86775-f01a-4c63-a116-28344ca08645"
         },
         "created": "2026-09-09"
       },
@@ -90502,6 +90514,385 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T153619849624-wslp-wall-is-measured-while-a-run-is-live",
+        "plan": "worker-spend-is-legible-in-the-pane",
+        "section": "\u00a77",
+        "node": "wslp-wall-is-measured-while-a-run-is-live",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1803,
+                "cached_input_tokens": 670632,
+                "input_tokens": 672437,
+                "output_tokens": 1600,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 674037,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3e7dcff5-8cdd-4a76-bdc7-a5c7cca53e79",
+            "session_id": "ship-worker-spend-20260909"
+          },
+          "done_when": "A transition for a live run renders a measured wall figure rather than the unmeasured marker, asserted over a fixture pointer carrying created_at and attempt_started_at and no throughput block - which is every live pointer, verified as 0 of 3 sampled carrying one. _fold_time today reads throughput.elapsed_seconds alone and therefore returns nothing for any in-flight run. A resumed run sums its attempts' spans rather than reporting only the current attempt. The derived figure is marked as derived-from-stamps rather than presented identically to a span folded from a completed row, because the provenance differs and a reader comparing rows must not have to guess which. Model seconds and the generation rate stay unmeasured while a run is live and that is correct rather than a gap: no inference span exists until a terminal record or a rollout with bounded tool spans does, so do not invent one - if wall cannot be produced without also producing a model figure, report that as a refutation rather than proceeding. A completed row's folded span must be unchanged, asserted by a test that fails if the stamp path is used where a throughput block exists. pytest tests/test_cumulative_token_accounting.py tests/test_crew_ticker.py tests/test_crew_recovery.py shows no failures added against the base revision.",
+          "estimated_hours": null,
+          "goal": "The wall cell carries a measured figure for a run still in flight, derived from the pointer's own stamps when no throughput block exists",
+          "id": "wslp-wall-is-measured-while-a-run-is-live",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-09T15:36:20Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T153619849624-wslp-wall-is-measured-while-a-run-is-live/manifest.md",
+          "plan": "worker-spend-is-legible-in-the-pane",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/crew/metering.py",
+            "tests/test_cumulative_token_accounting.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "spend-livewall",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-09T15:36:25Z",
+        "completed_at": "2026-09-09T16:20:40.452Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2643,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2655,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "b14175d0a3281ac78c0d51a81b54d87e64145cc2",
+        "commits": [
+          "bda87229e4f98d518c3f822d920e4b1f4a0a5981"
+        ],
+        "changed_lines": {
+          "added": 287,
+          "removed": 15,
+          "files": 2
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD python -m pytest -p no:cacheprovider tests/test_cumulative_token_accounting.py tests/test_crew_ticker.py tests/test_crew_recovery.py -q",
+          "exit_status": 0,
+          "log_path": null,
+          "log_digest": "117 passed at HEAD bda8722; 111 at base b14175d; 6 added, 0 failing; test_ledger.py 83 passed"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T153619849624-wslp-wall-is-measured-while-a-run-is-live/manifest.md",
+        "scope_changed": false,
+        "session_id": "0cb86775-f01a-4c63-a116-28344ca08645",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 9124543,
+            "input_tokens_cumulative": 9124543,
+            "output_tokens": 54678,
+            "output_tokens_cumulative": 54678,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-09T16:20:40.452Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 9124543,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 2652.58,
+          "generated_tokens": 54678,
+          "generation_seconds": 2567.84,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 16.8,
+          "machine_seconds": 84.74,
+          "peak_input_tokens": 171086,
+          "tokens_per_second": 21.29,
+          "wall_tokens_per_second": 20.61
+        },
+        "follow_on_paths": [
+          "recovery.py/ticker.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_cumulative_token_accounting.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-worker-spend-20260909/wslp-wall-is-measured-while-a-run-is-live",
+          "session_id": "0cb86775-f01a-4c63-a116-28344ca08645",
+          "session_source": "pointer",
+          "retained_at": "2026-09-09T16:20:40.452Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T151648776270-clw-the-fence-charges-tokens",
+        "plan": "clive-local-workers",
+        "section": "\u00a714",
+        "node": "clw-the-fence-charges-tokens",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 787,
+                "cached_input_tokens": 881788,
+                "input_tokens": 882577,
+                "output_tokens": 2163,
+                "reasoning_output_tokens": 1498,
+                "total_tokens": 884740,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "d605a9b0-7fe6-4816-b993-dad99ec68f17",
+            "session_id": "ship-clw-2026-09-09"
+          },
+          "done_when": "pytest over the named test files reports 0 added failures against base HEAD stated as a number, and cases assert that a run whose generated tokens are within budget is inside its fence however long it took in wall clock, that a run exceeding its token budget is over it, that a run which has stopped producing is still caught by the wall-clock ceiling under its own distinct name, and that a token budget set in flight config reaches the run record via the dispatch path rather than only the resolver",
+          "estimated_hours": null,
+          "goal": "Denominate the worker budget in generated tokens, keeping a separately named wall-clock ceiling as the hang guard",
+          "id": "clw-the-fence-charges-tokens",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-09T15:16:49Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T151648776270-clw-the-fence-charges-tokens/manifest.md",
+          "plan": "clive-local-workers",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a714",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "reckon/crew/dispatch.py",
+            "reckon/cli.py",
+            "reckon/schema/flight.yaml",
+            "reckon/_flight_schema.py",
+            "docs/_shared/flight.schema.json",
+            "tests/test_crew_recovery.py",
+            "tests/test_flight.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-manifest-keys",
+        "backend": "clive",
+        "local": false,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-09T15:16:54Z",
+        "completed_at": "2026-09-09T16:18:25.952Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3683,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3691,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "49ee8aa293b8369bbcca73feaa8b7fb2e7fd0e1f",
+        "commits": [
+          "e108c92f179a9c1f892d3ea2daa6f64e193d1683",
+          "94fe893248525e6c628918eb1a4e4f37c0d0b33c",
+          "f5dd4fbc384d7edc21d3b3f3692180e0b8c52f91"
+        ],
+        "changed_lines": {
+          "added": 544,
+          "removed": 12,
+          "files": 8
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD PATH=venv/bin:$PATH venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_recovery.py tests/test_flight.py",
+          "exit_status": 0,
+          "log_path": "/tmp/inscope_final.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T151648776270-clw-the-fence-charges-tokens/manifest.md",
+        "scope_changed": false,
+        "session_id": "c9c5efee-9878-41cc-a722-f9a02cca5635",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 22823847,
+            "input_tokens_cumulative": 22823847,
+            "output_tokens": 78562,
+            "output_tokens_cumulative": 78562,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-09T16:18:25.952Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 22823847,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 3688.438,
+          "generated_tokens": 78562,
+          "generation_seconds": 3216.81,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 21.5,
+          "machine_seconds": 471.628,
+          "peak_input_tokens": 218131,
+          "tokens_per_second": 24.42,
+          "wall_tokens_per_second": 21.3
+        },
+        "follow_on_paths": [
+          "flight-defaults.yaml",
+          "host/project",
+          "mcp_views.py",
+          "token/ceiling",
+          "SPA/monitor"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest over",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-clw-2026-09-09/clw-the-fence-charges-tokens",
+          "session_id": "c9c5efee-9878-41cc-a722-f9a02cca5635",
+          "session_source": "pointer",
+          "retained_at": "2026-09-09T16:18:25.952Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -90730,6 +91121,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1334
+    "_version": 1339
   }
 }
