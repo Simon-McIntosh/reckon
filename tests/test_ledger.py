@@ -742,6 +742,30 @@ def test_a_completed_record_carries_shadow_replay_inputs() -> None:
     assert stored["shadow_patch"].endswith("/shadow.patch")
 
 
+def test_a_contaminated_shadow_record_keeps_the_reason_and_is_excluded() -> None:
+    """A marked shadow row says why and every slice excludes it first."""
+    stored = ledger.build_record(
+        run_id="r-shadow-contaminated",
+        plan="plan-a",
+        gate="passed",
+        completed_at_source="provided",
+        lineage={"kind": "shadow", "primary_run_id": "r-primary"},
+        shadow_contaminated="primary_commit_read",
+    )
+    clean = ledger.build_record(
+        run_id="r-shadow-clean",
+        plan="plan-a",
+        gate="passed",
+        completed_at_source="provided",
+        lineage={"kind": "shadow", "primary_run_id": "r-primary"},
+    )
+
+    assert stored["shadow_contaminated"] == "primary_commit_read"
+    assert "shadow_contaminated" not in clean
+    assert ledger.measurement_exclusion_reason(stored) == "contaminated"
+    assert ledger.measurement_exclusion_reason(clean) is None
+
+
 def test_ledger_summary_partitions_live_and_shadow_gate_counts(repo) -> None:
     for record in (
         ledger.build_record(

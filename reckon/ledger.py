@@ -876,6 +876,7 @@ def build_record(
     follow_on_paths: Iterable[str] | None = None,
     predecessor_run: str | None = None,
     dispute_count: int | str | None = None,
+    shadow_contaminated: str = "",
 ) -> dict[str, Any]:
     """Assemble one completed-run record, refusing an unknown gate verdict.
 
@@ -985,6 +986,11 @@ def build_record(
         record["budget_fallback"] = stored_fallback
     if resume_remedy is not None:
         record["resume_remedy"] = dict(resume_remedy)
+    # Contamination is a measurement of the shadow's stream, so a row with no
+    # such reading must not read as one that read clean. Only a marked row
+    # carries the key.
+    if str(shadow_contaminated).strip():
+        record["shadow_contaminated"] = str(shadow_contaminated).strip()
     # Routing evidence is present whenever promotion could read it. An empty
     # ``follow_on_paths`` is a real measurement — the manifest declared no
     # follow-ons — and stays distinct from an absent key, which is a row never
@@ -1023,6 +1029,12 @@ def build_record(
 
 def measurement_exclusion_reason(record: Mapping[str, Any]) -> str | None:
     """Name why a run cannot feed duration consumers, if it cannot."""
+    # A shadow that read its primary's answer is void as a measurement no
+    # matter what else is true of the row, so the contamination reason lands
+    # first: every slice that excludes for any other reason must exclude for
+    # this one too.
+    if record.get("shadow_contaminated"):
+        return "contaminated"
     if record.get("scope_changed"):
         return "scope_changed"
     if record.get("stalled"):
@@ -1030,6 +1042,261 @@ def measurement_exclusion_reason(record: Mapping[str, Any]) -> str | None:
     if str(record.get("completed_at_source") or "") not in USABLE_COMPLETION_SOURCES:
         return "unusable_completion"
     return None
+
+
+# ── Shadow contamination: a stream that read its primary's answer ───────────
+
+# Git subcommands that read repository content or history. Naming a shadow
+# primary's landed commit with one of these reveals the answer the shadow is
+# measured against. The content-revealing subset additionally gates a
+# changed-path read: naming a primary file with a bare status or ref query
+# resolves nothing about its content, so it is not a read of the answer.
+_SHADOW_GIT_READ_VERBS = frozenset(
+    {
+        "show",
+        "log",
+        "diff",
+        "cat-file",
+        "blame",
+        "rev-list",
+        "ls-tree",
+        "archive",
+        "grep",
+        "rev-parse",
+        "describe",
+        "merge-base",
+    }
+)
+_SHADOW_GIT_CONTENT_READ_VERBS = frozenset(
+    {"show", "log", "diff", "cat-file", "blame", "ls-tree", "archive"}
+)
+# A git object abbreviation is a naming from seven hex digits up. Matching the
+# full sha and every prefix of that length keeps ``git show 7572d83`` (the
+# abbreviation a landed commit is routinely cited by) on an equal footing with
+# its full form, while a shorter run of hex is too likely to be fragmentary
+# to read as a reference.
+_SHADOW_SHA_PREFIX_MIN = 7
+# Tool names whose payload is a file path rather than a command line.
+_SHADOW_PATH_CALL_KINDS = frozenset({"read", "grep", "glob"})
+
+
+def _sha_prefixes(commit: str) -> tuple[str, ...]:
+    """Return every abbreviation of a commit sha that names it as a target."""
+    sha = str(commit or "").strip()
+    if not re.fullmatch(r"[0-9a-f]+", sha) or len(sha) <= _SHADOW_SHA_PREFIX_MIN:
+        return (sha,) if sha else ()
+    return tuple(sha[:length] for length in range(_SHADOW_SHA_PREFIX_MIN, len(sha) + 1))
+
+
+def stream_tool_calls(paths: Iterable[str | Path]) -> list[tuple[str, str]]:
+    """Extract a run's tool calls from its ordered JSONL streams.
+
+    Bash invocations become ``("bash", command)``; file-path tools become
+    ``("read", path)`` and friends, so a caller can distinguish a read of a
+    file from a command that merely mentions it. An unparsable line or a call
+    without a payload is skipped: a malformed record answers nothing rather
+    than poisoning the whole stream.
+    """
+    calls: list[tuple[str, str]] = []
+    for path in paths:
+        with Path(path).open(encoding="utf-8", errors="replace") as handle:
+            for line in handle:
+                try:
+                    event = json.loads(line)
+                except (TypeError, ValueError):
+                    continue
+                if not isinstance(event, Mapping):
+                    continue
+                message = event.get("message")
+                if not isinstance(message, Mapping):
+                    continue
+                content = message.get("content")
+                if not isinstance(content, list):
+                    continue
+                for item in content:
+                    if not isinstance(item, Mapping):
+                        continue
+                    name = str(item.get("name") or "").strip()
+                    payload = item.get("input")
+                    if not isinstance(payload, Mapping):
+                        continue
+                    if name == "Bash" and str(payload.get("command") or "").strip():
+                        calls.append(("bash", str(payload["command"]).strip()))
+                    elif name.lower() in _SHADOW_PATH_CALL_KINDS and str(
+                        payload.get("file_path") or ""
+                    ).strip():
+                        calls.append((name.lower(), str(payload["file_path"]).strip()))
+    return calls
+
+
+def shadow_primary_read(
+    calls: Iterable[tuple[str, str]],
+    *,
+    primary_commit: str,
+    primary_paths: Iterable[str] = (),
+    repo_root: str = "",
+    worktree: str = "",
+) -> str | None:
+    """Return how a shadow's tool calls read its primary's answer, or None.
+
+    Two reads give the answer away: naming the primary's landed commit in a git
+    read (the object store is shared with the integration branch, so the
+    commit resolves from anywhere), and reading a primary changed file where
+    it is checked out at that landed state — the main checkout. A command that
+    merely mentions a shared path (running the primary's own tests on the
+    shadow's copy of that file, or reading the shadow's own worktree via a
+    ``git -C`` against it) resolves nothing about the landed answer and never
+    triggers. The main-checkout context is decided per git invocation: an
+    explicit ``-C <dir>`` wins over the working directory the stream's earlier
+    commands left behind, so a changed-path read that names the worktree stays
+    clean even when the command also contains a stray ``cd`` into the main
+    checkout.
+    """
+    prefixes = _sha_prefixes(str(primary_commit or "").strip())
+    paths = tuple(
+        str(path).strip() for path in primary_paths if str(path).strip()
+    )
+    main_root = str(repo_root or "").strip().rstrip("/")
+    work_root = str(worktree or "").strip().rstrip("/")
+    cwd = ""
+    variables: dict[str, str] = {}
+    for kind, payload in calls:
+        if kind == "bash":
+            cwd, variables = _absorb_shell_state(payload, cwd, variables)
+            if _command_reads_primary_commit(payload, prefixes):
+                return "primary_commit_read"
+            if _command_reads_primary_path(
+                payload,
+                paths,
+                main_root=main_root,
+                cwd=cwd,
+                variables=variables,
+            ):
+                return "primary_changed_path_read"
+        elif kind in _SHADOW_PATH_CALL_KINDS:
+            if _path_reads_primary_changed(
+                payload, paths, main_root=main_root, work_root=work_root
+            ):
+                return "primary_changed_path_read"
+    return None
+
+
+_CD_TARGET = re.compile(r"(?:^|&&|;|\||\n)\s*cd\s+([^\s;&|]+)")
+_VAR_ASSIGN = re.compile(r"(?:^|;|&&|\s)\s*([A-Za-z_][A-Za-z0-9_]*)=(/[\S]+)")
+
+
+def _expand_path(token: str, variables: Mapping[str, str]) -> str:
+    """Resolve a path token that may reference a shell variable, or ''."""
+    expanded = re.sub(
+        r"\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?",
+        lambda match: variables.get(match.group(1), ""),
+        token.strip(),
+    )
+    return expanded.strip("\"'")
+
+
+def _absorb_shell_state(
+    command: str, cwd: str, variables: Mapping[str, str]
+) -> tuple[str, dict[str, str]]:
+    """Fold a command's ``cd`` and path assignments into tracked shell state."""
+    tracked = dict(variables)
+    for match in _VAR_ASSIGN.finditer(command):
+        tracked[match.group(1)] = match.group(2).strip("\"'")
+    for match in _CD_TARGET.finditer(command):
+        resolved = _expand_path(match.group(1), tracked)
+        if resolved.startswith("/"):
+            cwd = resolved.rstrip("/")
+    return cwd, tracked
+
+
+# One git invocation: an optional ``git -C <dir>`` prefix, a verb, and the
+# rest. The rest stops at a command separator so a later pipe or join cannot
+# smuggle an unrelated path into a read it does not target.
+_GIT_INVOCATION = re.compile(
+    r"\bgit(?:\s+-C\s+([^\s;&|]+))?\s+([a-z][a-z-]*)([^;&|\n]*)"
+)
+
+
+def _git_invocations(
+    command: str, variables: Mapping[str, str] | None = None
+) -> list[tuple[str, str, str]]:
+    """Return (verb, resolved -C directory or '', argument-text) per git call."""
+    known = variables or {}
+    resolved: list[tuple[str, str, str]] = []
+    for match in _GIT_INVOCATION.finditer(command):
+        target = "" if match.group(1) is None else match.group(1)
+        if target:
+            target = _expand_path(target, known)
+            if not target.startswith("/"):
+                target = ""
+        resolved.append((match.group(2), target, match.group(3)))
+    return resolved
+
+
+def _command_reads_primary_commit(
+    command: str, prefixes: tuple[str, ...], variables: Mapping[str, str] | None = None
+) -> bool:
+    if not prefixes:
+        return False
+    prefix = r"\b" + re.escape(prefixes[0])
+    for verb, _target, args in _git_invocations(command, variables):
+        if verb in _SHADOW_GIT_READ_VERBS and re.search(prefix, args):
+            return True
+    return False
+
+
+def _command_reads_primary_path(
+    command: str,
+    paths: tuple[str, ...],
+    *,
+    main_root: str,
+    cwd: str,
+    variables: Mapping[str, str],
+) -> bool:
+    if not paths or not main_root:
+        return False
+    for verb, target, args in _git_invocations(command, variables):
+        if verb not in _SHADOW_GIT_CONTENT_READ_VERBS:
+            continue
+        context = target or cwd
+        if context != main_root:
+            continue
+        if _path_tokens_matching(args, paths):
+            return True
+    return False
+
+
+def _path_tokens_matching(args: str, paths: tuple[str, ...]) -> bool:
+    """Whether a git argument list names a changed path as a target.
+
+    A path is named when it is an argument on its own, or a ``revision:path``
+    object reference whose path half equals it. An argument that merely embeds
+    the path inside another directory (``HEAD:$W/reckon/crew/recovery.py`` for
+    a worktree variable) names a different object and never matches.
+    """
+    for raw in args.split():
+        token = raw.strip("\"'")
+        candidate = token.split(":", 1)[1] if ":" in token else token
+        if candidate in paths:
+            return True
+    return False
+
+
+def _path_reads_primary_changed(
+    path: str,
+    paths: tuple[str, ...],
+    *,
+    main_root: str,
+    work_root: str,
+) -> bool:
+    if not paths or not main_root:
+        return False
+    if work_root and path.startswith(work_root + "/"):
+        return False
+    if not path.startswith(main_root + "/"):
+        return False
+    relative = path[len(main_root) :].lstrip("/")
+    return relative in paths
 
 
 def per_run_budget(
@@ -1551,6 +1818,7 @@ def effort_report(
                 "excluded_scope_changed": 0,
                 "excluded_stalled": 0,
                 "excluded_unusable_completion": 0,
+                "excluded_contaminated": 0,
                 "measured_minutes": 0.0,
                 "durations": [],
             },
