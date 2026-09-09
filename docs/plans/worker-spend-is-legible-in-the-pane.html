@@ -329,6 +329,19 @@ accumulation_key := run_id                          if kind == "shadow"
       head, which is the only place the combination can be measured at all.
     </p>
     <p>
+      <strong>A measure ranges over the corpus, never over a fixture, wherever the figure it
+      asserts can go unmeasured.</strong> This plan's own fifth measure failed that test on
+      first authoring: it asked that each cell carry a value or an explicit marker, which five
+      dim dashes satisfy, and at the base revision all five cells are measured together on
+      only 26 of 803 committed rows. A cell-by-cell corpus reading is the reason the figure is
+      known at all &mdash; wall 89.4%, tokens 90.4%, model 16.1%, rate 15.8%, dollars 13.3%,
+      and any cell at all on 98.1% of rows. So the fifth node now carries a coverage floor
+      against the corpus and the first three carry the measurements that raise it. The general
+      form, which cost a sibling section six passing-but-inert measures in one day: a
+      derivation that can return unknown must be checked for whether it returns unknown on the
+      whole corpus, because a fixture where it resolves proves only that it can resolve.
+    </p>
+    <p>
       <strong>Every measure below is phrased with <em>carries</em> or <em>does</em>, never with
       <em>can</em> or <em>supports</em>.</strong> A measure phrased permissively is satisfied by
       a capability nobody exercises: a sibling section's gate read &ldquo;every run <em>can</em>
@@ -373,7 +386,7 @@ accumulation_key := run_id                          if kind == "shadow"
         <tr>
           <td><code>pane-carries-the-figures</code></td>
           <td>Every monitor row carries the five cells at fixed alignment, and the transition record carries them as facts.</td>
-          <td>Every transition record for a live run <em>carries</em> a measured or explicitly-unmeasured value in all five cells, asserted over a fixture fleet containing a resumed run, a redispatched run and a shadow. A rendered line is exactly the requested width with no wrapping at 155, 180 and 208 columns; the five cells occupy the same screen column on every row of a multi-row fixture; an unmeasured cell renders the dim marker and a measured zero renders a zero, asserted as distinct strings. <code>Ticker._stats</code> is unmodified, verified by diff. <code>uv run pytest tests/test_crew_ticker.py tests/test_crew_ticker_layout.py tests/test_crew_monitor_output.py tests/test_crew_watch_stream.py tests/test_crew_recovery.py tests/test_fleet_counter_coverage.py tests/test_recovery_state_typing.py tests/test_crew_session_delivery.py tests/test_external_wait.py tests/test_follow_observes_other_sessions.py tests/test_follow_sweep_cadence.py -q</code> passes &mdash; all eleven files that assert on a rendered line, fenced with the source because a narrower fence reads a clean delta while the merged head is red.</td>
+          <td><strong>A coverage floor measured on the corpus, not a rendering check on a fixture.</strong> At the base revision all five cells are measured together on <strong>26 of 803</strong> committed rows &mdash; 3.2% &mdash; so a measure asking only that each cell carry a value or a marker is satisfied by five dim dashes and cannot fail. It must therefore assert, over the project's real committed corpus rather than a fixture: the model and rate cells render a <em>measured</em> value for every codex row whose rollout survives, the count still rendering the unmeasured marker is reported as a number beside the coverage it came from, and that number is lower than the base revision's. A run of the pane against the live fleet is attached with its per-cell measured count. Separately, and on a fixture fleet containing a resumed run, a redispatched run and a shadow: a rendered line is exactly the requested width with no wrapping at 155, 180 and 208 columns; the five cells occupy the same screen column on every row of a multi-row fixture; an unmeasured cell renders the dim marker and a measured zero renders a zero, asserted as distinct strings. <code>Ticker._stats</code> is unmodified, verified by diff. <code>uv run pytest tests/test_crew_ticker.py tests/test_crew_ticker_layout.py tests/test_crew_monitor_output.py tests/test_crew_watch_stream.py tests/test_crew_recovery.py tests/test_fleet_counter_coverage.py tests/test_recovery_state_typing.py tests/test_crew_session_delivery.py tests/test_external_wait.py tests/test_follow_observes_other_sessions.py tests/test_follow_sweep_cadence.py -q</code> passes &mdash; all eleven files that assert on a rendered line, fenced with the source because a narrower fence reads a clean delta while the merged head is red.</td>
           <td><code>reckon/crew/ticker.py</code>, <code>reckon/crew/recovery.py</code>, and the eleven test files named in the measure</td>
           <td>guided &middot; local, after nodes 1&ndash;4</td>
         </tr>
