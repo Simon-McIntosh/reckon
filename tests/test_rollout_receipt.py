@@ -3,16 +3,20 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import fields
+from datetime import date
 from itertools import accumulate
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
 
+from reckon import flight
 from reckon.crew import rollout
 from reckon.crew.rollout import (
     REQUEST_INPUT_CROSSING_THRESHOLD,
     WEEKLY_WINDOW_MINUTES,
+    RateBasis,
     Unmeasured,
     read_rollout_receipt,
 )
@@ -692,3 +696,233 @@ def test_real_named_rollout_cumulative_beats_naive_single_readings() -> None:
     assert cumulative != last_value
     assert cumulative != maximum_value
     assert cumulative > last_value
+
+
+# ── Notional spend beside the quota position ───────────────────────────────
+
+
+def _priced_token_record(
+    *,
+    total_input: int,
+    request_input: int,
+    request_output: int,
+    context_window: int,
+) -> dict[str, Any]:
+    """One token_count record with exact per-request input and output."""
+    return {
+        "type": "event_msg",
+        "payload": {
+            "type": "token_count",
+            "info": {
+                "total_token_usage": {
+                    "input_tokens": total_input,
+                    "cached_input_tokens": 0,
+                    "output_tokens": request_output,
+                    "reasoning_output_tokens": 0,
+                    "total_tokens": total_input + request_output,
+                },
+                "last_token_usage": {
+                    "input_tokens": request_input,
+                    "cached_input_tokens": 0,
+                    "output_tokens": request_output,
+                    "reasoning_output_tokens": 0,
+                    "total_tokens": request_input + request_output,
+                },
+                "model_context_window": context_window,
+            },
+        },
+    }
+
+
+def _dated_rate_config() -> dict[str, Any]:
+    """A resolved flight config whose priced lane carries a dated pair."""
+    return {
+        "backends": {
+            "lane-priced": {
+                "model": "fixture-model-0",
+                "input_rate_per_million": 4.00,
+                "output_rate_per_million": 20.00,
+                "as_of": date(2026, 1, 1),
+            }
+        }
+    }
+
+
+def test_a_run_on_a_dated_rate_lane_carries_a_surcharge_aware_notional_spend(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The figure prices the surcharged quantities at the declared rates.
+
+    One request sits strictly above the long-context threshold, so its input
+    is charged at the whole-request double rate and its output at time and a
+    half.  The bare tokens price at 2.20 — the asserted 3.60 can only come
+    from the surcharge, which is what makes the delegation to quota_weight
+    load-bearing rather than cosmetic.
+    """
+    monkeypatch.setattr(rollout, "CLIENT_SESSIONS_DIR", tmp_path)
+    monkeypatch.setattr(flight, "resolve", lambda: SimpleNamespace(config=_dated_rate_config()))
+    threshold = REQUEST_INPUT_CROSSING_THRESHOLD
+    records = [
+        _priced_token_record(
+            total_input=100_000,
+            request_input=100_000,
+            request_output=10_000,
+            context_window=threshold + 100_000,
+        ),
+        _priced_token_record(
+            total_input=400_000,
+            request_input=300_000,
+            request_output=20_000,
+            context_window=threshold + 100_000,
+        ),
+    ]
+    _write_rollout(tmp_path, "dated-rate-session", records)
+
+    receipt = read_rollout_receipt(
+        "dated-rate-session", model_identifier="fixture-model-0"
+    )
+
+    assert receipt.requests_over_threshold == 1
+    assert receipt.maximum_request_input_tokens == threshold + 28_000
+    assert receipt.notional_cost_usd == 3.60
+    assert receipt.rate_basis == RateBasis(
+        model_identifier="fixture-model-0",
+        input_per_million=4.0,
+        output_per_million=20.0,
+        as_of=date(2026, 1, 1),
+    )
+
+
+def test_an_undated_rate_pair_carries_the_explicit_unpriced_marker(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A pair without an as_of date is not a price, never a zero."""
+    monkeypatch.setattr(rollout, "CLIENT_SESSIONS_DIR", tmp_path)
+    undated_config = {
+        "backends": {
+            "lane-undated": {
+                "model": "fixture-model-undated",
+                "input_rate_per_million": 4.00,
+                "output_rate_per_million": 20.00,
+            }
+        }
+    }
+    monkeypatch.setattr(
+        flight, "resolve", lambda: SimpleNamespace(config=undated_config)
+    )
+    records = [
+        _priced_token_record(
+            total_input=100_000,
+            request_input=100_000,
+            request_output=10_000,
+            context_window=258_400,
+        )
+    ]
+    _write_rollout(tmp_path, "undated-rate-session", records)
+
+    receipt = read_rollout_receipt(
+        "undated-rate-session", model_identifier="fixture-model-undated"
+    )
+
+    assert receipt.notional_cost_usd is Unmeasured.NO_DATED_RATE
+    assert receipt.rate_basis is Unmeasured.NO_DATED_RATE
+    assert receipt.notional_cost_usd is not None
+    assert receipt.notional_cost_usd != 0
+
+
+def test_a_receipt_with_no_model_identifier_is_explicitly_unpriced_not_zero(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """No lane identity means no figure, and the marker names the reason."""
+    monkeypatch.setattr(rollout, "CLIENT_SESSIONS_DIR", tmp_path)
+    records = [
+        _priced_token_record(
+            total_input=100_000,
+            request_input=100_000,
+            request_output=10_000,
+            context_window=258_400,
+        )
+    ]
+    _write_rollout(tmp_path, "no-model-session", records)
+
+    receipt = read_rollout_receipt("no-model-session")
+
+    assert receipt.notional_cost_usd is Unmeasured.NO_MODEL_IDENTIFIER
+    assert receipt.rate_basis is Unmeasured.NO_MODEL_IDENTIFIER
+    assert receipt.notional_cost_usd is not None
+    assert receipt.notional_cost_usd != 0
+
+
+def test_an_account_reporting_one_window_yields_exactly_one(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """One reported window is one reading, asserted by the absent second.
+
+    The assertion is the absence of any second window in the returned mapping,
+    not the text of the one that is there: a surface must not render a second
+    horizon an account never reported.
+    """
+    monkeypatch.setattr(rollout, "CLIENT_SESSIONS_DIR", tmp_path)
+    window = 5 * 60
+    records = [
+        _token_record(
+            total_input=1,
+            request_input=1,
+            sequence=1,
+            context_window=121_600,
+            used_percent=float(37),
+            rate_limits={
+                "primary": {
+                    "used_percent": 37,
+                    "window_minutes": window,
+                    "resets_at": 1_900_000_300,
+                },
+                "secondary": None,
+                "plan_type": "standard",
+            },
+        )
+    ]
+    _write_rollout(tmp_path, "single-window-session", records)
+
+    receipt = read_rollout_receipt("single-window-session")
+
+    assert len(receipt.quota_readings) == 1
+    assert set(receipt.quota_readings) == {window}
+    reading = receipt.quota_readings[window]
+    assert reading.window_minutes == window
+    assert reading.used_percent == 37
+
+
+def test_used_percent_quantisation_limit_travels_with_the_reading(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The whole-percent limit is carried in the returned structure.
+
+    A surface that reads the figure must be able to say the reading is
+    quantised to whole points, because per-run attribution from such a reading
+    is not sound.  The limit lives on the reading, not only in a docstring.
+    """
+    monkeypatch.setattr(rollout, "CLIENT_SESSIONS_DIR", tmp_path)
+    _write_rollout(
+        tmp_path,
+        "quantised-session",
+        [
+            _token_record(
+                total_input=1,
+                request_input=1,
+                sequence=1,
+                context_window=258_400,
+                used_percent=float(42),
+            )
+        ],
+    )
+
+    receipt = read_rollout_receipt("quantised-session")
+
+    assert receipt.weekly_quota.used_percent == 42
+    assert receipt.weekly_quota.used_percent_quantisation == 1.0

@@ -805,3 +805,79 @@ def test_exclusion_reason_outside_the_fixed_set_counts_instead_of_crashing(
         "invalid": 0,
         "contaminated": 1,
     }
+
+
+# ── The computed notional figure and the existing unmetered flag ──────────
+
+
+def test_cost_usd_prefers_a_computed_notional_figure_over_the_harness() -> None:
+    """A row carrying the new computed field is returned, never discarded.
+
+    The notional figure is derived from declared rates and measured tokens,
+    while the harness's own figure can price a model that was never billed —
+    the free lane read as the dearest one.  When both are recorded the
+    computed figure wins, and a bare notional figure is returned on its own.
+    """
+    assert capabilities._cost_usd({"budget": {"notional_cost_usd": 1.23}}) == 1.23
+    both = {"budget": {"cost_usd": 99.0, "notional_cost_usd": 1.23}}
+    assert capabilities._cost_usd(both) == 1.23
+
+
+def test_cost_usd_falls_back_to_the_recorded_figure_without_notional() -> None:
+    """Rows predating the new field keep reading the harness figure."""
+    assert capabilities._cost_usd({"budget": {"cost_usd": 2.5}}) == 2.5
+    assert capabilities._cost_usd({"budget": {}}) is None
+    assert capabilities._cost_usd({}) is None
+
+
+def test_the_imputed_flag_meaning_is_unchanged() -> None:
+    """cost_usd_imputed still marks a nulled unmetered figure, and wins.
+
+    The flag is authoritative over either cost field: a figure already flagged
+    imputed (a null inserted because the lane is unmetered) is excluded exactly
+    as before, even when the block also carries a computed notional figure.
+    """
+    run = {
+        "budget": {
+            "cost_usd": 5.0,
+            "notional_cost_usd": 1.23,
+            "cost_usd_imputed": True,
+        }
+    }
+    assert capabilities._cost_usd(run) is None
+    assert capabilities._cost_usd_imputed(run) is True
+
+
+def test_a_computed_notional_figure_survives_storage_beside_the_flag() -> None:
+    """Storage preserves the new field and the flag keeps its own meaning."""
+    metered = ledger.build_record(
+        run_id="r-notional-metered",
+        plan="plan-a",
+        gate="passed",
+        backend="claude",
+        budget={
+            "cost_usd": 1.61,
+            "cost_usd_cumulative": 1.61,
+            "notional_cost_usd": 1.23,
+        },
+    )
+    assert metered["budget"]["notional_cost_usd"] == 1.23
+    assert metered["budget"]["cost_usd"] == 1.61
+    assert "cost_usd_imputed" not in metered["budget"]
+
+    unmetered = ledger.build_record(
+        run_id="r-notional-clive",
+        plan="plan-a",
+        gate="passed",
+        backend="clive",
+        budget={
+            "cost_usd": 21.59,
+            "cost_usd_cumulative": 21.59,
+            "notional_cost_usd": 0.5,
+        },
+    )
+    assert unmetered["budget"]["cost_usd"] is None
+    assert unmetered["budget"]["cost_usd_imputed"] is True
+    assert unmetered["budget"]["notional_cost_usd"] == 0.5
+    assert capabilities._cost_usd(unmetered) is None
+    assert capabilities._cost_usd_imputed(unmetered) is True
