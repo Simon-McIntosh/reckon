@@ -3501,6 +3501,7 @@ def test_shadow_derives_the_committed_node_at_the_primary_base(home, repo) -> No
         candidate_backend="candidate",
         config=_candidate_config(),
         repo=repo,
+        session="shadow-session",
         launcher=lambda *args, **kwargs: 0,
     )
 
@@ -3546,6 +3547,7 @@ def test_shadow_inherits_primary_agent_settings_while_switching_backend(
         candidate_backend="candidate",
         config=_candidate_config_with_distinct_agent(),
         repo=repo,
+        session="shadow-session",
         launcher=lambda *args, **kwargs: 0,
     )
 
@@ -3575,6 +3577,7 @@ def test_shadow_explicit_effort_override_is_used_and_recorded(home, repo) -> Non
         candidate_backend="candidate",
         config=_candidate_config_with_distinct_agent(),
         repo=repo,
+        session="shadow-session",
         configuration_overrides={"effort"},
         launcher=lambda *args, **kwargs: 0,
     )
@@ -3598,6 +3601,7 @@ def test_shadow_inherits_primary_time_budget_instead_of_role_default(
         candidate_backend="candidate",
         config=_candidate_config_with_distinct_agent(),
         repo=repo,
+        session="shadow-session",
         launcher=lambda *args, **kwargs: 0,
     )
 
@@ -3617,6 +3621,7 @@ def test_shadow_explicit_time_budget_override_is_used_and_recorded(home, repo) -
         candidate_backend="candidate",
         config=config,
         repo=repo,
+        session="shadow-session",
         configuration_overrides={"time_budget"},
         launcher=lambda *args, **kwargs: 0,
     )
@@ -3643,6 +3648,7 @@ def test_shadow_without_recorded_time_budget_uses_role_default_and_records_fallb
         candidate_backend="candidate",
         config=_candidate_config_with_distinct_agent(),
         repo=repo,
+        session="shadow-session",
         launcher=lambda *args, **kwargs: 0,
     )
 
@@ -3670,6 +3676,7 @@ def test_shadow_refuses_primary_without_recorded_agent_configuration(
             candidate_backend="candidate",
             config=_candidate_config(),
             repo=repo,
+            session="shadow-session",
             launcher=lambda *args, **kwargs: 0,
         )
 
@@ -3699,6 +3706,7 @@ def test_shadow_accepts_historical_plan_when_current_plan_changed(home, repo) ->
         candidate_backend="candidate",
         config=_candidate_config(),
         repo=repo,
+        session="shadow-session",
         launcher=lambda *args, **kwargs: 0,
     )
 
@@ -3754,6 +3762,7 @@ def test_shadow_refuses_plan_unreadable_at_primary_base(home, repo) -> None:
             candidate_backend="candidate",
             config=_candidate_config(),
             repo=repo,
+            session="shadow-session",
             launcher=lambda *args, **kwargs: 0,
         )
 
@@ -3810,6 +3819,7 @@ def test_shadow_refuses_section_absent_at_primary_base(home, repo) -> None:
             candidate_backend="candidate",
             config=_candidate_config(),
             repo=repo,
+            session="shadow-session",
             launcher=lambda *args, **kwargs: 0,
         )
 
@@ -3831,6 +3841,7 @@ def test_shadow_refuses_an_unreachable_primary_base_without_artifacts(
             candidate_backend="candidate",
             config=_candidate_config(),
             repo=repo,
+            session="shadow-session",
             launcher=lambda *args, **kwargs: 0,
         )
 
@@ -3861,6 +3872,8 @@ def test_shadow_cli_routes_the_candidate_and_derives_the_node(
             "shadow",
             "--run",
             primary["run_id"],
+            "--session",
+            "shadow-session",
             "--backend",
             "candidate",
             "--set",
@@ -3962,6 +3975,7 @@ def test_shadow_completion_refuses_commits_and_measures_the_retained_patch(
         candidate_backend="candidate",
         config=_candidate_config(),
         repo=repo,
+        session="shadow-session",
         launcher=lambda *args, **kwargs: 0,
     )
     changed = Path(shadow["worktree"]) / "reckon" / "_backends.py"

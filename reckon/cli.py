@@ -1287,7 +1287,7 @@ def crew_dispatch(
 @crew.command(name="shadow")
 @click.option("--run", "run_id", required=True, help="Committed primary run id.")
 @click.option(
-    "--session", default="", help="Dispatching session that owns this shadow."
+    "--session", required=True, help="Dispatching session that owns this shadow."
 )
 @click.option("--wave", default="", help="Optional open wave id grouping this shadow.")
 @click.option(

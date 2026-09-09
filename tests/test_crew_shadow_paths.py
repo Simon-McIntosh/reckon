@@ -134,7 +134,7 @@ def _shadow(
     *,
     config: dict | None = None,
     configuration_overrides: set[str] | None = None,
-    session: str = "",
+    session: str = "shadow-session",
     wave: str = "",
 ) -> dict:
     return dispatch_shadow(
@@ -205,15 +205,14 @@ def test_many_candidates_shadow_one_primary_without_colliding(home, repo) -> Non
         shadows, ("candidate-a", "candidate-b", "candidate-c"), strict=True
     ):
         assert record["backend"] == backend
-        # The dispatcher derives its session through the shared helper, so each
-        # worktree lives under a session that names both primary and candidate.
+        assert record["session"] == "shadow-session"
+        # Attribution is shared while the internal worktree identity retains
+        # the primary, candidate, and unique component used for isolation.
         component = record["lineage"]["worktree_component"]
-        assert record["session"] == routing.shadow_worktree_session(
+        worktree_identity = routing.shadow_worktree_session(
             primary_id, backend, component
         )
-        assert record["session"].startswith(
-            routing.shadow_worktree_session(primary_id, backend) + "-"
-        )
+        assert worktree_identity in str(Path(record["worktree"]))
 
 
 def test_two_effort_arms_on_one_backend_keep_separate_patches(home, repo) -> None:
@@ -235,7 +234,7 @@ def test_two_effort_arms_on_one_backend_keep_separate_patches(home, repo) -> Non
 
     assert first["agent"]["effort"] == primary["agent"]["effort"] == "high"
     assert second["agent"]["effort"] == "medium"
-    assert first["session"] != second["session"]
+    assert first["session"] == second["session"] == "shadow-session"
     assert first["worktree"] != second["worktree"]
     assert (
         first["lineage"]["worktree_component"]

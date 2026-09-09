@@ -2177,7 +2177,7 @@ def shadow(
     candidate_backend: str,
     config: Mapping[str, Any],
     repo: str | Path,
-    session: str = "",
+    session: str,
     wave: str = "",
     member: str = "",
     configuration_overrides: Iterable[str] = (),
@@ -2190,7 +2190,7 @@ def shadow(
     node = source["node"]
     base_sha = source["base_sha"]
     primary = source["primary"]
-    dispatching_session = str(session or primary.get("session") or "")
+    dispatching_session = str(session)
     if not dispatching_session:
         raise CrewError(
             format_refusal(
