@@ -1064,3 +1064,128 @@ def test_a_missing_stream_row_is_excluded_not_averaged_as_zero(
     assert row["tool_step_samples"] == 1
     assert row["median_tool_steps"] == 6.0
     assert row["input_samples"] == 2
+
+
+# ── A recorded absence is authoritative, not a hole the fallback fills ───────
+#
+# The ledgered figure keys win by presence, not by the truthiness of their
+# value. A row that records the figure as null is the promotion-time statement
+# that it is underivable; re-deriving it from a stream that still exists on
+# disk would both waste the walk and override the record. Only a row that
+# never gained the key falls through to the stream walk as before.
+
+
+def test_a_recorded_figure_key_is_authoritative_by_presence_not_truthiness(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A present key returns its value - null included - without opening a stream.
+
+    A measured figure returns its value; a recorded null returns null even
+    though a stream still on disk could be walked, because the row already
+    states the figure is underivable; only a row without the key walks the
+    stream. Proving the null is avoidable: the walk counter stays at zero for
+    the present-key rows and advances only for the absent-key row.
+    """
+    root = _project(tmp_path)
+    _plan(root, "work", 2.0)
+    for run_id, steps in (("r-measured", 2), ("r-null", 4), ("r-absent", 6)):
+        _figure_run(root, home, run_id, tool_steps=steps, effort="high")
+
+    data, version = ledger.load(root.name, root=root)
+    for row in data["runs"]:
+        if row["run_id"] == "r-measured":
+            row["tool_steps"] = 2.0
+            row["orientation_input_tokens"] = 220.0
+        elif row["run_id"] == "r-null":
+            row["tool_steps"] = None
+            row["orientation_input_tokens"] = None
+    ledger.write(root.name, data, version, root=root)
+    runs = {row["run_id"]: row for row in ledger.load(root.name, root=root)[0]["runs"]}
+
+    opens = _StreamOpenCounter(monkeypatch)
+    assert capabilities._tool_steps(runs["r-measured"]) == 2.0
+    assert capabilities._tool_steps(runs["r-null"]) is None
+    assert capabilities._tool_steps(runs["r-absent"]) == 6.0
+    assert capabilities._orientation_input_tokens(runs["r-measured"]) == 220.0
+    assert capabilities._orientation_input_tokens(runs["r-null"]) is None
+    assert capabilities._orientation_input_tokens(runs["r-absent"]) == 220.0
+    # tool + orientation = two opens, both from the absent-key row alone
+    assert opens.count() == 2
+
+
+def test_a_recorded_null_with_a_live_stream_is_not_re_walked_by_the_derive(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The derive reads the ledger only: zero stream opens, nulls included.
+
+    Both rows carry the figure keys - one measured, one recorded null - and
+    the null row's stream is still on disk and would yield a figure if walked.
+    The derive still opens none of them, because key presence is authoritative.
+    """
+    root = _project(tmp_path)
+    _plan(root, "work", 2.0)
+    _figure_run(root, home, "r-measured", tool_steps=2, effort="high")
+    _figure_run(root, home, "r-null", tool_steps=4, effort="high")
+
+    data, version = ledger.load(root.name, root=root)
+    null_row = None
+    for row in data["runs"]:
+        if row["run_id"] == "r-measured":
+            row["tool_steps"] = 2.0
+            row["orientation_input_tokens"] = 220.0
+        else:
+            row["tool_steps"] = None
+            row["orientation_input_tokens"] = None
+            null_row = row
+    ledger.write(root.name, data, version, root=root)
+    assert capabilities._stream_path(null_row) is not None  # stream still live
+
+    opens = _StreamOpenCounter(monkeypatch)
+    capabilities.derive_capabilities({root.name: root / "docs"})
+    assert opens.count() == 0
+
+
+def test_the_fast_path_reproduces_the_walk_over_all_three_row_shapes(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Measured figure, recorded null and absent key derive identically.
+
+    The recorded-null row's stream is gone, matching the record's statement
+    that the figure is underivable, so every row comes out the same whether
+    the derive reads the ledger or re-opens streams. Only the number of stream
+    opens differs: the fast path walks just the absent-key row.
+    """
+    root = _project(tmp_path)
+    _plan(root, "work", 2.0)
+    for run_id, steps in (("r-measured", 2), ("r-null", 4), ("r-absent", 6)):
+        _figure_run(root, home, run_id, tool_steps=steps, effort="medium")
+
+    data, version = ledger.load(root.name, root=root)
+    for row in data["runs"]:
+        if row["run_id"] == "r-measured":
+            row["tool_steps"] = 2.0
+            row["orientation_input_tokens"] = 220.0
+        elif row["run_id"] == "r-null":
+            row["tool_steps"] = None
+            row["orientation_input_tokens"] = None
+            (home / "crew" / "runs" / "r-null" / "stream.jsonl").unlink()
+    ledger.write(root.name, data, version, root=root)
+    mounts = {root.name: root / "docs"}
+
+    opens = _StreamOpenCounter(monkeypatch)
+    fast = capabilities.derive_capabilities(mounts)
+    fast_opens = opens.count()
+    assert fast_opens >= 2  # the absent-key row's tool and orientation walks
+
+    # Strip every figure key so the whole corpus has to walk, and require the
+    # same derived rows as the ledger-only path: equivalence, not just speed.
+    data2, version2 = ledger.load(root.name, root=root)
+    for row in data2["runs"]:
+        row.pop("tool_steps", None)
+        row.pop("orientation_input_tokens", None)
+    ledger.write(root.name, data2, version2, root=root)
+    walk = capabilities.derive_capabilities(mounts)
+
+    assert opens.count() > fast_opens  # the walk re-opened the keyless streams
+    assert fast["configurations"] == walk["configurations"]
+    assert fast["routing"]["rows"] == walk["routing"]["rows"]

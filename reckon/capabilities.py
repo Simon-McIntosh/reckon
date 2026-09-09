@@ -170,6 +170,26 @@ def _measured_number(value: Any) -> float | None:
     return measured if math.isfinite(measured) and measured >= 0 else None
 
 
+# Sentinel distinguishing a key that is absent from one that is present but
+# recorded as undefinable (null). A figure key is authoritative by presence: a
+# row that already states a figure cannot be derived must never be re-derived
+# by reopening its stream, and only an absent key leaves the walk as fallback.
+_ABSENT = object()
+
+
+def _recorded_figure(row: Mapping[str, Any], key: str) -> float | object | None:
+    """Return a row's recorded figure value, or ``_ABSENT`` when none is recorded.
+
+    Key presence, not value truthiness, decides: a present ``null`` is a
+    deliberate statement that the figure is underivable and must not fall
+    through to the stream walk, while an absent key returns the walk as the
+    fallback as before.
+    """
+    if key not in row:
+        return _ABSENT
+    return _measured_number(row[key])
+
+
 def _input_tokens(run: Mapping[str, Any]) -> float | None:
     """Read the charged worker input carried by one promoted run."""
 
@@ -392,8 +412,8 @@ def _target_is_declared(target: str, scopes: Sequence[str]) -> bool:
 def _orientation_input_tokens(run: Mapping[str, Any]) -> float | None:
     """Measure charged input consumed before the first declared-path write."""
 
-    direct = _measured_number(run.get("orientation_input_tokens"))
-    if direct is not None:
+    direct = _recorded_figure(run, "orientation_input_tokens")
+    if direct is not _ABSENT:
         return direct
     scopes = _write_paths(run)
     if not scopes:
@@ -449,15 +469,15 @@ def _orientation_input_tokens(run: Mapping[str, Any]) -> float | None:
 def _tool_steps(run: Mapping[str, Any]) -> float | None:
     """Count completed tool interactions, preferring a ledgered measurement."""
 
-    direct = _measured_number(run.get("tool_steps"))
-    if direct is not None:
+    direct = _recorded_figure(run, "tool_steps")
+    if direct is not _ABSENT:
         return direct
     for block_name in ("throughput", "budget"):
         block = run.get(block_name)
         if isinstance(block, Mapping):
-            measured = _measured_number(block.get("tool_steps"))
-            if measured is not None:
-                return measured
+            nested = _recorded_figure(block, "tool_steps")
+            if nested is not _ABSENT:
+                return nested
 
     stream = _stream_path(run)
     if stream is None:
@@ -834,8 +854,7 @@ def derive_routing(
                     "cost_usd_samples": len(dollar_costs),
                     "value": _median_or_none(dollar_costs),
                     "cost_usd_imputed_samples": imputed_cost_samples,
-                    "cost_usd_imputed": imputed_cost_samples > 0
-                    and not dollar_costs,
+                    "cost_usd_imputed": imputed_cost_samples > 0 and not dollar_costs,
                 },
                 "per_run_cost": {
                     "label": "immediate spend; a short window can reflect this",
