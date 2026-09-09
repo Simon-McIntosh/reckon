@@ -359,8 +359,20 @@ slots:
   time_budget:
     description: >-
       Wall-clock allowance, written as an integer followed by a unit — `s`, `m`
-      or `h`.
+      or `h`. It remains the ceiling that bounds a hang: a process that has
+      stopped producing is only caught by elapsed wall clock, never by a token
+      count.
     pattern: "^[0-9]+[smh]$"
+
+  token_budget:
+    description: >-
+      Worker allowance denominated in generated output tokens — the quantity
+      the same task needs regardless of what else the lane is doing, so a slow
+      lane inside its token budget is not an overrun however long it took.
+      Written as a bare integer of output tokens. Cannot bound a hang, so the
+      wall-clock `time_budget` ceiling stays under its own name.
+    range: integer
+    minimum_value: 1
 
   backend:
     description: Backend this role dispatches to. Absent means `default_backend`.
@@ -497,6 +509,7 @@ classes:
       - max_concurrent_runs
       - fallback
       - time_budget
+      - token_budget
 
   CatalogConfig:
     description: Provider-neutral model catalog probe owned by a backend.
@@ -529,6 +542,7 @@ classes:
       - sandbox
       - session_reuse
       - time_budget
+      - token_budget
       - write_paths
       - by_spec_level
 
@@ -546,6 +560,7 @@ classes:
       - model
       - effort
       - time_budget
+      - token_budget
 
   GateConfig:
     description: How evidence gates are enforced.
@@ -570,6 +585,7 @@ classes:
     description: Limits a worker applies to itself before asking for help.
     slots:
       - time_budget
+      - token_budget
       - needs_help_after_failures
       - manifest_required
       - enforce_budget_watchdog

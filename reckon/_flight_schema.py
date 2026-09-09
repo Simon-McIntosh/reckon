@@ -209,7 +209,8 @@ class BackendConfig(ConfiguredBaseModel):
     usable_input_window: Optional[int] = Field(default=None, description="""Maximum input tokens this backend can hold after any output reservation has already been removed. Dispatch compares this declared window with a deterministic estimate of the node's standing instructions and named repository files before creating a worktree. Absence means unbounded, never zero: an unknown ceiling cannot justify refusing work.""", ge=1)
     max_concurrent_runs: Optional[int] = Field(default=None, description="""Maximum live worker runs this backend may carry at once. Dispatch counts the non-terminal live pointers claiming this backend and refuses a new dispatch that would exceed the ceiling, naming the backend, the ceiling, the current count and the occupying run ids. Absent or null means unlimited, the default for every backend that does not declare one.""", ge=1)
     fallback: Optional[str] = Field(default=None, description="""Backend to substitute when this one is held on budget. Declared, never inferred: a backend naming no fallback still refuses a held dispatch exactly as one would with this key absent. The substitution is recorded on the run — the backend asked for, the backend used and the hold that caused it — so a calibration slice never attributes a fallback run to the backend the caller named. A fallback that is itself held still refuses; this key does not chain into a search across backends.""")
-    time_budget: Optional[str] = Field(default=None, description="""Wall-clock allowance, written as an integer followed by a unit — `s`, `m` or `h`.""")
+    time_budget: Optional[str] = Field(default=None, description="""Wall-clock allowance, written as an integer followed by a unit — `s`, `m` or `h`. It remains the ceiling that bounds a hang: a process that has stopped producing is only caught by elapsed wall clock, never by a token count.""")
+    token_budget: Optional[int] = Field(default=None, description="""Worker allowance denominated in generated output tokens — the quantity the same task needs regardless of what else the lane is doing, so a slow lane inside its token budget is not an overrun however long it took. Written as a bare integer of output tokens. Cannot bound a hang, so the wall-clock `time_budget` ceiling stays under its own name.""", ge=1)
 
     @field_validator('time_budget')
     def pattern_time_budget(cls, v):
@@ -260,7 +261,8 @@ class RoleConfig(ConfiguredBaseModel):
     execution_capable: Optional[bool] = Field(default=None, description="""Whether this role runs commands that can write build, test, cache or product state inside its detached worktree.""")
     sandbox: Optional[SandboxMode] = Field(default=None, description="""Filesystem blast radius granted to workers of this backend.""")
     session_reuse: Optional[bool] = Field(default=None, description="""Whether a finished worker session can be resumed rather than respawned.""")
-    time_budget: Optional[str] = Field(default=None, description="""Wall-clock allowance, written as an integer followed by a unit — `s`, `m` or `h`.""")
+    time_budget: Optional[str] = Field(default=None, description="""Wall-clock allowance, written as an integer followed by a unit — `s`, `m` or `h`. It remains the ceiling that bounds a hang: a process that has stopped producing is only caught by elapsed wall clock, never by a token count.""")
+    token_budget: Optional[int] = Field(default=None, description="""Worker allowance denominated in generated output tokens — the quantity the same task needs regardless of what else the lane is doing, so a slow lane inside its token budget is not an overrun however long it took. Written as a bare integer of output tokens. Cannot bound a hang, so the wall-clock `time_budget` ceiling stays under its own name.""", ge=1)
     write_paths: Optional[list[str]] = Field(default=None, description="""Default write scope granted to a node of this role when it declares no write_paths of its own. Entries are relative and are resolved against the dispatching run's own durable report-and-log directory — the same directory `manifest_path` already defaults into — never against the repository being worked on. A shipped or host layer therefore names no host-specific location, and a role whose entries all stay under that directory grants no reach into repository source.""")
     by_spec_level: Optional[SpecificationRouting] = Field(default=None, description="""Routing overlays selected by the specification completeness declared for a node. An undeclared level applies no overlay.""")
 
@@ -294,7 +296,8 @@ class RoutingOverlay(ConfiguredBaseModel):
     backend: Optional[str] = Field(default=None, description="""Backend this role dispatches to. Absent means `default_backend`.""")
     model: Optional[str] = Field(default=None, description="""Model identifier passed to this backend. User data; free text so that no provider vocabulary is encoded here.""")
     effort: Optional[str] = Field(default=None, description="""Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.""")
-    time_budget: Optional[str] = Field(default=None, description="""Wall-clock allowance, written as an integer followed by a unit — `s`, `m` or `h`.""")
+    time_budget: Optional[str] = Field(default=None, description="""Wall-clock allowance, written as an integer followed by a unit — `s`, `m` or `h`. It remains the ceiling that bounds a hang: a process that has stopped producing is only caught by elapsed wall clock, never by a token count.""")
+    token_budget: Optional[int] = Field(default=None, description="""Worker allowance denominated in generated output tokens — the quantity the same task needs regardless of what else the lane is doing, so a slow lane inside its token budget is not an overrun however long it took. Written as a bare integer of output tokens. Cannot bound a hang, so the wall-clock `time_budget` ceiling stays under its own name.""", ge=1)
 
     @field_validator('time_budget')
     def pattern_time_budget(cls, v):
@@ -334,7 +337,8 @@ class FenceConfig(ConfiguredBaseModel):
     """
     Limits a worker applies to itself before asking for help.
     """
-    time_budget: Optional[str] = Field(default=None, description="""Wall-clock allowance, written as an integer followed by a unit — `s`, `m` or `h`.""")
+    time_budget: Optional[str] = Field(default=None, description="""Wall-clock allowance, written as an integer followed by a unit — `s`, `m` or `h`. It remains the ceiling that bounds a hang: a process that has stopped producing is only caught by elapsed wall clock, never by a token count.""")
+    token_budget: Optional[int] = Field(default=None, description="""Worker allowance denominated in generated output tokens — the quantity the same task needs regardless of what else the lane is doing, so a slow lane inside its token budget is not an overrun however long it took. Written as a bare integer of output tokens. Cannot bound a hang, so the wall-clock `time_budget` ceiling stays under its own name.""", ge=1)
     needs_help_after_failures: Optional[int] = Field(default=None, description="""Consecutive failures after which a worker stops retrying and asks for help. Zero disables the fence.""", ge=0)
     manifest_required: Optional[bool] = Field(default=None, description="""Whether a worker must write its manifest to the orchestrator-named path before its node counts as delivered.""")
     enforce_budget_watchdog: Optional[bool] = Field(default=None, description="""Whether observation stops a live CLI worker after its declared time budget multiplied by the configured grace. Off by default; classification always reports the overrun without mutating the run.""")
