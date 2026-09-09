@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T10:40:05",
+  "updated": "2026-09-09T10:47:34",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -85752,6 +85752,174 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T083657181270-cotd-the-declaration-has-a-write-path",
+        "plan": "crew-observability-truth",
+        "section": "\u00a714",
+        "node": "cotd-the-declaration-has-a-write-path",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 545,
+                "cached_input_tokens": 422721,
+                "input_tokens": 423268,
+                "output_tokens": 878,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 424146,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "29187761-681d-4f4d-85ae-fc3d7adc250b",
+            "session_id": "ship-cot-drain-20260909"
+          },
+          "done_when": "pytest tests/test_edit_plan.py -q exits 0 having added at least 4 tests that CALL the write path rather than assert on prose: a set op on section_declarations succeeds and a subsequent read returns the identical mapping; the same mapping survives a write, a reread and a second write at the bumped version; a classification outside implementable/deferred/done is refused rather than stored; and a malformed section identity is refused. One test asserts the end-to-end reachability that was missing \u2014 after the write, plan_executable_remainder over the reread state returns the declared implementable count minus landed sections, never the unknown sentinel, so the field is proven reachable from the surface a coordinator actually uses. Base-versus-head delta on tests/test_mcp_store.py, tests/test_store_concurrency.py, tests/test_schema.py and tests/test_executable_remainder.py adds zero failures. Context: the field, its published schema and its HTML round trip already landed and are green, and edit_plan still answers unsupported plan set path, so this node closes a capability that exists everywhere except at its call site",
+          "estimated_hours": null,
+          "goal": "the executable-section declaration writable through the plan edit surface and readable back unchanged",
+          "id": "cotd-the-declaration-has-a-write-path",
+          "lane_declaration": {
+            "backend": "codex-terra",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-09T08:36:57Z",
+            "read_at": "2026-09-09T08:36:58Z",
+            "resolved_backend": "codex-terra",
+            "utilisation_pct": 65.0
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T083657181270-cotd-the-declaration-has-a-write-path/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "codex-terra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a714",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/_store.py",
+            "tests/test_edit_plan.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "implement-terra-b",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-09T08:37:06Z",
+        "completed_at": "2026-09-09T08:44:52Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 466,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 466,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "83d580437adae9fafd71c85dff2f8fd789ab6f39",
+        "commits": [
+          "c8dc7345602d9c7560b1a98af58e762aed082936"
+        ],
+        "changed_lines": {
+          "added": 124,
+          "removed": 1,
+          "files": 2
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_edit_plan.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T083657181270-cotd-the-declaration-has-a-write-path/focused-edit-plan.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T083657181270-cotd-the-declaration-has-a-write-path/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a08550-49f5-7701-8f4d-3edb424f2beb",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 4335360,
+            "cached_input_tokens_cumulative": 4335360,
+            "input_tokens": 4498495,
+            "input_tokens_cumulative": 4498495,
+            "output_tokens": 14803,
+            "output_tokens_cumulative": 14803,
+            "reasoning_output_tokens": 3560,
+            "reasoning_output_tokens_cumulative": 3560
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-09T08:44:52Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 65.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-09T08:44:52Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 4335360,
+          "cumulative_input_tokens": 8833855,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 18363
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_edit_plan.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cot-drain-20260909/cotd-the-declaration-has-a-write-path",
+          "session_id": "01a08550-49f5-7701-8f4d-3edb424f2beb",
+          "session_source": "stream",
+          "retained_at": "2026-09-09T08:44:52Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -85980,6 +86148,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1284
+    "_version": 1285
   }
 }
