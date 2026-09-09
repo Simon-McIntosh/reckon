@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="worker-spend-is-legible-in-the-pane-landed">
+  <meta name="plan-title" content="What Each Worker Cost — landed record">
+  <meta name="plan-summary" content="Seven nodes: the pane's five spend cells, the measurements under them, and the four corrections the work made to its own plan.">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-evidence-for" content="worker-spend-is-legible-in-the-pane">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <title>What Each Worker Cost — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution record &middot; 2026-09-09</p>
+      <h1>What Each Worker Cost &mdash; landed record</h1>
+      <p class="lead">
+        Seven nodes on the local lane, all promoted and merged. The pane carries five spend
+        cells; the measurements they read were built first, because at the base revision all
+        five were measured together on 26 of 803 committed rows. The record below keeps the
+        four corrections this work made to its own plan alongside what it delivered, because
+        three of the four were found by workers refusing a brief rather than by review.
+      </p>
+    </header>
+
+    <h2 id="grid">&sect;1 &mdash; The grid, rendered</h2>
+    <p>
+      Rendered from the merged code rather than mocked. The five cells sit between the effort
+      cell and the fleet counters; every line is exactly the requested width, with no wrapping
+      and the columns aligned down the pane.
+    </p>
+<pre>17:14:59  implement    cank-thomson-forward-model    dispatched &rarr; blocked   sol5.6     high    1:47:22  52:14 6.4M   38  3.41 7w&middot; 1b&middot; 2u  ! the same all_debug gate&hellip;
+17:14:59  investigate  ucc-reuse-map-scout             complete &rarr; promoted  dsv4-flash xhigh   2:04:11  18:02 1.5M   44     &ndash; 7w&middot; 1b&middot; 1u
+17:14:59  implement    bob-terminal-hash-semantics     complete &rarr; promoted  luna5.6    high      23:41   9:37 890k   52  0.12 7w&middot; 0b&middot; 0u
+17:14:59  implement    zero-spend-but-measured         complete &rarr; promoted  sol5.6     high       0:00   0:00    0    0  0.00 7w&middot; 0b&middot; 0u
+17:14:59  implement    never-observed-no-figures     dispatched &rarr; working   sol5.6     high          &ndash;      &ndash;    &ndash;    &ndash;     &ndash; 8w&middot; 0b&middot; 0u
+                                                                                            wall  model  tok  /s   usd</pre>
+    <p>
+      Rows four and five are the pair that matters: a <strong>measured zero</strong> renders
+      <code>0:00 0:00 0 0 0.00</code> and an <strong>unmeasured</strong> row renders dashes, so
+      the two are different strings on the line rather than the same value twice. Row two is
+      the free local lane &mdash; cost dashed while its other four cells carry figures, which
+      is the case that would otherwise have read as a lane that spent nothing measurable.
+    </p>
+    <table>
+      <thead><tr><th>Cell</th><th>Width</th><th>Renders</th></tr></thead>
+      <tbody>
+        <tr><td>wall</td><td>7</td><td>cumulative wall seconds across the lineage chain, <code>[H:]MM:SS</code></td></tr>
+        <tr><td>model</td><td>6</td><td>cumulative model seconds &mdash; tool and queue waits excluded</td></tr>
+        <tr><td>tokens</td><td>4</td><td>charged input including cache, plus output, collapsing unit</td></tr>
+        <tr><td>rate</td><td>4</td><td>generated tokens per second of model time</td></tr>
+        <tr><td>usd</td><td>5</td><td>notional cost from dated public rates, never the harness figure</td></tr>
+      </tbody>
+    </table>
+    <p>
+      The block is 30 columns including its leading gap, taking <code>MIN_WIDTH</code> from 128
+      to <strong>157</strong>. On the 208-column pane this workstation measures, the reason
+      field falls from 79 columns to 50 &mdash; well above the 12-column floor below which a
+      clause is not worth reading. <code>Ticker._stats</code> is byte-identical to the base
+      revision, verified by extracting the function from both revisions and again after the
+      merge, so a concurrent session's fourth counter cell is unaffected.
+    </p>
+
+    <h2 id="nodes">&sect;2 &mdash; The seven nodes</h2>
+    <table>
+      <thead><tr><th>Node</th><th>Commit</th><th>Gate</th><th>What it established</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>reuse map scout</td><td>no commit</td><td>passed</td>
+          <td>22 rows over 6 required symbols; found that <code>cost_usd_imputed</code> means the <em>opposite</em> of this plan's "imputed" and that <code>capabilities._cost_usd</code> discards a flagged row</td>
+        </tr>
+        <tr>
+          <td>lineage accumulator</td><td><code>12b7538</code></td><td>passed, +11 tests</td>
+          <td>Spend accumulates along the lineage chain; durability names its exclusion so an unknown kind is durable by default; durability and contamination asserted separately</td>
+        </tr>
+        <tr>
+          <td>codex model span</td><td><code>3130955</code></td><td>passed, +10 tests</td>
+          <td>Model span from the client rollout by bounding tool spans; validated against the backend's own <code>duration_api_ms</code> to <strong>0.005%</strong></td>
+        </tr>
+        <tr>
+          <td>dated rate ledger</td><td><code>23c19b5</code></td><td>passed</td>
+          <td>An undated rate pair classifies explicitly unpriced; schema descriptions reversed; refused an unsatisfiable clause naming a host-config file</td>
+        </tr>
+        <tr>
+          <td>span reaches the record</td><td><code>82486c3</code></td><td>passed, +2 tests</td>
+          <td>17 lines joining two halves promotion already held; new test fails at base, proving the join load-bearing</td>
+        </tr>
+        <tr>
+          <td>notional spend</td><td><code>27241ad</code></td><td>passed, +9 tests</td>
+          <td><code>notional_cost_usd</code> and <code>rate_basis</code>; the old flag's meaning pinned by test; surcharge load-bearing at 3.60 against 2.20</td>
+        </tr>
+        <tr>
+          <td>the pane cells</td><td><code>9b8f25f</code>, <code>f5ce93e</code></td><td>passed</td>
+          <td>Five cells at fixed alignment; 233 passed across all eleven render-asserting files</td>
+        </tr>
+        <tr>
+          <td>figure reaches its readers</td><td><code>f937a7c</code></td><td>passed, +3 tests</td>
+          <td>Both call sites pass the model identity they already held; positive control fails at base with <code>KeyError</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="cause">&sect;3 &mdash; Why the figures were missing, precisely</h2>
+    <p>
+      The coverage gap was never a measurement difficulty. The <code>throughput</code> block's
+      own docstring at <code>_backends.py:137</code> argues for exactly these figures &mdash;
+      &ldquo;<em>what makes a slow worker distinguishable from a stuck one</em>&rdquo;, keeping
+      &ldquo;<em>generation apart from tool wait because wall clock on a node running its own
+      test suite is mostly the suite</em>&rdquo; &mdash; and its only consumer never read it.
+      The field was defined, exported by <code>as_dict()</code>, and dropped by every caller,
+      so its stated reason for existing was unachievable from the day it was written and no
+      test failed, because a computed value reaching no reader breaks nothing.
+    </p>
+    <p>
+      Two distinct drops, both now closed: <code>dispatch.py:3172</code> copied five fields out
+      of the observation and not <code>throughput</code>, so no live pointer carried a span;
+      and <code>promotion.py</code> stored the block from an <code>observe_log</code> call made
+      <em>without</em> a receipt, while <code>_harvest_lane_receipt</code> read that same
+      rollout receipt a few functions away. Promotion held both halves and never joined them.
+      The proof that nothing was failing to measure: a direct <code>observe_log</code> of one
+      run's stream computed <strong>6885.08</strong> seconds against that stream's own
+      <code>duration_api_ms</code> of <strong>6885.44</strong>.
+    </p>
+
+    <h2 id="corrections">&sect;4 &mdash; What the work corrected in its own plan</h2>
+    <p>
+      Kept because the pattern is more useful than any single entry: three of these were found
+      by workers declining to satisfy a defective brief, and one by a peer's generalisation.
+    </p>
+    <table>
+      <thead><tr><th>The plan said</th><th>Measurement said</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>The rollout counter resets at the file's three <code>compacted</code> markers</td>
+          <td>It <strong>decreases twelve times</strong>. Marker-only segmentation leaves nine uncorrected decreases as negative deltas; reset-detection reproduces ground truth within 1%</td>
+        </tr>
+        <tr>
+          <td>Model share strictly inside 1&ndash;99% or the rule is refuted</td>
+          <td>144 of ~2,313 rollouts sit at or above 99% and are legitimate &mdash; a session with three tool calls over an hour <em>is</em> almost all generation. The bound called a correct reading a refutation</td>
+        </tr>
+        <tr>
+          <td>Reverse the three &ldquo;never a currency&rdquo; comments in <code>flight.yaml</code></td>
+          <td>They exist only in <code>~/.config/reckon/flight.yaml</code> &mdash; host config, outside the repository, unsatisfiable from any worktree</td>
+        </tr>
+        <tr>
+          <td>Each cell carries a measured or explicitly-unmeasured value</td>
+          <td>Satisfied by five dashes. All five were measured together on <strong>26 of 803</strong> rows, so the measure could not fail</td>
+        </tr>
+        <tr>
+          <td>Identical <code>resets_at</code> establishes a shared account</td>
+          <td>The probe issues <code>account/rateLimits/read</code> with no model, so identical readings are evidence of identical <em>probing</em>. Grouping must be declared, not inferred</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Four times a brief named the mechanism and omitted the call site, and each time the
+      worker stopped at its fence and named the site rather than widening &mdash; which is why
+      the two drops in &sect;3 were found at all.
+    </p>
+
+    <h2 id="cost">&sect;5 &mdash; The cost figure, and why it is computed</h2>
+    <p>
+      Of 803 committed rows, 107 carry a numeric <code>cost_usd</code> and only <strong>64
+      &mdash; 8.0% &mdash; are genuinely metered</strong>: $87.65 on claude and $47.91 on
+      claude-opus. The other 43 are fabricated figures on the free local lanes totalling
+      <strong>$941.50</strong>. So 87% of every dollar this project has recorded was never
+      charged to anyone, and all of it is attributed to hardware that costs nothing per token.
+      Those 43 rows all predate 2026-09-03 while every correctly-flagged row postdates 09-05,
+      with no overlap, so <code>_label_unmetered_cost</code> works and they are pre-guard
+      residue &mdash; a backfill for whichever plan owns ledger repair.
+    </p>
+    <p>
+      The computed figure therefore takes its own name. <code>cost_usd_imputed</code> means
+      <em>this figure was nulled</em>; <code>notional_cost_usd</code> means <em>this figure was
+      derived</em>, with <code>rate_basis</code> recording which dated pair produced it. One
+      word carrying both would have made a nulled row and a derived row indistinguishable in
+      the field that exists to tell them apart.
+    </p>
+
+    <h2 id="deployment">&sect;6 &mdash; Three code lifetimes, one deploy</h2>
+    <p>
+      A pane rendering dashes after this landed is a <strong>delivery gap, never a measurement
+      gap</strong>, and the reason is worth keeping. The follower reloads installed code in
+      place, so it picked up the new cells within a minute; the watch producer is a separate
+      long-lived process and does not, so records emitted by a producer armed before
+      <code>f5ce93e</code> genuinely lack the <code>spend_*</code> facts. The CLI is current
+      every invocation; an MCP is cold until reconnected. The figures were available
+      throughout: called directly, the accumulator returns elapsed 5961.787 s, generation
+      5764.321 s and 41,770,910 charged tokens for the pane node's own run &mdash; a 96.7%
+      model share.
+    </p>
+  </main>
+</body>
+</html>
