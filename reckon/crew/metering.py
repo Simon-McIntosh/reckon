@@ -310,6 +310,14 @@ class AccumulatedRunSpend:
     ``durable`` is the exported exclusion predicate applied to the queried
     record: a shadow's own row carries its spend, but that spend is never a
     durable contribution to its primary's total.
+
+    ``unmeasured_time_attempt_count`` names how many attempts the folded times
+    could not measure. A completed row whose directory holds one stream folds
+    its committed throughput block untouched; one whose directory holds
+    several is a resumed run whose block describes only the newest attempt, so
+    each attempt contributes its own span, and an attempt whose span cannot be
+    measured nulls the wall and model totals rather than letting a partial sum
+    read as complete.
     """
 
     run_id: str
@@ -324,6 +332,7 @@ class AccumulatedRunSpend:
     generation_seconds: float | None
     machine_seconds: float | None
     elapsed_from_stamps: bool = False
+    unmeasured_time_attempt_count: int = 0
 
     @property
     def total_charged_tokens(self) -> int:
@@ -395,6 +404,76 @@ def _measure_streams(
     return total_input, total_cached, total_output, measured, unmeasured
 
 
+def _seconds_value(value: Any) -> float | None:
+    """A measured seconds figure, or None for a non-number or boolean."""
+    if isinstance(value, bool) or not isinstance(value, Real):
+        return None
+    return float(value)
+
+
+def _seconds_from_ms(value: Any) -> float | None:
+    """A reported millisecond span converted to seconds, or None."""
+    seconds = _seconds_value(value)
+    return None if seconds is None else round(seconds / 1000.0, 3)
+
+
+def _stream_time_span(path: Path) -> tuple[float | None, float | None]:
+    """One attempt's own wall and generation span, from its stream file.
+
+    Wall prefers the harness-reported duration of the attempt's own terminal
+    result wholesale — the same authority a promoted throughput block reads —
+    and falls back to the interval between the stream's own first and last
+    event timestamps, so an attempt the harness did not clock still has a
+    bounded span. Generation is only the harness's own reported inference
+    span; neither the event interval nor the wall is restated as a model
+    span, because either would invent a measurement the stream did not take.
+    """
+
+    wall_ms: float | None = None
+    model_ms: float | None = None
+    first: datetime | None = None
+    last: datetime | None = None
+    try:
+        with Path(path).open(encoding="utf-8") as lines:
+            for line in lines:
+                try:
+                    record = json.loads(line)
+                except (json.JSONDecodeError, TypeError):
+                    continue
+                if not isinstance(record, Mapping):
+                    continue
+                if record.get("type") == "result":
+                    if _seconds_value(record.get("duration_ms")) is not None:
+                        wall_ms = record["duration_ms"]
+                    if _seconds_value(record.get("duration_api_ms")) is not None:
+                        model_ms = record["duration_api_ms"]
+                raw = record.get("timestamp")
+                if isinstance(raw, str) and raw.strip():
+                    parsed = _event_timestamp(raw)
+                    if parsed is not None:
+                        if first is None or parsed < first:
+                            first = parsed
+                        if last is None or parsed > last:
+                            last = parsed
+    except OSError:
+        return None, None
+
+    wall = _seconds_from_ms(wall_ms)
+    if wall is None and first is not None and last is not None and last > first:
+        wall = round((last - first).total_seconds(), 3)
+    model = _seconds_from_ms(model_ms)
+    return wall, model
+
+
+def _event_timestamp(value: str) -> datetime | None:
+    """Parse one event's timestamp, treating a naive stamp as UTC."""
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+
+
 def _stamped_elapsed(
     record: Mapping[str, Any], *, now_seconds: float | None = None
 ) -> float | None:
@@ -424,25 +503,87 @@ def _stamped_elapsed(
     return max(0.0, float(now_seconds) - moment.timestamp())
 
 
+def _fold_attempt_spans(
+    elapsed: float | None,
+    generation: float | None,
+    record: Mapping[str, Any],
+    paths: Sequence[Path],
+) -> tuple[float | None, float | None, bool, int]:
+    """Sum every attempt's own span for a completed, resumed row.
+
+    ``log_path`` is repointed to the newest resume file on every restart, so
+    the row's committed throughput block — read off the named file by the
+    promoter — describes only the attempt it promoted. Where the run's
+    directory holds several streams, the earlier attempts are separate spans
+    with no committed block, so each is measured from its own stream and the
+    newest attempt prefers the block's recorded values, which may carry a
+    dialect join (a codex rollout receipt) its stream alone cannot.
+    """
+
+    throughput = record.get("throughput")
+    stream_spans = [_stream_time_span(path) for path in paths]
+    unmeasured = 0
+    contribution_wall = 0.0
+    contribution_model = 0.0
+    wall_measured = True
+    model_measured = True
+    for index, (stream_wall, stream_model) in enumerate(stream_spans):
+        newest = index == len(paths) - 1
+        if newest and isinstance(throughput, Mapping):
+            wall = _seconds_value(throughput.get("elapsed_seconds"))
+            if wall is None:
+                wall = stream_wall
+            model = _seconds_value(throughput.get("generation_seconds"))
+            if model is None:
+                model = stream_model
+        else:
+            wall, model = stream_wall, stream_model
+
+        # An attempt whose span cannot be measured must not disappear from the
+        # total: a partial sum would read as the complete figure. The missing
+        # attempt instead nulls the folded wall, and its count records why.
+        if wall is None:
+            wall_measured = False
+            unmeasured += 1
+        else:
+            contribution_wall += wall
+        if model is None:
+            model_measured = False
+        else:
+            contribution_model += model
+    elapsed = None if not wall_measured else (elapsed or 0.0) + contribution_wall
+    # Model seconds follow the same refusal: where an attempt has no inference
+    # span the total stays unmeasured rather than summing the attempts that do.
+    generation = (
+        None if not model_measured else (generation or 0.0) + contribution_model
+    )
+    return elapsed, generation, False, unmeasured
+
+
 def _fold_time(
     elapsed: float | None,
     generation: float | None,
     record: Mapping[str, Any],
+    paths: Sequence[Path],
     *,
     now_seconds: float | None = None,
-) -> tuple[float | None, float | None, bool]:
+) -> tuple[float | None, float | None, bool, int]:
     """Fold one row's times into the chain totals, marking their provenance.
 
-    A completed row contributes the span its throughput block recorded. A row
-    still in flight has no block, so wall is derived from the pointer's own
-    stamps instead, and generation stays unmeasured because no inference span
-    exists until a terminal record or a rollout with bounded tool spans does.
-    The third return reports whether the contributed wall was derived from
-    stamps, which the caller records so a reader can distinguish a derived
-    live figure from a span folded from a completed row's block.
+    A completed row with a single attempt contributes the span its throughput
+    block recorded, unchanged. A completed row whose directory holds several
+    streams is a resumed run: its block describes only the newest attempt, so
+    every attempt contributes its own span. A row still in flight has no
+    block, so wall is derived from the pointer's own stamps instead, and
+    generation stays unmeasured because no inference span exists until a
+    terminal record or a rollout with bounded tool spans does. The third
+    return reports whether the contributed wall was derived from stamps, and
+    the fourth reports how many attempts this row's total refused to measure.
     """
 
     throughput = record.get("throughput")
+    if isinstance(throughput, Mapping) and len(paths) > 1:
+        return _fold_attempt_spans(elapsed, generation, record, paths)
     if isinstance(throughput, Mapping):
         span = throughput.get("elapsed_seconds")
         if isinstance(span, Real):
@@ -450,11 +591,11 @@ def _fold_time(
         model = throughput.get("generation_seconds")
         if isinstance(model, Real):
             generation = (generation or 0.0) + float(model)
-        return elapsed, generation, False
+        return elapsed, generation, False, 0
     stamped = _stamped_elapsed(record, now_seconds=now_seconds)
     if stamped is None:
-        return elapsed, generation, False
-    return (elapsed or 0.0) + stamped, generation, True
+        return elapsed, generation, False, 0
+    return (elapsed or 0.0) + stamped, generation, True, 0
 
 
 def accumulate_run_spend(
@@ -497,6 +638,7 @@ def accumulate_run_spend(
     elapsed: float | None = None
     generation: float | None = None
     derived_from_stamps = False
+    unmeasured_time_attempts = 0
     for row in runs:
         # Keying is the exclusion in action: a shadow's accumulation key is
         # its own run id, so it folds only when the query is its own row and
@@ -513,10 +655,11 @@ def accumulate_run_spend(
         total_output += output_total
         measured_streams += measured
         unmeasured_streams += unmeasured
-        elapsed, generation, derived = _fold_time(
-            elapsed, generation, row, now_seconds=now_seconds
+        elapsed, generation, derived, unmeasured_attempts = _fold_time(
+            elapsed, generation, row, paths, now_seconds=now_seconds
         )
         derived_from_stamps = derived_from_stamps or derived
+        unmeasured_time_attempts += unmeasured_attempts
     machine = None
     if elapsed is not None and generation is not None and not derived_from_stamps:
         machine = round(elapsed - generation, 3)
@@ -533,4 +676,5 @@ def accumulate_run_spend(
         generation_seconds=generation,
         machine_seconds=machine,
         elapsed_from_stamps=derived_from_stamps,
+        unmeasured_time_attempt_count=unmeasured_time_attempts,
     )
