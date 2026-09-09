@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from reckon.calibration import (
@@ -7,6 +9,7 @@ from reckon.calibration import (
     agent_configuration_key,
     calibrate_agent_speeds,
     calibrate_plan_estimates,
+    calibration_configuration_key,
 )
 
 
@@ -175,6 +178,66 @@ def test_agent_configuration_key_is_stable_across_mapping_order() -> None:
     right = {"agent": {"model": "worker", "backend": "local", "effort": "deep"}}
 
     assert agent_configuration_key(left) == agent_configuration_key(right)
+
+
+def _behavioural_agent() -> dict:
+    return {
+        "backend": "clive",
+        "launch": "cli",
+        "model": "deepseek-v4-flash",
+        "effort": "high",
+        "sandbox": "worktree-full",
+    }
+
+
+def test_calibration_key_pools_alias_window_and_local() -> None:
+    base = _behavioural_agent()
+    variants = [
+        {"agent": dict(base)},
+        {"agent": {**base, "alias": "flash4"}},
+        {"agent": {**base, "usable_input_window": 1016576}},
+        {"agent": {**base, "local": True}},
+    ]
+
+    keys = {calibration_configuration_key(variant) for variant in variants}
+
+    assert len(keys) == 1
+    assert calibration_configuration_key({"agent": base}) == next(iter(keys))
+
+
+def test_calibration_key_keeps_effort_and_sandbox_separate() -> None:
+    base = _behavioural_agent()
+    variants = [
+        {"agent": dict(base)},
+        {"agent": {**base, "effort": "medium"}},
+        {"agent": {**base, "sandbox": "read-only"}},
+    ]
+
+    keys = {calibration_configuration_key(variant) for variant in variants}
+
+    assert len(keys) == 3
+
+
+def test_session_reuse_key_is_byte_identical_for_an_unchanged_configuration() -> None:
+    agent = {
+        "backend": "codex",
+        "launch": "cli",
+        "model": "gpt-5.6-sol",
+        "effort": "high",
+        "sandbox": "worktree-full",
+        "alias": "sol5.6",
+        "usable_input_window": 258400,
+        "local": True,
+    }
+
+    assert agent_configuration_key({"agent": agent}) == json.dumps(
+        dict(agent), sort_keys=True, separators=(",", ":")
+    )
+    assert agent_configuration_key({"agent": agent}) == (
+        '{"alias":"sol5.6","backend":"codex","effort":"high","launch":"cli",'
+        '"local":true,"model":"gpt-5.6-sol","sandbox":"worktree-full",'
+        '"usable_input_window":258400}'
+    )
 
 
 def test_invalid_duration_is_excluded_without_changing_figures() -> None:

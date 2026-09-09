@@ -8,7 +8,9 @@ from typing import Any
 
 import pytest
 
-from reckon import capabilities, ledger, mcp, serve
+from reckon import capabilities, capability, crew, ledger, mcp, serve
+from reckon.calibration import calibration_configuration_key
+from reckon.crew.routing import _competence_verdict
 
 
 def _project(root: Path, name: str, mounts: dict[str, str]) -> Path:
@@ -501,3 +503,65 @@ def test_capability_rebuild_carries_the_current_routing_rows(
         cached["routing"]["rows"]
         == capabilities.derive_routing(routing_ledgers["mounts"])["rows"]
     )
+
+
+def test_competence_lookup_resolves_horizon_for_a_pooled_configuration(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A cosmetic or mutable field must not hide a measured horizon.
+
+    The cache holds one configuration keyed on the behavioural fields only.
+    A resolution carrying an alias, a usable input window and a local flag
+    must still hit that row; before pooling, the window in the lookup key
+    missed the row and the verdict fell through to no-measured-horizon.
+    """
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    behavioural = {
+        "backend": "clive",
+        "launch": "cli",
+        "model": "deepseek-v4-flash",
+        "effort": "high",
+        "sandbox": "worktree-full",
+    }
+    monkeypatch.setattr(
+        capabilities,
+        "load_capabilities",
+        lambda: {
+            "configurations": [
+                {
+                    "key": calibration_configuration_key({"agent": behavioural}),
+                    "competence_horizon_hours": 6.0,
+                    "speed": {"mean": 0.8},
+                }
+            ]
+        },
+    )
+
+    resolution = crew.DispatchPlan(
+        run_id="run",
+        backend="clive",
+        launch="cli",
+        backend_settings={
+            **behavioural,
+            "alias": "flash4",
+            "usable_input_window": 1016576,
+            "local": True,
+        },
+        node=crew.TaskNode(id="node", goal="goal", plan="plan-a", estimated_hours=2.0),
+        budget_ceiling="1h",
+        validation=crew.NodeValidation(ok=True),
+        execution_fit=capability.ExecutionFit(
+            role="implement",
+            execution_capable=True,
+            matched_measure=None,
+            override=False,
+        ),
+    )
+
+    verdict = _competence_verdict(resolution=resolution, project="alpha", repo=repo)
+
+    assert verdict["reason"] == "within-competence-horizon"
+    assert verdict["allowed"] is True
+    assert verdict["competence_horizon_hours"] == 6.0
+    assert verdict["agent_key"] == calibration_configuration_key({"agent": behavioural})
