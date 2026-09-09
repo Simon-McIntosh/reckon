@@ -22,7 +22,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-09">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="4">
+<meta name="plan-commits" content="25f1a7d">
+<meta name="plan-impl" content="0.5">
 </head>
 <body>
   <main class="plan-doc">
@@ -198,6 +200,17 @@
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260909T105242954525-sfo-session-keying-failures-get-a-named-cause" data-who="crew-budget-instrument" data-when="2026-09-09T11:14:39.829Z">
+    <div class="r-comment-body"><p>all six session-keying failures were stale assertions from one shared fixture predating the specification-level requirement, fixed by one insertion; 6 failed at base and 0 at head, zero added, and the effort-session fence the scan depends on is now proven by a live-lookup case rather than inferred. Merge deliberately deferred: this is arm A of an effort pair and its shadow must not be able to discover the answer</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260909-session-keying-six-were-one-fixture" data-who="reckon-ship" data-when="2026-09-09T11:55:00Z">
+    <div class="r-comment-body"><p><strong>All six were one stale fixture, and the repair is a single insertion.</strong> Commit <code>25f1a7d</code>, merged. The shared node fixture predated the specification-level requirement the dispatch gate enforces, so every one of the six was refused <em>before any session lookup ran</em> &mdash; which is why a change to the very function they assert on, the calibration/session identity split at <code>7572d83</code>, moved none of them. Declaring <code>spec_level="guided"</code> on that fixture clears all six. <code>reckon/crew/dispatch.py</code> was declared in the node's write scope and never touched, and that under-claim is the evidence: the behaviour was right and the tests were behind it.</p><p>Verified by the coordinator against a base whose copy of both files was checked unchanged from the node's base to current main: <strong>6 failed at base, 6 passed at head, zero added</strong>, and 6 passed again at the merged head. Each of the six carries its cause in the run record as <em>stale assertion</em> with the reason stated, which is what &#167;2's first measure asked for &mdash; a repair that turns a test green without naming which side was wrong does not satisfy it.</p><p><strong>The harder measure landed too, and it matters outside this plan.</strong> A case now asserts that two dispatches differing only in resolved effort take distinct sessions <em>against the live lookup rather than a fixture</em>. That fence is the precondition of the effort scan in <a href="/reckon/plans/clive-local-workers">clive-local-workers</a> &#167;10, which until now was believed intact on indirect evidence &mdash; roster members holding distinct sessions per effort &mdash; while the one file that would have demonstrated it was red. It is now demonstrated by the file that covers it.</p><p>Standing set after this landing and the ledger repair: <strong>6 remaining of the 14 inventoried</strong>, all in <code>tests/test_ledger.py</code> at the time of writing and repaired in an unmerged commit awaiting its own pair.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260909T105344882067-sfo-ledger-failures-get-a-named-cause" data-who="crew-both-reasons" data-when="2026-09-09T11:35:14.074Z">
+    <div class="r-comment-body"><p>all six ledger-suite failures were stale assertions in two confirmed groups, both against deliberately-changed production surfaces: the five unprefixed MCP tool names, and the scoring/promotable recovery vocabulary whose retired name is now renamed in the test. 6 failed at base, 83 passed and 0 failed at head, zero added, production untouched. Merge deferred: arm A of an effort pair</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
