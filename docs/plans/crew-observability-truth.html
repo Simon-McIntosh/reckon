@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-09">
-<meta name="plan-version" content="255">
+<meta name="plan-version" content="257">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md">
 <meta name="plan-impl" content="0.97">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b">
@@ -739,6 +739,18 @@
     dispatch and never at dry run. A coordinator planning a wave against dry-run verdicts
     gets a subset of the refusal set and no indication that it is a subset.</p>
 
+    <p><strong>The general form is one sentence, and the scope case is only its most visible
+    instance: the dry run returns before the record exists, so it can never answer a question
+    about a persisted field.</strong> It validates the node contract and nothing downstream of
+    record construction. Measured twice more the same day, both times nearly producing a false
+    report: a live path claim held by the caller's own run cleared, and the wave id assigned
+    during record construction was absent from the payload entirely, so a working default and
+    a broken one were indistinguishable from that instrument. Every field the record assigns
+    is invisible to it, not merely the two anyone happened to check. So the remedy is not a
+    longer list of things the dry run should also validate &mdash; it is the payload stating
+    what it did not evaluate, which is the same requirement as the refusal enumerating the
+    roots it checked.</p>
+
     <p><strong>A granted scope extension has no verb.</strong> A worker that blocks with a
     <code>NEEDS-HELP:</code> asking for one more path is behaving exactly as the protocol
     intends, and the orchestrator has no command with which to say yes. None of
@@ -776,6 +788,18 @@
     belongs to seat release and is guarded against signalling its own group. Observed the same
     day: a peer's node ran 28% past its budget, untouched and still logging. So the limit is
     already soft.</p>
+
+    <p><strong>A live reader and a ledger reader see different schemas, which is sharper than a
+    coverage gap.</strong> <code>budget_overrun</code> and <code>budget_overrun_seconds</code>
+    are present on the live pointer and absent from all 800 committed rows, so a measure
+    written against one surface is silently unmeasurable against the other. Neither half was
+    findable alone: a peer's census found the absence from the ledger side while this session
+    found the presence at the pointer side, and the discrepancy only appeared when the two
+    readings met. A durable capture of one live instance is therefore evidence that cannot be
+    reconstructed &mdash; recorded at
+    <code>crew/reports/soft-limit-live-overrun-20260909.md</code>: a run 101 seconds past a
+    55-minute budget, process alive, still logging, untouched, and losing both fields the
+    moment it is promoted.</p>
 
     <p><strong>What is missing is the message.</strong> An overrun today produces
     <code>budget_overrun</code> and <code>budget_overrun_seconds</code> on a record, and
