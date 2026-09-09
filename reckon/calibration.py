@@ -189,16 +189,23 @@ def _eligible_runs(
     int,
 ]:
     included: list[tuple[str, str, float]] = []
-    excluded = {
-        "scope_changed": 0,
-        "stalled": 0,
-        "unusable_completion": 0,
-        "untrustworthy_duration": 0,
-        "duration_over_budget": 0,
-        "invalid_measurement": 0,
-        "missing_counterpart": 0,
-    }
-    excluded_worker_hours = {reason: 0.0 for reason in excluded}
+    # Seeded with every exclusion reason this module emits so an unreported
+    # zero is stable output, then left open to any reason measurement returns
+    # elsewhere: a new reason must count under its own key, never crash.
+    excluded: dict[str, int] = defaultdict(int)
+    excluded.update(
+        {
+            "scope_changed": 0,
+            "stalled": 0,
+            "unusable_completion": 0,
+            "untrustworthy_duration": 0,
+            "duration_over_budget": 0,
+            "invalid_measurement": 0,
+            "missing_counterpart": 0,
+        }
+    )
+    excluded_worker_hours: dict[str, float] = defaultdict(float)
+    excluded_worker_hours.update(dict.fromkeys(excluded, 0.0))
     unjudgeable_runs = 0
     for run in runs:
         if _duration_provenance_is_unjudgeable(run):

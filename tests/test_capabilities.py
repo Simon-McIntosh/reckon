@@ -768,3 +768,40 @@ def test_explicit_completion_time_is_usable_for_capabilities(tmp_path) -> None:
 
     assert record["configurations"][0]["runs"] == 1
     assert record["excluded"]["unusable_completion"] == 0
+
+
+def test_exclusion_reason_outside_the_fixed_set_counts_instead_of_crashing(
+    tmp_path, monkeypatch
+) -> None:
+    """An exclusion reason the ledger returns that this function does not seed
+    must count under its own key, never raise a KeyError.
+
+    The ledger's exclusion function decides which committed outcomes feed
+    capability figures and is free to add reasons beyond the ones seeded here:
+    a contaminated shadow is one such reason. Derivation stays correct when
+    the reason set grows, holding the unknown record apart from the figures.
+    """
+    root = _project(tmp_path)
+    _plan(root, "work", 2.0)
+    original = ledger.measurement_exclusion_reason
+
+    def reason_for(run):
+        if run.get("run_id") == "contaminated":
+            return "contaminated"
+        return original(run)
+
+    monkeypatch.setattr(ledger, "measurement_exclusion_reason", reason_for)
+    _run(root, "contaminated", "work", 1.0)
+    _run(root, "clean", "work", 1.0)
+
+    derived = _derive(root)
+
+    assert derived["configurations"][0]["runs"] == 1
+    assert derived["configurations"][0]["observations"][0]["run_id"] == "clean"
+    assert derived["excluded"] == {
+        "scope_changed": 0,
+        "stalled": 0,
+        "unusable_completion": 0,
+        "invalid": 0,
+        "contaminated": 1,
+    }
