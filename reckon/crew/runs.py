@@ -52,6 +52,17 @@ def reports_dir() -> Path:
     return crew_home() / "reports"
 
 
+def delivery_roots() -> tuple[Path, ...]:
+    """Return every durable directory a node may use outside its repository."""
+    from reckon.crew.review import review_store_root
+
+    return (
+        runs_dir().resolve(),
+        reports_dir().resolve(),
+        review_store_root().resolve(),
+    )
+
+
 def run_dir(run_id: str) -> Path:
     """Directory holding one run's prompt, event log and default manifest."""
     return runs_dir() / run_id

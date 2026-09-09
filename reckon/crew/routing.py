@@ -30,11 +30,11 @@ from reckon.crew.runs import (
     _live_worktree_claims,
     _pointer_lock,
     _process_start_time,
+    delivery_roots,
     list_live,
     pointer_path,
     process_alive,
     read_pointer,
-    reports_dir,
     runs_dir,
 )
 
@@ -1063,17 +1063,17 @@ def _require_write_paths_in_repository(
 ) -> None:
     """Confine writes to the worktree or Reckon's durable delivery roots."""
     work_repo = Path(str(authority["write"]["repository"])).resolve()
-    delivery_roots = (runs_dir().resolve(), reports_dir().resolve())
+    roots = delivery_roots()
     for declared in node.write_paths:
         raw = Path(declared).expanduser()
         resolved = (raw if raw.is_absolute() else work_repo / raw).resolve()
         if not resolved.is_relative_to(work_repo) and not any(
-            resolved.is_relative_to(root) for root in delivery_roots
+            resolved.is_relative_to(root) for root in roots
         ):
             raise CrewError(
                 f"write path {declared!r} resolves outside the authorised work "
                 f"repository {work_repo} and Reckon delivery directories "
-                f"{delivery_roots[0]} and {delivery_roots[1]}; declare a path "
+                f"{', '.join(str(root) for root in roots)}; declare a path "
                 "inside one of them"
             )
 

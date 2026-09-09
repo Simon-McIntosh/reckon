@@ -82,6 +82,7 @@ from reckon.crew.runs import (
     _watch_arming_line,
     _watch_attach_line,
     _write_json,
+    delivery_roots,
     list_live,
     new_run_id,
     pointer_path,
@@ -90,7 +91,6 @@ from reckon.crew.runs import (
     reports_dir,
     run_dir,
     project_watch_visibility,
-    runs_dir,
     watch_state,
     watch_stream_path,
 )
@@ -1658,8 +1658,8 @@ def _require_write_paths_in_authority(
             repository_roots.append(root)
     if work_repo not in repository_roots:
         repository_roots.append(work_repo)
-    delivery_roots = (runs_dir().resolve(), reports_dir().resolve())
-    allowed_roots = (*repository_roots, *delivery_roots)
+    roots = delivery_roots()
+    allowed_roots = (*repository_roots, *roots)
     for declared in node.write_paths:
         raw = Path(declared).expanduser()
         resolved = (raw if raw.is_absolute() else work_repo / raw).resolve()
@@ -1669,8 +1669,8 @@ def _require_write_paths_in_authority(
         raise CrewError(
             f"write path {declared!r} resolves outside the authorised work repository "
             f"{work_repo}, every other repository registered by the dispatch authority "
-            f"({repositories}), and Reckon delivery directories {delivery_roots[0]} and "
-            f"{delivery_roots[1]}; the repository containing this path is missing from "
+            f"({repositories}), and Reckon delivery directories {', '.join(str(root) for root in roots)}; "
+            "the repository containing this path is missing from "
             "mounts.json or outside the resolved plan authority"
         )
 
