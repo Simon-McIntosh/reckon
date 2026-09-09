@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-09">
-<meta name="plan-version" content="250">
+<meta name="plan-version" content="251">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md">
 <meta name="plan-impl" content="0.97">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b">
@@ -759,6 +759,38 @@
         <tr><td>A delta gate that cannot complete is named before it is demanded</td><td>The delta discipline assumes a base census can be taken, and on one file it cannot: <code>tests/test_crew.py::test_first_dispatch_proceeds_with_a_freshly_armed_project_watch</code> deadlocks, its main thread joining while its worker stays inside the watch loop in <code>reckon/crew/runs.py</code>. Measured twice &mdash; a worker's assigned pair terminated at exit 143 without producing failure identities, and the same single test terminated past 90 seconds on a checkout <em>without</em> that worker's change, which is what establishes it as pre-existing rather than a regression. So a coordinator demanding a delta over that file demands something unobtainable, and the worker's only honest moves are to block or to narrow the gate silently. The measure has two halves: a dispatch that names a file carrying a non-completing test says so, and the deadlock itself is fixed or the test is deselected with its cause recorded, never left to be rediscovered per node. The negative: a deselection with no stated cause fails this, because a quietly narrowed gate and a passing one are indistinguishable afterwards.</td></tr>
         <tr><td>A done-when demanding absolute green is refused at dispatch</td><td>Dispatch already validates eight node-contract properties, and the ninth is the one this repository's own test policy states: judge by delta against a stated base, never by absolute green. A done-when requiring a test command to exit zero over files that carry pre-existing failures is refused, or accepted with the base failure count quoted back so the coordinator sees what it just demanded. Measured across one session's coordination: three of its nodes were gated wrongly by their own coordinator &mdash; a fence too narrow to include a generated artifact its gate required, a falsifier ranged over one field where the defect ranged over the declaration, and an exit-zero requirement on a base carrying fourteen failures. Each worker behaved correctly, one blocking and one refusing outright, and each cost a round trip. The negative matters as much: a node whose files are genuinely green must not be refused, so the check reads the base rather than the wording.</td></tr>
         <tr><td>Granting a scope extension is a command</td><td>One verb records an additional exclusive path on a live run, refuses when a peer holds that path, and leaves the widening on the promoted row. Asserted by granting, promoting, and then reading the widened scope off the <em>committed record</em> rather than the pointer, since the pointer is deleted at promotion and an audit trail that dies with it is the same defect as a note nobody can fetch.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s17">§17 — The runtime gate is a soft limit, and a soft limit that speaks to nobody is not one</h2>
+
+    <p>Directed by the lead 2026-09-09: a worker is never killed at its runtime gate. The
+    time budget exists to stop a runaway session, not to end a working one, and the response
+    to an overrun is to <em>message the worker</em>.</p>
+
+    <p><strong>Half of that is already true, and measuring it first is what makes the other
+    half legible.</strong> Nothing in this repository kills a worker on its budget.
+    <code>terminate()</code> has exactly one caller, the operator-initiated stop verb; the
+    stalled determination at twice budget is a classification that feeds recovery routing and
+    a worker-seconds source, never a signal; and the one <code>killpg</code> in the tree
+    belongs to seat release and is guarded against signalling its own group. Observed the same
+    day: a peer's node ran 28% past its budget, untouched and still logging. So the limit is
+    already soft.</p>
+
+    <p><strong>What is missing is the message.</strong> An overrun today produces
+    <code>budget_overrun</code> and <code>budget_overrun_seconds</code> on a record, and
+    nothing delivers them to anyone &mdash; not to the worker that could land what it has, not
+    to the coordinator that could decide. That is this plan's own defect at the runtime gate:
+    the state is computed exactly and reported to nobody, so the only way an overrun becomes
+    known is somebody looking. A worker told it is past budget can write the manifest it
+    already owes and finish deliberately; a worker not told runs until something outside
+    reckon reaps it, which is the outcome the directive forbids and the one nobody chose.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>An overrun messages the worker and terminates nothing</td><td>Crossing the soft limit delivers a message to the running worker naming the overrun and asking it to write the manifest it has rather than the one it wanted, and the run keeps its process, its session and its worktree. Asserted with the negative that carries the directive: no code path signals a worker on budget, proven by assertion over the call graph rather than by inspection, so a future contributor cannot add one without failing a test. A second negative: a worker that lands normally before the limit receives no message, since a limit that always speaks is noise and gets filtered.</td></tr>
+        <tr><td>The overrun is visible where a reader already looks</td><td>The overrun appears on the monitor surface a coordinator watches, not only in a record a reader must go and fetch &mdash; the segment-time measure being built alongside this section is that instrument, so this row cites it rather than adding a second clock. Asserted by a fixture fleet holding one run inside budget and one past it, distinguishable on the rendered line.</td></tr>
       </tbody>
     </table>
 
