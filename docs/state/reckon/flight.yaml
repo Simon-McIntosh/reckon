@@ -12,6 +12,21 @@
 
 version: 1
 
+# Default routing goes to the local lane, set 2026-09-09 by the lead.
+#
+# The metered account read 85% of its weekly window with a 3.95x burn multiple
+# and a projected exhaustion of 2026-09-11T00:00Z against a reset of
+# 2026-09-15T02:28Z - dry for roughly four days. The local lane is unmetered
+# hardware, so routing there costs nothing but wall clock.
+#
+# It is a default, not a fence: a node that needs the metered lane still names
+# it with --backend, and that choice lands on the run record where a reader can
+# see it. Effort is deliberately NOT pinned down here - the measured argument
+# for high is the competence horizon (local 40h at high against 16h at medium,
+# n=125 and n=37), which is capability. The speed column favours medium and is
+# estimated-over-actual, so it measures less deliberation per run rather than
+# more throughput; read the horizon, not the speed.
+
 backends:
   codex-spark:
     launch: cli
@@ -20,3 +35,5 @@ backends:
     sandbox: worktree-full
     session_reuse: true
     time_budget: 15m
+
+default_backend: clive
