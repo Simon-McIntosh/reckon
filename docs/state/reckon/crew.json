@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T09:31:28",
+  "updated": "2026-09-09T09:50:27",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -478,9 +478,11 @@
         "id": "crew-gc-coverage",
         "harness": "clive",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "f519b6a1-f83a-4a3f-94c0-53d37d31764e",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "f519b6a1-f83a-4a3f-94c0-53d37d31764e"
+        },
         "created": "2026-09-06"
       },
       {
@@ -84474,6 +84476,223 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T073434525507-clw-calibration-identity-pools-cosmetic-fields",
+        "plan": "clive-local-workers",
+        "section": "\u00a716",
+        "node": "clw-calibration-identity-pools-cosmetic-fields",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 754,
+                "cached_input_tokens": 392726,
+                "input_tokens": 393482,
+                "output_tokens": 382,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 393864,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "d605a9b0-7fe6-4816-b993-dad99ec68f17",
+            "session_id": "shadow-r-20260909T061216201721-clw-calibration-identity-pools-cosmetic-fields-clive-fb812051aa0a"
+          },
+          "done_when": "pytest over the named test files reports 0 added failures against base 991d38c stated as a number, with new cases asserting that two runs differing only in alias, usable_input_window or local pool into one calibration row, that two differing in effort or sandbox stay separate, that the competence lookup resolves a horizon for a pooled configuration instead of falling through to no-measured-horizon, and that the session-reuse key is byte-identical to today for an unchanged configuration",
+          "estimated_hours": null,
+          "goal": "Give calibration its own configuration identity that pools cosmetic and mutable agent fields, leaving session reuse keyed on the full configuration",
+          "id": "clw-calibration-identity-pools-cosmetic-fields",
+          "lane_declaration": {
+            "backend": "clive",
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-09T07:34:34Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T073434525507-clw-calibration-identity-pools-cosmetic-fields/manifest.md",
+          "plan": "clive-local-workers",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a716",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/calibration.py",
+            "reckon/capabilities.py",
+            "reckon/crew/routing.py",
+            "tests/test_calibration.py",
+            "tests/test_capabilities.py",
+            "tests/test_routing_surface.py",
+            "tests/fixtures/crew-public-surface.txt"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-gc-coverage",
+        "backend": "clive",
+        "local": false,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-09T07:34:35Z",
+        "completed_at": "2026-09-09T07:47:42.798Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 779,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 787,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "991d38cb4156f1791920ba73b29c050b3c9a0081",
+        "commits": [],
+        "changed_lines": {
+          "added": 247,
+          "removed": 7,
+          "files": 6
+        },
+        "tests_added": 0,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "infrastructure-failure",
+        "outcome": "void as measurement, not as work: the medium arm read the canonical landed diff for source and tests with two git show calls from inside the main checkout, so its 13-minute match of the 69-minute primary measures a leak rather than an effort. A shadow shares the object store with main and can cd out of its worktree, and the boundary check fences writes not reads, so nothing prevented or detected this. The three earlier effort pairs were checked the same way and are clean",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T073434525507-clw-calibration-identity-pools-cosmetic-fields/manifest.md",
+        "scope_changed": false,
+        "session_id": "f519b6a1-f83a-4a3f-94c0-53d37d31764e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6935858,
+            "input_tokens_cumulative": 6935858,
+            "output_tokens": 33294,
+            "output_tokens_cumulative": 33294,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-09T07:47:42.798Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": {
+          "configuration": {
+            "inherited": {
+              "launch": "cli",
+              "model": "deepseek-v4-flash",
+              "sandbox": "worktree-full",
+              "time_budget": "45m"
+            },
+            "overrides": {
+              "effort": {
+                "layers": {
+                  "backend": "xhigh",
+                  "spec_level": "medium"
+                },
+                "resolved": "medium"
+              }
+            },
+            "resolved": {
+              "effort": "medium",
+              "time_budget": "45m"
+            },
+            "substituted": {
+              "backend": {
+                "primary": "clive",
+                "shadow": "clive",
+                "via": "backend"
+              },
+              "effort": {
+                "primary": "high",
+                "shadow": "medium",
+                "via": "override"
+              }
+            }
+          },
+          "kind": "shadow",
+          "primary_run_id": "r-20260909T061216201721-clw-calibration-identity-pools-cosmetic-fields",
+          "worktree_component": "fb812051aa0a"
+        },
+        "shadow_controlled": false,
+        "shadow_patch": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T073434525507-clw-calibration-identity-pools-cosmetic-fields/shadow.patch",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6935858,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 783.932,
+          "generated_tokens": 33294,
+          "generation_seconds": 680.787,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 13.2,
+          "machine_seconds": 103.145,
+          "peak_input_tokens": 134378,
+          "tokens_per_second": 48.91,
+          "wall_tokens_per_second": 42.47
+        },
+        "follow_on_paths": [
+          "tests/fixtures/crew-public-surface.txt",
+          "dispatch.py",
+          "refusals/review/rollout",
+          "MCP-surface/flight-config"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest over",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "shadow",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": "shadow run: never merged by design",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/shadow-r-20260909T061216201721-clw-calibration-identity-pools-cosmetic-fields-clive-fb812051aa0a/clw-calibration-identity-pools-cosmetic-fields",
+          "session_id": "f519b6a1-f83a-4a3f-94c0-53d37d31764e",
+          "session_source": "pointer",
+          "retained_at": "2026-09-09T07:47:42.798Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -84702,6 +84921,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1268
+    "_version": 1270
   }
 }
