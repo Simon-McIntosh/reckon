@@ -1160,11 +1160,28 @@ def _terminal_stream_data(
     timestamps: list[tuple[datetime, str]] = []
     session_id = None
     throughput: dict[str, Any] = {}
+    # The client-owned rollout receipt, read by the same authority
+    # _harvest_lane_receipt uses, joins this observe_log call to the model span
+    # it already measures. The exec stream cannot separate inference from tool
+    # wait, so without the join the stored throughput block carries no span for
+    # a codex run whose rollout does. Only a receipt that actually measured the
+    # span is folded in: one that measured nothing must not relabel the stream's
+    # own report, so an absent rollout leaves the span explicitly unmeasured
+    # rather than claimed.
+    record_session = str(record.get("session_id") or "").strip()
+    receipt = None
+    if record_session:
+        candidate = rollout.read_rollout_receipt(record_session)
+        if isinstance(
+            getattr(candidate, "generation_seconds", None), float
+        ) and isinstance(getattr(candidate, "machine_seconds", None), float):
+            receipt = candidate
     for candidate in paths:
         observation = _backends.observe_log(
             backend_name=backend_name,
             backend=backend,
             log_path=candidate,
+            receipt=receipt,
         )
         if observation.terminal:
             budget = dict(observation.budget)

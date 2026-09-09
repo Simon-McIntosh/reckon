@@ -274,3 +274,199 @@ def test_an_absent_receipt_is_unmeasured_and_promotion_still_succeeds(
     assert receipt["unmeasured"]["quota_windows"] == "missing_rollout"
     assert receipt["unmeasured"]["effective_context_window"] == "missing_rollout"
     assert receipt["observed_at"] == OBSERVED_AT
+
+
+# ── The measured model span reaches the committed run record ─────────────
+
+
+def _write_span_rollout(
+    session_root: Path,
+    session_id: str,
+    *,
+    context_window: int,
+) -> Path:
+    """A rollout whose bounded tool spans measure the model's generation time.
+
+    Wall spans 01Z to 11Z; the two bounded tool calls charge 4s and 3s, so the
+    receipt measures machine 7.0s and generation 3.0s — the tuple a codex exec
+    stream cannot report, which is what makes the join below load-bearing.
+    """
+    directory = session_root / "2030" / "01" / "02"
+    directory.mkdir(parents=True, exist_ok=True)
+
+    def tool_call(call_id: str, timestamp: str) -> dict[str, Any]:
+        return {
+            "type": "response_item",
+            "timestamp": timestamp,
+            "payload": {
+                "type": "custom_tool_call",
+                "call_id": call_id,
+                "name": "probe",
+            },
+        }
+
+    def tool_output(call_id: str, timestamp: str) -> dict[str, Any]:
+        return {
+            "type": "response_item",
+            "timestamp": timestamp,
+            "payload": {
+                "type": "custom_tool_call_output",
+                "call_id": call_id,
+                "output": [{"type": "input_text", "text": "done"}],
+            },
+        }
+
+    records = [
+        tool_call("bound-a", "2030-01-02T00:00:01.000Z"),
+        tool_output("bound-a", "2030-01-02T00:00:05.000Z"),
+        tool_call("bound-b", "2030-01-02T00:00:07.000Z"),
+        tool_output("bound-b", "2030-01-02T00:00:10.000Z"),
+        {
+            "type": "event_msg",
+            "timestamp": "2030-01-02T00:00:11.000Z",
+            "payload": {
+                "type": "token_count",
+                "info": {
+                    "total_token_usage": {
+                        "input_tokens": 1000,
+                        "cached_input_tokens": 200,
+                        "output_tokens": 100,
+                    },
+                    "last_token_usage": {"input_tokens": 900, "output_tokens": 100},
+                    "model_context_window": context_window,
+                },
+            },
+        },
+    ]
+    path = directory / f"rollout-2030-01-02T00-00-00-{session_id}.jsonl"
+    path.write_text(
+        "".join(f"{json.dumps(record)}\n" for record in records), encoding="utf-8"
+    )
+    return path
+
+
+def _codex_stream(repository: Path, run_id: str) -> Path:
+    """A terminal codex exec stream that reports tokens but no span.
+
+    The completed turn carries no duration fields, so the codex dialect leaves
+    generation and machine time unmeasured: the rollout is the only authority
+    that can rate the run, which is the join being tested.
+    """
+    stream = repository / "runs" / run_id / "stream.jsonl"
+    stream.parent.mkdir(parents=True, exist_ok=True)
+    events = [
+        {"thread_id": f"thread-{run_id}", "type": "thread.started"},
+        {
+            "type": "turn.completed",
+            "usage": {"input_tokens": 500, "output_tokens": 100},
+        },
+    ]
+    stream.write_text(
+        "".join(f"{json.dumps(event)}\n" for event in events), encoding="utf-8"
+    )
+    return stream
+
+
+def _promote_codex(
+    repository: Path, run_id: str, session_id: str, stream: Path
+) -> dict:
+    """Promote a spawned codex run the shape dispatch leaves behind."""
+    _write_json(
+        pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": PROJECT,
+            "repo": str(repository),
+            "worktree": str(repository),
+            "base_sha": _git(repository, "rev-parse", "HEAD"),
+            "launch": "cli",
+            "role": "implement",
+            "backend": "codex",
+            "session_id": session_id,
+            "argv": ["codex", "exec", "--json"],
+            "log_path": str(stream),
+            "created_at": "2030-01-02T03:00:00Z",
+            "node": {
+                "id": f"receipt-{run_id}",
+                "plan": PLAN,
+                "section": "receipt",
+                "time_budget": "20m",
+                "write_paths": [],
+            },
+        },
+    )
+    return crew.complete(
+        run_id,
+        gate="passed",
+        completed_at=OBSERVED_AT,
+        root=repository,
+    )
+
+
+def test_promoted_codex_rows_carry_the_rollout_span_across_the_cohort(
+    repository: Path,
+) -> None:
+    """Every promoted codex run with a surviving rollout stores the measured span.
+
+    The coverage count is the point, not a single fixture: each row in the
+    promoted cohort must carry non-null generation and machine seconds and the
+    derived rate, where at the base revision the promotion passed no receipt and
+    stored none of them.
+    """
+    sessions = (
+        ("r-span-prime", "span-prime", 121_600),
+        ("r-span-second", "span-second", 121_600),
+        ("r-span-third", "span-third", 121_600),
+    )
+    for run_id, session_id, context_window in sessions:
+        _write_span_rollout(
+            rollout.CLIENT_SESSIONS_DIR,
+            session_id,
+            context_window=context_window,
+        )
+        _promote_codex(
+            repository, run_id, session_id, _codex_stream(repository, run_id)
+        )
+
+    measured_rows = 0
+    for run_id, _session_id, _context_window in sessions:
+        stored = _stored_row(repository, run_id)
+        throughput = stored.get("throughput") or {}
+        assert stored["gate"] == "passed"
+        assert throughput.get("generation_seconds") is not None
+        assert throughput.get("machine_seconds") is not None
+        assert throughput.get("tokens_per_second") is not None
+        # measured, and never a substitute zero
+        assert throughput.get("generation_seconds") != 0
+        assert throughput.get("tokens_per_second") == round(100 / 3, 2)
+        measured_rows += 1
+    assert measured_rows == len(sessions)
+
+
+def test_a_codex_run_without_a_surviving_rollout_promotes_the_span_unmeasured(
+    repository: Path,
+) -> None:
+    """An absent rollout is the marker, never a zero, and promotion still lands.
+
+    The exec stream reports tokens but cannot rate them, so a run whose rollout
+    did not survive keeps the span explicitly unmeasured on the row; the receipt
+    read returns the marker object naming the missing rollout rather than a null
+    or a zero standing in for a figure nobody measured.
+    """
+    run_id = "r-no-rollout"
+    session_id = "no-rollout-session"
+    _promote_codex(repository, run_id, session_id, _codex_stream(repository, run_id))
+
+    stored = _stored_row(repository, run_id)
+    throughput = stored.get("throughput") or {}
+    assert stored["gate"] == "passed"
+    assert throughput.get("generation_seconds") is None
+    assert throughput.get("machine_seconds") is None
+    assert throughput.get("tokens_per_second") is None
+    assert throughput.get("generation_seconds") != 0
+
+    missing = rollout.read_rollout_receipt(session_id)
+    assert missing.generation_seconds is rollout.Unmeasured.MISSING_ROLLOUT
+    assert missing.machine_seconds is rollout.Unmeasured.MISSING_ROLLOUT
+    assert missing.generation_seconds is not None
+    assert missing.generation_seconds != 0
