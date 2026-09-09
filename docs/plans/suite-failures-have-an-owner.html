@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="suite-failures-have-an-owner">
+  <meta name="plan-title"     content="Every Suite Failure Has An Owner">
+  <meta name="plan-summary"   content="Give the suite's standing failures an owner and a cause, so a delta is readable without measuring the base twice">
+  <meta name="plan-status"    content="draft">
+  <meta name="plan-roi"       content="mid">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint"    content="S17">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-tags"      content="reckon-tooling,crew">
+  <title>Every Suite Failure Has An Owner | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">&#167;1 &mdash; A standing failure with no owner taxes every measurement after it</h2>
+    <p>This repository's suite carries failures that no plan claims. They are not regressions and
+    nobody introduced them today; they simply sit there, and the cost is paid by every session
+    that has to prove it did no harm. Because absolute green is unavailable, <em>no</em> claim of
+    the form <q>the suite passes</q> can be made, so every node must instead measure its base and
+    its head and compare failure sets by node id. That is the correct discipline and this plan does
+    not propose weakening it &mdash; but it doubles the verification cost of every landing, and a
+    coordinator who forgets it reports a red suite as a defect in the change under review.</p>
+
+    <p><strong>Measured 2026-09-09 at <code>dc52c8d</code>: 14 failing node ids.</strong> Counted by
+    running the three files that hold them; the two in <code>tests/test_crew.py</code> were verified
+    individually because that file cannot complete in a bounded run (see &#167;4).</p>
+    <table>
+      <thead><tr><th>File</th><th>Failing</th><th>Cause</th></tr></thead>
+      <tbody>
+        <tr><td><code>tests/test_crew_session_keying.py</code></td><td>6</td><td>undiagnosed &mdash; &#167;2</td></tr>
+        <tr><td><code>tests/test_ledger.py</code></td><td>6</td><td>undiagnosed &mdash; &#167;3</td></tr>
+        <tr><td><code>tests/test_crew.py</code></td><td>2</td><td><strong>diagnosed</strong> &mdash; &#167;4</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>One caution the inventory itself demonstrates, and it is why every row above is
+    stamped with a revision.</strong> An earlier reading of this same population counted 20 rather
+    than 14, because it included six failures in <code>tests/test_crew_promotion.py</code> observed
+    at a <em>different</em> base, <code>69db659</code>. At <code>dc52c8d</code> that file passes
+    clean. So a failure set is a property of a revision and not of the repository, and an inventory
+    quoted without its revision is worse than none &mdash; it sends someone hunting a failure that
+    is not there. Re-measure before acting on any row here, and record the revision beside the
+    count when you do.</p>
+
+    <p><strong>What is deliberately not proposed.</strong> Not disabling, not
+    <code>xfail</code>-ing, and not deleting. The repository's own guidance is that a failing test
+    that runs is a high-value signal and a disabled one is worth nothing, so the disposition of
+    every row below is <em>diagnose and fix</em>, or <em>correct a stale expectation</em>, with a
+    stated cause either way. A row closed by making it invisible is not closed.</p>
+
+    <h2 id="s2">&#167;2 &mdash; The session-keying six</h2>
+    <p>Six failures in <code>tests/test_crew_session_keying.py</code>, stable across every revision
+    measured today and unaffected by a change to the very function they assert on &mdash; the
+    calibration/session identity split landed at <code>7572d83</code> and the set did not move,
+    which is itself evidence the cause is in the test's own fixtures rather than in session keying.
+    One reported symptom, not yet confirmed as the cause: a node lacking a declared specification
+    level.</p>
+    <table>
+      <thead><tr><th>Node id</th></tr></thead>
+      <tbody>
+        <tr><td><code>test_two_dispatches_at_the_same_configuration_resume_one_session</code></td></tr>
+        <tr><td><code>test_changed_effort_starts_fresh_and_both_sessions_remain_reusable</code></td></tr>
+        <tr><td><code>test_changed_model_starts_fresh</code></td></tr>
+        <tr><td><code>test_legacy_model_key_reuses_when_capture_configuration_matches</code></td></tr>
+        <tr><td><code>test_legacy_model_key_starts_fresh_without_matching_capture_evidence[None]</code></td></tr>
+        <tr><td><code>test_legacy_model_key_starts_fresh_without_matching_capture_evidence[capturing_agent1]</code></td></tr>
+      </tbody>
+    </table>
+    <p>These six matter more than their count suggests. Session reuse keyed on the resolved
+    configuration is what stops a higher-effort arm inheriting a lower one's context, and that
+    fence is a precondition of the effort scan in
+    <a href="/reckon/plans/clive-local-workers">clive-local-workers</a> &#167;10. The mechanism is
+    verified working by other means &mdash; roster members hold distinct sessions per effort &mdash;
+    so the failures are believed to be assertion-side. <em>Believed</em> is the operative word:
+    until they are diagnosed, the one file that would tell us the fence is intact is the file that
+    is red.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Cause named before repair</td><td>Each of the six carries a one-line cause in the plan record, distinguishing a stale assertion from a real defect in session keying. A repair that turns a test green without naming which of the two it was does not satisfy this.</td></tr>
+        <tr><td>The fence is proven, not assumed</td><td>After repair, a case asserts that two dispatches differing only in resolved effort take distinct sessions, against the live lookup rather than a fixture &mdash; so the precondition the effort scan depends on is demonstrated by this file rather than inferred elsewhere.</td></tr>
+        <tr><td>Zero added</td><td>Failure sets compared by node id at the base revision and at the head, with the base revision recorded; the six are gone and nothing else moved.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s3">&#167;3 &mdash; The ledger six</h2>
+    <p>Six failures in <code>tests/test_ledger.py</code>, likewise stable across every revision
+    measured today. Their titles suggest two distinct groups rather than one cause, which is worth
+    establishing before any repair: four concern read surfaces and their vocabularies, two concern
+    recovery classification and the promoted-but-unread state.</p>
+    <table>
+      <thead><tr><th>Node id</th><th>Apparent group</th></tr></thead>
+      <tbody>
+        <tr><td><code>test_the_mcp_surface_holds_at_five_tools</code></td><td>surface shape</td></tr>
+        <tr><td><code>test_every_read_tool_rejects_an_unknown_keyword_with_its_vocabulary</code></td><td>surface shape</td></tr>
+        <tr><td><code>test_every_read_view_returns_and_large_defaults_are_compact</code></td><td>surface shape</td></tr>
+        <tr><td><code>test_a_document_audit_keeps_its_own_findings_by_default</code></td><td>surface shape</td></tr>
+        <tr><td><code>test_recovery_reports_all_three_classes_and_counts_them</code></td><td>recovery classification</td></tr>
+        <tr><td><code>test_a_killed_run_that_delivered_is_completed_but_unpromoted</code></td><td>recovery classification</td></tr>
+      </tbody>
+    </table>
+    <p><strong>The recovery pair is the one to read first, because the surface it asserts on has
+    moved twice this week.</strong> A terminal run carrying a manifest now classifies
+    <code>scoring</code> rather than <code>completed_unpromoted</code>, and the independent-review
+    lifecycle interposed a state between delivery and promotion. A test naming the older vocabulary
+    would fail for a reason that is not a defect &mdash; but the same two names would also fail if
+    classification were genuinely wrong, and those two readings license opposite actions. Establish
+    which before touching either.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Groups confirmed or merged</td><td>The two apparent groups are either confirmed as distinct causes or shown to share one, stated with the evidence. Repairing six tests under one assumed cause when there are two is how half a repair passes review.</td></tr>
+        <tr><td>Superseded vocabulary distinguished from wrong behaviour</td><td>For each recovery-classification failure, the record states whether the test named a retired state or the classifier produced a wrong one, and cites the current classification for the case in question.</td></tr>
+        <tr><td>Zero added</td><td>Failure sets compared by node id at a recorded base and at the head; the six are gone and nothing else moved.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s4">&#167;4 &mdash; Two failures already diagnosed, and a file that cannot be run whole</h2>
+    <p><strong>The diagnosis, carried forward from the session that met them.</strong> Both
+    <code>test_dispatch_refuses_work_above_the_selected_configuration_horizon</code> and
+    <code>test_cli_competence_refusal_has_typed_dry_run_parity</code> assert on a refusal's
+    <code>reason</code> and <code>recommendation</code> <em>without</em> the remedy clause
+    &mdash; <q>Resolve with <code>reckon crew dispatch</code> once for each smaller node.</q>
+    &mdash; that was added deliberately at <code>e68a84a</code>, an ancestor of the base at which
+    they were observed failing. So the expectation is stale and the behaviour is the intended one.
+    These two are the cheapest rows on the board and they are the reason this plan is not
+    speculative.</p>
+
+    <p><strong>The file cannot be run whole, which is a second finding rather than an obstacle to
+    the first.</strong> <code>tests/test_crew.py</code> does not complete in a bounded run in this
+    environment; it stalls partway, and its output is block-buffered when redirected, so the stall
+    presents as silence rather than as a failure. Both diagnosed rows above were therefore verified
+    by running the two node ids individually. A file that cannot be run whole cannot produce a
+    trustworthy delta for anything inside it, so every future change touching it is measured
+    against a subset chosen by hand &mdash; which is precisely the condition that lets a real
+    regression hide. The file is also the largest in the suite by a wide margin, and the repository
+    already splits crew tests across many <code>test_crew_*.py</code> siblings, so the seam that
+    would fix it exists and has simply never been finished.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>The stale expectations are corrected at the assertion, not the behaviour</td><td>Both tests assert the current refusal text including the remedy clause, and a case pins the clause itself so a future removal fails loudly rather than silently widening what the refusal says. The locked decision in this plan governs which side moves.</td></tr>
+        <tr><td>The file completes, or its inability is bounded and reported</td><td>Either <code>tests/test_crew.py</code> runs to completion within a stated wall-clock bound, or the stall is characterised &mdash; the point it reaches, whether it is one test or an interaction, and whether unbuffered output changes it &mdash; and recorded so the next reader does not rediscover silence.</td></tr>
+        <tr><td>A subset is never mistaken for the file</td><td>Where a delta is measured over a hand-chosen subset because the file cannot complete, the run record names the subset and says so. A delta over an unnamed subset is not a delta.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s5">&#167;5 &mdash; What closing this buys, stated so it can be checked later</h2>
+    <p>The point is not a green badge. It is that a delta becomes readable from one run instead of
+    two, and that a coordinator reading a red suite stops having to decide whether the red is
+    theirs. Two consequences are worth stating as claims rather than hopes, because both are
+    measurable afterwards.</p>
+    <p><strong>Verification cost.</strong> Every node landed today paid for a base run and a head
+    run of the same files, purely to establish that a pre-existing failure was pre-existing. If the
+    standing set is empty, the base run is unnecessary for any file whose failures were in it, and
+    the saving is one full run per node touching those files.</p>
+    <p><strong>A guard's fallout stops being ambiguous.</strong> When a fail-open guard is closed,
+    the failures it exposes are legitimate and must be judged on their merits &mdash; but that
+    judgement currently starts by separating the exposed failures from the standing ones. With no
+    standing set, an exposed failure is unambiguously the guard's, which is the difference between
+    reading a fallout count and re-deriving it.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="stale-expectation-authority" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">When a test's expectation and the shipped behaviour disagree, and the behaviour was changed deliberately, which side moves?</p>
+        <p class="r-dec-ctx">The two diagnosed failures in §4 assert a refusal's text without a remedy clause added on purpose at e68a84a. Updating the test blesses whatever shipped; reverting the behaviour blesses whatever was asserted first. The choice sets the default for every future instance of this shape, of which the ledger six may contain more.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="test-follows-behaviour-with-a-pin">Update the test to the shipped text, and pin the clause so a future removal fails loudly</button>
+          <button class="r-opt" data-value="behaviour-follows-test">Treat the assertion as the contract and revert the behaviour change</button>
+          <button class="r-opt" data-value="case-by-case">Decide per instance, recording the reason each time</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-sfo-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-09">
+        <h4 class="r-fu-title">Take the two diagnosed failures first, then diagnose the two groups of six</h4>
+        <div class="r-fu-body"><p>§4's two are the only rows with a named cause, they are cheap, and landing them settles the decision that governs every later row &mdash; so they go first even though they are the smallest.</p><p>Then §2 and §3, and <strong>diagnosis before repair in both</strong>: the plan's measures refuse a repair that turns a test green without naming whether the assertion or the behaviour was wrong, because those two readings license opposite actions and six tests repaired under one assumed cause is how half a repair passes review. §3's recovery pair is the sharpest instance, since the classification vocabulary it asserts on genuinely moved this week.</p><p>Re-measure before acting on any inventory row. An earlier count of this same population read 20 rather than 14 because it included six failures observed at a different base; a failure set belongs to a revision, not to the repository.</p></div>
+        <pre class="r-fu-prompt">/reckon-ship suite-failures-have-an-owner §4</pre>
+      </article>
+    </section>
+
+  </main>
+</body>
+</html>
