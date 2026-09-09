@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T15:15:13",
+  "updated": "2026-09-09T15:28:17",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -2325,9 +2325,11 @@
         "id": "spend-record",
         "harness": "clive",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "9fb805b9-6356-4d31-80a0-0b788a17346d",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "9fb805b9-6356-4d31-80a0-0b788a17346d"
+        },
         "created": "2026-09-09"
       },
       {
@@ -89707,6 +89709,188 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T124529891040-wslp-receipt-reaches-the-record",
+        "plan": "worker-spend-is-legible-in-the-pane",
+        "section": "\u00a77",
+        "node": "wslp-receipt-reaches-the-record",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 960,
+                "cached_input_tokens": 497289,
+                "input_tokens": 498251,
+                "output_tokens": 1005,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 499256,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3e7dcff5-8cdd-4a76-bdc7-a5c7cca53e79",
+            "session_id": "ship-worker-spend-20260909"
+          },
+          "done_when": "A promoted codex run whose rollout survives carries non-null throughput.generation_seconds, machine_seconds and tokens_per_second on its ledger row where at the base revision it carries null. The change passes the receipt that _harvest_lane_receipt already reads at promotion.py line 1893 into the _backends.observe_log call at promotion.py line 1164 whose result is already stored at line 2324, using the receipt parameter that observe_log already accepts. It therefore introduces no new rollout read and no new span computation; if the change requires either, the diagnosis behind this node is wrong and the manifest reports that as a refutation rather than proceeding. A run with no surviving rollout still promotes with the span explicitly unmeasured rather than zero, asserted as the returned marker object and not as a null. Report the count of committed codex rows carrying a measured span at HEAD beside the count at the base revision, both as numbers. pytest tests/test_ledger.py tests/test_promotion_harvests_the_receipt.py tests/test_crew_promotion.py shows no failures added against the base revision, test_ledger.py being included because it holds the contracts crossing this package's boundaries.",
+          "estimated_hours": null,
+          "goal": "The measured model span reaches the committed run record by joining the receipt promotion already reads to the observe_log call promotion already stores",
+          "id": "wslp-receipt-reaches-the-record",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-09T12:45:30Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T124529891040-wslp-receipt-reaches-the-record/manifest.md",
+          "plan": "worker-spend-is-legible-in-the-pane",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "tests/test_promotion_harvests_the_receipt.py",
+            "tests/test_ledger.py",
+            "tests/test_crew_promotion.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "spend-record",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-09T12:45:36Z",
+        "completed_at": "2026-09-09T13:26:12.442Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2426,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2436,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "7e262137e5bb3a8f072930a0ec4edfdf93d05c02",
+        "commits": [
+          "82486c3cf6528290f10eab3455df65270a8cb498"
+        ],
+        "changed_lines": {
+          "added": 213,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD python -m pytest -p no:cacheprovider tests/test_ledger.py tests/test_promotion_harvests_the_receipt.py tests/test_crew_promotion.py -q",
+          "exit_status": 0,
+          "log_path": null,
+          "log_digest": "118 passed at HEAD 82486c3; 116 at base 7e26213; 0 added failures; new cohort test verified failing at base by the coordinator"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T124529891040-wslp-receipt-reaches-the-record/manifest.md",
+        "scope_changed": false,
+        "session_id": "9fb805b9-6356-4d31-80a0-0b788a17346d",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 11518258,
+            "input_tokens_cumulative": 11518258,
+            "output_tokens": 74338,
+            "output_tokens_cumulative": 74338,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-09T13:26:12.442Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 11518258,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 2433.243,
+          "generated_tokens": 74338,
+          "generation_seconds": 2153.355,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 17.7,
+          "machine_seconds": 279.888,
+          "peak_input_tokens": 179504,
+          "tokens_per_second": 34.52,
+          "wall_tokens_per_second": 30.55
+        },
+        "follow_on_paths": [
+          "dispatch.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_ledger.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-worker-spend-20260909/wslp-receipt-reaches-the-record",
+          "session_id": "9fb805b9-6356-4d31-80a0-0b788a17346d",
+          "session_source": "pointer",
+          "retained_at": "2026-09-09T13:26:12.442Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -89935,6 +90119,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1322
+    "_version": 1324
   }
 }
