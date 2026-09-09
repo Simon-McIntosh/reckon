@@ -23,6 +23,9 @@
   <title>History Persists As Detail Washes Out | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-09">
+<meta name="plan-version" content="2">
+<meta name="plan-impl" content="0.22">
 </head>
 <body>
   <main class="plan-doc">
@@ -292,51 +295,59 @@
     </table>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-    <h2><span class="sec">&sect;</span> Decisions</h2>
-    <div class="r-dec" data-key="detail-horizon">
-      <p class="r-dec-q">How long is per-run detail kept before it washes out (&sect;2)?</p>
-      <p class="r-dec-opts">
-        <button class="r-opt" data-value="30d">30d</button>
-        <button class="r-opt" data-value="90d">90d</button>
-        <button class="r-opt" data-value="by-count">by-count</button>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="detail-horizon" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">How long is per-run detail kept before it washes out (§2)?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="30d">30d</button>
+      <button class="r-opt" data-value="90d">90d</button>
+      <button class="r-opt" data-value="by-count">by-count</button>
       </p>
-      <p class="r-dec-rat">Open. The run directories the detail points at are
+    <p class="r-dec-rat">Open. The run directories the detail points at are
       currently reaped at 30 days, so a detail horizon longer than that keeps
       pointers to files that are gone. by-count holds a fixed number of recent runs
       regardless of elapsed time, which is the option that behaves the same in a
       quiet week and a busy one.</p>
     </div>
-    <div class="r-dec" data-key="committed-export-scope">
-      <p class="r-dec-q">What does the committed file carry after cutover (&sect;4)?</p>
-      <p class="r-dec-opts">
-        <button class="r-opt" data-value="durable-rows">durable-rows</button>
-        <button class="r-opt" data-value="everything">everything</button>
-        <button class="r-opt" data-value="retire">retire</button>
+<div class="r-dec" data-key="committed-export-scope" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">What does the committed file carry after cutover (§4)?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="durable-rows">durable-rows</button>
+      <button class="r-opt" data-value="everything">everything</button>
+      <button class="r-opt" data-value="retire">retire</button>
       </p>
-      <p class="r-dec-rat">Open. durable-rows is the narrow permanent half, which
+    <p class="r-dec-rat">Open. durable-rows is the narrow permanent half, which
       is what makes the export small enough to merge line-by-line. everything keeps
-      today's content and today's merge cost. retire makes cross-checkout history
+      today&#x27;s content and today&#x27;s merge cost. retire makes cross-checkout history
       unavailable to any reader without the config home and is listed to be
       rejected explicitly rather than by omission.</p>
     </div>
-    </section>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-    <h2><span class="sec">&sect;</span> Followups</h2>
-    <article class="r-fu" data-id="f-hpdw-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-09" data-recommends-skill="/reckon-ship history-persists-as-detail-washes-out">
-      <h4 class="r-fu-title">Expand and dual-write before anything reads the database &mdash; &sect;3</h4>
-      <div class="r-fu-body">Execution order is forced by the reversibility argument
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-hpdw-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-09" data-recommends-skill="/reckon-ship history-persists-as-detail-washes-out" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Expand and dual-write before anything reads the database — §3</h4>
+    <div class="r-fu-body">Execution order is forced by the reversibility argument
       rather than by preference: the expand and dual-write stages must both hold before
       the equality check can measure anything, and the check must report a stated
       count of clean promotions before any reader is cut over. The two prerequisite
-      sections in <code>dispatch-cost-per-durable-node</code> &mdash; the retention invariant
-      and the per-run figures recorded at promotion &mdash; gate &sect;5 only; &sect;3's earlier
+      sections in <code>dispatch-cost-per-durable-node</code> — the retention invariant
+      and the per-run figures recorded at promotion — gate §5 only; §3's earlier
       stages do not wait on them. Both decisions are open and neither blocks the
       expand stage.</div>
-      <pre class="r-fu-prompt">/reckon-ship history-persists-as-detail-washes-out</pre>
+    <pre class="r-fu-prompt">/reckon-ship history-persists-as-detail-washes-out</pre>
     </article>
-    </section>
+</section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260909T174707543021-hpdw-the-store-exists-beside-the-file" data-who="crew-admission" data-when="2026-09-09T18:37:11.729Z">
+    <div class="r-comment-body"><p>The expand stage of the store change. An embedded SQLite store created on first use with four tables - a narrow durable run row, the wide detail keyed to it, roster members and holds - and the durable columns driven by one declaration that builds both the schema and the insert, asserted by adding a field to the declaration and requiring it in the durable row. A promotion writes the file row first, then the store under a single transaction that reads or rewrites no other row, asserted by snapshotting the other rows' bytes. A store write that raises returns status failed with the error on the payload while the file row still commits, asserted by injecting the exception rather than by reading the guard. Nothing reads the store: every existing reader gives an identical answer with the store present and with it deleted. Every test resolves the store under a temporary home and asserts the real config home is untouched. 94 passed on the two named files; 4 failed / 235 passed at head against 4 failed / 228 passed at base over a 233-test delta set, 0 added failures, the four being pre-existing sandbox failures in routing-evidence with identical ids at both trees.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260909T184007058570" data-who="ship-clw-2026-09-09" data-when="">
+    <div class="r-comment-body"><p><strong>Expand has landed.</strong> At <code>c5687cd</code>: an embedded SQLite store created on first use, four tables &mdash; a narrow durable run row, the wide detail keyed to it, roster members and holds &mdash; and the durable columns driven by one declaration that builds both the schema and the insert. 94 passed on the two named files; over a 233-test delta set, 4 failed / 235 passed at head against 4 failed / 228 passed at base, 0 added, the four being pre-existing sandbox failures in routing-evidence with identical ids at both trees.</p><p><strong>The two measures that make the stage reversible were both asserted by injection rather than by inspection.</strong> A store write that raises returns <code>status: failed</code> with the error on the payload while the file row still commits &mdash; asserted by monkeypatching the append to raise, not by reading the guard. And nothing reads the store: every existing reader gives an identical answer with the store file present and with it deleted. The insert touches no other row, asserted by snapshotting the other rows' bytes across the append.</p><p><strong>Two gaps to close before the later stages, both recorded now because neither fails anything today.</strong></p><ul><li><strong>The durable declaration is 10 fields; &sect;2 measured 43.</strong> Nothing is lost at expand, because the detail table holds everything else &mdash; but rotation deletes detail, and 33 fields this plan calls permanent are currently on the wrong side of that line: the agent configuration, role, specification level, commits, changed lines, tests added, lineage, worker seconds and the two derived figures among them. The declaration must reach 43 before rotation is enabled, and because rotation is the one irreversible step, this is the gap with real teeth.</li><li><strong>A recorded store failure is invisible where an operator looks.</strong> <code>append_run</code> returns the outcome on its payload and promotion does not forward it, so a shadow that has been silently failing for a week reads exactly like one that has been working. The dual-write stage cannot be believed without it &mdash; the equality check would compare a file against a store nothing has been writing to.</li></ul></div>
+</div>
+</section>
+</main>
 </body>
 </html>
