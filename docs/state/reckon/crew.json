@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T10:21:50",
+  "updated": "2026-09-09T10:31:11",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -1153,6 +1153,24 @@
           "{\"backend\":\"claude\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"claude-sonnet-5\",\"sandbox\":\"worktree-full\"}": "dbfb5653-7d5c-4b00-84af-9d3e7dbefcf9"
         },
         "created": "2026-09-03"
+      },
+      {
+        "id": "implement-terra-b",
+        "harness": "codex-terra",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-09"
+      },
+      {
+        "id": "implement-terra-c",
+        "harness": "codex-terra",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-09"
       },
       {
         "id": "investigate-terra-b",
@@ -85038,6 +85056,176 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T082244915910-cotd-wait-declaration-accepts-a-quoted-stamp",
+        "plan": "crew-observability-truth",
+        "section": "\u00a71",
+        "node": "cotd-wait-declaration-accepts-a-quoted-stamp",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1270,
+                "cached_input_tokens": 374098,
+                "input_tokens": 375370,
+                "output_tokens": 2539,
+                "reasoning_output_tokens": 973,
+                "total_tokens": 377909,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "29187761-681d-4f4d-85ae-fc3d7adc250b",
+            "session_id": "ship-cot-drain-20260909"
+          },
+          "done_when": "pytest tests/test_external_wait.py -q exits 0 having added at least 3 tests: a stamp wrapped in matched single or double quotes with a local offset classifies as waiting and sweep-eligible rather than unreadable; the parsed offset survives, proven by comparing .timestamp() against the same instant written bare in UTC; and a genuinely invalid value still reports unreadable AND still names the offending field, so the repair narrows the rejection without blunting the diagnosis. Base-versus-head delta on tests/test_wait_declaration_parses_both_forms.py, tests/test_a_met_wait_is_ready_not_abandoned.py, tests/test_a_resume_does_not_inherit_its_baseline.py and tests/test_worker_wait_contract.py adds zero failures. Cite the map at /home/ITER/mcintos/.config/reckon/crew/reports/cot-resume-and-park-reader-map.md; its row for recovery.py:905-910 is the whole change, and the two other park causes it found already closed in this tree must NOT be reimplemented",
+          "estimated_hours": null,
+          "goal": "a wait declaration whose timestamp carries surrounding quotes parses instead of rejecting the whole declaration",
+          "id": "cotd-wait-declaration-accepts-a-quoted-stamp",
+          "lane_declaration": {
+            "backend": "codex-terra",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-09T08:22:45Z",
+            "read_at": "2026-09-09T08:22:46Z",
+            "resolved_backend": "codex-terra",
+            "utilisation_pct": 64.0
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T082244915910-cotd-wait-declaration-accepts-a-quoted-stamp/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "codex-terra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_external_wait.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "implement-terra-b",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-09T08:22:55Z",
+        "completed_at": "2026-09-09T08:28:43Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 348,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 348,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "1ece27db1417b32470f8852e13429d42a10eb2f9",
+        "commits": [
+          "99b71df2545c7cf9fb877062699644c3ea0766e7"
+        ],
+        "changed_lines": {
+          "added": 85,
+          "removed": 1,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_external_wait.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T082244915910-cotd-wait-declaration-accepts-a-quoted-stamp/after-external-wait.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T082244915910-cotd-wait-declaration-accepts-a-quoted-stamp/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a08543-4c90-70b2-919d-0c09f482fa1e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3435008,
+            "cached_input_tokens_cumulative": 3435008,
+            "input_tokens": 3584125,
+            "input_tokens_cumulative": 3584125,
+            "output_tokens": 13530,
+            "output_tokens_cumulative": 13530,
+            "reasoning_output_tokens": 3893,
+            "reasoning_output_tokens_cumulative": 3893
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-09T08:28:43Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 64.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-09T08:28:43Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 3435008,
+          "cumulative_input_tokens": 7019133,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 17423
+        },
+        "follow_on_paths": [
+          "tests/test_a_resume_does_not_inherit_its_baseline.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_external_wait.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cot-drain-20260909/cotd-wait-declaration-accepts-a-quoted-stamp",
+          "session_id": "01a08543-4c90-70b2-919d-0c09f482fa1e",
+          "session_source": "stream",
+          "retained_at": "2026-09-09T08:28:43Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -85266,6 +85454,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1277
+    "_version": 1280
   }
 }
