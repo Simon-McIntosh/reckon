@@ -22,8 +22,9 @@ import os
 import re
 import struct
 import termios
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
+from numbers import Real
 from typing import Any
 
 CLOCK = 8
@@ -51,6 +52,41 @@ MODEL = 10
 PAIR_GAP = 1
 EFFORT = 7
 GAP = 2
+
+# The spend block: wall time, model time, charged tokens, generation rate and
+# a notional dollar figure, in that order. Every cell is right-aligned to a
+# fixed width with a single space between cells, so the five columns a reader
+# scans stay put as figures change. The wall-and-model pair earns the space:
+# much wall against little model is a worker sitting in a test suite or a
+# queue, and the two read at a glance without arithmetic. Tokens are the total
+# a meter actually charges (input including cache reads, plus output); the rate
+# is generated output over model seconds, so the two deliberately do not divide
+# into each other. SPEND counts content and the four inter-cell spaces; the
+# leading space before the wall cell is separate, and both replace the old
+# two-column gap before the counters together.
+WALL = 7
+MODEL_SECS = 6
+TOKENS = 4
+RATE = 4
+DOLLARS = 5
+SPEND_GAP = 1
+SPEND = (
+    WALL
+    + SPEND_GAP
+    + MODEL_SECS
+    + SPEND_GAP
+    + TOKENS
+    + SPEND_GAP
+    + RATE
+    + SPEND_GAP
+    + DOLLARS
+)
+
+# A cell with no measurement renders this, never a zero: a zero asserts a
+# measurement that was never taken, and this fleet holds large populations of
+# both facts at once — an unpriced lane really did spend nothing chargeable,
+# while an unobserved run's tokens are simply unknown.
+DIM_MARKER = "\N{EN DASH}"
 
 # Identity hues, one set per background. Picked by measurement rather than eye:
 # each clears a 3.8:1 contrast ratio against its pane, sits in the cool arc
@@ -220,11 +256,13 @@ STATS = sum(2 + 1 for _ in _MAX_CELLS) + (len(_MAX_CELLS) - 1)
 # The widest the fixed columns can be, plus the stats block and one gap. A width
 # below this cannot be honoured without wrapping, so it is raised to this.
 # Everything before the reason consumes exactly this many columns with the role
-# word at its widest (documentation, thirteen), the model cell at ten and the
-# effort cell at seven: 128 after the counter separators lost their surrounding
-# spaces. Against the 180-column DEFAULT_WIDTH budget that leaves 52 for the
-# reason, and 79 on the 208-column pane this workstation measures (208 minus the
-# inset) — either leaves room for the vocabularies in full, so the 52 at the
+# word at its widest (documentation, thirteen), the model cell at ten, the
+# effort cell at seven and the five spend cells in full — the spend block and
+# its leading space replace the old two-column gap before the counters, so the
+# fixed part of the row grows by the block's own width. Against the 180-column
+# DEFAULT_WIDTH budget that leaves 23 for the reason, and 51 on the 208-column
+# pane this workstation measures (208 minus the inset) — both clear the
+# 12-column floor below which a clause is not worth reading, and the 23 at the
 # default is what a later added column spends first.
 MIN_WIDTH = (
     CLOCK
@@ -240,7 +278,8 @@ MIN_WIDTH = (
     + MODEL
     + PAIR_GAP
     + EFFORT
-    + GAP
+    + SPEND_GAP
+    + SPEND
     + STATS
     + GAP
 )
@@ -345,6 +384,30 @@ def local_clock(observed: Any) -> str:
     if moment.tzinfo is None:
         moment = moment.replace(tzinfo=UTC)
     return moment.astimezone().strftime("%H:%M:%S")
+
+
+def _clock(seconds: float) -> str:
+    """Render a duration as h:mm:ss (or m:ss under an hour), seconds rounded."""
+    total = max(0, round(seconds))
+    hours, remainder = divmod(total, 3600)
+    minutes, secs = divmod(remainder, 60)
+    if hours:
+        return f"{hours}:{minutes:02d}:{secs:02d}"
+    return f"{minutes}:{secs:02d}"
+
+
+def _compact_tokens(count: int) -> str:
+    """Render a token total compactly: 6.4M, 890k, or the plain count.
+
+    A meter's charged figure lands in the thousands to the millions, so the
+    spellings carry a unit letter that keeps the four-column cell readable — and
+    a measured zero renders "0", not the absence marker.
+    """
+    if count >= 1_000_000:
+        return f"{count / 1_000_000:.1f}M"
+    if count >= 1_000:
+        return f"{count / 1_000:.0f}k"
+    return str(count)
 
 
 def single_clause(value: Any, *, limit: int = 96) -> str:
@@ -592,8 +655,8 @@ class Ticker:
             (f"{model_cell:<{MODEL}}", "dim"),
             (" " * PAIR_GAP, None),
             (f"{effort_cell:<{EFFORT}}", "dim"),
-            (" " * GAP, None),
         ]
+        cells.extend(self._spend_cells(event))
         cells.extend(self._stats(event))
         cells.append((" " * GAP, None))
 
@@ -643,6 +706,45 @@ class Ticker:
         if marker and clause:
             return f"{marker} {clause}"
         return marker or clause
+
+    def _spend_cells(self, event: Mapping[str, Any]) -> list[tuple[str, Any]]:
+        """The five spend cells, fed by the transition record's numeric facts.
+
+        Each fact is right-aligned to its fixed width with a single space
+        between cells, so the columns a reader scans stay put as figures change.
+        An unmeasured fact renders the dim absence marker, never a zero; a
+        measured zero stays a zero. The cells read the record's own figures and
+        shape them only here, so the persisted event stays re-renderable.
+        """
+
+        def cell(value: Any, formatter: Callable[[float], str]) -> tuple[str, Any]:
+            if isinstance(value, Real):
+                return formatter(float(value)), None
+            return DIM_MARKER, "dim"
+
+        wall, wall_style = cell(event.get("spend_wall_seconds"), _clock)
+        model, model_style = cell(event.get("spend_model_seconds"), _clock)
+        tokens, tokens_style = cell(
+            event.get("spend_charged_tokens"), lambda value: _compact_tokens(int(value))
+        )
+        rate, rate_style = cell(
+            event.get("spend_generation_rate"), lambda value: f"{value:.0f}"
+        )
+        dollars, dollars_style = cell(
+            event.get("spend_notional_cost_usd"), lambda value: f"{value:.2f}"
+        )
+        return [
+            (" " * SPEND_GAP, None),
+            (f"{wall:>{WALL}}", wall_style),
+            (" " * SPEND_GAP, None),
+            (f"{model:>{MODEL_SECS}}", model_style),
+            (" " * SPEND_GAP, None),
+            (f"{tokens:>{TOKENS}}", tokens_style),
+            (" " * SPEND_GAP, None),
+            (f"{rate:>{RATE}}", rate_style),
+            (" " * SPEND_GAP, None),
+            (f"{dollars:>{DOLLARS}}", dollars_style),
+        ]
 
     def _stats(self, event: Mapping[str, Any]) -> list[tuple[str, Any]]:
         """The fleet after this transition, as a grid whose digits line up.

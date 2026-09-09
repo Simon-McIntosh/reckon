@@ -337,7 +337,10 @@ def test_a_re_attached_follower_repeats_no_state_it_already_reported(home) -> No
         stop.set()
         thread.join(timeout=2)
 
-    assert [event["to_state"] for event in received] == ["working", "complete"]
+    assert [event["to_state"] for event in received] == [
+        "working",
+        "completed_unpromoted",
+    ]
 
 
 def _wait_for(predicate, *, timeout: float = WATCHER_LOAD_BOUND_SECONDS) -> None:
@@ -427,7 +430,7 @@ def test_an_attaching_follower_reports_its_fleet_as_transitions(home) -> None:
         "the follower's own lifecycle is not fleet state and does not belong here"
     )
     rendered = [recovery.format_watch_transition(event) for event in events]
-    assert all("2w ·  0b ·  0u" in line for line in rendered)
+    assert all(" 2w· 0b· 0u" in line for line in rendered)
     for line in rendered:
         assert "[stderr]" not in line
 

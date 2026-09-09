@@ -928,3 +928,160 @@ def test_every_line_ends_at_the_resolved_width_when_crowded(monkeypatch):
     narrow = plain(grid.render(_event(working=1, blocked=2, unpromoted=3)))
     assert letter_columns(line) == letter_columns(narrow)
     assert counters(line).end() < len(line)
+
+
+# ── The five spend cells: fixed widths, stable columns, absence vs zero ───
+#
+# Between the effort cell and the fleet counters sit wall time, model time,
+# charged tokens, generation rate and a notional dollar figure. Every cell is
+# right-aligned to a fixed width with a single space between cells, and an
+# unmeasured fact renders the dim absence marker rather than a zero — a zero
+# asserts a measurement that was never taken.
+
+
+def _spend_columns() -> list[tuple[int, int]]:
+    """The (start, width) of the five spend cells on a plain rendered line."""
+    prefix = (
+        ticker_module.CLOCK
+        + ticker_module.GAP
+        + ticker_module.ROLE
+        + ticker_module.GAP
+        + ticker_module.NODE
+        + ticker_module.GAP
+        + (ticker_module.STATE * 2 + 3)
+        + ticker_module.GAP
+        + ticker_module.MODEL
+        + ticker_module.PAIR_GAP
+        + ticker_module.EFFORT
+        + ticker_module.SPEND_GAP
+    )
+    columns: list[tuple[int, int]] = []
+    for width in (
+        ticker_module.WALL,
+        ticker_module.MODEL_SECS,
+        ticker_module.TOKENS,
+        ticker_module.RATE,
+        ticker_module.DOLLARS,
+    ):
+        columns.append((prefix, width))
+        prefix += width + ticker_module.SPEND_GAP
+    return columns
+
+
+def test_a_line_with_spend_facts_is_exactly_the_requested_width_at_three_sizes():
+    """The spend block holds the fixed grid at its floor and beyond.
+
+    A rendered line is exactly the requested visible width with no wrapping, so
+    the floor is asserted too (the narrowest width the grid can honour).
+    """
+    event = _event(
+        spend_wall_seconds=6_422.0,
+        spend_model_seconds=3_133.5,
+        spend_charged_tokens=6_400_000,
+        spend_generation_rate=38.2,
+        spend_notional_cost_usd=3.41,
+    )
+    for width in (ticker_module.MIN_WIDTH, 180, 208):
+        for with_session in (False, True):
+            line = plain(ticker_module.Ticker(width=width).render(event, with_session=with_session))
+            assert len(line) == width, (width, len(line))
+
+
+def test_the_five_spend_cells_render_measured_figures_in_their_own_cells():
+    """wall 7, model 6, tokens 4, rate 4, dollars 5, right-aligned."""
+    event = _event(
+        spend_wall_seconds=6_422.0,
+        spend_model_seconds=3_133.5,
+        spend_charged_tokens=1_500_000,
+        spend_generation_rate=44.0,
+        spend_notional_cost_usd=0.12,
+    )
+    line = plain(ticker_module.Ticker(width=180).render(event))
+    wall, model, tokens, rate, dollars = _spend_columns()
+    assert line[wall[0] : wall[0] + wall[1]] == "1:47:02"
+    assert line[model[0] : model[0] + model[1]] == " 52:14"
+    assert line[tokens[0] : tokens[0] + tokens[1]] == "1.5M"
+    assert line[rate[0] : rate[0] + rate[1]] == "  44"
+    assert line[dollars[0] : dollars[0] + dollars[1]] == " 0.12"
+
+
+def test_the_five_spend_cells_occupy_the_same_columns_on_every_row():
+    """A resumed run, a redispatched run and a shadow line up by column.
+
+    A reader scans each cost figure down the pane; if a row's cells sat one
+    column to the side, the scan would re-find a moving column and the width
+    read would shift. The resume's figures and the shadow's markers must land
+    in the same five columns.
+    """
+    rows = [
+        _event(
+            node="n-resumed",
+            lineage={"kind": "resumed"},
+            spend_wall_seconds=100.0,
+            spend_model_seconds=40.0,
+            spend_charged_tokens=890_000,
+            spend_generation_rate=12.0,
+            spend_notional_cost_usd=0.0,
+        ),
+        _event(
+            node="n-redispatch",
+            lineage={"kind": "redispatch", "root_run_id": "r-shadow"},
+            spend_wall_seconds=3_600.0,
+            spend_model_seconds=1_800.0,
+            spend_charged_tokens=8_900_000,
+            spend_generation_rate=44.0,
+            spend_notional_cost_usd=3.41,
+        ),
+        _event(
+            node="n-shadow",
+            lineage={"kind": "shadow"},
+            spend_wall_seconds=None,
+            spend_model_seconds=None,
+            spend_charged_tokens=None,
+            spend_generation_rate=None,
+            spend_notional_cost_usd=1.2,
+        ),
+    ]
+    expected = [
+        ["   1:40", "  0:40", "890k", "  12", " 0.00"],
+        ["1:00:00", " 30:00", "8.9M", "  44", " 3.41"],
+        ["      \N{EN DASH}", "     \N{EN DASH}", "   \N{EN DASH}", "   \N{EN DASH}", " 1.20"],
+    ]
+    columns = list(zip(("wall", "model", "tokens", "rate", "dollars"), _spend_columns()))
+    for event, cells in zip(rows, expected, strict=True):
+        line = plain(ticker_module.Ticker(width=180).render(event))
+        for (name, (start, width)), expected_cell in zip(columns, cells, strict=True):
+            assert line[start : start + width] == expected_cell, (name, line)
+
+
+def test_an_unmeasured_cell_and_a_measured_zero_are_distinct_strings():
+    """The absence marker must never read as a zero.
+
+    The same row rendered once with measured facts and once without must
+    differ in every one of the five cells, and the unmeasured spelling is the
+    marker — never ``0``, ``0.00`` or ``0:00``, which assert a measurement
+    that was never taken.
+    """
+    zero = _event(
+        spend_wall_seconds=0.0,
+        spend_model_seconds=0.0,
+        spend_charged_tokens=0,
+        spend_generation_rate=0.0,
+        spend_notional_cost_usd=0.0,
+    )
+    unmeasured = _event(
+        spend_wall_seconds=None,
+        spend_model_seconds=None,
+        spend_charged_tokens=None,
+        spend_generation_rate=None,
+        spend_notional_cost_usd=None,
+    )
+    zero_line = plain(ticker_module.Ticker(width=180).render(zero))
+    marker_line = plain(ticker_module.Ticker(width=180).render(unmeasured))
+    for start, width in _spend_columns():
+        zero_cell = zero_line[start : start + width]
+        marker_cell = marker_line[start : start + width]
+        assert zero_cell != marker_cell
+        assert marker_cell.strip() == "\N{EN DASH}"
+        assert zero_cell.strip() != "\N{EN DASH}"
+        assert any(character.isdigit() for character in zero_cell)

@@ -12,8 +12,10 @@ import time
 from contextlib import contextmanager
 from datetime import UTC, datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Iterable, Iterator, Mapping
+from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 
+from reckon.crew import metering
+from reckon.crew import quota_weight
 from reckon.crew import review as review_module
 from reckon.crew import runs
 from reckon.crew.node import (
@@ -2380,14 +2382,24 @@ def _watch_transition(
     previous: str | None,
     current: str,
     counts: Mapping[str, int],
+    spend_runs: Sequence[Mapping[str, Any]] | None = None,
+    rate_statuses: Mapping[str, Any] | None = None,
+    streams_root: str | Path | None = None,
 ) -> dict[str, Any]:
     """Build one lossless transition object for text or JSON rendering.
 
     This is the surface the events log persists, so it carries facts only: the
     model, effort, alias and backend separately, the full untruncated detail,
-    and the structured fact a block's glyph is derived from. No composed label,
-    no pre-claused reason and no display glyph are written here — the monitor
+    the structured fact a block's glyph is derived from, and the run's
+    cumulative spend — wall seconds, model seconds, charged tokens, generation
+    rate and notional cost as separate numeric facts. No composed label, no
+    pre-claused reason and no display glyph are written here — the monitor
     derives those from these facts, so the log stays re-renderable.
+
+    ``spend_runs`` is the record set the accumulator folds (the live fleet, or
+    rows already promoted); omitted, the project's own live pointers are read.
+    ``rate_statuses`` maps a backend to its dated rate standing for the notional
+    cost figure; omitted, the resolved configuration is read.
     """
     event = {
         "project": project,
@@ -2432,7 +2444,116 @@ def _watch_transition(
         event["commit_count"] = len(event["manifest_commits"])
     if "waiting" in counts or previous in WAITING_STATES or current in WAITING_STATES:
         event["waiting"] = counts.get("waiting", 0)
+    event.update(
+        _spend_facts(
+            project,
+            snapshot,
+            spend_runs=spend_runs,
+            rate_statuses=rate_statuses,
+            streams_root=streams_root,
+        )
+    )
     return event
+
+
+def _spend_facts(
+    project: str,
+    snapshot: Mapping[str, Any],
+    *,
+    spend_runs: Sequence[Mapping[str, Any]] | None = None,
+    rate_statuses: Mapping[str, Any] | None = None,
+    streams_root: str | Path | None = None,
+) -> dict[str, Any]:
+    """The transition's cumulative spend as separate, re-renderable facts.
+
+    Every figure is written numerically — never as a pre-formatted string — and
+    ``None`` is the explicit unmeasured state for each derived figure, because a
+    zero would assert a measurement that was never taken. Tokens are the total a
+    meter charges (input including cache reads, plus output); the rate is
+    generated output over model seconds.
+    """
+    run_id = str(snapshot.get("run_id") or "")
+    facts: dict[str, Any] = {
+        "spend_wall_seconds": None,
+        "spend_model_seconds": None,
+        "spend_machine_seconds": None,
+        "spend_charged_tokens": None,
+        "spend_generation_rate": None,
+        "spend_notional_cost_usd": None,
+        "spend_folded_run_count": 0,
+        "spend_measured_stream_count": 0,
+        "spend_unmeasured_stream_count": 0,
+    }
+    if not run_id:
+        return facts
+    rows = spend_runs
+    if rows is None:
+        rows = runs._list_live_records(project=project)
+    spend = metering.accumulate_run_spend(rows, run_id, streams_root=streams_root)
+    if not isinstance(spend, metering.AccumulatedRunSpend):
+        return facts
+    measured = spend.measured_stream_count > 0
+    facts.update(
+        {
+            "spend_folded_run_count": spend.folded_run_count,
+            "spend_measured_stream_count": spend.measured_stream_count,
+            "spend_unmeasured_stream_count": spend.unmeasured_stream_count,
+            "spend_wall_seconds": spend.elapsed_seconds,
+            "spend_model_seconds": spend.generation_seconds,
+            "spend_machine_seconds": spend.machine_seconds,
+            "spend_charged_tokens": spend.total_charged_tokens if measured else None,
+            "spend_generation_rate": _generation_rate(spend, measured),
+            "spend_notional_cost_usd": _notional_cost(snapshot, spend, rate_statuses),
+        }
+    )
+    return facts
+
+
+def _generation_rate(
+    spend: metering.AccumulatedRunSpend, measured: bool
+) -> float | None:
+    """Generated tokens over model seconds, or None when either is unknown.
+
+    A measured zero model span is still a span a rate could be divided from, so
+    only a strictly positive span rates a denominator; an unmeasured chain never
+    fabricates a rate from a zero it did not observe.
+    """
+    if (
+        not measured
+        or spend.generation_seconds is None
+        or spend.generation_seconds <= 0
+    ):
+        return None
+    return spend.cumulative_output_tokens / spend.generation_seconds
+
+
+def _notional_cost(
+    snapshot: Mapping[str, Any],
+    spend: metering.AccumulatedRunSpend,
+    rate_statuses: Mapping[str, Any] | None,
+) -> float | None:
+    """The run's notional dollar figure from declared rates, or None unpriced.
+
+    The figure is computed from public rates and measured tokens, never read
+    from the harness — which prices whatever model name it was told to speak and
+    therefore ranks the free local lane as the most expensive backend. A lane
+    with no dated rate pair stays explicitly unpriced, and a chain with no
+    measured stream stays unmeasured.
+    """
+    if spend.measured_stream_count == 0:
+        return None
+    if rate_statuses is None:
+        rate_statuses = quota_weight.backend_rate_statuses()
+    status = rate_statuses.get(str(snapshot.get("backend") or ""))
+    priced = bool(getattr(status, "priced", False))
+    rate = getattr(status, "rate", None) if priced else None
+    if rate is None:
+        return None
+    return round(
+        spend.cumulative_input_tokens / 1_000_000 * rate.input_per_million
+        + spend.cumulative_output_tokens / 1_000_000 * rate.output_per_million,
+        2,
+    )
 
 
 # Rendering a transition is a layout concern with its own contract, so it lives
@@ -2470,6 +2591,9 @@ def watch_ticker(
     stall_seconds = parse_duration(stall_window)
     known: dict[str, dict[str, Any]] = {}
     fleet_seen = False
+    # Rate standings move on their own cadence, so one resolution serves the
+    # whole watch session rather than a config read per transition.
+    rate_statuses = quota_weight.backend_rate_statuses()
 
     with _watch_registration(project, stall_window) as (acquired, watcher):
         if not acquired:
@@ -2510,6 +2634,8 @@ def watch_ticker(
                         previous=None,
                         current=str(snapshot["state"]),
                         counts=counts,
+                        spend_runs=pointers,
+                        rate_statuses=rate_statuses,
                     )
                 continue
 
@@ -2522,6 +2648,8 @@ def watch_ticker(
                     previous=previous,
                     current=state,
                     counts=event_counts,
+                    spend_runs=pointers,
+                    rate_statuses=rate_statuses,
                 )
                 for snapshot, previous, state, event_counts in folded
             ]
