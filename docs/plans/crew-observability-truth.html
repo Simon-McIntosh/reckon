@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-09">
-<meta name="plan-version" content="236">
+<meta name="plan-version" content="237">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md">
 <meta name="plan-impl" content="0.97">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b">
@@ -755,6 +755,36 @@
         <tr><td>A dry run names what it did not check</td><td>The dry-run payload either states that live path claims were not evaluated, or evaluates them and names the owning run. Asserted both ways round, because the property is a distinction and not a field: a node whose paths are free and a node whose paths are held by another live run must be tellable apart from the dry-run payload alone. Negative: a dry run must not report a conflict dispatch would not raise, since one false refusal teaches coordinators to stop running the check.</td></tr>
         <tr><td>A done-when demanding absolute green is refused at dispatch</td><td>Dispatch already validates eight node-contract properties, and the ninth is the one this repository's own test policy states: judge by delta against a stated base, never by absolute green. A done-when requiring a test command to exit zero over files that carry pre-existing failures is refused, or accepted with the base failure count quoted back so the coordinator sees what it just demanded. Measured across one session's coordination: three of its nodes were gated wrongly by their own coordinator &mdash; a fence too narrow to include a generated artifact its gate required, a falsifier ranged over one field where the defect ranged over the declaration, and an exit-zero requirement on a base carrying fourteen failures. Each worker behaved correctly, one blocking and one refusing outright, and each cost a round trip. The negative matters as much: a node whose files are genuinely green must not be refused, so the check reads the base rather than the wording.</td></tr>
         <tr><td>Granting a scope extension is a command</td><td>One verb records an additional exclusive path on a live run, refuses when a peer holds that path, and leaves the widening on the promoted row. Asserted by granting, promoting, and then reading the widened scope off the <em>committed record</em> rather than the pointer, since the pointer is deleted at promotion and an audit trail that dies with it is the same defect as a note nobody can fetch.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s16">§16 — A finished run is reported dead, and the action offered is to redo it</h2>
+
+    <p>Measured 2026-09-09 on a peer coordinator's run in this repository, read-only. Its
+    manifest carried a clean <code>status: complete</code> naming three changed files and
+    five added cases; its commit was already an ancestor of <code>main</code>; its worktree
+    was clean; its process was legitimately gone, with the recorded launcher host matching
+    the reading host, so the liveness verdict was sound rather than a cross-host artefact.
+    The row read <code>classification: abandoned</code> and its <code>next_action</code>
+    offered <em>redispatch if needed</em>. By the classifier's own documented mapping a
+    <code>complete</code> manifest becomes <code>completed_unpromoted</code>, and
+    <code>abandoned</code> is reserved for a <em>missing</em> terminal manifest.</p>
+
+    <p>This is the sibling of the defect that names this plan, with the sign reversed. The
+    familiar case is finished work nobody notices; here the surface actively reports finished
+    work as dead and recommends doing it again, which would have duplicated a merged commit.
+    It is also the class of the park failures in §1: one field disagreeing with its authority
+    rejects the whole reading, and the resulting state names the wrong cause. One symptom is
+    recorded without a diagnosis, because the classifier was not read &mdash; the
+    <em>derived</em> <code>manifest_status</code> in the live payload is not the file's clean
+    <code>complete</code> but that word concatenated with the changed-paths prose. The
+    manifest itself was checked and carries no run-on, so whatever joins them sits after
+    parsing.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>A complete manifest is never classified abandoned</td><td>A run whose manifest records a terminal status is classified from that status, and <code>abandoned</code> stays reachable only when no terminal manifest exists. Asserted on the exact shape measured here &mdash; terminal manifest present, process legitimately gone, launcher host matching the reader &mdash; and on its negative, a genuinely missing terminal manifest that must still classify <code>abandoned</code>, because a classifier that never says abandoned is as useless as one that says it wrongly. The suggested action is asserted too, not only the label: a classification that recommends redispatching a run whose commit is reachable from the primary branch fails this measure however it is worded.</td></tr>
       </tbody>
     </table>
 
