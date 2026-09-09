@@ -843,12 +843,13 @@ def record_run_disposition(
     return _mutate_pointer(run_id, record)
 
 
-def _project_executable_remainder(project: str) -> int | None:
-    """Return the project's known remaining declared execution scope.
+def _project_executable_remainder(project: str) -> tuple[int | None, int | None]:
+    """Return a declared-scope lower bound and its uncovered plan count.
 
-    A drain is a closure decision, so an unavailable plan inventory or one
-    plan without a valid declaration is deliberately unknown rather than an
-    empty execution set.  An explicit empty declaration remains a known zero.
+    A plan without a valid declaration cannot reduce the lower bound or make
+    it unknown when another plan supplies a declared remainder.  The separate
+    uncovered count makes that incomplete coverage visible to the closure
+    decision.  An unreadable inventory remains entirely unknown.
     """
     from reckon import _plan_html
     from reckon._schema import plan_executable_remainder
@@ -857,24 +858,30 @@ def _project_executable_remainder(project: str) -> int | None:
 
     docs_dir = _docs_dir_for_project(project)
     if docs_dir is None:
-        return None
+        return None, None
 
     remainders: list[int] = []
+    uncovered_plans = 0
+    plan_count = 0
     for resource in resource_map(
         docs_dir, project, include_archived=False, ignore_invalid=True
     ).values():
         if resource.type != "plan":
             continue
+        plan_count += 1
         try:
             state = _plan_html.read_state(resource.path.read_text(encoding="utf-8"))
         except OSError:
-            return None
+            return None, None
         remainder = plan_executable_remainder(state)
         if remainder is None:
-            return None
+            uncovered_plans += 1
+            continue
         remainders.append(remainder)
 
-    return sum(remainders) if remainders else None
+    if plan_count == 0:
+        return None, None
+    return (sum(remainders) if remainders else None), uncovered_plans
 
 
 def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
@@ -922,14 +929,17 @@ def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
 
     counted, peers = _partition_session_rows(rows, session)
     unreconciled = sum(1 for row in counted if row["unreconciled"])
-    executable_remainder = _project_executable_remainder(project)
+    executable_remainder, uncovered_plans = _project_executable_remainder(project)
     result = {
         "project": project,
         "live_pointers": len(counted),
         "disposed_runs": len(counted) - unreconciled,
         "unreconciled_runs": unreconciled,
         "executable_remainder": executable_remainder,
-        "drained": unreconciled == 0 and executable_remainder == 0,
+        "uncovered_plans": uncovered_plans,
+        "drained": (
+            unreconciled == 0 and executable_remainder == 0 and uncovered_plans == 0
+        ),
         "dispositions": list(RUN_DRAIN_DISPOSITIONS),
         "runs": counted,
     }
