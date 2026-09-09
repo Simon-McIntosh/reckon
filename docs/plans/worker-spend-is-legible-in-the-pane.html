@@ -151,6 +151,21 @@
       and mean nothing a reader could act on.
     </p>
     <p>
+      <strong>The rate cell separates a node that is too large from a lane that is too busy,
+      which no counter and no budget overrun can do.</strong> A large node generates a lot at a
+      normal rate; a contended lane generates normally at a collapsed one, and an overrun looks
+      identical either way. Measured over 24 local runs in one day, pairing each run's rate
+      against the number of peers overlapping its window: idle runs 45.8&ndash;81.4 tok/s, two
+      or fewer peers a median of 28.23, four or more a median of 15.87, and five to nine
+      10.5&ndash;17.9. So throughput roughly halves at four concurrent and falls about fivefold
+      by nine. The concrete case is a node judged badly sized on its overrun alone: it
+      generated 41,434 tokens at 11.53 tok/s with seven peers running, which at that lane's
+      idle 48.91 is 847 seconds &mdash; inside its 1,200-second budget. It was correctly sized
+      and the lane was saturated, and reading the overrun without the rate would have split a
+      node that needed no splitting. This matters more now that the project's default backend
+      resolves to the local lane, because that is what raises concurrency on it.
+    </p>
+    <p>
       <strong>An unmeasured cell renders a dim en-dash, never a zero.</strong> A zero and an
       unknown are different facts, and this fleet has large populations of both: 131 rows of
       one lane whose dollar figure must be suppressed, and 96.6% of runs with no model span.
@@ -339,15 +354,30 @@ accumulation_key := run_id                          if kind == "shadow"
       the projection rather than the remainder.
     </p>
     <p>
-      <strong>The account grouping rests on an observable rather than a declaration, and that
-      is a real limit.</strong> Nothing in flight configuration says which backends share an
-      account; the only evidence is that they report an identical <code>resets_at</code>. That
-      discriminator is sound today and would be defeated by two genuinely separate accounts
-      whose windows happened to align on the same boundary, which is possible and would group
-      them wrongly. So it belongs in a measure as the stated discriminator <em>with</em> its
-      failure mode, not as a fact about the world &mdash; and a declared account key in
-      configuration would retire the guess entirely, which is the durable fix rather than a
-      better heuristic.
+      <strong>The identical readings are evidence of identical probing, not of a shared budget,
+      and this paragraph first said the opposite.</strong> An earlier revision offered
+      <code>resets_at</code> as the discriminator for account grouping, sound today and
+      defeated only by a coincidence. That is wrong, and the mechanism is checkable:
+      <code>_backends.py:891</code> issues <code>account/rateLimits/read</code> with empty
+      params &mdash; an account-level call carrying <em>no model</em> &mdash; and all four codex
+      backends share <code>command: codex</code>. So the probe returns one account's answer for
+      every backend that shares the command, which is why the four readings are byte-identical.
+      The observable cannot distinguish a shared budget from a shared probe, because a shared
+      probe is what produces it.
+    </p>
+    <p>
+      Two consequences, and they are opposite errors in one display. If a lane's budget really
+      is separate &mdash; the owner states <code>codex-spark</code> is metered apart from the
+      rest &mdash; then rendering four rows over-counts the pooled headroom <em>and</em> shows
+      spark a figure belonging to a different account. The committed record cannot settle it
+      either: all ten <code>codex-spark</code> rows carry
+      <code>headroom: unknown</code> with a detail reading &ldquo;backend reports token usage
+      but no headroom&rdquo;, so there is not one quota reading of spark's own in the corpus.
+      <strong>Grouping therefore has to be declared in configuration rather than inferred from
+      any reading</strong> &mdash; an account or budget-group key per backend is the only thing
+      that can carry the truth, and no heuristic over the probe output can substitute for it,
+      however careful. This is the plan's own thesis arriving in the figure the plan is about:
+      a number computed for one thing, displayed against another, with nothing failing.
     </p>
     <p>
       <strong>One soundness limit travels with it and must be stated on the surface, not only
