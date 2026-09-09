@@ -8,8 +8,13 @@ import pytest
 from reckon.crew.metering import (
     SURCHARGED_REQUEST_INPUT_TOKENS,
     UNMEASURED,
+    AccumulatedRunSpend,
     StreamTokenUsage,
+    accumulate_run_spend,
+    accumulation_key,
+    is_durable,
     measure_stream_tokens,
+    run_streams,
 )
 
 CODEX_RUN = (
@@ -253,3 +258,270 @@ def test_real_claude_run_has_smaller_positive_request_maximum_than_total() -> No
     assert result.turn_count > 1
     assert isinstance(result.maximum_request_input_tokens, int)
     assert 0 < result.maximum_request_input_tokens < result.cumulative_input_tokens
+
+
+# ── Lineage accumulation ────────────────────────────────────────────────────
+
+
+def _codex_stream(path: Path, input_tokens: int, output_tokens: int = 1) -> Path:
+    """A one-turn codex stream carrying a distinctive input total."""
+    return _write_stream(
+        path,
+        [
+            {
+                "type": "turn.completed",
+                "usage": {
+                    "input_tokens": input_tokens,
+                    "cached_input_tokens": 0,
+                    "output_tokens": output_tokens,
+                    "reasoning_output_tokens": 0,
+                },
+            }
+        ],
+    )
+
+
+def _record(run_id: str, **extra: object) -> dict[str, object]:
+    return {"run_id": run_id, **extra}
+
+
+def _accumulate(
+    runs: list[dict[str, object]],
+    run_id: str,
+    streams_root: Path,
+) -> AccumulatedRunSpend:
+    result = accumulate_run_spend(runs, run_id, streams_root=streams_root)
+    assert isinstance(result, AccumulatedRunSpend)
+    return result
+
+
+def test_resumed_run_totals_all_eight_attempt_files_not_the_named_file(
+    tmp_path: Path,
+) -> None:
+    run_dir = tmp_path / "r-resumed"
+    run_dir.mkdir(parents=True)
+    inputs = [100 + index for index in range(8)]
+    for index, input_tokens in enumerate(inputs):
+        name = "stream.jsonl" if index == 0 else f"resume-{index}.jsonl"
+        _codex_stream(run_dir / name, input_tokens)
+    streams = [run_dir / "stream.jsonl", *sorted(run_dir.glob("resume-*.jsonl"))]
+    assert len(streams) == 8
+    runs = [_record("r-resumed", log_path=str(run_dir / "resume-7.jsonl"))]
+
+    result = _accumulate(runs, "r-resumed", tmp_path)
+
+    assert result.measured_stream_count == 8
+    assert result.cumulative_input_tokens == sum(inputs)
+    assert result.cumulative_input_tokens > inputs[-1]
+    assert result.total_charged_tokens == sum(inputs) + len(inputs)
+
+
+def test_redispatch_folds_into_lineage_root_run_id(tmp_path: Path) -> None:
+    root_stream = _codex_stream(tmp_path / "root.jsonl", 310)
+    rd_stream = _codex_stream(tmp_path / "redispatch.jsonl", 470)
+    runs = [
+        _record(
+            "r-root",
+            log_path=str(root_stream),
+            throughput={"elapsed_seconds": 100.0, "generation_seconds": 40.0},
+        ),
+        _record(
+            "r-redispatch",
+            log_path=str(rd_stream),
+            lineage={
+                "kind": "redispatch",
+                "root_run_id": "r-root",
+                "previous_run_id": "r-root",
+            },
+        ),
+    ]
+
+    for queried in ("r-root", "r-redispatch"):
+        result = _accumulate(runs, queried, tmp_path)
+        assert result.run_id == "r-root"
+        assert result.durable is True
+        assert result.folded_run_count == 2
+        assert result.cumulative_input_tokens == 780
+        assert result.measured_stream_count == 2
+
+    alone = _accumulate(runs[:1], "r-root", tmp_path)
+    assert alone.cumulative_input_tokens < 780
+    assert alone.elapsed_seconds == 100.0
+
+
+def test_accumulator_folds_recorded_times_across_the_chain(tmp_path: Path) -> None:
+    rows = [
+        _record(
+            "r-root",
+            log_path=str(_codex_stream(tmp_path / "a.jsonl", 10)),
+            throughput={"elapsed_seconds": 600.0, "generation_seconds": 200.0},
+        ),
+        _record(
+            "r-next",
+            log_path=str(_codex_stream(tmp_path / "b.jsonl", 10)),
+            lineage={"kind": "redispatch", "root_run_id": "r-root"},
+            throughput={"elapsed_seconds": 900.0, "generation_seconds": 300.0},
+        ),
+    ]
+
+    result = _accumulate(rows, "r-next", tmp_path)
+
+    assert result.elapsed_seconds == 1500.0
+    assert result.generation_seconds == 500.0
+    assert result.machine_seconds == 1000.0
+
+
+def test_lane_change_row_is_counted_durable(tmp_path: Path) -> None:
+    lane = _record(
+        "r-lane",
+        log_path=str(_codex_stream(tmp_path / "lane.jsonl", 640)),
+        lineage={"kind": "lane-change", "attempt": 1, "root_run_id": "r-lane"},
+    )
+
+    assert is_durable(lane) is True
+    result = _accumulate([lane], "r-lane", tmp_path)
+    assert result.durable is True
+    assert result.folded_run_count == 1
+    assert result.cumulative_input_tokens == 640
+
+
+def test_shadow_is_keyed_to_itself_and_absent_from_its_primary(
+    tmp_path: Path,
+) -> None:
+    primary_stream = _codex_stream(tmp_path / "primary.jsonl", 800)
+    shadow_stream = _codex_stream(tmp_path / "shadow.jsonl", 250)
+    primary = _record("r-primary", log_path=str(primary_stream))
+    shadow = _record(
+        "r-shadow",
+        log_path=str(shadow_stream),
+        lineage={"kind": "shadow", "primary_run_id": "r-primary"},
+    )
+    runs = [primary, shadow]
+
+    assert accumulation_key(shadow) == "r-shadow"
+    assert is_durable(shadow) is False
+    primary_total = _accumulate(runs, "r-primary", tmp_path)
+    shadow_total = _accumulate(runs, "r-shadow", tmp_path)
+
+    assert primary_total.cumulative_input_tokens == 800
+    assert primary_total.durable is True
+    assert primary_total.folded_run_count == 1
+    assert shadow_total.cumulative_input_tokens == 250
+    assert shadow_total.durable is False
+    assert shadow_total.folded_run_count == 1
+
+
+def test_shadow_carrying_a_root_run_id_is_still_keyed_to_itself(
+    tmp_path: Path,
+) -> None:
+    root_stream = _codex_stream(tmp_path / "chain-root.jsonl", 900)
+    shadow_stream = _codex_stream(tmp_path / "rooted-shadow.jsonl", 120)
+    root = _record("r-chain-root", log_path=str(root_stream))
+    shadow = _record(
+        "r-rooted-shadow",
+        log_path=str(shadow_stream),
+        lineage={
+            "kind": "shadow",
+            "root_run_id": "r-chain-root",
+            "primary_run_id": "r-chain-root",
+        },
+    )
+    runs = [root, shadow]
+
+    assert accumulation_key(shadow) == "r-rooted-shadow"
+    assert accumulation_key(root) == "r-chain-root"
+    root_total = _accumulate(runs, "r-chain-root", tmp_path)
+    assert root_total.cumulative_input_tokens == 900
+    assert root_total.folded_run_count == 1
+    rooted_shadow_total = _accumulate(runs, "r-rooted-shadow", tmp_path)
+    assert rooted_shadow_total.cumulative_input_tokens == 120
+    assert rooted_shadow_total.durable is False
+
+
+def test_unknown_lineage_kind_is_durable_by_default() -> None:
+    unknown = {
+        "run_id": "r-future",
+        "lineage": {"kind": "seedless-replay", "root_run_id": "r-ancient"},
+    }
+
+    assert is_durable({}) is True
+    assert is_durable({"run_id": "r-plain"}) is True
+    assert is_durable(unknown) is True
+    assert is_durable({"lineage": {"kind": "shadow"}}) is False
+    assert "exclusion" in is_durable.__doc__
+
+
+def test_durability_does_not_absorb_the_contamination_question() -> None:
+    contaminated_redispatch = {
+        "run_id": "r-redispatch",
+        "lineage": {
+            "kind": "redispatch",
+            "root_run_id": "r-root",
+            "previous_run_id": "r-root",
+        },
+        "shadow_contaminated": "primary_commit_read",
+    }
+    contaminated_shadow = {
+        "run_id": "r-shadow",
+        "lineage": {
+            "kind": "shadow",
+            "primary_run_id": "r-primary",
+        },
+        "shadow_contaminated": "primary_commit_read",
+    }
+
+    assert is_durable(contaminated_redispatch) is True
+    assert is_durable(contaminated_shadow) is False
+
+
+def test_contamination_is_a_measurement_reason_not_a_durability_reason() -> None:
+    from reckon import ledger
+
+    contaminated_non_shadow = {
+        "run_id": "r-redispatch",
+        "lineage": {
+            "kind": "redispatch",
+            "root_run_id": "r-root",
+            "previous_run_id": "r-root",
+        },
+        "shadow_contaminated": "primary_commit_read",
+    }
+
+    assert is_durable(contaminated_non_shadow) is True
+    assert (
+        ledger.measurement_exclusion_reason(contaminated_non_shadow) == "contaminated"
+    )
+
+
+def test_measure_stream_tokens_is_wired_through_the_accumulator(
+    tmp_path: Path,
+) -> None:
+    run_dir = tmp_path / "r-wired"
+    run_dir.mkdir(parents=True)
+    _codex_stream(run_dir / "stream.jsonl", 555)
+    runs = [_record("r-wired", log_path=str(run_dir / "stream.jsonl"))]
+
+    result = _accumulate(runs, "r-wired", tmp_path)
+
+    assert result.cumulative_input_tokens == 555
+    assert result.measured_stream_count == 1
+    assert result.total_charged_tokens == 556
+
+
+def test_run_streams_returns_the_original_before_numbered_resumes(
+    tmp_path: Path,
+) -> None:
+    run_dir = tmp_path / "r-ordered"
+    run_dir.mkdir(parents=True)
+    expected = [run_dir / "stream.jsonl"]
+    _codex_stream(expected[0], 0)
+    for index in range(1, 4):
+        path = run_dir / f"resume-{index}.jsonl"
+        _codex_stream(path, index)
+        expected.append(path)
+    path = run_dir / "resume-10.jsonl"
+    _codex_stream(path, 10)
+    expected.append(path)
+
+    assert run_streams(run_dir / "resume-10.jsonl") == expected
+    assert run_streams(Path("")) == []

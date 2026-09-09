@@ -1,9 +1,19 @@
-"""Derive cumulative token measurements from a crew run stream."""
+"""Derive cumulative token and time measurements along a run's lineage.
+
+A run's spend is read from its streams and folded across every attempt that
+reached the same chain: resumes keep the run id and add a stream file, while
+redispatches and lane changes mint a new run id and chain to a recorded root.
+A shadow mints a new run id too but is never a further attempt, so its
+evidence stays on its own row and is excluded from its primary's total under
+one exported predicate (:func:`is_durable`).
+"""
 
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
+import re
+import sys
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
 from numbers import Real
@@ -214,3 +224,259 @@ def _nonnegative_int(value: Any) -> int | None:
     if isinstance(value, bool) or not isinstance(value, Real) or value < 0:
         return None
     return int(value)
+
+
+# ── Lineage accumulation: spend that adds up along the chain ─────────────────
+
+
+def is_durable(record: Mapping[str, Any]) -> bool:
+    """Whether a run's spend belongs in its lineage chain's cumulative total.
+
+    The rule names the exclusion rather than enumerating the durable kinds: a
+    run is non-durable only when it is a shadow, so a lineage kind recorded
+    after this module was written is durable by default and only an explicit
+    shadow is carved out. Durability and measurement quality are separate
+    questions — a contaminated row is still durable because its spend merged,
+    and a shadow is not durable whether or not it is contaminated.
+    """
+
+    lineage = record.get("lineage")
+    if not isinstance(lineage, Mapping):
+        return True
+    return str(lineage.get("kind") or "") != "shadow"
+
+
+def accumulation_key(record: Mapping[str, Any]) -> str:
+    """Run id whose cumulative total carries this run's spend.
+
+    A shadow accumulates onto its own run id even when it carries a chain
+    root, so its never-merged evidence stays off its primary's total; the
+    shadow branch therefore precedes the chain-root branch, which is the
+    ordering the accidental ``root_run_id or run_id`` form gets wrong the day
+    a shadow records a root. Every other kind folds into the chain root it
+    recorded, falling back to its own run id, which lets a resumed run (no
+    new run id) and a self-rooted lane change both accumulate under the id
+    that carries them.
+    """
+
+    lineage = record.get("lineage")
+    run_id = str(record.get("run_id") or "")
+    if isinstance(lineage, Mapping):
+        if str(lineage.get("kind") or "") == "shadow":
+            return run_id
+        root = str(lineage.get("root_run_id") or "")
+        if root:
+            return root
+    return run_id
+
+
+def _resume_stream_order(path: Path) -> tuple[int, str]:
+    """Order numbered resume streams by attempt rather than by filename text."""
+    match = re.fullmatch(r"resume-(\d+)\.jsonl", path.name)
+    return (int(match.group(1)), path.name) if match else (sys.maxsize, path.name)
+
+
+def run_streams(stream_path: str | Path) -> list[Path]:
+    """Every surviving stream one run wrote, in attempt order.
+
+    ``log_path`` is repointed on every resume, so a figure read from the named
+    file alone resets each time the run restarts. The original stream and
+    every numbered resume share one directory, and the cumulative figure is
+    the sum over all of them.
+    """
+
+    value = str(stream_path or "")
+    if not value.strip():
+        return []
+    stream = Path(value).expanduser()
+    original = (
+        stream.parent / "stream.jsonl" if stream.name.startswith("resume-") else stream
+    )
+    resumes = sorted(stream.parent.glob("resume-*.jsonl"), key=_resume_stream_order)
+    return [candidate for candidate in (original, *resumes) if candidate.is_file()]
+
+
+@dataclass(frozen=True)
+class AccumulatedRunSpend:
+    """Cumulative token and time figures for one run's whole lineage chain.
+
+    Tokens are the charged totals a meter actually charges: all input
+    including cache reads, plus all generated output. Times are folded from
+    the chain's rows' recorded throughput blocks. The chain reports how many
+    run rows and measured streams it folded, so an unmeasured chain is an
+    explicit count of zeros rather than an ambiguity.
+
+    ``durable`` is the exported exclusion predicate applied to the queried
+    record: a shadow's own row carries its spend, but that spend is never a
+    durable contribution to its primary's total.
+    """
+
+    run_id: str
+    durable: bool
+    folded_run_count: int
+    measured_stream_count: int
+    unmeasured_stream_count: int
+    cumulative_input_tokens: int
+    cumulative_cached_input_tokens: int
+    cumulative_output_tokens: int
+    elapsed_seconds: float | None
+    generation_seconds: float | None
+    machine_seconds: float | None
+
+    @property
+    def total_charged_tokens(self) -> int:
+        """Input (including cache reads) plus output — what a meter charges."""
+        return self.cumulative_input_tokens + self.cumulative_output_tokens
+
+
+def _find_run(
+    runs: Sequence[Mapping[str, Any]], run_id: str
+) -> Mapping[str, Any] | None:
+    for record in runs:
+        if str(record.get("run_id") or "") == run_id:
+            return record
+    return None
+
+
+def _resolve_streams_root(streams_root: str | Path | None) -> Path:
+    """The directory holding one subdirectory per run id."""
+    if streams_root is not None:
+        return Path(str(streams_root)).expanduser()
+    from reckon.crew.runs import runs_dir
+
+    return runs_dir()
+
+
+def _row_streams(record: Mapping[str, Any], streams_root: Path) -> list[Path]:
+    """Every surviving stream path a row's attempts wrote, without duplicates.
+
+    ``log_path`` is the stream file the launcher wrote and resumes live beside
+    it; the run directory is the fallback when a pointer never carried one, so
+    a record whose launcher recorded nothing still reaches whatever stream
+    survived.
+    """
+
+    gathered: list[Path] = []
+    seen: set[Path] = set()
+    candidates: list[Path] = []
+    log_value = str(record.get("log_path") or "")
+    if log_value.strip():
+        candidates.extend(run_streams(log_value))
+    run_id = str(record.get("run_id") or "")
+    if run_id:
+        candidates.extend(run_streams(streams_root / run_id / "stream.jsonl"))
+    for candidate in candidates:
+        if candidate not in seen:
+            seen.add(candidate)
+            gathered.append(candidate)
+    return gathered
+
+
+def _measure_streams(
+    paths: Sequence[Path],
+) -> tuple[int, int, int, int, int]:
+    """Sum one run's streams into token totals and stream counts."""
+    total_input = 0
+    total_cached = 0
+    total_output = 0
+    measured = 0
+    unmeasured = 0
+    for path in paths:
+        usage = measure_stream_tokens(path)
+        if usage is UNMEASURED or not isinstance(usage, StreamTokenUsage):
+            unmeasured += 1
+            continue
+        measured += 1
+        total_input += usage.cumulative_input_tokens
+        total_cached += usage.cumulative_cached_input_tokens
+        total_output += usage.cumulative_output_tokens
+    return total_input, total_cached, total_output, measured, unmeasured
+
+
+def _fold_time(
+    elapsed: float | None,
+    generation: float | None,
+    record: Mapping[str, Any],
+) -> tuple[float | None, float | None]:
+    """Fold one row's recorded times into the chain totals, if it recorded any."""
+    throughput = record.get("throughput")
+    if not isinstance(throughput, Mapping):
+        return elapsed, generation
+    span = throughput.get("elapsed_seconds")
+    if isinstance(span, Real):
+        elapsed = (elapsed or 0.0) + float(span)
+    model = throughput.get("generation_seconds")
+    if isinstance(model, Real):
+        generation = (generation or 0.0) + float(model)
+    return elapsed, generation
+
+
+def accumulate_run_spend(
+    runs: Sequence[Mapping[str, Any]],
+    run_id: str,
+    *,
+    streams_root: str | Path | None = None,
+) -> AccumulatedRunSpend | MeasurementState:
+    """Return the whole lineage chain's cumulative spend for one run.
+
+    Rows are folded by accumulation key. A redispatch or lane change folds
+    into the chain root it recorded, a resumed run keeps its run id and its
+    directory's streams accumulate under it, and a shadow accumulates onto its
+    own id so its never-merged evidence stays off its primary's total. Each
+    folded row contributes every surviving stream in its run directory,
+    because ``log_path`` is repointed on every resume and a figure read from
+    it alone would reset at each restart.
+
+    ``UNMEASURED`` names a run id absent from ``runs``; a present run whose
+    streams carry no usage counters returns a zero total with its stream
+    counts rather than the absence marker. ``streams_root`` is the directory
+    holding one subdirectory per run id, defaulting to the crew runs directory
+    when omitted.
+    """
+
+    record = _find_run(runs, run_id)
+    if record is None:
+        return UNMEASURED
+    root = _resolve_streams_root(streams_root)
+    key = accumulation_key(record)
+    folded_rows = 0
+    total_input = 0
+    total_cached = 0
+    total_output = 0
+    measured_streams = 0
+    unmeasured_streams = 0
+    elapsed: float | None = None
+    generation: float | None = None
+    for row in runs:
+        # Keying is the exclusion in action: a shadow's accumulation key is
+        # its own run id, so it folds only when the query is its own row and
+        # never into its primary's total, however the shadow is recorded.
+        if accumulation_key(row) != key:
+            continue
+        folded_rows += 1
+        paths = _row_streams(row, root)
+        input_total, cached_total, output_total, measured, unmeasured = (
+            _measure_streams(paths)
+        )
+        total_input += input_total
+        total_cached += cached_total
+        total_output += output_total
+        measured_streams += measured
+        unmeasured_streams += unmeasured
+        elapsed, generation = _fold_time(elapsed, generation, row)
+    machine = None
+    if elapsed is not None and generation is not None:
+        machine = round(elapsed - generation, 3)
+    return AccumulatedRunSpend(
+        run_id=key,
+        durable=is_durable(record),
+        folded_run_count=folded_rows,
+        measured_stream_count=measured_streams,
+        unmeasured_stream_count=unmeasured_streams,
+        cumulative_input_tokens=total_input,
+        cumulative_cached_input_tokens=total_cached,
+        cumulative_output_tokens=total_output,
+        elapsed_seconds=elapsed,
+        generation_seconds=generation,
+        machine_seconds=machine,
+    )
