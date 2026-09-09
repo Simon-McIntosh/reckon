@@ -27,6 +27,7 @@ from reckon import crew, flight, ledger
 from reckon.calibration import agent_configuration_key
 from reckon.crew import recovery, review, runs
 from reckon.crew.dispatch import shadow as dispatch_shadow
+from reckon.crew.refusals import format_refusal
 
 CONFIG = {
     "default_backend": "alpha",
@@ -2110,10 +2111,14 @@ def test_dispatch_refuses_work_above_the_selected_configuration_horizon(
         "competence_horizon_hours": 2.5,
         "estimate_provenance": "plan-fallback",
         "estimated_hours": 4.0,
-        "reason": "competence-horizon-exceeded",
+        "reason": (
+            "competence-horizon-exceeded Resolve with `reckon crew dispatch` "
+            "once for each smaller node."
+        ),
         "recommendation": (
             "split into nodes no larger than 2.5 worker-hours for this agent "
-            "configuration"
+            "configuration Resolve with `reckon crew dispatch` once for each "
+            "smaller node."
         ),
         "speed_direction": "neutral-estimate-hours-per-actual-worker-hour",
         "speed_factor": 1.4,
@@ -2215,11 +2220,31 @@ def test_cli_competence_refusal_has_typed_dry_run_parity(
 
     assert real.exit_code == dry.exit_code == 5
     assert real_payload["error"] == dry_payload["error"] == "competence-refusal"
-    assert real_payload["competence"] == dry_payload["competence"]
-    assert real_payload["competence"]["target_size_hours"] == 2.5
-    assert real_payload["competence"]["estimate_provenance"] == "node"
+    real_competence = real_payload["competence"]
+    dry_competence = dry_payload["competence"]
+    # The launching path raises the refusal and the exception rewrites the
+    # typed reason token with the remedy clause; the dry run emits the routing
+    # token as-is. Parity holds on every field except that enrichment.
+    assert {
+        key: value for key, value in real_competence.items() if key != "reason"
+    } == {key: value for key, value in dry_competence.items() if key != "reason"}
+    assert real_competence["reason"] == format_refusal("D08", dry_competence["reason"])
+    assert real_competence["target_size_hours"] == 2.5
+    assert real_competence["estimate_provenance"] == "node"
     help_text = CliRunner().invoke(cli_module.main, ["crew", "--help"]).output
     assert "5 the selected worker configuration" in " ".join(help_text.split())
+
+
+def test_the_split_refusal_names_its_resolving_action() -> None:
+    """The split-below-the-horizon refusal must keep its resolving action.
+
+    The clause is asserted in its own right so a future removal fails loudly
+    here rather than quietly narrowing what a competence refusal says.
+    """
+    rendered = format_refusal("D08", "the operation was refused")
+    assert rendered.endswith(
+        "Resolve with `reckon crew dispatch` once for each smaller node."
+    )
 
 
 def test_configuration_without_a_measured_horizon_refuses_nothing(
