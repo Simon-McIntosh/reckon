@@ -56,6 +56,23 @@
       than over wall. Someone designed this correctly. The block is then populated on almost
       nothing.
     </p>
+    <p>
+      <strong>The field's own docstring argues this plan's case better than this plan does,
+      and its only consumer never reads it.</strong> At <code>_backends.py:137</code>:
+      &ldquo;<em>throughput is what makes a slow worker distinguishable from a stuck one.
+      Liveness read from the age of the log answers only whether bytes arrived, so it reports a
+      model producing two tokens a second and a model producing none identically. The block
+      folds the token counts the stream already carries into a rate, keeps generation apart
+      from tool wait because wall clock on a node running its own test suite is mostly the
+      suite, and states peak input against the usable window so a run approaching a ceiling is
+      visible before it hits one rather than after.</em>&rdquo; That is the wall-against-model
+      distinction of &sect;2, the tool-wait exclusion, and the rate &mdash; reasoned in full,
+      before this plan existed. The field is defined, exported by <code>as_dict()</code>, and
+      dropped by every caller. So its stated reason for existing was unachievable from the day
+      it was written, and no test failed, because a computed value that reaches no reader
+      breaks nothing. This plan is not adding a capability; it is connecting one that has been
+      sitting one line short of a reader.
+    </p>
     <table>
       <thead>
         <tr><th>Pane cell</th><th>Existing field</th><th>Populated</th></tr>
