@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T12:07:56",
+  "updated": "2026-09-09T12:13:28",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -2291,6 +2291,42 @@
           "gpt-5.6-sol": "01a062c3-2354-7912-8b91-e27f1185c3c8"
         },
         "created": "2026-09-02"
+      },
+      {
+        "id": "spend-accumulator",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-09"
+      },
+      {
+        "id": "spend-rates",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-09"
+      },
+      {
+        "id": "spend-rollout",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-09"
+      },
+      {
+        "id": "spend-scout",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-09"
       },
       {
         "id": "surface-baseline",
@@ -86871,6 +86907,179 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T095850548462-cotd-delivery-roots-come-from-one-definition",
+        "plan": "crew-observability-truth",
+        "section": "\u00a715",
+        "node": "cotd-delivery-roots-come-from-one-definition",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 900,
+                "cached_input_tokens": 535598,
+                "input_tokens": 536500,
+                "output_tokens": 1696,
+                "reasoning_output_tokens": 559,
+                "total_tokens": 538196,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "29187761-681d-4f4d-85ae-fc3d7adc250b",
+            "session_id": "ship-cot-drain-20260909"
+          },
+          "done_when": "The end-to-end assertion is the point and must CALL the path, not inspect it: a test takes the review dispatch that the scoring lifecycle itself emits as next_action and asserts it is authorised rather than refused. Reproduce the current failure first \u2014 that emitted command is refused today with 'resolves outside the authorised work repository ... and Reckon delivery directories .../crew/runs and .../crew/reports', so a scoring run cannot be reconciled through the route its own state machine offers. Add a single helper returning every delivery root, sourcing the reviews root from its existing definition in reckon/crew/review.py rather than a fourth copy, and have both enforcement sites use it: reckon/crew/routing.py around line 1066 and reckon/crew/dispatch.py around line 1661, which today each hold their own hardcoded two-tuple. Both refusal messages currently index element 0 and element 1 explicitly, so a test must assert the message ENUMERATES every root it checked: with three roots configured the text names three, because a message naming a subset of what it checked is the defect this section is about. Judge by DELTA, never absolute green: tests/test_crew.py carries a known deadlocking test, so run the gate with --deselect tests/test_crew.py::test_first_dispatch_proceeds_with_a_freshly_armed_project_watch, record that deselection and its cause in the manifest, and require zero ADDED failures against base for tests/test_crew.py and tests/test_crew_peer_client_reach.py",
+          "estimated_hours": null,
+          "goal": "one definition of the authorised delivery roots, including reviews, used by every call site that enforces or reports them",
+          "id": "cotd-delivery-roots-come-from-one-definition",
+          "lane_declaration": {
+            "backend": "codex-terra",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-09T09:58:51Z",
+            "read_at": "2026-09-09T09:58:51Z",
+            "resolved_backend": "codex-terra",
+            "utilisation_pct": 69.0
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T095850548462-cotd-delivery-roots-come-from-one-definition/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "codex-terra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a715",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/runs.py",
+            "reckon/crew/routing.py",
+            "reckon/crew/dispatch.py",
+            "tests/test_crew.py",
+            "tests/test_crew_peer_client_reach.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "implement-terra-c",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-09T09:58:59Z",
+        "completed_at": "2026-09-09T10:10:47Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 708,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 708,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "9952739144e1809ebc57d727ffc6be074a8f0ec4",
+        "commits": [
+          "2997fc4ed6dba5bffeb4343fa8cce47ee49b287e"
+        ],
+        "changed_lines": {
+          "added": 45,
+          "removed": 14,
+          "files": 4
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q the focused delivery-root reproduction",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T095850548462-cotd-delivery-roots-come-from-one-definition/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T095850548462-cotd-delivery-roots-come-from-one-definition/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a0859b-4041-7263-accf-72d57fe7428e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 8826624,
+            "cached_input_tokens_cumulative": 8826624,
+            "input_tokens": 9073371,
+            "input_tokens_cumulative": 9073371,
+            "output_tokens": 27215,
+            "output_tokens_cumulative": 27215,
+            "reasoning_output_tokens": 8491,
+            "reasoning_output_tokens_cumulative": 8491
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-09T10:10:47Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 70.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-09T10:10:47Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 8826624,
+          "cumulative_input_tokens": 17899995,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 35706
+        },
+        "follow_on_paths": [
+          "base/head"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cot-drain-20260909/cotd-delivery-roots-come-from-one-definition",
+          "session_id": "01a0859b-4041-7263-accf-72d57fe7428e",
+          "session_source": "stream",
+          "retained_at": "2026-09-09T10:10:47Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -87099,6 +87308,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1293
+    "_version": 1298
   }
 }

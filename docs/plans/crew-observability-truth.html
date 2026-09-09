@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-09">
-<meta name="plan-version" content="249">
+<meta name="plan-version" content="250">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md">
 <meta name="plan-impl" content="0.97">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b">
@@ -1519,6 +1519,9 @@
 </div>
 <div class="r-comment" data-section="s14" data-id="c-run-r-20260909T084943048969-cotd-landing-evidence-is-not-completion" data-who="implement-terra-b" data-when="2026-09-09T09:07:17Z">
     <div class="r-comment-body"><p>landing evidence decoupled from closure: the remainder is now declared-implementable minus explicit done reclassification, and comments are no longer consulted. 16 focused plus 54 contract cases, three-file suite 0 failures at both revisions. Measured against this plan itself at the merged head: the remainder moved from a falsely reassuring 2 to an honest 5, and the unknown sentinel for an undeclared plan survives</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20260909T095850548462-cotd-delivery-roots-come-from-one-definition" data-who="implement-terra-c" data-when="2026-09-09T10:10:47Z">
+    <div class="r-comment-body"><p>one delivery_roots helper in crew/runs.py returning three roots, sourcing the reviews root from its existing definition; both enforcement sites call it; neither refusal message indexes elements any more, verified by a refusal that now enumerates all three. Coordinator measured the one added suite failure as pre-existing and flaky: test_redispatch_does_not_inherit_a_terminal_delivery failed 2 of 3 runs on main WITHOUT this commit. Coordinator also found the authority layer is not the only gate — a reviews-rooted path now passes authorisation and is refused by the read-only sandbox tier, which enumerates its writable grants separately; that is a second node, not a defect in this one</p></div>
 </div>
 </section>
 </main>
