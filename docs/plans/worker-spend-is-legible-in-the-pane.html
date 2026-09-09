@@ -25,7 +25,8 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-09">
 <meta name="plan-impl" content="0.0">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="3">
+<meta name="plan-artifacts" content="~/.config/reckon/crew/reports/worker-spend-reuse-map.md">
 </head>
 <body>
   <main class="plan-doc">
@@ -229,6 +230,21 @@ accumulation_key := run_id                          if kind == "shadow"
       rates and measured tokens, never the harness's own.
     </p>
     <p>
+      <strong>The word &ldquo;imputed&rdquo; already means the opposite of what this plan needs
+      it to mean, and the flag cannot be reused.</strong> Today
+      <code>budget.cost_usd_imputed</code> marks a figure that was <em>nulled</em> because the
+      lane is unmetered, and <code>capabilities._cost_usd</code> returns <code>None</code>
+      whenever it is set. Under this plan an imputed figure is one that was
+      <em>computed</em> from declared rates. Setting the existing flag on a computed figure
+      would therefore make every surface reading through that helper discard the cost for
+      exactly the lanes the plan exists to compare &mdash; a stable name whose referent has
+      inverted, which is the failure this repository has spent a sprint removing. So the
+      computed figure gets its own vocabulary, the existing flag keeps meaning precisely what
+      it means now, and <code>capabilities.py</code> changes in the same commit as the
+      derivation rather than a commit later. The prior-art scout found this; the plan had
+      missed it.
+    </p>
+    <p>
       <strong>The ledger has to be refreshable, and every rate has to carry its own date.</strong>
       Rates move; a rate written down once and never revisited is the fuse this repository
       already knows about under &ldquo;a snapshot of a moving number&rdquo;. So each rate is
@@ -344,7 +360,7 @@ accumulation_key := run_id                          if kind == "shadow"
           <td><code>rate-ledger</code></td>
           <td>A refreshable per-model rate ledger, each rate dated, with the currency decision reversed in config and schema text.</td>
           <td>Every backend in the resolved flight configuration either carries a rate pair with an <code>as_of</code> date or is reported explicitly unpriced, asserted over the resolved config rather than over a fixture. A rate older than the declared staleness horizon is returned with its age attached. The three <code>flight.yaml</code> rate comments and both schema descriptions no longer state the rates are never a currency, and <code>scripts/regen_flight_schema.py</code> has been run so <code>_flight_schema.py</code> and <code>flight.schema.json</code> match the source schema. <code>uv run pytest tests/test_flight.py tests/test_quota_weight.py -q</code> passes.</td>
-          <td><code>reckon/schema/flight.yaml</code>, <code>reckon/_flight_schema.py</code>, <code>docs/_shared/flight.schema.json</code>, <code>reckon/crew/quota_weight.py</code>, <code>tests/test_flight.py</code>, <code>tests/test_quota_weight.py</code></td>
+          <td><code>reckon/schema/flight.yaml</code>, <code>reckon/_flight_schema.py</code>, <code>docs/_shared/flight.schema.json</code>, <code>reckon/crew/quota_weight.py</code>, <code>tests/test_flight.py</code>, <code>tests/test_quota_weight.py</code>. <strong>Not</strong> <code>reckon/capabilities.py</code> or <code>reckon/ledger.py</code>: the flag-vocabulary change of &sect;4 needs both, a concurrent coordinator holds uncommitted work in both, and this node must not be the one to touch them &mdash; it is the fourth node's scope, after that merge.</td>
           <td>guided &middot; local</td>
         </tr>
         <tr>
@@ -489,7 +505,13 @@ accumulation_key := run_id                          if kind == "shadow"
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s7" data-id="c-20260909-denominator" data-who="reckon-ship" data-when="2026-09-09T10:12:00Z">
-    <div class="r-comment-body"><p>Executable denominator for this plan is <strong>six nodes</strong>, all declared in this section's table. Sections 1 to 6 and 8 carry rationale, measurement and exclusions rather than executable work, so they are not part of the denominator. Recorded here as a comment because the engine refuses a <code>section_declarations</code> set path that the ship skill mandates &mdash; the skill names a write the code does not implement, which is the fourth existence-without-availability gap found while planning this work and belongs in the skill's own repair rather than in this plan.</p><p>Wave one dispatches nodes 1 to 3, which touch disjoint files and hold no live path claim. Node 4 is held deliberately: it writes <code>ledger.py</code>, and a concurrent coordinator session holds roughly 105 uncommitted lines there against a contamination fix that is deliberately off main. Write exclusivity is enforced against dispatched runs and not against coordinators, so the scope validator would clear that node and the collision would land anyway.</p></div>
+    <div class="r-comment-body"><p>Executable denominator for this plan is <strong>six nodes</strong>, all declared in this section's table. Sections 1 to 6 and 8 carry rationale, measurement and exclusions rather than executable work, so they are not part of the denominator. Recorded here as a comment because the engine refuses a <code>section_declarations</code> set path that the ship skill mandates — the skill names a write the code does not implement, which is the fourth existence-without-availability gap found while planning this work and belongs in the skill's own repair rather than in this plan.</p><p>Wave one dispatches nodes 1 to 3, which touch disjoint files and hold no live path claim. Node 4 is held deliberately: it writes <code>ledger.py</code>, and a concurrent coordinator session holds roughly 105 uncommitted lines there against a contamination fix that is deliberately off main. Write exclusivity is enforced against dispatched runs and not against coordinators, so the scope validator would clear that node and the collision would land anyway.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20260909T101253793894-wslp-reuse-map-scout" data-who="spend-scout" data-when="2026-09-09T10:17:08.288Z">
+    <div class="r-comment-body"><p>Reuse map delivered: 22 rows covering all 6 required symbols with resolving paths and extend/insufficient verdicts. Found the cost_usd_imputed semantic inversion the plan had missed - capabilities._cost_usd returns None whenever that flag is set, so reusing it for a computed figure would discard cost for exactly the lanes being compared.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260909-reuse-map" data-who="reckon-ship" data-when="2026-09-09T10:20:00Z">
+    <div class="r-comment-body"><p>REUSE MAP LANDED &mdash; run <code>r-20260909T101253793894-wslp-reuse-map-scout</code>, gate passed, no commit (the node is fenced to a report outside the repository). 22 table rows covering all six required symbols with resolving paths and extend-or-insufficient verdicts; the scout's own grep count of 6 source files was reproduced independently.</p><p>THE FINDING THE PLAN HAD MISSED, and it is a scope change rather than a note. <code>budget.cost_usd_imputed</code> today marks a figure that was NULLED because the lane is unmetered, and <code>capabilities._cost_usd</code> returns <code>None</code> whenever it is set. This plan's "imputed" means COMPUTED from declared rates. Setting the existing flag on a computed figure would make every surface reading through that helper discard the cost for exactly the lanes the plan exists to compare &mdash; one flag name, two opposite referents. Recorded in &sect;4: the computed figure takes its own vocabulary, the existing flag keeps its current meaning, and <code>capabilities.py</code> changes in the same commit as the derivation.</p><p>MY OWN VERIFIER WAS WRONG FIRST and that is worth recording beside the pass. The gate check initially FAILED the report for addressing 6 of 13 grep hits; 7 of those 13 were <code>__pycache__/*.pyc</code> bytecode. The worker's count of 6 was correct and my instrument was counting compiled artefacts as source. When a check contradicts a measurement, the check is the thing to suspect first.</p><p>TWO FOLLOW-ONS TRIAGED, both same-plan and therefore folded rather than written as followups. The flag inversion becomes the fourth node's scope, since <code>capabilities.py</code> and <code>ledger.py</code> are both held by a concurrent coordinator; the third node's write paths now say explicitly that it must NOT take them. And <code>measure_stream_tokens</code> having no production caller at the base revision confirms &sect;1 from the worker's own reading, so the second node's scope includes wiring it into the observation path rather than assuming something already calls it.</p><p>The scout is not one of &sect;7's six nodes, so <code>impl</code> stays at 0 &mdash; the executable denominator is unchanged and a prior-art node is not a sixth of the delivery.</p></div>
 </div>
 </section>
 </main>
