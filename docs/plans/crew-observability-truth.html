@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-09">
-<meta name="plan-version" content="264">
+<meta name="plan-version" content="265">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md">
 <meta name="plan-impl" content="0.97">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b">
@@ -1592,6 +1592,9 @@
 </div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20260909T095850548462-cotd-delivery-roots-come-from-one-definition" data-who="implement-terra-c" data-when="2026-09-09T10:10:47Z">
     <div class="r-comment-body"><p>one delivery_roots helper in crew/runs.py returning three roots, sourcing the reviews root from its existing definition; both enforcement sites call it; neither refusal message indexes elements any more, verified by a refusal that now enumerates all three. Coordinator measured the one added suite failure as pre-existing and flaky: test_redispatch_does_not_inherit_a_terminal_delivery failed 2 of 3 runs on main WITHOUT this commit. Coordinator also found the authority layer is not the only gate — a reviews-rooted path now passes authorisation and is refused by the read-only sandbox tier, which enumerates its writable grants separately; that is a second node, not a defect in this one</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20260909T124310767932-cotd-observe-carries-the-throughput-it-computed" data-who="implement-terra-c" data-when="2026-09-09T12:51:40Z">
+    <div class="r-comment-body"><p>one line in dispatch.py plus 37 test lines: observe now writes the throughput block it already computed to every CLI live pointer. Agreement falsifier met on a recorded stream, 664.405 s against 664405 ms; the unmeasurable branch records an explicit reason rather than an absent key. Base 6 and head 6 identical failures. Coordinator verified on a real pointer after merge: the key is present and carries detail &#x27;turn tokens recorded, but no span was supplied to rate them&#x27;, so a reader can now tell unmeasured from unrecorded</p></div>
 </div>
 </section>
 </main>
