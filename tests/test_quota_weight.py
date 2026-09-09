@@ -3,6 +3,8 @@ from __future__ import annotations
 import ast
 import re
 from collections.abc import Sequence
+from copy import deepcopy
+from datetime import date
 from itertools import pairwise
 from pathlib import Path
 from types import SimpleNamespace
@@ -15,23 +17,29 @@ from reckon.crew.quota_weight import (
     INPUT_SURCHARGE_MULTIPLIER,
     LONG_CONTEXT_INPUT_THRESHOLD,
     OUTPUT_SURCHARGE_MULTIPLIER,
+    BackendRateStatus,
     ModelRate,
     RelativeQuotaWeight,
     RequestTokenUsage,
     UnknownQuotaWeight,
+    backend_rate_statuses,
     quota_weight,
 )
+
+RATE_PUBLISHED = date(2026, 1, 1)
+ANCHOR = date(2026, 9, 1)
 
 
 @pytest.fixture(autouse=True)
 def configured_rates(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Give every test model identifiers and rates through flight configuration."""
+    """Give every test model identifiers and dated rates through flight config."""
     rate_pairs = ((4.00, 20.00), (2.00, 12.00), (0.20, 1.20))
     configured_backends = {
         f"lane-{index}": {
             "model": f"fixture-model-{index}",
             "input_rate_per_million": input_rate,
             "output_rate_per_million": output_rate,
+            "as_of": RATE_PUBLISHED,
         }
         for index, (input_rate, output_rate) in enumerate(rate_pairs)
     }
@@ -49,6 +57,7 @@ def _rates() -> dict[str, ModelRate]:
         str(backend["model"]): ModelRate(
             input_per_million=float(backend["input_rate_per_million"]),
             output_per_million=float(backend["output_rate_per_million"]),
+            as_of=RATE_PUBLISHED,
         )
         for backend in _config()["backends"].values()
         if "input_rate_per_million" in backend and "output_rate_per_million" in backend
@@ -117,16 +126,12 @@ def _expected_weight(
     ) = _expected_totals(requests)
     rates = _rates()
     rate = rates[model]
-    normalising_rate = ModelRate(
-        input_per_million=max(item.input_per_million for item in rates.values()),
-        output_per_million=max(item.output_per_million for item in rates.values()),
-    )
+    normalising_input = max(item.input_per_million for item in rates.values())
+    normalising_output = max(item.output_per_million for item in rates.values())
     weighted_input = surcharged_input_tokens if apply_surcharge else input_tokens
     weighted_output = surcharged_output_tokens if apply_surcharge else output_tokens
-    return weighted_input * (
-        rate.input_per_million / normalising_rate.input_per_million
-    ) + weighted_output * (
-        rate.output_per_million / normalising_rate.output_per_million
+    return weighted_input * (rate.input_per_million / normalising_input) + (
+        weighted_output * (rate.output_per_million / normalising_output)
     )
 
 
@@ -373,6 +378,128 @@ def test_configuration_with_no_rates_returns_unknown_without_raising(
 
     assert all(isinstance(result, UnknownQuotaWeight) for result in results)
     assert all(result.weight is None for result in results)
+
+
+def test_every_resolved_backend_is_priced_with_a_date_or_explicitly_unpriced() -> None:
+    """The status ledger covers the whole resolved backend map, not a priced subset.
+
+    The fixture's resolved config holds five backends: three priced and dated,
+    one with a model but no rates, and one with no rate pair at all. Each must
+    appear in the status map, priced only when it carries a dated pair.
+    """
+    statuses = backend_rate_statuses(anchor=ANCHOR)
+
+    assert set(statuses) == set(_config()["backends"])
+    for backend_name, status in statuses.items():
+        if backend_name == "unpriced":
+            assert not status.priced
+            assert status.rate is None
+            assert status.age_days is None
+            continue
+        assert status.priced
+        assert status.rate is not None
+        assert status.rate.as_of == RATE_PUBLISHED
+        assert status.age_days == (ANCHOR - RATE_PUBLISHED).days
+
+
+def test_a_backend_added_to_the_config_is_covered_without_editing_the_test(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A later backend is priced-or-unpriced by the same ledger call."""
+    config = deepcopy(_config())
+    config["backends"]["later-lane"] = {
+        "model": "fixture-model-later",
+        "input_rate_per_million": 1.5,
+        "output_rate_per_million": 9.0,
+        "as_of": RATE_PUBLISHED,
+    }
+    monkeypatch.setattr(flight, "resolve", lambda: SimpleNamespace(config=config))
+
+    statuses = backend_rate_statuses(anchor=ANCHOR)
+
+    assert set(statuses) == set(config["backends"])
+    later = statuses["later-lane"]
+    assert later.priced
+    assert later.model_identifier == "fixture-model-later"
+    assert later.rate == ModelRate(1.5, 9.0, RATE_PUBLISHED)
+
+
+def test_a_rate_pair_without_an_as_of_date_is_explicitly_unpriced(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config = {
+        "backends": {
+            "undated": {
+                "model": "fixture-model-undated",
+                "input_rate_per_million": 4.0,
+                "output_rate_per_million": 20.0,
+            }
+        }
+    }
+    monkeypatch.setattr(flight, "resolve", lambda: SimpleNamespace(config=config))
+
+    status = backend_rate_statuses(anchor=ANCHOR)["undated"]
+    result = quota_weight("fixture-model-undated", ())
+
+    assert not status.priced
+    assert status.rate is None
+    assert status.age_days is None
+    assert isinstance(result, UnknownQuotaWeight)
+    assert result.weight is None
+
+
+def test_a_rate_older_than_the_staleness_horizon_carries_its_age(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    old_published = date(2025, 1, 1)
+    stale_anchor = date(2026, 9, 1)
+    config = deepcopy(_config())
+    for backend in config["backends"].values():
+        if "as_of" in backend:
+            backend["as_of"] = old_published
+    monkeypatch.setattr(flight, "resolve", lambda: SimpleNamespace(config=config))
+
+    statuses = backend_rate_statuses(anchor=stale_anchor)
+
+    stale_backends = [
+        status for status in statuses.values() if status.priced and status.stale
+    ]
+    assert stale_backends
+    for status in stale_backends:
+        assert status.age_days == (stale_anchor - old_published).days
+        assert status.age_days > 180
+
+
+def test_a_fresh_rate_is_reported_with_its_age_and_not_stale(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fresh_published = date(2026, 8, 1)
+    anchor = date(2026, 9, 1)
+    config = deepcopy(_config())
+    for backend in config["backends"].values():
+        if "as_of" in backend:
+            backend["as_of"] = fresh_published
+    monkeypatch.setattr(flight, "resolve", lambda: SimpleNamespace(config=config))
+
+    statuses = backend_rate_statuses(anchor=anchor)
+
+    priced = [status for status in statuses.values() if status.priced]
+    assert priced
+    for status in priced:
+        assert status.age_days == (anchor - fresh_published).days
+        assert not status.stale
+
+
+def test_ledger_status_is_an_explicit_absent_marker_not_a_zero_price() -> None:
+    """An unpriced backend reads unpriced, never as a zero-price rate."""
+    statuses = backend_rate_statuses(anchor=ANCHOR)
+
+    unpriced = statuses["unpriced"]
+    assert not unpriced.priced
+    assert unpriced.rate is None
+    assert unpriced.age_days is None
+    assert unpriced.stale is False
+    assert isinstance(unpriced, BackendRateStatus)
 
 
 def test_empty_request_sequence_is_a_known_zero_weight() -> None:

@@ -20,14 +20,16 @@ from __future__ import annotations
 import json
 import shutil
 import sys
+from datetime import date
 from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
 
-from reckon.cli import main as cli_main
-from reckon import crew
+from reckon import crew, flight
 from reckon._flight_schema import BackendConfig
+from reckon.cli import main as cli_main
+from reckon.crew.quota_weight import backend_rate_statuses
 from reckon.flight import (
     FlightConfigError,
     deep_merge,
@@ -155,6 +157,145 @@ def test_shipped_defaults_validate_against_the_schema():
     resolved = resolve(host_path=Path("/nonexistent/flight.yaml"))
     assert resolved.config["version"] == 1
     assert resolved.config["default_backend"] in resolved.config["backends"]
+
+
+def test_rate_descriptions_no_longer_deny_a_currency_role():
+    """Both rate descriptions no longer state the rates are never a currency.
+
+    The owner reversed that decision: the per-million rates are the basis of a
+    notional per-run cost, so a schema description still calling them "used
+    only to derive dimensionless quota comparisons" would contradict the code.
+    """
+    source = (ROOT / "reckon" / "schema" / "flight.yaml").read_text()
+    assert "used only to derive" not in source
+    assert "dimensionless" not in source
+    assert "never a currency" not in source
+
+
+def test_rate_schema_declares_the_published_date_for_a_priced_backend():
+    """The schema dates every priced backend and marks absent rates unpriced."""
+    schema = json.loads((ROOT / "docs" / "_shared" / "flight.schema.json").read_text())
+    definitions = schema.get("$defs", schema)
+    backend_def = _find_backend_def(definitions)
+    assert backend_def is not None
+    properties = backend_def.get("properties", {})
+
+    assert "as_of" in properties
+    as_of = properties["as_of"]
+    assert as_of.get("format") == "date"
+    assert "explicitly unpriced" in as_of.get("description", "")
+
+    input_rate = properties["input_rate_per_million"].get("description", "")
+    output_rate = properties["output_rate_per_million"].get("description", "")
+    assert "notional per-run cost" in input_rate
+    assert "notional per-run cost" in output_rate
+    assert "used only to derive" not in input_rate
+    assert "used only to derive" not in output_rate
+
+
+def test_every_resolved_backend_is_priced_with_a_date_or_explicitly_unpriced(
+    layers, monkeypatch
+):
+    """The dated ledger ranges over the resolved config, not a picked subset.
+
+    The host layer declares a dated priced backend, an undated pair and a
+    backend with no rates; resolving the real layers must classify each once,
+    and a backend added to the layer later is covered without editing the test.
+    """
+    write(
+        layers["host"],
+        "version: 1\n"
+        "backends:\n"
+        "  dated:\n"
+        "    model: gpt-resolved-dated\n"
+        "    input_rate_per_million: 4.0\n"
+        "    output_rate_per_million: 20.0\n"
+        "    as_of: 2026-01-01\n"
+        "  undated:\n"
+        "    model: gpt-resolved-undated\n"
+        "    input_rate_per_million: 2.0\n"
+        "    output_rate_per_million: 12.0\n"
+        "  unrated:\n"
+        "    model: gpt-resolved-unrated\n",
+    )
+    resolved = resolve_files(layers)
+    monkeypatch.setattr(flight, "resolve", lambda: resolved)
+
+    statuses = backend_rate_statuses(anchor=date(2026, 6, 1))
+
+    # Range over whatever the resolved layers hold — shipped, host and project
+    # all contribute here ("native" comes from shipped) — so every configured
+    # backend is classified, not a hand-picked subset.
+    assert set(statuses) == set(resolved.config["backends"])
+    for backend_name, status in statuses.items():
+        if backend_name == "dated":
+            assert status.priced
+            assert status.rate is not None
+            assert status.age_days == 151
+            assert not status.stale
+            continue
+        assert not status.priced
+        assert status.rate is None
+
+
+def test_a_backend_added_to_a_layer_is_covered_without_editing_the_test(
+    layers, monkeypatch
+):
+    write(layers["host"], "version: 1\nbackends:\n  existing:\n    model: gpt-here\n")
+    resolved = resolve_files(layers)
+    monkeypatch.setattr(flight, "resolve", lambda: resolved)
+
+    def classify():
+        statuses = backend_rate_statuses(anchor=date(2026, 6, 1))
+        assert set(statuses) == set(resolved.config["backends"])
+        for status in statuses.values():
+            if status.priced:
+                assert status.rate is not None
+                assert status.rate.as_of is not None
+            else:
+                assert status.rate is None
+
+    classify()
+
+    write(
+        layers["host"],
+        "version: 1\n"
+        "backends:\n"
+        "  existing:\n"
+        "    model: gpt-here\n"
+        "  added-later:\n"
+        "    model: gpt-there\n"
+        "    input_rate_per_million: 1.0\n"
+        "    output_rate_per_million: 6.0\n"
+        "    as_of: 2026-01-01\n",
+    )
+    resolved = resolve_files(layers)
+    monkeypatch.setattr(flight, "resolve", lambda: resolved)
+
+    classify()
+
+
+def _find_backend_def(definitions: dict) -> dict | None:
+    """Locate the BackendConfig definition in a LinkML-generated JSON schema.
+
+    gen-json-schema emits the class once under ``$defs`` (or the root object
+    itself when inlined), and the properties may live under a nested
+    ``properties/backends/items`` shape; search both for the backend slots.
+    """
+    candidates = [definitions]
+    for item in definitions.values():
+        if isinstance(item, dict):
+            candidates.append(item)
+            properties = item.get("properties")
+            if isinstance(properties, dict):
+                candidates.append(properties)
+    for candidate in candidates:
+        properties = (
+            candidate.get("properties") if isinstance(candidate, dict) else None
+        )
+        if isinstance(properties, dict) and "input_rate_per_million" in properties:
+            return candidate
+    return None
 
 
 def test_local_backend_resolves_beside_default_with_leaf_provenance(layers):
