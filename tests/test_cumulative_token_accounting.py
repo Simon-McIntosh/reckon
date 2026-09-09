@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -743,3 +743,218 @@ def test_mixed_chain_does_not_fabricate_machine_for_the_live_segment(
     assert result.generation_seconds == 200.0
     assert result.machine_seconds is None
     assert result.elapsed_from_stamps is True
+
+
+# ── A resumed run's wall spans every attempt, not only the newest ───────────
+
+
+def _claude_result_stream(
+    path: Path, duration_ms: int, duration_api_ms: int, input_tokens: int = 1
+) -> Path:
+    """A completed claude-style attempt whose own result clocks its spans."""
+    return _write_stream(
+        path,
+        [
+            {
+                "type": "assistant",
+                "message": {
+                    "id": "message-a",
+                    "usage": {"input_tokens": input_tokens},
+                },
+            },
+            {
+                "type": "result",
+                "duration_ms": duration_ms,
+                "duration_api_ms": duration_api_ms,
+                "usage": {"input_tokens": input_tokens, "output_tokens": 1},
+            },
+        ],
+    )
+
+
+def _timed_codex_stream(path: Path, *, span: float, input_tokens: int = 5) -> Path:
+    """A codex attempt bounded by its own timestamps, with no inference span."""
+    first = _epoch("2026-09-09T10:00:00Z")
+    records = [
+        {
+            "type": "turn.completed",
+            "usage": {
+                "input_tokens": input_tokens,
+                "cached_input_tokens": 0,
+                "output_tokens": 1,
+                "reasoning_output_tokens": 0,
+            },
+            "timestamp": datetime.fromtimestamp(stamp, tz=UTC).isoformat(),
+        }
+        for stamp in (first, first + span)
+    ]
+    return _write_stream(path, records)
+
+
+def test_resumed_wall_spans_every_attempt_not_only_the_newest(
+    tmp_path: Path,
+) -> None:
+    """A resumed run's committed block describes the newest attempt alone.
+
+    ``log_path`` is repointed on every resume, so the block the promoter
+    measured from it covers only the last attempt; the earlier attempt
+    contributes its own stream-measured span and the two sum to the run's
+    total wall, exceeding the last attempt's figure.
+    """
+    run_dir = tmp_path / "r-resumed-wall"
+    run_dir.mkdir(parents=True)
+    _claude_result_stream(run_dir / "stream.jsonl", 3_700_000, 2_600_000)
+    _claude_result_stream(run_dir / "resume-1.jsonl", 600_000, 300_000)
+    rows = [
+        _record(
+            "r-resumed-wall",
+            log_path=str(run_dir / "resume-1.jsonl"),
+            throughput={"elapsed_seconds": 600.0, "generation_seconds": 300.0},
+        )
+    ]
+
+    result = _accumulate(rows, "r-resumed-wall", tmp_path)
+
+    assert result.elapsed_seconds == pytest.approx(3700.0 + 600.0)
+    assert result.generation_seconds == pytest.approx(2600.0 + 300.0)
+    assert result.machine_seconds == pytest.approx(3700.0 + 600.0 - 2900.0)
+    assert result.elapsed_seconds > 600.0
+    assert result.unmeasured_time_attempt_count == 0
+    assert result.elapsed_from_stamps is False
+
+
+def test_single_attempt_folds_its_block_not_a_stream_measured_span(
+    tmp_path: Path,
+) -> None:
+    """A run holding only stream.jsonl keeps its committed block untouched.
+
+    The stream's own result would report a different span; if the per-attempt
+    path were taken where only the original stream exists, this test fails.
+    """
+    run_dir = tmp_path / "r-single-attempt"
+    run_dir.mkdir(parents=True)
+    _claude_result_stream(run_dir / "stream.jsonl", 1_234_000, 900_000)
+    rows = [
+        _record(
+            "r-single-attempt",
+            log_path=str(run_dir / "stream.jsonl"),
+            throughput={"elapsed_seconds": 900.0, "generation_seconds": 300.0},
+        )
+    ]
+
+    result = _accumulate(rows, "r-single-attempt", tmp_path)
+
+    assert result.elapsed_seconds == 900.0
+    assert result.generation_seconds == 300.0
+    assert result.machine_seconds == 600.0
+    assert result.unmeasured_time_attempt_count == 0
+
+
+def test_an_unmeasurable_attempt_refuses_a_partial_wall_total(
+    tmp_path: Path,
+) -> None:
+    """An attempt whose span cannot be measured is never silently omitted.
+
+    The middle attempt carries no duration and no timestamps, so neither the
+    wall nor the model total may report the sum of the attempts around it as
+    though it were complete; the folded total says so instead.
+    """
+    run_dir = tmp_path / "r-incomplete"
+    run_dir.mkdir(parents=True)
+    _claude_result_stream(run_dir / "stream.jsonl", 1_700_000, 1_200_000)
+    _codex_stream(run_dir / "resume-1.jsonl", 40)
+    _claude_result_stream(run_dir / "resume-2.jsonl", 500_000, 200_000)
+    rows = [
+        _record(
+            "r-incomplete",
+            log_path=str(run_dir / "resume-2.jsonl"),
+            throughput={"elapsed_seconds": 500.0, "generation_seconds": 200.0},
+        )
+    ]
+
+    result = _accumulate(rows, "r-incomplete", tmp_path)
+
+    assert result.elapsed_seconds is None
+    assert result.generation_seconds is None
+    assert result.machine_seconds is None
+    assert result.unmeasured_time_attempt_count == 1
+
+
+def test_model_seconds_refuse_a_partial_sum_where_an_attempt_has_none(
+    tmp_path: Path,
+) -> None:
+    """Wall may be complete while model seconds stay unmeasured.
+
+    The earlier attempt's stream bounded its wall with timestamps but carried
+    no inference span, so the model total stays unmeasured even though the
+    wall spans every attempt; summing generation from the attempts that did
+    measure it would invent a figure for the one that did not.
+    """
+    run_dir = tmp_path / "r-model-gap"
+    run_dir.mkdir(parents=True)
+    _timed_codex_stream(run_dir / "stream.jsonl", span=1200.0)
+    _claude_result_stream(run_dir / "resume-1.jsonl", 800_000, 400_000)
+    rows = [
+        _record(
+            "r-model-gap",
+            log_path=str(run_dir / "resume-1.jsonl"),
+            throughput={"elapsed_seconds": 800.0, "generation_seconds": 400.0},
+        )
+    ]
+
+    result = _accumulate(rows, "r-model-gap", tmp_path)
+
+    assert result.elapsed_seconds == pytest.approx(1200.0 + 800.0)
+    assert result.generation_seconds is None
+    assert result.machine_seconds is None
+    assert result.unmeasured_time_attempt_count == 0
+
+
+def _terminal_duration_seconds(path: Path) -> float:
+    """The seconds of a stream's own final terminal result duration."""
+    wall = 0.0
+    with path.open(encoding="utf-8") as lines:
+        for line in lines:
+            try:
+                record = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(record, dict) and record.get("type") == "result":
+                value = record.get("duration_ms")
+                if isinstance(value, (int, float)) and not isinstance(value, bool):
+                    wall = value / 1000.0
+    return wall
+
+
+def test_measured_resumed_run_wall_spans_both_attempts() -> None:
+    """Positive control on the plan's measured resumed run.
+
+    The committed row records the resume attempt's own span; the accumulator
+    must exceed it by the first attempt's own stream-measured span, summed
+    from the streams' own terminal results the same way the promoter clocks
+    the newest one.
+    """
+    run_id = "r-20260909T152008864960-wslp-merged-head-attribution"
+    runs_root = Path.home() / ".config" / "reckon" / "crew" / "runs"
+    run_dir = runs_root / run_id
+    if (
+        not (run_dir / "stream.jsonl").is_file()
+        or not (run_dir / "resume-1.jsonl").is_file()
+    ):
+        pytest.skip(f"resumed run is not mounted: {run_dir}")
+    ledger = json.loads(Path("docs/state/reckon/crew.json").read_text())
+    row = next(item for item in ledger["data"]["runs"] if item["run_id"] == run_id)
+    block = row["throughput"]
+    expected_wall = float(block["elapsed_seconds"]) + _terminal_duration_seconds(
+        run_dir / "stream.jsonl"
+    )
+
+    result = accumulate_run_spend(
+        ledger["data"]["runs"], run_id, streams_root=runs_root
+    )
+    assert isinstance(result, AccumulatedRunSpend)
+
+    assert result.elapsed_seconds == pytest.approx(expected_wall, rel=1e-6)
+    assert result.elapsed_seconds > block["elapsed_seconds"]
+    assert result.cumulative_input_tokens > block["cumulative_input_tokens"]
+    assert result.unmeasured_time_attempt_count == 0
