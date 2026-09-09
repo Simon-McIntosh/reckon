@@ -15,6 +15,7 @@ import re
 import sys
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from enum import Enum
 from numbers import Real
 from pathlib import Path
@@ -322,6 +323,7 @@ class AccumulatedRunSpend:
     elapsed_seconds: float | None
     generation_seconds: float | None
     machine_seconds: float | None
+    elapsed_from_stamps: bool = False
 
     @property
     def total_charged_tokens(self) -> int:
@@ -393,22 +395,66 @@ def _measure_streams(
     return total_input, total_cached, total_output, measured, unmeasured
 
 
+def _stamped_elapsed(
+    record: Mapping[str, Any], *, now_seconds: float | None = None
+) -> float | None:
+    """Wall seconds elapsed for an in-flight run, from the pointer's own stamps.
+
+    A run that is still working has no terminal record, so its wall measures
+    to now. The run's creation stamp is its original dispatch, which is the
+    same base the completed row's folded span uses, so a run resumed several
+    times counts every attempt's interval rather than only the current one.
+    ``attempt_started_at`` is the fallback when no creation stamp was
+    recorded, matching the budget watchdog's convention. Missing or malformed
+    stamps return ``None``, which keeps an unrunnable record an unmeasured
+    one rather than an invented time.
+    """
+
+    started = record.get("created_at") or record.get("attempt_started_at")
+    if not isinstance(started, str) or not started:
+        return None
+    try:
+        moment = datetime.fromisoformat(str(started))
+    except ValueError:
+        return None
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=UTC)
+    if now_seconds is None:
+        now_seconds = datetime.now(UTC).timestamp()
+    return max(0.0, float(now_seconds) - moment.timestamp())
+
+
 def _fold_time(
     elapsed: float | None,
     generation: float | None,
     record: Mapping[str, Any],
-) -> tuple[float | None, float | None]:
-    """Fold one row's recorded times into the chain totals, if it recorded any."""
+    *,
+    now_seconds: float | None = None,
+) -> tuple[float | None, float | None, bool]:
+    """Fold one row's times into the chain totals, marking their provenance.
+
+    A completed row contributes the span its throughput block recorded. A row
+    still in flight has no block, so wall is derived from the pointer's own
+    stamps instead, and generation stays unmeasured because no inference span
+    exists until a terminal record or a rollout with bounded tool spans does.
+    The third return reports whether the contributed wall was derived from
+    stamps, which the caller records so a reader can distinguish a derived
+    live figure from a span folded from a completed row's block.
+    """
+
     throughput = record.get("throughput")
-    if not isinstance(throughput, Mapping):
-        return elapsed, generation
-    span = throughput.get("elapsed_seconds")
-    if isinstance(span, Real):
-        elapsed = (elapsed or 0.0) + float(span)
-    model = throughput.get("generation_seconds")
-    if isinstance(model, Real):
-        generation = (generation or 0.0) + float(model)
-    return elapsed, generation
+    if isinstance(throughput, Mapping):
+        span = throughput.get("elapsed_seconds")
+        if isinstance(span, Real):
+            elapsed = (elapsed or 0.0) + float(span)
+        model = throughput.get("generation_seconds")
+        if isinstance(model, Real):
+            generation = (generation or 0.0) + float(model)
+        return elapsed, generation, False
+    stamped = _stamped_elapsed(record, now_seconds=now_seconds)
+    if stamped is None:
+        return elapsed, generation, False
+    return (elapsed or 0.0) + stamped, generation, True
 
 
 def accumulate_run_spend(
@@ -416,6 +462,7 @@ def accumulate_run_spend(
     run_id: str,
     *,
     streams_root: str | Path | None = None,
+    now_seconds: float | None = None,
 ) -> AccumulatedRunSpend | MeasurementState:
     """Return the whole lineage chain's cumulative spend for one run.
 
@@ -431,7 +478,9 @@ def accumulate_run_spend(
     streams carry no usage counters returns a zero total with its stream
     counts rather than the absence marker. ``streams_root`` is the directory
     holding one subdirectory per run id, defaulting to the crew runs directory
-    when omitted.
+    when omitted. ``now_seconds`` pins the observation the live-run wall
+    derives from and exists so a test can fix a fixture's present; omitted,
+    the wall measures to the moment of reading.
     """
 
     record = _find_run(runs, run_id)
@@ -447,6 +496,7 @@ def accumulate_run_spend(
     unmeasured_streams = 0
     elapsed: float | None = None
     generation: float | None = None
+    derived_from_stamps = False
     for row in runs:
         # Keying is the exclusion in action: a shadow's accumulation key is
         # its own run id, so it folds only when the query is its own row and
@@ -463,9 +513,12 @@ def accumulate_run_spend(
         total_output += output_total
         measured_streams += measured
         unmeasured_streams += unmeasured
-        elapsed, generation = _fold_time(elapsed, generation, row)
+        elapsed, generation, derived = _fold_time(
+            elapsed, generation, row, now_seconds=now_seconds
+        )
+        derived_from_stamps = derived_from_stamps or derived
     machine = None
-    if elapsed is not None and generation is not None:
+    if elapsed is not None and generation is not None and not derived_from_stamps:
         machine = round(elapsed - generation, 3)
     return AccumulatedRunSpend(
         run_id=key,
@@ -479,4 +532,5 @@ def accumulate_run_spend(
         elapsed_seconds=elapsed,
         generation_seconds=generation,
         machine_seconds=machine,
+        elapsed_from_stamps=derived_from_stamps,
     )
