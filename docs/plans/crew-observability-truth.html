@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-09">
-<meta name="plan-version" content="237">
+<meta name="plan-version" content="238">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md">
 <meta name="plan-impl" content="0.97">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b">
@@ -784,7 +784,9 @@
     <table>
       <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
       <tbody>
-        <tr><td>A complete manifest is never classified abandoned</td><td>A run whose manifest records a terminal status is classified from that status, and <code>abandoned</code> stays reachable only when no terminal manifest exists. Asserted on the exact shape measured here &mdash; terminal manifest present, process legitimately gone, launcher host matching the reader &mdash; and on its negative, a genuinely missing terminal manifest that must still classify <code>abandoned</code>, because a classifier that never says abandoned is as useless as one that says it wrongly. The suggested action is asserted too, not only the label: a classification that recommends redispatching a run whose commit is reachable from the primary branch fails this measure however it is worded.</td></tr>
+        <tr><td>A complete manifest is never classified abandoned</td><td>A run whose manifest records a terminal status is classified from that status &mdash; the assertion is on the <em>classification</em>, since that is the wrong fact; the advice string is downstream of it and a coordinator who inspects the worktree finds the answer regardless. <code>abandoned</code> stays reachable only where no terminal manifest exists, asserted as the negative, because a classifier that never says abandoned is as useless as one that says it wrongly.</td></tr>
+        <tr><td>The fixture is the failing shape, not the shape that looks like it</td><td>The trigger is a key-value reader continuing a value across following lines that each contain <code>": "</code> &mdash; the prose bullets beneath <code>status:</code>. The structural hypothesis was tested and <strong>refuted</strong>: blank-line count is not the trigger, because a manifest carrying one blank line above <code>node:</code> parsed correctly while the failing one carried two. A fixture built on the blank line would pass while reproducing nothing, so the fixture carries value-continuing bullets and the refuted hypothesis is recorded here to stop it being re-tested.</td></tr>
+        <tr><td>Two fields disagreeing is the cheapest detector</td><td>On the same manifest, <code>manifest_commits</code> parsed cleanly to a single sha while the status field did not. So a terminal phase carrying a parsed commit beside an unusable status is unambiguous and needs no new instrument: assert that combination is never classified <code>abandoned</code>. This is stronger than checking either field alone, which is why it is stated as its own measure rather than folded into the one above.</td></tr>
       </tbody>
     </table>
 
