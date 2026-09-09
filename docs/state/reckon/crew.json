@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T12:01:30",
+  "updated": "2026-09-09T12:07:56",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -634,9 +634,11 @@
         "id": "crew-monitor-invocation",
         "harness": "clive",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "62918c07-c832-4353-89dd-16808d1de2dc",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "62918c07-c832-4353-89dd-16808d1de2dc"
+        },
         "created": "2026-09-06"
       },
       {
@@ -86633,6 +86635,242 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T095428299498-clw-exclusion-accounting-tolerates-any-reason",
+        "plan": "clive-local-workers",
+        "section": "\u00a716",
+        "node": "clw-exclusion-accounting-tolerates-any-reason",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1781,
+                "cached_input_tokens": 540612,
+                "input_tokens": 542395,
+                "output_tokens": 524,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 542919,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "d605a9b0-7fe6-4816-b993-dad99ec68f17",
+            "session_id": "ship-clw-2026-09-09"
+          },
+          "done_when": "pytest over tests/test_calibration.py and tests/test_capabilities.py reports 0 added failures against base HEAD stated as a number, and a new case feeds a record whose exclusion reason is a string absent from every fixed accumulator and asserts both the calibration eligibility pass and the capabilities derivation complete without raising, counting it under that reason, with the literal reason contaminated asserted as one such case",
+          "estimated_hours": null,
+          "goal": "Make the exclusion-reason accumulators count any reason the exclusion function can return, instead of crashing on one outside a fixed set",
+          "id": "clw-exclusion-accounting-tolerates-any-reason",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-09T09:54:29Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T095428299498-clw-exclusion-accounting-tolerates-any-reason/manifest.md",
+          "plan": "clive-local-workers",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a716",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "write_paths": [
+            "reckon/calibration.py",
+            "reckon/capabilities.py",
+            "tests/test_calibration.py",
+            "tests/test_capabilities.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-monitor-invocation",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-09T09:54:38Z",
+        "completed_at": "2026-09-09T10:05:10.659Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 623,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 632,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "9cc8cbe1114d4df2e0d11bee2f99afc58a54a6d4",
+        "commits": [
+          "eedec7bf89a2105502aec77aad73fcb5b36688b1"
+        ],
+        "changed_lines": {
+          "added": 108,
+          "removed": 16,
+          "files": 4
+        },
+        "tests_added": 8,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD pytest -p no:cacheprovider -q over calibration, capabilities, routing_surface, shadow_contamination, shadow_paths, shadow_overrides, crew_promotion, ledger and session_keying at the MERGED head carrying both commits, plus re-running the KeyError reproduction that failed before the repair",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T095428299498-clw-exclusion-accounting-tolerates-any-reason/coordinator-verification.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T095428299498-clw-exclusion-accounting-tolerates-any-reason/manifest.md",
+        "scope_changed": false,
+        "session_id": "62918c07-c832-4353-89dd-16808d1de2dc",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6936188,
+            "input_tokens_cumulative": 6936188,
+            "output_tokens": 34177,
+            "output_tokens_cumulative": 34177,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-09T10:05:10.659Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 3086,
+              "budget_seconds": 2700,
+              "classification": "scoring",
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 5786,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1448,
+              "log_fresh": false,
+              "manifest_commits": [
+                "dfe14da2ab; changed_paths: [\"reckon/crew/promotion.py\"",
+                "\"reckon/ledger.py\"",
+                "\"tests/test_crew_shadow_contamination.py\"",
+                "\"tests/test_ledger.py\"]"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "28caf356286653e8a369f9314488d5e62af858151c2ad85ed26a4a11f58b1163",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T075350856073-clw-shadow-contamination-is-detected-and-excluded/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan clive-local-workers --section '\u00a77' --role review --spec-level exact --node review-of-clw-shadow-contamination-is-detected-and-excluded --goal 'attach an independent review to run r-20260909T075350856073-clw-shadow-contamination-is-detected-and-excluded' --done-when 'the review for r-20260909T075350856073-clw-shadow-contamination-is-detected-and-excluded parses all five score dimensions' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260909T075350856073-clw-shadow-contamination-is-detected-and-excluded.json --time-budget 45m --session ship-clw-2026-09-09 --local",
+              "node": "clw-shadow-contamination-is-detected-and-excluded",
+              "phase": "complete",
+              "plan": "clive-local-workers",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260909T075350856073-clw-shadow-contamination-is-detected-and-excluded",
+              "session": "ship-clw-2026-09-09",
+              "terminal_age_seconds": 1534,
+              "terminal_at": "2026-09-09T09:29:02Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-clw-2026-09-09/clw-shadow-contamination-is-detected-and-excluded"
+            }
+          ]
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6936188,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 628.782,
+          "generated_tokens": 34177,
+          "generation_seconds": 597.79,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 13.7,
+          "machine_seconds": 30.992,
+          "peak_input_tokens": 139753,
+          "tokens_per_second": 57.17,
+          "wall_tokens_per_second": 54.35
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest over",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-clw-2026-09-09/clw-exclusion-accounting-tolerates-any-reason",
+          "session_id": "62918c07-c832-4353-89dd-16808d1de2dc",
+          "session_source": "pointer",
+          "retained_at": "2026-09-09T10:05:10.659Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -86861,6 +87099,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1291
+    "_version": 1293
   }
 }
