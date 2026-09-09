@@ -219,6 +219,27 @@ accumulation_key := run_id                          if kind == "shadow"
       behaviour is worse than no comment &mdash; the next reader trusts it.
     </p>
     <p>
+      <strong>Measured on this project's own 803 committed rows, the case is stronger than
+      &sect;1b's coverage figure suggests.</strong> 107 rows carry a numeric
+      <code>cost_usd</code>, but only <strong>64 &mdash; 8.0% &mdash; are genuinely metered</strong>:
+      48 on claude totalling $87.65 and 14 on claude-opus totalling $47.91. The other 43 are
+      fabricated figures on the free local lanes, and they total <strong>$941.50</strong>. So
+      87% of every dollar this project has ever recorded was never charged to anyone, and all
+      of it is attributed to the hardware that costs nothing per token.
+    </p>
+    <p>
+      The existing guard is not at fault and the distinction matters for what gets fixed.
+      <code>_label_unmetered_cost</code> nulls and flags correctly on 89 rows, and the 43
+      survivors all fall between 2026-08-26 and 2026-09-03 while every correctly flagged row
+      falls between 2026-09-05 and 2026-09-09 &mdash; no overlap, so they are residue from
+      before the guard existed rather than a leak in it. That makes the 43 rows a backfill
+      belonging to whichever plan owns ledger repair, not a defect for this one to fix, and it
+      leaves the forward path clean. What it does not leave is a usable historical ranking:
+      any comparison drawn over the committed corpus is poisoned by those rows until they are
+      backfilled, which is a second and independent argument for a figure derived from
+      declared rates rather than read from a record.
+    </p>
+    <p>
       What &sect;1b was right about survives intact, and it is the reason the figure must be
       computed rather than read. <code>budget.cost_usd</code> comes from the harness, which
       prices whatever model name it was told to speak. On the locally-served lane it therefore
