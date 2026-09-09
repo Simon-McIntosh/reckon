@@ -4,12 +4,16 @@ from __future__ import annotations
 
 import json
 import subprocess
+from datetime import date
 from pathlib import Path
+from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
-from reckon import _plan_html, crew, ledger
+from reckon import _plan_html, crew, flight, ledger, mcp_views
 from reckon.crew import rollout
+from reckon.crew.rollout import REQUEST_INPUT_CROSSING_THRESHOLD
 from reckon.crew.runs import _write_json, pointer_path
 
 PROJECT = "receipt-project"
@@ -470,3 +474,229 @@ def test_a_codex_run_without_a_surviving_rollout_promotes_the_span_unmeasured(
     assert missing.machine_seconds is rollout.Unmeasured.MISSING_ROLLOUT
     assert missing.generation_seconds is not None
     assert missing.generation_seconds != 0
+
+
+# ── The notional figure reaches the stored receipt and the lanes view ─────────
+
+
+def _write_priced_rollout(session_root: Path, session_id: str) -> None:
+    """A rollout whose two requests price to a known notional figure.
+
+    The second request sits strictly above the long-context threshold, so the
+    figure at the dated fixture rates is surcharge-aware and matches the
+    rollout module's own priced fixture: 3.60.  The session root is
+    monkeypatched in, so a real rollout is never touched.
+    """
+    directory = session_root / "2030" / "01" / "02"
+    directory.mkdir(parents=True, exist_ok=True)
+    threshold = REQUEST_INPUT_CROSSING_THRESHOLD
+
+    def token_record(
+        total_input: int, request_input: int, request_output: int
+    ) -> dict[str, Any]:
+        return {
+            "type": "event_msg",
+            "payload": {
+                "type": "token_count",
+                "info": {
+                    "total_token_usage": {
+                        "input_tokens": total_input,
+                        "cached_input_tokens": 0,
+                        "output_tokens": request_output,
+                    },
+                    "last_token_usage": {
+                        "input_tokens": request_input,
+                        "output_tokens": request_output,
+                    },
+                    "model_context_window": threshold + 100_000,
+                },
+            },
+        }
+
+    records = [
+        token_record(total_input=100_000, request_input=100_000, request_output=10_000),
+        token_record(total_input=400_000, request_input=300_000, request_output=20_000),
+    ]
+    path = directory / f"rollout-2030-01-02T00-00-00-{session_id}.jsonl"
+    path.write_text(
+        "".join(f"{json.dumps(record)}\n" for record in records), encoding="utf-8"
+    )
+
+
+def _dated_rate_config() -> dict[str, Any]:
+    """A resolved flight config with one dated and one undated lane."""
+    return {
+        "backends": {
+            "lane-priced": {
+                "model": "fixture-model-0",
+                "input_rate_per_million": 4.00,
+                "output_rate_per_million": 20.00,
+                "as_of": date(2026, 1, 1),
+            },
+            "lane-undated": {
+                "model": "fixture-model-undated",
+                "input_rate_per_million": 4.00,
+                "output_rate_per_million": 20.00,
+            },
+        }
+    }
+
+
+def _promote_agent(
+    repository: Path,
+    run_id: str,
+    session_id: str,
+    *,
+    backend: str,
+    model: str,
+) -> dict:
+    """Promote a run whose pointer carries the agent configuration."""
+    _write_json(
+        pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": PROJECT,
+            "repo": str(repository),
+            "worktree": str(repository),
+            "base_sha": _git(repository, "rev-parse", "HEAD"),
+            "launch": "in-harness",
+            "role": "implement",
+            "backend": backend,
+            "agent": {"backend": backend, "model": model},
+            "session_id": session_id,
+            "created_at": "2030-01-02T03:00:00Z",
+            "node": {
+                "id": f"receipt-{run_id}",
+                "plan": PLAN,
+                "section": "receipt",
+                "time_budget": "20m",
+                "write_paths": [],
+            },
+        },
+    )
+    return crew.complete(
+        run_id,
+        gate="passed",
+        completed_at=OBSERVED_AT,
+        root=repository,
+    )
+
+
+def test_a_promoted_run_on_a_dated_rate_lane_carries_the_notional_figure(
+    repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The stored receipt carries the computed spend and the pair that made it.
+
+    At the base revision promotion passed no model to the receipt reader, so
+    the figure was computed and then dropped; the pointer's own agent
+    configuration holds the model the record already carried, so this is a
+    wiring change and not a new identity lookup.
+    """
+    monkeypatch.setattr(
+        flight, "resolve", lambda: SimpleNamespace(config=_dated_rate_config())
+    )
+    session_id = "priced-session"
+    _write_priced_rollout(rollout.CLIENT_SESSIONS_DIR, session_id)
+
+    _promote_agent(
+        repository,
+        "r-priced",
+        session_id,
+        backend="lane-priced",
+        model="fixture-model-0",
+    )
+    receipt = _stored_row(repository, "r-priced")["lane_receipt"]
+
+    assert receipt["notional_cost_usd"] == 3.60
+    assert receipt["notional_cost_usd"] is not None
+    assert receipt["notional_cost_usd"] != 0
+    assert receipt["rate_basis"] == {
+        "model_identifier": "fixture-model-0",
+        "input_per_million": 4.0,
+        "output_per_million": 20.0,
+        "as_of": "2026-01-01",
+    }
+    assert "notional_cost_usd" not in receipt.get("unmeasured", {})
+    assert "rate_basis" not in receipt.get("unmeasured", {})
+
+
+def test_an_undated_rate_lane_promotes_with_the_explicit_unpriced_marker(
+    repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A pair without an as_of date is not a price, never a zero.
+
+    Promotion still lands on such a lane; the stored figure carries the
+    explicit unpriced marker and its reason, so a reader can tell an unrated
+    lane from one that genuinely priced at nothing.
+    """
+    monkeypatch.setattr(
+        flight, "resolve", lambda: SimpleNamespace(config=_dated_rate_config())
+    )
+    session_id = "undated-session"
+    _write_priced_rollout(rollout.CLIENT_SESSIONS_DIR, session_id)
+
+    _promote_agent(
+        repository,
+        "r-undated",
+        session_id,
+        backend="lane-undated",
+        model="fixture-model-undated",
+    )
+    receipt = _stored_row(repository, "r-undated")["lane_receipt"]
+
+    assert receipt["notional_cost_usd"] == "unmeasured"
+    assert receipt["rate_basis"] == "unmeasured"
+    assert receipt["unmeasured"]["notional_cost_usd"] == "no_dated_rate"
+    assert receipt["unmeasured"]["rate_basis"] == "no_dated_rate"
+    assert receipt["notional_cost_usd"] is not None
+    assert receipt["notional_cost_usd"] != 0
+
+
+def test_stored_receipt_and_lanes_view_price_the_same_run_in_one_assertion(
+    repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The two surfaces disagreeing fails instead of telling two stories.
+
+    Both call sites pass the model their own configuration already holds, so a
+    run priced at promotion and the same run priced again by the lanes view
+    must agree figure for figure.  The surfaces are compared against each
+    other — and against the expected value — in a single chained assertion;
+    comparing each separately would let a drifted copy pass in isolation.
+    """
+    monkeypatch.setattr(
+        flight, "resolve", lambda: SimpleNamespace(config=_dated_rate_config())
+    )
+    session_id = "both-surfaces-session"
+    _write_priced_rollout(rollout.CLIENT_SESSIONS_DIR, session_id)
+
+    _promote_agent(
+        repository,
+        "r-both-surfaces",
+        session_id,
+        backend="lane-priced",
+        model="fixture-model-0",
+    )
+    stored = _stored_row(repository, "r-both-surfaces")
+    view = mcp_views.crew_lanes_view(_dated_rate_config(), [stored])
+    lane = next(row for row in view["lanes"] if row["backend"] == "lane-priced")
+
+    assert lane["backend"] == "lane-priced"
+    assert (
+        (
+            stored["lane_receipt"]["notional_cost_usd"],
+            stored["lane_receipt"]["rate_basis"],
+        )
+        == (
+            lane["notional_cost_usd"],
+            lane["rate_basis"],
+        )
+        == (
+            3.60,
+            {
+                "model_identifier": "fixture-model-0",
+                "input_per_million": 4.0,
+                "output_per_million": 20.0,
+                "as_of": "2026-01-01",
+            },
+        )
+    )
