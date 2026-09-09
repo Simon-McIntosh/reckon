@@ -545,22 +545,29 @@ def flight(project, checkout_path, overrides, probe_auth, pretty):
     help="Rebuild the disposable cache from all mounted committed ledgers.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def capabilities_command(rebuild, pretty):
-    """Inspect cache freshness, or explicitly rebuild it off dispatch."""
+@click.option(
+    "--project",
+    default=None,
+    help="Narrow the published rows to configurations fed by this project.",
+)
+def capabilities_command(rebuild, pretty, project):
+    """Publish one truthful row per worker configuration from the cache.
+
+    Rows carry the competence horizon, speed mean and median, and sample
+    size as numbers, plus an explicit horizon legibility state and per-row
+    freshness naming both ledger versions whenever the backing cache trails
+    its project's ledger.
+    """
 
     from reckon import capabilities as capabilities_module
 
     if rebuild:
-        record = capabilities_module.rebuild_capabilities()
-        payload = {
-            "rebuilt": True,
-            "path": str(capabilities_module.capabilities_path()),
-            "ledger_versions": record.get("ledger_versions", {}),
-            "configurations": len(record.get("configurations") or []),
-        }
-    else:
-        payload = {"rebuilt": False, **capabilities_module.inspect_capabilities()}
-    _emit(payload, pretty)
+        capabilities_module.rebuild_capabilities()
+    try:
+        payload = capabilities_module.publish_capabilities(project=project)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit({"rebuilt": bool(rebuild), **payload}, pretty)
 
 
 @main.group(name="tag")
