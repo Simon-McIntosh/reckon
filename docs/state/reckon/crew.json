@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T14:53:33",
+  "updated": "2026-09-09T15:15:13",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -2314,9 +2314,11 @@
         "id": "spend-rates",
         "harness": "clive",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "8075e1fc-c638-4096-8ddb-455e84002b07",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "8075e1fc-c638-4096-8ddb-455e84002b07"
+        },
         "created": "2026-09-09"
       },
       {
@@ -89509,6 +89511,202 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T102320263584-wslp-rate-ledger",
+        "plan": "worker-spend-is-legible-in-the-pane",
+        "section": "\u00a77",
+        "node": "wslp-rate-ledger",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1487,
+                "cached_input_tokens": 390732,
+                "input_tokens": 392221,
+                "output_tokens": 1027,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 393248,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3e7dcff5-8cdd-4a76-bdc7-a5c7cca53e79",
+            "session_id": "ship-worker-spend-20260909"
+          },
+          "done_when": "Every backend in the resolved flight configuration either carries an input and output rate pair with an as_of date or is reported explicitly unpriced, asserted over the resolved configuration rather than over a fixture, so a backend added later is covered without editing the test. A rate whose as_of date is older than a declared staleness horizon is returned with its age attached rather than silently priced at last year's number. The three rate comments in reckon/schema/flight.yaml and both rate descriptions in the schema no longer state that the rates are never a currency charged to a subscription, because the owner has reversed that decision; scripts/regen_flight_schema.py has been run so reckon/_flight_schema.py and docs/_shared/flight.schema.json match the source schema, and a test asserts the generated files are in step with it. Only three of the nine configured backends carry rates at the base revision, so the measure ranges over every configured backend rather than over those three. This node must NOT write reckon/capabilities.py or reckon/ledger.py: the cost_usd_imputed vocabulary change needs both, a concurrent coordinator holds uncommitted work in both, and that change belongs to a later node. pytest tests/test_flight.py tests/test_quota_weight.py passes with no failures added against the base revision.",
+          "estimated_hours": null,
+          "goal": "A refreshable per-model public-rate ledger whose every rate carries its own date, with the never-a-currency wording reversed in the flight schema and config",
+          "id": "wslp-rate-ledger",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-09T10:23:20Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T102320263584-wslp-rate-ledger/manifest.md",
+          "plan": "worker-spend-is-legible-in-the-pane",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a77",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/schema/flight.yaml",
+            "reckon/_flight_schema.py",
+            "docs/_shared/flight.schema.json",
+            "reckon/crew/quota_weight.py",
+            "tests/test_flight.py",
+            "tests/test_quota_weight.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "spend-rates",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-09T10:23:26Z",
+        "completed_at": "2026-09-09T13:11:25.681Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 10061,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 10079,
+        "stalled": true,
+        "time_budget": "45m",
+        "base_sha": "36c6adb0a36813364f0d57a04d41ae14c362078b",
+        "commits": [
+          "23c19b579e892dacdcb5de7ddadbdc6b648dc7d3"
+        ],
+        "changed_lines": {
+          "added": 456,
+          "removed": 49,
+          "files": 7
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD python -m pytest -p no:cacheprovider tests/test_flight.py tests/test_quota_weight.py tests/test_lane_evidence.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T102320263584-wslp-rate-ledger/logs/gate-after.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T102320263584-wslp-rate-ledger/manifest.md",
+        "scope_changed": true,
+        "session_id": "8075e1fc-c638-4096-8ddb-455e84002b07",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 27938536,
+            "input_tokens_cumulative": 27938536,
+            "output_tokens": 163362,
+            "output_tokens_cumulative": 163362,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-09T13:11:25.681Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 27938536,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 10076.194,
+          "generated_tokens": 163362,
+          "generation_seconds": 9926.295,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 29.2,
+          "machine_seconds": 149.899,
+          "peak_input_tokens": 296657,
+          "tokens_per_second": 16.46,
+          "wall_tokens_per_second": 16.21
+        },
+        "follow_on_paths": [
+          "~/.config/reckon/flight.yaml",
+          "codex/gpt-5.6-sol",
+          "coordinator/owner:",
+          "tests/test_lane_evidence.py",
+          "4/4",
+          "capabilities.py",
+          "/",
+          "ledger.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_flight.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": [
+          {
+            "path": "tests/test_lane_evidence.py",
+            "reason": "the node's own contract change made an undated rate pair explicitly unpriced, which broke two tests in this file via an undated fixture; the file was clean and unclaimed, the repair is four lines adding as_of to that fixture, and the worker declared it in changed_paths and flagged it for audit rather than letting it pass silently"
+          }
+        ],
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-worker-spend-20260909/wslp-rate-ledger",
+          "session_id": "8075e1fc-c638-4096-8ddb-455e84002b07",
+          "session_source": "pointer",
+          "retained_at": "2026-09-09T13:11:25.681Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -89737,6 +89935,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1320
+    "_version": 1322
   }
 }
