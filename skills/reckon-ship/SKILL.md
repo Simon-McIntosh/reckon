@@ -1035,6 +1035,10 @@ artifact paths, evidence link + SHAs; `✓ landed YYYY-MM-DD` badge
 (`.badge-shipped`) on the header; original prose moves to the cumulative
 evidence anchor; **HTML, never markdown**.
 
+In the same collapse-on-landing beat, reclassify its `section_declarations`
+entry to `done`. A section comment records a landed node, not completion: only
+`done` lowers its executable remainder.
+
 ### 7. Update plan state — in the SAME BEAT as EACH node promotion
 
 ```python
@@ -1077,10 +1081,11 @@ nodes) over the whole selected plan (the orchestrator owns the denominator),
 monotonic. Set it on EVERY node landing — the server does NOT compute it; you
 MUST set it.
 
-If the node also closes its section, include the driving-followup resolution in
-the same `edit_plan` call and then collapse the section as §6b requires. If it
-does not close the section, leave that followup open: a node landing advances the
-ledger without pretending the larger section is finished.
+If the node also closes its section, include the driving-followup resolution
+and the section's `section_declarations` reclassification to `done` in the same
+`edit_plan` call, then collapse the section as §6b requires. If it does not
+close the section, leave that followup open: a node landing advances the ledger
+without pretending the larger section is finished.
 
 **Same-plan follow-on work becomes a section, never a followup.** Before setting
 a terminal status, add discovered work that belongs to this plan to the evergreen

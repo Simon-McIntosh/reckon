@@ -628,6 +628,14 @@ def test_ship_persists_the_dag_build_section_classification() -> None:
     assert "remainder is unknown, never zero" in ship
 
 
+def test_ship_reclassifies_a_collapsed_section_as_done() -> None:
+    ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
+
+    assert "reclassify its `section_declarations` entry to `done`" in ship
+    assert "records a landed node, not completion" in ship
+    assert "reclassification to `done` in the same `edit_plan` call" in ship
+
+
 def test_ship_landing_state_carries_commit_and_gate_measure_with_impl() -> None:
     ship = normalized((ROOT / "skills" / "reckon-ship" / "SKILL.md").read_text())
     reference = normalized(
