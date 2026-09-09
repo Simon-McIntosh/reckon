@@ -1639,18 +1639,60 @@ def parse_events(lines: Iterable[str]) -> tuple[list[dict[str, Any]], int]:
     return events, malformed
 
 
+def _apply_receipt_to_throughput(
+    throughput: dict[str, Any], receipt: object
+) -> dict[str, Any]:
+    """Fold a client rollout's measurements into a codex throughput block.
+
+    The codex exec stream reports only aggregate per-turn usage; the per-session
+    rollout is the client's own per-request record, and its measured model span
+    and reset-aware cumulative input are authoritative over the stream for a
+    run the rollout covers.  Fields the receipt could not measure stay as the
+    stream reported them — an absent measurement is never overwritten by a
+    marker.
+    """
+    generation = getattr(receipt, "generation_seconds", None)
+    machine = getattr(receipt, "machine_seconds", None)
+    if (
+        isinstance(generation, (int, float))
+        and not isinstance(generation, bool)
+        and isinstance(machine, (int, float))
+        and not isinstance(machine, bool)
+    ):
+        throughput["generation_seconds"] = float(generation)
+        throughput["machine_seconds"] = float(machine)
+        throughput["tokens_per_second"] = _rate(
+            throughput.get("generated_tokens"), generation
+        )
+    cumulative = getattr(receipt, "cumulative_input_tokens", None)
+    if isinstance(cumulative, int) and not isinstance(cumulative, bool):
+        throughput["cumulative_input_tokens"] = cumulative
+    cached = getattr(receipt, "cumulative_cached_input_tokens", None)
+    if isinstance(cached, int) and not isinstance(cached, bool):
+        throughput["cumulative_cached_input_tokens"] = cached
+    throughput["detail"] = (
+        "model span bounded from the client rollout's tool spans; "
+        "input cumulative summed across resets"
+    )
+    return throughput
+
+
 def observe_stream(
     *,
     backend_name: str,
     backend: Mapping[str, Any],
     lines: Iterable[str],
     elapsed_seconds: float | None = None,
+    receipt: object | None = None,
 ) -> Observation:
     """Fold a backend's recorded event stream into one normalised observation.
 
     ``elapsed_seconds`` lets a caller that knows when the run started supply the
     span a dialect's own stream may not report, so a rate is available for every
-    harness rather than only the one that times itself.
+    harness rather than only the one that times itself.  ``receipt`` is the
+    client rollout's per-session reading for a codex run; when supplied and
+    measured, it replaces the stream's own generation span and cumulative input
+    with the rollout's authoritative figures.
     """
     dialect = dialect_for(backend)
     events, malformed = parse_events(lines)
@@ -1660,6 +1702,8 @@ def observe_stream(
     obs.backend = backend_name
     obs.malformed_lines = malformed
     obs.throughput = _refine_throughput_from_timestamps(obs.throughput, events)
+    if receipt is not None and getattr(dialect, "name", "") == "codex":
+        obs.throughput = _apply_receipt_to_throughput(obs.throughput, receipt)
     if obs.phase == "blocked":
         obs.detail = _blocked_detail(obs)
     return obs
@@ -1709,11 +1753,14 @@ def observe_log(
     backend: Mapping[str, Any],
     log_path: str | Path,
     elapsed_seconds: float | None = None,
+    receipt: object | None = None,
 ) -> Observation:
     """Observe a worker from its on-disk event log, absent log included.
 
     An absent log is the ordinary state of a run whose process has not yet
-    written anything, so it reports ``starting`` rather than failing.
+    written anything, so it reports ``starting`` rather than failing.  A
+    ``receipt`` is forwarded to the stream observer for a codex run whose
+    client rollout the caller has already read.
     """
     path = Path(log_path)
     if not path.exists():
@@ -1730,4 +1777,5 @@ def observe_log(
             backend=backend,
             lines=handle,
             elapsed_seconds=elapsed_seconds,
+            receipt=receipt,
         )

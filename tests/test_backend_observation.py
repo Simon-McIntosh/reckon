@@ -20,6 +20,7 @@ from datetime import datetime
 from pathlib import Path
 
 from reckon import _backends
+from reckon.crew import rollout
 
 FIXTURES = Path(__file__).parent / "fixtures" / "backends"
 
@@ -199,6 +200,60 @@ def test_a_span_supplied_by_the_caller_rates_a_stream_that_reports_none():
     # No inference span was reported, so none is claimed.
     assert throughput["generation_seconds"] is None
     assert throughput["tokens_per_second"] is None
+
+
+def test_a_codex_receipt_gives_the_stream_a_measured_generation_span(
+    tmp_path,
+    monkeypatch,
+):
+    """The client rollout supplies the span the codex stream cannot report.
+
+    The exec stream separates neither inference from tool wait, so without a
+    rollout it reports no generation span.  With a read receipt the same stream
+    reports the rollout's bounded-tool-span measurement — non-null, and
+    distinct from the stream-alone form.
+    """
+    monkeypatch.setattr(rollout, "CLIENT_SESSIONS_DIR", tmp_path)
+    directory = tmp_path / "2026" / "09" / "08"
+    directory.mkdir(parents=True, exist_ok=True)
+    session_id = "observation-span-session"
+    records = [
+        {
+            "type": "response_item",
+            "timestamp": "2026-09-08T00:00:01.000Z",
+            "payload": {"type": "custom_tool_call", "call_id": "c1", "name": "probe"},
+        },
+        {
+            "type": "response_item",
+            "timestamp": "2026-09-08T00:00:05.000Z",
+            "payload": {
+                "type": "custom_tool_call_output",
+                "call_id": "c1",
+                "output": [{"type": "input_text", "text": "done"}],
+            },
+        },
+        {
+            "timestamp": "2026-09-08T00:00:06.000Z",
+            "payload": {
+                "type": "token_count",
+                "info": {"total_token_usage": {"input_tokens": 10}},
+            },
+        },
+    ]
+    (directory / f"rollout-2026-09-08T00-00-00-{session_id}.jsonl").write_text(
+        "".join(f"{json.dumps(record)}\n" for record in records)
+    )
+
+    receipt = rollout.read_rollout_receipt(session_id)
+    # wall 5s, one 4s bounded tool span, generation 1s
+    assert receipt.machine_seconds == 4.0
+    assert receipt.generation_seconds == 1.0
+
+    throughput = observe("codex-turn.jsonl", CODEX, receipt=receipt).throughput
+
+    assert throughput["generation_seconds"] is not None
+    assert throughput["machine_seconds"] is not None
+    assert throughput["tokens_per_second"] == round(5 / 1.0, 2)
 
 
 def test_an_unrated_stream_says_so_rather_than_reporting_zero():
