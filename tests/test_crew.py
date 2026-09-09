@@ -2686,12 +2686,14 @@ def test_interleaved_attach_and_observe_preserve_the_task_binding(
 FIXTURES = Path(__file__).parent / "fixtures" / "backends"
 
 
-def _dispatched(home, repo, fixture: str | None = None, **node_kwargs) -> dict:
+def _dispatched(
+    home, repo, fixture: str | None = None, *, config: dict | None = None, **node_kwargs
+) -> dict:
     record = crew.dispatch(
         node=_node(**node_kwargs),
         project="proj",
         repo=repo,
-        config=CONFIG,
+        config=config or CONFIG,
         session="sess",
         launcher=lambda plan, *, log_path, stderr_path, prompt_path: 0,
     )
@@ -2723,11 +2725,42 @@ def test_observe_folds_the_stream_into_the_record(home, repo) -> None:
     assert observed["session_id"] == "019ff509-8a60-7723-94fd-65942a6d8faa"
     assert observed["final_message"] == "ready"
     assert observed["budget"]["headroom"] == "unknown"
+    assert observed["throughput"]["generated_tokens"] == 5
+    assert observed["throughput"]["generation_seconds"] is None
+    assert observed["throughput"]["tokens_per_second"] is None
+    assert observed["throughput"]["detail"] == (
+        "turn tokens recorded, but no span was supplied to rate them"
+    )
     assert observed["manifest_present"] is False
     # Written back, so the next reader does not have to re-derive it.
     assert (
         json.loads(crew.pointer_path(record["run_id"]).read_text())["phase"]
         == "complete"
+    )
+
+
+def test_observe_persists_the_recorded_generation_span(home, repo) -> None:
+    """The pointer carries the stream's measured model duration unchanged."""
+    config = {
+        **CONFIG,
+        "backends": {
+            **CONFIG["backends"],
+            "alpha": {**CONFIG["backends"]["alpha"], "command": "claude"},
+        },
+    }
+    record = _dispatched(home, repo, "claude-worked-turn.jsonl", config=config)
+    observed = crew.observe(record["run_id"])
+    result = json.loads(
+        (FIXTURES / "claude-worked-turn.jsonl").read_text().splitlines()[-1]
+    )
+
+    assert (
+        observed["throughput"]
+        == json.loads(crew.pointer_path(record["run_id"]).read_text())["throughput"]
+    )
+    assert observed["throughput"]["generation_seconds"] == pytest.approx(
+        result["duration_api_ms"] / 1000,
+        rel=0.01,
     )
 
 

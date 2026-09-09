@@ -3174,6 +3174,7 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
             record["events"] = data["events"]
             record["exit_status"] = data["exit_status"]
             record["final_message"] = data["final_message"]
+            record["throughput"] = data["throughput"]
             record["phase"] = "stopped" if stopped else data["phase"]
             if (
                 not stopped
