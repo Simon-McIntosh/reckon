@@ -46,6 +46,7 @@ def _run(
     *,
     gate: str = "passed",
     effort: str = "high",
+    agent: dict | None = None,
     changed_lines: dict | None = None,
     completed_at_source: str = "stream_mtime",
     spec_level: str | None = None,
@@ -56,13 +57,15 @@ def _run(
     build_record_kwargs: dict[str, Any] = {}
     if spec_level is not None:
         build_record_kwargs["spec_level"] = spec_level
+    if agent is None:
+        agent = {"backend": "worker", "model": "concrete", "effort": effort}
     ledger.append_run(
         root.name,
         ledger.build_record(
             run_id=run_id,
             plan=plan,
             gate=gate,
-            agent={"backend": "worker", "model": "concrete", "effort": effort},
+            agent=agent,
             worker_seconds=int(actual_hours * 3600),
             completed_at_source=completed_at_source,
             changed_lines=changed_lines,
@@ -113,6 +116,86 @@ def test_deleting_and_rebuilding_reproduces_identical_figures(home, tmp_path) ->
     second = capabilities.rebuild_capabilities(mounted_docs=mounts)
 
     assert second == first
+
+
+def test_alias_window_and_local_pool_into_one_configuration(tmp_path) -> None:
+    root = _project(tmp_path)
+    _plan(root, "work", 2.0)
+    _run(root, "plain", "work", 1.0, effort="high")
+    _run(
+        root,
+        "aliased",
+        "work",
+        1.0,
+        agent={
+            "backend": "worker",
+            "model": "concrete",
+            "effort": "high",
+            "alias": "concrete-x",
+        },
+    )
+    _run(
+        root,
+        "windowed",
+        "work",
+        1.0,
+        agent={
+            "backend": "worker",
+            "model": "concrete",
+            "effort": "high",
+            "usable_input_window": 500000,
+        },
+    )
+    _run(
+        root,
+        "local",
+        "work",
+        1.0,
+        agent={
+            "backend": "worker",
+            "model": "concrete",
+            "effort": "high",
+            "local": True,
+        },
+    )
+
+    configurations = _derive(root)["configurations"]
+
+    assert len(configurations) == 1
+    configuration = configurations[0]
+    assert configuration["runs"] == 4
+    assert {item["run_id"] for item in configuration["observations"]} == {
+        "plain",
+        "aliased",
+        "windowed",
+        "local",
+    }
+
+
+def test_effort_or_sandbox_difference_keeps_configurations_separate(tmp_path) -> None:
+    root = _project(tmp_path)
+    _plan(root, "work", 2.0)
+    base = {
+        "backend": "worker",
+        "model": "concrete",
+        "effort": "high",
+        "sandbox": "worktree-full",
+    }
+    _run(root, "high", "work", 1.0, agent=base)
+    _run(root, "medium", "work", 1.0, agent={**base, "effort": "medium"})
+    _run(root, "readonly", "work", 1.0, agent={**base, "sandbox": "read-only"})
+
+    configurations = _derive(root)["configurations"]
+
+    assert len(configurations) == 3
+    assert {item["configuration"]["effort"] for item in configurations} == {
+        "high",
+        "medium",
+    }
+    assert {item["configuration"]["sandbox"] for item in configurations} == {
+        "worktree-full",
+        "read-only",
+    }
 
 
 def test_agent_configuration_includes_recorded_effort_level(tmp_path) -> None:

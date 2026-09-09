@@ -15,7 +15,7 @@ from typing import Any
 
 from reckon import _plan_html, ledger
 from reckon._store import _config_home, _mounts_path
-from reckon.calibration import agent_configuration_key
+from reckon.calibration import calibration_configuration_key
 
 _ORIENTATION_MINIMUM_SAMPLES = 2
 _RESUMED_INPUT_OUTLIER_LIMIT = 60_000_000
@@ -882,7 +882,7 @@ def derive_capabilities(
             if run.get("run_id")
         }
         for run in data["runs"]:
-            agent_key = agent_configuration_key(run)
+            agent_key = calibration_configuration_key(run)
             exclusion = ledger.measurement_exclusion_reason(run)
             if exclusion:
                 excluded[exclusion] += 1

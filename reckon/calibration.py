@@ -61,6 +61,36 @@ def agent_configuration_key(run: Mapping[str, Any]) -> str:
     return str(run.get("member") or run.get("backend") or "").strip()
 
 
+# Fields that decide what a worker actually runs. Display labels and mutable
+# deployment facts beside them (alias, usable_input_window, local) describe the
+# same behaviour, so a key that carries them splits one configuration's
+# evidence into rows that disagree with one another.
+_CALIBRATION_FIELDS = ("backend", "launch", "model", "effort", "sandbox")
+
+
+def calibration_configuration_key(run: Mapping[str, Any]) -> str:
+    """Return the calibration identity pooling cosmetic and mutable fields.
+
+    Session reuse stays keyed on the full configuration
+    (``agent_configuration_key``), because a changed window or a ``--local``
+    dispatch must still start a fresh session. Calibration instead pools
+    records that differ only in ``alias``, ``usable_input_window`` or
+    ``local``: they ran the same configuration, and splitting them halves
+    every sample while the two halves quietly disagree. An explicit
+    ``agent_key`` remains the authoritative identity for measured batches,
+    shared with the session key.
+    """
+
+    explicit = str(run.get("agent_key") or "").strip()
+    if explicit:
+        return explicit
+    agent = run.get("agent")
+    if isinstance(agent, Mapping) and agent:
+        pooled = {key: agent[key] for key in _CALIBRATION_FIELDS if key in agent}
+        return json.dumps(pooled, sort_keys=True, separators=(",", ":"))
+    return str(run.get("member") or run.get("backend") or "").strip()
+
+
 def _figure(value: Any) -> CalibrationFigure:
     if isinstance(value, CalibrationFigure):
         return value
@@ -96,7 +126,7 @@ def _observation(
     if attempt > 1 and duration_source in {"", "wall_fallback"}:
         return "untrustworthy_duration"
     plan = str(run.get("plan") or "").strip()
-    agent = agent_configuration_key(run)
+    agent = calibration_configuration_key(run)
     try:
         worker_seconds = float(run.get("worker_seconds"))
     except (TypeError, ValueError):

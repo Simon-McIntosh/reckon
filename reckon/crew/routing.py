@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
 from reckon import _backends, _plan_html, agent_context, capabilities, flight, ledger
-from reckon.calibration import agent_configuration_key
+from reckon.calibration import calibration_configuration_key
 
 from reckon.crew.node import (
     CrewError,
@@ -1440,7 +1440,7 @@ def _competence_verdict(
     agent = _agent_configuration(
         resolution.backend, resolution.launch, resolution.backend_settings
     )
-    key = agent_configuration_key({"agent": agent})
+    key = calibration_configuration_key({"agent": agent})
     plan_repo = repo
     if resolution.authority is not None:
         plan_repo = Path(resolution.authority["plan"]["repository"])
