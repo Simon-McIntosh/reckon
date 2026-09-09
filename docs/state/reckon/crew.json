@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T13:56:03",
+  "updated": "2026-09-09T14:15:05",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -471,7 +471,8 @@
         "session_id": "b7d2d137-9815-4150-8368-7d50dac9d63f",
         "session_model": "deepseek-v4-flash",
         "sessions": {
-          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "b7d2d137-9815-4150-8368-7d50dac9d63f"
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "b7d2d137-9815-4150-8368-7d50dac9d63f",
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"medium\",\"launch\":\"cli\",\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "3059b218-afc0-4fb5-9bcc-6f6e671a1f45"
         },
         "created": "2026-09-06"
       },
@@ -88708,6 +88709,222 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T113837888304-sfo-ledger-failures-get-a-named-cause",
+        "plan": "suite-failures-have-an-owner",
+        "section": "\u00a73",
+        "node": "sfo-ledger-failures-get-a-named-cause",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 6224,
+                "cached_input_tokens": 683277,
+                "input_tokens": 689503,
+                "output_tokens": 1091,
+                "reasoning_output_tokens": 494,
+                "total_tokens": 690594,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "d605a9b0-7fe6-4816-b993-dad99ec68f17",
+            "session_id": "ship-clw-2026-09-09"
+          },
+          "done_when": "all 6 named node ids in tests/test_ledger.py pass, the report states as a number how many distinct causes were found and names the cause of each failure, each recovery-classification row states whether the test named a retired state or the classifier produced a wrong one with the current classification cited, and the added-failure count against the recorded base revision is stated as a number and equals 0",
+          "estimated_hours": null,
+          "goal": "Give each of the six ledger-suite failures a named cause and repair them, confirming whether the two apparent groups are one cause or two",
+          "id": "sfo-ledger-failures-get-a-named-cause",
+          "lane_declaration": {
+            "backend": "clive",
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-09T11:38:38Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T113837888304-sfo-ledger-failures-get-a-named-cause/manifest.md",
+          "plan": "suite-failures-have-an-owner",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "tests/test_ledger.py",
+            "reckon/mcp.py",
+            "reckon/crew/recovery.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-flag-migration",
+        "backend": "clive",
+        "local": false,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "medium",
+          "launch": "cli",
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-09T11:38:40Z",
+        "completed_at": "2026-09-09T12:13:08.557Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2059,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2068,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "827f56685b5d1b865606efa887db64969eb1e5f5",
+        "commits": [],
+        "changed_lines": {
+          "added": 22,
+          "removed": 14,
+          "files": 1
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH pytest -p no:cacheprovider -q tests/test_ledger.py in the shadow worktree, plus an independent coordinator scan of the arm's stream for reads of arm A's commit",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T113837888304-sfo-ledger-failures-get-a-named-cause/coordinator-verification.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "effort pair 2 arm B at medium, verified clean: 83 passed identical to arm A, patch 22 insertions and 14 deletions against arm A's 20 and 15, and 32 thinking blocks against 39. The arms converged on this node, which is the opposite of pair 1 where high wrote 1 line against medium's 31 for the same outcome",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T113837888304-sfo-ledger-failures-get-a-named-cause/manifest.md",
+        "scope_changed": false,
+        "session_id": "3059b218-afc0-4fb5-9bcc-6f6e671a1f45",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 2964555,
+            "input_tokens_cumulative": 2964555,
+            "output_tokens": 22807,
+            "output_tokens_cumulative": 22807,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-09T12:13:08.557Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": {
+          "configuration": {
+            "inherited": {
+              "launch": "cli",
+              "model": "deepseek-v4-flash",
+              "sandbox": "worktree-full",
+              "time_budget": "45m"
+            },
+            "overrides": {
+              "effort": {
+                "layers": {
+                  "backend": "xhigh",
+                  "spec_level": "medium"
+                },
+                "resolved": "medium"
+              }
+            },
+            "resolved": {
+              "effort": "medium",
+              "time_budget": "45m"
+            },
+            "substituted": {
+              "backend": {
+                "primary": "clive",
+                "shadow": "clive",
+                "via": "backend"
+              },
+              "effort": {
+                "primary": "high",
+                "shadow": "medium",
+                "via": "override"
+              }
+            }
+          },
+          "kind": "shadow",
+          "primary_run_id": "r-20260909T105344882067-sfo-ledger-failures-get-a-named-cause",
+          "worktree_component": "6e7f81fdf502"
+        },
+        "shadow_controlled": false,
+        "shadow_patch": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T113837888304-sfo-ledger-failures-get-a-named-cause/shadow.patch",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 2964555,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 2065.542,
+          "generated_tokens": 22807,
+          "generation_seconds": 1965.52,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 10.3,
+          "machine_seconds": 100.022,
+          "peak_input_tokens": 104578,
+          "tokens_per_second": 11.6,
+          "wall_tokens_per_second": 11.04
+        },
+        "follow_on_paths": [
+          "reckon/mcp.py",
+          "reckon/crew/recovery.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "shadow",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": "shadow run: never merged by design; the deliverable is the retained worktree patch",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/shadow-r-20260909T105344882067-sfo-ledger-failures-get-a-named-cause-clive-6e7f81fdf502/sfo-ledger-failures-get-a-named-cause",
+          "session_id": "3059b218-afc0-4fb5-9bcc-6f6e671a1f45",
+          "session_source": "pointer",
+          "retained_at": "2026-09-09T12:13:08.557Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -88936,6 +89153,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1311
+    "_version": 1313
   }
 }
