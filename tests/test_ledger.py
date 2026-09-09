@@ -1146,7 +1146,7 @@ def test_a_run_in_flight_leaves_the_working_tree_clean(home, repo) -> None:
 # ── Interruption is recoverable ─────────────────────────────────────────────
 
 
-def test_a_killed_run_that_delivered_is_completed_but_unpromoted(home, repo) -> None:
+def test_a_killed_run_that_delivered_is_scoring_pending_review(home, repo) -> None:
     record = _dispatch(repo, fixture="codex-turn.jsonl")
     _deliver(record)
     _kill(record)
@@ -1154,11 +1154,14 @@ def test_a_killed_run_that_delivered_is_completed_but_unpromoted(home, repo) -> 
     report = crew.recover(project=PROJECT)
     row = report["runs"][0]
 
-    assert row["classification"] == "completed_unpromoted"
+    # A delivered run whose manifest reached complete but carries no attached
+    # independent review classifies scoring: the review lifecycle interposed
+    # a state between delivery and promotion, and the older
+    # completed_unpromoted name is retired.
+    assert row["classification"] == "scoring"
     assert row["manifest_path"] == record["manifest_path"]
-    assert row["next_action"].startswith(
-        f"reckon crew complete --run {record['run_id']}"
-    )
+    assert row["next_action"].startswith("reckon crew dispatch")
+    assert "--role review" in row["next_action"]
     # And promotion then succeeds, so nothing was lost by the interruption.
     promoted = crew.complete(
         record["run_id"], gate="passed", commits=[record["base_sha"]]
@@ -1207,7 +1210,9 @@ def test_recovery_reports_all_three_classes_and_counts_them(home, repo) -> None:
 
     assert report["counts"] == {
         "running": 1,
-        "completed_unpromoted": 1,
+        "scoring": 1,
+        "promotable": 0,
+        "completed_unpromoted": 0,
         "abandoned": 1,
     }
     assert {row["run_id"] for row in report["runs"]} == {
@@ -1791,7 +1796,7 @@ def _call_mcp(name: str, **arguments):
 
 
 def test_every_read_tool_rejects_an_unknown_keyword_with_its_vocabulary() -> None:
-    for name in ("_read_plan", "_roadmap", "_audit", "_crew"):
+    for name in ("read_plan", "roadmap", "audit", "crew"):
         tool = _mcp_tool(name)
         accepted = sorted(tool.parameters["properties"])
 
@@ -1820,7 +1825,7 @@ def test_every_read_view_returns_and_large_defaults_are_compact(home) -> None:
     before = durable_outside_state()
     assert _store._config_home() == home.resolve()
 
-    discovery = _call_mcp("_read_plan", project="reckon", checkout_path=str(checkout))
+    discovery = _call_mcp("read_plan", project="reckon", checkout_path=str(checkout))
     assert discovery["view"] == "summary"
     selected = next(
         item for item in discovery["resources"] if item.get("type") == "plan"
@@ -1835,7 +1840,7 @@ def test_every_read_view_returns_and_large_defaults_are_compact(home) -> None:
     responses.extend(
         [
             _call_mcp(
-                "_read_plan",
+                "read_plan",
                 resource=selector,
                 view=view,
                 checkout_path=str(checkout),
@@ -1847,7 +1852,7 @@ def test_every_read_view_returns_and_large_defaults_are_compact(home) -> None:
     responses.extend(
         [
             _call_mcp(
-                "_roadmap",
+                "roadmap",
                 project="reckon",
                 view=view,
                 checkout_path=str(checkout),
@@ -1859,7 +1864,7 @@ def test_every_read_view_returns_and_large_defaults_are_compact(home) -> None:
     responses.extend(
         [
             _call_mcp(
-                "_audit",
+                "audit",
                 project="reckon",
                 view=view,
                 checkout_path=str(checkout),
@@ -1871,7 +1876,7 @@ def test_every_read_view_returns_and_large_defaults_are_compact(home) -> None:
     responses.extend(
         [
             _call_mcp(
-                "_crew",
+                "crew",
                 project="reckon",
                 view=view,
                 checkout_path=str(checkout),
@@ -1891,7 +1896,7 @@ def test_every_read_view_returns_and_large_defaults_are_compact(home) -> None:
         ]
     )
 
-    audit_default = _call_mcp("_audit", project="reckon", checkout_path=str(checkout))
+    audit_default = _call_mcp("audit", project="reckon", checkout_path=str(checkout))
     responses.append(audit_default)
     assert audit_default["view"] == "summary"
     assert audit_default["state"]["checked"] >= audit_default["state"]["conformant"]
@@ -1909,7 +1914,7 @@ def test_a_document_audit_keeps_its_own_findings_by_default(home) -> None:
     document = next((checkout / "docs" / "plans").glob("*.html"))
 
     result = _call_mcp(
-        "_audit",
+        "audit",
         project="reckon",
         path=str(document),
         checkout_path=str(checkout),
@@ -2094,7 +2099,7 @@ def test_the_mcp_surface_holds_at_five_tools() -> None:
 
     names = {item.name for item in mcp.mcp._tool_manager.list_tools()}
 
-    assert names == {"_read_plan", "_edit_plan", "_roadmap", "_audit", "_crew"}
+    assert names == {"read_plan", "edit_plan", "roadmap", "audit", "crew"}
 
 
 # ── Two in-flight measurements survive the pointer they were held on ────────
