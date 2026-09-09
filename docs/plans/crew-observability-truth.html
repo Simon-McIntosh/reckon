@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-09">
-<meta name="plan-version" content="221">
+<meta name="plan-version" content="222">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md">
 <meta name="plan-impl" content="0.97">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b">
@@ -546,6 +546,90 @@
       and requiring the malformed one to be reported, and by promoting a run whose manifest
       carries the one-line form and requiring the guard to speak.
     </p>
+
+    <h2 id="s13">&#167;13 &mdash; A quiet fleet and a working one look identical, because nothing reports a wave</h2>
+    <p><strong>Directed by the lead 2026-09-09, after a session spent counting completions by
+    hand.</strong> Every signal this surface emits is per-run. The follower reports one line per
+    transition and trails each with a <code>Nw&middot;Nb&middot;Nu</code> count, so the information
+    that a wave has drained is present in the stream and belongs to no one: a coordinator learns
+    its wave finished by remembering how many nodes it dispatched and counting promotions until
+    the numbers agree. That is a rule enforced by recollection, which is the failure this plan is
+    named for &mdash; the display does not lie here, it declines to speak.</p>
+
+    <p><strong>Measured on one session, 2026-09-09.</strong> Seven runs across two waves. The
+    drain of the first was visible only as <code>0w&middot;0b&middot;0u</code> on the trailing
+    counter of an unrelated run's promotion line. Two of the seven &mdash; both shadows &mdash;
+    reached <em>no follower at all</em>: <code>crew shadow</code> accepts no <code>--session</code>,
+    so each minted a synthetic session id and read <code>mine: false</code>, and the third had to be
+    waited on with a hand-rolled loop against its manifest file. So the qualification work this
+    workstation does most of is the work its monitor cannot see.</p>
+
+    <p><strong>A wave is a type, and its membership is open.</strong> Not a set declared at
+    dispatch: a wave <em>accretes</em> while the ready queue keeps producing independent nodes, then
+    drains. A closed set would reintroduce the barrier the ship contract explicitly forbids &mdash;
+    a wave is a reporting snapshot of the active fleet, never a wait-for-everyone gate &mdash; because
+    a node that becomes ready after the wave opened would need either a second wave, fragmenting the
+    signal, or a wait. Measured in the same session: a design-pair shadow was added twenty minutes
+    after its siblings, since the node it pairs against had to land first to become the pair's other
+    arm. Under closed membership that is three waves for one push.</p>
+
+    <p><strong>Open membership is why closure needs a lifecycle rather than a counter.</strong></p>
+    <table>
+      <thead><tr><th>State</th><th>Admits members</th><th>What zero-working means</th></tr></thead>
+      <tbody>
+        <tr><td><code>open</code></td><td>yes</td><td><em>quiet, may still grow</em> &mdash; not a completion</td></tr>
+        <tr><td><code>sealed</code></td><td>no</td><td>every remaining member is in flight; closure is now derivable</td></tr>
+        <tr><td><code>closed</code></td><td>no</td><td>all members terminal &mdash; the signal fires here</td></tr>
+      </tbody>
+    </table>
+    <p>The coordinator seals, because only the coordinator knows whether more nodes are coming, and
+    the beat it already runs to seal is the session-closure fence. Without the sealed state, zero
+    working is ambiguous in exactly the way a baseline row is mistaken for a transition: the same
+    reading carries two meanings and nothing distinguishes them. Note that the boundary already
+    exists unnamed &mdash; the producer's seat is released when a wave drains and a fresh one is armed
+    for the next &mdash; so this names a thing the implementation already tracks implicitly.</p>
+
+    <p><strong>Unstaffed by default; an agent is an upgrade.</strong> The derived signal must work
+    with nobody assigned, or it costs a worker to learn that work finished and will not be armed.
+    Staffed, the wave takes a summarizer whose single job is to compile the receipts its members
+    already wrote &mdash; manifest <code>status</code>, <code>commits</code>, <code>tests</code>,
+    <code>baseline_suite</code> and <code>after_suite</code>, <code>failure_attribution</code>,
+    <code>artifacts</code>, <code>evidence_inputs</code>, <code>follow_ons</code>,
+    <code>blockers</code>, and from the committed row <code>gate_check</code>,
+    <code>throughput</code>, <code>worker_seconds</code>, <code>tests_added</code> and
+    <code>no_commit</code>. Nothing needs instrumenting; the fields exist and are read by hand today.</p>
+
+    <p><strong>The highest-value field to compile is <code>follow_ons</code>.</strong> The closure
+    contract requires every followup and every manifest follow-on to be enumerated and given a
+    disposition from a closed set, and a row with no disposition is an unfinished drain. That
+    enumeration is the most mechanical part of closure and the part where a missed row silently
+    hides work &mdash; roughly a dozen entries were collected by hand in one session. A staffed wave's
+    natural deliverable is therefore the drain queue itself, not prose about it.</p>
+
+    <p><strong>A wave id on the committed row makes wave cost measurable.</strong> Seven runs from
+    one session are seven independent ledger rows with no grouping, so no one can ask what a wave
+    cost, how many nodes a coordinator needed, or how much of a window a push consumed &mdash; which
+    is the question the cost-per-durable-node work is trying to answer about burn. The grouping is a
+    field, not an analysis.</p>
+
+    <p><strong>The hazard, written down before the feature exists.</strong> A summarizer must never
+    become a promoter. What caught real defects in the measured session was adversarial reading, not
+    summarizing: a configuration key fragmented by a display field, and a worker's choice between two
+    comparators that flipped <em>1.4&times; slower</em> into <em>no slower at all</em>. A wave overview
+    that reads plausible is precisely what would license skipping that read, which is the same shape
+    as a passing gate written by the worker being judged. The summary compiles receipts and states
+    the disposition split; the decision stays with the coordinator.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Every run can join a wave</td><td>Both <code>crew dispatch</code> and <code>crew shadow</code> accept the wave and the session, and a shadow's run is attributable to the dispatching session rather than to a synthetic id. Asserted through both commands, because the shadow path is the one with no signal today and the reason this section exists.</td></tr>
+        <tr><td>Membership is open, and sealing is what closes it</td><td>A member added after the wave opened joins it rather than forming a second wave; a wave with zero working members and no seal reports <em>open</em>, not closed; the same wave once sealed reports closed only when every member is terminal. Asserted in all three states, including the negative that an unsealed quiet wave never emits the closure signal.</td></tr>
+        <tr><td>The signal names the disposition split, never <em>finished</em></td><td>The closing line carries promoted, unpromoted and blocked counts separately, and a wave whose members are all terminal with one unpromoted is reported as needing attention rather than as complete. Asserted by test on that exact mix, since terminal-unpromoted is the state a coordinator misreads as done.</td></tr>
+        <tr><td>Unstaffed works, staffed adds synthesis</td><td>A wave with no agent assigned still opens, seals and emits its closure signal; a staffed wave additionally produces one overview artifact enumerating every member's gate, quantitative measure, artifacts and follow-on entries. Asserted separately, so the signal is never contingent on staffing.</td></tr>
+        <tr><td>Wave cost is readable from the ledger</td><td>Committed rows carry the wave they belonged to, and a calibration read reports node count, worker seconds and input tokens per wave without joining by timestamp. Asserted against the committed ledger rather than a fixture.</td></tr>
+      </tbody>
+    </table>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
