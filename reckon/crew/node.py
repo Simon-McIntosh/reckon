@@ -334,9 +334,12 @@ class CompetenceLimit(CrewError):
     """A node must be split before this worker configuration can run it."""
 
     def __init__(self, verdict: Mapping[str, Any]) -> None:
+        # The verdict is preserved exactly as built, reason included: a real
+        # refusal and the dry run that previewed it must be the same payload,
+        # or the preview answers a question the dispatch does not. The remedy
+        # stays reachable through the verdict's recommendation field and this
+        # exception's message, which both carry it in either refusal shape.
         self.verdict = dict(verdict)
-        reason = str(self.verdict.get("reason") or "competence horizon exceeded")
-        self.verdict["reason"] = format_refusal("D08", reason)
         super().__init__(
             format_refusal(
                 "D08",

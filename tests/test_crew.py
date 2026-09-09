@@ -2111,10 +2111,9 @@ def test_dispatch_refuses_work_above_the_selected_configuration_horizon(
         "competence_horizon_hours": 2.5,
         "estimate_provenance": "plan-fallback",
         "estimated_hours": 4.0,
-        "reason": (
-            "competence-horizon-exceeded Resolve with `reckon crew dispatch` "
-            "once for each smaller node."
-        ),
+        # The reason is the structured token as built; the split remedy lives
+        # beside it in recommendation, which this payload also pins below.
+        "reason": "competence-horizon-exceeded",
         "recommendation": (
             "split into nodes no larger than 2.5 worker-hours for this agent "
             "configuration Resolve with `reckon crew dispatch` once for each "
@@ -2222,13 +2221,11 @@ def test_cli_competence_refusal_has_typed_dry_run_parity(
     assert real_payload["error"] == dry_payload["error"] == "competence-refusal"
     real_competence = real_payload["competence"]
     dry_competence = dry_payload["competence"]
-    # The launching path raises the refusal and the exception rewrites the
-    # typed reason token with the remedy clause; the dry run emits the routing
-    # token as-is. Parity holds on every field except that enrichment.
-    assert {
-        key: value for key, value in real_competence.items() if key != "reason"
-    } == {key: value for key, value in dry_competence.items() if key != "reason"}
-    assert real_competence["reason"] == format_refusal("D08", dry_competence["reason"])
+    # The competence-horizon refusal raises the same envelope as the
+    # context-window refusal; both carry the reason token as built, so the
+    # real payload equals the preview field for field and an operator is not
+    # handed a different answer from the one the dry run previewed.
+    assert real_competence == dry_competence
     assert real_competence["target_size_hours"] == 2.5
     assert real_competence["estimate_provenance"] == "node"
     help_text = CliRunner().invoke(cli_module.main, ["crew", "--help"]).output
