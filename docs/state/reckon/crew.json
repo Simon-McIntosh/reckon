@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T07:50:57",
+  "updated": "2026-09-09T07:59:14",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -83341,6 +83341,180 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T053246300342-clw-effort-override-key-per-path",
+        "plan": "clive-local-workers",
+        "section": "\u00a710",
+        "node": "clw-effort-override-key-per-path",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 4419,
+                "cached_input_tokens": 208174,
+                "input_tokens": 212595,
+                "output_tokens": 1988,
+                "reasoning_output_tokens": 693,
+                "total_tokens": 214583,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "d605a9b0-7fe6-4816-b993-dad99ec68f17",
+            "session_id": "ship-clw-2026-09-09"
+          },
+          "done_when": "the report quotes the raw JSON of 4 dry runs - dispatch path and shadow path, each under --set backends.clive.effort=medium and under --set roles.implement.by_spec_level.guided.effort=medium - states the resolved agent.effort string for each, and gives as a number how many of the 4 resolved to medium, naming per path which key moved the value and which was discarded without refusal",
+          "estimated_hours": null,
+          "goal": "Report which configuration key the dispatch path and the shadow path each honour when a local-lane run's effort is overridden",
+          "id": "clw-effort-override-key-per-path",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-09T05:32:46Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T053246300342-clw-effort-override-key-per-path/manifest.md",
+          "plan": "clive-local-workers",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a710",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/clw-effort-override-key-per-path.md"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-admission",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-09T05:32:49Z",
+        "completed_at": "2026-09-09T05:57:14.919Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1447,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1465,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "bd7734c9150b95d17547ca510dfd2ddc80cbf33e",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "coordinator reproduction: two crew shadow --dry-run probes differing only in the override key, asserting agent.effort and the lineage layer record, against the dispatch-path pair measured earlier in the same session",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T053246300342-clw-effort-override-key-per-path/coordinator-verification.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T053246300342-clw-effort-override-key-per-path/manifest.md",
+        "scope_changed": false,
+        "session_id": "65ec16d1-87fc-4662-a20b-2fd6599e4c05",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 1882361,
+            "input_tokens_cumulative": 6745471,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 34830,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-09T05:57:14.919Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6745471,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 1462.586,
+          "generated_tokens": 34830,
+          "generation_seconds": 1442.311,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 21.1,
+          "machine_seconds": 20.275,
+          "peak_input_tokens": 214697,
+          "tokens_per_second": 24.15,
+          "wall_tokens_per_second": 23.81
+        },
+        "follow_on_paths": [
+          "exact/guided",
+          "reports/clw-effort-override-key-per-path.md"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": "report-only node; its entire declared write scope is a report outside every repository",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-clw-2026-09-09/clw-effort-override-key-per-path",
+          "session_id": "65ec16d1-87fc-4662-a20b-2fd6599e4c05",
+          "session_source": "pointer",
+          "retained_at": "2026-09-09T05:57:14.919Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -83569,6 +83743,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1257
+    "_version": 1258
   }
 }
