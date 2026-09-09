@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T17:13:00",
+  "updated": "2026-09-09T17:19:18",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -2336,9 +2336,11 @@
         "id": "spend-readers",
         "harness": "clive",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "520f9a18-9a90-4a69-bec1-21dc3b98dd0b",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "520f9a18-9a90-4a69-bec1-21dc3b98dd0b"
+        },
         "created": "2026-09-09"
       },
       {
@@ -2383,6 +2385,15 @@
         "sessions": {
           "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"xhigh\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"read-only\",\"usable_input_window\":1016576}": "23cb9cd6-0b67-4a73-a135-16b565c39ea4"
         },
+        "created": "2026-09-09"
+      },
+      {
+        "id": "spend-verify",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
         "created": "2026-09-09"
       },
       {
@@ -90299,6 +90310,198 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T140406768753-wslp-notional-figure-reaches-its-readers",
+        "plan": "worker-spend-is-legible-in-the-pane",
+        "section": "\u00a75",
+        "node": "wslp-notional-figure-reaches-its-readers",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1059,
+                "cached_input_tokens": 557542,
+                "input_tokens": 558603,
+                "output_tokens": 1051,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 559654,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3e7dcff5-8cdd-4a76-bdc7-a5c7cca53e79",
+            "session_id": "ship-worker-spend-20260909"
+          },
+          "done_when": "A promoted run on a dated-rate lane carries a non-null notional_cost_usd with its rate_basis on the stored lane_receipt, where at the base revision it carries none, and the lanes view reports the same figure for the same run. Both call sites pass model_identifier from the agent configuration the record already holds - _harvest_lane_receipt in promotion.py and the lanes view in mcp_views.py, each of which calls read_rollout_receipt with no model today, verified as zero occurrences of model_identifier in each file. No new resolution of model identity is introduced; if either site cannot reach the model without a new lookup, report that as a finding rather than working around it. A lane whose rate pair carries no as_of date still promotes with the figure carrying the explicit unpriced marker object rather than zero. The two surfaces are compared against each other in ONE assertion rather than asserted separately, so a drifting copy fails instead of telling two stories. A new test must fail at the base revision and pass at HEAD, and that positive control is reported, because a test green on both sides proves nothing. pytest tests/test_promotion_harvests_the_receipt.py tests/test_lane_quota_attribution.py tests/test_mcp_views.py tests/test_ledger.py shows no failures added against the base revision.",
+          "estimated_hours": null,
+          "goal": "The computed notional figure reaches the stored receipt and the lanes view by passing the model identity its two call sites already hold",
+          "id": "wslp-notional-figure-reaches-its-readers",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-09T14:04:07Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T140406768753-wslp-notional-figure-reaches-its-readers/manifest.md",
+          "plan": "worker-spend-is-legible-in-the-pane",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "reckon/mcp_views.py",
+            "tests/test_promotion_harvests_the_receipt.py",
+            "tests/test_lane_quota_attribution.py",
+            "tests/test_mcp_views.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "spend-readers",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-09T14:04:15Z",
+        "completed_at": "2026-09-09T15:15:26.678Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4246,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4271,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "8ad33203ef194c98f48fd53b0394c7bdb16edf4a",
+        "commits": [
+          "f937a7c2f75dbda033e3be079720253d41baaa00"
+        ],
+        "changed_lines": {
+          "added": 344,
+          "removed": 4,
+          "files": 3
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD python -m pytest -p no:cacheprovider tests/test_promotion_harvests_the_receipt.py tests/test_lane_quota_attribution.py tests/test_mcp_views.py tests/test_ledger.py -q",
+          "exit_status": 0,
+          "log_path": null,
+          "log_digest": "exit 0 and failure_count 0 at base 8ad3320 and at HEAD f937a7c; 52 passed on the coordinator's independent three-file run"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T140406768753-wslp-notional-figure-reaches-its-readers/manifest.md",
+        "scope_changed": false,
+        "session_id": "520f9a18-9a90-4a69-bec1-21dc3b98dd0b",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 16284978,
+            "input_tokens_cumulative": 16284978,
+            "output_tokens": 91211,
+            "output_tokens_cumulative": 91211,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-09T15:15:26.678Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 16284978,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 4267.807,
+          "generated_tokens": 91211,
+          "generation_seconds": 4004.84,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 22.4,
+          "machine_seconds": 262.967,
+          "peak_input_tokens": 227774,
+          "tokens_per_second": 22.78,
+          "wall_tokens_per_second": 21.37
+        },
+        "follow_on_paths": [
+          "tests/test_crew_lanes_view.py::test_crew_tool_accepts_lanes_and_keeps_unknown_view_refusal",
+          "mcp_views.py",
+          "test_lanes_view_is_live.py",
+          "test_lanes_view_serving_state.py",
+          "tests/test_promotion_beat_carries_fleet_state.py::test_promotion_carries_a_bounded_fleet_reading_without_changing_the_ledger",
+          "notional_cost_usd/rate_basis",
+          "docs/rendered-evidence",
+          "docs/worker-spend",
+          "docs/state/crew.json",
+          ".claude/)."
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_promotion_harvests_the_receipt.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-worker-spend-20260909/wslp-notional-figure-reaches-its-readers",
+          "session_id": "520f9a18-9a90-4a69-bec1-21dc3b98dd0b",
+          "session_source": "pointer",
+          "retained_at": "2026-09-09T15:15:26.678Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -90527,6 +90730,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1331
+    "_version": 1334
   }
 }
