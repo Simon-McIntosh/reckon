@@ -73,31 +73,75 @@
     <h2 id="s2">&sect;2 &mdash; What the store is, and what washing out means</h2>
 
     <p>An embedded SQLite database in the crew config home, one file, no server,
-    already available in the standard library. Three properties are the whole
-    reason for choosing it over the current file:</p>
+    already in the standard library. Three properties are the whole reason for
+    choosing it over the current one:</p>
 
     <ul>
       <li><strong>An append is an append.</strong> A promoting run inserts one
       row under a transaction. It does not read, rewrite or serialise the other
-      817. The concurrent-promotion race disappears rather than being defended
+      825. The concurrent-promotion race disappears rather than being defended
       against.</li>
       <li><strong>A question can be asked without reading everything.</strong>
-      Indexed on run id, member, node, project, and completion time &mdash; the five
+      Indexed on run id, member, node, project and completion time &mdash; the five
       keys every current reader scans linearly for.</li>
       <li><strong>Rows can hold their fields for different durations.</strong>
-      This is what makes rotation possible at all: the durable summary of a run
-      &mdash; its identity, member, configuration, gate verdict, commit, and the
-      derived figures &mdash; is a narrow row that is never deleted, while the wide
-      detail hanging off it is a separate table that ages out. History persists;
-      the detail washes out. Deleting a run's gate-check payload after ninety
-      days does not delete the fact that the run happened, what it cost, or what
-      it produced, which is the thing every long-horizon measurement actually
-      needs.</li>
+      This is what makes rotation possible at all, and it is the property a
+      single JSON array cannot have at any size.</li>
     </ul>
 
-    <p>The durable half is small: at the current corpus it is on the order of a
-    kilobyte per run, so ten thousand runs of permanent history is a file smaller
-    than today's 818-run document.</p>
+    <p><strong>The split is measured, not proposed.</strong> Over the 826 rows
+    present at authoring &mdash; 2.81 MB of row payload across 54 distinct fields &mdash;
+    thirteen fields carry <strong>78.3%</strong> of the bytes and the other
+    forty-three carry <strong>21.7%</strong>. One field, the node contract
+    re-stored on every run, is <strong>43.7%</strong> by itself. So the durable
+    row and the detail hanging off it are not a design preference imposed on the
+    data; they are where the data already divides.</p>
+
+    <table>
+    <thead>
+      <tr><th>Half</th><th>Fields</th><th>Share of payload</th><th>Per run</th><th>Lifetime</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Durable row</strong> &mdash; identity, member, agent configuration,
+        role, specification level, gate verdict, commits, changed lines, tests added,
+        lineage, timestamps, the two derived figures</td>
+        <td>43</td>
+        <td>21.7%</td>
+        <td>737 B</td>
+        <td>never deleted</td>
+      </tr>
+      <tr>
+        <td><strong>Detail</strong> &mdash; <code>node_definition</code> (43.7% alone),
+        <code>budget</code>, <code>unreconciled_override</code>, <code>gate_check</code>,
+        <code>execution_fit</code>, <code>throughput</code>, <code>worktree_retention</code>,
+        <code>lane_receipt</code>, <code>suite_delta</code> and the rest</td>
+        <td>13</td>
+        <td>78.3%</td>
+        <td>2,660 B</td>
+        <td>ages out</td>
+      </tr>
+    </tbody>
+    </table>
+
+    <p><strong>What that buys, stated as a figure rather than as a direction.</strong>
+    Today's file is 5,300 bytes per run. The durable half is 737, a
+    <strong>7.2&times;</strong> reduction, so the permanent record of 10,000 runs is
+    <strong>7.4 MB</strong>. That is larger than today's 4.38 MB file, and saying
+    otherwise would be the wrong claim: the win is not that permanent history is
+    smaller in absolute terms, it is that <em>the part that grows without bound
+    grows 7.2&times; more slowly</em>, and that the part which does not need to be
+    permanent stops being permanent. Deleting a run's gate-check payload after its
+    horizon does not delete that the run happened, what it cost, or what it
+    produced &mdash; which is everything a long-horizon measurement reads.</p>
+
+    <p><strong>Three tables, and the two the current file conflates.</strong> The
+    ledger today is one document holding runs, roster members and holds together;
+    826, 236 and 16 of them. Members and holds are small, mutable and read on every
+    dispatch, while runs are large, immutable once written and read in bulk &mdash;
+    opposite access patterns sharing one lock and one parse. They become their own
+    tables, which is most of why a dispatch stops paying for the run history it
+    never looks at.</p>
 
     <h2 id="s3">&sect;3 &mdash; The swap is hot, because reads and writes flip independently</h2>
 
