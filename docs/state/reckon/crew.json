@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T10:33:46",
+  "updated": "2026-09-09T10:38:26",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -621,9 +621,11 @@
         "id": "crew-midflight",
         "harness": "clive",
         "role": "implement",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
+        "session_id": "cbd19988-9613-4cbf-93fb-01ffd04eb0d1",
+        "session_model": "deepseek-v4-flash",
+        "sessions": {
+          "{\"alias\":\"dsv4-flash\",\"backend\":\"clive\",\"effort\":\"high\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\",\"usable_input_window\":1016576}": "cbd19988-9613-4cbf-93fb-01ffd04eb0d1"
+        },
         "created": "2026-09-06"
       },
       {
@@ -85400,6 +85402,177 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T082334314461-cotd-resumability-reads-the-resolved-session",
+        "plan": "crew-observability-truth",
+        "section": "\u00a71",
+        "node": "cotd-resumability-reads-the-resolved-session",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 731,
+                "cached_input_tokens": 379433,
+                "input_tokens": 380166,
+                "output_tokens": 1759,
+                "reasoning_output_tokens": 1060,
+                "total_tokens": 381925,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "29187761-681d-4f4d-85ae-fc3d7adc250b",
+            "session_id": "ship-cot-drain-20260909"
+          },
+          "done_when": "pytest tests/test_crew.py tests/test_crew_lane_change.py -q exits 0 having added at least 3 tests: resume_plan continues a run whose pointer session is null while its stream supplies one, and does so WITHOUT depending on an observe write-back; the same-harness lane change records a continued session for a stream-resolved id and stores that id with its source; and a run with no session resolvable in any authority still refuses. State the before and after count of direct record.get session_id reads in reckon/crew/dispatch.py, and the after count must contain no resumability decision. Base-versus-head delta on tests/test_crew_session_keying.py adds zero failures. reckon/crew/promotion.py is held by another coordinator's live run: its _recoverable_session defect is OUT of scope, so do not edit it and do not add a test that cannot pass without it. Cite the map at /home/ITER/mcintos/.config/reckon/crew/reports/cot-resume-and-park-reader-map.md",
+          "estimated_hours": null,
+          "goal": "every resumability decision in dispatch keyed on the resolved session value rather than the raw pointer field",
+          "id": "cotd-resumability-reads-the-resolved-session",
+          "lane_declaration": {
+            "backend": "codex-terra",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-09T08:23:34Z",
+            "read_at": "2026-09-09T08:23:35Z",
+            "resolved_backend": "codex-terra",
+            "utilisation_pct": 64.0
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T082334314461-cotd-resumability-reads-the-resolved-session/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "codex-terra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "tests/test_crew.py",
+            "tests/test_crew_lane_change.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "implement-terra-c",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-09T08:23:42Z",
+        "completed_at": "2026-09-09T08:36:49Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 787,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 787,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "1ece27db1417b32470f8852e13429d42a10eb2f9",
+        "commits": [
+          "4f566d97d18cc2bd4bc2d55ee54fd5150c3be093"
+        ],
+        "changed_lines": {
+          "added": 101,
+          "removed": 9,
+          "files": 3
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q the focused stream-resolution cases",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T082334314461-cotd-resumability-reads-the-resolved-session/resolved-session-cases.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T082334314461-cotd-resumability-reads-the-resolved-session/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a08544-07b6-74c0-902f-35e15d1808a4",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 5777664,
+            "cached_input_tokens_cumulative": 5777664,
+            "input_tokens": 5956336,
+            "input_tokens_cumulative": 5956336,
+            "output_tokens": 26380,
+            "output_tokens_cumulative": 26380,
+            "reasoning_output_tokens": 11013,
+            "reasoning_output_tokens_cumulative": 11013
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-09T08:36:49Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 65.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-09T08:36:49Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 5777664,
+          "cumulative_input_tokens": 11734000,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 37393
+        },
+        "follow_on_paths": [
+          "tests/test_crew_session_keying.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_crew.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cot-drain-20260909/cotd-resumability-reads-the-resolved-session",
+          "session_id": "01a08544-07b6-74c0-902f-35e15d1808a4",
+          "session_source": "stream",
+          "retained_at": "2026-09-09T08:36:49Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -85628,6 +85801,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1281
+    "_version": 1283
   }
 }
