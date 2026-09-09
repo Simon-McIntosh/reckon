@@ -959,6 +959,102 @@ def _run_streams(path: Path) -> list[Path]:
     return [candidate for candidate in (original, *resumes) if candidate.is_file()]
 
 
+def _record_stream_paths(record: Mapping[str, Any]) -> list[Path]:
+    """Every surviving stream path a run's tool calls appear in.
+
+    ``log_path`` is the stream file the launcher wrote and resumes live beside
+    it; the run directory is the fallback when a pointer never carried one, so
+    a record whose launcher recorded nothing still reaches whatever stream
+    survived.
+    """
+    candidates: list[Path] = []
+    gathered: set[Path] = set()
+    for candidate in _run_streams(Path(str(record.get("log_path") or ""))):
+        if candidate not in gathered:
+            candidates.append(candidate)
+            gathered.add(candidate)
+    run_stream = run_dir(str(record.get("run_id") or "")) / "stream.jsonl"
+    for candidate in _run_streams(run_stream):
+        if candidate not in gathered:
+            candidates.append(candidate)
+            gathered.add(candidate)
+    return candidates
+
+
+def _primary_read_targets(
+    primary: Mapping[str, Any], tree: Path
+) -> tuple[str, tuple[str, ...]]:
+    """The landed commit and changed paths a shadow could have read.
+
+    The commit is the primary row's own cited sha, resolved at its promotion,
+    and the paths are the files that sha changed, read back from the shared
+    object store so no manifest or fixture needs to have named them. A primary
+    with no cited commit (a shadow of a shadow, which does not land code) has
+    nothing a run could read as an answer.
+    """
+    commits = [str(sha) for sha in (primary.get("commits") or ()) if str(sha).strip()]
+    commit = commits[-1] if commits else ""
+    if not commit:
+        return "", ()
+    result = subprocess.run(
+        [
+            "git",
+            "diff-tree",
+            "--root",
+            "--no-commit-id",
+            "--name-only",
+            "-r",
+            f"{commit}^{{commit}}",
+        ],
+        cwd=str(tree),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode:
+        return commit, ()
+    return commit, tuple(line for line in result.stdout.splitlines() if line.strip())
+
+
+def _shadow_stream_contamination(
+    record: Mapping[str, Any],
+    ledger_runs: Iterable[Mapping[str, Any]],
+    tree: Path,
+) -> str | None:
+    """Scan a shadow's streams for reads of its primary's landed answer.
+
+    Detection runs at promotion, where both halves are already in hand: the
+    primary's row in the ledger this promotion loaded and the run's own stream.
+    A run that cannot see the primary's commit — its row absent, its stream
+    gone, or its primary never cited one — answers clean rather than refusing,
+    because an instrument that fails must not become a refusal of its own.
+    """
+    lineage = record.get("lineage")
+    primary_run_id = str((lineage or {}).get("primary_run_id") or "")
+    if not primary_run_id:
+        return None
+    primary = next(
+        (row for row in ledger_runs if str(row.get("run_id")) == primary_run_id),
+        None,
+    )
+    if primary is None:
+        return None
+    commit, paths = _primary_read_targets(primary, tree)
+    if not commit:
+        return None
+    stream_paths = _record_stream_paths(record)
+    if not stream_paths:
+        return None
+    calls = ledger.stream_tool_calls(stream_paths)
+    return ledger.shadow_primary_read(
+        calls,
+        primary_commit=commit,
+        primary_paths=paths,
+        repo_root=str(record.get("repo") or ""),
+        worktree=str(record.get("worktree") or ""),
+    )
+
+
 @dataclass(frozen=True)
 class StreamMeasures:
     """Measurements recoverable from a run's ordered event streams."""
@@ -2268,6 +2364,15 @@ def _complete_locked(
     execution_fit = record.get("execution_fit")
     if isinstance(execution_fit, Mapping):
         run["execution_fit"] = dict(execution_fit)
+    # A shadow whose stream read its primary's landed answer is void as
+    # calibration evidence; the stream is still on disk at this point (the run
+    # directory is released after the append) so promotion scans it rather than
+    # trusting a worker's self-report. Contamination recreates the primary's
+    # answer from the object store, never from the shadow's own patch.
+    if shadow:
+        contamination = _shadow_stream_contamination(record, ledger_data["runs"], tree)
+        if contamination:
+            run["shadow_contaminated"] = contamination
     already_promoted = False
     try:
         written = ledger.append_run(project, run, root=ledger_root)
