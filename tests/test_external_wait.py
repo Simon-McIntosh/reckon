@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -208,10 +208,11 @@ def test_a_crash_without_a_wait_declaration_stays_abandoned(
 def test_a_quoted_local_offset_wait_stays_waiting_and_sweep_eligible(
     home: Path, tmp_path: Path, quote: str
 ) -> None:
+    local = datetime.now(tz=UTC).astimezone(timezone(timedelta(hours=2))).isoformat()
     pointer = _waiting_run(
         tmp_path,
         f"r-quoted-offset-{ord(quote)}",
-        started_at=f"{quote}2026-09-09T10:15:30+02:00{quote}",
+        started_at=f"{quote}{local}{quote}",
     )
 
     row = recovery.classify_pointer(pointer)
@@ -263,6 +264,36 @@ def test_a_quoted_local_offset_uses_the_same_epoch_as_bare_utc(
         == datetime.fromisoformat(utc).timestamp()
     )
     assert quoted_wait["age_seconds"] == bare_wait["age_seconds"]
+
+
+@pytest.mark.parametrize("field", recovery._WAIT_DECLARATION_SCALAR_FIELDS)
+@pytest.mark.parametrize("quote", ["'", '"'])
+def test_wait_declaration_scalars_tolerate_matched_surrounding_quotes(
+    tmp_path: Path, field: str, quote: str
+) -> None:
+    manifest = tmp_path / "manifest.md"
+    manifest.write_text("status: waiting\n", encoding="utf-8")
+    value = "2026-09-09T08:15:30+00:00" if field == "wait_started_at" else "30m"
+    declaration = recovery._manifest_wait(
+        {
+            "status": "waiting",
+            "wait_condition": "cluster job 7788",
+            "wait_probe": ["scheduler-status", "--job", "7788"],
+            "wait_terminal": ["COMPLETED"],
+            "resume_brief": "inspect the job result and finish",
+            field: f"{quote}{value}{quote}",
+        },
+        manifest,
+        now_seconds=datetime(2026, 9, 9, 9, 15, 30, tzinfo=UTC).timestamp(),
+        stale_after_seconds=3600,
+    )
+
+    assert declaration is not None
+    assert declaration["valid"] is True
+    assert declaration["expected_horizon_seconds"] == (
+        3600 if field == "wait_started_at" else 1800
+    )
+    assert declaration["error"] == ""
 
 
 def test_an_invalid_quoted_wait_stamp_stays_unreadable_and_names_its_field(
