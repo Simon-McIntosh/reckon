@@ -108,6 +108,7 @@ def _node(home: Path, sequence: int) -> crew.TaskNode:
         ),
         write_paths=[f"reckon/session_{sequence}.py"],
         time_budget="20m",
+        spec_level="guided",
         manifest_path=str(home / f"session-node-{sequence}.md"),
     )
 
