@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T11:02:31",
+  "updated": "2026-09-09T11:09:05",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -86099,6 +86099,178 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T084943048969-cotd-landing-evidence-is-not-completion",
+        "plan": "crew-observability-truth",
+        "section": "\u00a714",
+        "node": "cotd-landing-evidence-is-not-completion",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1844,
+                "cached_input_tokens": 472767,
+                "input_tokens": 474613,
+                "output_tokens": 822,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 475435,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "29187761-681d-4f4d-85ae-fc3d7adc250b",
+            "session_id": "ship-cot-drain-20260909"
+          },
+          "done_when": "Judge by DELTA against the base revision, never absolute green: record base failure ids for tests/test_schema.py, tests/test_edit_plan.py and tests/test_roadmap.py and require zero ADDED. Focused coverage: pytest tests/test_executable_remainder.py -q exits 0 with at least 4 added cases. The falsifier is a live measurement and must be reproduced as a fixture: five sections declared implementable of which three carry landing evidence and none is reclassified reports a remainder of 5, where the current derivation reports 2. Also assert a reclassification to done lowers the count by exactly one; that a section already done does not return to the remainder when a later comment lands on it; and that an absent or malformed declaration still reports the unknown sentinel rather than zero, since that negative must survive this change. The entry point is named and covered, not implied: reckon-ship SKILL.md instructs the coordinator to reclassify the section to done in the collapse-on-landing beat it already performs, asserted by pytest tests/test_skill_contracts.py -q exiting 0. Context and reason this node exists: the first derivation treated any non-empty section comment as a finished section, so on the live plan the remainder read 0 while eleven measures were outstanding \u2014 the same under-report that ended the coordinator session this plan was written after",
+          "estimated_hours": null,
+          "goal": "a declared section leaving the executable remainder only when its declaration is reclassified done",
+          "id": "cotd-landing-evidence-is-not-completion",
+          "lane_declaration": {
+            "backend": "codex-terra",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-09T08:49:43Z",
+            "read_at": "2026-09-09T08:49:44Z",
+            "resolved_backend": "codex-terra",
+            "utilisation_pct": 66.0
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T084943048969-cotd-landing-evidence-is-not-completion/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "codex-terra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a714",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/_schema.py",
+            "tests/test_executable_remainder.py",
+            "skills/reckon-ship/SKILL.md",
+            "tests/test_skill_contracts.py",
+            "tests/test_edit_plan.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "implement-terra-b",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-09T08:49:56Z",
+        "completed_at": "2026-09-09T09:07:17Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 1041,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 1041,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "f0f7c36f00694cdfd3e0fefc36f2de9bb0be379c",
+        "commits": [
+          "f86c5947d5c3700189a363f6f2c244fe344c0425",
+          "0a4e370fabf508583a7d9595e0ffe54035b9ed79"
+        ],
+        "changed_lines": {
+          "added": 81,
+          "removed": 21,
+          "files": 5
+        },
+        "tests_added": 12,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_executable_remainder.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T084943048969-cotd-landing-evidence-is-not-completion/executable-remainder-tests.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T084943048969-cotd-landing-evidence-is-not-completion/manifest.md",
+        "scope_changed": true,
+        "session_id": "01a0855c-0ab2-7b62-a9c8-2324a04ccece",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 3245952,
+            "cached_input_tokens_cumulative": 3245952,
+            "input_tokens": 3420494,
+            "input_tokens_cumulative": 3420494,
+            "output_tokens": 7753,
+            "output_tokens_cumulative": 7753,
+            "reasoning_output_tokens": 1831,
+            "reasoning_output_tokens_cumulative": 1831
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-09T09:07:17Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 67.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-09T09:07:17Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 3245952,
+          "cumulative_input_tokens": 6666446,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 9584
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest tests/test_executable_remainder.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cot-drain-20260909/cotd-landing-evidence-is-not-completion",
+          "session_id": "01a0855c-0ab2-7b62-a9c8-2324a04ccece",
+          "session_source": "stream",
+          "retained_at": "2026-09-09T09:07:17Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -86327,6 +86499,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1287
+    "_version": 1288
   }
 }
