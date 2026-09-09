@@ -546,6 +546,13 @@ accumulation_key := run_id                          if kind == "shadow"
           <td>guided &middot; local, after nodes 1&ndash;4</td>
         </tr>
         <tr>
+          <td><code>wall-is-measured-while-a-run-is-live</code></td>
+          <td>The wall cell carries a figure for a run still in flight, which is when a reader most needs it.</td>
+          <td>A transition for a live run renders a measured wall figure rather than the unmeasured marker, asserted over a fixture pointer carrying <code>created_at</code> and <code>attempt_started_at</code> and no <code>throughput</code> block &mdash; which is every live pointer, verified as 0 of 3 sampled carrying one. <code>_fold_time</code> currently reads <code>throughput.elapsed_seconds</code> alone and so returns nothing for any in-flight run, while the pointer's own stamps make elapsed derivable; a resumed run sums its attempts' spans rather than reporting only the current one. The derived figure must be marked as derived-from-stamps rather than presented identically to a span folded from a completed row, because the two have different provenance and a reader comparing rows should not have to guess which. Model seconds and the rate stay unmeasured while a run is live and that is correct, not a gap: no inference span exists until a terminal record or a rollout with bounded tool spans does, so this node must not invent one &mdash; if it can only produce wall by also producing a model figure, it reports that rather than proceeding. <code>uv run pytest tests/test_cumulative_token_accounting.py tests/test_crew_ticker.py tests/test_crew_recovery.py -q</code> shows no failures added against the base revision.</td>
+          <td><code>reckon/crew/metering.py</code>, <code>tests/test_cumulative_token_accounting.py</code></td>
+          <td>guided &middot; local, ready now</td>
+        </tr>
+        <tr>
           <td><code>merged-head-attribution</code></td>
           <td>The combination is measured where it exists, and any failure is attributed to the node that caused it.</td>
           <td>The full suite runs at the merged head with every node's commit present, its failure set is compared against the recorded base revision, and each added failure is attributed to a named node. A suite that cannot complete is recorded with the verdict <code>not-run</code> and still delivers the attribution for the prefix it reached; it is never recorded as passed. The pane is rendered once against the live fleet at the real pane width and the capture is attached.</td>
