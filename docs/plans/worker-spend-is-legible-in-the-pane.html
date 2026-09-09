@@ -399,6 +399,13 @@ accumulation_key := run_id                          if kind == "shadow"
           <td>guided &middot; local</td>
         </tr>
         <tr>
+          <td><code>receipt-reaches-the-record</code></td>
+          <td>The measured span reaches the committed run record, by joining the two halves promotion already holds.</td>
+          <td>A promoted codex run whose rollout survives carries non-null <code>throughput.generation_seconds</code>, <code>machine_seconds</code> and <code>tokens_per_second</code> on its ledger row, where at the base revision it carries null. The measure is a coverage count over promoted rows rather than a single fixture: the number of codex rows carrying a measured span rises against the base revision and the figure is stated. <code>promotion.py</code> passes the receipt <code>_harvest_lane_receipt</code> already reads into the <code>observe_log</code> call that already stores the block, so no new read and no new computation is introduced &mdash; if the change needs either, that is evidence the diagnosis was wrong and the node reports it rather than proceeding. A run with no surviving rollout still promotes, with the span explicitly unmeasured rather than zero, asserted as the returned marker. <code>uv run pytest tests/test_ledger.py tests/test_promotion_harvests_the_receipt.py tests/test_crew_promotion.py -q</code> shows no failures added against the base revision &mdash; <code>test_ledger.py</code> included because it holds the contracts that cross this package's boundaries and changes fenced away from it have broken one each time.</td>
+          <td><code>reckon/crew/promotion.py</code>, <code>tests/test_promotion_harvests_the_receipt.py</code>, <code>tests/test_ledger.py</code>, <code>tests/test_crew_promotion.py</code></td>
+          <td>guided &middot; local, ready now</td>
+        </tr>
+        <tr>
           <td><code>receipt-carries-spend</code></td>
           <td>The lane receipt carries notional spend beside the quota position, per window, each labelled with its own duration and reset.</td>
           <td>A receipt for a run on a rated lane carries a notional spend figure derived from declared rates and measured tokens, and a receipt on an unrated lane carries the explicit unpriced marker rather than zero. Each quota window in the receipt is labelled with the duration the payload reported, and an account reporting one window yields exactly one, asserted by the absence of any second window rather than by its text. The quantisation limit is stated in the returned structure, not only in a docstring. <code>uv run pytest tests/test_rollout_receipt.py tests/test_promotion_harvests_the_receipt.py tests/test_lane_quota_attribution.py -q</code> passes.</td>
