@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="worker-spend-is-legible-in-the-pane-landed">
   <meta name="plan-title" content="What Each Worker Cost — landed record">
-  <meta name="plan-summary" content="Seven nodes: the pane's five spend cells, the measurements under them, and the four corrections the work made to its own plan.">
+  <meta name="plan-summary" content="Eleven nodes: the pane's five spend cells, the measurements under them, and the five corrections the work made to its own plan.">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-evidence-for" content="worker-spend-is-legible-in-the-pane">
   <meta name="plan-owner" content="Simon McIntosh">
@@ -21,11 +21,11 @@
       <p class="eyebrow">Execution record &middot; 2026-09-09</p>
       <h1>What Each Worker Cost &mdash; landed record</h1>
       <p class="lead">
-        Seven nodes on the local lane, all promoted and merged. The pane carries five spend
+        Eleven nodes on the local lane, all promoted and merged. The pane carries five spend
         cells; the measurements they read were built first, because at the base revision all
         five were measured together on 26 of 803 committed rows. The record below keeps the
-        four corrections this work made to its own plan alongside what it delivered, because
-        three of the four were found by workers refusing a brief rather than by review.
+        five corrections this work made to its own plan alongside what it delivered, because
+        four of the five were found by workers refusing a brief rather than by review.
       </p>
     </header>
 
@@ -67,7 +67,7 @@
       merge, so a concurrent session's fourth counter cell is unaffected.
     </p>
 
-    <h2 id="nodes">&sect;2 &mdash; The seven nodes</h2>
+    <h2 id="nodes">&sect;2 &mdash; The eleven nodes</h2>
     <table>
       <thead><tr><th>Node</th><th>Commit</th><th>Gate</th><th>What it established</th></tr></thead>
       <tbody>
@@ -102,6 +102,18 @@
         <tr>
           <td>figure reaches its readers</td><td><code>f937a7c</code></td><td>passed, +3 tests</td>
           <td>Both call sites pass the model identity they already held; positive control fails at base with <code>KeyError</code></td>
+        </tr>
+        <tr>
+          <td>wall while a run is live</td><td><code>bda8722</code></td><td>passed, +6 tests</td>
+          <td>Wall derives from the pointer's own stamps where no throughput block exists; also stopped a fabricated machine figure on a mixed chain</td>
+        </tr>
+        <tr>
+          <td>time across attempts</td><td><code>924801f</code></td><td>passed, +5 tests</td>
+          <td>A resumed run's wall spans every attempt: 656.814 to 4449.933, agreeing within 1% with that row's own <code>worker_seconds</code></td>
+        </tr>
+        <tr>
+          <td>merged-head attribution</td><td>no commit</td><td>passed</td>
+          <td>Full suite recorded <strong><code>not-run</code></strong> on a time bound, never passed; separated three distinct causes of a rendered marker</td>
         </tr>
       </tbody>
     </table>
