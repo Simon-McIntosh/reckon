@@ -843,6 +843,40 @@ def record_run_disposition(
     return _mutate_pointer(run_id, record)
 
 
+def _project_executable_remainder(project: str) -> int | None:
+    """Return the project's known remaining declared execution scope.
+
+    A drain is a closure decision, so an unavailable plan inventory or one
+    plan without a valid declaration is deliberately unknown rather than an
+    empty execution set.  An explicit empty declaration remains a known zero.
+    """
+    from reckon import _plan_html
+    from reckon._schema import plan_executable_remainder
+    from reckon._store import _docs_dir_for_project
+    from reckon.resources import resource_map
+
+    docs_dir = _docs_dir_for_project(project)
+    if docs_dir is None:
+        return None
+
+    remainders: list[int] = []
+    for resource in resource_map(
+        docs_dir, project, include_archived=False, ignore_invalid=True
+    ).values():
+        if resource.type != "plan":
+            continue
+        try:
+            state = _plan_html.read_state(resource.path.read_text(encoding="utf-8"))
+        except OSError:
+            return None
+        remainder = plan_executable_remainder(state)
+        if remainder is None:
+            return None
+        remainders.append(remainder)
+
+    return sum(remainders) if remainders else None
+
+
 def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
     """Return the closure drain derived from one project's live pointers.
 
@@ -888,11 +922,14 @@ def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
 
     counted, peers = _partition_session_rows(rows, session)
     unreconciled = sum(1 for row in counted if row["unreconciled"])
+    executable_remainder = _project_executable_remainder(project)
     result = {
         "project": project,
         "live_pointers": len(counted),
         "disposed_runs": len(counted) - unreconciled,
         "unreconciled_runs": unreconciled,
+        "executable_remainder": executable_remainder,
+        "drained": unreconciled == 0 and executable_remainder == 0,
         "dispositions": list(RUN_DRAIN_DISPOSITIONS),
         "runs": counted,
     }

@@ -2904,7 +2904,8 @@ def _crew(
     ``<repo>/docs/state/<project>/crew.json``, the durable half; ``live`` reads
     the never-committed pointers of runs still in flight, each carrying the
     classification :func:`reckon.crew.recovery.recover` would give it; ``drain`` derives
-    the session-closure count and recorded dispositions from those pointers;
+    the session-closure count, declared executable remainder, and recorded
+    dispositions from those pointers;
     ``scopes`` reads live path claims and partitions the optional ordered
     ``candidates`` wave manifest into mutually independent serial lanes;
     ``runs`` joins compact, filterable rows from live pointers and the ledger;
