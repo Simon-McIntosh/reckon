@@ -166,6 +166,35 @@
       resolves to the local lane, because that is what raises concurrency on it.
     </p>
     <p>
+      <strong>But the per-row rate is a cost figure, not a health figure, and it falls when the
+      lane is doing well.</strong> Sampling the same day's local timeline every sixty seconds
+      and summing the rate of everything active: one concurrent gives 21.9 aggregate tok/s, two
+      gives 43.7, three 62.0, four 60.0, five 69.4 &mdash; monotonic, and 3.2 times the work at
+      five-wide against one-wide, while the per-worker figure falls from 21.9 to 13.9. Each
+      worker slows and the lane speeds up, which on owned hardware is the outcome to want. So a
+      surface showing only the per-worker column shows a number that <em>drops as throughput
+      improves</em>, and a reader acting on it narrows the fleet. This plan's cell is per row
+      and stays per row, because attributing a rate to the worker that earned it is the right
+      per-row fact; the consequence is for whatever rolls those rows up, which must
+      <strong>sum</strong> them rather than take a median. Nothing in this plan builds that
+      rollup, and this paragraph exists so that whoever does is not misled by the column it
+      reads from.
+    </p>
+    <p>
+      One claim behind that advice is <strong>recorded here as unverified rather than adopted</strong>,
+      because the check available to this plan does not test it. It was put that generation
+      seconds is held flat by the fence &mdash; 1.00&times; between low and high concurrency
+      while delivered tokens fall to 0.70&times; &mdash; so that a time budget truncates a
+      contended task and records an overrunning node rather than a busy lane, making tokens the
+      load-invariant quantity. Over all 108 local-lane rows carrying a measured span,
+      <code>generation_seconds</code> spreads 124&times; against 79&times; for tokens and
+      40&times; for the rate, so it is the <em>most</em> variable of the three across the
+      population. That does not refute the claim: a mean can be flat between two concurrency
+      bands while the underlying spread across differently-sized nodes is enormous, and those
+      are different measurements. It does mean the flatness has not been demonstrated at this
+      plan's altitude, so no measure here rests on it.
+    </p>
+    <p>
       <strong>An unmeasured cell renders a dim en-dash, never a zero.</strong> A zero and an
       unknown are different facts, and this fleet has large populations of both: 131 rows of
       one lane whose dollar figure must be suppressed, and 96.6% of runs with no model span.
