@@ -21,8 +21,8 @@ import pytest
 import reckon._plan_html as _plan_html_module
 import reckon._store as _store_module
 import reckon.mcp as mcp_module
+from reckon._schema import plan_executable_remainder
 from reckon.lifecycle import effective_status
-
 
 # ── Fixtures ───────────────────────────────────────────────────────────────
 
@@ -106,6 +106,128 @@ def test_set_scalar(setup):
     assert r["ok"] is True
     data, _ = _store_module.read_plan(project, "plan-a")
     assert data["status"] == "active"
+
+
+def test_set_section_declarations_round_trips_through_edit_plan(setup):
+    docs_dir, _, project = setup
+    declarations = {"s1": "implementable", "s2": "deferred"}
+    _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "active"})
+
+    result = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [{"op": "set", "path": "section_declarations", "value": declarations}],
+        0,
+    )
+
+    assert result["ok"] is True
+    reread = mcp_module._read_plan(project, "plan-a")
+    assert reread["data"]["section_declarations"] == declarations
+
+
+def test_section_declarations_survive_two_versioned_writes(setup):
+    docs_dir, _, project = setup
+    original = {"s1": "implementable", "s2": "done"}
+    replacement = {"s1": "implementable", "s2": "deferred", "s3": "done"}
+    _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "active"})
+
+    first = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [{"op": "set", "path": "section_declarations", "value": original}],
+        0,
+    )
+    reread = mcp_module._read_plan(project, "plan-a")
+    second = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [{"op": "set", "path": "section_declarations", "value": replacement}],
+        reread["version"],
+    )
+
+    assert first["ok"] is True
+    assert second["ok"] is True
+    final_read = mcp_module._read_plan(project, "plan-a")
+    assert final_read["version"] == reread["version"] + 1
+    assert final_read["data"]["section_declarations"] == replacement
+
+
+def test_set_section_declarations_rejects_unknown_classification(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "active"})
+
+    result = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [
+            {
+                "op": "set",
+                "path": "section_declarations",
+                "value": {"s1": "queued"},
+            }
+        ],
+        0,
+    )
+
+    assert result["ok"] is False
+    assert result["error"] == "schema_validation"
+    reread = mcp_module._read_plan(project, "plan-a")
+    assert "section_declarations" not in reread["data"]
+    assert reread["version"] == 0
+
+
+def test_set_section_declarations_rejects_malformed_identity(setup):
+    docs_dir, _, project = setup
+    _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "active"})
+
+    result = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [
+            {
+                "op": "set",
+                "path": "section_declarations",
+                "value": {"not a section": "implementable"},
+            }
+        ],
+        0,
+    )
+
+    assert result["ok"] is False
+    assert result["error"] == "schema_validation"
+    reread = mcp_module._read_plan(project, "plan-a")
+    assert "section_declarations" not in reread["data"]
+    assert reread["version"] == 0
+
+
+def test_write_path_makes_executable_remainder_reachable(setup):
+    docs_dir, _, project = setup
+    declarations = {
+        "s1": "implementable",
+        "s2": "implementable",
+        "s3": "deferred",
+        "s4": "done",
+    }
+    _make_plan_html(
+        docs_dir,
+        "plan-a",
+        {
+            "version": 0,
+            "status": "active",
+            "comments": {"s1": [{"id": "landing"}]},
+        },
+    )
+
+    result = mcp_module._edit_plan(
+        project,
+        "plan-a",
+        [{"op": "set", "path": "section_declarations", "value": declarations}],
+        0,
+    )
+
+    assert result["ok"] is True
+    reread = mcp_module._read_plan(project, "plan-a")
+    assert plan_executable_remainder(reread["data"]) == 1
 
 
 def test_edit_plan_selects_duplicate_leaf_by_doc_type(setup):

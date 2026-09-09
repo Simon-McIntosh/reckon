@@ -1081,6 +1081,7 @@ _PLAN_SET_TOP = frozenset(
     {
         "status",
         "impl",
+        "section_declarations",
         "roi",
         "effort_hours",
         "effort",
