@@ -195,6 +195,36 @@
       5764.321 s and 41,770,910 charged tokens for the pane node's own run &mdash; a 96.7%
       model share.
     </p>
+    <p>
+      <strong>The evidence is the events file, not the timestamps.</strong> The reckon producer
+      was armed at 15:30:38 against an emitting module changed at 17:04:36, so it was 93
+      minutes cold &mdash; but the fact that settles it is that the last four transitions on
+      the stream, including this plan's own attribution dispatch at 15:20:13Z, carried
+      <em>no</em> <code>spend_*</code> keys at all. Every record was unrenderable, which makes
+      it a delivery failure rather than a rendering one. A dispatch does not replace a cold
+      seat: replacement keys on the supervisor having died, deliberately, because refusing a
+      dispatch over a producer that streams perfectly would block work.
+    </p>
+    <p>
+      <strong>The staleness check that exists cannot catch this, and the reason is not the one
+      first recorded here.</strong> An earlier reading held that
+      <code>__version__</code> is the literal <code>dev</code>, making the comparison
+      vacuous &mdash; that came from running a <em>system</em> interpreter with no editable
+      install on its path. Under the project interpreter it reads
+      <code>0.2.1.dev1279</code>, and the released seat had recorded exactly that. The real
+      reason is the one <code>watch_seat_version_current</code> states itself: it &ldquo;names
+      the <em>install</em> and not the code&rdquo;, written once at install time, so both sides
+      compare one string whichever revision each process is executing. The distinction is
+      practical rather than pedantic &mdash; on the wrong reason a properly-versioned
+      non-editable install would fix it, and on the right one no install can, because the
+      version cannot move when the working tree moves and the working tree is what every
+      session runs. Content or mtime of the emitting modules is the only discriminator.
+    </p>
+    <p>
+      One consequence for a reader: arming a fresh producer switches the pane from all-dashes
+      to real figures at once, which reads as the feature turning on. It was on; the delivery
+      was not.
+    </p>
   </main>
 </body>
 </html>
