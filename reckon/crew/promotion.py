@@ -1907,6 +1907,47 @@ def _receipt_unmeasured_reason(value: object) -> str | None:
     return value.value if isinstance(value, rollout.Unmeasured) else None
 
 
+def _agent_model_identifier(record: Mapping[str, Any]) -> str | None:
+    """Return the served model from the agent configuration the record holds."""
+    agent = record.get("agent")
+    if not isinstance(agent, Mapping):
+        return None
+    model = str(agent.get("model") or "").strip()
+    return model or None
+
+
+def _serialize_notional_figure(receipt: object) -> tuple[object, str | None]:
+    """Serialize the receipt's notional figure and its unmeasured reason.
+
+    The figure is the receipt's own, derived from declared rates in
+    ``rollout._notional_price``; promotion never recomputes it.  A marked
+    figure keeps the readable absence string in its field and the marker's
+    reason in the unmeasured map, so a lane that never priced is
+    distinguishable from a run that genuinely cost nothing.
+    """
+    value = getattr(
+        receipt, "notional_cost_usd", rollout.Unmeasured.NO_MODEL_IDENTIFIER
+    )
+    reason = _receipt_unmeasured_reason(value)
+    if reason is not None:
+        return "unmeasured", reason
+    return value, None
+
+
+def _serialize_rate_basis(receipt: object) -> tuple[object, str | None]:
+    """Serialize the receipt's rate basis, its date rendered as ISO text."""
+    value = getattr(receipt, "rate_basis", rollout.Unmeasured.NO_MODEL_IDENTIFIER)
+    reason = _receipt_unmeasured_reason(value)
+    if reason is not None:
+        return "unmeasured", reason
+    return {
+        "model_identifier": value.model_identifier,
+        "input_per_million": value.input_per_million,
+        "output_per_million": value.output_per_million,
+        "as_of": value.as_of.isoformat(),
+    }, None
+
+
 def _harvest_lane_receipt(
     record: Mapping[str, Any],
     *,
@@ -1917,7 +1958,14 @@ def _harvest_lane_receipt(
     # Do not source this from the delivered manifest: a run cannot independently
     # attest its own quota use. The harness-owned client receipt is evidence the
     # run did not author, even though adding a manifest field would look simpler.
-    receipt = rollout.read_rollout_receipt(str(session_id or ""))
+    #
+    # The served model flows through from the agent configuration the record
+    # already holds, so the notional figure resolves without any new identity
+    # lookup.  The receipt prices a lane the model names; a record carrying no
+    # model keeps the explicit no-model marker rather than a fabricated figure.
+    receipt = rollout.read_rollout_receipt(
+        str(session_id or ""), model_identifier=_agent_model_identifier(record)
+    )
     unmeasured: dict[str, str] = {}
     context_reason = _receipt_unmeasured_reason(receipt.model_context_window)
     if context_reason is None:
@@ -1925,13 +1973,25 @@ def _harvest_lane_receipt(
     else:
         effective_context_window = "unmeasured"
         unmeasured["effective_context_window"] = context_reason
+    notional_cost, notional_reason = _serialize_notional_figure(receipt)
+    basis, basis_reason = _serialize_rate_basis(receipt)
 
     result: dict[str, Any] = {
         "quota_state": "unmeasured",
         "observed_at": observed_at,
         "effective_context_window": effective_context_window,
         "quota_windows": [],
+        "notional_cost_usd": notional_cost,
+        "rate_basis": basis,
     }
+    for reason_key, reason in (
+        ("effective_context_window", context_reason),
+        ("notional_cost_usd", notional_reason),
+        ("rate_basis", basis_reason),
+    ):
+        if reason is not None:
+            unmeasured[reason_key] = reason
+
     agent = record.get("agent")
     agent_backend = agent.get("backend") if isinstance(agent, Mapping) else ""
     backend = str(record.get("backend") or agent_backend or "")

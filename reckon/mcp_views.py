@@ -206,6 +206,41 @@ def _measured_or_marker(value: object) -> tuple[object, str | None]:
     return value, None
 
 
+def _notional_cost_reading(receipt: object) -> tuple[object, str | None]:
+    """Serialize the receipt's notional spend and its unmeasured reason.
+
+    The figure is the receipt's own, derived from declared rates in
+    ``rollout``; the view never recomputes it.  A marked figure keeps the
+    readable absence string in its field and the marker's reason in the
+    unmeasured map, so an unpriced lane is distinguishable from a run that
+    genuinely cost nothing.  An injected reader that carries no figure
+    resolves to the no-model marker rather than fabricating one.
+    """
+    return _measured_or_marker(
+        getattr(
+            receipt,
+            "notional_cost_usd",
+            rollout_module.Unmeasured.NO_MODEL_IDENTIFIER,
+        )
+    )
+
+
+def _rate_basis_reading(receipt: object) -> tuple[object, str | None]:
+    """Serialize the receipt's rate basis, its date rendered as ISO text."""
+    value = getattr(
+        receipt, "rate_basis", rollout_module.Unmeasured.NO_MODEL_IDENTIFIER
+    )
+    reason = _unmeasured_reason(value)
+    if reason is not None:
+        return "unmeasured", reason
+    return {
+        "model_identifier": value.model_identifier,
+        "input_per_million": value.input_per_million,
+        "output_per_million": value.output_per_million,
+        "as_of": value.as_of.isoformat(),
+    }, None
+
+
 def _quota_rows(
     readings: Mapping[int, object] | object,
     observed_at: str | None,
@@ -393,7 +428,6 @@ def crew_lanes_view(
 ) -> dict[str, Any]:
     """Compose endpoint availability without selecting or ranking a backend."""
 
-    read_receipt = receipt_reader or rollout_module.read_rollout_receipt
     composition_time = composed_at or datetime.now(UTC).isoformat().replace(
         "+00:00", "Z"
     )
@@ -482,7 +516,17 @@ def crew_lanes_view(
             )
             continue
 
-        receipt = read_receipt(session_id)
+        # The served model passes through from the backend configuration the
+        # view already holds, so the notional figure resolves without any new
+        # identity lookup.  An injected reader keeps its one-argument seam; only
+        # the production reader prices the receipt.
+        if receipt_reader is not None:
+            receipt = receipt_reader(session_id)
+        else:
+            receipt = rollout_module.read_rollout_receipt(
+                session_id,
+                model_identifier=str(settings.get("model") or "").strip() or None,
+            )
         observed_at = _receipt_observed_at(run)
         context_value, context_reason = _measured_or_marker(
             getattr(receipt, "model_context_window", None)
@@ -529,6 +573,8 @@ def crew_lanes_view(
             composition_time,
             source=quota_source,
         )
+        notional_cost, notional_reason = _notional_cost_reading(receipt)
+        basis, basis_reason = _rate_basis_reading(receipt)
         lane: dict[str, Any] = {
             "backend": backend_name,
             "alias": settings.get("alias"),
@@ -541,6 +587,8 @@ def crew_lanes_view(
             "probe_status": probe_status,
             "probe_detail": probe_detail,
             "probe_cached": probe_cached,
+            "notional_cost_usd": notional_cost,
+            "rate_basis": basis,
         }
         unmeasured = {
             key: value
@@ -556,6 +604,8 @@ def crew_lanes_view(
                 ),
                 ("effective_context_window", context_reason),
                 ("quota_windows", quota_reason),
+                ("notional_cost_usd", notional_reason),
+                ("rate_basis", basis_reason),
             )
             if value is not None
         }
