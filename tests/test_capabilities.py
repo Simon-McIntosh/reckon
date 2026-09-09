@@ -881,3 +881,186 @@ def test_a_computed_notional_figure_survives_storage_beside_the_flag() -> None:
     assert unmetered["budget"]["notional_cost_usd"] == 0.5
     assert capabilities._cost_usd(unmetered) is None
     assert capabilities._cost_usd_imputed(unmetered) is True
+
+
+# ── A ledgered figure is the stream fallback's replacement, not a rival ──────
+#
+# The two per-run figures are immutable once a run is terminal, so a row that
+# carries them lets the derivation read the ledger and never reopen the stream.
+# The fast path is proven equivalent - identical configurations and routing
+# rows, stream-opens counted rather than timed - and a row whose stream is
+# gone is recorded absent and excluded, never averaged in as a zero.
+
+
+def _figure_stream_text(tool_use_blocks: int) -> str:
+    """One orientation window and a tool-interaction count in stream form."""
+    return (
+        "\n".join(
+            json.dumps(event)
+            for event in (
+                {
+                    "type": "assistant",
+                    "message": {
+                        "id": "probe",
+                        "content": [{"type": "text", "text": "reading"}],
+                        "usage": {
+                            "input_tokens": 2,
+                            "cache_creation_input_tokens": 30,
+                            "cache_read_input_tokens": 68,
+                        },
+                    },
+                },
+                {
+                    "type": "assistant",
+                    "message": {
+                        "id": "write",
+                        "content": [
+                            {
+                                "type": "tool_use",
+                                "name": "Write",
+                                "input": {"file_path": "src/fig.py"},
+                            }
+                            for _ in range(tool_use_blocks)
+                        ],
+                        "usage": {
+                            "input_tokens": 2,
+                            "cache_creation_input_tokens": 20,
+                            "cache_read_input_tokens": 98,
+                        },
+                    },
+                },
+            )
+        )
+        + "\n"
+    )
+
+
+def _figure_run(
+    root: Path,
+    config_home: Path,
+    run_id: str,
+    *,
+    tool_steps: int,
+    effort: str,
+) -> dict[str, float]:
+    """A routed row without ledgered figures, whose stream encodes them."""
+    run_directory = config_home / "crew" / "runs" / run_id
+    run_directory.mkdir(parents=True)
+    stream = run_directory / "stream.jsonl"
+    stream.write_text(_figure_stream_text(tool_steps), encoding="utf-8")
+    ledger.append_run(
+        root.name,
+        ledger.build_record(
+            run_id=run_id,
+            plan="work",
+            gate="passed",
+            node_definition={
+                "id": run_id,
+                "write_paths": ["src/fig.py"],
+                "coordinator": {
+                    "session_id": "coord",
+                    "authoring_turn": {
+                        "status": "measured",
+                        "tokens": {"input_tokens": 10},
+                    },
+                },
+            },
+            role="implement",
+            spec_level="guided",
+            agent={"model": "fig-model", "effort": effort},
+            completed_at_source="provided",
+            worker_seconds=3600,
+            budget={"tokens": {"input_tokens": 100}},
+            changed_lines={"added": 4, "removed": 0, "files": 1},
+            manifest_path=str(run_directory / "manifest.md"),
+        ),
+        root=root,
+    )
+    return {
+        "tool_steps": float(tool_steps),
+        "orientation_input_tokens": 220.0,
+    }
+
+
+class _StreamOpenCounter:
+    """Count Path.open calls that touch a run's jsonl stream."""
+
+    def __init__(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        self._original = Path.open
+        self.stream_opens = 0
+
+        def counting_open(path: Path, *args: Any, **kwargs: Any) -> Any:
+            if str(path).endswith(".jsonl"):
+                self.stream_opens += 1
+            return self._original(path, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "open", counting_open)
+
+    def count(self) -> int:
+        return self.stream_opens
+
+
+def test_ledgered_figures_let_the_derive_close_the_streams(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = _project(tmp_path)
+    _plan(root, "work", 2.0)
+    expected = {
+        run_id: _figure_run(root, home, run_id, tool_steps=tool_steps, effort="high")
+        for run_id, tool_steps in (("one", 2), ("two", 4))
+    }
+    mounts = {root.name: root / "docs"}
+
+    opens = _StreamOpenCounter(monkeypatch)
+    walk = capabilities.derive_capabilities(mounts)
+    walked_opens = opens.count()
+    assert walked_opens >= 2  # the stream walk really opened the run streams
+
+    data, version = ledger.load(root.name, root=root)
+    for row in data["runs"]:
+        figures = expected[str(row["run_id"])]
+        row["tool_steps"] = figures["tool_steps"]
+        row["orientation_input_tokens"] = figures["orientation_input_tokens"]
+    ledger.write(root.name, data, version, root=root)
+    fast = capabilities.derive_capabilities(mounts)
+
+    # The fast path opens no stream on the same corpus, and it reproduces the
+    # walk's configurations (competence horizon included) and routing rows
+    # exactly, so it is equivalent rather than merely faster.
+    assert opens.count() == walked_opens
+    assert fast["configurations"] == walk["configurations"]
+    assert fast["routing"]["rows"] == walk["routing"]["rows"]
+
+
+def test_a_missing_stream_row_is_excluded_not_averaged_as_zero(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = _project(tmp_path)
+    _plan(root, "work", 2.0)
+    _figure_run(root, home, "r-has-figure", tool_steps=6, effort="medium")
+    _figure_run(root, home, "r-missing-stream", tool_steps=6, effort="medium")
+
+    data, version = ledger.load(root.name, root=root)
+    for row in data["runs"]:
+        if row["run_id"] == "r-has-figure":
+            row["tool_steps"] = 6.0
+            row["orientation_input_tokens"] = 220.0
+        else:
+            # The stream is gone and the figures are absent, never zero.
+            (home / "crew" / "runs" / "r-missing-stream" / "stream.jsonl").unlink()
+            row["tool_steps"] = None
+            row["orientation_input_tokens"] = None
+    ledger.write(root.name, data, version, root=root)
+
+    report = capabilities.derive_routing({root.name: root / "docs"})
+    row = next(
+        item
+        for item in report["rows"]
+        if (item["model"], item["effort"]) == ("fig-model", "medium")
+    )
+    # Both rows pool into the group, but only the measured one enters the
+    # tool-step median - an absent figure is never averaged in as a zero.
+    assert row["samples"] == 2
+    assert row["tool_step_samples"] == 1
+    assert row["median_tool_steps"] == 6.0
+    assert row["input_samples"] == 2
