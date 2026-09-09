@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T01:15:19",
+  "updated": "2026-09-09T07:50:57",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -82995,6 +82995,352 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T050055984925-spa-test-health-census",
+        "plan": "rendered-evidence-on-this-host",
+        "section": "\u00a72",
+        "node": "spa-test-health-census",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1540,
+                "cached_input_tokens": 681526,
+                "input_tokens": 683068,
+                "output_tokens": 789,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 683857,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "c97ff0dc-76f9-4d90-a37e-98717f5066f2",
+            "session_id": "ship-s15-2026-09-08b"
+          },
+          "done_when": "the report at /home/ITER/mcintos/.config/reckon/crew/reports/spa-test-health-census-20260909.md names every test in the repository's SPA and surface test files that FAILS at the current head, distinguishing failures from skips and from timeouts, with the exact command and the per-file passed/failed/skipped/error counts. For each failure it states which of three causes applies, with the evidence for that classification: a browser or rendered gate that cannot complete on this host, a stale contract asserting behaviour the code no longer produces, or a genuine defect in surface code. Report the failing total explicitly and say plainly whether it is close to two dozen or not, since that figure was inherited from a prior session and is unverified. Count leaked browser processes and the inotify instance count before running, and report both, because a rendered gate times out for either reason and the two are distinguishable. Re-run any flagrant failure in isolation before counting it. Change no file under the repository: the report is the only deliverable",
+          "estimated_hours": null,
+          "goal": "census every failing SPA and surface test at head and classify each by cause",
+          "id": "spa-test-health-census",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-09T05:00:56Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T050055984925-spa-test-health-census/manifest.md",
+          "plan": "rendered-evidence-on-this-host",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/spa-test-health-census-20260909.md"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-attention",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-09T05:01:01Z",
+        "completed_at": "2026-09-09T05:47:15.104Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2725,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2774,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "0e13b756afdae07840896afe60bb9f1d211a1f14",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=\"$PWD\" .venv/bin/python -m pytest -p no:cacheprovider -q <41 SPA/surface files>",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T050055984925-spa-test-health-census/logs/census_main.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T050055984925-spa-test-health-census/manifest.md",
+        "scope_changed": false,
+        "session_id": "a610799a-5781-46cd-9c72-4110a2528ddb",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 0,
+            "input_tokens_cumulative": 17334512,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 45167,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-09T05:47:15.104Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 17334512,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 2769.794,
+          "generated_tokens": 45167,
+          "generation_seconds": 2169.474,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 39.9,
+          "machine_seconds": 600.32,
+          "peak_input_tokens": 405786,
+          "tokens_per_second": 20.82,
+          "wall_tokens_per_second": 16.31
+        },
+        "follow_on_paths": [
+          "2/3",
+          "3/3;",
+          "host/browser-runtime"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": "measurement-only node; the deliverable is a report outside the repository and no repository file changed",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-2026-09-08b/spa-test-health-census",
+          "session_id": "a610799a-5781-46cd-9c72-4110a2528ddb",
+          "session_source": "pointer",
+          "retained_at": "2026-09-09T05:47:15.104Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T053356396139-clw-local-readonly-lane-qualification-read",
+        "plan": "clive-local-workers",
+        "section": "\u00a75",
+        "node": "clw-local-readonly-lane-qualification-read",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 4589,
+                "cached_input_tokens": 212593,
+                "input_tokens": 217184,
+                "output_tokens": 1917,
+                "reasoning_output_tokens": 988,
+                "total_tokens": 219101,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "d605a9b0-7fe6-4816-b993-dad99ec68f17",
+            "session_id": "ship-clw-2026-09-09"
+          },
+          "done_when": "the report gives the run count as a number, the gate pass rate to 2 decimal places and the median worker seconds for backend clive and for backend codex separately across the investigate, review and test roles, computed from the project's committed crew ledger read programmatically rather than loaded into context, and states as a number per role how many promoted clive runs exist against the 10 that section 5 requires",
+          "estimated_hours": null,
+          "goal": "Report the local backend's promoted read-only-role pass rate and median worker time beside the incumbent's for the same roles",
+          "id": "clw-local-readonly-lane-qualification-read",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-09T05:33:56Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T053356396139-clw-local-readonly-lane-qualification-read/manifest.md",
+          "plan": "clive-local-workers",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "25m",
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/clw-local-readonly-lane-qualification-read.md"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-both-reasons",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-09T05:33:59Z",
+        "completed_at": "2026-09-09T05:47:53.667Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 811,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 834,
+        "stalled": false,
+        "time_budget": "25m",
+        "base_sha": "bd7734c9150b95d17547ca510dfd2ddc80cbf33e",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "python3 recompute of role/backend pass rate and median worker_seconds from the committed reckon ledger, asserting each of the 6 claimed cells and the 10-run threshold",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T053356396139-clw-local-readonly-lane-qualification-read/coordinator-verification.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T053356396139-clw-local-readonly-lane-qualification-read/manifest.md",
+        "scope_changed": false,
+        "session_id": "610e9ad5-48c9-4e9d-8983-0cc2cfcfbf7b",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 0,
+            "input_tokens_cumulative": 2030231,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 12633,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-09T05:47:53.667Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 2030231,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 831.336,
+          "generated_tokens": 12633,
+          "generation_seconds": 826.931,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 12.7,
+          "machine_seconds": 4.405,
+          "peak_input_tokens": 128691,
+          "tokens_per_second": 15.28,
+          "wall_tokens_per_second": 15.2
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": "the node's declared write scope is a report outside the git tree, so no repository change applies",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-clw-2026-09-09/clw-local-readonly-lane-qualification-read",
+          "session_id": "610e9ad5-48c9-4e9d-8983-0cc2cfcfbf7b",
+          "session_source": "pointer",
+          "retained_at": "2026-09-09T05:47:53.667Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -83223,6 +83569,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1255
+    "_version": 1257
   }
 }
