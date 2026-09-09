@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-09T12:31:37",
+  "updated": "2026-09-09T12:41:53",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -87427,6 +87427,175 @@
         "boundary_waiver": null,
         "resume_waiver": null,
         "watch_override": null
+      },
+      {
+        "run_id": "r-20260909T103207684731-cotd-the-drain-view-can-refute-a-stop",
+        "plan": "crew-observability-truth",
+        "section": "\u00a714",
+        "node": "cotd-the-drain-view-can-refute-a-stop",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2295,
+                "cached_input_tokens": 597176,
+                "input_tokens": 599473,
+                "output_tokens": 1353,
+                "reasoning_output_tokens": 388,
+                "total_tokens": 600826,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "29187761-681d-4f4d-85ae-fc3d7adc250b",
+            "session_id": "ship-cot-drain-20260909"
+          },
+          "done_when": "Focused coverage exits 0 with at least 5 added cases. The point is that the view the closure fence NAMES becomes capable of contradicting a premature stop, so assert it on a reconstruction of one: a project whose live pointers are all reconciled, unreconciled_runs 0, and whose plan declares implementable sections not yet reclassified done, must report a non-zero executable remainder \u2014 and that combination must NOT read as drained. Negatives, all three: a plan with no declaration reports the unknown sentinel through the view and never 0, because a missing declaration must not read as nothing-left; a fully-done declaration reports 0; and unreconciled_runs keeps its current meaning unchanged, since the remainder is a second fact beside it rather than a replacement. Derive it ONCE in reckon/crew/runs.py where drain lives, so that BOTH the MCP drain view and the reckon crew drain CLI carry the same figure \u2014 a derivation added in the MCP layer alone would leave the shell reader blind and split one truth across two surfaces, which is the defect this plan is named for. Assert both readers return the same remainder for one fixture. Judge by DELTA: record base failure ids for tests/test_crew_runs_view.py and require zero ADDED",
+          "estimated_hours": null,
+          "goal": "the executable remainder carried by the drain view so the closure fence can fail",
+          "id": "cotd-the-drain-view-can-refute-a-stop",
+          "lane_declaration": {
+            "backend": "codex-terra",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-09T10:32:08Z",
+            "read_at": "2026-09-09T10:32:09Z",
+            "resolved_backend": "codex-terra",
+            "utilisation_pct": 72.0
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T103207684731-cotd-the-drain-view-can-refute-a-stop/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "codex-terra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a714",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "write_paths": [
+            "reckon/crew/runs.py",
+            "reckon/mcp.py",
+            "tests/test_crew_runs_view.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "implement-terra-d",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-09T10:32:18Z",
+        "completed_at": "2026-09-09T10:39:22Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 424,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 424,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "6739af475220c75acf73c2dc6794b6794152bbc8",
+        "commits": [
+          "f1ad8003447ea47a47b1c0f1238e9dbb7c2cea0a"
+        ],
+        "changed_lines": {
+          "added": 176,
+          "removed": 2,
+          "files": 3
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_runs_view.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T103207684731-cotd-the-drain-view-can-refute-a-stop/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260909T103207684731-cotd-the-drain-view-can-refute-a-stop/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a085b9-c3ca-75f0-91cb-d08dbacfc1df",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 5401856,
+            "cached_input_tokens_cumulative": 5401856,
+            "input_tokens": 5578357,
+            "input_tokens_cumulative": 5578357,
+            "output_tokens": 16800,
+            "output_tokens_cumulative": 16800,
+            "reasoning_output_tokens": 5447,
+            "reasoning_output_tokens_cumulative": 5447
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-09T10:39:22Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 72.0,
+              "resets_at": 1789439333,
+              "observed_at": "2026-09-09T10:39:22Z"
+            }
+          ]
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 5401856,
+          "cumulative_input_tokens": 10980213,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 22247
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-cot-drain-20260909/cotd-the-drain-view-can-refute-a-stop",
+          "session_id": "01a085b9-c3ca-75f0-91cb-d08dbacfc1df",
+          "session_source": "stream",
+          "retained_at": "2026-09-09T10:39:22Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null
       }
     ],
     "holds": [
@@ -87655,6 +87824,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1301
+    "_version": 1302
   }
 }
