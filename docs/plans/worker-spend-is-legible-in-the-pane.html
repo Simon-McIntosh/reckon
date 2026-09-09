@@ -331,7 +331,23 @@ accumulation_key := run_id                          if kind == "shadow"
       keyed on the account and must be stated once for the group rather than repeated per lane.
       The window also moved two points in about thirty-five minutes under load, which is why a
       remaining <em>percentage</em> is a weak instrument on its own: 15% remaining reads as
-      survivable and at that rate is not.
+      survivable and at that rate is not. Read at the same moment, the pre-flight's own
+      projection says the lane runs dry in <strong>33.4 hours</strong> against a window that
+      refills in <strong>131.8</strong> &mdash; so it is dry for about <strong>four
+      days</strong>. That is the same measurement as the percentage and it is the one a reader
+      can act on, so where a surface has room for one figure beside utilisation it should carry
+      the projection rather than the remainder.
+    </p>
+    <p>
+      <strong>The account grouping rests on an observable rather than a declaration, and that
+      is a real limit.</strong> Nothing in flight configuration says which backends share an
+      account; the only evidence is that they report an identical <code>resets_at</code>. That
+      discriminator is sound today and would be defeated by two genuinely separate accounts
+      whose windows happened to align on the same boundary, which is possible and would group
+      them wrongly. So it belongs in a measure as the stated discriminator <em>with</em> its
+      failure mode, not as a fact about the world &mdash; and a declared account key in
+      configuration would retire the guess entirely, which is the durable fix rather than a
+      better heuristic.
     </p>
     <p>
       <strong>One soundness limit travels with it and must be stated on the surface, not only
