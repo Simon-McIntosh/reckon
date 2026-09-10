@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="doc">
+  <meta name="plan-slug" content="reckon-onboarding">
+  <meta name="plan-title" content="Reckon Onboarding">
+  <meta name="plan-summary" content="What a new user installs to use the skills, the MCP server and the docs server, in dependency order.">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-informs" content="reckon-skill-overhaul,blank-project-surface">
+  <meta name="plan-source" content="reckon CLI and skill sources">
+  <meta name="plan-source-quality" content="primary">
+  <meta name="plan-tags" content="reckon-tooling,documentation">
+  <title>Reckon Onboarding | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Explainer</p>
+      <h1>Reckon Onboarding</h1>
+      <p class="lead">
+        Three surfaces install independently, and only one of them is needed to
+        do agent work: the skills teach an agent the workflow, the MCP server
+        lets it write plan state, and the docs server renders the surface for a
+        human. A project must be registered before either server can see it.
+      </p>
+    </header>
+
+    <section id="order">
+      <h2>&sect;1 &mdash; What installs once, and what repeats</h2>
+      <p>
+        Two of the steps are host-wide and done once; one is per-repository and
+        repeats every time a new project joins. Conflating them is the usual
+        first-run mistake &mdash; people re-link the skills for each project, or
+        register a project once and expect a second repository to appear on its
+        own.
+      </p>
+
+      <figure>
+        <svg viewBox="0 0 700 250" width="100%" role="img"
+             aria-label="Host setup runs once: checkout, then skills and MCP registration, verified by doctor. Project registration repeats per repository and is what makes a project visible to the server and the MCP.">
+          <text x="0" y="14" font-family="system-ui, sans-serif" font-size="13"
+                font-weight="600" fill="#1a1a1a">Once per host</text>
+
+          <rect x="0" y="28" width="132" height="46" fill="#ffffff"
+                stroke="#8a8a8a" stroke-width="1" rx="2"/>
+          <text x="66" y="47" font-family="system-ui, sans-serif" font-size="13"
+                fill="#1a1a1a" text-anchor="middle">clone reckon</text>
+          <text x="66" y="64" font-family="ui-monospace, monospace" font-size="12"
+                fill="#444444" text-anchor="middle">uv sync</text>
+
+          <line x1="132" y1="51" x2="186" y2="51" stroke="#8a8a8a" stroke-width="1"/>
+          <polygon points="186,51 179,47.5 179,54.5" fill="#8a8a8a"/>
+
+          <rect x="188" y="28" width="150" height="46" fill="#ffffff"
+                stroke="#8a8a8a" stroke-width="1" rx="2"/>
+          <text x="263" y="47" font-family="system-ui, sans-serif" font-size="13"
+                fill="#1a1a1a" text-anchor="middle">link the skills</text>
+          <text x="263" y="64" font-family="system-ui, sans-serif" font-size="12"
+                fill="#444444" text-anchor="middle">3 runtime dirs</text>
+
+          <line x1="338" y1="51" x2="392" y2="51" stroke="#8a8a8a" stroke-width="1"/>
+          <polygon points="392,51 385,47.5 385,54.5" fill="#8a8a8a"/>
+
+          <rect x="394" y="28" width="150" height="46" fill="#ffffff"
+                stroke="#8a8a8a" stroke-width="1" rx="2"/>
+          <text x="469" y="47" font-family="system-ui, sans-serif" font-size="13"
+                fill="#1a1a1a" text-anchor="middle">register the MCP</text>
+          <text x="469" y="64" font-family="system-ui, sans-serif" font-size="12"
+                fill="#444444" text-anchor="middle">once per client</text>
+
+          <line x1="544" y1="51" x2="598" y2="51" stroke="#8a8a8a" stroke-width="1"/>
+          <polygon points="598,51 591,47.5 591,54.5" fill="#8a8a8a"/>
+
+          <rect x="600" y="28" width="100" height="46" fill="#ffffff"
+                stroke="#2f6f4f" stroke-width="1.5" rx="2"/>
+          <text x="650" y="55" font-family="ui-monospace, monospace" font-size="12"
+                fill="#2f6f4f" text-anchor="middle">doctor</text>
+
+          <text x="0" y="126" font-family="system-ui, sans-serif" font-size="13"
+                font-weight="600" fill="#1a1a1a">Once per repository</text>
+
+          <rect x="0" y="140" width="220" height="46" fill="#ffffff"
+                stroke="#8a8a8a" stroke-width="1" rx="2"/>
+          <text x="110" y="159" font-family="ui-monospace, monospace" font-size="12"
+                fill="#1a1a1a" text-anchor="middle">reckon sync &lt;repo&gt;/docs</text>
+          <text x="110" y="176" font-family="system-ui, sans-serif" font-size="12"
+                fill="#444444" text-anchor="middle">mounts it, scaffolds docs/</text>
+
+          <line x1="220" y1="163" x2="274" y2="163" stroke="#8a8a8a" stroke-width="1"/>
+          <polygon points="274,163 267,159.5 267,166.5" fill="#8a8a8a"/>
+
+          <rect x="276" y="140" width="180" height="46" fill="#ffffff"
+                stroke="#8a8a8a" stroke-width="1" rx="2"/>
+          <text x="366" y="159" font-family="system-ui, sans-serif" font-size="13"
+                fill="#1a1a1a" text-anchor="middle">the project is visible</text>
+          <text x="366" y="176" font-family="system-ui, sans-serif" font-size="12"
+                fill="#444444" text-anchor="middle">to the MCP and the server</text>
+
+          <line x1="456" y1="163" x2="510" y2="163" stroke="#8a8a8a" stroke-width="1"/>
+          <polygon points="510,163 503,159.5 503,166.5" fill="#8a8a8a"/>
+
+          <rect x="512" y="140" width="188" height="46" fill="#ffffff"
+                stroke="#8a8a8a" stroke-width="1" rx="2"/>
+          <text x="606" y="159" font-family="ui-monospace, monospace" font-size="12"
+                fill="#1a1a1a" text-anchor="middle">/reckon-create &lt;slug&gt;</text>
+          <text x="606" y="176" font-family="system-ui, sans-serif" font-size="12"
+                fill="#444444" text-anchor="middle">first plan or doc</text>
+
+          <text x="0" y="222" font-family="system-ui, sans-serif" font-size="12"
+                fill="#444444">The docs server is optional for agent work &mdash; the MCP writes plan state without it.</text>
+        </svg>
+        <figcaption>
+          Setup order. The host row is one-time; the repository row repeats for
+          every project. Registration is the step that makes a project readable,
+          which is why a second repository never appears on its own.
+        </figcaption>
+      </figure>
+    </section>
+
+    <section id="prereq">
+      <h2>&sect;2 &mdash; Prerequisites</h2>
+      <p>
+        A checkout and <code>uv</code>. Everything else is driven from the
+        checkout, and every command below can be run from any directory by
+        naming the project explicitly, which is what makes this work without
+        installing anything onto the path.
+      </p>
+      <pre><code>git clone git@github.com:Simon-McIntosh/reckon.git ~/Code/reckon
+cd ~/Code/reckon &amp;&amp; uv sync</code></pre>
+      <p>
+        The distribution is named <code>reckon-plans</code>; the import package
+        and the console command are both <code>reckon</code>. Invoke it as
+        <code>uv run --project ~/Code/reckon reckon &lt;command&gt;</code>. The
+        skills all use that form, so a path install is a convenience rather than
+        a requirement. Python 3.12 or newer.
+      </p>
+    </section>
+
+    <section id="skills">
+      <h2>&sect;3 &mdash; The skills</h2>
+      <p>
+        The skills are what make an agent use the plan system correctly rather
+        than hand-editing HTML: they carry the state-writeback rules, the
+        followup contract and the fan-out boundary. They are the only one of the
+        three surfaces that needs no server at all.
+      </p>
+      <p>
+        Link them, do not copy them. A symlink means an edit in the checkout is
+        live in every runtime immediately, and it cannot drift; a copy is a
+        second source of truth that goes stale silently. Note that the
+        <code>reckon install-skills</code> subcommand <em>copies</em>, and
+        reaches only the Claude directory &mdash; the linking step in
+        <code>reckon-sync</code> is the one that produces symlinks across all
+        three runtimes.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Directory</th><th>Runtime that reads it</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>~/.claude/skills/</code></td><td>Claude Code</td></tr>
+          <tr><td><code>~/.codex/skills/</code></td><td>Codex</td></tr>
+          <tr><td><code>~/.agents/skills/</code></td><td>Shared agent runtimes</td></tr>
+        </tbody>
+      </table>
+      <p>
+        Run <strong>Step S</strong> of <code>~/.claude/skills/reckon-sync/SKILL.md</code>,
+        which enumerates skill directories by the presence of a
+        <code>SKILL.md</code> rather than by a name list. That detail matters:
+        a fixed list silently skips a skill added later, which is exactly how
+        <code>reckon-roadmap</code> stayed unlinked after it was written.
+      </p>
+      <p>
+        Seven skills install. <code>reckon-sync</code> sets up a repository,
+        <code>reckon-create</code> authors a plan or doc, <code>reckon-edit</code>
+        amends one and records outcomes, <code>reckon-ship</code> executes the
+        work a plan describes, <code>reckon-sprint</code> manages sprint and
+        roadmap state, and <code>reckon-status</code> and
+        <code>reckon-roadmap</code> read without writing.
+      </p>
+    </section>
+
+    <section id="mcp">
+      <h2>&sect;4 &mdash; The MCP server</h2>
+      <p>
+        The MCP transport brokers versioned writes to plan state. It is what
+        lets an agent resolve a followup or lock a decision without the HTTP
+        server running, and registration is per client rather than per host.
+      </p>
+      <p>For Claude Code:</p>
+      <pre><code>claude mcp add reckon --scope user -- \
+  uv run --project ~/Code/reckon reckon mcp</code></pre>
+      <p>
+        For Codex, add a table to <code>~/.codex/config.toml</code>. Append it
+        rather than rewriting the file, and re-parse afterwards to confirm the
+        result is still valid TOML:
+      </p>
+      <pre><code>[mcp_servers.reckon]
+command = "uv"
+args = ["run", "--project", "/home/&lt;user&gt;/Code/reckon", "reckon", "mcp"]</code></pre>
+      <p>
+        A registration is worth smoke-testing before trusting it, because a
+        wrong command fails silently at client start rather than loudly. Feed
+        the server one initialize frame and read the reply:
+      </p>
+      <pre><code>printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"smoke","version":"0"}}}' \
+  | uv run --project ~/Code/reckon reckon mcp</code></pre>
+      <p>
+        A registration added to a running session is not live in that session
+        &mdash; the client connects its MCP servers at start, so restart or
+        reconnect before expecting the tools.
+      </p>
+    </section>
+
+    <section id="project">
+      <h2>&sect;5 &mdash; Registering a repository</h2>
+      <p>
+        One idempotent command per repository. It registers the project in
+        <code>mounts.json</code>, copies the shared stylesheets, writes the SPA
+        entry point, creates the state directory and symlinks it into the config
+        home:
+      </p>
+      <pre><code>uv run --project ~/Code/reckon reckon sync &lt;repo&gt;/docs
+# override the project key, which defaults to the docs parent directory name:
+uv run --project ~/Code/reckon reckon sync &lt;repo&gt;/docs --project my-key</code></pre>
+      <p>
+        <code>mounts.json</code> is re-read on every request, so a newly
+        registered project needs no server restart. Plans are discovered live
+        from their <code>&lt;meta name="plan-*"&gt;</code> tags too &mdash; sync
+        is for setting up a repository and for pulling in new shared assets after
+        a reckon upgrade, not for adding a plan.
+      </p>
+      <p>
+        The config home resolves as <code>RECKON_HOME</code>, then
+        <code>~/.config/reckon</code>, then <code>~/docs-server</code> for a
+        legacy install. The CLI resolves it, so no step here needs to compute it.
+      </p>
+      <p>
+        <strong>Re-sync existing projects after upgrading reckon.</strong> A
+        project's <code>index.html</code> is a rendered copy of the checkout's
+        template, so it does not follow the checkout when the asset pipeline
+        changes. A project left un-synced across such a change keeps requesting
+        modules that no longer exist and renders a blank page with no error, and
+        because every request it does make returns 200 the failure looks like
+        anything but a stale entry point. The check is cheap, so bind it to the
+        upgrade rather than trusting memory:
+      </p>
+      <pre><code>python3 - &lt;&lt;'PY'
+import json, pathlib
+home = pathlib.Path.home()
+config = next((p for p in (home / ".config/reckon", home / "docs-server") if p.is_dir()), None)
+mounts = json.loads((config / "mounts.json").read_text())
+for project, docs in mounts.items():
+    index = pathlib.Path(docs) / "index.html"
+    text = index.read_text() if index.is_file() else ""
+    stale = "text/babel" in text or "unpkg.com" in text
+    print(f"{project:24} {'STALE - re-sync' if stale else 'current'}")
+PY</code></pre>
+    </section>
+
+    <section id="server">
+      <h2>&sect;6 &mdash; The docs server</h2>
+      <p>
+        The HTTP server renders the SPA and serves shared assets and compiled UI
+        modules. Agent work does not need it: the skills read plan HTML from
+        disk and the MCP writes it. It is what a human uses to read and act on
+        plans, and what the crew surface reports into.
+      </p>
+      <pre><code>uv run --project ~/Code/reckon reckon serve            # port 8765
+uv run --project ~/Code/reckon reckon serve --port 8766</code></pre>
+      <p>
+        A foreground <code>serve</code> dies with its terminal. For a persistent
+        deployment install it as a systemd user service, which enables lingering
+        so it survives logout:
+      </p>
+      <pre><code>uv run --project ~/Code/reckon reckon service install
+uv run --project ~/Code/reckon reckon service restart   # after changing reckon code</code></pre>
+      <p>
+        Registered projects are then at <code>/&lt;project&gt;/</code>. Because
+        the server compiles the JSX itself and serves each module as
+        <code>/_ui/&lt;name&gt;.js</code>, a Python change needs the process
+        restarted before any reader sees it, while a JSX change is live on the
+        next page load.
+      </p>
+    </section>
+
+    <section id="verify">
+      <h2>&sect;7 &mdash; Verify, and what the check does not cover</h2>
+      <pre><code>uv run --project ~/Code/reckon reckon doctor</code></pre>
+      <p>
+        It confirms the skills are present, that <code>mounts.json</code> is
+        readable with every mounted directory existing, and that an MCP
+        registration exists.
+      </p>
+      <p>
+        Two gaps are worth knowing, because a green report is easy to
+        over-read. The MCP check looks in the Claude <em>Desktop</em> config and
+        the Codex config, and not in <code>~/.claude.json</code> where Claude
+        Code keeps its own registration &mdash; so it passes on a Codex-only
+        registration while Claude Code has no reckon tools, and conversely a
+        working Claude Code registration alone does not satisfy it. And the
+        skills check tests presence, not that a skill is a symlink rather than a
+        stale copy. Neither is caught by the command, so check both directly
+        when a client unexpectedly has no tools.
+      </p>
+    </section>
+
+    <section id="first">
+      <h2>&sect;8 &mdash; First plan</h2>
+      <p>
+        With a repository registered, author through the skills rather than by
+        editing HTML: <code>/reckon-create &lt;slug&gt;</code> for a plan, or the
+        same command with <code>reckon-type=doc</code> for a non-plan document
+        &mdash; a review, an incident report, an explainer such as this one.
+        <code>/reckon-status</code> reads across everything without writing, and
+        is the cheapest way to confirm a fresh install sees what you expect.
+      </p>
+      <p>
+        Validate anything authored before relying on it. The validator catches
+        the failures that otherwise surface as a silently wrong render, such as a
+        relative image source or literal markdown in a field the surface passes
+        through as raw HTML:
+      </p>
+      <pre><code>uv run --project ~/Code/reckon reckon audit-doc &lt;repo&gt;/docs/plans/&lt;slug&gt;.html</code></pre>
+    </section>
+  </main>
+</body>
+</html>
