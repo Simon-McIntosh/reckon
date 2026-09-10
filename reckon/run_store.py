@@ -16,6 +16,15 @@ which is the direction that cannot lose a permanent record. The declaration
 is the only place the list of washable fields is spelled out; the durable set
 is defined as its complement.
 
+The runs row carries that whole durable record as one JSON payload and, beside
+it, the five query keys — run id and the four in ``QUERY_KEYS`` — as real
+indexed columns. A question routed through one of the keys is answered by an
+index search rather than by the whole-table scan plus per-row JSON parse the
+flat file costs, while an unclassified field is still kept forever in the
+payload. A store created under an older schema is rebuilt in place on open
+rather than failing its next write, because ``CREATE TABLE IF NOT EXISTS``
+leaves an existing table exactly as the version that created it left it.
+
 Nothing here is read by any existing reader, and this module exposes no read
 API for run data yet beyond the durable/detail readers the rotation contract
 asserts against — only the append a promotion needs, the schema it creates on
@@ -54,9 +63,82 @@ DETAIL_FIELDS = (
     "follow_on_paths",
 )
 
+# The query keys a reader routes through. Each is a real indexed column on the
+# runs row, extracted from the payload at insert, so a question about one run
+# is answered by an index search rather than by the scan-plus-parse the flat
+# file costs. run_id is the fifth query key and is indexed by the table's
+# primary key alone. The declaration is the only place the key list is
+# spelled out; it drives both the schema and the insert, so the two cannot
+# drift.
+QUERY_KEYS = ("member", "node", "project", "completed_at")
+
+# The runs table built from QUERY_KEYS. Precomputed once at import so the
+# schema, the indexes and the insert all come from the same declaration and
+# no caller input ever reaches a string.
+_RUNS_COLUMNS = frozenset(("run_id", "payload", *QUERY_KEYS))
+_RUNS_COLUMN_DEFS = ", ".join(
+    [
+        '"run_id" TEXT PRIMARY KEY',
+        *(f'"{name}" TEXT' for name in QUERY_KEYS),
+        '"payload" TEXT NOT NULL',
+    ]
+)
+_RUNS_CREATE = f'CREATE TABLE IF NOT EXISTS "runs" ({_RUNS_COLUMN_DEFS});'
+_RUNS_INDEXES = "".join(
+    f'CREATE INDEX IF NOT EXISTS "idx_runs_{name}" ON "runs" ("{name}");'
+    for name in QUERY_KEYS
+)
+_RUNS_SCHEMA = _RUNS_CREATE + _RUNS_INDEXES
+_RUNS_INSERT_COLUMNS = ", ".join(
+    ['"run_id"', *(f'"{name}"' for name in QUERY_KEYS), '"payload"']
+)
+_RUNS_INSERT_MARKS = ", ".join("?" for _name in ("run_id", *QUERY_KEYS, "payload"))
+_RUNS_INSERT = (
+    f'INSERT INTO "runs" ({_RUNS_INSERT_COLUMNS}) VALUES ({_RUNS_INSERT_MARKS})'  # noqa: S608
+)
+# The migration backfills every column a row is missing. The SET list and the
+# values share the QUERY_KEYS declaration, so the two cannot drift.
+_RUNS_UPDATE_SET = ", ".join(
+    ['"payload" = ?', *(f'"{name}" = ?' for name in QUERY_KEYS)]
+)
+_RUNS_UPDATE = f'UPDATE "runs" SET {_RUNS_UPDATE_SET} WHERE "run_id" = ?'  # noqa: S608
+
+# The three companion tables have stable shapes of their own and never need
+# migrating; only the runs row has drifted across declarations.
+_AUX_SCHEMA = """
+CREATE TABLE IF NOT EXISTS "run_details" (
+    "run_id" TEXT PRIMARY KEY,
+    "detail" TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS "members" (
+    "member_id" TEXT PRIMARY KEY,
+    "payload" TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS "holds" (
+    "hold_id" TEXT PRIMARY KEY,
+    "payload" TEXT NOT NULL
+);
+"""
+
+
 def store_path() -> Path:
     """Return the store's SQLite path under the crew config home."""
     return _store._config_home() / "crew" / "run_store.db"
+
+
+def _legacy_payload(row: Mapping[str, Any]) -> dict[str, Any]:
+    """Rebuild a run's durable record from a row an older runs shape wrote.
+
+    A store that already carried the payload blob keeps that record verbatim;
+    a store from the original ten narrow columns has no blob, so the durable
+    half is reconstructed from the columns it does hold, dropping the NULLs
+    that recorded an absent field. Either way the earlier rows remain
+    readable through the durable reader after the migration.
+    """
+    stored = row.get("payload")
+    if stored is not None:
+        return json.loads(stored)
+    return {name: value for name, value in row.items() if value is not None}
 
 
 class RunStore:
@@ -75,30 +157,68 @@ class RunStore:
         self.close()
 
     def _create(self) -> None:
-        """Create the tables and indexes."""
-        self._conn.executescript(
-            """
-            CREATE TABLE IF NOT EXISTS "runs" (
-                "run_id" TEXT PRIMARY KEY,
-                "payload" TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS "run_details" (
-                "run_id" TEXT PRIMARY KEY,
-                "detail" TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS "members" (
-                "member_id" TEXT PRIMARY KEY,
-                "payload" TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS "holds" (
-                "hold_id" TEXT PRIMARY KEY,
-                "payload" TEXT NOT NULL
-            );
-            """
+        """Create the tables and the run query-key indexes, migrating older runs in place.
+
+        The index claim is literal: each of the query keys in ``QUERY_KEYS``
+        gets its own index, so a reader routing through one of them is
+        answered by an index search rather than by a scan plus a per-row JSON
+        parse, and run_id is indexed by the table's primary key.
+        """
+        self._conn.executescript(_AUX_SCHEMA)
+        self._migrate_runs()
+
+    def _runs_columns(self) -> frozenset[str]:
+        return frozenset(
+            str(row[1]) for row in self._conn.execute('PRAGMA table_info("runs")')
         )
 
+    def _migrate_runs(self) -> None:
+        """Ensure the runs table has the current columns and indexes.
+
+        ``CREATE TABLE IF NOT EXISTS`` leaves an existing table exactly as the
+        version that created it left it, so a store created under an older
+        schema — the live store holds 22 rows under the original ten narrow
+        columns — would fail every later write with a missing-column error.
+        When the columns are not the current set, each missing one is added
+        and the whole table is backfilled inside one transaction: a row that
+        holds a payload blob feeds the query-key columns from it, and a
+        payloadless row from the original narrow shape is rebuilt from its
+        own column values. The earlier rows stay readable through the durable
+        reader afterwards.
+        """
+        columns = self._runs_columns()
+        if not columns:
+            self._conn.executescript(_RUNS_SCHEMA)
+            return
+        if columns == _RUNS_COLUMNS:
+            self._conn.executescript(_RUNS_INDEXES)
+            return
+        names = [
+            str(desc[0])
+            for desc in self._conn.execute('SELECT * FROM "runs" LIMIT 0').description
+        ]
+        rows = self._conn.execute('SELECT * FROM "runs"').fetchall()
+        with self._conn:
+            # The added columns are nullable, unlike a fresh table's payload;
+            # nothing reads the store yet, so the constraint is not worth the
+            # rebuild an ALTER that adds NOT NULL would cost.
+            for name in (*QUERY_KEYS, "payload"):
+                if name not in columns:
+                    self._conn.execute(f'ALTER TABLE "runs" ADD COLUMN "{name}" TEXT')
+            for row in rows:
+                record = _legacy_payload(dict(zip(names, row, strict=True)))
+                self._conn.execute(
+                    _RUNS_UPDATE,
+                    (
+                        json.dumps(record, sort_keys=True, separators=(",", ":")),
+                        *(record.get(name) for name in QUERY_KEYS),
+                        record["run_id"],
+                    ),
+                )
+            self._conn.executescript(_RUNS_INDEXES)
+
     def append(self, project: str, record: Mapping[str, Any]) -> None:
-        """Insert one run's durable payload and its wide detail in one transaction.
+        """Insert one run's durable record and its wide detail in one transaction.
 
         Only the new run id is written; no existing row is read or rewritten.
         A second insert for the same run id raises (the store's own primary
@@ -109,7 +229,9 @@ class RunStore:
         Every field not named in the detail declaration is durable and is
         stored in the runs payload; exactly the declared wide fields the
         record carries are stored as the washable detail hanging off the
-        durable half.
+        durable half. The query keys are real columns beside the payload,
+        extracted from it at insert, so the indexed answers agree with the
+        durable record row for row.
         """
         payload = dict(record)
         payload.setdefault("project", project)
@@ -117,8 +239,12 @@ class RunStore:
         detail = {name: payload.pop(name) for name in DETAIL_FIELDS if name in payload}
         with self._conn:
             self._conn.execute(
-                'INSERT INTO "runs" ("run_id", "payload") VALUES (?, ?)',
-                (run_id, json.dumps(payload, sort_keys=True, separators=(",", ":"))),
+                _RUNS_INSERT,
+                (
+                    run_id,
+                    *(payload.get(name) for name in QUERY_KEYS),
+                    json.dumps(payload, sort_keys=True, separators=(",", ":")),
+                ),
             )
             self._conn.execute(
                 'INSERT INTO "run_details" ("run_id", "detail") VALUES (?, ?)',

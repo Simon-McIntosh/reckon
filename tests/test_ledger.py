@@ -2477,26 +2477,39 @@ def test_append_run_writes_the_shadow_store_beside_the_file(home, repo) -> None:
     store_location = run_store.store_path()
     assert store_location.is_file()
     with sqlite3.connect(str(store_location)) as connection:
-        durable = connection.execute(
+        connection.row_factory = sqlite3.Row
+        stored = connection.execute(
             'SELECT * FROM "runs" WHERE "run_id" = ?', ("r-store-echo",)
         ).fetchone()
-        assert durable is not None
+        assert stored is not None
         detail = json.loads(
             connection.execute(
                 'SELECT "detail" FROM "run_details" WHERE "run_id" = ?',
                 ("r-store-echo",),
             ).fetchone()[0]
         )
-    durable_by_name = dict(
-        zip([name for name, _ in run_store.DURABLE_FIELDS], durable, strict=True)
-    )
-    assert durable_by_name["run_id"] == "r-store-echo"
-    assert durable_by_name["project"] == PROJECT
-    assert durable_by_name["member"] == "worker-a"
-    assert durable_by_name["node"] == ""
-    assert durable_by_name["gate"] == "passed"
-    assert durable_by_name["completed_at"] == "2026-09-09T00:00:00Z"
-    assert detail["run_id"] == "r-store-echo"
+    # The five query keys are answered from real columns on the runs row…
+    assert stored["run_id"] == "r-store-echo"
+    assert stored["member"] == "worker-a"
+    assert stored["node"] == ""
+    assert stored["project"] == PROJECT
+    assert stored["completed_at"] == "2026-09-09T00:00:00Z"
+
+    # …while the complete durable record still lives in the payload beside
+    # them, so a field the declaration does not index is still kept forever.
+    durable = json.loads(stored["payload"])
+    assert durable["run_id"] == "r-store-echo"
+    assert durable["project"] == PROJECT
+    assert durable["member"] == "worker-a"
+    assert durable["node"] == ""
+    assert durable["gate"] == "passed"
+    assert durable["completed_at"] == "2026-09-09T00:00:00Z"
+    # The detail half carries only the declared wide fields, keyed to the run
+    # by the shared run_id; no durable field leaks into what rotation may
+    # wash out.
+    assert set(detail) <= set(run_store.DETAIL_FIELDS)
+    assert "run_id" not in detail
+    assert {"member", "node", "project", "gate", "completed_at"}.isdisjoint(detail)
     # The real crew config home was not written to.
     assert real_store.exists() == was_present
 
