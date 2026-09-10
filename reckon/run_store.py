@@ -3,19 +3,23 @@
 The committed ledger file (``docs/state/<project>/crew.json``) is the store
 every reader reads. This module keeps the same rows in an embedded SQLite
 database beside it — for now a shadow that nothing reads, whose writes must
-never break the file write. A run row is split into a narrow durable half and
-a wide detail half keyed to it; that split is what a later rotation stage can
-use to wash wide detail out while every durable field survives.
+never break the file write. A run row is split into a durable half and a wide
+detail half keyed to it; that split is what a later rotation stage can use to
+wash wide detail out while every durable field survives.
 
-The durable columns come from the single ``DURABLE_FIELDS`` declaration: the
-runs table is created from it and the durable row is inserted from it, so
-adding a durable field is one declaration change and appears in both the
-schema and every written durable row. The declaration is the only place the
-list of durable fields is spelled out.
+The classification is inverted so that the failure boundary sits where it
+keeps data rather than deleting it: the single ``DETAIL_FIELDS`` declaration
+names the wide fields a later rotation may wash out, and every other field on
+a run record is durable by default and lands in the runs payload. Forgetting
+to classify a new field therefore keeps it forever rather than deleting it,
+which is the direction that cannot lose a permanent record. The declaration
+is the only place the list of washable fields is spelled out; the durable set
+is defined as its complement.
 
 Nothing here is read by any existing reader, and this module exposes no read
-API for run data yet — only the append a promotion needs, the schema it
-creates on first use, and the path helper the isolation assertions resolve.
+API for run data yet beyond the durable/detail readers the rotation contract
+asserts against — only the append a promotion needs, the schema it creates on
+first use, and the path helper the isolation assertions resolve.
 """
 
 from __future__ import annotations
@@ -28,26 +32,27 @@ from typing import Any, Self
 
 from reckon import _store
 
-# The single durable-field declaration: (column, SQL type). The runs table's
-# CREATE and the durable-row INSERT are both built from this tuple, so a field
-# added here surfaces in the schema and in every written durable row with no
-# second copy to keep in step.
-DURABLE_FIELDS = (
-    ("run_id", "TEXT"),
-    ("project", "TEXT"),
-    ("member", "TEXT"),
-    ("node", "TEXT"),
-    ("plan", "TEXT"),
-    ("section", "TEXT"),
-    ("gate", "TEXT"),
-    ("completed_at", "TEXT"),
-    ("backend", "TEXT"),
-    ("base_sha", "TEXT"),
+# The single detail-field declaration. A field on a run record named here is
+# wide detail a later rotation stage may wash out once its derived value
+# exists; every field not named here is durable by default and lives in the
+# runs row's payload, so an unclassified field is kept forever rather than
+# deleted. These are the thirteen wide fields measured at 78.3 percent of the
+# ledger's payload at authoring.
+DETAIL_FIELDS = (
+    "node_definition",
+    "budget",
+    "unreconciled_override",
+    "gate_check",
+    "execution_fit",
+    "throughput",
+    "worktree_retention",
+    "lane_receipt",
+    "suite_delta",
+    "resume_remedy",
+    "failure_attribution",
+    "shadow_patch",
+    "follow_on_paths",
 )
-
-# The durable columns a query routes through; each gets its own index.
-_DURABLE_INDEXED = ("member", "node", "project", "completed_at")
-
 
 def store_path() -> Path:
     """Return the store's SQLite path under the crew config home."""
@@ -70,17 +75,12 @@ class RunStore:
         self.close()
 
     def _create(self) -> None:
-        """Create the tables and indexes, derived from the field declaration."""
-        durable = ", ".join(f'"{name}" {sql_type}' for name, sql_type in DURABLE_FIELDS)
-        indexes = "".join(
-            f'CREATE INDEX IF NOT EXISTS "idx_runs_{name}" ON "runs" ("{name}");'
-            for name in _DURABLE_INDEXED
-        )
+        """Create the tables and indexes."""
         self._conn.executescript(
-            f"""
+            """
             CREATE TABLE IF NOT EXISTS "runs" (
-                {durable},
-                PRIMARY KEY ("run_id")
+                "run_id" TEXT PRIMARY KEY,
+                "payload" TEXT NOT NULL
             );
             CREATE TABLE IF NOT EXISTS "run_details" (
                 "run_id" TEXT PRIMARY KEY,
@@ -94,40 +94,65 @@ class RunStore:
                 "hold_id" TEXT PRIMARY KEY,
                 "payload" TEXT NOT NULL
             );
-            {indexes}
             """
         )
 
     def append(self, project: str, record: Mapping[str, Any]) -> None:
-        """Insert one run's durable row and its detail in one transaction.
+        """Insert one run's durable payload and its wide detail in one transaction.
 
         Only the new run id is written; no existing row is read or rewritten.
         A second insert for the same run id raises (the store's own primary
         keys), the same refusal the committed file makes for a double
         promotion. The transaction covers both inserts, so a failure in either
         leaves the store untouched rather than half-written.
+
+        Every field not named in the detail declaration is durable and is
+        stored in the runs payload; exactly the declared wide fields the
+        record carries are stored as the washable detail hanging off the
+        durable half.
         """
         payload = dict(record)
         payload.setdefault("project", project)
-        durable_names = tuple(name for name, _sql_type in DURABLE_FIELDS)
-        durable_values = tuple(payload.get(name) for name in durable_names)
-        columns = ", ".join(f'"{name}"' for name in durable_names)
-        marks = ", ".join("?" for _name in durable_names)
+        run_id = str(payload["run_id"])
+        detail = {name: payload.pop(name) for name in DETAIL_FIELDS if name in payload}
         with self._conn:
-            # The interpolated names come only from this module's own field
-            # declaration, never from caller input, so there is no injection
-            # surface; the flag is the heuristic not seeing that.
             self._conn.execute(
-                f'INSERT INTO "runs" ({columns}) VALUES ({marks})',  # noqa: S608
-                durable_values,
+                'INSERT INTO "runs" ("run_id", "payload") VALUES (?, ?)',
+                (run_id, json.dumps(payload, sort_keys=True, separators=(",", ":"))),
             )
             self._conn.execute(
                 'INSERT INTO "run_details" ("run_id", "detail") VALUES (?, ?)',
-                (
-                    str(payload["run_id"]),
-                    json.dumps(payload, sort_keys=True, separators=(",", ":")),
-                ),
+                (run_id, json.dumps(detail, sort_keys=True, separators=(",", ":"))),
             )
+
+    def get_run(self, run_id: str) -> dict[str, Any] | None:
+        """Return one run's durable half as a dict, or None when absent.
+
+        The durable half is every field the record carried except the declared
+        wide detail, so this is the part a rotation must never touch: after a
+        rotation deletes the detail row, every field this answers is still
+        answerable.
+        """
+        row = self._conn.execute(
+            'SELECT "payload" FROM "runs" WHERE "run_id" = ?', (run_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        return json.loads(row[0])
+
+    def get_detail(self, run_id: str) -> dict[str, Any] | None:
+        """Return one run's wide detail as a dict, or None when absent.
+
+        The detail is the subset of the declared wide fields the record
+        carried; it is what rotation washes out, so it returns None once the
+        detail row has been rotated away.
+        """
+        row = self._conn.execute(
+            'SELECT "detail" FROM "run_details" WHERE "run_id" = ?', (run_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        return json.loads(row[0])
 
     def append_member(self, member: Mapping[str, Any]) -> None:
         """Record one roster member's full payload under its own id."""
