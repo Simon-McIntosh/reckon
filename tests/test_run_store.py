@@ -15,6 +15,7 @@ leaving the real crew config home untouched.
 
 from __future__ import annotations
 
+import json
 import os
 import sqlite3
 from pathlib import Path
@@ -183,9 +184,9 @@ def _connect(path: Path) -> sqlite3.Connection:
     return connection
 
 
-def _table_names(connection: sqlite3.Connection) -> set[str]:
+def _table_names(connection: sqlite3.Connection, *, kind: str = "table") -> set[str]:
     rows = connection.execute(
-        "SELECT name FROM sqlite_master WHERE type = 'table'"
+        "SELECT name FROM sqlite_master WHERE type = ?", (kind,)
     ).fetchall()
     return {str(row["name"]) for row in rows}
 
@@ -466,3 +467,235 @@ def test_a_failed_durable_write_rolls_back_the_whole_append(
         ).fetchone()
         assert durable is None
         assert detail is None
+
+
+# ── The query keys are real indexed columns beside the payload ──────────────
+
+
+def _query_plan(connection: sqlite3.Connection, key: str) -> str:
+    """The planner's own words for a lookup through one query key."""
+    row = connection.execute(
+        f'EXPLAIN QUERY PLAN SELECT "run_id" FROM "runs" WHERE "{key}" = ?',  # noqa: S608
+        ("worker-a",),
+    ).fetchone()
+    return str(row[3])
+
+
+def test_the_five_query_keys_are_answered_from_indexed_columns(store: Path) -> None:
+    with run_store.RunStore(store) as sqlite_store:
+        for suffix in ("one", "two", "three"):
+            sqlite_store.append("proj", _addressing_record(f"r-{suffix}"))
+
+    with _connect(store) as connection:
+        indexes = {
+            str(row["name"])
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master "
+                "WHERE type = 'index' AND tbl_name = 'runs'"
+            )
+        }
+        # run_id is indexed by the primary key; the other four keys each get
+        # their own index from the declaration.
+        assert "idx_runs_member" in indexes
+        assert "idx_runs_node" in indexes
+        assert "idx_runs_project" in indexes
+        assert "idx_runs_completed_at" in indexes
+
+        # For each of the five keys the planner reports a search using an
+        # index rather than a table scan, asserted on the plan text rather
+        # than on elapsed time. A SEARCH row in SQLite's query plan always
+        # reads through an index — the primary key or a query-key index —
+        # while a SCAN row is the whole-table scan the flat file costs.
+        for key in ("run_id", "member", "node", "project", "completed_at"):
+            plan = _query_plan(connection, key)
+            assert "SCAN" not in plan, f"{key}: plan scans: {plan}"
+            assert plan.startswith("SEARCH"), (
+                f"{key}: plan does not search an index: {plan}"
+            )
+
+
+def test_a_query_for_one_member_returns_the_same_rows_either_way(
+    store: Path,
+) -> None:
+    for suffix, member in (
+        ("one", "worker-a"),
+        ("two", "worker-b"),
+        ("three", "worker-a"),
+    ):
+        record = _addressing_record(f"r-{suffix}")
+        record["member"] = member
+        with run_store.RunStore(store) as sqlite_store:
+            sqlite_store.append("proj", record)
+
+    with _connect(store) as connection:
+        via_column = {
+            str(row["run_id"])
+            for row in connection.execute(
+                'SELECT "run_id" FROM "runs" WHERE "member" = ?', ("worker-a",)
+            )
+        }
+        via_payload = {
+            str(row["run_id"])
+            for row in connection.execute(
+                'SELECT "run_id" FROM "runs" '
+                'WHERE json_extract("payload", "$.member") = ?',
+                ("worker-a",),
+            )
+        }
+
+    assert via_column == {"r-one", "r-three"}
+    assert via_column == via_payload
+
+
+# ── A store from an earlier declaration migrates in place on open ───────────
+
+
+def _build_legacy_shape(connection: sqlite3.Connection) -> None:
+    """Create the runs table under the previous narrow-column declaration.
+
+    The earlier shape had ten durable columns and no payload blob; this is
+    the shape the live store carries its 22 rows in, and it is the shape
+    whose every write is failing today because ``CREATE TABLE IF NOT EXISTS``
+    leaves the old table exactly as it was.
+    """
+    connection.executescript(
+        """
+        CREATE TABLE "runs" (
+            "run_id" TEXT PRIMARY KEY,
+            "project" TEXT,
+            "member" TEXT,
+            "node" TEXT,
+            "plan" TEXT,
+            "section" TEXT,
+            "gate" TEXT,
+            "completed_at" TEXT,
+            "backend" TEXT,
+            "base_sha" TEXT
+        );
+        CREATE INDEX "idx_runs_member" ON "runs" ("member");
+        CREATE TABLE "run_details" (
+            "run_id" TEXT PRIMARY KEY,
+            "detail" TEXT NOT NULL
+        );
+        CREATE TABLE "members" (
+            "member_id" TEXT PRIMARY KEY,
+            "payload" TEXT NOT NULL
+        );
+        CREATE TABLE "holds" (
+            "hold_id" TEXT PRIMARY KEY,
+            "payload" TEXT NOT NULL
+        );
+        """
+    )
+    connection.execute(
+        'INSERT INTO "runs" '
+        '("run_id", "project", "member", "node", "gate", "completed_at") '
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        ("r-old", "proj", "worker-a", "node-a", "passed", "2026-09-09T00:00:00Z"),
+    )
+
+
+def test_a_store_from_the_narrow_column_shape_migrates_in_place_on_open(
+    store: Path,
+) -> None:
+    with _connect(store) as connection:
+        _build_legacy_shape(connection)
+
+    # Opening with the current code migrates the table before the next write:
+    # the append succeeds and the earlier row stays readable in full.
+    with run_store.RunStore(store) as sqlite_store:
+        sqlite_store.append("proj", _addressing_record("r-new"))
+        old_run = sqlite_store.get_run("r-old")
+        new_run = sqlite_store.get_run("r-new")
+
+    assert old_run == {
+        "run_id": "r-old",
+        "project": "proj",
+        "member": "worker-a",
+        "node": "node-a",
+        "gate": "passed",
+        "completed_at": "2026-09-09T00:00:00Z",
+    }
+    assert new_run["run_id"] == "r-new"
+
+    # The migrated table carries the query keys as real columns plus the
+    # payload — the legacy narrow columns stay as harmless extras — with the
+    # query-key indexes, and leaves no scaffold table behind.
+    with _connect(store) as connection:
+        columns = {
+            str(row["name"]) for row in connection.execute('PRAGMA table_info("runs")')
+        }
+        assert {
+            "run_id",
+            "member",
+            "node",
+            "project",
+            "completed_at",
+            "payload",
+        } <= columns
+        assert "idx_runs_member" in _table_names(connection, kind="index")
+        migrated = connection.execute(
+            'SELECT "member", "node", "project", "completed_at" '
+            'FROM "runs" WHERE "run_id" = ?',
+            ("r-old",),
+        ).fetchone()
+        assert tuple(migrated) == ("worker-a", "node-a", "proj", "2026-09-09T00:00:00Z")
+        assert "runs_legacy" not in _table_names(connection)
+
+
+def test_a_store_from_the_payload_blob_shape_migrates_in_place_on_open(
+    store: Path,
+) -> None:
+    # The immediately-preceding shape kept the durable half as one payload
+    # blob but dropped the query-key columns.
+    with _connect(store) as connection:
+        connection.executescript(
+            """
+            CREATE TABLE "runs" (
+                "run_id" TEXT PRIMARY KEY,
+                "payload" TEXT NOT NULL
+            );
+            CREATE TABLE "run_details" (
+                "run_id" TEXT PRIMARY KEY,
+                "detail" TEXT NOT NULL
+            );
+            CREATE TABLE "members" (
+                "member_id" TEXT PRIMARY KEY,
+                "payload" TEXT NOT NULL
+            );
+            CREATE TABLE "holds" (
+                "hold_id" TEXT PRIMARY KEY,
+                "payload" TEXT NOT NULL
+            );
+            """
+        )
+        connection.execute(
+            'INSERT INTO "runs" ("run_id", "payload") VALUES (?, ?)',
+            (
+                "r-old",
+                json.dumps(
+                    {
+                        "run_id": "r-old",
+                        "project": "proj",
+                        "member": "worker-a",
+                        "node": "node-a",
+                        "gate": "passed",
+                        "completed_at": "2026-09-09T00:00:00Z",
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ),
+            ),
+        )
+
+    with run_store.RunStore(store) as sqlite_store:
+        sqlite_store.append("proj", _addressing_record("r-new"))
+        old_run = sqlite_store.get_run("r-old")
+
+    assert old_run["member"] == "worker-a"
+    assert old_run["node"] == "node-a"
+    with _connect(store) as connection:
+        row = connection.execute(
+            'SELECT "member" FROM "runs" WHERE "run_id" = ?', ("r-old",)
+        ).fetchone()
+        assert str(row["member"]) == "worker-a"
