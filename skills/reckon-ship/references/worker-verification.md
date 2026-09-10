@@ -128,3 +128,25 @@ Measured cost and return: **$6.51 and 14 minutes for three commits totalling abo
 against $12–23 per implement node. It found what an audit of thirty merges had
 not. It would have found nothing on the pure refactor above, which is exactly why
 the trigger matters.
+
+#### The manifest is a report, not the record — and a reachable commit is not the content
+
+**A manifest field is not evidence.** An empty `commits:` or `changed_paths:`
+means the field is empty — never that no work was done: a worker that finished
+and forgot to record itself reads exactly like one that never started. So
+before concluding a run produced nothing, resolve the actual head commit of its
+worktree and diff it against the base the run was dispatched from. Reconcile
+the status word the other way too: a manifest whose own status reads `complete`
+must be checked against the run classification, because a manifest can
+truthfully describe finished work while the administrative record says the node
+never terminated normally — and an unspoken disagreement between the two
+records lets a completed node sit unpromoted.
+
+**Prove a landing by a marker the change introduced, never by the absence of
+one it removed.** A reachable commit and landed content are different facts: a
+merge can drop a committed change while leaving the commit reachable, so
+grepping for a symbol the change deleted proves nothing — absence cannot
+distinguish "removed correctly" from "never landed". Check the positive marker,
+a string or shape the change added that must exist in the file at the head, and
+check the negative half as well, that the removed marker is really gone — a
+dropped deletion is as silent as a dropped addition.
