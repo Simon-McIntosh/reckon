@@ -23,6 +23,31 @@ DURABLE_WRITE_CONTRACT = (
     "  preceding a long generation survives that generation failing."
 )
 
+# The falsifiable-evidence contract, embedded in every composed prompt beside
+# the durable-write one. It lives here for the same reason its sibling does:
+# the prompt embeds no protocol reference by design, so a discipline carried
+# only by a reference file reaches nobody. Every clause states a mechanical
+# rule and names no repository, path, tool, model or project, because this text
+# reaches workers on every project that syncs this package. Kept as a
+# standalone constant so a test can compose with it masked out and diff against
+# the live prompt, which proves the addition is removable and nothing else
+# changed.
+FALSIFIABLE_EVIDENCE_CONTRACT = (
+    "CONTRACT — EVIDENCE THAT COULD HAVE FAILED\n"
+    "  Confirm a previously recorded defect still reproduces before repairing it and\n"
+    "  quote the reproduction; where the behaviour is already correct, verify it and\n"
+    "  add the missing test rather than reimplementing a working guard.\n"
+    "  A passing suite never shows that a guard fires, so make the guarded thing\n"
+    "  happen and show the refusal.\n"
+    "  Treat an implausible measurement as a claim about the instrument first: a\n"
+    "  zero, an empty result or a uniform column needs the check shown to see\n"
+    "  something known present before an absence is reported.\n"
+    "  Read the receipt rather than the absence of an error, and verify a change\n"
+    "  landed by a marker it introduced rather than one it removed.\n"
+    "  Record the commits and paths you changed; a coordinator cannot see your\n"
+    "  tree, so an unfilled field reads as no work."
+)
+
 # ── Prompt composition ──────────────────────────────────────────────────────
 
 
@@ -126,6 +151,8 @@ ROLE     {node.role}
 {specification_guidance}{delivery_directory_note}
 
 {DURABLE_WRITE_CONTRACT}
+
+{FALSIFIABLE_EVIDENCE_CONTRACT}
 
 FENCE — SCOPE (exclusive write paths; nothing outside them)
 {scope_lines}
