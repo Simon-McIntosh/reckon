@@ -1346,10 +1346,10 @@ def _shadow_store_append(project: str, record: Mapping[str, Any]) -> dict[str, A
     """Write one run to the queryable store, recording rather than raising.
 
     The store is a shadow nothing reads yet, so its failure must never turn a
-    committed file row into a failed promotion: the file row is already
-    written before this runs, and any store exception is returned on the
-    payload rather than propagated. ``append_run``'s callers — promotion
-    included — receive the outcome on the returned payload.
+    committed file row into a failed promotion: any store exception is
+    returned on the payload rather than propagated, and ``append_run`` records
+    the outcome on both the committed row and the returned payload it hands to
+    promotion.
     """
     from reckon import run_store
 
@@ -1383,6 +1383,7 @@ def append_run(
     if stored_record.get("throughput") is None and str(stored_record.get("manifest_path") or ""):
         stored_record.pop("throughput", None)
     last: LedgerError | None = None
+    store_outcome: dict[str, Any] | None = None
     for _attempt in range(max(1, attempts)):
         data, version = load(project, ledger_root)
         existing = next(
@@ -1394,6 +1395,14 @@ def append_run(
                 f"(completed {existing.get('completed_at')!r}); promoting it twice "
                 "would double-count its measurements"
             )
+        if store_outcome is None:
+            # Attempt the shadow store write exactly once, before the file row
+            # commits, so its outcome can be recorded on the committed row
+            # itself. The store never raises here — a failure is reported on
+            # the row and the returned payload, never propagated — so a broken
+            # shadow cannot turn a promotion into a failed one.
+            store_outcome = _shadow_store_append(project, stored_record)
+            stored_record["store_write"] = dict(store_outcome)
         data["runs"] = data["runs"] + [stored_record]
         try:
             new_version = write(project, data, version, ledger_root)
@@ -1401,18 +1410,38 @@ def append_run(
             last = exc
             _retry_backoff(_attempt)
             continue
-        # The file row is committed; the store is a shadow whose failure is
-        # recorded on the returned payload, never raised here.
         return {
             "path": str(ledger_path(project, ledger_root)),
             "version": new_version,
             "run": dict(stored_record),
-            "store": _shadow_store_append(project, stored_record),
+            "store": dict(store_outcome or {"status": "unknown"}),
         }
     raise LedgerError(
         f"ledger for {project!r} was rewritten on every attempt — {last}"
         if last
         else f"ledger for {project!r} could not be written"
+    )
+
+
+def failed_store_write_count(
+    project: str,
+    root: str | Path | None = None,
+) -> int:
+    """Count committed rows whose shadow store write failed.
+
+    A row carries ``store_write`` only once the shadow store exists, so rows
+    committed before then are neither failures nor successes — they are simply
+    not counted. The failing count is the durable, queryable record of how many
+    promotions have a store write that raised, independent of any command's
+    transient output.
+    """
+
+    data, _version = load(project, _run_ledger_root(project, root))
+    return sum(
+        1
+        for run in data["runs"]
+        if isinstance(run.get("store_write"), Mapping)
+        and str(run["store_write"].get("status") or "").strip() == "failed"
     )
 
 

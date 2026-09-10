@@ -47,6 +47,12 @@ FIXTURES = Path(__file__).parent / "fixtures" / "backends"
 PROJECT = "proj"
 SESSION_ID = "019ff509-8a60-7723-94fd-65942a6d8faa"
 
+
+def _written(record: dict) -> dict:
+    """A committed row always records its shadow store outcome."""
+    return {**record, "store_write": {"status": "written"}}
+
+
 # The complete observed row keeps checkout routing independent of which
 # promotion fields are populated. A smaller synthetic mapping would not pin
 # the boundary that a full promotion record crosses.
@@ -336,8 +342,8 @@ def test_a_foreign_projects_promoted_row_reaches_its_registered_checkout(
     owner_ledger = owner_state / "crew.json"
     stray_ledger = repo / "docs" / "state" / "imas-codex" / "crew.json"
     assert promoted["path"] == str(owner_ledger)
-    assert ledger.runs("imas-codex", owner) == [MISROUTED_PROMOTED_ROW]
-    assert promoted["run"] == MISROUTED_PROMOTED_ROW
+    assert ledger.runs("imas-codex", owner) == [_written(MISROUTED_PROMOTED_ROW)]
+    assert promoted["run"] == _written(MISROUTED_PROMOTED_ROW)
     assert not stray_ledger.exists()
 
 
@@ -348,7 +354,7 @@ def test_an_explicit_checkout_is_used_when_the_mount_registry_is_absent(
 
     requested_ledger = repo / "docs" / "state" / "imas-codex" / "crew.json"
     assert promoted["path"] == str(requested_ledger)
-    assert ledger.runs("imas-codex", repo) == [MISROUTED_PROMOTED_ROW]
+    assert ledger.runs("imas-codex", repo) == [_written(MISROUTED_PROMOTED_ROW)]
     assert not (home / "mounts.json").exists()
 
 
@@ -378,7 +384,7 @@ def test_a_projects_own_checkout_remains_its_promotion_target(home, repo) -> Non
 
     expected = repo / "docs" / "state" / PROJECT / "crew.json"
     assert promoted["path"] == str(expected)
-    assert ledger.runs(PROJECT, repo) == [row]
+    assert ledger.runs(PROJECT, repo) == [_written(row)]
 
 
 def test_completion_promotes_the_pointer_into_the_repositorys_ledger(
@@ -2516,6 +2522,50 @@ def test_a_raising_store_write_is_recorded_and_never_propagated(
     # The committed file row landed regardless of the shadow failure.
     assert [entry["run_id"] for entry in ledger.runs(PROJECT, repo)] == ["r-store-fail"]
     assert real_store.exists() == was_present
+
+
+def test_a_successful_store_write_is_recorded_written_on_the_committed_row(
+    home, repo
+) -> None:
+    record = ledger.build_record(run_id="r-store-ok", plan="plan-a", gate="passed")
+    real_store = _real_store_path()
+    was_present = real_store.exists()
+
+    result = ledger.append_run(PROJECT, record, root=repo)
+
+    assert result["store"] == {"status": "written"}
+    stored = ledger.runs(PROJECT, repo)[0]
+    # A working shadow reports written rather than nothing, so the durable
+    # record can distinguish a healthy shadow from a promotion that predates
+    # the store entirely.
+    assert stored["store_write"] == {"status": "written"}
+    assert ledger.failed_store_write_count(PROJECT, repo) == 0
+    assert real_store.exists() == was_present
+
+
+def test_failed_store_writes_are_durable_and_countable(home, repo, monkeypatch) -> None:
+    from reckon import run_store
+
+    first = ledger.build_record(run_id="r-store-first", plan="plan-a", gate="passed")
+    ledger.append_run(PROJECT, first, root=repo)
+    raw = ledger.runs(PROJECT, repo)[0]
+    assert raw["store_write"] == {"status": "written"}
+    assert ledger.failed_store_write_count(PROJECT, repo) == 0
+
+    def broken_append(_project: str, _record_entry: dict) -> None:
+        raise RuntimeError("injected store failure")
+
+    monkeypatch.setattr(run_store, "append", broken_append)
+    second = ledger.build_record(run_id="r-store-second", plan="plan-a", gate="passed")
+    failed = ledger.append_run(PROJECT, second, root=repo)
+
+    assert failed["store"]["status"] == "failed"
+    stored = {entry["run_id"]: entry for entry in ledger.runs(PROJECT, repo)}
+    assert stored["r-store-first"]["store_write"] == {"status": "written"}
+    assert stored["r-store-second"]["store_write"]["status"] == "failed"
+    assert "RuntimeError" in stored["r-store-second"]["store_write"]["error"]
+    # The count is a number over the ledger, independent of any command output.
+    assert ledger.failed_store_write_count(PROJECT, repo) == 1
 
 
 def test_existing_readers_are_identical_with_the_store_present_and_deleted(
