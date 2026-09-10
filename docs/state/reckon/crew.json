@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-10T12:14:49",
+  "updated": "2026-09-10T12:39:00",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -95184,6 +95184,200 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260910T095412865565-hpdw-the-store-holds-what-the-file-holds",
+        "plan": "history-persists-as-detail-washes-out",
+        "section": "\u00a73",
+        "node": "hpdw-the-store-holds-what-the-file-holds",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 638,
+                "cached_input_tokens": 408146,
+                "input_tokens": 408786,
+                "output_tokens": 740,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 409526,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "d605a9b0-7fe6-4816-b993-dad99ec68f17",
+            "session_id": "ship-clw-2026-09-09"
+          },
+          "done_when": "pytest over the named test files reports 0 added failures against base HEAD stated as a number, and: a re-runnable import brings every run in this project's committed crew ledger, resolved by project name and never opened as a file, into the store, reporting rows imported and rows already present as separate numbers, with a second immediate pass reporting zero of both; the import does NOT rewrite the historical store_write field on any row, because that field records what happened at one promotion rather than current state, asserted by requiring the two rows that carry a failed status to still carry it afterwards; an equality check compares the two stores and reports, as numbers, rows in the file absent from the store, rows in the store absent from the file, and rows present in both whose durable fields disagree, returning zero on all three once the import has run and being shown non-zero first by removing one row from the store; the check is cheap enough to run on every promotion, demonstrated by stating its elapsed time over the full corpus as a number; the durable comparison covers every field the store calls durable rather than a chosen subset, so a field silently dropped by the writer is caught; and the store stays a shadow, every existing reader giving an identical answer whether the store file is present or deleted",
+          "estimated_hours": null,
+          "goal": "Import the committed corpus into the shadow store and give the two stores a standing equality check, so dual-write can be believed rather than assumed",
+          "id": "hpdw-the-store-holds-what-the-file-holds",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-10T09:54:13Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260910T095412865565-hpdw-the-store-holds-what-the-file-holds/manifest.md",
+          "plan": "history-persists-as-detail-washes-out",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "55m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/run_store.py",
+            "scripts/import_runs_into_store.py",
+            "tests/test_run_store.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-elapsed",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-10T09:54:19Z",
+        "completed_at": "2026-09-10T10:35:10.331Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2429,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2451,
+        "stalled": false,
+        "time_budget": "55m",
+        "base_sha": "b565bcdea928b1f689ad10ea9e959a9e0fb9e8d7",
+        "commits": [
+          "99e3da169be8b146aa77aa2a99c344aff55c6c3b"
+        ],
+        "changed_lines": {
+          "added": 508,
+          "removed": 5,
+          "files": 3
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_run_store.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260910T095412865565-hpdw-the-store-holds-what-the-file-holds/head_gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260910T095412865565-hpdw-the-store-holds-what-the-file-holds/manifest.md",
+        "scope_changed": false,
+        "session_id": "d8fd41c1-b3e2-4684-97f2-dd9a10714d94",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 10074504,
+            "input_tokens_cumulative": 10074504,
+            "output_tokens": 83107,
+            "output_tokens_cumulative": 83107,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-10T10:35:10.331Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 10074504,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 2447.523,
+          "generated_tokens": 83107,
+          "generation_seconds": 2333.523,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 19.1,
+          "machine_seconds": 114.0,
+          "peak_input_tokens": 193994,
+          "tokens_per_second": 35.61,
+          "wall_tokens_per_second": 33.96
+        },
+        "follow_on_paths": [
+          "run_store.compare",
+          "promotion.py",
+          "78.3",
+          "/"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest over",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-clw-2026-09-09/hpdw-the-store-holds-what-the-file-holds",
+          "session_id": "d8fd41c1-b3e2-4684-97f2-dd9a10714d94",
+          "session_source": "stream",
+          "retained_at": "2026-09-10T10:35:10.331Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 83.0,
+        "orientation_input_tokens": 3711775.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -95412,6 +95606,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1360
+    "_version": 1361
   }
 }
