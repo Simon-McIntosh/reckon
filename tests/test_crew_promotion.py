@@ -7,7 +7,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from click.testing import CliRunner
+from click.testing import CliRunner, Result
 
 from reckon import _plan_html, _store, crew, ledger
 from reckon.cli import main as cli_main
@@ -424,6 +424,80 @@ def test_full_commit_promotes_without_rewriting_its_identity(
 
     assert stored["commits"] == [commit]
     assert not pointer_path(run_id).exists()
+
+
+def _invoke_complete_cli(run_id: str, gate_log: Path, commit: str) -> Result:
+    return CliRunner().invoke(
+        cli_main,
+        [
+            "crew",
+            "complete",
+            "--run",
+            run_id,
+            "--gate",
+            "passed",
+            "--commit",
+            commit,
+            "--gate-command",
+            "probe check",
+            "--gate-exit-status",
+            "0",
+            "--gate-log-path",
+            str(gate_log),
+        ],
+    )
+
+
+def test_a_successful_store_write_is_reported_written_on_the_command_payload(
+    repository: Path, tmp_path: Path
+) -> None:
+    base, commit = _repository_with_candidate(repository)
+    run_id = "r-store-written-payload"
+    _write_commit_pointer(repository, run_id, base)
+    gate_log = tmp_path / "gate.log"
+    gate_log.write_text("probe check passed\n", encoding="utf-8")
+
+    invoked = _invoke_complete_cli(run_id, gate_log, commit)
+
+    assert invoked.exit_code == 0
+    payload = json.loads(invoked.output)
+    assert payload["ok"] is True
+    # A working shadow reports written rather than nothing, on the ordinary
+    # success payload, so a healthy shadow is distinguishable from an absent
+    # store and from a missing field.
+    assert payload["store"] == {"status": "written"}
+    assert payload["record"]["store_write"] == {"status": "written"}
+    assert payload["record"]["run_id"] == run_id
+
+
+def test_a_failing_store_write_is_reported_on_the_ordinary_success_payload(
+    repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from reckon import run_store
+
+    base, commit = _repository_with_candidate(repository)
+    run_id = "r-store-fail-payload"
+    _write_commit_pointer(repository, run_id, base)
+    gate_log = tmp_path / "gate.log"
+    gate_log.write_text("probe check passed\n", encoding="utf-8")
+
+    def broken_append(_project: str, _record_entry: dict) -> None:
+        raise RuntimeError("injected store failure")
+
+    monkeypatch.setattr(run_store, "append", broken_append)
+
+    invoked = _invoke_complete_cli(run_id, gate_log, commit)
+
+    # The promotion itself still succeeds: the committed row lands and the
+    # exit status is the ordinary success one, unchanged by the shadow.
+    assert invoked.exit_code == 0
+    payload = json.loads(invoked.output)
+    assert payload["ok"] is True
+    assert payload["store"]["status"] == "failed"
+    assert "RuntimeError" in payload["store"]["error"]
+    assert payload["record"]["store_write"]["status"] == "failed"
+    assert payload["record"]["run_id"] == run_id
+    assert [row["run_id"] for row in ledger.runs(PROJECT, repository)] == [run_id]
 
 
 @pytest.mark.parametrize("commits", [None, "none"])

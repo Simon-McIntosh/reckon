@@ -2480,6 +2480,14 @@ def _complete_locked(
             "version": ledger_version,
             "run": dict(existing),
         }
+    # The shadow store outcome rides on the ordinary payload, not a flag or a
+    # log stream: a promotion that otherwise succeeded is the exact consumer
+    # that must see a silently failing shadow. When this call did not perform
+    # the append, the outcome is the one already recorded on the committed row.
+    store_outcome = written.get("store")
+    if store_outcome is None:
+        recorded = written["run"].get("store_write")
+        store_outcome = dict(recorded) if isinstance(recorded, Mapping) else None
 
     # The session id lives only in the pointer until it reaches the roster, so
     # it has to be captured before the pointer goes.
@@ -2507,6 +2515,7 @@ def _complete_locked(
         "session_capture": capture,
         "plan_comment": comment,
         "release": release,
+        "store": store_outcome,
     }
 
 
