@@ -29,6 +29,19 @@ Nothing here is read by any existing reader, and this module exposes no read
 API for run data yet beyond the durable/detail readers the rotation contract
 asserts against — only the append a promotion needs, the schema it creates on
 first use, and the path helper the isolation assertions resolve.
+
+The one reader the swap itself introduces is the standing equality check
+(``compare``): it reads both the committed ledger, resolved by project name
+through the ordinary ledger loader, and the store rows scoped to that project —
+the database is shared across every project on this config home, so a row's
+``project`` column is what ties it to one committed file. ``import_ledger`` is
+its pairing write: a re-runnable pass that brings a project's committed corpus
+into the store, inserting absent runs and correcting already-present runs whose
+durable record disagrees (a store predating the current shape stored subset
+rows), while leaving already-identical rows byte-for-byte untouched so a second
+pass is a no-op. Neither ever writes ``store_write``: that field records what
+happened at one promotion, not current state, so it never becomes store content
+and is excluded from the durable comparison.
 """
 
 from __future__ import annotations
@@ -141,6 +154,44 @@ def _legacy_payload(row: Mapping[str, Any]) -> dict[str, Any]:
     return {name: value for name, value in row.items() if value is not None}
 
 
+def _durable_record(project: str, record: Mapping[str, Any]) -> dict[str, Any]:
+    """The durable content the store holds for a run record.
+
+    The store never holds the promotion record: ``store_write`` is a record of
+    what happened at one promotion, not a statement of current state, so it is
+    dropped here and by every store write. ``project`` is injected when the
+    record does not carry it, matching the append. The declared wide detail
+    lives in the run_details half, so it is excluded from the durable row.
+    This is the reference the equality check compares a stored payload against,
+    so it must agree field for field with what ``sync_run`` and ``append``
+    store.
+    """
+    record_copy = dict(record)
+    record_copy.pop("store_write", None)
+    record_copy.setdefault("project", project)
+    return {
+        name: value for name, value in record_copy.items() if name not in DETAIL_FIELDS
+    }
+
+
+def _split_durable(project: str, record: Mapping[str, Any]) -> tuple[str, dict, dict]:
+    """Split a run record into its durable payload and its wide detail.
+
+    The durable payload is the record minus the promotion-record field
+    ``store_write``, minus the declared wide detail, with ``project`` injected;
+    the detail is exactly the declared wide fields the record carries. Both
+    the append and the idempotent sync build their row from this one split so
+    the two cannot drift, and the equality check's reference derives from the
+    same rules without the split.
+    """
+    payload = dict(record)
+    payload.pop("store_write", None)
+    payload.setdefault("project", project)
+    run_id = str(payload["run_id"])
+    detail = {name: payload.pop(name) for name in DETAIL_FIELDS if name in payload}
+    return run_id, payload, detail
+
+
 class RunStore:
     """One embedded SQLite store, creating its schema on first use."""
 
@@ -231,12 +282,11 @@ class RunStore:
         record carries are stored as the washable detail hanging off the
         durable half. The query keys are real columns beside the payload,
         extracted from it at insert, so the indexed answers agree with the
-        durable record row for row.
+        durable record row for row. The durable payload never carries
+        ``store_write``: that field is a record of what happened at one
+        promotion, not store content.
         """
-        payload = dict(record)
-        payload.setdefault("project", project)
-        run_id = str(payload["run_id"])
-        detail = {name: payload.pop(name) for name in DETAIL_FIELDS if name in payload}
+        run_id, payload, detail = _split_durable(project, record)
         with self._conn:
             self._conn.execute(
                 _RUNS_INSERT,
@@ -250,6 +300,51 @@ class RunStore:
                 'INSERT INTO "run_details" ("run_id", "detail") VALUES (?, ?)',
                 (run_id, json.dumps(detail, sort_keys=True, separators=(",", ":"))),
             )
+
+    def sync_run(self, project: str, record: Mapping[str, Any]) -> str:
+        """Ensure one run's row matches the record, returning what happened.
+
+        The outcome is one of ``inserted`` (the run was absent), ``updated``
+        (the run was present but its durable payload disagreed and was
+        rewritten to match), or ``unchanged`` (the run was present and already
+        byte-identical, so it was left untouched). The last case is what makes
+        a corpus import re-runnable: once the store holds the committed
+        content, a second pass does no work at all. ``store_write`` is never
+        part of the stored payload, exactly as in ``append``.
+        """
+        run_id, payload, detail = _split_durable(project, record)
+        encoded_payload = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        encoded_detail = json.dumps(detail, sort_keys=True, separators=(",", ":"))
+        with self._conn:
+            existing = self._conn.execute(
+                'SELECT "payload" FROM "runs" WHERE "run_id" = ?', (run_id,)
+            ).fetchone()
+            if existing is None:
+                self._conn.execute(
+                    _RUNS_INSERT,
+                    (
+                        run_id,
+                        *(payload.get(name) for name in QUERY_KEYS),
+                        encoded_payload,
+                    ),
+                )
+                self._conn.execute(
+                    'INSERT INTO "run_details" ("run_id", "detail") VALUES (?, ?)',
+                    (run_id, encoded_detail),
+                )
+                return "inserted"
+            if existing[0] == encoded_payload:
+                return "unchanged"
+            self._conn.execute(
+                _RUNS_UPDATE,
+                (encoded_payload, *(payload.get(name) for name in QUERY_KEYS), run_id),
+            )
+            self._conn.execute(
+                'INSERT INTO "run_details" ("run_id", "detail") VALUES (?, ?) '
+                'ON CONFLICT("run_id") DO UPDATE SET "detail" = excluded."detail"',
+                (run_id, encoded_detail),
+            )
+            return "updated"
 
     def get_run(self, run_id: str) -> dict[str, Any] | None:
         """Return one run's durable half as a dict, or None when absent.
@@ -279,6 +374,23 @@ class RunStore:
         if row is None:
             return None
         return json.loads(row[0])
+
+    def durable_rows(self, project: str) -> dict[str, dict[str, Any]]:
+        """Return {run_id: durable payload} for one project's stored runs.
+
+        The database is shared across every project on this config home, so a
+        comparison against one project's committed ledger must scope by the
+        project column rather than trusting that all rows belong to the same
+        file.
+        """
+        rows = self._conn.execute(
+            'SELECT "run_id", "payload" FROM "runs" WHERE "project" = ?', (project,)
+        ).fetchall()
+        return {
+            str(run_id): json.loads(payload)
+            for run_id, payload in rows
+            if payload is not None
+        }
 
     def append_member(self, member: Mapping[str, Any]) -> None:
         """Record one roster member's full payload under its own id."""
@@ -310,3 +422,99 @@ def append(project: str, record: Mapping[str, Any]) -> None:
     """
     with RunStore() as store:
         store.append(project, record)
+
+
+def import_ledger(
+    project: str,
+    *,
+    root: str | Path | None = None,
+) -> dict[str, Any]:
+    """Bring a project's committed ledger into the store, re-runnable.
+
+    The ledger is resolved by project name through the ordinary ledger loader
+    and never opened directly here, so whichever checkout the config home
+    routes that project to is the file this reads. Every committed run that is
+    absent from the store is inserted; a run already present whose durable
+    record disagrees is corrected to match; a run already present and identical
+    is left byte-for-byte untouched. The historical ``store_write`` field is
+    never written to the store — promotion records stay on the committed file
+    rows — and the two reported numbers are the per-pass actions taken, so once
+    the store holds the corpus a second pass reports zero of both.
+
+    Returns counts keyed ``rows_imported`` (inserted), ``rows_already_present``
+    (present but divergent, corrected) and ``rows_unchanged`` (present and
+    already identical).
+    """
+    from reckon import ledger
+
+    data, _version = ledger.load(project, root)
+    counts = {"rows_imported": 0, "rows_already_present": 0, "rows_unchanged": 0}
+    with RunStore() as store:
+        for record in data["runs"]:
+            try:
+                outcome = store.sync_run(project, record)
+            except sqlite3.IntegrityError:
+                # A concurrent promotion landed this run's row between the
+                # absent-check and the insert; it is present now, so the retry
+                # reports it as already there rather than crashing the import.
+                outcome = store.sync_run(project, record)
+            if outcome == "inserted":
+                counts["rows_imported"] += 1
+            elif outcome == "updated":
+                counts["rows_already_present"] += 1
+            else:
+                counts["rows_unchanged"] += 1
+    return {"project": project, **counts}
+
+
+def compare(
+    project: str,
+    *,
+    root: str | Path | None = None,
+) -> dict[str, Any]:
+    """Compare a project's committed ledger against its store rows.
+
+    The file side is the ledger resolved by project name through the ordinary
+    ledger loader. The store side is only that project's rows, because the
+    database is shared across every project on this config home. Each run's
+    durable content — every field the store holds except the declared wide
+    detail and the promotion record ``store_write`` — is compared field for
+    field, so a field the file carries but the store dropped, or the store
+    carries but the file dropped, is a disagreement rather than a chosen
+    subset. Reports the three divergence directions as counts (with the run
+    ids for diagnosis):
+
+    - ``rows_in_file_absent_from_store``
+    - ``rows_in_store_absent_from_file``
+    - ``rows_present_in_both_disagreeing``
+
+    The check is the standing measure the dual-write stage is believed on:
+    cheap enough for every promotion, and zero on all three directions only
+    once the import has brought the corpus in.
+    """
+    from reckon import ledger
+
+    data, _version = ledger.load(project, root)
+    file_durable = {
+        str(record.get("run_id")): _durable_record(project, record)
+        for record in data["runs"]
+    }
+    with RunStore() as store:
+        store_durable = store.durable_rows(project)
+    file_ids = set(file_durable)
+    store_ids = set(store_durable)
+    file_only = file_ids - store_ids
+    store_only = store_ids - file_ids
+    disagreeing = {
+        run_id
+        for run_id in file_ids & store_ids
+        if file_durable[run_id] != store_durable[run_id]
+    }
+    return {
+        "rows_in_file_absent_from_store": len(file_only),
+        "rows_in_store_absent_from_file": len(store_only),
+        "rows_present_in_both_disagreeing": len(disagreeing),
+        "file_only_run_ids": sorted(file_only),
+        "store_only_run_ids": sorted(store_only),
+        "disagreeing_run_ids": sorted(disagreeing),
+    }
