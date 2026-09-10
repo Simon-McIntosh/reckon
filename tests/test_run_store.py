@@ -699,3 +699,242 @@ def test_a_store_from_the_payload_blob_shape_migrates_in_place_on_open(
             'SELECT "member" FROM "runs" WHERE "run_id" = ?', ("r-old",)
         ).fetchone()
         assert str(row["member"]) == "worker-a"
+
+
+# ── The corpus import and the standing equality check ──────────────────────
+#
+# The dual-write stage's second half: a re-runnable import brings the whole
+# committed ledger, resolved by project name through the ordinary ledger
+# loader, into the store beside the rows promotions already wrote, and the
+# equality check compares the two stores project by project so dual-write can
+# be believed rather than assumed. The store never carries the promotion
+# record (``store_write`` is what happened at one promotion, not current
+# state), and the import leaves already-identical rows untouched, which is what
+# makes a second pass report zero of both numbers. Every test points the
+# config home at a temp tree and seeds the committed ledger there, so the real
+# crew config home is never touched.
+
+
+@pytest.fixture()
+def config_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Point the config home at a temp tree for import/equality tests."""
+    home = tmp_path / "config"
+    home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    return home
+
+
+def _seed_ledger(project: str, runs: list[dict]) -> None:
+    """Write a committed crew ledger for one project under the temp home."""
+    from reckon import ledger
+
+    ledger.write(project, {"members": [], "runs": runs, "holds": []}, 0)
+
+
+def test_import_brings_every_ledger_run_into_the_store_and_reports_imported(
+    config_home: Path,
+) -> None:
+    real_store = _real_store_path()
+    was_present = real_store.exists()
+
+    records = {
+        f"r-{suffix}": _real_record(f"r-{suffix}") for suffix in ("one", "two", "three")
+    }
+    _seed_ledger("reckon", list(records.values()))
+
+    report = run_store.import_ledger("reckon")
+
+    assert report["project"] == "reckon"
+    assert report["rows_imported"] == 3
+    assert report["rows_already_present"] == 0
+    assert report["rows_unchanged"] == 0
+    # Every committed run now answers from the store, field for field, with
+    # project injected the way a live promotion would inject it.
+    with run_store.RunStore() as store:
+        for run_id, record in records.items():
+            _assert_answers_every_field(
+                store.get_run(run_id),
+                _durable_expected(record, project="reckon"),
+                where=f"{run_id} after import",
+            )
+    # The real crew config home was not written to.
+    assert real_store.exists() == was_present
+
+
+def test_a_second_import_pass_reports_zero_of_both(config_home: Path) -> None:
+    _seed_ledger("reckon", [_real_record("r-one"), _real_record("r-two")])
+
+    first = run_store.import_ledger("reckon")
+    assert first["rows_imported"] == 2
+
+    second = run_store.import_ledger("reckon")
+    assert second["rows_imported"] == 0
+    assert second["rows_already_present"] == 0
+    assert second["rows_unchanged"] == 2
+
+
+def test_import_corrects_a_row_already_present_with_a_stale_durable_record(
+    config_home: Path,
+) -> None:
+    # The store already holds this run under the old narrow shape, as a subset
+    # of the record the ledger now carries — exactly the rows rebuilt from the
+    # ten original columns before the payload existed.
+    with run_store.RunStore() as store:
+        store.append("reckon", _addressing_record("r-legacy"))
+    record = _real_record("r-legacy")
+    _seed_ledger("reckon", [record])
+
+    report = run_store.import_ledger("reckon")
+
+    assert report["rows_imported"] == 0
+    assert report["rows_already_present"] == 1
+    assert report["rows_unchanged"] == 0
+    # The stale subset was corrected to the full durable record the ledger
+    # carries.
+    with run_store.RunStore() as store:
+        _assert_answers_every_field(
+            store.get_run("r-legacy"),
+            _durable_expected(record, project="reckon"),
+            where="r-legacy after correction",
+        )
+
+
+def test_import_never_rewrites_the_historical_store_write(config_home: Path) -> None:
+    from reckon import ledger
+
+    failed_a = {
+        **_real_record("r-failed-a"),
+        "store_write": {"status": "failed", "error": "deliberate"},
+    }
+    failed_b = {
+        **_real_record("r-failed-b"),
+        "store_write": {"status": "failed", "error": "deliberate"},
+    }
+    written = {**_real_record("r-written"), "store_write": {"status": "written"}}
+    _seed_ledger("reckon", [failed_a, failed_b, written])
+
+    run_store.import_ledger("reckon")
+
+    # The committed rows still carry the historical failure record: the import
+    # only reads the file, and it never writes store_write into the store.
+    data, _version = ledger.load("reckon")
+    statuses = {
+        entry["run_id"]: entry["store_write"]["status"] for entry in data["runs"]
+    }
+    assert statuses == {
+        "r-failed-a": "failed",
+        "r-failed-b": "failed",
+        "r-written": "written",
+    }
+    with run_store.RunStore() as store:
+        for run_id in ("r-failed-a", "r-failed-b", "r-written"):
+            assert "store_write" not in store.get_run(run_id)
+    # The equality check is undisturbed by the promotion record, so the two
+    # failed rows do not masquerade as divergence.
+    assert run_store.compare("reckon")["rows_present_in_both_disagreeing"] == 0
+
+
+def test_equality_check_reports_zero_on_all_three_after_import(
+    config_home: Path,
+) -> None:
+    records = {
+        f"r-{suffix}": _real_record(f"r-{suffix}") for suffix in ("one", "two", "three")
+    }
+    _seed_ledger("reckon", list(records.values()))
+    run_store.import_ledger("reckon")
+
+    verdict = run_store.compare("reckon")
+
+    assert verdict["rows_in_file_absent_from_store"] == 0
+    assert verdict["rows_in_store_absent_from_file"] == 0
+    assert verdict["rows_present_in_both_disagreeing"] == 0
+
+
+def test_equality_check_reports_a_row_removed_from_the_store(
+    config_home: Path,
+) -> None:
+    records = {
+        f"r-{suffix}": _real_record(f"r-{suffix}") for suffix in ("one", "two", "three")
+    }
+    _seed_ledger("reckon", list(records.values()))
+    run_store.import_ledger("reckon")
+    with _connect(run_store.store_path()) as connection:
+        connection.execute('DELETE FROM "runs" WHERE "run_id" = ?', ("r-one",))
+        connection.execute('DELETE FROM "run_details" WHERE "run_id" = ?', ("r-one",))
+
+    verdict = run_store.compare("reckon")
+
+    assert verdict["rows_in_file_absent_from_store"] == 1
+    assert verdict["file_only_run_ids"] == ["r-one"]
+    assert verdict["rows_in_store_absent_from_file"] == 0
+    assert verdict["rows_present_in_both_disagreeing"] == 0
+
+
+def test_equality_check_reports_a_store_row_absent_from_the_file(
+    config_home: Path,
+) -> None:
+    _seed_ledger("reckon", [_real_record("r-one")])
+    run_store.import_ledger("reckon")
+    # A store-only row the file never committed — the orphan direction the
+    # check must detect, not only the missing-row direction.
+    with run_store.RunStore() as store:
+        store.append("reckon", _addressing_record("r-orphan"))
+
+    verdict = run_store.compare("reckon")
+
+    assert verdict["rows_in_store_absent_from_file"] == 1
+    assert verdict["store_only_run_ids"] == ["r-orphan"]
+    assert verdict["rows_in_file_absent_from_store"] == 0
+    assert verdict["rows_present_in_both_disagreeing"] == 0
+
+
+def test_equality_check_catches_a_field_the_store_silently_dropped(
+    config_home: Path,
+) -> None:
+    records = {f"r-{suffix}": _real_record(f"r-{suffix}") for suffix in ("one", "two")}
+    _seed_ledger("reckon", list(records.values()))
+    run_store.import_ledger("reckon")
+    # A writer that drops one durable field entirely, and one that lets a value
+    # drift: both must count as disagreement, because the comparison covers
+    # every field the store calls durable rather than a chosen subset.
+    with _connect(run_store.store_path()) as connection:
+        row = connection.execute(
+            'SELECT "payload" FROM "runs" WHERE "run_id" = ?', ("r-one",)
+        ).fetchone()
+        payload = json.loads(str(row["payload"]))
+        payload.pop("gate")
+        connection.execute(
+            'UPDATE "runs" SET "payload" = ? WHERE "run_id" = ?',
+            (json.dumps(payload, sort_keys=True, separators=(",", ":")), "r-one"),
+        )
+        row = connection.execute(
+            'SELECT "payload" FROM "runs" WHERE "run_id" = ?', ("r-two",)
+        ).fetchone()
+        payload = json.loads(str(row["payload"]))
+        payload["gate"] = "refused"
+        connection.execute(
+            'UPDATE "runs" SET "payload" = ? WHERE "run_id" = ?',
+            (json.dumps(payload, sort_keys=True, separators=(",", ":")), "r-two"),
+        )
+
+    verdict = run_store.compare("reckon")
+
+    assert verdict["rows_present_in_both_disagreeing"] == 2
+    assert verdict["disagreeing_run_ids"] == sorted(["r-one", "r-two"])
+    assert verdict["rows_in_file_absent_from_store"] == 0
+    assert verdict["rows_in_store_absent_from_file"] == 0
+
+
+def test_equality_check_scopes_the_store_by_project(config_home: Path) -> None:
+    # The database is shared across every project on a config home; a row a
+    # different project promoted must not read as a divergence for this one.
+    with run_store.RunStore() as store:
+        store.append("otherproj", _addressing_record("r-other"))
+    _seed_ledger("reckon", [_real_record("r-one")])
+    run_store.import_ledger("reckon")
+
+    verdict = run_store.compare("reckon")
+
+    assert verdict["rows_in_store_absent_from_file"] == 0
+    assert verdict["rows_in_file_absent_from_store"] == 0
+    assert verdict["rows_present_in_both_disagreeing"] == 0
