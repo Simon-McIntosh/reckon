@@ -9,6 +9,25 @@
 - Crew dispatch, the command surface, and fleet sizing: see `reckon/crew/AGENTS.md`
 - Plan format, layout, and server operations: see `docs/AGENTS.md`
 
+## Verification and orchestration discipline
+
+Two `reckon-ship` references own the coordinator-side verification and
+orchestration reflexes as mechanical rules, each stating the failure it
+prevents. Pointers below, one per rule; the references hold the full text.
+
+- Verification — the untrust checks and proving a change landed:
+  `skills/reckon-ship/references/worker-verification.md`
+  - a manifest field is not evidence — resolve the worktree head first
+  - prove a landing by a marker the change introduced, never by one removed
+- Orchestration — the coordinator contract for measures, briefs, and runs:
+  `skills/reckon-ship/references/sprint-orchestration.md`
+  - a prove-by-test measure fences the test as a deliverable before dispatch
+  - a two-population measure names which direction is the defect
+  - a repair brief confirms the defect still reproduces before repair
+  - size an operational cap from population and measured unit rate so the
+    cohort completes — and name the scarce resource
+  - an operational run outliving a turn runs in bounded slices
+
 ## Project
 
 **reckon** is a repo-agnostic agile planning system. Primary branch: `main`.

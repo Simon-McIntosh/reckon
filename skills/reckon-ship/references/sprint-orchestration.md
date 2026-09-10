@@ -775,3 +775,62 @@ failure included), `unpromoted` is delivered work waiting on a gate.
 `--json` for transition objects, and no `--session` at all for the whole
 project's fleet, which labels every line with the session that owns it. Status
 and refusals go to stderr so stdout stays one notification per transition.
+
+## 16. The coordinator's own bound checks — measures, briefs, caps, and runs
+
+The worker contract governs the worker; these govern what the coordinator
+writes around it. Each is a reflex on the coordinator's own output — a
+done-when, a brief, a cap, a run plan — so the measure carries its own bound
+check rather than relying on the worker to be the one that notices.
+
+### A prove-by-test done-when makes the test a deliverable path
+
+**"Prove it by test" hands the worker an undeclared deliverable.** The measure
+names a file the worker must produce, so extract every path the measure names
+or implies and fence it before dispatch: a worker fenced to application source
+alone can write the test, and then the gate that was meant to verify a scoped
+change sits outside the scope that change may touch. Find the right file by
+searching for what *drives* the changed symbol — the callers and inputs that
+reach it — never by what merely contains it, because the file that happens to
+mention a symbol is often not the one that exercises its behaviour.
+
+### A two-population measure names which direction is the defect
+
+**An undirected comparison reads as equality, and equality is rarely the
+meaning.** One side usually has a legitimate reason to differ — the whole point
+of the change may be that the two populations are *supposed* to diverge. So the
+measure must name the defect direction: a difference that way is a defect, or
+the defect is a difference either way. A measure that does not say leaves a
+middle the worker cannot pass honestly: an unsatisfiable measure forces a
+choice between a failing gate and a forbidden workaround, and a worker barred
+from the word that would make the measure pass will take the workaround.
+
+### A repair brief confirms the defect still reproduces
+
+**A repair brief for a previously recorded finding opens by confirming the
+defect still reproduces.** A plan that accumulates findings faster than it
+closes them carries items that adjacent work has since repaired, so a brief
+that assumes the defect is live sends a worker to re-found a repair that
+already landed — or to re-break what a neighbouring landing fixed. State in the
+brief that reproducing the defect is the first instruction, and that finding it
+already fixed is a success to report, not a node wasted.
+
+### Size an operational cap so the cohort completes — and name the scarce resource
+
+**A cap trimmed for safety buys a half-finished cohort.** Size an operational
+cap from the population and the measured unit rate so that a cohort completes:
+a cohort that cannot finish inside the cap costs another dispatch, another
+audit, and another decision round, which together outweigh the headroom the
+trimmed cap was meant to buy. And name which resource is actually scarce before
+defending the cap — coordinator attention and metered worker capacity are the
+ones that run out while operational spend renews, and defending the wrong one
+trades the real constraint for an imagined one.
+
+### An operational run outliving a turn runs in bounded slices
+
+**Give an operational run whose work outlives a single turn bounded slices,
+with the record updated between them.** A lost turn then costs one slice rather
+than the run. Divide the work so each slice is observable on its own and every
+slice boundary writes the record, and leave the record naming the next slice
+when the turn ends — a run that dies between slices is resumable only if
+something on disk says where it stopped.
