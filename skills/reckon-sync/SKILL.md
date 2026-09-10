@@ -86,9 +86,10 @@ uv run --project ~/Code/reckon reckon sync "$REPO_ROOT/docs"
 
 `reckon sync` is idempotent and does **all** of:
 
-- copies `_shared/foundation.css` + `_shared/dashboard.css` from the canonical
-  `~/Code/reckon/docs/_shared/` (JSX is served live at `/_ui/<file>`; no
-  per-project copies — use `reckon build` for offline/static deploys);
+- copies the `_shared/` assets from the canonical `~/Code/reckon/docs/_shared/`,
+  and reports them as already in place when the target *is* that directory (JSX
+  is compiled and served at `/_ui/<file>`; no per-project copies — use `reckon
+  build` for offline/static deploys);
 - writes `docs/index.html` (the SPA entry point) on first run, and refreshes it
   on later runs **only if** the existing file is already a reckon SPA — a
   hand-authored page is left untouched;
@@ -108,8 +109,8 @@ The CLI resolves `<config-home>` itself (`RECKON_HOME` env → `~/.config/reckon
 The skill owns this leg. `reckon install-skills` **copies** the skill dirs into
 `~/.claude/skills/` *only* — it does not touch `~/.agents/skills/`, does not use
 symlinks, and does not clean up legacy whole-dir links. We want symlinks (so a
-skill edit in `~/Code/reckon` is live immediately) into **both** runtime dirs,
-so we do it here:
+skill edit in `~/Code/reckon` is live immediately) into **all three** runtime
+dirs, so we do it here:
 
 - `~/.claude/skills/` — Claude Code
 - `~/.codex/skills/` — Codex
@@ -224,49 +225,49 @@ else
 fi
 mkdir -p "$CONFIG_HOME/state"
 
-# CSS (overwrites system-owned CSS only; never per-plan HTML)
+# Shared assets (overwrites system-owned assets only; never per-plan HTML).
+# `cp -u` is not enough here: syncing the canonical checkout's own docs dir
+# makes source and destination one path, which cp reports as an error.
 mkdir -p "$DOCS/_shared"
-cp "$RECKON/docs/_shared/foundation.css" "$DOCS/_shared/foundation.css"
-cp "$RECKON/docs/_shared/dashboard.css"  "$DOCS/_shared/dashboard.css"
+for asset in foundation.css dashboard.css badge.svg; do
+  SRC="$RECKON/docs/_shared/$asset"
+  DEST="$DOCS/_shared/$asset"
+  [ -f "$SRC" ] || continue
+  if [ "$(readlink -f "$SRC")" = "$(readlink -f "$DEST")" ]; then
+    echo "canonical _shared/$asset — already in place"
+  else
+    cp "$SRC" "$DEST"
+  fi
+done
 
 # index.html — create on first run, refresh only if already a reckon SPA.
+#
+# Render from the canonical template rather than a copy of it. The asset
+# pipeline changes (server-side JSX compilation, locally served React), and a
+# template transcribed into this file would keep writing whichever architecture
+# was current when someone last pasted it — producing a blank page against a
+# newer server. Substituting project identity into the real file is what the
+# CLI does, and stdlib python3 is enough, so this stays correct when the reckon
+# package itself is the thing that is broken.
 INDEX="$DOCS/index.html"
 if [ ! -f "$INDEX" ] || grep -q '_shared/' "$INDEX" 2>/dev/null; then
-  cat > "$INDEX" <<HTMLEOF
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="docs-project" content="${PROJECT}">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>reckon · ${PROJECT}</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/_shared/foundation.css">
-  <link rel="stylesheet" href="/_shared/dashboard.css">
-  <link rel="stylesheet" href="/_ui/project.css">
-  <link rel="stylesheet" href="/_ui/styles-base.css">
-  <link rel="stylesheet" href="/_ui/styles.css">
-  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
-</head>
-<body>
-  <div id="root"></div>
-  <script src="/_ui/state-loader.js"></script>
-  <script type="text/babel" src="/_ui/ui.jsx"></script>
-  <script type="text/babel" src="/_ui/bits.jsx"></script>
-  <script type="text/babel" src="/_ui/decision.jsx"></script>
-  <script type="text/babel" src="/_ui/cockpit.jsx"></script>
-  <script type="text/babel" src="/_ui/plan.jsx"></script>
-  <script type="text/babel" src="/_ui/sprint.jsx"></script>
-  <script type="text/babel" src="/_ui/graph.jsx"></script>
-  <script type="text/babel" src="/_ui/shell.jsx"></script>
-</body>
-</html>
-HTMLEOF
-  echo "wrote $INDEX (project=$PROJECT)"
+  python3 - "$RECKON/docs/index.html" "$INDEX" "$PROJECT" <<'EOF'
+import html, pathlib, re, sys
+template_path, out_path, project = sys.argv[1], sys.argv[2], sys.argv[3]
+template = pathlib.Path(template_path).read_text(encoding="utf-8")
+if pathlib.Path(template_path).resolve() == pathlib.Path(out_path).resolve():
+    print("canonical index.html — template left as authored")
+    raise SystemExit(0)
+escaped = html.escape(project, quote=True)
+rendered = re.sub(
+    r'(<meta name="docs-project" content=")[^"]*(">)',
+    rf"\g<1>{escaped}\g<2>", template, count=1)
+rendered = re.sub(
+    r"(<title>reckon · ).*?(</title>)",
+    rf"\g<1>{escaped}\g<2>", rendered, count=1)
+pathlib.Path(out_path).write_text(rendered, encoding="utf-8")
+print(f"wrote {out_path} (project={project})")
+EOF
 else
   echo "skipped index.html — not a reckon SPA (manual review needed)"
 fi
@@ -343,14 +344,18 @@ EOF
 
 ## CSS layout
 
-`reckon sync` copies two layers from `~/Code/reckon/docs/_shared/`:
+`reckon sync` copies these from `~/Code/reckon/docs/_shared/`:
 
 | File | Role |
 |---|---|
 | `foundation.css` | Design tokens — colours, typography, spacing |
 | `dashboard.css` | Plan widgets — cards, badges, sprint tables |
+| `badge.svg` | Project status badge artwork |
 
-JSX UI components are served by the reckon server at `/_ui/<file>` directly from `~/Code/reckon/docs/ui/`. No per-project copies.
+UI components are authored as JSX in `~/Code/reckon/docs/ui/` and compiled by
+the server, which serves each one as `/_ui/<name>.js`. A project's
+`index.html` therefore references `.js`, not `.jsx`, and needs no in-browser
+Babel. No per-project copies.
 
 ## Cross-references
 

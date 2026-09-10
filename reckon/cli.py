@@ -3198,9 +3198,17 @@ def sync(
     shared_dest.mkdir(parents=True, exist_ok=True)
     for fname in ("foundation.css", "dashboard.css", "badge.svg"):
         src = shared_src / fname
-        if src.is_file():
-            shutil.copy2(src, shared_dest / fname)
-            click.echo(f"  copied _shared/{fname}")
+        if not src.is_file():
+            continue
+        dest = shared_dest / fname
+        # Syncing the canonical checkout's own docs dir makes the asset root and
+        # the destination one path, where a copy raises instead of no-opping.
+        # The file is by definition already current, so report and move on.
+        if src.resolve() == dest.resolve():
+            click.echo(f"  canonical _shared/{fname} — already in place")
+            continue
+        shutil.copy2(src, dest)
+        click.echo(f"  copied _shared/{fname}")
 
     # ── Write canonical index.html (SPA entry point) ──────────────────────
     index_html = docs_dir / "index.html"
@@ -3208,12 +3216,21 @@ def sync(
         "_shared/" in index_html.read_text() or "/_shared/" in index_html.read_text()
     )
     is_first_run = not index_html.exists()
-    if is_first_run or is_spa:
+    source_index = asset_root / "index.html"
+    # The canonical checkout's index.html is the template every project renders
+    # from. Writing a rendered copy back over it would bake one project's name
+    # and title into the source that all the others inherit.
+    is_own_template = index_html.exists() and index_html.resolve() == (
+        source_index.resolve() if source_index.exists() else None
+    )
+    if is_own_template:
+        click.echo("  canonical index.html — template left as authored")
+    elif is_first_run or is_spa:
         from reckon.serve import _render_spa_html
 
         template = _render_spa_html(
             proj_name,
-            index_path=asset_root / "index.html",
+            index_path=source_index,
         )
         index_html.write_text(template)
         click.echo(f"  wrote index.html (project={proj_name})")
