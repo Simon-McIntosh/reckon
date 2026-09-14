@@ -584,8 +584,44 @@ def _fact_event(**overrides) -> dict:
     return event
 
 
+def test_the_ruler_is_emitted_once_and_only_on_a_human_stream(monkeypatch):
+    """The pane is measured against one ruler line — and only where a pane is.
+
+    A follower opens with exactly one calibration line, before any row, so the
+    observed cut of it is what the grid below is calibrated at. A json caller
+    feeds a parser, which reads the machine stream and gets no human-facing
+    line at all.
+    """
+    monkeypatch.setattr(
+        cli_module,
+        "_follow_watch_lines",
+        lambda *_a, **_kw: iter([_event(), _event(node="second-node")]),
+    )
+    plain_lines = (
+        CliRunner()
+        .invoke(cli_module.main, ["crew", "follow", "--project", "proj", "--no-color"])
+        .output.splitlines()
+    )
+    assert plain_lines[0] == ticker_module.ruler_line()
+    assert plain_lines.count(ticker_module.ruler_line()) == 1
+    assert len(plain_lines[0]) == ticker_module.RULER_LENGTH
+
+    json_lines = CliRunner().invoke(
+        cli_module.main, ["crew", "follow", "--project", "proj", "--json"]
+    )
+    assert json_lines.exit_code == 0, json_lines.output
+    assert ticker_module.ruler_line() not in json_lines.output
+    payloads = [json.loads(line) for line in json_lines.output.splitlines()]
+    assert [row["node"] for row in payloads] == ["ticker-node", "second-node"]
+
+
 def _follow_rows(monkeypatch, events, *args) -> list[str]:
-    """The rows `crew follow` prints for these log lines, colour off."""
+    """The rows `crew follow` prints for these log lines, colour off.
+
+    The follower opens with one calibration ruler line, so the rows here are
+    the transition lines with that single measurement line set aside; the ruler
+    itself is asserted by dedicated tests.
+    """
     monkeypatch.setattr(
         cli_module, "_follow_watch_lines", lambda *_a, **_kw: iter(list(events))
     )
@@ -594,7 +630,11 @@ def _follow_rows(monkeypatch, events, *args) -> list[str]:
         ["crew", "follow", "--project", "proj", "--no-color", *args],
     )
     assert result.exit_code == 0, result.output
-    return result.output.splitlines()
+    return [
+        line
+        for line in result.output.splitlines()
+        if line != ticker_module.ruler_line()
+    ]
 
 
 def _arrow_column(row: str) -> int:
@@ -827,7 +867,11 @@ def test_a_shadow_row_says_so_end_to_end_rather_than_by_identifier(
     )
 
     assert result.exit_code == 0, result.output
-    primary, shadow = result.output.splitlines()
+    primary, shadow = [
+        line
+        for line in result.output.splitlines()
+        if line != ticker_module.ruler_line()
+    ]
     assert "\x1b[38;5;" in primary
     assert "\x1b[38;5;" not in shadow
     assert "\x1b[2m" in shadow

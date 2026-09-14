@@ -53,34 +53,21 @@ PAIR_GAP = 1
 EFFORT = 7
 GAP = 2
 
-# The spend block: wall time, model time, charged tokens, generation rate and
-# a notional dollar figure, in that order. Every cell is right-aligned to a
-# fixed width with a single space between cells, so the five columns a reader
-# scans stay put as figures change. The wall-and-model pair earns the space:
-# much wall against little model is a worker sitting in a test suite or a
-# queue, and the two read at a glance without arithmetic. Tokens are the total
-# a meter actually charges (input including cache reads, plus output); the rate
-# is generated output over model seconds, so the two deliberately do not divide
-# into each other. SPEND counts content and the four inter-cell spaces; the
-# leading space before the wall cell is separate, and both replace the old
-# two-column gap before the counters together.
+# The measure block: wall time and generation rate, in that order, behind the
+# fleet counters so the always-populated columns lead. Every cell is
+# right-aligned to a fixed width with a single space between cells, so the two
+# columns a reader scans stay put as figures change. The row no longer carries
+# model seconds, charged tokens or the notional dollar figure — a meter's spend
+# is a wider question than a pane can answer line by line, so those facts stay
+# in the record and only wall and rate reach the row, which frees exactly the
+# columns the reason now spends. The rate is generated output over model
+# seconds; it deliberately does not divide into the wall figure, and the two
+# readings are neighbours, not factors. SPEND counts content and the single
+# inter-cell space; the leading space before the wall cell is separate.
 WALL = 7
-MODEL_SECS = 6
-TOKENS = 4
 RATE = 4
-DOLLARS = 5
 SPEND_GAP = 1
-SPEND = (
-    WALL
-    + SPEND_GAP
-    + MODEL_SECS
-    + SPEND_GAP
-    + TOKENS
-    + SPEND_GAP
-    + RATE
-    + SPEND_GAP
-    + DOLLARS
-)
+SPEND = WALL + SPEND_GAP + RATE
 
 # A cell with no measurement renders this, never a zero: a zero asserts a
 # measurement that was never taken, and this fleet holds large populations of
@@ -257,13 +244,14 @@ STATS = sum(2 + 1 for _ in _MAX_CELLS) + (len(_MAX_CELLS) - 1)
 # below this cannot be honoured without wrapping, so it is raised to this.
 # Everything before the reason consumes exactly this many columns with the role
 # word at its widest (documentation, thirteen), the model cell at ten, the
-# effort cell at seven and the five spend cells in full — the spend block and
-# its leading space replace the old two-column gap before the counters, so the
-# fixed part of the row grows by the block's own width. Against the 180-column
-# DEFAULT_WIDTH budget that leaves 23 for the reason, and 51 on the 208-column
-# pane this workstation measures (208 minus the inset) — both clear the
-# 12-column floor below which a clause is not worth reading, and the 23 at the
-# default is what a later added column spends first.
+# effort cell at seven, the four fleet counters and the measure cells (wall and
+# rate) in full — the measures sit behind the counters now, and the row no
+# longer carries model seconds, tokens or the dollar figure, which frees exactly
+# the columns that moved to the free text. Against the 180-column DEFAULT_WIDTH
+# budget that leaves 41 for the reason, and 69 on the 208-column pane this
+# workstation measures (its observed cut, read directly with no inset
+# subtracted) — both clear the 12-column floor below which a clause is not worth
+# reading, and 41 at the default is what a later added column spends first.
 MIN_WIDTH = (
     CLOCK
     + GAP
@@ -285,12 +273,6 @@ MIN_WIDTH = (
 )
 DEFAULT_WIDTH = 180
 DEFAULT_THEME = "light"
-
-# One column of inset between the hosting terminal's width and the text grid, so
-# the counters never press on the very edge the pane still owns. PROVISIONAL and
-# awaiting calibration against a real pane — over-filling loses the counters off
-# the right edge, while under-filling only leaves a harmless gap.
-INSET = 1
 
 
 def _ancestor_terminal_paths():
@@ -342,12 +324,42 @@ def _columns_of(path: str) -> int | None:
     return struct.unpack("HHHH", packed)[1]
 
 
+# The ruler a follower opens with: where the pane breaks the line is the width
+# the grid must fit, so every transition row renders to that measured cut rather
+# than to a guessed margin. One ruler is emitted, never repeated, so a reader
+# who missed it still sees exactly one such line. Length overruns any pane — a
+# cut that is visible tells the width, an uncut line tells nothing.
+RULER_LENGTH = 240
+
+
+def ruler_line(length: int = RULER_LENGTH) -> str:
+    """A line longer than any pane, marked so where it is cut can be read."""
+    return "".join(
+        str((index // 10) % 10) if index % 10 == 0 else "\N{EN DASH}"
+        for index in range(length)
+    )
+
+
+def calibrated_width(observed_cut: int) -> int:
+    """The grid width a pane cut the ruler line at, floored at the minimum.
+
+    The width comes from that observed cut position — where the pane broke the
+    ruler — not from a constant between a terminal's column count and the text
+    grid. A cut narrower than the fixed columns can honour is still raised so
+    no line ever wraps, and a detached follower with no ruler is handled at the
+    call site.
+    """
+    return max(int(observed_cut), MIN_WIDTH)
+
+
 def resolve_terminal_width() -> int:
     """The pane's current width for this renderer, or the stated fallback.
 
     The width a line must fit is not on the stream it is written to; it lives on
     the terminal an ancestor owns and tracks a resize. Walk the ancestry to the
-    first readable terminal, subtract the inset, and floor the result at the
+    first readable terminal and read its column count as where the pane cut the
+    calibration ruler — no inset is subtracted, because where the pane breaks
+    that line IS the width the grid must fit — and floor the result at the
     grid's minimum so a narrower pane still never wraps. A detached follower has
     no such ancestor — collector or nohup'd — and falls back to the stated
     default. ``--width`` overrides this at the call site.
@@ -355,7 +367,7 @@ def resolve_terminal_width() -> int:
     for path in _ancestor_terminal_paths():
         columns = _columns_of(path)
         if columns:
-            return max(int(columns) - INSET, MIN_WIDTH)
+            return calibrated_width(columns)
     return DEFAULT_WIDTH
 
 
@@ -394,20 +406,6 @@ def _clock(seconds: float) -> str:
     if hours:
         return f"{hours}:{minutes:02d}:{secs:02d}"
     return f"{minutes}:{secs:02d}"
-
-
-def _compact_tokens(count: int) -> str:
-    """Render a token total compactly: 6.4M, 890k, or the plain count.
-
-    A meter's charged figure lands in the thousands to the millions, so the
-    spellings carry a unit letter that keeps the four-column cell readable — and
-    a measured zero renders "0", not the absence marker.
-    """
-    if count >= 1_000_000:
-        return f"{count / 1_000_000:.1f}M"
-    if count >= 1_000:
-        return f"{count / 1_000:.0f}k"
-    return str(count)
 
 
 def single_clause(value: Any, *, limit: int = 96) -> str:
@@ -603,11 +601,12 @@ class Ticker:
         receives is its own by construction, so the column would only take room
         from the node beside it.
 
-        The counters precede the reason because the pane clips its own right
-        edge. Everything before the reason is fixed-width, so a row rendered
-        wider than the pane can spare loses trailing free text and nothing else;
-        with the counters last, a width read one column too wide silently ate
-        the fleet's numbers instead.
+        The counters precede the optional measures, which both sit before the
+        reason, because the pane clips its own right edge: the always-populated
+        columns lead. Everything before the reason is fixed-width, so a row
+        rendered wider than the pane can spare loses trailing free text and
+        nothing else; with the counters last, a width read one column too wide
+        silently ate the fleet's numbers instead.
         """
         node = str(event.get("node") or event.get("run_id") or "unknown")
         raw_to_state = event.get("to_state") or "unknown"
@@ -656,8 +655,8 @@ class Ticker:
             (" " * PAIR_GAP, None),
             (f"{effort_cell:<{EFFORT}}", "dim"),
         ]
-        cells.extend(self._spend_cells(event))
         cells.extend(self._stats(event))
+        cells.extend(self._spend_cells(event, to_state))
         cells.append((" " * GAP, None))
 
         head = sum(len(text) for text, _ in cells)
@@ -707,14 +706,21 @@ class Ticker:
             return f"{marker} {clause}"
         return marker or clause
 
-    def _spend_cells(self, event: Mapping[str, Any]) -> list[tuple[str, Any]]:
-        """The five spend cells, fed by the transition record's numeric facts.
+    def _spend_cells(
+        self, event: Mapping[str, Any], to_state: str
+    ) -> list[tuple[str, Any]]:
+        """Wall time and generation rate, fed by the transition record's facts.
 
         Each fact is right-aligned to its fixed width with a single space
         between cells, so the columns a reader scans stay put as figures change.
         An unmeasured fact renders the dim absence marker, never a zero; a
-        measured zero stays a zero. The cells read the record's own figures and
-        shape them only here, so the persisted event stays re-renderable.
+        measured zero stays a zero. Wall time on a transition into dispatched is
+        time zero by definition, so that cell blanks — blank rather than the
+        absence marker, because the marker already means unmeasured and blanking
+        noise with it would collapse two different facts. The row carries only
+        these two figures; model seconds, charged tokens and the dollar figure
+        stay in the record, unrendered. The cells read the record's own figures
+        and shape them only here, so the persisted event stays re-renderable.
         """
 
         def cell(value: Any, formatter: Callable[[float], str]) -> tuple[str, Any]:
@@ -723,27 +729,16 @@ class Ticker:
             return DIM_MARKER, "dim"
 
         wall, wall_style = cell(event.get("spend_wall_seconds"), _clock)
-        model, model_style = cell(event.get("spend_model_seconds"), _clock)
-        tokens, tokens_style = cell(
-            event.get("spend_charged_tokens"), lambda value: _compact_tokens(int(value))
-        )
+        if to_state == "dispatched":
+            wall, wall_style = "", None
         rate, rate_style = cell(
             event.get("spend_generation_rate"), lambda value: f"{value:.0f}"
-        )
-        dollars, dollars_style = cell(
-            event.get("spend_notional_cost_usd"), lambda value: f"{value:.2f}"
         )
         return [
             (" " * SPEND_GAP, None),
             (f"{wall:>{WALL}}", wall_style),
             (" " * SPEND_GAP, None),
-            (f"{model:>{MODEL_SECS}}", model_style),
-            (" " * SPEND_GAP, None),
-            (f"{tokens:>{TOKENS}}", tokens_style),
-            (" " * SPEND_GAP, None),
             (f"{rate:>{RATE}}", rate_style),
-            (" " * SPEND_GAP, None),
-            (f"{dollars:>{DOLLARS}}", dollars_style),
         ]
 
     def _stats(self, event: Mapping[str, Any]) -> list[tuple[str, Any]]:
