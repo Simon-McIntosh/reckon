@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-14T21:57:15",
+  "updated": "2026-09-14T22:13:19",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -109194,6 +109194,217 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T165952239943-lanes-view-reports-the-claude-probe",
+        "plan": "a-lane-can-say-where-it-stands",
+        "section": "where-the-probe-lives",
+        "node": "lanes-view-reports-the-claude-probe",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1818,
+                "cached_input_tokens": 762447,
+                "input_tokens": 764267,
+                "output_tokens": 1112,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 765379,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "306c1aec-df4a-489e-88c3-441bbb1f5baf",
+            "session_id": "ship-lane-aware-20260914"
+          },
+          "done_when": "uv run pytest tests/test_crew_lanes_view.py tests/test_lanes_view_is_live.py -q passes with: a backend whose dialect owns an account-surface reading reported as declaring a probe WITHOUT that reading being executed, asserted by a reader that would raise if called; a dialect declaring nothing still reported as declaring nothing; and the per-command grouping preserved, asserted by two backends sharing one command resolving to a single read. Failure delta 0 against base 686e160",
+          "estimated_hours": null,
+          "goal": "The lanes view reports a lane whose dialect can read an account surface as having a declared probe",
+          "id": "lanes-view-reports-the-claude-probe",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T16:59:52Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T165952239943-lanes-view-reports-the-claude-probe/manifest.md",
+          "plan": "a-lane-can-say-where-it-stands",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "where-the-probe-lives",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/mcp_views.py",
+            "tests/test_crew_lanes_view.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-no-zombies",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T17:00:06Z",
+        "completed_at": "2026-09-14T18:15:23.579Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4445,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4517,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "40a7b7006cc62a959dc0356db2541d1a15dc16f0",
+        "commits": [
+          "fff2ca7fbe0c83249b7b2ac10776b8111764c9b7"
+        ],
+        "changed_lines": {
+          "added": 126,
+          "removed": 2,
+          "files": 2
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_lanes_view.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T165952239943-lanes-view-reports-the-claude-probe.json",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T165952239943-lanes-view-reports-the-claude-probe/manifest.md",
+        "scope_changed": false,
+        "session_id": "94b0db3f-d7d6-4ba1-be3e-d243cae12e26",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 5378216,
+            "input_tokens_cumulative": 5378216,
+            "output_tokens": 61482,
+            "output_tokens_cumulative": 61482,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-14T18:15:23.579Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 18,
+            "fit": 19,
+            "goal_fidelity": 19,
+            "scope_discipline": 20
+          },
+          "absent": [
+            "a dialect whose read_account_surface raises synchronously during composition is unreachable, because declaration is class-based (nothing executes) and _cached_probe_reading wraps every reader call in try/except returning an unavailable observation; the raising-seam property is asserted by the injected raising reader.",
+            "a declaration with surrounding whitespace (' claude ') is stripped before dialect lookup (mcp_views.py:322), so the owned-surface lane resolves to command 'claude' and reads once; not separately driven by a test.",
+            "credential expiry mid-composition cannot crash the view: the reading returns an unknown block naming the reason, never raises, and that failure mode is owned by the account-surface suite on the reading itself."
+          ],
+          "total": 94
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 5543862,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 4514.41,
+          "generated_tokens": 70576,
+          "generation_seconds": 4490.826,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 82.2,
+          "machine_seconds": 23.584,
+          "peak_input_tokens": 164346,
+          "tokens_per_second": 15.72,
+          "wall_tokens_per_second": 15.63
+        },
+        "follow_on_paths": [
+          "tests/test_lanes_view_is_live.py::test_a_dialect_without_a_probe_never_calls_the_probe_reader",
+          "tests/test_crew_lanes_view.py::test_crew_tool_accepts_lanes_and_keeps_unknown_view_refusal"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_crew_lanes_view.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-lane-aware-20260914/lanes-view-reports-the-claude-probe",
+          "session_id": "94b0db3f-d7d6-4ba1-be3e-d243cae12e26",
+          "session_source": "pointer",
+          "retained_at": "2026-09-14T18:15:23.579Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 53.0,
+        "orientation_input_tokens": 2472187.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -109422,6 +109633,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1413
+    "_version": 1414
   }
 }

@@ -20,11 +20,11 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="19">
 <meta name="plan-section-declarations" content="{&quot;what-is-wrong&quot;:&quot;done&quot;,&quot;the-surface&quot;:&quot;done&quot;,&quot;where-the-probe-lives&quot;:&quot;implementable&quot;,&quot;parse-strictly&quot;:&quot;implementable&quot;,&quot;coordinator-share&quot;:&quot;implementable&quot;,&quot;pin-the-denominator&quot;:&quot;implementable&quot;,&quot;out-of-scope&quot;:&quot;done&quot;}">
-<meta name="plan-commits" content="5e3e041c895353a003e15954382a78b49151a2ac,fab092dafb269286fb2f6bc1dbfb1f060dd95247">
+<meta name="plan-commits" content="5e3e041c895353a003e15954382a78b49151a2ac,fab092dafb269286fb2f6bc1dbfb1f060dd95247,50c436f3c1865e2e11a662829f87283660a13da5,fff2ca7">
 <meta name="plan-artifacts" content="reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/budget.py,reckon/_backends.py,tests/test_coordinator_reserve.py,tests/test_flight.py,tests/test_claude_account_surface.py,tests/fixtures/backends/claude-account-limits.json,docs/evidence/archive/a-lane-can-say-where-it-stands-landed.html">
-<meta name="plan-impl" content="0.5">
+<meta name="plan-impl" content="0.67">
 </head>
 <body>
   <main class="plan-doc">
@@ -435,6 +435,12 @@
 </div>
 <div class="r-comment" data-section="where-the-probe-lives" data-id="c-run-r-20260914T160938925813-review-of-lane-account-reading" data-who="crew-attention" data-when="2026-09-14T16:59:18.562Z">
     <div class="r-comment-body"><p>Independent review attached to lane-account-reading; all five dimensions parsed</p></div>
+</div>
+<div class="r-comment" data-section="where-the-probe-lives" data-id="c-run-r-20260914T165952239943-lanes-view-reports-the-claude-probe" data-who="crew-no-zombies" data-when="2026-09-14T18:15:23.579Z">
+    <div class="r-comment-body"><p>The lanes view reports a lane whose dialect owns an account-surface reading as having a declared probe, without executing it; 9 passed, 4 tests added. The one failing id in that file is PRE-EXISTING on main - it fails identically with none of this node's changes applied, at mcp_views.py:526 where a monkeypatch substitutes a mapping for a module. Added-failure delta 0. This node closes the seam the prior-art scout predicted lane-account-reading would miss</p></div>
+</div>
+<div class="r-comment" data-section="where-the-probe-lives" data-id="c-20260914T2015" data-who="reckon-ship" data-when="2026-09-14T20:15:00Z">
+    <div class="r-comment-body">lanes-view-reports-the-claude-probe landed — commit fff2ca7, merged and content verified present at HEAD. Gate passed exit 0; measure: 9 passed, 4 tests added, added-failure delta 0. A lane whose dialect owns an account-surface reading is now reported as declaring a probe, and the view answers WITHOUT executing the reading to find out — asserted with a reader that raises if called, so the negative is proven rather than assumed. Per-command grouping preserved: two backends sharing one command still resolve to a single read. THIS CLOSES THE SEAM THE PRIOR-ART SCOUT PREDICTED, and the prediction is the finding: the map warned forty minutes before lane-account-reading ran that a worker adding only a new Dialect method would leave the view consulting the base method and reporting the old answer, which is exactly what happened. Without the map the visible symptom would have been a lane rendered unobserved while it knew precisely where it stood — a surface silent about a fact it now had, the quietest failure this plan concerns itself with. ONE PRE-EXISTING FAILURE recorded rather than carried silently: tests/test_crew_lanes_view.py::test_crew_tool_accepts_lanes_and_keeps_unknown_view_refusal fails identically on main with none of this node's changes, at mcp_views.py:526 where a monkeypatch substitutes a mapping for a module. Not this node's, not fixed here. Record: docs/evidence/archive/a-lane-can-say-where-it-stands-landed.html#lanes-view-seam.</div>
 </div>
 <div class="r-comment" data-section="coordinator-share" data-id="c-run-r-20260914T143307893065-coordinator-reserve-declared" data-who="crew-gc-coverage" data-when="2026-09-14T15:32:17.197Z">
     <div class="r-comment-body"><p>A declared coordinator reserve is subtracted from the dispatch ceiling with its reasoning recorded beside it; 144 passed, 0 failed across the reserve, flight and budget suites</p></div>

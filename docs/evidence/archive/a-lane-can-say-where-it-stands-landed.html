@@ -141,6 +141,30 @@
     surface quietly saying &ldquo;unobserved&rdquo; about a lane that knows exactly
     where it stands.</p>
   </section>
+
+  <section id="lanes-view-seam">
+    <h2>The surface now reports what the dialect can do</h2>
+    <p>Landed 2026-09-14, commit <code>fff2ca7</code>. A lane whose dialect owns an
+    account-surface reading is reported as declaring a probe &mdash; and the view
+    answers that question <em>without executing the reading to find out</em>,
+    asserted with a reader that raises if called. The per-command grouping is
+    preserved, so two backends sharing one command still resolve to a single read.
+    9 passed, 4 tests added.</p>
+    <p><strong>This closes the seam the prior-art scout predicted, and the
+    prediction is the point.</strong> The map warned, forty minutes before the node
+    that left it ran, that a worker adding only a new method on the dialect would
+    leave the view consulting the base method and reporting the old answer. That is
+    exactly what happened. Without the map, the visible symptom would have been a
+    lane reported as unobserved while it knew precisely where it stood &mdash; a
+    surface saying nothing about a fact it now had, which is the quietest failure
+    this plan is concerned with and would likely have gone unnoticed for weeks.</p>
+    <p><strong>One failing test in the same file is pre-existing on main</strong>
+    and is recorded rather than silently carried: it fails identically with none of
+    this node's changes applied, at <code>mcp_views.py:526</code>, where a
+    monkeypatch substitutes a mapping for a module and a keyword call then raises
+    <code>TypeError</code>. Added-failure delta 0. It is not this node's and it is
+    not fixed here.</p>
+  </section>
 </main>
 </body>
 </html>
