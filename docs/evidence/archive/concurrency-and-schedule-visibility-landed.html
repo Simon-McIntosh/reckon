@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="concurrency-and-schedule-visibility-landed">
+  <meta name="plan-title" content="What May Run Together, and What Should Run Next — landed evidence">
+  <meta name="plan-summary" content="Cumulative execution evidence for all eight sections, derived from the live plan's section-attached landing comments.">
+  <meta name="plan-evidence-for" content="concurrency-and-schedule-visibility">
+  <meta name="plan-verifies" content="concurrency-and-schedule-visibility#s1,concurrency-and-schedule-visibility#s2,concurrency-and-schedule-visibility#s3,concurrency-and-schedule-visibility#s4,concurrency-and-schedule-visibility#s5,concurrency-and-schedule-visibility#s6,concurrency-and-schedule-visibility#s7,concurrency-and-schedule-visibility#s8">
+  <meta name="plan-recorded-at" content="2026-09-14">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-commits" content="8609ef1,c26c8ce,e18fc2d,ee3caac,4e0f5f5,d38406d,9221681,16c7e6d,f4a09c3,10ccdc3,a2f6023,1119a08,0e66462,dc04f05,8da7f1b,6272fef,ff5aa9a,55a2429">
+  <title>What May Run Together — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>What May Run Together, and What Should Run Next — cumulative landed evidence</h1>
+    <p class="plan-summary">One stable anchor for each authored section. The evergreen plan owns
+    the design; this record preserves the material outcomes, quantitative gates, commit identities,
+    negative findings, and provenance gaps its execution comments actually recorded.</p>
+  </header>
+
+  <section id="record-scope">
+    <h2>Record scope and provenance</h2>
+    <p>The source is plan version 86 at worktree base <code>8ca2c3c</code>. A positive-control
+    census found exactly <strong>56 section-attached comments</strong>: 4 on §3, 1 on §4, 28 on
+    §5, 3 on §7, and 20 on §8. Sections 1, 2, and 6 have no section-attached comment; the one
+    separate <code>_top</code> comment is excluded from that count. For those three anchors, this
+    record identifies the execution comment elsewhere in the same plan that carries the outcome.
+    It does not turn argument prose into execution evidence.</p>
+    <p>The latest census comment recorded <strong>84 done-when clauses</strong> across the three
+    pending sprint plans: 74 landed and 10 unlanded, distributed 1 / 0 / 9. It also verified all
+    24 commits cited by that wider census as ancestors of <code>a39bd85f</code>. This record applies
+    the narrower check to every commit it cites: all 18 resolve as commits and are ancestors of its
+    own base.</p>
+    <p>No figure is included. The evidence is categorical and tabular; turning the values into an
+    image would make them harder to inspect and copy without expressing a spatial, plotted, or
+    sequential relationship.</p>
+  </section>
+
+  <section id="s1">
+    <h2>§1 — The baseline became a checked measurement</h2>
+    <p>The section's material outcome was not new fleet machinery but correction of its hand-written
+    census by a derived surface. The schedule-readiness landing measured
+    <code>horizon_depth=6</code> across S5, S6, S8, S9, S12, and S13, correcting the section's
+    recorded value of five because S8 had been missed. That is the promised transition from a
+    coordinator's hand count to a re-checkable answer.</p>
+    <p><strong>Gate:</strong> full suite <strong>2120 passed in 81.42 s, 0 failures</strong>, two
+    more passes than the 2118-case base. Commit <code>8609ef1</code>.</p>
+    <p><strong>Comment provenance:</strong> <code>c-20260824T1450</code>, attached to §4 because
+    that is where the derived axis was implemented. No §1-attached landing comment exists.</p>
+  </section>
+
+  <section id="s2">
+    <h2>§2 — The two missing dispatch axes became explicit</h2>
+    <p>The framing section distinguished dependency readiness from file-scope exclusivity and
+    schedule order. Its outcome is carried by the two implementing comments: live write-scope
+    containment now refuses a conflicting dispatch before worktree creation, and roadmap now
+    reports schedule readiness beside dependency readiness without removing deferred rows from
+    the ordered result.</p>
+    <ul>
+      <li><code>c26c8ce</code>: 3 test functions covering 4 cases; final suite
+        <strong>2118 passed in 75.07 s, 0 failures</strong>, up from 2113 at base
+        <code>9c87caf</code>.</li>
+      <li><code>8609ef1</code>: final suite <strong>2120 passed in 81.42 s, 0 failures</strong>,
+        +2 against the 2118 base.</li>
+    </ul>
+    <p><strong>Comment provenance:</strong> <code>c-20260824T1435</code> and
+    <code>c-20260824T1450</code>. No §2-attached landing comment exists.</p>
+  </section>
+
+  <section id="s3">
+    <h2>§3 — Claims, derivations, and lane planning</h2>
+    <p>Three landed results form the claim registry's usable surface:</p>
+    <ul>
+      <li><strong>Derived refusal.</strong> <code>c26c8ce</code> derives peer claims from live
+        pointers, normalises repository-relative POSIX paths, and refuses componentwise containment
+        before worktree creation. The gate was 2118 passed in 75.07 s with zero failures; the run
+        recorded a scope change after three fixtures were found to encode concurrent identical
+        claims.</li>
+      <li><strong>Derivation map.</strong> <code>e18fc2d</code> validates the optional
+        source-to-generated map on the project resource, including absolute, traversal, empty, and
+        backslash refusals. The gate was <strong>2124 passed in 67.22 s, 0 failures</strong>, +6
+        against the 2118 base; 111 insertions over 2 files.</li>
+      <li><strong>Read view and planner.</strong> <code>ee3caac</code> exposes immutable ownership,
+        derivation expansion, the conflict graph, live conflicts, and ordered serial lanes. Five
+        focused acceptance cases, 185 affected-file tests, and the crew-view contract preceded a
+        full suite of <strong>2132 passed in 63.39 s, 0 failures</strong>.</li>
+    </ul>
+    <p>A fourth comment records that authorised mounted-repository paths are accepted while an
+    unmounted repository is refused and run/report directories remain valid. That comment contains
+    no commit SHA or numeric gate, so none is invented here.</p>
+    <p><strong>Comment provenance:</strong> <code>c-20260824T1435</code>,
+    <code>c-20260824T1452</code>, <code>c-20260824T1520</code>, and
+    <code>c-run-r-20260824T203927727703-mounted-repo-write-paths</code>.</p>
+  </section>
+
+  <section id="s4">
+    <h2>§4 — Schedule readiness and a declared horizon</h2>
+    <p><code>8609ef1</code> landed the second readiness axis. A plan outside the window stays
+    dependency-ready and remains in the ordered roadmap while its schedule-deferred reason names
+    the earlier sprint. Its gate was <strong>2120 passed in 81.42 s, 0 failures</strong>, +2 against
+    the 2118 base, and its first live read corrected the horizon from five to six.</p>
+    <p>The later §8 landing completed the policy half. Commits <code>8da7f1b</code> and
+    <code>6272fef</code> first proved the sprint index inert, then placed the setting on the project
+    resource the axis actually reads. The measurable state changed from
+    <code>configured=false</code> and <code>window_sprints=null</code> to
+    <code>configured=true</code>, <code>window_sprints=3</code>, and
+    <code>horizon_depth=3</code>. With exactly three open sprints, the deferred set was correctly
+    zero; the first deferral occurs when a fourth opens. <strong>Two test cases passed.</strong></p>
+    <p><strong>Comment provenance:</strong> <code>c-20260824T1450</code> and
+    <code>c-20260908T225500</code>.</p>
+  </section>
+
+  <section id="s5">
+    <h2>§5 — A watcher became a multi-session delivery surface</h2>
+    <p>The section accumulated several coupled landings because width exposed lifecycle facts that
+    one-lane execution hid:</p>
+    <ul>
+      <li><strong>Current attempt identity.</strong> <code>4e0f5f5</code> made a resumed or
+        redispatched run report the current stream, a non-terminal phase while alive, a captured
+        session without preparatory observation, and a watch that ignores the preceding manifest.
+        Six targeted cases and 147 file tests preceded <strong>2120 passed in 60.60 s, 0
+        failures</strong>.</li>
+      <li><strong>Unwatched-dispatch refusal.</strong> <code>d38406d</code> refused work when an
+        existing fleet had no live watcher and recorded <code>--no-watch</code> on both transient
+        and promoted records. Eight targeted cases and 195 touched-file tests preceded
+        <strong>2152 passed in 64.62 s, 0 failures</strong>.</li>
+      <li><strong>Visibility, durable transitions, and follower.</strong>
+        <code>9221681</code>, <code>16c7e6d</code>, and <code>f4a09c3</code> exposed watcher state,
+        made the producer append one baseline per current run plus fsync-backed real transitions,
+        and let any number of sessions attach without taking the single producer seat. The plan
+        comments recorded full suites of <strong>2266</strong>, <strong>2269</strong>, and
+        <strong>2269</strong> passes. Two simultaneous stream readers saw identical lines; three
+        staggered followers received 3, 2, and 1 subsequent transitions with zero seat acquisitions.</li>
+      <li><strong>Retained lifetime was verified rather than reimplemented.</strong>
+        <code>a2f6023</code> already kept the default watcher alive from an empty project through
+        every landing. The reproduction seeded a terminal-unpromoted pointer already
+        <strong>600 seconds stale</strong>; the watcher stayed alive with pointer count 1, admitted
+        a second dispatch without a waiver, emitted the transition only after removal, and exited
+        cleanly. Three cold-start regression tests were kept; no production rewrite was justified.</li>
+    </ul>
+    <p>Later comments also record automatic producer arming, attempt-scoped budget accounting, a
+    verified watcher-stop command, baseline and transition ticker rendering, and CLI/live-view
+    classification parity. Their quantitative receipts include 2274, 2285, and 2373 passing full
+    suites, 24 of 35 local import groups hoisted, and the fixed-read-set estimate falling from
+    14,314 to 14,259 tokens. Those comments omit the corresponding commit SHAs, so this record
+    retains the results without manufacturing identities.</p>
+    <p><strong>Comment provenance:</strong> <code>c-20260824T1452b</code>,
+    <code>c-20260824T1545</code>, <code>c-watch-contact-20260825</code>,
+    <code>c-run-r-20260825T060602160175-dispatch-arms-the-producer</code>,
+    <code>c-run-r-20260825T061611906275-watch-holds-through-unreconciled</code>,
+    <code>c-face-four-was-already-closed-20260825</code>, and
+    <code>c-run-r-20260825T084013159052-crew-list-classification-fields</code>.</p>
+  </section>
+
+  <section id="s6">
+    <h2>§6 — Adjacent peers exchange knowledge without sharing writes</h2>
+    <p>The execution comment records symmetric run-directory mailboxes, import-or-call adjacency,
+    event-blocked reads that become a <code>NEEDS-HELP:</code> report when unanswered, and the
+    unchanged live write-claim refusal. The quantitative receipt is a full suite of
+    <strong>2201 passed</strong>; the adjacent follow-mode landing was at 2202.</p>
+    <p><strong>Commit provenance gap:</strong> the section has no attached comment. The execution
+    comment <code>c-20260824T1945</code>, attached to §5 because the channel and follow mode landed
+    in the same beat, records the 2201-pass result but omits the peer-channel SHA. The nearby
+    transport comments do cite <code>16c7e6d</code> and <code>f4a09c3</code>, but those commits own
+    the watcher stream and follower, not the peer channel; they are therefore not relabelled as the
+    §6 implementation commit. The argument prose's SHA is deliberately not copied into this
+    comment-derived record.</p>
+  </section>
+
+  <section id="s7">
+    <h2>§7 — Closure targets remain derived and decision-gated</h2>
+    <p><code>1119a08</code> made an open decision a blocker kind of its own, naming both the
+    decision and the plan that carries it; locking or explicit deferral clears the block without
+    hiding the decision. The gate ran <strong>41 targeted cases</strong> and then the dispatch-tree
+    suite at <strong>2190 passed, 0 failures</strong>. The run recorded a scope change and 945
+    worker-seconds against a 35-minute budget.</p>
+    <p>The graph-target comments record two further outcomes: the graph ship target landed, and the
+    handle grammar is closed and unique per project so the bare handle resolves safely while the
+    prefixed form remains available. The later startup-compatibility comment is the only execution
+    comment that gives the grammar a SHA, <code>10ccdc3</code>; it also records a full suite of
+    <strong>2285 passed with zero new failures</strong> after 24 required modules and symbol groups
+    were hoisted from 35 local imports so a stale server fails at connection rather than first use.
+    The graph-target comments themselves omit their commit SHA and numeric gate.</p>
+    <p><strong>Comment provenance:</strong> <code>c-20260824T1855</code>,
+    <code>c-run-r-20260824T195833469883-graph-ship-target</code>,
+    <code>c-run-r-20260824T203929898877-bare-graph-handle</code>, and
+    <code>c-run-r-20260825T061619776915-import-failure-at-startup-not-first-call</code>.</p>
+  </section>
+
+  <section id="s8">
+    <h2>§8 — Residual claims, promotion, horizon, and drain gaps closed</h2>
+    <p>The residual section carried several independent material results. The archive keeps their
+    receipts separate inside this stable section anchor:</p>
+    <ul>
+      <li><strong>Planning and repository scope.</strong> A dry run now reports a live conflict and
+        owning run while validating and exiting zero; repository-root claims see collisions across
+        project identities while member serialisation stays project-scoped; and an unreachable
+        delivery path is refused against the resolved sandbox before spawning. These three landing
+        comments omit both SHA and numeric gate, so the outcomes are retained without inferred
+        commits.</li>
+      <li><strong>Promotion requires its evidence.</strong> <code>0e66462</code> refuses a complete
+        manifest that reports changed paths and no commit. Four new cases passed; the focused file
+        moved from 18 to 22 passes while retaining the same 6 pre-existing failures, for
+        <strong>zero added failures</strong>.</li>
+      <li><strong>Report-only prose stays report-only.</strong> <code>dc04f05</code> treats prose
+        beginning with “none” as no changed path only when every listed item is prose-none, while a
+        path-shaped near miss remains a path. Two parametrized cases moved the file from 22 to 24
+        passes with the same 6 pre-existing failures: <strong>zero added</strong>.</li>
+      <li><strong>The horizon width is declared.</strong> <code>8da7f1b</code> proved the sprint-index
+        location inert and <code>6272fef</code> placed width 3 on the project resource. Configuration
+        moved false to true, the width null to 3, horizon depth measured 3, and the deferred set was
+        0 with three open sprints. <strong>Two cases passed.</strong></li>
+      <li><strong>Promotion contracts match the record.</strong> <code>ff5aa9a</code> replaced six
+        stale absence assertions one for one, without skipping or widening them: the focused result
+        moved from <strong>24 passed / 6 failed to 30 passed / 0 failed</strong>, with no production
+        file touched.</li>
+      <li><strong>The closure drain is session-scoped.</strong> <code>55a2429</code> counts the
+        asking session's runs and reports peer runs separately with their owning session. Its gate
+        moved from <strong>0 passed / 3 failed to 4 passed / 0 failed</strong>; the ledger selection
+        remained 76 passed / 6 failed before and after, and ruff findings remained 36, so both
+        deltas were zero. Four hours later, live evidence measured 1 owned unreconciled run plus 4
+        peer runs, against the unchanged project-wide count of 5.</li>
+    </ul>
+    <p><strong>Comment provenance:</strong>
+    <code>c-run-r-20260824T193545621977-dry-run-reports-conflicts</code>,
+    <code>c-run-r-20260824T205518233675-repo-root-scope-claims</code>,
+    <code>c-run-r-20260825T043337703281-sandbox-delivery-reachability</code>,
+    <code>c-20260908T195800</code>, <code>c-20260908T224300</code>,
+    <code>c-20260908T225500</code>, <code>c-20260909T002200</code>,
+    <code>c-20260909T005500</code>, and <code>c-20260909T052000</code>.</p>
+  </section>
+</main>
+</body>
+</html>
