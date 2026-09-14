@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="version-derives-from-version-tags-landed">
+  <meta name="plan-title" content="Only a version tag sets the version — landed evidence">
+  <meta name="plan-summary" content="A rescue tag whose name ends in a commit sha satisfied the default describe pattern, so one such tag broke every wheel build in the repository. Version discovery is now constrained to release-shaped tags, and the fix is measured with the malformed tag still in place so the passing build tests the repair rather than its absence.">
+  <meta name="plan-evidence-for" content="reckon:version-derives-from-version-tags">
+  <meta name="plan-verifies" content="reckon:version-derives-from-version-tags#s2">
+  <meta name="plan-recorded-at" content="2026-09-15">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; hatch-vcs; the malformed rescue tag present locally and on the remote throughout every measurement">
+  <meta name="plan-commits" content="e89fcce">
+  <meta name="plan-artifacts" content="pyproject.toml,tests/test_build.py">
+  <title>Only a version tag sets the version — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Only a version tag sets the version &mdash; landed evidence</h1>
+    <p class="plan-summary">One section, one measure, passing. What makes the record worth
+    keeping is the shape of the verification: the defect was demonstrated to be fixed
+    <em>as a class</em>, with the offending tag deliberately left in the repository, rather
+    than made to disappear by deleting the tag that exposed it.</p>
+  </header>
+
+  <section id="overview">
+    <h2>Record scope</h2>
+    <p>A rescue tag named <code>rescue/spec-level-names-a-backend-957c042</code> ends in a
+    commit sha. The default describe pattern accepted it as a version tag, the version parser
+    then failed on the name, and every wheel build in the repository failed with it &mdash;
+    five test ids, none of which had anything to do with packaging. The fix constrains both
+    halves in <code>pyproject.toml</code>: the describe command matches only
+    <code>v[0-9]*</code>, and the tag regex admits only a release-shaped version.</p>
+  </section>
+
+  <section id="s2">
+    <h2>&sect;2 &mdash; Constrain what may name a version</h2>
+    <p>Measured on 2026-09-15 at the current head, with the malformed tag present locally and
+    confirmed present on the remote:</p>
+    <table class="r-table">
+      <thead><tr><th>What the measure asked</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Describe with the malformed tag in place</td><td>selects <code>v0.2.0</code>, the newest release tag</td></tr>
+        <tr><td>Wheel version built at the head</td><td><code>0.2.1.dev2260</code>, no local segment</td></tr>
+        <tr><td>The five previously failing build ids</td><td>all pass: 5 passed, then 2 passed across the two files</td></tr>
+        <tr><td>A synthesised tag of the same malformed shape</td><td>also ignored &mdash; the fix covers the class, not one string</td></tr>
+        <tr><td>Diagnostic when no release tag exists</td><td>names the <code>v[0-9]*</code> pattern, never the rescue tag</td></tr>
+      </tbody>
+    </table>
+    <p>The fourth row is the one that matters. A fix verified only against the tag that
+    exposed the defect would pass equally well if someone had simply deleted that tag, and the
+    next rescue tag would break the build again. Cloning the repository, adding a second
+    malformed tag, and requiring the constrained describe to ignore that one too is what
+    separates a repair from a cleanup.</p>
+  </section>
+
+  <section id="findings">
+    <h2>One observation the review added</h2>
+    <p>The plan's prose states that the repository carries four tags. It carries twelve at
+    this date. The extra tags end in digit-bearing shas as well, so the change reinforces the
+    plan's premise rather than undermining it &mdash; but the figure is a snapshot of a number
+    that grows on its own, and is recorded here with its date rather than corrected in the
+    plan, because a bare count with no date is the same fuse as a test that hardcodes today.</p>
+  </section>
+</main>
+</body>
+</html>

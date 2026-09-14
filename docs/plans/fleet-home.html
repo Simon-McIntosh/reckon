@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="fleet-home">
   <meta name="plan-title" content="A Fleet Home That Hides at Zero">
   <meta name="plan-summary" content="Replace the standalone home page and the per-project cockpit with one read-only fleet dashboard inside the shell that obeys global visibility.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="9.0">
   <meta name="plan-wall-clock-hours" content="5.0">
@@ -22,12 +22,12 @@
   <meta name="plan-tags" content="reckon-tooling,spa">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-depends-on" content="spa-shell-scope-and-visibility,served-surface-data-contracts">
-  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,design/reckon-spa-handoff.md,docs/ui/home.jsx,docs/ui/home.css,tests/test_spa_home_surface.py,tests/test_spa_home_geometry.py,docs/figures/fleet-home/after/capture-index.json">
+  <meta name="plan-artifacts" content="docs/ui/home.jsx,docs/ui/home.css,docs/ui/shell-route.jsx,docs/ui/shell.jsx,reckon/serve.py,tests/test_spa_home_surface.py,tests/test_spa_home_geometry.py,docs/evidence/archive/fleet-home-landed.html">
   <title>A Fleet Home That Hides at Zero | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="11">
+<meta name="plan-modified" content="2026-09-15">
+<meta name="plan-version" content="12">
 <meta name="plan-commits" content="6481026,2b3b276,2125e17,572774c,db42211">
 <meta name="plan-impl" content="1.0">
 </head>
@@ -137,10 +137,11 @@
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-fh-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-03" data-recommends-skill="/reckon-ship fleet-home" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-fh-001" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-09-03" data-recommends-skill="/reckon-ship fleet-home" data-resolved-at="2026-09-14T22:43:20+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Land the home view, then retire what it replaces</h4>
     <div class="r-fu-body"><p>§2 runs once the shell plan's Crew and token nodes have merged and the data plan has landed the live fleet index. §3 follows on the same member because it writes the same shell files and the server module. §4 captures last.</p></div>
     <pre class="r-fu-prompt">/reckon-ship fleet-home</pre>
+    <p class="r-fu-outcome">done — no followup. All three sections landed and all five ship commits were resolved and proven ancestors of the head rather than read off their summaries. The home view renders over the visible set with its stat band, one row per moving project, the no-activity text where a series is empty, and the dormant strip absent at zero; the standalone page and the cockpit module are deleted and the root URL redirects; four captures at two widths record their row counts and the hidden-project stat change from 39 plans to 27. Gate 13 passed, exit 0. The eight failures in the wider four-file command were each attributed away from this plan by evidence rather than by assertion: two are the host browser-navigation boundary and six are assertions other plans made stale, of which four are among the ten contracts owned by spa-surface-contract-health and are being repaired there. Record at docs/evidence/archive/fleet-home-landed.html.</p>
     </article>
 </section>
 

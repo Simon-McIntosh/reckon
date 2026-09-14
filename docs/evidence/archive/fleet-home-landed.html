@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="fleet-home-landed">
+  <meta name="plan-title" content="A fleet home that hides at zero — landed evidence">
+  <meta name="plan-summary" content="One read-only fleet dashboard inside the shell replaced a standalone home page that listed nine dead projects above four real ones, and the per-project cockpit it duplicated. A project with no recorded activity says so in words rather than drawing a flat line, and a control whose count is zero is absent rather than rendered dead.">
+  <meta name="plan-evidence-for" content="reckon:fleet-home">
+  <meta name="plan-verifies" content="reckon:fleet-home#s2,reckon:fleet-home#s3,reckon:fleet-home#s4">
+  <meta name="plan-recorded-at" content="2026-09-15">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; detached git worktrees; captures taken at 1374 and 1920 against this workstation's real mounts">
+  <meta name="plan-commits" content="6481026,2b3b276,2125e17,572774c,db42211">
+  <meta name="plan-artifacts" content="docs/ui/home.jsx,docs/ui/home.css,docs/ui/shell-route.jsx,docs/ui/shell.jsx,reckon/serve.py,tests/test_spa_home_surface.py,tests/test_spa_home_geometry.py,docs/figures/fleet-home/after/capture-index.json">
+  <title>A fleet home that hides at zero — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>A fleet home that hides at zero &mdash; landed evidence</h1>
+    <p class="plan-summary">Three sections, all landed, all five ship commits proven ancestors
+    of the head rather than read off their own summaries. The part of this record worth
+    reading is not the verdict but the attribution: the section's wider gate reports eight
+    failures, and none of them belongs to this plan.</p>
+  </header>
+
+  <section id="overview">
+    <h2>Record scope</h2>
+    <p>The standalone home page listed nine projects with no work above four with work, every
+    one drawn with a flat sparkline, and the shell's default view was a per-project cockpit the
+    handoff canvas replaced with a brand mark. Both are now gone, and one read-only dashboard
+    inside the shell serves the visible set.</p>
+  </section>
+
+  <section id="s2">
+    <h2>&sect;2 &mdash; The home view</h2>
+    <p>An empty hash routes to the home view and the brand mark navigates back to it. The
+    eyebrow reads <em>N of M shown</em> from the visible set, and hiding a project changes the
+    stat band by that project's own count. Rows render only for projects that have plans, in
+    last-edited order. A project whose activity series is empty renders the words
+    <em>no recorded activity</em> and no polyline at all, which is the decision that matters:
+    a flat line reads as broken and is indistinguishable from a genuinely flat series, while
+    the payload distinguishes them and so must the surface.</p>
+    <p>Measure: <code>tests/test_spa_home_surface.py</code> and
+    <code>tests/test_spa_home_geometry.py</code> pass &mdash; 13 passed with the capture gate,
+    exit 0.</p>
+  </section>
+
+  <section id="s3">
+    <h2>&sect;3 &mdash; Retire the standalone home and the cockpit</h2>
+    <p>The standalone page and the cockpit module are deleted, no module defines a cockpit
+    body, and the server's root URL redirects to the first mounted project's home. The
+    retirement was its own node so that reverting it is one commit.</p>
+  </section>
+
+  <section id="s4">
+    <h2>&sect;4 &mdash; Rendered evidence</h2>
+    <p>Four captures at two widths, each carrying its width, row count and stat band: the home
+    at 1374 and 1920 with three moving projects, one streakline, one no-activity row and a
+    dormant strip; and the hidden-project case at both widths, where the row count drops to two
+    and the plans figure falls from 39 to 27 &mdash; the stat-band change the visibility
+    decision requires, measured rather than asserted.</p>
+  </section>
+
+  <section id="attribution">
+    <h2>Eight failures, none of them this plan's</h2>
+    <p>The wider four-file command named by &sect;3 reports eight failures. A large red count in
+    a shared file is normally read as the landing plan's own fallout, and here it is not. The
+    review classified every one and proved non-attribution rather than asserting it: none of
+    the five ship commits touches the files those assertions read, and a pickaxe search over
+    the base range shows that not one of the eight test functions has changed since this plan's
+    base.</p>
+    <table class="r-table">
+      <thead><tr><th>Count</th><th>Cause</th><th>Owner</th></tr></thead>
+      <tbody>
+        <tr><td>2</td><td>Host browser-navigation boundary; no plan work can address it</td><td>the host runtime</td></tr>
+        <tr><td>6</td><td>Assertions other plans made stale &mdash; an in-flight band, store directions, a sprint metrics shape</td><td>four of the six are among the ten contracts owned by <code>spa-surface-contract-health</code></td></tr>
+      </tbody>
+    </table>
+    <p>Routing them to the plan that owns stale contracts, rather than repairing them here,
+    is what keeps one repair from appearing as three.</p>
+  </section>
+</main>
+</body>
+</html>

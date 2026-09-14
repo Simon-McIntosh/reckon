@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="version-derives-from-version-tags">
   <meta name="plan-title" content="Only A Version Tag Sets The Version">
   <meta name="plan-summary" content="A rescue tag whose name ends in a commit sha satisfies the default tag match, so any such tag breaks every wheel build in the repository.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="2.0">
   <meta name="plan-wall-clock-hours" content="1.5">
@@ -23,10 +23,10 @@
   <title>Only A Version Tag Sets The Version | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="5">
+<meta name="plan-modified" content="2026-09-15">
+<meta name="plan-version" content="6">
 <meta name="plan-commits" content="e89fcce">
-<meta name="plan-artifacts" content="pyproject.toml,tests/test_build.py">
+<meta name="plan-artifacts" content="pyproject.toml,tests/test_build.py,docs/evidence/archive/version-derives-from-version-tags-landed.html">
 <meta name="plan-impl" content="1.0">
 </head>
 <body>
@@ -85,10 +85,11 @@
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-vdvt-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship version-derives-from-version-tags" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-vdvt-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship version-derives-from-version-tags" data-resolved-at="2026-09-14T22:43:14+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Constrain the version tag pattern with the rescue tag left in place</h4>
     <div class="r-fu-body"><p>One node. The five wheel-build ids the merged-head verification named are the before-and-after list, and the malformed tag stays in the repository throughout so the passing build measures the fix rather than its absence.</p></div>
     <pre class="r-fu-prompt">/reckon-ship version-derives-from-version-tags</pre>
+    <p class="r-fu-outcome">done — no followup. Verified at the head with the malformed rescue tag deliberately left in place locally and on the remote, so the passing build measures the repair rather than its absence. The constrained describe selects v0.2.0, a wheel builds as 0.2.1.dev2260 with no local segment, and the five previously failing build ids all pass, 5 then 2 across the two files. The clause that makes this a class fix rather than a cleanup also holds: a clone carrying a second synthesised tag of the same malformed shape is ignored too, and the diagnostic with no release tag present names the v[0-9]* pattern rather than the rescue tag. Record at docs/evidence/archive/version-derives-from-version-tags-landed.html.</p>
     </article>
 </section>
 <section data-reckon="comments" id="comments" class="r-comments">
