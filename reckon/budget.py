@@ -88,6 +88,13 @@ DEFAULT_AVAILABILITY_PROBE_CACHE_SECONDS = 60.0
 BURN_ELAPSED_FRACTION_FLOOR = 0.05
 BURN_UTILISATION_PCT_FLOOR = 5.0
 
+# The account's own severity labels that mean a window is raised. Severity is
+# the account's server-computed posture rather than a threshold reckon invents,
+# so a raised label holds even when a numeric utilisation alone would sit under
+# the configured ceiling: the fence holds no looser than the figure the account
+# reports, whichever of the two inputs is currently telling the truth.
+RAISED_SEVERITIES = ("warning", "critical")
+
 
 @dataclass
 class BudgetState:
@@ -109,6 +116,7 @@ class BudgetState:
     resets_at: str | None = None
     seconds_until_reset: int | None = None
     threshold_status: str | None = None
+    severity: str | None = None
     observed_at: str | None = None
     age_source: str | None = None
     source: str = "none"
@@ -138,6 +146,7 @@ class BudgetState:
             "seconds_until_reset": self.seconds_until_reset,
             "source": self.source,
             "threshold_status": self.threshold_status,
+            "severity": self.severity,
             "utilisation_pct": self.utilisation_pct,
         }
 
@@ -824,6 +833,10 @@ def _effective_quota_block(block: Mapping[str, Any]) -> dict[str, Any]:
             effective["resets_at"] = row["resets_at"]
         if row.get("rate_limit_type"):
             effective["rate_limit_type"] = row["rate_limit_type"]
+        # The severity rides the same window the utilisation does: only the
+        # binding row's label reaches the decision, so a severity the account
+        # reports for some other horizon cannot hold a request it does not gate.
+        effective["severity"] = row.get("severity")
         effective["headroom"] = "known"
         return effective
     if status == "own-unmeasured":
@@ -918,6 +931,7 @@ def _from_block(
         resets_at=resets_at,
         seconds_until_reset=remaining,
         threshold_status=block.get("threshold_status"),
+        severity=block.get("severity"),
         observed_at=observed_at,
         age_source=age_source,
         source=source,
@@ -1230,6 +1244,17 @@ def decide(
             "D02",
             f"{_position(state)} is at or above the {limit}% ceiling for a "
             f"{purpose}{margin}{_evidence_note(state)}",
+        )
+        return verdict
+    if state.severity in RAISED_SEVERITIES:
+        verdict["held"] = True
+        verdict["reason"] = format_refusal(
+            "D02",
+            f"the account reports severity {state.severity!r} on the window that "
+            f"gates this {purpose}; {_position(state)} is below the {limit}% "
+            "ceiling, so this hold comes from the account's raised severity "
+            "rather than the configured ceiling"
+            f"{_evidence_note(state)}",
         )
         return verdict
     verdict["reason"] = (
