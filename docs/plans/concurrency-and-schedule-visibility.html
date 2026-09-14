@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="94">
+<meta name="plan-version" content="97">
 <meta name="plan-impl" content="0.99">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/evidence/archive/concurrency-and-schedule-visibility-landed.html">
@@ -957,19 +957,34 @@ What makes this worth a section rather than a note: shipped_of_total is the figu
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260914T110857431448-review-of-csv-landed-record" data-who="crew-budget-instrument" data-when="2026-09-14T12:21:32.107Z">
     <div class="r-comment-body"><p>independent review parsed with all five dimensions scored, total 79, absent none; it found that tests/test_schema.py exempts every path under docs/evidence/archive from its conformance scan, which I confirmed directly - 126 plan files scanned, 0 of 43 archived evidence records among them - so a landed evidence record can carry a fabricated sha and no test fails; durability scored 6 of 20 for that reason</p></div>
 </div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20260914T142305237329-delivery-fixtures-declare-a-spec-level" data-who="crew-backpressure" data-when="2026-09-14T14:43:41.086Z">
+    <div class="r-comment-body"><p>five sandbox-delivery tests red since d5811b2 on 2026-09-04 are green: 5 failed 0 passed at base to 5 passed 0 failed at head, repaired by two inserted lines declaring the specification level the fixture has needed since that commit made it mandatory; no production file edited and no assertion added or removed, so the delivery behaviour each test asserts is unchanged</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20260914T142419402225-serving-verdict-names-the-configured-model" data-who="crew-attention" data-when="2026-09-14T14:41:54.874Z">
+    <div class="r-comment-body"><p>the serving verdict now compares the backend's configured model against the model ids its endpoints document lists, returning mismatch as a state distinct from not-serving because a lane that is down and one up with the wrong checkpoint need different operator actions; 7 to 9 passed with 0 failures either side, all four verdicts asserted against synthesised documents with no cluster access; closes a gap in a check this session shipped three hours earlier, found when a lane swap made serving read true while the configured model was absent</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-20260914T1650" data-who="reckon-ship" data-when="2026-09-14T16:50:00Z">
+    <div class="r-comment-body">THE SECTION'S OWN DELIVERABLE IS NOW LANDED AND PROVABLE, which it was not this morning. Two nodes closed it.
+
+delivery-fixtures-declare-a-spec-level - commit 8198983, merged; gate passed. Five tests in tests/test_sandbox_delivery.py had been red since d5811b2 on 2026-09-04, which made a specification level mandatory and which this file was never updated for: 5 failed 0 passed at base to 5 passed 0 failed at head. The repair is two inserted lines, one file, zero deletions, and zero assertions added or removed, so the delivery behaviour each test asserts is untouched. Those five included test_unreachable_write_path_is_invalid_before_launch, which is the test for this section's own class-level repair - the behaviour was live and its proof was red for a reason that had nothing to do with it.
+
+serving-verdict-names-the-configured-model - commit d5b282b, merged; gate passed; 7 to 9 passed with zero failures either side. Not this section's subject, but found while closing it and worth recording beside it: the serving check this session shipped at midday answered whether a lane was serving ANYTHING rather than whether it was serving the model the backend declares. Those diverge exactly at a lane swap, which is the one moment the check is load-bearing, and a swap at 16:11Z produced a state where the document listed deepseek-v4-flash, the backend declared deepseek-v4.1-flash, and the verdict read serving while dispatch would have launched workers against an absent checkpoint. mismatch is now a state distinct from not-serving, because a lane that is down and a lane that is up with the wrong checkpoint need different operator actions - a distinction the reckon-09 session argued for and which is right.
+
+So this section's declared scope is complete. What remains on it are two findings recorded today that are NOT its declared scope: the roadmap answering only the sprint shape of what should run next, and an abandoned closure member never leaving the completion denominator. Both were discovered here and neither belongs here; recording where they go is the next write rather than landing them under a plan that was authored for something else.</div>
+</div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260825T142832299679-n-readyqueuegap" data-who="codex-a" data-when="2026-08-25T14:36:10Z">
     <div class="r-comment-body"><p>Ready-queue gap report: one unshipped deliverable, three of four requested capabilities implemented, zero automatic end-to-end loops</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260914T1520" data-who="reckon-ship" data-when="2026-09-14T15:20:00Z">
     <div class="r-comment-body">DRAIN LEDGER - ship-s15-20260914 @ 2026-09-14T15:20:00Z
 
-  f-csv-001  concurrency-and-schedule-visibility  folded -> f-csv-002, section 8 reopened with three recorded deliverables
+  f-csv-001  concurrency-and-schedule-visibility  folded -&gt; f-csv-002, section 8 reopened with three recorded deliverables
   f-dcdn-003 dispatch-cost-per-durable-node        already resolved before this pass; its section 7 remainder is below
-  section 7 pilot retirement                        authority-required -> retiring a declared measure is the lead's call; the evidence that it is answerable from merged ledger runs is recorded on the section, 66 and 18 samples against a stated band of 20 to 40
-  f-atl-001  advise-the-lane-never-force-it        foreign-owner -> ship-lane-aware-20260914, dispatching now
-  f-bvb-001  burn-is-visible-before-it-bites       foreign-owner -> ship-lane-aware-20260914, dispatching now
-  read-the-account-surface  a-lane-can-say         foreign-owner -> ship-lane-aware-20260914, dispatching now
-  f-lrc-002  landed-record-at-closure              foreign-owner -> S17, outside this session's target; a finding was added to it, not work
+  section 7 pilot retirement                        authority-required -&gt; retiring a declared measure is the lead's call; the evidence that it is answerable from merged ledger runs is recorded on the section, 66 and 18 samples against a stated band of 20 to 40
+  f-atl-001  advise-the-lane-never-force-it        foreign-owner -&gt; ship-lane-aware-20260914, dispatching now
+  f-bvb-001  burn-is-visible-before-it-bites       foreign-owner -&gt; ship-lane-aware-20260914, dispatching now
+  read-the-account-surface  a-lane-can-say         foreign-owner -&gt; ship-lane-aware-20260914, dispatching now
+  f-lrc-002  landed-record-at-closure              foreign-owner -&gt; S17, outside this session's target; a finding was added to it, not work
   ---
   rows: 7   foldable-remaining: 0   unreconciled-runs: 0
 

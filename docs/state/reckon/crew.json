@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-14T16:45:56",
+  "updated": "2026-09-14T16:47:01",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -102572,6 +102572,188 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T142419402225-serving-verdict-names-the-configured-model",
+        "plan": "concurrency-and-schedule-visibility",
+        "section": "\u00a78",
+        "node": "serving-verdict-names-the-configured-model",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 997,
+                "cached_input_tokens": 803810,
+                "input_tokens": 804809,
+                "output_tokens": 954,
+                "reasoning_output_tokens": 294,
+                "total_tokens": 805763,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "43258b7e-3d2c-401c-abad-61285516def9",
+            "session_id": "ship-s15-20260914"
+          },
+          "done_when": "the serving field reckon flight reports for each configured backend reads one of serving, not-serving, mismatch or unknown; mismatch is returned when that backend declares an endpoints document listing at least one endpoint and no listed model id equals the backend's configured model, and stays distinct from not-serving because a lane that is down and a lane that is up with the wrong checkpoint need different operator actions; serving now requires a listed endpoint whose model id equals the configured model rather than merely a non-empty list; not-serving and unknown keep their present meanings with their existing tests passing unchanged; all four verdicts are asserted against synthesised endpoint documents under tmp_path with no network or cluster access, one case reproducing the state measured on this host at 16:16Z where the document listed deepseek-v4-flash while the backend declared deepseek-v4.1-flash and the verdict read serving; and tests/test_backend_availability.py failure count against base HEAD does not rise",
+          "estimated_hours": null,
+          "goal": "the serving verdict distinguishes a lane that is down from one serving a different model than the backend declares",
+          "id": "serving-verdict-names-the-configured-model",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T14:24:19Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T142419402225-serving-verdict-names-the-configured-model/manifest.md",
+          "plan": "concurrency-and-schedule-visibility",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/flight.py",
+            "tests/test_backend_availability.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-attention",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T14:24:27Z",
+        "completed_at": "2026-09-14T14:41:54.874Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 916,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1047,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "499c3097f0dcaddd7e10eb543a66a2ac130f8b7e",
+        "commits": [
+          "d5b282bc3ce052f408db4a572a045742560f02d1"
+        ],
+        "changed_lines": {
+          "added": 84,
+          "removed": 10,
+          "files": 2
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_backend_availability.py -q, measured at base and head",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T142419402225-serving-verdict-names-the-configured-model/after_committed_test_backend_availability.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T142419402225-serving-verdict-names-the-configured-model/manifest.md",
+        "scope_changed": false,
+        "session_id": "a610799a-5781-46cd-9c72-4110a2528ddb",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": null,
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "run completed after 9 rate-limit retries; retries alone are not a refusal"
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-14T14:41:54.874Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 3411312,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 1044.371,
+          "generated_tokens": 28562,
+          "generation_seconds": 1000.045,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 53.2,
+          "machine_seconds": 44.326,
+          "peak_input_tokens": 106485,
+          "tokens_per_second": 28.56,
+          "wall_tokens_per_second": 27.35
+        },
+        "follow_on_paths": [
+          "/tmp/reckon/",
+          "flight.py",
+          "/tmp",
+          "reckon/_flight_schema.py",
+          "reckon/schema/flight.yaml",
+          "serving/not-serving/unknown"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-20260914/serving-verdict-names-the-configured-model",
+          "session_id": "a610799a-5781-46cd-9c72-4110a2528ddb",
+          "session_source": "pointer",
+          "retained_at": "2026-09-14T14:41:54.874Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 41.0,
+        "orientation_input_tokens": 1110566.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -102800,6 +102982,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1386
+    "_version": 1387
   }
 }
