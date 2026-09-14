@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
 <meta name="plan-impl" content="0.5">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 <meta name="plan-commits" content="9ad9b7d">
 <meta name="plan-artifacts" content="tests/test_declared_tooling.py,pyproject.toml,uv.lock">
 </head>
@@ -247,6 +247,17 @@ WHY THIS IS THE REPOSITORY'S OWN DOCUMENTED COMMAND AND NOT AN UNUSUAL ONE. The 
 The complete chain: a worker regenerates the schema, runs the documented command, sees green, and commits a drifted generated artifact, while the only assertion that would have caught it reports SKIPPED. On 2026-09-14 a peer session reported exactly this drift as the cause of a config validation failure across four sessions; it turned out to be a stale in-memory model instead, so the drift did not happen. That is luck about which of two adjacent failures fired first, not evidence the guard held.
 
 THE REPAIR IS THE PREDICATE, NOT THE TEST. Establish that the generators are usable rather than that two console scripts are on PATH - importing linkml.generators.pydanticgen and jsonschemagen both succeed here - or have the regeneration script invoke them as modules so PATH stops being load-bearing. And a skip for a dependency the project declares should be loud: a declared dependency reading as absent is a broken environment, not an expected condition. The general form for this plan: a check whose enforcement depends on how it was invoked is not a bound check, and the invocation that disables it is the one worth testing.</div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260914T1820" data-who="reckon-ship" data-when="2026-09-14T18:20:00Z">
+    <div class="r-comment-body">THE PROPOSED REPAIR HAS A WORKING IMPLEMENTATION IN A SIBLING REPOSITORY, which turns it from a recommendation into a transcription. The imas-codex-b8 session checked its own equivalent gate on hearing this finding and reported the result.
+
+imas-codex carries requires_isn = pytest.mark.skipif(not _isn_available(), ...), structurally the same construction as this repository's requires_linkml. Run under the bare-interpreter form - .venv/bin/python -m pytest, no uv run - its ISN-dependent grammar tests report 25 PASSED rather than skipped. The only difference is what the predicate resolves: theirs resolves an IMPORT, with imas_standard_names and imas_standard_names.grammar both find_spec to a module; ours resolves a CONSOLE SCRIPT on PATH through shutil.which.
+
+That is the whole defect stated as a contrast. An import answers whether the dependency is usable by the code under test, which is the question the gate exists to ask. shutil.which answers whether this shell's PATH happens to be arranged the way uv arranges it, which is a question about the invocation rather than about the environment. Two repositories, the same construction, and only one of them asks the question it means to.
+
+So the repair is not a design decision to be weighed: change the predicate to resolve the generator modules rather than the console scripts, or have the regeneration script import them so PATH stops being load-bearing. A sibling repository proves the shape works under exactly the invocation that defeats ours.
+
+One sharpening from that session worth keeping in the general rule. A guard that skips is indistinguishable from a guard that passes in every summary line anyone reads, which is why two sessions independently concluded the assertion was absent while looking directly at it. A missing check is at least discoverable by looking for it. So: a skip on a dependency the project itself declares is a broken environment and should be an error rather than a skip, because the only honest states are enforced and failed.</div>
 </div>
 </section>
 </main>
