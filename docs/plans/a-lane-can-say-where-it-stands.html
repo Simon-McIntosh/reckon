@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-section-declarations" content="{&quot;what-is-wrong&quot;:&quot;done&quot;,&quot;the-surface&quot;:&quot;done&quot;,&quot;where-the-probe-lives&quot;:&quot;implementable&quot;,&quot;parse-strictly&quot;:&quot;implementable&quot;,&quot;coordinator-share&quot;:&quot;implementable&quot;,&quot;pin-the-denominator&quot;:&quot;implementable&quot;,&quot;out-of-scope&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="5e3e041c895353a003e15954382a78b49151a2ac">
 <meta name="plan-artifacts" content="reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/budget.py,tests/test_coordinator_reserve.py,tests/test_flight.py,docs/evidence/archive/a-lane-can-say-where-it-stands-landed.html">
@@ -282,6 +282,59 @@
         announces one window while the configured lane declares another: the
         reading must follow the configured figure or return unknown, never split
         the difference and never silently prefer the announced one.
+      </p>
+    </section>
+
+    <section id="read-before-you-dispatch">
+      <h2><span class="sec">&sect;5c</span> &mdash; The worst moment to read a lane is immediately after dispatching to it</h2>
+      <p>
+        Measured on the local lane 2026-09-14 by a peer holding the instrument,
+        and recorded here because it constrains how any reading this plan produces
+        may be used. Three consecutive samples, thirty seconds apart:
+      </p>
+      <table>
+        <caption>Derived fleet budget against a constant request count.</caption>
+        <thead><tr><th>Sample</th><th>Running</th><th>Mean context</th><th>Budget</th><th>Headroom</th></tr></thead>
+        <tbody>
+          <tr><td>16:21:21Z</td><td>19</td><td>15,586</td><td>141</td><td>122</td></tr>
+          <tr><td>16:21:51Z</td><td>19</td><td>~62,865</td><td>35</td><td>16</td></tr>
+          <tr><td>16:22:21Z</td><td>16</td><td>73,121</td><td>30</td><td>14</td></tr>
+        </tbody>
+      </table>
+      <p>
+        <strong>The budget fell from 141 to 35 in thirty seconds with the request
+        count unchanged at nineteen.</strong> Nothing joined and nothing left. The
+        same nineteen requests went from their first tokens to their real working
+        context, and the derived headroom fell by a factor of eight.
+      </p>
+      <p>
+        The mechanism is obvious once seen and invisible before: a freshly
+        dispatched worker's first request carries almost no context, so a reading
+        taken immediately after a dispatch catches the fleet at its very lightest.
+        The figure is not wrong when taken &mdash; it is a true measurement of a
+        transient state that will not exist a minute later.
+      </p>
+      <p>
+        <strong>The consequence runs in the dangerous direction and lands exactly
+        where a coordinator would naturally look.</strong> The moment an
+        orchestrator most wants to know whether it may dispatch more is immediately
+        after dispatching some &mdash; and that is the moment the lane reads most
+        generous. A coordinator dispatching five, reading ample headroom, and
+        dispatching five more on the strength of it is acting on a figure that has
+        already gone by the time the second batch lands.
+      </p>
+      <p>
+        So a reading must carry its observation time, and a consumer should prefer
+        a reading taken <em>before</em> its own dispatch to one taken after. This is
+        the same asymmetry &sect;4 states at the parser and &sect;5b states at the
+        denominator, arriving a third time at the clock: the quiet failure runs
+        toward apparent headroom, and every form of it flatters the lane.
+      </p>
+      <p>
+        An earlier estimate of this decay put it at roughly twenty minutes. That was
+        wrong by an order of magnitude, and the correction matters more than the
+        original figure &mdash; a twenty-minute decay is something a coordinator can
+        reasonably ignore within a wave, while a thirty-second collapse is not.
       </p>
     </section>
 
