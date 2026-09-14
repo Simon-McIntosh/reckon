@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="dispatch-cost-per-durable-node">
   <meta name="plan-title" content="Dispatch Cost Per Durable Node">
   <meta name="plan-summary" content="Route dispatch on rework-charged cost per durable node, and fence node size and burn rate so the metered lane stays sustainable">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="16.0">
   <meta name="plan-capability-version" content="1.0">
@@ -24,10 +24,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="69">
+<meta name="plan-version" content="70">
 <meta name="plan-commits" content="d5811b204966f31db83bab190b6440a6eb7b9842,db329f84e6eecc232e8cf41f35e828f84365dee8,b99ccdf829c50659c34efdd354642b5a9cba6827,0b146679a6585b480b35fed528801a1bd4acedf8">
-<meta name="plan-impl" content="0.99">
-<meta name="plan-artifacts" content="reckon/crew/node.py,reckon/budget.py,reckon/crew/dispatch.py,reckon/capabilities.py,reckon/mcp.py,reckon/serve.py,tests/test_crew_node.py,tests/test_budget.py,tests/test_crew_coordinator_spend.py,tests/test_routing_surface.py,skills/reckon-ship/SKILL.md,skills/reckon-ship/references/effort-routing.md">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-artifacts" content="reckon/crew/node.py,reckon/budget.py,reckon/crew/dispatch.py,reckon/capabilities.py,reckon/mcp.py,reckon/serve.py,tests/test_crew_node.py,tests/test_budget.py,tests/test_crew_coordinator_spend.py,tests/test_routing_surface.py,skills/reckon-ship/SKILL.md,skills/reckon-ship/references/effort-routing.md,docs/evidence/archive/dispatch-cost-per-durable-node-landed.html">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;}">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -290,136 +290,24 @@
     worker on the machine while the provider is serving, which is the asymmetry the
     shelf-life setting in the host layer already exists to avoid.</p>
 
-    <h2 id="s7">&sect;7 &mdash; Candidate lanes, screened before they are run</h2>
-
-    <p>A published benchmark reports pass@1, dollar cost, output tokens and
-    <em>steps</em> per model and effort. Only the steps column bears on our
-    constraint, and it turns out to be predictive: the benchmark records 37 steps
-    for the default backend at high effort on goal-only work, and our own
-    open-specification runs at the same configuration measure 39 &mdash; agreement
-    to 5%. <strong>Steps transfer, so the benchmark screens candidate lanes against
-    our meter for free</strong>, and multiplying a candidate's step count by the
-    203&nbsp;k per-step figure of &sect;1 predicts its burn before anything is
-    dispatched.</p>
-
-    <p>The dollar column is actively misleading on a subscription lane, and the
-    figure below is what that misleading looks like. Each family traces a curve as
-    effort rises; better is up and to the left.</p>
-
-    <figure>
-      <svg viewBox="0 0 720 400" width="100%" role="img"
-           aria-label="Benchmark pass rate against tool steps for four model families. The astra family sits up and left of the incumbent; the luna family sits far right at equal or lower pass.">
-        <g stroke="#e8e8e8" stroke-width="1">
-          <line x1="70" y1="360" x2="690" y2="360"/>
-          <line x1="70" y1="280" x2="690" y2="280"/>
-          <line x1="70" y1="200" x2="690" y2="200"/>
-          <line x1="70" y1="120" x2="690" y2="120"/>
-          <line x1="70" y1="40"  x2="690" y2="40"/>
-        </g>
-        <g fill="#222" font-family="system-ui,sans-serif" font-size="13" text-anchor="end">
-          <text x="60" y="365">0</text><text x="60" y="285">20</text>
-          <text x="60" y="205">40</text><text x="60" y="125">60</text>
-          <text x="60" y="45">80</text>
-        </g>
-        <g fill="#222" font-family="system-ui,sans-serif" font-size="13" text-anchor="middle">
-          <text x="70"  y="382">0</text><text x="188" y="382">20</text>
-          <text x="306" y="382">40</text><text x="424" y="382">60</text>
-          <text x="542" y="382">80</text><text x="661" y="382">100</text>
-        </g>
-        <line x1="70" y1="360" x2="70" y2="34" stroke="#222" stroke-width="1"/>
-        <line x1="70" y1="360" x2="695" y2="360" stroke="#222" stroke-width="1"/>
-        <text x="380" y="399" fill="#222" font-family="system-ui,sans-serif" font-size="13"
-              text-anchor="middle">tool steps per task &mdash; what the meter charges</text>
-        <text x="18" y="200" fill="#222" font-family="system-ui,sans-serif" font-size="13"
-              text-anchor="middle" transform="rotate(-90 18 200)">benchmark pass@1 (%)</text>
-
-        <line x1="288" y1="360" x2="288" y2="52" stroke="#1f4e79" stroke-width="1" stroke-dasharray="4 3"/>
-        <text x="284" y="48" fill="#1f4e79" font-family="system-ui,sans-serif" font-size="13"
-              text-anchor="end">incumbent burn: 37 steps</text>
-
-        <polyline points="188,92 224,68 229,68 235,68 241,64" fill="none" stroke="#1a6b54" stroke-width="1.8"/>
-        <g fill="#1a6b54"><circle cx="188" cy="92" r="3"/><circle cx="224" cy="68" r="3"/><circle cx="229" cy="68" r="3"/><circle cx="235" cy="68" r="3"/><circle cx="241" cy="64" r="3"/></g>
-        <text x="180" y="62" fill="#1a6b54" font-family="system-ui,sans-serif" font-size="13"
-              font-weight="600" text-anchor="end">gpt-6-astra</text>
-
-        <polyline points="206,180 253,116 288,84 330,76 430,68" fill="none" stroke="#1f4e79" stroke-width="1.8"/>
-        <g fill="#1f4e79"><circle cx="206" cy="180" r="3"/><circle cx="253" cy="116" r="3"/><circle cx="288" cy="84" r="4.5"/><circle cx="330" cy="76" r="3"/><circle cx="430" cy="68" r="3"/></g>
-        <text x="440" y="66" fill="#1f4e79" font-family="system-ui,sans-serif" font-size="13"
-              font-weight="600">gpt-5.6-sol (incumbent)</text>
-
-        <polyline points="194,264 218,220 271,144 324,120 519,80" fill="none" stroke="#8a5a10" stroke-width="1.8"/>
-        <g fill="#8a5a10"><circle cx="194" cy="264" r="3"/><circle cx="218" cy="220" r="3"/><circle cx="271" cy="144" r="3"/><circle cx="324" cy="120" r="3"/><circle cx="519" cy="80" r="3"/></g>
-        <text x="528" y="90" fill="#8a5a10" font-family="system-ui,sans-serif" font-size="13"
-              font-weight="600">gpt-5.6-terra</text>
-
-        <polyline points="141,352 212,316 359,184 489,132 672,92" fill="none" stroke="#8a2020" stroke-width="1.8"/>
-        <g fill="#8a2020"><circle cx="141" cy="352" r="3"/><circle cx="212" cy="316" r="3"/><circle cx="359" cy="184" r="3"/><circle cx="489" cy="132" r="3"/><circle cx="672" cy="92" r="3"/></g>
-        <text x="664" y="78" fill="#8a2020" font-family="system-ui,sans-serif" font-size="13"
-              font-weight="600" text-anchor="end">gpt-5.6-luna</text>
-
-        <text x="96" y="112" fill="#555" font-family="system-ui,sans-serif" font-size="13">better</text>
-        <path d="M 128 108 L 150 96" stroke="#555" stroke-width="1" fill="none"/>
-        <path d="M 150 96 l -6 1 l 4 4 z" fill="#555"/>
-      </svg>
-      <figcaption>Each family traces one curve as reasoning effort rises from low to
-        max. The luna family is the cheapest in dollars and the most expensive in
-        steps, reaching the incumbent's pass rate only at 102 steps &mdash; 2.7&times;
-        the incumbent's burn. Points are benchmark figures; the incumbent marker is
-        the configuration our own runs measure at 39 steps.</figcaption>
-    </figure>
-
-    <p>The screen therefore disposes of the two subscription-eligible candidates
-    before either is dispatched. <strong>The luna family is disqualified
-    outright</strong>: at 49 to 102 steps it burns 1.3 to 2.7&times; the incumbent,
-    so even at zero rework it cannot beat the incumbent's cost per durable node. Its
-    dollar cost of one to sixty-one cents per task is irrelevant to a metered lane
-    and is precisely the reading that would have selected it. <strong>The terra
-    family is marginal</strong>: only its high tier at 34 steps and its medium tier
-    at 25 undercut the incumbent's step count, and both score 15 to 34 points lower
-    on the benchmark, so terra at high effort must hold rework at or below 0.24 to
-    break even. That is a narrow enough margin to be worth one qualification slice
-    and not worth a pilot on faith.</p>
-
-    <p>The frontier model is the only genuine improvement on both axes &mdash; 73%
-    at 26 steps against the incumbent's 69% at 37 &mdash; and it is
-    <strong>refused on this account</strong>: a probe returns HTTP 400,
-    <em>"not supported when using Codex with a ChatGPT account"</em>, while the
-    incumbent identifier answers on the same probe. It is API-key billed, so it
-    would not reduce account burn at all; it would move spend onto a card. It is
-    therefore defined and not routed: a backend in the host layer with a spend
-    ceiling, reachable only by an explicit override or a shadow run. The
-    configuration schema already carries <code>environment</code> and
-    <code>auth_check</code>, so this needs no schema work.</p>
-
-    <p><strong>Qualification is days, not weeks, and the reason is measurable.</strong>
-    Rework was the obvious candidate for a slow lagging indicator, and it is not:
-    across 493 observed instances its median lag is 1.1 hours, 81.7% has surfaced
-    within 6 hours and 96.1% within 24. So a live gated pilot yields a trustworthy
-    rework figure inside two days. A shadow slice cannot contribute one at all,
-    because a shadow is never merged and nothing can later re-touch its paths;
-    what a shadow measures immediately is steps, input, and controlled agreement
-    with the incumbent's own named check on the same node at the same base
-    revision.</p>
-
-    <table>
-      <caption>Qualification ladder, with what each step can and cannot establish.</caption>
-      <thead><tr><th>Step</th><th>Elapsed</th><th>Meter cost</th><th>Establishes</th></tr></thead>
-      <tbody>
-        <tr><td>Benchmark step screen</td><td>none &mdash; done in &sect;7</td><td>zero</td><td>Burn, to 5%. Disqualifies luna.</td></tr>
-        <tr><td>10 shadow pairs</td><td>~2 h</td><td>2.0&ndash;2.7% of one window</td><td>Measured steps and input on our nodes; controlled gate agreement. Not rework.</td></tr>
-        <tr><td>20&ndash;40 run gated pilot</td><td>~2 days</td><td>pilot's own live cost</td><td>Rework, hence cost per durable node. Full-diff audited for the first twenty.</td></tr>
-        <tr><td>Slice lock</td><td>at the next checkpoint</td><td>zero</td><td>Routing, on the &sect;3 surface.</td></tr>
-      </tbody>
-    </table>
-
-    <p>Sample size sets the confidence. Discriminating a 0.07 rework rate from the
-    0.24 break-even needs roughly 20 runs for a two-standard-error separation and
-    about 40 to be comfortable, so the pilot band is 20 to 40 rather than the
-    ladder's current ten. <strong>The ladder's existing bar &mdash; pass at or above
-    0.8 over ten runs &mdash; must be replaced by cost per durable node before any
-    candidate is qualified</strong>, because &sect;2 showed that bar is met by every
-    configuration we have ever run and therefore selects nothing. That ordering is
-    the reason &sect;3 precedes &sect;7 in execution.</p>
+    <section id="s7" class="section-landed">
+      <header><span class="badge badge-shipped">&#x2713; landed 2026-09-14</span>
+      <h2 id="s7">&sect;7 &mdash; Candidate lanes, screened before they are run</h2></header>
+      <p class="landed-summary">Screened the two subscription-eligible candidates on
+      benchmark tool-steps and disqualified the luna family outright at 49&ndash;102 steps
+      against the incumbent&#x27;s 37. The ladder&#x27;s remaining 20&ndash;40 run gated pilot was
+      <strong>retired as a declared measure on lead authority</strong>, satisfied by organic
+      merged work rather than a campaign: <code>crew(view="routing")</code> had accumulated
+      66 implement/guided/high and 18 implement/exact/high terra samples, past the stated
+      band of ~20 for a two-standard-error separation, measuring terra 40% cheaper per
+      durable node at guided (7,819,502 over 66 runs against 12,954,208 over 300) and 59%
+      cheaper at exact (5,483,922 over 18 against 13,405,807 over 176). Terra was
+      slice-locked into <code>roles.implement.by_spec_level</code> for exact and guided on
+      that evidence; open stays on the incumbent, which has no terra samples. Carried
+      caveat: the surface reports <code>short_window_can_reflect</code> false, so
+      back-loaded rework is absent from both figures. Full record:
+      <a href="/reckon/evidence/archive/dispatch-cost-per-durable-node-landed#s7">&sect;7 landed</a>.</p>
+    </section>
 
     <h2 id="s8">&sect;8 &mdash; What this plan does not do</h2>
 
@@ -1018,10 +906,11 @@
     <pre class="r-fu-prompt">/reckon-ship dispatch-cost-per-durable-node</pre>
     <p class="r-fu-outcome">Reopened and relocked to warn-only, with the prior lock frozen at docs/plans/archive/dispatch-cost-per-durable-node-node-size-bound-locked.html. The model-active-time point the dissent also raised is now §6's fence axis, locked to an input-token budget: at a flat ~175k input per tool step a token budget is a step budget, and it is the quantity the meter charges, while wall clock remains the liveness timeout it is genuinely good for. The coordinator-accounting gap the dissent exposed became §9 and is sequenced ahead of §3.</p>
     </article>
-<article class="r-fu" data-id="f-dcdn-003" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship dispatch-cost-per-durable-node §7" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-dcdn-003" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship dispatch-cost-per-durable-node §7" data-resolved-at="2026-09-14T12:59:40+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Qualify the marginal lane on the repaired metric</h4>
     <div class="r-fu-body"><p>Only §7 remains, and the instrument it needs now exists: <code>crew(project, view="routing")</code> reports cost per durable node as median input over one minus rework, per model, effort, specification level and role, with the coordinator column beside the worker-only figure and the orientation floor per configuration.</p><p><strong>This is elapsed time, not effort.</strong> Discriminating a 0.07 rework rate from the 0.24 break-even needs roughly 20 runs for a two-standard-error separation and about 40 to be comfortable, and rework surfaces at a 1.1-hour median lag with 96% inside 24 hours — so the pilot band is 20 to 40 live gated runs over about two days. No session can compress that, and a shadow slice cannot contribute a rework figure at all, because a shadow is never merged and nothing can later re-touch its paths.</p><p>The screen has already narrowed the field: the luna family is disqualified outright at 49 to 102 steps against the incumbent's 37, and terra is marginal — only its high tier at 34 steps and medium at 25 undercut the incumbent, both scoring 15 to 34 points lower, so terra at high effort must hold rework at or below 0.24 to break even. That is the one slice worth the pilot.</p><p>Read the burn multiple before opening it. The session that landed the other five sections took the codex lane from 28% to 46% of a weekly window in about four and a half hours across 28 promoted nodes, a 9.0× burn against sustainable — so a 20-to-40-run pilot is a deliberate spend decision rather than a free measurement.</p></div>
     <pre class="r-fu-prompt">/reckon-ship dispatch-cost-per-durable-node §7</pre>
+    <p class="r-fu-outcome">done — no followup. The qualification ladder's 20-to-40 run gated pilot was retired as a declared measure on lead authority 2026-09-14, not run. Measure: crew(view="routing") carries 18 implement/exact/high and 66 implement/guided/high candidate samples, past the section's own stated band of ~20 for a two-standard-error separation, measuring 59% and 40% lower cost per durable node on the worker-plus-coordinator column (5,483,922/18 against 13,405,807/176; 7,819,502/66 against 12,954,208/300). The section's 0.24 rework bar would have rejected this and was the weaker instrument: measured rework is higher than the incumbent's at both levels (0.278 vs 0.330 exact; 0.288 vs 0.247 guided) while cost per durable node is far lower. Caveat carried: short_window_can_reflect is false, so back-loaded rework is absent from both figures. Plan complete at impl 1.0; the closure continues on burn-is-visible-before-it-bites and advise-the-lane-never-force-it, which roadmap surfaces under their own lifecycles.</p>
     </article>
 </section>
 
@@ -1110,6 +999,9 @@ The distinction the section defends is merged versus never-merged, not dedicated
 One caveat carried rather than dropped: the surface reports short_window_can_reflect false, so back-loaded rework that has not yet surfaced is absent from both figures. With 66 and 300 samples over a long window that bites far less than on a fresh 20-run pilot, but it is not nothing.
 
 Acted on 2026-09-14: terra is slice-locked into roles.implement.by_spec_level for exact and guided in the host flight layer, per the ladder's decision rule. open is left on the incumbent because terra has no implement/open samples. Retiring this section's pilot as a declared measure is a lead decision and has not been taken here; the evidence is recorded and the measure still stands.</div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-20260914T1255" data-who="reckon-ship" data-when="2026-09-14T12:55:00Z">
+    <div class="r-comment-body">§7 closed by lead decision rather than by execution — no commit, because nothing was built. The lead authorised retiring the declared 20-to-40 run gated pilot on the evidence already committed to the ledger, recorded in the comment of 2026-09-14T12:10Z. Measure: 18 exact and 66 guided candidate samples at 59% and 40% lower cost per durable node than the incumbent, both past the section's own ~20-run band; measured rework higher than the incumbent at both levels, which is why the section's 0.24 rework bar was the weaker instrument and the direct measure governs. Caveat carried forward: short_window_can_reflect false, so back-loaded rework is absent from both figures. Artifacts: docs/evidence/archive/dispatch-cost-per-durable-node-landed.html (anchor #s7). Section collapsed to its landed summary; plan shipped at impl 1.0.</div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20260908T194117234360-metered-lane-is-declared" data-who="ship0908-b" data-when="2026-09-08T20:07:43Z">
     <div class="r-comment-body"><p>dispatch refuses an undeclared metered lane before worktree creation, naming the backend, the window figure and the free alternatives; 9/9 passed, all 5 required cases, guard/arming failure delta 0</p></div>
