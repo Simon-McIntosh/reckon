@@ -864,7 +864,9 @@ def test_the_width_is_read_from_the_ancestor_terminal(monkeypatch):
     finally:
         os.close(master)
         os.close(slave)
-    assert resolved == 208 - ticker_module.INSET
+    # The pane's own cut IS the width: the column count passes straight through
+    # as the grid width, with nothing guessed and subtracted on top of the read.
+    assert resolved == 208
 
 
 def test_a_detached_follower_falls_back_to_the_stated_width(monkeypatch):
@@ -930,17 +932,19 @@ def test_every_line_ends_at_the_resolved_width_when_crowded(monkeypatch):
     assert counters(line).end() < len(line)
 
 
-# ── The five spend cells: fixed widths, stable columns, absence vs zero ───
+# ── The measure cells: fixed widths, stable columns, absence vs zero ──────
 #
-# Between the effort cell and the fleet counters sit wall time, model time,
-# charged tokens, generation rate and a notional dollar figure. Every cell is
-# right-aligned to a fixed width with a single space between cells, and an
-# unmeasured fact renders the dim absence marker rather than a zero — a zero
-# asserts a measurement that was never taken.
+# After the fleet counters sit wall time and generation rate, the only two
+# spend figures the row carries — model seconds, charged tokens and the dollar
+# figure stay in the record, unrendered. Every cell is right-aligned to a
+# fixed width with a single space between cells, and an unmeasured fact renders
+# the dim absence marker rather than a zero — a zero asserts a measurement
+# that was never taken. Where a row state makes a figure noise (wall time
+# entering dispatched), the cell blanks instead of marking absence.
 
 
 def _spend_columns() -> list[tuple[int, int]]:
-    """The (start, width) of the five spend cells on a plain rendered line."""
+    """The (start, width) of the two measure cells on a plain rendered line."""
     prefix = (
         ticker_module.CLOCK
         + ticker_module.GAP
@@ -953,16 +957,11 @@ def _spend_columns() -> list[tuple[int, int]]:
         + ticker_module.MODEL
         + ticker_module.PAIR_GAP
         + ticker_module.EFFORT
-        + ticker_module.SPEND_GAP
     )
+    prefix += sum(3 for _ in ticker_module._CELLS) + (len(ticker_module._CELLS) - 1)
+    prefix += ticker_module.SPEND_GAP
     columns: list[tuple[int, int]] = []
-    for width in (
-        ticker_module.WALL,
-        ticker_module.MODEL_SECS,
-        ticker_module.TOKENS,
-        ticker_module.RATE,
-        ticker_module.DOLLARS,
-    ):
+    for width in (ticker_module.WALL, ticker_module.RATE):
         columns.append((prefix, width))
         prefix += width + ticker_module.SPEND_GAP
     return columns
@@ -983,12 +982,16 @@ def test_a_line_with_spend_facts_is_exactly_the_requested_width_at_three_sizes()
     )
     for width in (ticker_module.MIN_WIDTH, 180, 208):
         for with_session in (False, True):
-            line = plain(ticker_module.Ticker(width=width).render(event, with_session=with_session))
+            line = plain(
+                ticker_module.Ticker(width=width).render(
+                    event, with_session=with_session
+                )
+            )
             assert len(line) == width, (width, len(line))
 
 
-def test_the_five_spend_cells_render_measured_figures_in_their_own_cells():
-    """wall 7, model 6, tokens 4, rate 4, dollars 5, right-aligned."""
+def test_the_two_measure_cells_render_measured_figures_in_their_own_cells():
+    """wall 7, rate 4, right-aligned; no cells for the figures the row cut."""
     event = _event(
         spend_wall_seconds=6_422.0,
         spend_model_seconds=3_133.5,
@@ -997,57 +1000,49 @@ def test_the_five_spend_cells_render_measured_figures_in_their_own_cells():
         spend_notional_cost_usd=0.12,
     )
     line = plain(ticker_module.Ticker(width=180).render(event))
-    wall, model, tokens, rate, dollars = _spend_columns()
+    wall, rate = _spend_columns()
     assert line[wall[0] : wall[0] + wall[1]] == "1:47:02"
-    assert line[model[0] : model[0] + model[1]] == " 52:14"
-    assert line[tokens[0] : tokens[0] + tokens[1]] == "1.5M"
     assert line[rate[0] : rate[0] + rate[1]] == "  44"
-    assert line[dollars[0] : dollars[0] + dollars[1]] == " 0.12"
+    # The cut figures stay in the record, not on the row.
+    assert "52:14" not in line
+    assert "1.5M" not in line
+    assert "0.12" not in line
 
 
-def test_the_five_spend_cells_occupy_the_same_columns_on_every_row():
+def test_the_two_measure_cells_occupy_the_same_columns_on_every_row():
     """A resumed run, a redispatched run and a shadow line up by column.
 
-    A reader scans each cost figure down the pane; if a row's cells sat one
-    column to the side, the scan would re-find a moving column and the width
-    read would shift. The resume's figures and the shadow's markers must land
-    in the same five columns.
+    A reader scans each figure down the pane; if a row's cells sat one column
+    to the side, the scan would re-find a moving column and the width read
+    would shift. The resume's measured figures and the shadow's absence markers
+    must land in the same two columns.
     """
     rows = [
         _event(
             node="n-resumed",
             lineage={"kind": "resumed"},
             spend_wall_seconds=100.0,
-            spend_model_seconds=40.0,
-            spend_charged_tokens=890_000,
             spend_generation_rate=12.0,
-            spend_notional_cost_usd=0.0,
         ),
         _event(
             node="n-redispatch",
             lineage={"kind": "redispatch", "root_run_id": "r-shadow"},
             spend_wall_seconds=3_600.0,
-            spend_model_seconds=1_800.0,
-            spend_charged_tokens=8_900_000,
             spend_generation_rate=44.0,
-            spend_notional_cost_usd=3.41,
         ),
         _event(
             node="n-shadow",
             lineage={"kind": "shadow"},
             spend_wall_seconds=None,
-            spend_model_seconds=None,
-            spend_charged_tokens=None,
             spend_generation_rate=None,
-            spend_notional_cost_usd=1.2,
         ),
     ]
     expected = [
-        ["   1:40", "  0:40", "890k", "  12", " 0.00"],
-        ["1:00:00", " 30:00", "8.9M", "  44", " 3.41"],
-        ["      \N{EN DASH}", "     \N{EN DASH}", "   \N{EN DASH}", "   \N{EN DASH}", " 1.20"],
+        ["   1:40", "  12"],
+        ["1:00:00", "  44"],
+        ["      \N{EN DASH}", "   \N{EN DASH}"],
     ]
-    columns = list(zip(("wall", "model", "tokens", "rate", "dollars"), _spend_columns()))
+    columns = list(zip(("wall", "rate"), _spend_columns(), strict=True))
     for event, cells in zip(rows, expected, strict=True):
         line = plain(ticker_module.Ticker(width=180).render(event))
         for (name, (start, width)), expected_cell in zip(columns, cells, strict=True):
@@ -1058,23 +1053,16 @@ def test_an_unmeasured_cell_and_a_measured_zero_are_distinct_strings():
     """The absence marker must never read as a zero.
 
     The same row rendered once with measured facts and once without must
-    differ in every one of the five cells, and the unmeasured spelling is the
-    marker — never ``0``, ``0.00`` or ``0:00``, which assert a measurement
-    that was never taken.
+    differ in both measure cells, and the unmeasured spelling is the marker —
+    never ``0`` or ``0:00``, which assert a measurement that was never taken.
     """
     zero = _event(
         spend_wall_seconds=0.0,
-        spend_model_seconds=0.0,
-        spend_charged_tokens=0,
         spend_generation_rate=0.0,
-        spend_notional_cost_usd=0.0,
     )
     unmeasured = _event(
         spend_wall_seconds=None,
-        spend_model_seconds=None,
-        spend_charged_tokens=None,
         spend_generation_rate=None,
-        spend_notional_cost_usd=None,
     )
     zero_line = plain(ticker_module.Ticker(width=180).render(zero))
     marker_line = plain(ticker_module.Ticker(width=180).render(unmeasured))
@@ -1085,3 +1073,120 @@ def test_an_unmeasured_cell_and_a_measured_zero_are_distinct_strings():
         assert marker_cell.strip() == "\N{EN DASH}"
         assert zero_cell.strip() != "\N{EN DASH}"
         assert any(character.isdigit() for character in zero_cell)
+
+
+def test_a_measure_noise_for_the_row_state_renders_blank_not_the_marker():
+    """A figure the row state makes meaningless renders blank, not as absence.
+
+    A transition into dispatched is at time zero by definition, so its wall
+    cell is blank — and blank rather than the dim dash, because the dash
+    already means unmeasured and two different facts must not share one glyph.
+    The dash survives where a figure was genuinely unmeasured, on a state where
+    it would have been meaningful, and a measured figure keeps its cell against
+    both.
+    """
+    wall, rate = _spend_columns()
+    wall_span = slice(wall[0], wall[0] + wall[1])
+    rate_span = slice(rate[0], rate[0] + rate[1])
+
+    dispatched = plain(
+        ticker_module.Ticker(width=180).render(
+            _event(
+                from_state=None,
+                to_state="dispatched",
+                spend_wall_seconds=1_234.0,
+                spend_generation_rate=44.0,
+            )
+        )
+    )
+    assert dispatched[wall_span] == " " * wall[1]
+    assert dispatched[rate_span] == "  44"
+
+    working = plain(
+        ticker_module.Ticker(width=180).render(
+            _event(
+                from_state="dispatched",
+                to_state="working",
+                spend_wall_seconds=None,
+                spend_generation_rate=44.0,
+            )
+        )
+    )
+    assert working[wall_span].strip() == "\N{EN DASH}"
+    # Blank and marker are distinct on the same cell: one keeps no glyph, the
+    # other is a glyph a reader can find.
+    assert working[wall_span] != dispatched[wall_span]
+
+    measured = plain(
+        ticker_module.Ticker(width=180).render(
+            _event(
+                from_state="dispatched",
+                to_state="working",
+                spend_wall_seconds=1_234.0,
+                spend_generation_rate=44.0,
+            )
+        )
+    )
+    assert measured[wall_span] == "  20:34"
+
+
+def test_calibration_consumes_an_observed_cut_position():
+    """The width is the pane's cut of a ruler line — a reading, not a guess.
+
+    The calibration path takes where the pane broke the line and adopts it as
+    the grid width, with nothing in between to adjust; only a cut too narrow
+    for the fixed columns is raised, so a line never wraps.
+    """
+    assert ticker_module.calibrated_width(208) == 208
+    assert ticker_module.calibrated_width(45) == ticker_module.MIN_WIDTH
+    assert not hasattr(ticker_module, "INSET"), (
+        "the width must come from the observed cut, not a guessed literal"
+    )
+
+
+def test_the_measured_pane_width_leaves_the_reason_at_least_seventy_five_columns(
+    monkeypatch,
+):
+    """The same pane that left 57 columns for the reason now spares at least 75.
+
+    The grid no longer spends eighteen columns on model seconds, tokens and the
+    dollar figure, so those columns move to the free text. Measured the way the
+    renderer measures it: the pty's column count is the observed cut, the
+    calibration path adopts it, and the reason then gets the whole trailing
+    margin with nothing left unspent.
+    """
+    path, master, slave = _open_terminal(208)
+    try:
+        monkeypatch.setattr(ticker_module, "_ancestor_terminal_paths", lambda: [path])
+        width = ticker_module.resolve_terminal_width()
+    finally:
+        os.close(master)
+        os.close(slave)
+
+    line = plain(
+        ticker_module.Ticker(width=width, color=False).render(
+            _event(to_state="blocked", reason="x" * 400)
+        )
+    )
+    assert len(line) == width
+    # The reason cell begins where the fixed columns end; everything after it
+    # is free text, and the resolved pane must spare it at least 75 columns.
+    assert width - line.index("x") >= 75
+
+
+def test_the_fleet_counters_precede_the_measures():
+    """The always-populated columns lead; the optional measures follow.
+
+    The grid reads clock, role, node, state pair, model, effort, then the fleet
+    counters, then wall and rate, then the reason last — the measures sit
+    behind the counters, both ahead of the free text a clipping pane is
+    allowed to cut.
+    """
+    line = plain(
+        ticker_module.Ticker(width=180).render(
+            _event(spend_wall_seconds=6_422.0, spend_generation_rate=38.0)
+        )
+    )
+    wall, _ = _spend_columns()
+    assert counters(line).end() <= wall[0]
+    assert "1:47:02" in line[wall[0] :]

@@ -1993,6 +1993,7 @@ def crew_follow(
     if attention:
         click.echo(_ATTENTION_DEPRECATION, err=True)
     from reckon.crew import runs as runs_module
+    from reckon.crew import ticker as ticker_module
     from reckon.crew.recovery import format_watch_transition
 
     delivery = runs_module.delivery_mode()
@@ -2007,6 +2008,12 @@ def crew_follow(
     _adopt_launched_workers_from_reexec()
 
     def stream_events(registration):
+        if not json_output:
+            # One ruler when the follower opens, so the pane's cut of it is what
+            # the grid below is calibrated against — the width is read from that
+            # observed cut, never a guessed margin. A json caller feeds a parser,
+            # which reads the machine stream and no human-facing line.
+            _echo_follow_line(ticker_module.ruler_line())
         reloader = _FollowerReloader(project, registration)
 
         def poll(checkpoint) -> None:
