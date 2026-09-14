@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-graph-handle" content="lane-aware-dispatch">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -203,40 +203,32 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="advisory-delivery-point" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="advisory-delivery-point" data-choice="dispatch-and-follower" data-by="Simon McIntosh" data-when="2026-09-14T11:37:20+00:00">
     <p class="r-dec-q">Where is the advisory emitted, given that it must arrive unasked?</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="dispatch-payload">on the dispatch payload only</button>
-      <button class="r-opt" data-value="dispatch-and-follower">on the dispatch payload and as a follower line</button>
+      <button class="r-opt chosen" data-value="dispatch-and-follower">on the dispatch payload and as a follower line</button>
       <button class="r-opt" data-value="dispatch-and-preflight">on the dispatch payload and in the pre-flight summary</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">The dispatch payload alone is disproven rather than untested. Every dispatch on 2026-09-14 returned lane_declaration.utilisation_pct, and a coordinator opened three waves on the codex lane without acting on any of them, because position is not rate: the burn multiple of 2.87x existed only on the budget and pre-flight surfaces. The pre-flight cannot satisfy the requirement that the advisory arrive unasked, because it has to be invoked, and that is exactly how it was missed - it was run once before the backend was chosen, where role defaults resolved it to the local lane and it never evaluated codex at all. The follower is the only channel that reaches the coordinator and the lead without being asked for, and reckon already measures its delivery from the descriptor its lines are written to. So the payload carries the figure for the record and the follower carries it to a reader.</p>
     </div>
-<div class="r-dec" data-key="local-lane-scarcity-signal" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="local-lane-scarcity-signal" data-choice="in-flight-requests" data-by="Simon McIntosh" data-when="2026-09-14T11:37:20+00:00">
     <p class="r-dec-q">What does the local lane publish as its scarcity signal, once measured?</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="concurrency-ceiling">a measured concurrency ceiling</button>
-      <button class="r-opt" data-value="in-flight-requests">instantaneous in-flight requests against an admission figure</button>
+      <button class="r-opt chosen" data-value="in-flight-requests">instantaneous in-flight requests against an admission figure</button>
       <button class="r-opt" data-value="latency-curve">a measured latency-degradation curve</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Router admission is instantaneous in-flight requests, not workers. Measured across waves of 5, 6 and 8 live workers, every count was correct and none was a ceiling, because worker count varies with phase mix - a worker reading files is not making a request. A concurrency ceiling therefore names a figure that will not reproduce between waves of different shape, which is the defect this plan exists to avoid rather than a conservative choice. A latency curve measures the consequence and needs a long observation before it can advise anything. The choice of signal is settled here on existing evidence; the admission figure it is compared against remains to be measured, and that measurement should count concurrent in-flight requests rather than dispatched workers.</p>
     </div>
-<div class="r-dec" data-key="shared-window-source" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="shared-window-source" data-choice="both" data-by="Simon McIntosh" data-when="2026-09-14T11:37:20+00:00">
     <p class="r-dec-q">How does a coordinator learn that peers are drawing on its window?</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="directory-derived">derived from the live coordinator directory</button>
       <button class="r-opt" data-value="ledger-derived">derived from recent promoted runs across mounted ledgers</button>
-      <button class="r-opt" data-value="both">the directory for who, the ledgers for how much</button>
+      <button class="r-opt chosen" data-value="both">the directory for who, the ledgers for how much</button>
       </p>
-    <p class="r-dec-rat"></p>
-    </div>
-<div class="r-dec" data-key="advisory-trigger-point" data-choice="" data-by="" data-when="">
-    <p class="r-dec-q">advisory-trigger-point</p>
-    <p class="r-dec-rat"></p>
-    </div>
-<div class="r-dec" data-key="speed-enters-routing" data-choice="" data-by="" data-when="">
-    <p class="r-dec-q">speed-enters-routing</p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">The directory for who, the ledgers for how much, because each already answers exactly half and neither answers the other. crew(view=directory) named five live coordinators across five repositories on 2026-09-14, live and costing nothing, which is the who. The ledgers carry promoted runs with their recorded token figures, which is the how much, and they lag by exactly the promotion beat. The gap this closes was measured the same day: a session moved the codex weekly window from 4 to 7 percent while two peer coordinators were live, and could not attribute any of that movement to itself, so it had to report the account-level rate and explicitly decline to claim the session&#x27;s share. A single source would have left that gap open in one direction or the other.</p>
     </div>
 </section>
 

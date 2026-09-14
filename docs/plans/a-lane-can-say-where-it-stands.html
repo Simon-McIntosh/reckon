@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -242,7 +242,7 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="fence-input" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="fence-input" data-choice="ceiling-with-severity-floor" data-by="Simon McIntosh" data-when="2026-09-14T11:37:35+00:00">
     <p class="r-dec-q">Does the fence read the account&#x27;s own severity, or reckon&#x27;s configured ceiling?</p>
     <p class="r-dec-ctx">The endpoint computes a severity per window and flags which window is
           binding. Reckon computes its own verdict from a utilisation ceiling
@@ -254,11 +254,11 @@
     <p class="r-dec-opts">
       <button class="r-opt" data-value="account-severity">Account severity and binding flag</button>
       <button class="r-opt" data-value="configured-ceiling">Reckon&#x27;s configured ceiling</button>
-      <button class="r-opt" data-value="ceiling-with-severity-floor">Ceiling, held no looser than the account&#x27;s severity</button>
+      <button class="r-opt chosen" data-value="ceiling-with-severity-floor">Ceiling, held no looser than the account&#x27;s severity</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Each input alone has a measured failure mode, and the composition is the only form that survives either one being wrong. The account reports on whichever horizon it chooses: on 2026-09-14 claude-opus read utilisation 1.21 percent, which is the calendar-month overage resetting on 2026-10-01 and not the window that gates a request, while a sibling record on the same family carried a five-hour figure that had already expired. Fencing on the account figure alone therefore admits work against a number describing a different period. Reckon&#x27;s configured ceiling is knowable and stable but blind to a severity the account raises before its own number looks bad. Holding at the ceiling, never looser than the account&#x27;s severity, takes the protection from whichever input is currently telling the truth.</p>
     </div>
-<div class="r-dec" data-key="lane-window-mapping" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="lane-window-mapping" data-choice="account-wide-first" data-by="Simon McIntosh" data-when="2026-09-14T11:37:35+00:00">
     <p class="r-dec-q">Do the three claude lanes map onto scoped per-model windows now, or share the account-wide figure first?</p>
     <p class="r-dec-ctx">A scoped window is the only way a lane can be fenced separately from
           its siblings, and the account-wide figure will hold a lane that has
@@ -268,10 +268,10 @@
           Sharing the account-wide figure first is always correct and never
           precise.</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="account-wide-first">Account-wide figure first</button>
+      <button class="r-opt chosen" data-value="account-wide-first">Account-wide figure first</button>
       <button class="r-opt" data-value="scoped-now">Scoped per-model windows now</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Ship the figure that is observed rather than the structure that would be tidy. There is no evidence that per-model claude windows exist: on 2026-09-14 both claude and claude-haiku reported headroom unknown from unattributed ledger records, so a scoped mapping would be inventing a shape nobody has seen. The opposite shape is measured on the same host - codex, codex-luna, codex-spark and codex-terra all reported identical utilisation of 7 percent and an identical reset time, which is one account window serving four declared lanes. Scoping now would also reintroduce the error this plan is named against, reporting a position inferred from configuration rather than read from the account. Scope later if a per-model window is ever actually observed.</p>
     </div>
 </section>
 
