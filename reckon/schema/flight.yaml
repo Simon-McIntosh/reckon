@@ -180,6 +180,18 @@ slots:
       configured model against its output; the declaration remains provider-neutral.
     range: CatalogConfig
 
+  endpoints_document:
+    description: >-
+      Optional path to a document publishing the endpoints this backend's lane
+      is currently serving, as JSON with an `endpoints` list. Availability
+      probing reads it to report whether the lane can serve rather than only
+      that its launcher exists: a document listing at least one endpoint
+      reports serving, one listing none reports not-serving, and an absent
+      declaration or an unreadable or unparsable document reports unknown.
+      User data naming one host's own publication; the schema supplies no path,
+      and the probe never reads it over the network.
+    range: string
+
   list_command:
     description: >-
       Argument vector that prints the models served by this backend. The vector
@@ -502,6 +514,7 @@ classes:
       - command
       - auth_check
       - catalog
+      - endpoints_document
       - environment
       - model
       - input_rate_per_million

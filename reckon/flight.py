@@ -27,6 +27,7 @@ of them.
 from __future__ import annotations
 
 import copy
+import json
 import os
 import re
 import shutil
@@ -691,6 +692,12 @@ def probe_availability(
     so it runs the backend's own ``auth_check`` argument vector — user data —
     and reports its exit status. That spawns a process, so it happens only when
     asked for; otherwise authentication is reported as unprobed.
+
+    ``command_found`` reports only that the launcher exists on PATH. A backend
+    can also declare ``endpoints_document`` — a document publishing the endpoints
+    its lane currently serves — and ``serving`` is read from that document, so a
+    lane whose wrapper exists but lists no live endpoint is distinguishable from
+    one that can actually serve.
     """
     report: dict[str, dict[str, Any]] = {}
     for name, backend in sorted((config.get("backends") or {}).items()):
@@ -705,6 +712,7 @@ def probe_availability(
                 "command_path": None,
                 "authenticated": None,
                 "detail": "in-harness backend needs no external command",
+                **_probe_serving(backend),
             }
             continue
         command = backend.get("command")
@@ -717,6 +725,7 @@ def probe_availability(
             "authenticated": None,
             "detail": "",
         }
+        entry.update(_probe_serving(backend))
         unresolved = unresolved_environment_references(backend)
         if unresolved:
             variable, referenced = unresolved[0]
@@ -733,6 +742,60 @@ def probe_availability(
             entry.update(_probe_catalog(backend))
         report[name] = entry
     return report
+
+
+def _probe_serving(backend: Mapping[str, Any]) -> dict[str, Any]:
+    """Report whether a backend's lane can serve, read from its declared document.
+
+    A backend declaring no ``endpoints_document`` reports ``unknown``: absence of
+    a declaration is not evidence the lane is down. The document is a local JSON
+    file listing the live endpoints; it is read directly and never over the
+    network. A document listing at least one endpoint reports ``serving``, an
+    empty list reports ``not-serving``, and a document that is missing,
+    unreadable or unparsable reports ``unknown`` rather than a guess.
+    """
+    document = backend.get("endpoints_document")
+    if not document:
+        return {
+            "serving": "unknown",
+            "serving_detail": "backend declares no endpoints document",
+        }
+    path = Path(str(document)).expanduser()
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return {
+            "serving": "unknown",
+            "serving_detail": f"endpoints document {str(path)!r} cannot be read — {exc}",
+        }
+    try:
+        payload = json.loads(raw)
+    except ValueError as exc:
+        return {
+            "serving": "unknown",
+            "serving_detail": (
+                f"endpoints document {str(path)!r} is not valid JSON — {exc}"
+            ),
+        }
+    endpoints = payload.get("endpoints") if isinstance(payload, Mapping) else None
+    if not isinstance(endpoints, list):
+        return {
+            "serving": "unknown",
+            "serving_detail": (
+                f"endpoints document {str(path)!r} has no 'endpoints' list"
+            ),
+        }
+    if endpoints:
+        return {
+            "serving": "serving",
+            "serving_detail": (
+                f"endpoints document {str(path)!r} lists {len(endpoints)} endpoint(s)"
+            ),
+        }
+    return {
+        "serving": "not-serving",
+        "serving_detail": f"endpoints document {str(path)!r} lists no endpoints",
+    }
 
 
 def _probe_catalog(backend: Mapping[str, Any]) -> dict[str, Any]:
