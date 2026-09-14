@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-lane-can-say-where-it-stands-landed">
+  <meta name="plan-title" content="A lane can say where it stands — cumulative execution-evidence record">
+  <meta name="plan-summary" content="Execution evidence for a-lane-can-say-where-it-stands. Opens with the prior-art reconnaissance, whose substance is recorded here rather than left in the crew config home where it carries no version control and nothing reads it.">
+  <meta name="plan-evidence-for" content="a-lane-can-say-where-it-stands">
+  <meta name="plan-recorded-at" content="2026-09-14">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; local lane deepseek-v4-flash on 4xH200 via vLLM; nodes dispatched through reckon crew to detached worktrees">
+  <title>A lane can say where it stands — cumulative execution-evidence record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>A lane can say where it stands — cumulative execution-evidence record</h1>
+    <p class="plan-summary">One anchor per material outcome, accumulating as nodes land.</p>
+  </header>
+
+  <section id="reuse-map">
+    <h2>Prior-art reconnaissance — what this plan must extend rather than re-author</h2>
+
+    <p>Recorded here rather than left as a file under the crew config home. A peer
+    coordinator made the argument and it applies to this record too: a reuse map
+    outside version control has no history, no reader, and no test asserting
+    against it, so its findings decay silently the moment the code moves.</p>
+
+    <table>
+      <caption>Six surfaces, each named to file and symbol, with the verdict the
+        implementing nodes cite.</caption>
+      <thead><tr><th>Plan concern</th><th>Owner today</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>Dialect probe abstraction and its transport</td><td><code>reckon/_backends.py</code> — <code>Dialect</code>, <code>BudgetProbe</code>, <code>_CodexDialect</code>, <code>run_probe</code></td><td><strong>New seam</strong> — a transport-owning entry point on <code>Dialect</code>; the description structure stays a private detail of the dialect that needs it</td></tr>
+        <tr><td>Failure funnel returning an explicit unknown</td><td><code>reckon/_backends.py</code> — <code>unknown_budget</code>, <code>probe_budget</code></td><td>Extend in place — the funnel must stay the single caller-facing entry</td></tr>
+        <tr><td>Reading age and shelf life</td><td><code>reckon/budget.py</code> — <code>policy</code>, <code>_lapsed_minutes</code>, <code>_evidence_note</code>, <code>state_for</code></td><td>Extend in place — the new reading must feed this machinery, never bypass it</td></tr>
+        <tr><td>Fence ceiling comparison</td><td><code>reckon/budget.py</code> — <code>decide</code>, <code>effective_ceiling</code></td><td>Extend in place for the reserve; a new input for the severity floor</td></tr>
+        <tr><td>Policy/schema layer for a declared reserve</td><td><code>reckon/schema/flight.yaml</code>, <code>flight-defaults.yaml</code>, generated <code>_flight_schema.py</code></td><td>Extend in place — mirror <code>resume_reserve_pct</code> end to end</td></tr>
+        <tr><td>Credential for the account surface</td><td><strong>nothing</strong> — no reader exists anywhere in the repository</td><td><strong>New seam</strong>, and the only one with no precedent to copy</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>The seam most likely to be missed</strong>, recorded because a node
+    that only adds a method on <code>Dialect</code> will leave it reporting the old
+    answer: <code>reckon/mcp_views.py</code>'s <code>_declared_probe_command</code>
+    calls <code>budget_probe</code> purely to test <em>whether</em> a probe is
+    declared, never executing it, and the lanes view groups readings by command so
+    two backends sharing a command share one read. A reading entry point that owns
+    its transport must still answer "is a probe declared?" without running one.</p>
+
+    <p><strong>The measured absence.</strong> A search for credential handling across
+    the package returns exactly one hit, in an unrelated exception message. Nothing
+    in the repository reads, refreshes or ages a client credential, so the plan's
+    requirement that an expired credential produce an unknown — never a clear and
+    never an exhausted — has no precedent to follow. The funnel catches only three
+    exception types, so anything else raised inside a dialect escapes the contract
+    unless the dialect catches it first.</p>
+
+    <h3>The map verified its own references, and the check fired</h3>
+    <p>Every <code>path:line</code> reference was checked mechanically rather than
+    recalled: 71 anchored triples of file, line and expected substring, of which
+    <strong>three mismatched on the first run</strong> and were corrected; then 128
+    references resolved with zero out of range. The three first-pass mismatches are
+    the positive control — the check returns non-empty when a reference is wrong, so
+    the second pass's zero means the references resolve rather than that the
+    instrument found nothing to look at.</p>
+  </section>
+</main>
+</body>
+</html>

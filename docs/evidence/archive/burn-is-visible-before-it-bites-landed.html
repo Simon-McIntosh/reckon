@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="burn-is-visible-before-it-bites-landed">
+  <meta name="plan-title" content="Where you are, and how fast — cumulative execution-evidence record">
+  <meta name="plan-summary" content="Execution evidence for burn-is-visible-before-it-bites. Opens with the prior-art reconnaissance for the meter surface and the refusal-stamp store, recorded here rather than left in the crew config home.">
+  <meta name="plan-evidence-for" content="burn-is-visible-before-it-bites">
+  <meta name="plan-recorded-at" content="2026-09-14">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; local lane deepseek-v4-flash on 4xH200 via vLLM; nodes dispatched through reckon crew to detached worktrees">
+  <title>Where you are, and how fast — cumulative execution-evidence record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Where you are, and how fast — cumulative execution-evidence record</h1>
+    <p class="plan-summary">One anchor per material outcome, accumulating as nodes land.</p>
+  </header>
+
+  <section id="reuse-map">
+    <h2>Prior-art reconnaissance — the meter surface and the refusal stamp</h2>
+
+    <p>The headline finding is that <strong>nothing in this section requires a newly
+    authored derivation</strong>. Every figure the surface needs is already computed
+    in Python, and both refusal detections already exist; what is missing is
+    persistence and a display.</p>
+
+    <h3>Already computed, and not to be re-derived in the surface</h3>
+    <p><code>reckon/budget.py</code>'s <code>BudgetState</code> already carries
+    utilisation, burn multiple, projected exhaustion, the window period, the reset
+    and the observation time. The window-selection machinery already distinguishes a
+    lane's own window from a shared account figure, returning
+    <code>own</code>, <code>shared</code> or <code>own-unmeasured</code> — the same
+    distinction the borrowed-figure measure needs, one layer down. Building a second
+    computation in JSX would be the defect the repository's render-never-derive
+    invariant exists to prevent.</p>
+
+    <h3>The meter primitive exists and is the right one to extend</h3>
+    <p>The Crew surface already carries a track-plus-fill meter with a percentage
+    label, styled in <code>docs/ui/crew.css</code>. It currently shows time budget
+    rather than quota, so a quota meter is a second use of the same primitive, not a
+    new one. Three other progress bars in the SPA are explicitly <em>not</em> the
+    right primitive — different semantics and thinner. No new CSS token is needed;
+    the accent, warning and background tokens already exist in the shared
+    foundation.</p>
+
+    <h3>Two refusal detections exist; neither persists where it must</h3>
+    <p>One reads the live run's stream for the newest rejected rate-limit event; the
+    other classifies a rejected threshold status into a blocked reason. Both are pure
+    readers. What is written today goes to the committed ledger — which is precisely
+    the store the survivorship trap excludes, because a refusal kills the run, a
+    killed run never promotes, and so no ledger row is ever written for the one event
+    that proves a limit exists.</p>
+
+    <p><strong>The lowest-cost durable slot was already declared and empty.</strong>
+    The run store — an embedded database on the shared config home, outside both the
+    run directory and the committed ledger — carries a <code>holds</code> table in
+    its schema that nothing writes. Both halves of the survivorship requirement hold
+    there by construction.</p>
+
+    <h3>Overlap flags, which decided the wave's partition</h3>
+    <table>
+      <caption>Write-scope overlap across the section's seams.</caption>
+      <thead><tr><th>File</th><th>Overlap</th><th>Consequence</th></tr></thead>
+      <tbody>
+        <tr><td><code>reckon/budget.py</code></td><td><strong>High</strong></td><td>Refusal read side, the meter figures, the shared-versus-own distinction and the ledger hold write all live here; a worker fenced onto the views module alone cannot complete the seam</td></tr>
+        <tr><td><code>reckon/_backends.py</code></td><td>Medium</td><td>Needed only if the stamp consumes the probe payload; otherwise read-only reuse</td></tr>
+        <tr><td><code>reckon/crew/ticker.py</code></td><td>None</td><td>Renders a string; needs no write unless the stamp's age must appear in the watcher pane, which is a display read</td></tr>
+      </tbody>
+    </table>
+    <p>This table is why the wave was partitioned by exclusive file ownership rather
+    than by plan section — the partition that produced four independent nodes across
+    two plans.</p>
+  </section>
+</main>
+</body>
+</html>
