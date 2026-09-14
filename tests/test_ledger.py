@@ -709,6 +709,11 @@ def test_every_completed_record_names_its_completion_time_source() -> None:
     assert set(ledger.RECORD_FIELDS) <= set(stored)
     assert stored["completed_at_source"] == "promotion_time"
     assert stored["worker_seconds_source"] == "unavailable"
+    assert ledger.duration_measurement_state(stored) == "underivable"
+    assert stored["duration_measurement"] == {
+        "status": "underivable",
+        "reason": "wall_clock_unavailable_at_promotion",
+    }
 
 
 def test_a_completed_record_carries_the_declared_specification_level() -> None:
