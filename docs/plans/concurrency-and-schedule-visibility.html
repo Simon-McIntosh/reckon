@@ -25,9 +25,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="86">
+<meta name="plan-version" content="88">
 <meta name="plan-impl" content="0.99">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+<meta name="plan-artifacts" content="docs/evidence/archive/concurrency-and-schedule-visibility-landed.html">
 </head>
 <body>
   <main class="plan-doc">
@@ -914,6 +915,14 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260914T091624271362-s15-remainder-map" data-who="ship0908-scout" data-when="2026-09-14T09:32:54Z">
     <div class="r-comment-body"><p>84 done-when clauses enumerated across the three pending S15 plans; 74 landed, 10 unlanded; per-plan unlanded 1/0/9; all 24 cited landing commits verified ancestors of a39bd85f; every unlanded row names its reuse seam</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20260914T094316532378-csv-landed-record" data-who="crew-rate-evidence" data-when="2026-09-14T09:53:39Z">
+    <div class="r-comment-body"><p>cumulative evidence record for the concurrency plan: 8 stable anchors s1-s8, 18 landing shas all verified ancestors of HEAD, 26 cited comment ids found in the live plan, 0 images, audit-doc zero errors; a provenance gap in s6 is preserved explicitly rather than filled from prose</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-20260914T1032" data-who="reckon-ship" data-when="2026-09-14T10:32:00Z">
+    <div class="r-comment-body">csv-landed-record landed — commit 64c5c77; merged; gate passed exit 0. The plan had no cumulative evidence record at all, which is a standing requirement rather than an optional extra. It now has one at docs/evidence/archive/concurrency-and-schedule-visibility-landed.html carrying reckon-type=evidence and the plan-evidence-for back-link, with 8 stable anchors s1-s8, 18 landing shas each verified an ancestor of HEAD, 26 cited comment ids found in the live plan, 0 images, and audit-doc reporting zero errors. Section 6's execution comment records 2201 passing tests but omits its implementation sha, and the record preserves that gap explicitly instead of copying a plausible sha out of the argument prose.
+
+THIS SECTION IS REOPENED, and the reason belongs on the page. A census of every Done-when clause in the plan's non-collapsed sections found 36 of 36 landed, which reads as a finished plan. It is not: the paragraph in this section beginning "A read-only role cannot write the delivery path it is given" states its repair in prose and carries no Done-when of its own, so a clause census cannot see it. Measured today: dispatching the review node that reckon crew recover itself emits as next_action is refused with the scoped property, because the read-only tier grants crew/reports and the run directory but not the crew/reviews store the review must write. The preventive half of that paragraph did land — the refusal fires before a worktree exists — while the narrow half granted one directory and not the other. This is exactly the failure this section already names, that two deliverables were nearly lost by being written as prose inside a landed summary, and the census inherited the blind spot rather than catching it. The plan stays active with this section implementable.</div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260825T142832299679-n-readyqueuegap" data-who="codex-a" data-when="2026-08-25T14:36:10Z">
     <div class="r-comment-body"><p>Ready-queue gap report: one unshipped deliverable, three of four requested capabilities implemented, zero automatic end-to-end loops</p></div>

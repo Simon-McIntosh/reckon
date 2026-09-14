@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-14T12:19:06",
+  "updated": "2026-09-14T12:30:25",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -99941,6 +99941,573 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T094148677744-ledger-rows-carry-their-durations",
+        "plan": "clive-local-workers",
+        "section": "\u00a714",
+        "node": "ledger-rows-carry-their-durations",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 784,
+                "cached_input_tokens": 260763,
+                "input_tokens": 261549,
+                "output_tokens": 599,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 262148,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "43258b7e-3d2c-401c-abad-61285516def9",
+            "session_id": "ship-s15-20260914"
+          },
+          "done_when": "after the backfill, a read over docs/state/reckon/crew.json finds zero run records that have a recorded stream on disk under the crew runs directory and lack any of wall_seconds, throughput.generation_seconds or throughput.machine_seconds, against a measured starting point of 676 such records of 839 with 675 backfillable and exactly 1 whose stream is absent; that one record carries an explicit underivable marker rather than a silent null; the derivation calls the existing span computation in reckon/_backends.py rather than reimplementing it, and does not modify that file; and tests/test_ledger.py asserts this as a property over the committed ledger rather than against any row count, so it stays true as the ledger grows, with its failure count against base 8ca2c3c not rising",
+          "estimated_hours": null,
+          "goal": "every committed run record carries its elapsed, generation and machine seconds or states why it cannot",
+          "id": "ledger-rows-carry-their-durations",
+          "lane_declaration": {
+            "backend": "codex",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-14T09:41:49Z",
+            "read_at": "2026-09-14T09:41:50Z",
+            "resolved_backend": "codex",
+            "utilisation_pct": 5.0
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T094148677744-ledger-rows-carry-their-durations/manifest.md",
+          "plan": "clive-local-workers",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a714",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "token_budget": null,
+          "write_paths": [
+            "docs/state/reckon/crew.json",
+            "reckon/ledger.py",
+            "scripts/backfill_run_durations.py",
+            "tests/test_ledger.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-metering",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-14T09:42:01Z",
+        "completed_at": "2026-09-14T10:23:12Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 2471,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 2471,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "8ca2c3c1872d0c12e9e72aa92f0394596d93a3c6",
+        "commits": [
+          "36531018efbb80046ed94277f96e005f3488d41b",
+          "fc468a2d9b8ef77e61683a2d0efb85fbdd8ffd7f",
+          "b22e78437639c5c1e174e0ae90116ef76da85dd0",
+          "ae1078c5eb8a842d5eb63dc0775261b70ff3f821",
+          "3eead323b8bcadb7f1e4d866e7635eb9ec2d3eda"
+        ],
+        "changed_lines": {
+          "added": 5537,
+          "removed": 1269,
+          "files": 4
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "srun --partition=all_debug pytest tests/test_ledger.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T094148677744-ledger-rows-carry-their-durations/after-final-test-ledger-debug.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T094148677744-ledger-rows-carry-their-durations/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07f7f-936c-7f72-b09e-9a6b905eabe7",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 17359872,
+            "cached_input_tokens_cumulative": 25104768,
+            "input_tokens": 17356754,
+            "input_tokens_cumulative": 25342516,
+            "output_tokens": 16079,
+            "output_tokens_cumulative": 54371,
+            "reasoning_output_tokens": 8538,
+            "reasoning_output_tokens_cumulative": 17623
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-14T10:23:12Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 8.0,
+              "resets_at": 1789970252,
+              "observed_at": "2026-09-14T10:23:12Z"
+            }
+          ],
+          "notional_cost_usd": 250.3479,
+          "rate_basis": {
+            "model_identifier": "gpt-5.6-sol",
+            "input_per_million": 4.0,
+            "output_per_million": 20.0,
+            "as_of": "2026-09-09"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 44671104,
+          "cumulative_input_tokens": 45462257,
+          "detail": "model span bounded from the client rollout's tool spans; input cumulative summed across resets",
+          "generated_tokens": 71994,
+          "generation_seconds": 535054.619,
+          "machine_seconds": 875.388,
+          "tokens_per_second": 0.13
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-20260914/ledger-rows-carry-their-durations",
+          "session_id": "01a07f7f-936c-7f72-b09e-9a6b905eabe7",
+          "session_source": "pointer",
+          "retained_at": "2026-09-14T10:23:12Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 33.0,
+        "orientation_input_tokens": 5706141.0,
+        "store_write": {
+          "status": "written"
+        }
+      },
+      {
+        "run_id": "r-20260914T094141156549-flight-declares-meteredness",
+        "plan": "dispatch-cost-per-durable-node",
+        "section": "\u00a712",
+        "node": "flight-declares-meteredness",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 784,
+                "cached_input_tokens": 260763,
+                "input_tokens": 261549,
+                "output_tokens": 599,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 262148,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "43258b7e-3d2c-401c-abad-61285516def9",
+            "session_id": "ship-s15-20260914"
+          },
+          "done_when": "the configuration-inspection surface reports, once per inspection, the configured backends carrying no explicit meteredness declaration, with clive and native present in that list on this host and every backend that declares the property absent from it; the declarable field is added by editing reckon/schema/flight.yaml and running scripts/regen_flight_schema.py, leaving the byte-identity regeneration test at tests/test_flight.py:125 passing; no per-dispatch report is emitted, proven by a dry-run payload carrying no such list; and tests/test_flight.py gains cases for a declaring backend, an undeclared backend and the emitted report, with its failure count against base 8ca2c3c not rising",
+          "estimated_hours": null,
+          "goal": "configuration inspection names every backend whose meteredness is undeclared",
+          "id": "flight-declares-meteredness",
+          "lane_declaration": {
+            "backend": "codex",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-14T09:41:41Z",
+            "read_at": "2026-09-14T09:41:42Z",
+            "resolved_backend": "codex",
+            "utilisation_pct": 5.0
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T094141156549-flight-declares-meteredness/manifest.md",
+          "plan": "dispatch-cost-per-durable-node",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a712",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/schema/flight.yaml",
+            "reckon/_flight_schema.py",
+            "docs/_shared/flight.schema.json",
+            "reckon/flight.py",
+            "tests/test_flight.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-quota-weight",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-14T09:41:54Z",
+        "completed_at": "2026-09-14T09:52:57Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 663,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 663,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "8ca2c3c1872d0c12e9e72aa92f0394596d93a3c6",
+        "commits": [
+          "d8e5cf7814880f7649a2163a491e488d3125d9bf",
+          "14e34cd76a08f7659059fb9adc2d4b8c8311a6f9"
+        ],
+        "changed_lines": {
+          "added": 103,
+          "removed": 0,
+          "files": 5
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_flight.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T094141156549-flight-declares-meteredness/after-test-flight.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T094141156549-flight-declares-meteredness/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a09f4b-6968-7373-a422-04d2c4bb25e9",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 8384768,
+            "cached_input_tokens_cumulative": 8384768,
+            "input_tokens": 8578471,
+            "input_tokens_cumulative": 8578471,
+            "output_tokens": 25244,
+            "output_tokens_cumulative": 25244,
+            "reasoning_output_tokens": 9543,
+            "reasoning_output_tokens_cumulative": 9543
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-14T09:52:57Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 6.0,
+              "resets_at": 1789970251,
+              "observed_at": "2026-09-14T09:52:57Z"
+            }
+          ],
+          "notional_cost_usd": 34.8188,
+          "rate_basis": {
+            "model_identifier": "gpt-5.6-sol",
+            "input_per_million": 4.0,
+            "output_per_million": 20.0,
+            "as_of": "2026-09-09"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 8384768,
+          "cumulative_input_tokens": 16963239,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 34787
+        },
+        "follow_on_paths": [
+          "reckon/_flight_schema.py",
+          "scripts/regen_flight_schema.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-20260914/flight-declares-meteredness",
+          "session_id": "01a09f4b-6968-7373-a422-04d2c4bb25e9",
+          "session_source": "stream",
+          "retained_at": "2026-09-14T09:52:57Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 61.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
+      },
+      {
+        "run_id": "r-20260914T094316532378-csv-landed-record",
+        "plan": "concurrency-and-schedule-visibility",
+        "section": "\u00a78",
+        "node": "csv-landed-record",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 3604,
+                "cached_input_tokens": 265902,
+                "input_tokens": 269508,
+                "output_tokens": 760,
+                "reasoning_output_tokens": 162,
+                "total_tokens": 270268,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "43258b7e-3d2c-401c-abad-61285516def9",
+            "session_id": "ship-s15-20260914"
+          },
+          "done_when": "docs/evidence/archive/concurrency-and-schedule-visibility-landed.html exists, carries reckon-type=evidence and plan-evidence-for=concurrency-and-schedule-visibility, links /_shared/foundation.css and /_shared/dashboard.css, and holds one stable anchor id per plan section s1 through s8; each anchor states that section's landed outcome with the quantitative measure and commit shas taken from the plan's own 56 landing comments rather than restated from its argument prose, and every sha it cites resolves under git rev-parse --verify and is an ancestor of HEAD; the record contains no image whose content is a table of values, and any figure it does contain encodes a spatial, plotted or sequential relationship, with no figure at all being an acceptable outcome; and reckon audit-doc on the file reports zero errors",
+          "estimated_hours": null,
+          "goal": "a cumulative evidence record for the concurrency plan carrying one anchor per material result",
+          "id": "csv-landed-record",
+          "lane_declaration": {
+            "backend": "codex",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-14T09:43:16Z",
+            "read_at": "2026-09-14T09:43:17Z",
+            "resolved_backend": "codex",
+            "utilisation_pct": 5.0
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T094316532378-csv-landed-record/manifest.md",
+          "plan": "concurrency-and-schedule-visibility",
+          "requested_backend": "codex",
+          "requires_decisions": [],
+          "role": "documentation",
+          "section": "\u00a78",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "docs/evidence/archive/concurrency-and-schedule-visibility-landed.html"
+          ]
+        },
+        "role": "documentation",
+        "spec_level": "guided",
+        "member": "crew-rate-evidence",
+        "backend": "codex",
+        "local": false,
+        "agent": {
+          "alias": "sol5.6",
+          "backend": "codex",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-sol",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-14T09:43:26Z",
+        "completed_at": "2026-09-14T09:53:39Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 613,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 613,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "8ca2c3c1872d0c12e9e72aa92f0394596d93a3c6",
+        "commits": [
+          "64c5c778d23820fcece7ff810d34a8d74c4e876b"
+        ],
+        "changed_lines": {
+          "added": 242,
+          "removed": 0,
+          "files": 1
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "reckon audit-doc on the emitted evidence record plus structural and anchor gates",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T094316532378-csv-landed-record/evidence-gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T094316532378-csv-landed-record/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a09f4c-d285-7c82-8a87-c1293459ffdd",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 6638464,
+            "cached_input_tokens_cumulative": 6638464,
+            "input_tokens": 6818925,
+            "input_tokens_cumulative": 6818925,
+            "output_tokens": 25207,
+            "output_tokens_cumulative": 25207,
+            "reasoning_output_tokens": 8692,
+            "reasoning_output_tokens_cumulative": 8692
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-14T09:53:39Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 6.0,
+              "resets_at": 1789970251,
+              "observed_at": "2026-09-14T09:53:39Z"
+            }
+          ],
+          "notional_cost_usd": 27.7798,
+          "rate_basis": {
+            "model_identifier": "gpt-5.6-sol",
+            "input_per_million": 4.0,
+            "output_per_million": 20.0,
+            "as_of": "2026-09-09"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 6638464,
+          "cumulative_input_tokens": 13457389,
+          "detail": "turn tokens recorded, but no span was supplied to rate them",
+          "generated_tokens": 33899
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "documentation",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-20260914/csv-landed-record",
+          "session_id": "01a09f4c-d285-7c82-8a87-c1293459ffdd",
+          "session_source": "stream",
+          "retained_at": "2026-09-14T09:53:39Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 52.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -100169,6 +100736,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1367
+    "_version": 1370
   }
 }
