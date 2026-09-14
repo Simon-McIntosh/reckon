@@ -2470,14 +2470,25 @@ def test_duration_backfill_uses_shared_observation_and_marks_real_gaps(
         json.dumps({"type": "assistant", "message": {"content": []}}) + "\n",
         encoding="utf-8",
     )
+    codex_stream = streams / "r-codex-legacy" / "stream.jsonl"
+    codex_stream.parent.mkdir(parents=True)
+    codex_stream.write_text(
+        (FIXTURES / "codex-turn.jsonl").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
 
     rows = []
-    for run_id in ("r-measured", "r-spanless", "r-missing"):
+    for run_id, backend in (
+        ("r-measured", "claude"),
+        ("r-spanless", "claude"),
+        ("r-codex-legacy", "codex"),
+        ("r-missing", "claude"),
+    ):
         row = ledger.build_record(
             run_id=run_id,
             plan="work",
             gate="passed",
-            backend="claude",
+            backend=backend,
             worker_seconds=20,
         )
         # These rows model records committed before duration status existed.
@@ -2498,6 +2509,17 @@ def test_duration_backfill_uses_shared_observation_and_marks_real_gaps(
         return shared_observe(**kwargs)
 
     monkeypatch.setattr(duration_backfill, "observe_stream", recording_observe)
+    receipt_sessions = []
+
+    class Receipt:
+        generation_seconds = 12.0
+        machine_seconds = 8.0
+
+    def receipt_for(session_id, **_kwargs):
+        receipt_sessions.append(session_id)
+        return Receipt()
+
+    monkeypatch.setattr(duration_backfill, "read_rollout_receipt", receipt_for)
 
     result = duration_backfill.backfill_run_durations(
         PROJECT, root=repo, streams_root=streams
@@ -2505,14 +2527,15 @@ def test_duration_backfill_uses_shared_observation_and_marks_real_gaps(
 
     assert result == {
         "project": PROJECT,
-        "rows_processed": 3,
-        "rows_measured": 1,
+        "rows_processed": 4,
+        "rows_measured": 2,
         "rows_underivable": 2,
-        "streams_found": 2,
+        "streams_found": 3,
         "streams_missing": 1,
         "ledger_version": 2,
     }
-    assert observed == ["claude", "claude"]
+    assert observed == ["claude", "claude", "codex"]
+    assert receipt_sessions == ["019ff509-8a60-7723-94fd-65942a6d8faa"]
     data, _version = ledger.load(PROJECT, root=repo)
     by_id = {row["run_id"]: row for row in data["runs"]}
     measured = by_id["r-measured"]
@@ -2524,6 +2547,7 @@ def test_duration_backfill_uses_shared_observation_and_marks_real_gaps(
     assert by_id["r-spanless"]["duration_measurement"]["reason"] == (
         "stream_has_no_model_span"
     )
+    assert ledger.duration_measurement_state(by_id["r-codex-legacy"]) == "measured"
     assert by_id["r-missing"]["duration_measurement"] == {
         "status": "underivable",
         "reason": "stream_missing",

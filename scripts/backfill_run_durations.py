@@ -69,14 +69,34 @@ def _command_for_stream(row: Mapping[str, Any], lines: list[str]) -> str:
     raise BackendError("stream and ledger row name no supported backend dialect")
 
 
-def _rollout_receipt(row: Mapping[str, Any], command: str) -> object | None:
+def _codex_session_id(row: Mapping[str, Any], lines: list[str]) -> str:
+    """Return the durable session id or the thread id recorded by old streams."""
+    recorded = str(row.get("session_id") or "").strip()
+    if recorded:
+        return recorded
+    for line in lines:
+        try:
+            event = json.loads(line)
+        except (TypeError, ValueError):
+            continue
+        if isinstance(event, Mapping) and event.get("type") == "thread.started":
+            return str(event.get("thread_id") or "").strip()
+    return ""
+
+
+def _rollout_receipt(
+    row: Mapping[str, Any], command: str, lines: list[str]
+) -> object | None:
     """Read a Codex receipt only when it contains both sides of the span."""
-    if command != "codex" or not str(row.get("session_id") or "").strip():
+    if command != "codex":
+        return None
+    session_id = _codex_session_id(row, lines)
+    if not session_id:
         return None
     agent = row.get("agent")
     model = agent.get("model") if isinstance(agent, Mapping) else None
     receipt = read_rollout_receipt(
-        str(row["session_id"]), model_identifier=str(model) if model else None
+        session_id, model_identifier=str(model) if model else None
     )
     if _numeric(getattr(receipt, "generation_seconds", None)) and _numeric(
         getattr(receipt, "machine_seconds", None)
@@ -112,7 +132,16 @@ def backfill_run_durations(
         "ledger_version": version,
     }
     for row in data["runs"]:
-        if ledger.duration_measurement_state(row) != "missing":
+        state = ledger.duration_measurement_state(row)
+        marker = row.get("duration_measurement")
+        retry_legacy_codex_join = (
+            state == "underivable"
+            and isinstance(marker, Mapping)
+            and marker.get("reason") == "stream_has_no_model_span"
+            and str(row.get("backend") or "").startswith("codex")
+            and not str(row.get("session_id") or "").strip()
+        )
+        if state != "missing" and not retry_legacy_codex_join:
             continue
         counts["rows_processed"] += 1
         elapsed = _elapsed_seconds(row)
@@ -142,7 +171,7 @@ def backfill_run_durations(
                 backend={"command": command},
                 lines=lines,
                 elapsed_seconds=elapsed,
-                receipt=_rollout_receipt(row, command),
+                receipt=_rollout_receipt(row, command, lines),
             )
         except BackendError as exc:
             if elapsed is not None:
