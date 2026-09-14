@@ -470,9 +470,15 @@ function PathPromptModal({ chain, fullPrereqItems, bySlug, onClose }) {
 function DependencyChainView({ onNav }) {
   const M = window.STATE;
 
+  // The roadmap is the authoritative source of endpoints, but a document that
+  // loads with only the plan inventory (a composed file, a partial payload)
+  // must still render the dependency graph it holds rather than a false empty
+  // state. Fall back to deriving the same endpoint rows from the inventory.
   const rows = React.useMemo(
-    () => _roadmapEndpointRows(M?.endpoints),
-    [M?.endpoints],
+    () => (Array.isArray(M?.endpoints) && M.endpoints.length
+      ? _roadmapEndpointRows(M.endpoints)
+      : _graphEndpointRows(M?.inventory || [], M?.project)),
+    [M?.endpoints, M?.inventory, M?.project],
   );
 
   const [hideDone, setHideDone] = React.useState(false);
