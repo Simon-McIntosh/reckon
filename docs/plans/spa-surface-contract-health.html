@@ -22,8 +22,8 @@
   <title>Eleven Surface Failures That Are Not The Browser | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="4">
+<meta name="plan-modified" content="2026-09-15">
+<meta name="plan-version" content="5">
 </head>
 <body>
   <main class="plan-doc">
@@ -183,6 +183,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-scope-review-20260914" data-who="reckon-ship" data-when="2026-09-14T21:58:00Z">
     <div class="r-comment-body">Scope review landed (run scope-review-spa-surface-contract-health, gate passed). Nothing in this plan has landed: 2 unlanded sections, 0 no-measure-stated, failure delta 0 of 10. Non-landing was proven rather than assumed, which matters because the census is five days old: the census revision is an ancestor of HEAD and the diff over all eight plan-relevant test files and their surface sources is empty against both HEAD and the current main tip, so the assertions are byte-identical and every census classification still transfers. Eight of the eleven cases were also reproduced live. This plan turns out to own every stale contract two other reviews in this wave found independently. Case 7 is the exact stylesheet dict-equality failure reported against graph-derived-schedule; case 10 is its date-encoded derived-flow failure; cases 1, 3, 4 and 5 are the six-failure set that the fleet-home review attributed away from its own plan by proving with git log -S that none of those test functions had changed since its base. So the repairs belong here and were deliberately not opened twice. One delivery gap recorded against the node: it persisted none of its three live runs to a dedicated log file and cited the earlier census log instead, so its live reproductions are attested by its manifest rather than by a log a reader can open.</div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260914T221120907008-leaning-cases-resolved-by-a-stated-finding" data-who="disc-local" data-when="2026-09-14T22:53:49.260Z">
+    <div class="r-comment-body"><p>Both leaning cases resolved by live reproduction, and they land on opposite verdicts, which is why the plan forbade conflating them. Case 10 is migrate-the-assertion: the lane count is 1 under the live clock and 2 under an injected one, measured both ways, so the schedule is correct and the test is the defect; the migration injects a clock as its three sibling tests already do and must NOT move the expected number, since 1 is itself wall-clock-dependent and would fail on fixture-era dates. Case 8 is repair-the-code: the reader readout genuinely reads 2 of 3 after arriving at the third item, the navigation and content are correct and only the printed numerator lags, and this is byte-for-byte the defect the sibling plan artifact-feeds-and-reader documents in its section 10 with its own open repair node. That assertion is catching a real defect and must be kept as it stands</p></div>
 </div>
 </section>
 </main>
