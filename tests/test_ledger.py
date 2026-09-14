@@ -709,6 +709,11 @@ def test_every_completed_record_names_its_completion_time_source() -> None:
     assert set(ledger.RECORD_FIELDS) <= set(stored)
     assert stored["completed_at_source"] == "promotion_time"
     assert stored["worker_seconds_source"] == "unavailable"
+    assert ledger.duration_measurement_state(stored) == "underivable"
+    assert stored["duration_measurement"] == {
+        "status": "underivable",
+        "reason": "wall_clock_unavailable_at_promotion",
+    }
 
 
 def test_a_completed_record_carries_the_declared_specification_level() -> None:
@@ -2441,6 +2446,145 @@ def test_backfill_fills_two_figures_and_reports_missing_streams_as_skipped(
     again = backfill_run_figures(PROJECT, root=repo)
     assert again["rows_filled"] == 0
     assert again["rows_skipped"] == 0
+
+
+def test_duration_backfill_uses_shared_observation_and_marks_real_gaps(
+    repo: Path, tmp_path: Path, monkeypatch
+) -> None:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    try:
+        import backfill_run_durations as duration_backfill
+    finally:
+        sys.path.pop(0)
+
+    streams = tmp_path / "streams"
+    measured_stream = streams / "r-measured" / "stream.jsonl"
+    measured_stream.parent.mkdir(parents=True)
+    measured_stream.write_text(
+        (FIXTURES / "claude-turn.jsonl").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    spanless_stream = streams / "r-spanless" / "stream.jsonl"
+    spanless_stream.parent.mkdir(parents=True)
+    spanless_stream.write_text(
+        json.dumps({"type": "assistant", "message": {"content": []}}) + "\n",
+        encoding="utf-8",
+    )
+    codex_stream = streams / "r-codex-legacy" / "stream.jsonl"
+    codex_stream.parent.mkdir(parents=True)
+    codex_stream.write_text(
+        (FIXTURES / "codex-turn.jsonl").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+
+    rows = []
+    for run_id, backend in (
+        ("r-measured", "claude"),
+        ("r-spanless", "claude"),
+        ("r-codex-legacy", "codex"),
+        ("r-missing", "claude"),
+    ):
+        row = ledger.build_record(
+            run_id=run_id,
+            plan="work",
+            gate="passed",
+            backend=backend,
+            worker_seconds=20,
+        )
+        # These rows model records committed before duration status existed.
+        row.pop("duration_measurement")
+        rows.append(row)
+    ledger.write(
+        PROJECT,
+        {"members": [], "runs": rows, "holds": []},
+        0,
+        root=repo,
+    )
+
+    shared_observe = duration_backfill.observe_stream
+    observed = []
+
+    def recording_observe(**kwargs):
+        observed.append(kwargs["backend"]["command"])
+        return shared_observe(**kwargs)
+
+    monkeypatch.setattr(duration_backfill, "observe_stream", recording_observe)
+    receipt_sessions = []
+
+    class Receipt:
+        generation_seconds = 12.0
+        machine_seconds = 8.0
+
+    def receipt_for(session_id, **_kwargs):
+        receipt_sessions.append(session_id)
+        return Receipt()
+
+    monkeypatch.setattr(duration_backfill, "read_rollout_receipt", receipt_for)
+
+    result = duration_backfill.backfill_run_durations(
+        PROJECT, root=repo, streams_root=streams
+    )
+
+    assert result == {
+        "project": PROJECT,
+        "rows_processed": 4,
+        "rows_measured": 2,
+        "rows_underivable": 2,
+        "streams_found": 3,
+        "streams_missing": 1,
+        "ledger_version": 2,
+    }
+    assert observed == ["claude", "claude", "codex"]
+    assert receipt_sessions == ["019ff509-8a60-7723-94fd-65942a6d8faa"]
+    data, _version = ledger.load(PROJECT, root=repo)
+    by_id = {row["run_id"]: row for row in data["runs"]}
+    measured = by_id["r-measured"]
+    assert ledger.duration_measurement_state(measured) == "measured"
+    assert measured["wall_seconds"] == pytest.approx(
+        measured["throughput"]["generation_seconds"]
+        + measured["throughput"]["machine_seconds"]
+    )
+    assert by_id["r-spanless"]["duration_measurement"]["reason"] == (
+        "stream_has_no_model_span"
+    )
+    assert ledger.duration_measurement_state(by_id["r-codex-legacy"]) == "measured"
+    assert by_id["r-missing"]["duration_measurement"] == {
+        "status": "underivable",
+        "reason": "stream_missing",
+    }
+    assert by_id["r-missing"]["duration_measurement"] != 0
+
+    again = duration_backfill.backfill_run_durations(
+        PROJECT, root=repo, streams_root=streams
+    )
+    assert again["rows_processed"] == 0
+
+
+def test_committed_runs_measure_or_explain_every_duration() -> None:
+    repository = Path(__file__).resolve().parents[1]
+    data, _version = ledger.load("reckon", root=repository)
+
+    missing = [
+        str(row.get("run_id") or "")
+        for row in data["runs"]
+        if ledger.duration_measurement_state(row) == "missing"
+    ]
+    underivable = [
+        row
+        for row in data["runs"]
+        if ledger.duration_measurement_state(row) == "underivable"
+    ]
+
+    assert missing == []
+    assert underivable
+    assert all(
+        str(row["duration_measurement"].get("reason") or "").strip()
+        for row in underivable
+    )
+    assert any(
+        row["duration_measurement"]["reason"] == "stream_missing"
+        for row in underivable
+    )
 
 
 # ── The run store exists beside the committed file ─────────────────────────

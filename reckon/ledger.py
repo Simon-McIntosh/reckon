@@ -108,6 +108,7 @@ RECORD_FIELDS = (
     "completed_at_source",
     "wall_seconds",
     "throughput",
+    "duration_measurement",
     "worker_seconds",
     "worker_seconds_source",
     "stalled",
@@ -788,6 +789,45 @@ def measured_throughput(throughput: Mapping[str, Any] | None) -> dict[str, Any] 
     return dict(sorted(measured.items()))
 
 
+def underivable_duration(reason: str, *, detail: str = "") -> dict[str, str]:
+    """Return the explicit ledger marker for duration figures no record can supply."""
+    marker = {"status": "underivable", "reason": str(reason).strip()}
+    if detail.strip():
+        marker["detail"] = detail.strip()
+    return marker
+
+
+def duration_measurement_state(record: Mapping[str, Any]) -> str:
+    """Classify a row's duration figures as measured, underivable, or missing.
+
+    A measured duration is the three-part identity consumers need: wall time,
+    model generation time, and machine time.  The latter pair must both be
+    numeric and live in the throughput block.  Anything else is underivable
+    only when the row carries a reason saying why; an absent reason remains a
+    missing measurement so a backfill or a property check can find it.
+    """
+
+    def numeric(value: Any) -> bool:
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+    throughput = record.get("throughput")
+    if (
+        numeric(record.get("wall_seconds"))
+        and isinstance(throughput, Mapping)
+        and numeric(throughput.get("generation_seconds"))
+        and numeric(throughput.get("machine_seconds"))
+    ):
+        return "measured"
+    marker = record.get("duration_measurement")
+    if (
+        isinstance(marker, Mapping)
+        and marker.get("status") == "underivable"
+        and str(marker.get("reason") or "").strip()
+    ):
+        return "underivable"
+    return "missing"
+
+
 def promoted_budget_fallback(
     fallback: Mapping[str, Any] | None,
 ) -> dict[str, Any] | None:
@@ -1023,6 +1063,15 @@ def build_record(
             [str(path) for path in follow_on_paths],
         )
     record.setdefault("throughput", None)
+    if duration_measurement_state(record) == "missing":
+        reason = (
+            "wall_clock_unavailable_at_promotion"
+            if record.get("wall_seconds") is None
+            else "model_span_unavailable_at_promotion"
+        )
+        record["duration_measurement"] = underivable_duration(reason)
+    else:
+        record["duration_measurement"] = None
     record.setdefault("scope_acceptances", None)
     record.setdefault("no_commit", None)
     record.setdefault("commit_resolution", None)
