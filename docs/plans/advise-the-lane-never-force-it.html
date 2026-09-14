@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 <meta name="plan-graph-handle" content="lane-aware-dispatch">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -299,6 +299,15 @@ The instrument is also sharper than I locked it. Running alone is not enough: it
 The conclusion is unchanged and now rests on a narrower margin honestly stated: average_width 1.571 against a lane serving 21 to 25 is still capacity not binding, but the margin is one order of magnitude rather than three.
 
 Also reconciled: my 16:37Z reading of seven concurrent workers saturating the lane. The deployed router was running defaults of 2 in flight and 4 queued rather than its configured 16 and 48, so seven workers hitting a wall was exactly two plus four plus one refused. The observation was right and only the causal reading was wrong - which is the better half to be wrong about, and worth recording as such rather than filed as an error.</div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260914T1745" data-who="reckon-ship" data-when="2026-09-14T17:45:00Z">
+    <div class="r-comment-body">THE LANE BUDGET DECAYS AS A FLEET MATURES, WHICH MAKES OCCUPANCY CONTEXT RATHER THAN A TRIGGER. The locked decision is not reopened for this: it already names Waiting above zero and num_preemptions_total leaving zero as the signals, and already says Running is read with KV occupancy or not at all. What this adds is why occupancy must not become the threshold itself.
+
+Four readings on one serve inside one hour, from imas-ambix-92: mean context 58,800 gives a budget of 37; 97,000 gives 22; 144,902 gives 15; and 15,300 gives 143, that last being a freshly dispatched wave whose workers are early in their sessions. Nothing changes between those readings except the workers already running getting further into their own work. So an orchestrator that reads a headroom of 135 at dispatch is over-subscribed half an hour later WITH NO EVENT TO OBSERVE - the fleet did not grow, its contexts did.
+
+The consequence for the instrument is precise. Occupancy is a function of fleet AGE and not only of fleet size, so a threshold on occupancy fires later for a young fleet than for an old one of identical width. That is correct behaviour and it is only safe if the reader knows that is what it means, rather than reading a rising figure as the fleet having grown. Waiting and preemptions carry no such caveat because they are the lane speaking for itself rather than a model of it, which is why they are the locked signal and occupancy is the thing that makes them legible.
+
+This is the same defect family as the rest of this plan, arriving as decay rather than as a stale write: a figure that is correct when read, is never updated, and becomes wrong through the passage of time alone while continuing to look like a measurement. The plan already holds one instance of a number read forward across a change - a run record carrying a window of 1,016,576 taken at dispatch while the config declared 172,800 and the engine enforced 204,800. A budget is more dangerous than a window, because a window at least announces itself when a node is refused for exceeding it, and a decayed budget announces nothing at all until the lane is already queueing.</div>
 </div>
 </section>
 </main>
