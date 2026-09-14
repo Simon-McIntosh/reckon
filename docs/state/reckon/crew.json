@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-14T23:48:41",
+  "updated": "2026-09-14T23:52:05",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -111829,6 +111829,203 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T210237360640-scope-review-burn-is-visible-before-it-bites",
+        "plan": "burn-is-visible-before-it-bites",
+        "section": "",
+        "node": "scope-review-burn-is-visible-before-it-bites",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 982,
+                "cached_input_tokens": 253855,
+                "input_tokens": 254839,
+                "output_tokens": 56,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 254895,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3332e8d8-dcef-4091-9774-c9680478b165",
+            "session_id": "ship-s16-20260914"
+          },
+          "done_when": "A report at the write path accounts for every h2 section id in docs/plans/burn-is-visible-before-it-bites.html exactly once, giving each section exactly one verdict from landed, unlanded, out-of-scope, or no-measure-stated; no-measure-stated is required for any section that states a deliverable in prose without a stated measure of its own, and such a section is reported as its own finding and never resolved into one of the other three; for every other verdict the section's own measure is quoted from the plan, the repository paths that section must write are named, and the evidence read at HEAD that justifies the verdict is given; any deliverable stated as prose inside a collapsed or landed summary is reported as its own row, because a reader stops at a summary and the dependency scan reads plans rather than section text; the number of unlanded sections and the number of no-measure-stated sections are each stated as a digit; every open followup in the plan is listed with whether its work is already done; and any section whose measure can no longer be produced is named with the reason",
+          "estimated_hours": null,
+          "goal": "Report the true remaining scope of this plan by checking every section against the code at HEAD",
+          "id": "scope-review-burn-is-visible-before-it-bites",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T21:02:37Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T210237360640-scope-review-burn-is-visible-before-it-bites/manifest.md",
+          "plan": "burn-is-visible-before-it-bites",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "review",
+          "section": "",
+          "spec_level": "guided",
+          "time_budget": "20m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/scope-burn-is-visible-before-it-bites.md"
+          ]
+        },
+        "role": "review",
+        "spec_level": "guided",
+        "member": "disc-local-b",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "read-only",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T21:03:02Z",
+        "completed_at": "2026-09-14T21:49:08.232Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2740,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2766,
+        "stalled": true,
+        "time_budget": "20m",
+        "base_sha": "c8f42be0172f76d6c8a68f9238cbe980a3988cfd",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_crew_burn.py",
+          "exit_status": 0,
+          "log_path": "/tmp/s2_gate.log",
+          "log_digest": "618296e2249738ff92363fc0e90a250b983c554bb6dae5ca511c87a92fa9eddb"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T210237360640-scope-review-burn-is-visible-before-it-bites/manifest.md",
+        "scope_changed": false,
+        "session_id": "dd02fb08-9b27-45f1-98df-36678122f7c9",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 1660381,
+            "input_tokens_cumulative": 1660381,
+            "output_tokens": 24154,
+            "output_tokens_cumulative": 24154,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-14T21:49:08.232Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 1660381,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 2762.558,
+          "generated_tokens": 24154,
+          "generation_seconds": 2729.711,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 55.3,
+          "machine_seconds": 32.847,
+          "peak_input_tokens": 110536,
+          "tokens_per_second": 8.85,
+          "wall_tokens_per_second": 8.74
+        },
+        "follow_on_paths": [
+          "~660/4228",
+          "s2/s5",
+          "0.5",
+          "2/5"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "review",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": "review role on a plan owned by another coordinator: findings are handed over, not acted on",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16-20260914/scope-review-burn-is-visible-before-it-bites",
+          "session_id": "dd02fb08-9b27-45f1-98df-36678122f7c9",
+          "session_source": "stream",
+          "retained_at": "2026-09-14T21:49:08.232Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 24.0,
+        "orientation_input_tokens": 1331332.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -112057,6 +112254,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1425
+    "_version": 1426
   }
 }

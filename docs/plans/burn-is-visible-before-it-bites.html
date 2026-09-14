@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="18">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="979805e1d460e5c46a15d466d64d4a674c8e3405,f26287ebeba4c4890f0965d2eb9f18c281743d26,a5254ef">
 <meta name="plan-artifacts" content="reckon/run_store.py,tests/test_run_store.py,reckon/crew/lane_evidence.py,tests/test_binding_window_inference.py,docs/ui/crew.jsx,docs/ui/crew.css,tests/test_spa_crew_burn.py,docs/evidence/archive/burn-is-visible-before-it-bites-landed.html">
@@ -269,6 +269,9 @@
     <div class="r-comment-body">The staged dependency on that plan's section 6 is reverted to the plan, because the staged form raises missing-dependency-section at error severity: plan_section_anchors derives referenceable sections from gate sections and from comment keys only when comments parse as a Mapping, the target carries no gates, and its comments parse as a list, so its anchor set is empty however many sections the page has.
 
 The reasoning behind the narrowing stands and is worth keeping: what this plan needs is the rate computation readable from Python, which is that section and has shipped, and the rest of that prerequisite is a measure bounded by elapsed time rather than effort. The coarse edge is the only form the resolver accepts today, so this plan blocks until the prerequisite ships as a whole. That is now a shorter wait than it was: the evidence for retiring the prerequisite's remaining pilot is recorded against it, since the figure the pilot would produce already exists in the ledger.</div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260914T210237360640-scope-review-burn-is-visible-before-it-bites" data-who="disc-local-b" data-when="2026-09-14T21:49:08.232Z">
+    <div class="r-comment-body"><p>Scope review of a foreign-owned plan (ship-lane-aware holds it). 5 sections plus one h3: 2 unlanded (s3 rendered evidence, never dispatched, no figures directory; s5 with 2 of 5 measures landed), 2 no-measure-stated, 1 landed with its 8-test gate green, 1 out-of-scope. Also found the plan&#x27;s section_declarations stale against the code, s2 declared implementable while landed, and an assertion gap where the locked upper-bound decision has no surface label or test asserting it. Findings handed to the owning coordinator, not acted on</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260914T162707540226-crew-meter-renders-position-and-projection" data-who="crew-elapsed" data-when="2026-09-14T18:28:24.023Z">
     <div class="r-comment-body"><p>The Crew surface renders a quota meter carrying position, reset and projected exhaustion; 8 passed, 298 lines of new tests. The run was classified abandoned on an incomplete manifest while its commit had already landed cleanly one ahead of base with a clean tree</p></div>
