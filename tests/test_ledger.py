@@ -23,6 +23,7 @@ from click.testing import CliRunner
 
 from reckon import _store, calibration, capabilities, crew, flight, ledger
 from reckon.cli import main as cli_main
+from reckon.crew import review as review_module
 
 
 CONFIG = {
@@ -723,6 +724,122 @@ def test_a_completed_record_carries_the_declared_specification_level() -> None:
 
     assert "spec_level" in ledger.RECORD_FIELDS
     assert stored["spec_level"] == "exact"
+
+
+def _review_block(total: int | None, **scores: int) -> dict:
+    return {
+        "status": "parsed",
+        "scores": {
+            dimension: scores.get(dimension, 0)
+            for dimension in review_module.REVIEW_DIMENSIONS
+        },
+        "absent": [],
+        "total": total,
+    }
+
+
+def test_a_record_without_a_review_is_distinguishable_from_a_zero_scored_one() -> None:
+    absent = ledger.build_record(run_id="r-unreviewed", plan="plan-a", gate="passed")
+    zero = ledger.build_record(
+        run_id="r-zero",
+        plan="plan-a",
+        gate="passed",
+        review=_review_block(0),
+    )
+    carried = ledger.build_record(
+        run_id="r-carried",
+        plan="plan-a",
+        gate="passed",
+        review=_review_block(85, goal_fidelity=18, evidence=15, scope_discipline=17,
+                             durability=19, fit=16),
+    )
+
+    # A row promoted with no review keeps the key at None; a reviewed row that
+    # scored zero carries a parsed block with total 0 — distinguishable in both
+    # directions, never read as the same fact.
+    assert "review" in ledger.RECORD_FIELDS
+    assert absent["review"] is None
+    assert zero["review"] is not None
+    assert zero["review"]["status"] == "parsed"
+    assert zero["review"]["total"] == 0
+    assert carried["review"]["total"] == 85
+    assert set(carried["review"]["scores"]) == {
+        "goal_fidelity",
+        "evidence",
+        "scope_discipline",
+        "durability",
+        "fit",
+    }
+    assert set(ledger.RECORD_FIELDS) <= set(carried)
+
+
+def test_review_scores_are_queryable_filtered_on_the_parent_run(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "repo"
+    (root / "docs" / "state" / PROJECT).mkdir(parents=True)
+    reviewed = ledger.build_record(
+        run_id="r-review-a",
+        plan="plan-a",
+        node="node-x",
+        gate="passed",
+        review=_review_block(85, goal_fidelity=18, evidence=15, scope_discipline=17,
+                             durability=19, fit=16),
+    )
+    unreviewed = ledger.build_record(
+        run_id="r-plain", plan="plan-a", node="node-x", gate="passed"
+    )
+    other_plan = ledger.build_record(
+        run_id="r-review-b",
+        plan="plan-b",
+        node="node-x",
+        gate="passed",
+        review=_review_block(40, goal_fidelity=10, evidence=10, scope_discipline=10,
+                             durability=5, fit=5),
+    )
+    for record in (reviewed, unreviewed, other_plan):
+        ledger.append_run(PROJECT, record, root=root)
+    rows, _version = ledger.load(PROJECT, root)
+
+    planned = ledger.review_scores(rows["runs"], plan="plan-a")
+    assert planned == [
+        {
+            "run_id": "r-review-a",
+            "plan": "plan-a",
+            "node": "node-x",
+            "status": "parsed",
+            "scores": {
+                "goal_fidelity": 18,
+                "evidence": 15,
+                "scope_discipline": 17,
+                "durability": 19,
+                "fit": 16,
+            },
+            "absent": [],
+            "total": 85,
+        }
+    ]
+    # An unreviewed row that still matches the filter is omitted — absence is
+    # never replaced by a zero, which would make it read as the reviewed one.
+    assert ledger.review_scores(rows["runs"], run_id="r-plain") == []
+    assert ledger.review_scores(rows["runs"], node="node-x") == [
+        planned[0],
+        {
+            "run_id": "r-review-b",
+            "plan": "plan-b",
+            "node": "node-x",
+            "status": "parsed",
+            "scores": {
+                "goal_fidelity": 10,
+                "evidence": 10,
+                "scope_discipline": 10,
+                "durability": 5,
+                "fit": 5,
+            },
+            "absent": [],
+            "total": 40,
+        },
+    ]
 
 
 def test_dispatch_refuses_a_node_without_a_specification_level(repo) -> None:

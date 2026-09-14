@@ -11,6 +11,7 @@ from click.testing import CliRunner, Result
 
 from reckon import _plan_html, _store, crew, ledger
 from reckon.cli import main as cli_main
+from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, pointer_path
 
 PROJECT = "proj"
@@ -202,6 +203,108 @@ def test_promotion_splits_narrative_from_run_measurements(repository: Path) -> N
     assert run["outcome"] == ""
     assert narrative not in json.dumps(run)
     assert not (repository / "docs" / "evidence").exists()
+
+
+# ── the attached review travels onto the committed ledger row ───────────────
+
+
+def _stored_review(run_id: str, values: dict[str, int]) -> None:
+    emitted = "\n".join(
+        f"SCORE {dimension}: {values[dimension]}"
+        for dimension in review_module.REVIEW_DIMENSIONS
+    )
+    record = review_module.parse_review(emitted)
+    record.update(
+        {
+            "project": PROJECT,
+            "reviewed_run_id": run_id,
+            "review_run_id": f"review-of-{run_id}",
+        }
+    )
+    review_module.store_review(record)
+
+
+def _promote(repository: Path, run_id: str) -> dict:
+    _write_json(
+        pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": PROJECT,
+            "repo": str(repository),
+            "launch": "in-harness",
+            "role": "implement",
+            "member": "worker-a",
+            "backend": "native",
+            "created_at": "2026-09-04T12:00:00Z",
+            "manifest_path": "/durable/manifest.md",
+            "node": {
+                "id": "node-a",
+                "plan": PLAN,
+                "section": "§2",
+                "time_budget": "25m",
+                "write_paths": [],
+            },
+        },
+    )
+    return crew.complete(run_id, gate="passed", root=repository)
+
+
+def test_a_reviewed_run_carries_its_dimensions_on_the_ledger_row(
+    repository: Path,
+) -> None:
+    run_id = "r-20260904T120000000101-reviewed-carried"
+    _stored_review(
+        run_id,
+        {
+            "goal_fidelity": 18,
+            "evidence": 15,
+            "scope_discipline": 17,
+            "durability": 19,
+            "fit": 16,
+        },
+    )
+    _promote(repository, run_id)
+
+    row = ledger.load(PROJECT, repository)[0]["runs"][0]
+    assert row["run_id"] == run_id
+    assert row["review"] == {
+        "status": "parsed",
+        "scores": {
+            "goal_fidelity": 18,
+            "evidence": 15,
+            "scope_discipline": 17,
+            "durability": 19,
+            "fit": 16,
+        },
+        "absent": [],
+        "total": 85,
+    }
+
+
+def test_a_run_promoted_without_a_review_is_distinguishable_from_a_zero_scored_one(
+    repository: Path,
+) -> None:
+    plain_run = "r-20260904T120000000102-unreviewed"
+    zero_run = "r-20260904T120000000103-scored-zero"
+    _promote(repository, plain_run)
+    _stored_review(zero_run, dict.fromkeys(review_module.REVIEW_DIMENSIONS, 0))
+    _promote(repository, zero_run)
+
+    rows = ledger.load(PROJECT, repository)[0]["runs"]
+    plain = next(row for row in rows if row["run_id"] == plain_run)
+    zero = next(row for row in rows if row["run_id"] == zero_run)
+    # Distinguishable in both directions: an unreviewed row is not one whose
+    # review measured zero, and a zero-scored review is not an absent one.
+    assert "review" in plain
+    assert plain["review"] is None
+    assert zero["review"] is not None
+    assert zero["review"] == {
+        "status": "parsed",
+        "scores": dict.fromkeys(review_module.REVIEW_DIMENSIONS, 0),
+        "absent": [],
+        "total": 0,
+    }
+    assert plain["review"] != zero["review"]
 
 
 def test_terminal_write_requires_a_back_linking_evidence_record(

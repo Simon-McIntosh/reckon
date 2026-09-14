@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping
 
 from reckon import _backends, _store, capabilities, ledger
+from reckon.crew import review as review_module
 from reckon.crew import rollout
 from reckon.crew.dispatch import _backend_settings, _capture_member_session
 from reckon.crew.node import (
@@ -2096,6 +2097,22 @@ def _fleet_state_reading(project: str) -> dict[str, Any]:
         }
 
 
+def _review_row_block(project: str, run_id: str) -> dict[str, Any] | None:
+    """Return the ledger-row block for this run's stored review, if any.
+
+    The record lands on the committed row at promotion, so the dimensions
+    survive the loss of the crew configuration home. A review the store
+    cannot read is recorded as ``unreadable`` — a distinct third state — so a
+    later reader can tell an anomaly from a run that was simply promoted
+    unreviewed, and from a parsed review whose dimensions measure zero.
+    """
+    try:
+        stored = review_module.read_review(project, run_id)
+    except (OSError, ValueError):
+        return review_module.ledger_block({"status": "unreadable"})
+    return review_module.ledger_block(stored)
+
+
 def _complete_locked(
     run_id: str,
     *,
@@ -2365,6 +2382,11 @@ def _complete_locked(
         if manifest_text is None
         else ledger.stated_correction_count(manifest_text)
     )
+    # An attached review is copied onto the committed row at promotion, so its
+    # five dimension scores and their total survive the loss of the crew
+    # configuration home. The store keeps the verbatim text and findings; the
+    # row keeps the compact block that joins to the run which earned it.
+    reviewed = _review_row_block(project, run_id)
     run = ledger.build_record(
         run_id=run_id,
         plan=str(node.get("plan") or ""),
@@ -2410,6 +2432,7 @@ def _complete_locked(
         follow_on_paths=follow_on_paths,
         predecessor_run=predecessor,
         dispute_count=dispute_count,
+        review=reviewed,
     )
     run["attempt"] = int(record.get("attempt") or 1)
     run["attempt_kind"] = str(record.get("attempt_kind") or "dispatch")

@@ -269,3 +269,59 @@ def test_base_dir_override_moves_the_store_and_leaves_config_untouched(
     assert read_back is not None
     assert read_back["total"] == 85
     assert _config_file_set(real_reviews) == before
+
+
+# ── The ledger-row reducer ──────────────────────────────────────────────────
+
+
+def test_a_parsed_review_reduces_to_its_ledger_row_block() -> None:
+    block = review_module.ledger_block(
+        review_module.parse_review(VALID_TEXT)
+    )
+    assert block == {
+        "status": "parsed",
+        "scores": {
+            "goal_fidelity": 18,
+            "evidence": 15,
+            "scope_discipline": 17,
+            "durability": 19,
+            "fit": 16,
+        },
+        "absent": [],
+        "total": 85,
+    }
+
+
+def test_no_review_at_all_reduces_to_none() -> None:
+    assert review_module.ledger_block(None) is None
+
+
+def test_absent_unparsed_and_scored_zero_stay_three_distinct_blocks() -> None:
+    absent = review_module.ledger_block(None)
+    unparsed = review_module.ledger_block(
+        {"status": "unparsed", "scores": {}, "total": None}
+    )
+    scored_zero = review_module.ledger_block(
+        {
+            "status": "parsed",
+            "scores": {
+                "goal_fidelity": 0,
+                "evidence": 0,
+                "scope_discipline": 0,
+                "durability": 0,
+                "fit": 0,
+            },
+            "absent": [],
+            "total": 0,
+        }
+    )
+    # Each pair must read apart, in both directions: an unreviewed run is not
+    # one whose review scored zero, and neither is an unparsed review.
+    assert absent is None
+    assert unparsed is not None
+    assert scored_zero is not None
+    assert unparsed != scored_zero
+    assert scored_zero["status"] == "parsed"
+    assert unparsed["status"] == "unparsed"
+    assert unparsed["total"] is None
+    assert scored_zero["total"] == 0
