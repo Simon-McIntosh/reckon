@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="served-surface-data-contracts">
   <meta name="plan-title" content="What the Server Must Serve Before the Canvas Can Land">
   <meta name="plan-summary" content="Serve figures as inventory rows, stamp every artifact with an edited time, and compute the fleet index live so the handoff canvas has the data it binds.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-wall-clock-hours" content="4.0">
@@ -22,12 +22,12 @@
   <meta name="plan-tags" content="reckon-tooling,spa">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-blocks" content="artifact-feeds-and-reader,fleet-home">
-  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,design/reckon-spa-handoff.md,reckon/figures.py,reckon/fleet_index.py,tests/test_serve_figure_rows.py,tests/test_fleet_index.py">
+  <meta name="plan-artifacts" content="reckon/figures.py,reckon/fleet_index.py,reckon/serve.py,tests/test_serve_figure_rows.py,tests/test_fleet_index.py,docs/evidence/archive/served-surface-data-contracts-landed.html">
   <title>What the Server Must Serve Before the Canvas Can Land | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-commits" content="4611f38,ec16a7a">
 <meta name="plan-impl" content="1.0">
 </head>
@@ -123,10 +123,11 @@
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-ssdc-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-03" data-recommends-skill="/reckon-ship served-surface-data-contracts" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-ssdc-001" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-09-03" data-recommends-skill="/reckon-ship served-surface-data-contracts" data-resolved-at="2026-09-14T22:37:07+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Land the two server contracts, figure rows first</h4>
     <div class="r-fu-body"><p>Both nodes write <code>reckon/serve.py</code>, so they are one serial lane on one roster member: §2 first because the artifact feeds are the longer downstream chain, then §3. Each lands with its named test and a recorded run against this checkout for the gate.</p></div>
     <pre class="r-fu-prompt">/reckon-ship served-surface-data-contracts</pre>
+    <p class="r-fu-outcome">done — no followup. Both server contracts landed on 2026-09-04 and are verified at the head: figure rows with header-read dimensions, an edited stamp on every inventory row of every type, and a fleet index computed per repository with an empty activity list rather than thirty zeros for a silent project. Combined measure 84 passed, exit 0, across the five named files. The half of this followup that was genuinely outstanding was its last clause, a recorded run against this checkout for the gate: the implementing node ran on synthesised fixtures, so the behaviour was demonstrated and the demanded figures were never written anywhere a reader could reach. That record now exists at docs/evidence/archive/served-surface-data-contracts-landed.html, carrying 58 figure rows, zero inventory rows missing an edited stamp, an example stamp of 2026-09-14T22:52:11 and an activity series of length 30 summing to 1050. Nothing remains. The work this plan revealed rather than owed is not hidden here: the absent gate element is recorded as a sprint-wide finding, and the three prose deliverables with no measure of their own are recorded in the evidence record.</p>
     </article>
 </section>
 
@@ -152,7 +153,7 @@
     <div class="r-comment-body">Scope review landed (run r-20260914T204503809575-scope-review-served-surface-data-contracts, gate passed). All four sections accounted for exactly once: 0 unlanded, 0 no-measure-stated. s2 (figure rows, edited stamps) and s3 (live fleet index) both verified landed at HEAD 467016b; s1 and s4 carry no measure by construction (premise and out-of-scope declaration). Gate: 84 passed, exit 0, over tests/test_serve_figure_rows.py, test_spa_state_boundary.py, test_discovery_cache.py, test_fleet_index.py, test_project_state.py. Gate evidence reproduced against the real checkout rather than fixtures: 58 figure rows discovered, an example row carrying dims 720 x 300 and its for_plan link, an ISO-8601 edited stamp at time resolution, and activity30 of length 30 with a non-flat series. The plan's own stated figure count of 40 predates later additions and is a moving number, not a discrepancy. Only remaining scope is bookkeeping: followup f-ssdc-001 describes work already landed. Close held pending the prose-deliverable audit now in flight, which exists to catch deliverables stated in prose without a measure of their own -- the one failure mode a section-verdict census cannot see.</div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260914T205153460690-prose-deliverable-audit-served-surface-data-contracts" data-who="crew-terminal-budget" data-when="2026-09-14T22:31:17.108Z">
-    <div class="r-comment-body"><p>Prose-deliverable audit: 10 deliverables stated in prose, 1 not-done, and the one is a missing record rather than missing code. The plan&#x27;s gate demanded a recorded run against the real checkout carrying the figure-row count and an example edited stamp in the execution record; the figure-rows node ran on synthetic fixtures and no execution record carries either figure. The behaviours are present at HEAD and the audit supplies the measurement: 58 figure rows, 0 inventory rows missing an edited stamp, example stamp 2026-09-14T22:52:11, activity30 length 30. Independently re-confirmed this plan carries no gate element</p></div>
+    <div class="r-comment-body"><p>Prose-deliverable audit: 10 deliverables stated in prose, 1 not-done, and the one is a missing record rather than missing code. The plan's gate demanded a recorded run against the real checkout carrying the figure-row count and an example edited stamp in the execution record; the figure-rows node ran on synthetic fixtures and no execution record carries either figure. The behaviours are present at HEAD and the audit supplies the measurement: 58 figure rows, 0 inventory rows missing an edited stamp, example stamp 2026-09-14T22:52:11, activity30 length 30. Independently re-confirmed this plan carries no gate element</p></div>
 </div>
 </section>
 </main>

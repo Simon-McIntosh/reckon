@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="served-surface-data-contracts-landed">
+  <meta name="plan-title" content="What the server must serve — landed evidence">
+  <meta name="plan-summary" content="Figures became inventory rows, every row of every type gained an edited stamp, and the fleet index is computed from the repositories rather than read from a superseded index file. Both sections are verified at the head, and the gate's demanded run against the real checkout is recorded here because it was never written when the work landed.">
+  <meta name="plan-evidence-for" content="reckon:served-surface-data-contracts">
+  <meta name="plan-verifies" content="reckon:served-surface-data-contracts#s2,reckon:served-surface-data-contracts#s3">
+  <meta name="plan-recorded-at" content="2026-09-15">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; detached git worktrees; the real checkout's docs tree read as project reckon rather than a synthesised fixture">
+  <meta name="plan-commits" content="4611f383,ec16a7a1">
+  <meta name="plan-artifacts" content="reckon/figures.py,reckon/fleet_index.py,reckon/serve.py,tests/test_serve_figure_rows.py,tests/test_fleet_index.py">
+  <title>What the server must serve — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>What the server must serve &mdash; landed evidence</h1>
+    <p class="plan-summary">Two sections, two measures, both passing at the head. The record
+    exists for a third reason: the plan's gate asked for a run against the <em>real</em>
+    checkout with three figures written into the execution record, and that run was never
+    written down. The behaviour was right and the evidence was missing, which is a different
+    defect and is repaired here rather than waved through.</p>
+  </header>
+
+  <section id="overview">
+    <h2>Record scope</h2>
+    <p>The plan bound three contracts the canvas needs and the server did not emit: figure
+    rows in discovery, an edited stamp at time resolution on every inventory row of every
+    type, and a fleet index computed live from each mounted repository. Both implementing
+    sections landed on 2026-09-04. This record was authored on 2026-09-15 during a scope
+    review of the sprint, which is why it is dated later than the work.</p>
+    <p>The review accounted for all four sections exactly once and found zero unlanded and
+    zero stating a deliverable without a measure. A separate prose-deliverable audit over the
+    same plan listed ten deliverables stated in prose and found one not done &mdash; the gate
+    record below.</p>
+  </section>
+
+  <section id="s2">
+    <h2>&sect;2 &mdash; Figure rows, and an edited stamp on every row</h2>
+    <p>Discovery emits one row per PNG and SVG under <code>docs/figures</code>, with the slug
+    taken from the path relative to that directory and the dimensions read from the file
+    headers rather than from an imaging library: <code>_png_dims</code> unpacks the
+    big-endian integers after the signature and IHDR, and <code>_svg_dims</code> reads the
+    <code>viewBox</code> or the width and height attributes. Rows are appended after the
+    typed resources, and <code>reckon/resources.py</code> continues to treat
+    <code>figures</code> as infrastructure, so no figure becomes a typed resource.</p>
+    <p>Every inventory row of every type carries an <code>edited</code> stamp derived by
+    <code>_row_times</code> from the last commit time, replaced by the working-tree mtime when
+    the path is modified or untracked, and never earlier than <code>created</code>.</p>
+    <p>Measure: <code>tests/test_serve_figure_rows.py</code>,
+    <code>tests/test_spa_state_boundary.py</code> and
+    <code>tests/test_discovery_cache.py</code> pass.</p>
+  </section>
+
+  <section id="s3">
+    <h2>&sect;3 &mdash; The fleet index is computed, not read</h2>
+    <p><code>reckon/fleet_index.py</code> derives each mounted project's row from its own
+    repository: status buckets by the same effective-status rule the project surface applies,
+    the live count from that project's run pointers, the latest edited stamp across its
+    artifacts, the active sprint from the distributed sprint resources or null, and a
+    thirty-entry activity series counting commits per calendar day from one
+    <code>git log</code> per project. A project with no commits in the window reports an
+    empty list rather than thirty zeros, because a flat line and a silent project are
+    different facts and a reader cannot tell them apart from a drawn line. The reference
+    instant is a parameter of the function rather than the wall clock, which is what keeps
+    the test from becoming a fuse.</p>
+    <p>Measure: <code>tests/test_fleet_index.py</code> passes and
+    <code>tests/test_project_state.py</code> stays green.</p>
+  </section>
+
+  <section id="gate">
+    <h2>Gate &mdash; the recorded run against the real checkout</h2>
+    <p>This is the part that was owed and unwritten. The gate asked for a run of discovery and
+    of the fleet index against this checkout, with the figure-row count, an example edited
+    stamp and the activity series length written into the execution record. The implementing
+    node ran on synthesised fixtures, so the behaviour was demonstrated and the demanded
+    figures were never recorded anywhere a reader could find them. Measured on 2026-09-15
+    against the real <code>docs</code> tree as project <code>reckon</code>:</p>
+    <table class="r-table">
+      <thead><tr><th>Figure the gate asked for</th><th>Measured</th></tr></thead>
+      <tbody>
+        <tr><td>Figure rows discovered</td><td>58 (46 PNG, 12 SVG and GIF)</td></tr>
+        <tr><td>Inventory rows missing an edited stamp</td><td>0</td></tr>
+        <tr><td>Example edited stamp on a figure row</td><td><code>2026-09-14T22:52:11</code></td></tr>
+        <tr><td>Activity series length</td><td>30 entries, sum 1050, non-flat</td></tr>
+        <tr><td>Fleet row for <code>reckon</code></td><td>78 plans; active 20, blocked 5, pending 5, shipped 48; live 25</td></tr>
+        <tr><td>Combined measured run</td><td>84 passed, exit 0, across the five named files</td></tr>
+      </tbody>
+    </table>
+    <p>The plan's own prose states a figure count of 40. That figure was true when written and
+    is a snapshot of a number that grows with the repository; it is recorded here as 58 at
+    this date rather than corrected in place, because the useful statement is the date beside
+    the number and not the number alone.</p>
+  </section>
+
+  <section id="findings">
+    <h2>What the review found that the work did not</h2>
+    <p>Two observations worth keeping, neither of which changes the verdict.</p>
+    <p>The plan carries no gate element. Its gate exists only as prose, so it could neither
+    block the plan nor be reported unmet, and the missing run record above went unnoticed for
+    eleven days as a direct consequence. Measured across the whole sprint at the same time:
+    no plan in it carries a gate element, so strict gate enforcement is configured and firing
+    on nothing.</p>
+    <p>Three deliverables in this plan are stated in prose with no measure of their own &mdash;
+    the capture-index title source, the ordering of figure rows after typed resources, and the
+    bound of two git invocations per project. All three are correct at the head. None is
+    asserted by any test, so all three would break silently.</p>
+  </section>
+</main>
+</body>
+</html>
