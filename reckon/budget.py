@@ -1226,13 +1226,7 @@ def decide(
         return verdict
 
     utilisation = state.utilisation_pct
-    if utilisation is None:
-        verdict["reason"] = (
-            "headroom is reported known but carries no utilisation, so there is "
-            "nothing to compare against the ceiling"
-        )
-        return verdict
-    if utilisation >= limit:
+    if utilisation is not None and utilisation >= limit:
         verdict["held"] = True
         if purpose == "resume":
             margin = ""
@@ -1247,14 +1241,27 @@ def decide(
         )
         return verdict
     if state.severity in RAISED_SEVERITIES:
+        # The floor runs before the None-utilisation guard so that a raised
+        # label holds even a reading carrying no figure at all to compare.
         verdict["held"] = True
+        if utilisation is None:
+            position = (
+                "the reading carries no utilisation to compare against the ceiling"
+            )
+        else:
+            position = f"{_position(state)} is below the {limit}% ceiling"
         verdict["reason"] = format_refusal(
             "D02",
             f"the account reports severity {state.severity!r} on the window that "
-            f"gates this {purpose}; {_position(state)} is below the {limit}% "
-            "ceiling, so this hold comes from the account's raised severity "
-            "rather than the configured ceiling"
+            f"gates this {purpose}; {position}, so this hold comes from the "
+            "account's raised severity rather than the configured ceiling"
             f"{_evidence_note(state)}",
+        )
+        return verdict
+    if utilisation is None:
+        verdict["reason"] = (
+            "headroom is reported known but carries no utilisation, so there is "
+            "nothing to compare against the ceiling"
         )
         return verdict
     verdict["reason"] = (
