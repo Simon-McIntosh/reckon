@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T01:28:33",
+  "updated": "2026-09-15T01:30:37",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -116760,6 +116760,370 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T215344778599-rate-is-marked-an-upper-bound",
+        "plan": "burn-is-visible-before-it-bites",
+        "section": "\u00a72",
+        "node": "rate-is-marked-an-upper-bound",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1099,
+                "cached_input_tokens": 863408,
+                "input_tokens": 864509,
+                "output_tokens": 2220,
+                "reasoning_output_tokens": 1327,
+                "total_tokens": 866729,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "306c1aec-df4a-489e-88c3-441bbb1f5baf",
+            "session_id": "ship-lane-aware-20260914"
+          },
+          "done_when": "uv run pytest tests/test_spa_crew_burn.py -q passes with a new case asserting that every derived rate figure in the rendered region carries a visible upper-bound marking distinguishing it from the meter position, which is the authority; a companion case asserting the meter position itself carries NO such marking, so the distinction is between the two rather than decoration on both; and the marking's text naming why it is a bound, since a resumed session records its whole accumulated context on every turn so run-level input over-counts. Failure delta 0 against base a76cb93",
+          "estimated_hours": null,
+          "goal": "The derived rate figures are rendered as a marked upper bound, not as measurements",
+          "id": "rate-is-marked-an-upper-bound",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T21:53:45Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T215344778599-rate-is-marked-an-upper-bound/manifest.md",
+          "plan": "burn-is-visible-before-it-bites",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "exact",
+          "time_budget": "35m",
+          "token_budget": null,
+          "write_paths": [
+            "docs/ui/crew.jsx",
+            "docs/ui/crew.css",
+            "tests/test_spa_crew_burn.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-backpressure",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T21:53:55Z",
+        "completed_at": "2026-09-14T23:05:24.484Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4239,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4289,
+        "stalled": true,
+        "time_budget": "35m",
+        "base_sha": "dc73720c5f6035d448a0773381b21bcac4f73347",
+        "commits": [
+          "b0ede8b69f154061c289d5ffb0ac14571fb1619b"
+        ],
+        "changed_lines": {
+          "added": 60,
+          "removed": 2,
+          "files": 3
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_crew_burn.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T215344778599-rate-is-marked-an-upper-bound.json",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T215344778599-rate-is-marked-an-upper-bound/manifest.md",
+        "scope_changed": false,
+        "session_id": "c58187cd-c8f6-40fc-8d34-29237d2c09d2",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 0,
+            "input_tokens_cumulative": 5921033,
+            "output_tokens": 5466,
+            "output_tokens_cumulative": 54048,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-14T23:05:24.484Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 744,
+              "budget_seconds": 900,
+              "classification": "scoring",
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 1644,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 7089,
+              "log_fresh": false,
+              "manifest_commits": [
+                "none (review role authored no repo change); changed_paths: [\"/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T162707540226-crew-meter-renders-position-and-projection.json\"]"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "3328b3a0df88248eddaf839a89124daabda695da3f72e5acc57f5ef45dc1818e",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T192759433285-rev-crew-meter-renders-position-and-projection/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan burn-is-visible-before-it-bites --section '\u00a72' --role review --spec-level exact --node review-of-rev-crew-meter-renders-position-and-projection --goal 'attach an independent review to run r-20260914T192759433285-rev-crew-meter-renders-position-and-projection' --done-when 'the review for r-20260914T192759433285-rev-crew-meter-renders-position-and-projection parses all five score dimensions' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T192759433285-rev-crew-meter-renders-position-and-projection.json --time-budget 15m --session ship-lane-aware-20260914 --local",
+              "node": "rev-crew-meter-renders-position-and-projection",
+              "phase": "starting",
+              "plan": "burn-is-visible-before-it-bites",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260914T192759433285-rev-crew-meter-renders-position-and-projection",
+              "session": "ship-lane-aware-20260914",
+              "terminal_age_seconds": 7131,
+              "terminal_at": "2026-09-14T19:55:00Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-lane-aware-20260914/rev-crew-meter-renders-position-and-projection"
+            },
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 1585,
+              "budget_seconds": 900,
+              "classification": "scoring",
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 2485,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 6143,
+              "log_fresh": false,
+              "manifest_commits": [
+                "none (review role \u2014 no code commits; the single write is the review JSON below)"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "c1e1b710ff5e0caf9dc7ef8dd724ddefe5c558f7f45b2e9f279ea025faab5408",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T192944863615-rev-lanes-view-reports-the-claude-probe/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan a-lane-can-say-where-it-stands --section where-the-probe-lives --role review --spec-level exact --node review-of-rev-lanes-view-reports-the-claude-probe --goal 'attach an independent review to run r-20260914T192944863615-rev-lanes-view-reports-the-claude-probe' --done-when 'the review for r-20260914T192944863615-rev-lanes-view-reports-the-claude-probe parses all five score dimensions' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T192944863615-rev-lanes-view-reports-the-claude-probe.json --time-budget 15m --session ship-lane-aware-20260914 --local",
+              "node": "rev-lanes-view-reports-the-claude-probe",
+              "phase": "starting",
+              "plan": "a-lane-can-say-where-it-stands",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260914T192944863615-rev-lanes-view-reports-the-claude-probe",
+              "session": "ship-lane-aware-20260914",
+              "terminal_age_seconds": 6191,
+              "terminal_at": "2026-09-14T20:10:40Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-lane-aware-20260914/rev-lanes-view-reports-the-claude-probe"
+            },
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 370,
+              "budget_seconds": 900,
+              "classification": "scoring",
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 1270,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 7155,
+              "log_fresh": false,
+              "manifest_commits": [
+                "none authored (review role",
+                "worktree unmodified)"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "7d81feb0ceab447abeb5b8fe006ea882e8cb7f17aab61fe9607054a31b11ae8a",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T193311734941-rev-attribution-report/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan burn-is-visible-before-it-bites --section '\u00a75' --role review --spec-level exact --node review-of-rev-attribution-report --goal 'attach an independent review to run r-20260914T193311734941-rev-attribution-report' --done-when 'the review for r-20260914T193311734941-rev-attribution-report parses all five score dimensions' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T193311734941-rev-attribution-report.json --time-budget 15m --session ship-lane-aware-20260914 --local",
+              "node": "rev-attribution-report",
+              "phase": "starting",
+              "plan": "burn-is-visible-before-it-bites",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260914T193311734941-rev-attribution-report",
+              "session": "ship-lane-aware-20260914",
+              "terminal_age_seconds": 7207,
+              "terminal_at": "2026-09-14T19:53:45Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-lane-aware-20260914/rev-attribution-report"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 20,
+            "evidence": 20,
+            "fit": 19,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 99
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6089142,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 4284.829,
+          "generated_tokens": 62319,
+          "generation_seconds": 4253.432,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 83.4,
+          "machine_seconds": 31.397,
+          "peak_input_tokens": 166809,
+          "tokens_per_second": 14.65,
+          "wall_tokens_per_second": 14.54
+        },
+        "follow_on_paths": [
+          "/",
+          "docs/evidence/archive/burn-is-visible-before-it-bites-landed.html"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_spa_crew_burn.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-lane-aware-20260914/rate-is-marked-an-upper-bound",
+          "session_id": "c58187cd-c8f6-40fc-8d34-29237d2c09d2",
+          "session_source": "pointer",
+          "retained_at": "2026-09-14T23:05:24.484Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 54.0,
+        "orientation_input_tokens": 1802855.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -116988,6 +117352,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1446
+    "_version": 1447
   }
 }
