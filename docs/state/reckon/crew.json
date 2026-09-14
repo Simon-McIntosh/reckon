@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T01:30:37",
+  "updated": "2026-09-15T01:35:29",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -117124,6 +117124,210 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T221120907206-containment-harness-matches-the-rendered-surface",
+        "plan": "viewport-containment",
+        "section": "\u00a72",
+        "node": "containment-harness-matches-the-rendered-surface",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2300,
+                "cached_input_tokens": 390692,
+                "input_tokens": 392994,
+                "output_tokens": 1630,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 394624,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3332e8d8-dcef-4091-9774-c9680478b165",
+            "session_id": "ship-s16-20260914"
+          },
+          "done_when": "One recorded run of tests/test_spa_viewport_containment.py walks every routable surface instead of expiring at the first one, and the number of surfaces it walked is stated as a digit greater than zero, because the defect being repaired is a guard that measured nothing; the plans surface reaches ready through the class names the mounted component actually renders, which at HEAD is ArtifactIndex producing r-artifact-index and r-artifact-row rather than the r-list and r-row the harness waits on at tests/spa_containment_harness.py line 33; the guard's first containment verdict is recorded verbatim in the run log whether it passes or fails, since a recorded negative result is the deliverable and a green run is not required; and one new case fails when a declared readiness selector matches nothing in the rendered surface, so the next component rename is reported loudly rather than waited on for twelve seconds",
+          "estimated_hours": null,
+          "goal": "Make the containment guard reach its walk instead of timing out on a readiness selector the surface no longer renders",
+          "id": "containment-harness-matches-the-rendered-surface",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T22:11:21Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T221120907206-containment-harness-matches-the-rendered-surface/manifest.md",
+          "plan": "viewport-containment",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/spa_containment_harness.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "disc-local",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T22:11:34Z",
+        "completed_at": "2026-09-14T23:32:31.531Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4810,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4857,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "bacc7f70ece28d39697e1ebe323e8c3a0caccfcf",
+        "commits": [
+          "0cf4ddbf7a20fcad777285e850c10118669818a8"
+        ],
+        "changed_lines": {
+          "added": 91,
+          "removed": 7,
+          "files": 1
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_viewport_containment.py with RECKON_VIEWPORT_VERDICT set, after reproducing the defect at the base revision",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T221120907206-containment-harness-matches-the-rendered-surface/walk-verdict.json",
+          "log_digest": "c7d1542701745c8f81ae01c00fa41a1765e562981c73341ceb2d504a28072833"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T221120907206-containment-harness-matches-the-rendered-surface/manifest.md",
+        "scope_changed": false,
+        "session_id": "1afe9307-b8b7-429d-abf1-66a109626733",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 7451563,
+            "input_tokens_cumulative": 7451563,
+            "output_tokens": 65711,
+            "output_tokens_cumulative": 65711,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-14T23:32:31.531Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 7615487,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 4853.376,
+          "generated_tokens": 72169,
+          "generation_seconds": 4785.918,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 81.3,
+          "machine_seconds": 67.458,
+          "peak_input_tokens": 162624,
+          "tokens_per_second": 15.08,
+          "wall_tokens_per_second": 14.87
+        },
+        "follow_on_paths": [
+          "tests/spa_containment_harness.py",
+          "tests/test_spa_vertical_scroll.py",
+          "tests/spa_browser_harness._classify_probe_failure",
+          "Plan/evidence",
+          "docs/"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16-20260914/containment-harness-matches-the-rendered-surface",
+          "session_id": "1afe9307-b8b7-429d-abf1-66a109626733",
+          "session_source": "stream",
+          "retained_at": "2026-09-14T23:32:31.531Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 67.0,
+        "orientation_input_tokens": 2012679.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -117352,6 +117556,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1447
+    "_version": 1448
   }
 }
