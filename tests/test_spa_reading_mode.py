@@ -2,11 +2,17 @@ import json
 import subprocess
 from pathlib import Path
 
-from tests.spa_browser_harness import AuthoredSource, authored_shell_source
+from tests.spa_browser_harness import (
+    AuthoredSource,
+    authored_shell_source,
+    file_spa,
+    installed_browser_or_skip,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 SHELL = authored_shell_source(ROOT)
 PLAN = ROOT / "docs" / "ui" / "plan.jsx"
+VIEWPORTS = ((1374, 900), (1920, 900))
 
 
 def _function_source(name: str, path: Path | AuthoredSource = SHELL) -> str:
@@ -231,3 +237,102 @@ def test_reader_steps_the_published_rendered_order_instead_of_rederiving_it() ->
     assert "focusPosition" not in reader
     assert "onPage" not in reader
     assert "setReaderSelectionKey(target.key)" in reader
+
+
+def _measure_state() -> dict[str, object]:
+    inventory = [
+        {
+            "slug": "measured",
+            "nav_key": "measured",
+            "title": "Measured plan",
+            "type": "plan",
+            "status": "active",
+            "effective_status": "active",
+            "depends_on": [],
+            "impl": 0.5,
+            "effort_hours": 1,
+        }
+    ]
+    return {
+        "project": "reckon",
+        "projects": [{"project": "reckon", "plans_count": len(inventory)}],
+        "inventory": inventory,
+        "plans": {item["slug"]: item for item in inventory},
+        "sprints": [],
+        "milestones": [],
+        "north_stars": [],
+        "timeline": [],
+        "blockers": [],
+        "active_sprints": [],
+        "active_sprint_conflict": False,
+        "attachment_relations": [],
+    }
+
+
+def _measure_preload() -> str:
+    return r"""
+      const nativeFetch = window.fetch.bind(window);
+      window.fetch = (resource, options) => {
+        const url = new URL(String(resource), window.location.href);
+        if (url.pathname.startsWith('/plan/reckon/')) {
+          return Promise.resolve(new Response(JSON.stringify({
+            version: 1, decisions: [], comments: {}, gates: [], followups: [],
+          }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+        }
+        if (url.pathname.startsWith('/reckon/') && url.pathname.endsWith('.html')) {
+          return Promise.resolve(new Response(
+            '<main class="plan-doc"><p>Rendered body</p></main>',
+            { status: 200, headers: { 'Content-Type': 'text/html' } },
+          ));
+        }
+        return nativeFetch(resource, options);
+      };
+    """
+
+
+def _measure_probe() -> str:
+    return r"""window.__measureReadingWidths = async () => {
+      const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+      const settle = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const waitFor = async (predicate, description) => {
+        const deadline = performance.now() + 8000;
+        while (performance.now() < deadline) {
+          if (predicate()) { await settle(); return; }
+          await delay(25);
+        }
+        throw new Error(`timed out waiting for ${description}`);
+      };
+      const measure = () => {
+        const element = document.querySelector('.r-reading-content');
+        if (!element) throw new Error('no .r-reading-content rendered');
+        return element.getBoundingClientRect().width;
+      };
+
+      await waitFor(() => document.querySelector('.r-reading-content'), 'entering base view');
+      const base = measure();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', bubbles: true }));
+      await waitFor(() => document.querySelector('.r-reading.is-focus-mode'), 'focus mode after f');
+      const focus = measure();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await waitFor(() => !document.querySelector('.r-reading.is-focus-mode'), 'exit focus with Escape');
+      const restored = measure();
+      return { base, focus, restored };
+    }"""
+
+
+def test_reading_measure_does_not_move_in_full_screen(tmp_path: Path) -> None:
+    browser = installed_browser_or_skip()
+    for viewport in VIEWPORTS:
+        with file_spa(
+            tmp_path, browser, _measure_state(), route="#plan/measured"
+        ) as spa:
+            result = spa.run_probe(
+                "window.__measureReadingWidths()",
+                viewport=viewport,
+                ready_expression="Boolean(document.querySelector('.r-reading-content'))",
+                preload_expression=_measure_preload() + _measure_probe(),
+            )
+        assert result["base"] == result["focus"] == result["restored"] == 820, (
+            viewport,
+            result,
+        )
