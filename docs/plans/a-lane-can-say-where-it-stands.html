@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="17">
 <meta name="plan-section-declarations" content="{&quot;what-is-wrong&quot;:&quot;done&quot;,&quot;the-surface&quot;:&quot;done&quot;,&quot;where-the-probe-lives&quot;:&quot;implementable&quot;,&quot;parse-strictly&quot;:&quot;implementable&quot;,&quot;coordinator-share&quot;:&quot;implementable&quot;,&quot;pin-the-denominator&quot;:&quot;implementable&quot;,&quot;out-of-scope&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="5e3e041c895353a003e15954382a78b49151a2ac,fab092dafb269286fb2f6bc1dbfb1f060dd95247">
 <meta name="plan-artifacts" content="reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/budget.py,reckon/_backends.py,tests/test_coordinator_reserve.py,tests/test_flight.py,tests/test_claude_account_surface.py,tests/fixtures/backends/claude-account-limits.json,docs/evidence/archive/a-lane-can-say-where-it-stands-landed.html">
@@ -433,6 +433,9 @@
 <div class="r-comment" data-section="where-the-probe-lives" data-id="c-20260914T1700" data-who="reckon-ship" data-when="2026-09-14T17:00:00Z">
     <div class="r-comment-body">lane-account-reading landed — commit fab092dafb269286fb2f6bc1dbfb1f060dd95247, merged and content verified present at HEAD by marker. Gate passed exit 0; measure: 13 tests added, 86 passed across tests/test_claude_account_surface.py, tests/test_budget.py and tests/test_lanes_view_is_live.py, no regressions. The dialect now owns its reading and its transport; parsing requires a named window and a numeric utilisation and returns unknown otherwise, with a missing field never resolving to zero and credential expiry producing unknown rather than clear or exhausted. Artifacts on the plan; record at docs/evidence/archive/a-lane-can-say-where-it-stands-landed.html#account-reading. TWO FINDINGS FROM VERIFICATION RATHER THAN FROM THE MANIFEST. First, the manifest reported status complete with commits, changed_paths and tests all EMPTY while a real commit sat one ahead with a clean tree — commit, scope and delta were all established by reading the worktree, and a promotion trusting the manifest would have recorded nothing. Second, the prior-art scout predicted the exact gap forty minutes before the node ran: its map warned that a node adding only a method on Dialect would leave _declared_probe_command reporting the old answer, and that is what happened — reckon/mcp_views.py was declared in scope and never touched, so the lane can now read its own position while the lanes view still reports it as having no probe. Followed up as lanes-view-reports-the-claude-probe rather than treated as a failure, the node's stated goal being the dialect reading.</div>
 </div>
+<div class="r-comment" data-section="where-the-probe-lives" data-id="c-run-r-20260914T160938925813-review-of-lane-account-reading" data-who="crew-attention" data-when="2026-09-14T16:59:18.562Z">
+    <div class="r-comment-body"><p>Independent review attached to lane-account-reading; all five dimensions parsed</p></div>
+</div>
 <div class="r-comment" data-section="coordinator-share" data-id="c-run-r-20260914T143307893065-coordinator-reserve-declared" data-who="crew-gc-coverage" data-when="2026-09-14T15:32:17.197Z">
     <div class="r-comment-body"><p>A declared coordinator reserve is subtracted from the dispatch ceiling with its reasoning recorded beside it; 144 passed, 0 failed across the reserve, flight and budget suites</p></div>
 </div>
@@ -441,6 +444,12 @@
 </div>
 <div class="r-comment" data-section="coordinator-share" data-id="c-run-r-20260914T153315066911-review-of-coordinator-reserve" data-who="crew-sweep-cadence" data-when="2026-09-14T15:57:57.103Z">
     <div class="r-comment-body"><p>Independent review attached to coordinator-reserve-declared; all five dimensions parsed</p></div>
+</div>
+<div class="r-comment" data-section="parse-strictly" data-id="c-run-r-20260914T162006293651-dispatch-carries-the-lane-reading" data-who="crew-codex-usage" data-when="2026-09-14T17:55:23.355Z">
+    <div class="r-comment-body"><p>A dispatch carries the local lane's published reading as advisory data and refuses nothing; 20 passed, 9 tests added. The critical negative is asserted directly: three documents at headroom 122, headroom 0 and absent all yield exit 0, an unchanged resolved backend and a passing validation, so no value in the document can refuse, hold or reroute a dispatch. Manifest was empty again on this backend - commit and delta established from the worktree</p></div>
+</div>
+<div class="r-comment" data-section="parse-strictly" data-id="c-run-r-20260914T175651288129-review-of-dispatch-lane-reading" data-who="crew-flag-migration" data-when="2026-09-14T18:14:55.398Z">
+    <div class="r-comment-body"><p>Independent review attached to dispatch-carries-the-lane-reading</p></div>
 </div>
 </section>
 </main>
