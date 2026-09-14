@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-14T15:52:51",
+  "updated": "2026-09-14T16:31:36",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -101664,6 +101664,180 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T125035036163-display-truth-reuse-map-wave-and-soft-limit",
+        "plan": "crew-observability-truth",
+        "section": "\u00a713",
+        "node": "display-truth-reuse-map-wave-and-soft-limit",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1976,
+                "cached_input_tokens": 235014,
+                "input_tokens": 236992,
+                "output_tokens": 745,
+                "reasoning_output_tokens": 297,
+                "total_tokens": 237737,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3ceb92f8-d6d4-46b5-82a8-d120cb0ddd1f",
+            "session_id": "ship-s18-20260914"
+          },
+          "done_when": "the report carries one row per measure row in the measure tables of sections 13 and 17 of the plan at the base revision (17 rows expected; state the count found if it differs), each row carrying a verdict of satisfied, partial or absent, a citation of the form file:line for every satisfied and partial verdict, and a proposed exclusive write-path set per section with the test files that assert on each named beside the source",
+          "estimated_hours": null,
+          "goal": "produce one reuse map for the unlanded measures of the wave-lifecycle section and the runtime-gate section",
+          "id": "display-truth-reuse-map-wave-and-soft-limit",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T12:50:35Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T125035036163-display-truth-reuse-map-wave-and-soft-limit/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "investigate",
+          "section": "\u00a713",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md"
+          ]
+        },
+        "role": "investigate",
+        "spec_level": "guided",
+        "member": "crew-attention",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "read-only",
+          "usable_input_window": 172800
+        },
+        "dispatched_at": "2026-09-14T12:50:42Z",
+        "completed_at": "2026-09-14T13:51:16.023Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3616,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3634,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "5384182abc14ee26159c13769f3eadb81ccf296c",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "reckon crew dispatch --role review (independent scored review, run r-20260914T135359878507)",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T125035036163-display-truth-reuse-map-wave-and-soft-limit.json",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T125035036163-display-truth-reuse-map-wave-and-soft-limit/manifest.md",
+        "scope_changed": false,
+        "session_id": "a4d5a850-d20e-4f1f-9726-d4e8b5ac5476",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": null,
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "run completed after 1 rate-limit retries; retries alone are not a refusal"
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-14T13:51:16.023Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 4792310,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 3630.68,
+          "generated_tokens": 36442,
+          "generation_seconds": 3610.163,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 70.7,
+          "machine_seconds": 20.517,
+          "peak_input_tokens": 141304,
+          "tokens_per_second": 10.09,
+          "wall_tokens_per_second": 10.04
+        },
+        "follow_on_paths": [
+          "~/.config/reckon/crew/reports/.git",
+          "display-reuse-map.md",
+          "emptying/removing",
+          "1/2/6",
+          "reckon/crew;"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "investigate",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": "investigate node whose declared write path is the crew reports directory, which is outside every git repository (rev-parse refuses); the durable delivery is the report file itself",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s18-20260914/display-truth-reuse-map-wave-and-soft-limit",
+          "session_id": "a4d5a850-d20e-4f1f-9726-d4e8b5ac5476",
+          "session_source": "pointer",
+          "retained_at": "2026-09-14T13:51:16.023Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 72.0,
+        "orientation_input_tokens": 3432112.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -101892,6 +102066,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1380
+    "_version": 1381
   }
 }
