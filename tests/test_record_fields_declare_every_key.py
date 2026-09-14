@@ -47,6 +47,7 @@ def test_promoted_record_fields_are_all_declared() -> None:
     assert "predecessor_run" in declared
     assert "boundary_waiver" in declared
     assert "commit_resolution" in declared
+    assert "review" in declared
 
     assert len(ledger.RECORD_FIELDS) == len(set(ledger.RECORD_FIELDS))
     assert all(isinstance(field, str) and field for field in ledger.RECORD_FIELDS)

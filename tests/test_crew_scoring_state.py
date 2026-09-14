@@ -126,3 +126,46 @@ def test_unparsed_review_is_distinct_from_absent_review(review_home: Path) -> No
         review.read_review("sample-project", "source-run")["raw_text"]
         == record["raw_text"]
     )
+
+
+def test_a_promotable_parsed_review_reduces_to_its_ledger_row_block(
+    review_home: Path,
+) -> None:
+    parsed = _parsed_review()
+    review.store_review(parsed)
+    row = recovery.classify_pointer(_pointer(review_home))
+    assert row["classification"] == "promotable"
+
+    block = review.ledger_block(parsed)
+
+    assert block["status"] == "parsed"
+    assert set(block["scores"]) == set(review.REVIEW_DIMENSIONS)
+    assert block["absent"] == []
+    assert block["total"] == 18 * len(review.REVIEW_DIMENSIONS)
+
+
+def test_a_scoring_unparsed_review_reduces_to_a_distinct_ledger_row_block(
+    review_home: Path,
+) -> None:
+    record = review.parse_review("review output without structured scores")
+    record.update(
+        {
+            "project": "sample-project",
+            "reviewed_run_id": "source-run",
+            "review_run_id": "review-run",
+        }
+    )
+    review.store_review(record)
+    row = recovery.classify_pointer(_pointer(review_home))
+    assert row["classification"] == "scoring"
+    assert row["review_status"] == "unparsed"
+
+    block = review.ledger_block(record)
+
+    assert block == {
+        "status": "unparsed",
+        "scores": {},
+        "absent": list(review.REVIEW_DIMENSIONS),
+        "total": None,
+    }
+    assert block != review.ledger_block(None)

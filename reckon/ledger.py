@@ -140,6 +140,7 @@ RECORD_FIELDS = (
     "boundary_waiver",
     "resume_waiver",
     "watch_override",
+    "review",
     "unreconciled_override",
 )
 
@@ -924,6 +925,7 @@ def build_record(
     follow_on_paths: Iterable[str] | None = None,
     predecessor_run: str | None = None,
     dispute_count: int | str | None = None,
+    review: Mapping[str, Any] | None = None,
     shadow_contaminated: str = "",
 ) -> dict[str, Any]:
     """Assemble one completed-run record, refusing an unknown gate verdict.
@@ -941,6 +943,13 @@ def build_record(
     caller supplies them and silently absent otherwise, so a row promoted
     before this instrumentation keeps every existing field; the three new keys
     are additions, never replacements.
+
+    ``review`` is the compact block a review record reduces to (see the review
+    store's reducer), so an attached review survives the loss of the crew
+    configuration home on the one durable record that joins to it — the row
+    owns the dimensions and their total, and the store owns the verbatim text
+    and findings. A row with no review keeps the key at ``None``, which is
+    distinct from a parsed review whose dimensions genuinely measure zero.
     """
     verdict = str(gate).strip().lower()
     if verdict not in GATE_VERDICTS:
@@ -1020,6 +1029,7 @@ def build_record(
         "unreconciled_override": (
             None if unreconciled_override is None else dict(unreconciled_override)
         ),
+        "review": None if review is None else dict(review),
     }
     # Both of these are absent from a record that has nothing to say about them,
     # which is why they are set after the literal rather than in it. The rate a
@@ -1556,6 +1566,50 @@ def read_records(
             raise LedgerError("record limit must be a positive integer")
         records = records[-limit:]
     return records, version
+
+
+def review_scores(
+    records: Iterable[Mapping[str, Any]],
+    *,
+    plan: str | None = None,
+    node: str | None = None,
+    run_id: str | None = None,
+) -> list[dict[str, Any]]:
+    """Return per-dimension scores from ledger rows that carry a review.
+
+    Filters bind the row's own run attributes, so a question like "which
+    dimension scored low on the work this plan produced" is answerable from
+    the committed ledger alone rather than by reading files by hand. A row
+    promoted without a review is omitted — an absent review is not a score of
+    zero, and nothing here turns it into one: a reviewed run whose dimensions
+    genuinely measure zero carries a block with ``total`` 0 and shows up in
+    the result, an unreviewed run does not.
+    """
+    selected: list[dict[str, Any]] = []
+    for record in records:
+        if not isinstance(record, Mapping):
+            continue
+        if plan is not None and str(record.get("plan") or "") != str(plan):
+            continue
+        if node is not None and str(record.get("node") or "") != str(node):
+            continue
+        if run_id is not None and str(record.get("run_id") or "") != str(run_id):
+            continue
+        block = record.get("review")
+        if not isinstance(block, Mapping):
+            continue
+        selected.append(
+            {
+                "run_id": str(record.get("run_id") or ""),
+                "plan": str(record.get("plan") or ""),
+                "node": str(record.get("node") or ""),
+                "status": str(block.get("status") or "unparsed"),
+                "scores": dict(block.get("scores") or {}),
+                "absent": list(block.get("absent") or []),
+                "total": block.get("total"),
+            }
+        )
+    return selected
 
 
 def _resume_stream_order(path: Path) -> tuple[int, str]:

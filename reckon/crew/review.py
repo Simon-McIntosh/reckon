@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -253,3 +254,32 @@ def read_review(
     if not path.is_file():
         return None
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def ledger_block(record: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Return the compact shape a promoted ledger row stores for a review.
+
+    ``None`` means no review was stored — the run was promoted unreviewed,
+    which is not a score of zero. A stored record reduces to its status,
+    per-dimension scores, absent dimensions and total, dropping the verbatim
+    text and findings that belong in the review store. A record that never
+    produced scores keeps a status other than ``"parsed"`` with empty scores,
+    so it reads unlike an absent review and unlike a parsed review whose
+    dimensions genuinely measure zero.
+    """
+    if record is None:
+        return None
+    score_values = record.get("scores")
+    scores: dict[str, int] = {}
+    if isinstance(score_values, Mapping):
+        scores = {
+            str(dimension): int(value)
+            for dimension, value in score_values.items()
+        }
+    total = record.get("total")
+    return {
+        "status": str(record.get("status") or "unparsed"),
+        "scores": scores,
+        "absent": [str(dimension) for dimension in (record.get("absent") or [])],
+        "total": None if total is None else int(total),
+    }
