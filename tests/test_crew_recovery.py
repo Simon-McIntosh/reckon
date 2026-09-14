@@ -1700,7 +1700,7 @@ def test_one_stored_new_line_renders_differently_at_two_display_settings(home) -
 
 
 def _spend_columns() -> list[tuple[int, int]]:
-    """The (start, width) of the five spend cells on a plain rendered line."""
+    """The (start, width) of the spend cells a plain rendered line carries."""
     module = ticker_module
     prefix = (
         module.CLOCK
@@ -1714,21 +1714,25 @@ def _spend_columns() -> list[tuple[int, int]]:
         + module.MODEL
         + module.PAIR_GAP
         + module.EFFORT
-        + module.SPEND_GAP
     )
-    columns: list[tuple[int, int]] = []
-    for width in (module.WALL, module.MODEL_SECS, module.TOKENS, module.RATE, module.DOLLARS):
-        columns.append((prefix, width))
-        prefix += width + module.SPEND_GAP
-    return columns
+    # The fleet counters precede the spend block once the row carries only the
+    # measured pair, so how many columns sit between effort and the wall cell is
+    # a layout fact. When SPEND is exactly that pair the counters lead; these
+    # fixtures carry no waiting counter, so the block is the named counters of
+    # two digits plus a letter and the separators between them, and the spend
+    # block's own leading gap follows.
+    if module.SPEND == module.WALL + module.SPEND_GAP + module.RATE:
+        prefix += len(module._CELLS) * 3 + (len(module._CELLS) - 1)
+    return [(prefix + module.SPEND_GAP, module.WALL)]
 
 
 # ── What a transition carries about a run's cumulative spend ──────────────
 #
-# The pane's five cost cells read the transition record's own numeric facts,
-# so the record must carry them as separate values — never as pre-formatted
-# strings — and an unmeasured chain must carry the explicit absence state
-# (None), not a zero that asserts a measurement never taken.
+# The transition record carries each spend quantity as a separate numeric
+# fact — never as pre-formatted strings — and an unmeasured chain must carry
+# the explicit absence state (None), not a zero that asserts a measurement
+# never taken. The row renders wall time and generation rate; model seconds,
+# charged tokens and the dollar figure stay in the record, unrendered.
 
 
 def _spend_snapshot(run_id: str, **overrides: Any) -> dict:
@@ -1846,10 +1850,9 @@ def test_a_resumed_runs_line_carries_measured_values_not_markers(
 ) -> None:
     """The accumulator exists; a reader sees it only through this call.
 
-    The wall, model and token cells of a resumed run's rendered line must carry
-    the measured figures rather than the absence marker — nothing reaches a
-    reader until this call site exists, so this is the positive control for the
-    wiring.
+    The wall cell of a resumed run's rendered line must carry the measured
+    figure rather than the absence marker — nothing reaches a reader until
+    this call site exists, so this is the positive control for the wiring.
     """
     run_dir = tmp_path / "runs" / "r-resumed"
     run_dir.mkdir(parents=True)
@@ -1877,21 +1880,11 @@ def test_a_resumed_runs_line_carries_measured_values_not_markers(
     measured_line = ticker_module.Ticker(width=180).render(measured)
     absent_line = ticker_module.Ticker(width=180).render(absent)
 
-    # Charged tokens: 4,200 input + 1,100 cached + 640 output = 5,940 -> "6k".
-    columns = dict(zip(("wall", "model", "tokens"), _spend_columns()))
-    assert measured_line[columns["wall"][0] : columns["wall"][0] + columns["wall"][1]] == "2:00:00"
-    assert (
-        measured_line[columns["model"][0] : columns["model"][0] + columns["model"][1]]
-        == " 20:00"
-    )
-    assert (
-        measured_line[columns["tokens"][0] : columns["tokens"][0] + columns["tokens"][1]]
-        == "  6k"
-    )
-    # The same run without a measured chain renders the absence marker instead.
-    for name in ("wall", "model", "tokens"):
-        start, width = columns[name]
-        assert absent_line[start : start + width].strip() == "\N{EN DASH}"
+    # The measured 7,200s wall time renders; the same run without a measured
+    # chain renders the absence marker instead.
+    start, width = _spend_columns()[0]
+    assert measured_line[start : start + width] == "2:00:00"
+    assert absent_line[start : start + width].strip() == "\N{EN DASH}"
 
 
 # ── The budget fence charges tokens, the hang ceiling stays wall clock ──────
