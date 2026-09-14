@@ -601,10 +601,16 @@ function renderCrewQuotaMeter(reading) {
             figures.map((figure, index) => (
               <span
                 key={`${figure.periodLabel}-${index}`}
-                className="r-crew-figure"
+                className="r-crew-figure r-crew-figure--rate"
                 data-observed-at={figure.observedStamp || ""}
               >
-                {crewFormatBurn(figure.burn)} <em>{figure.periodLabel}</em>
+                {crewFormatBurn(figure.burn)} <em>{figure.periodLabel}</em>{" "}
+                <span
+                  className="r-crew-bound"
+                  title="run-level input is an upper bound, not a measurement: a resumed session records its whole accumulated context on every turn, so input over-counts"
+                >
+                  upper bound · resumed sessions re-read full context each turn
+                </span>
                 {figure.only && <span className="r-crew-only-window">· only window</span>}
               </span>
             ))
