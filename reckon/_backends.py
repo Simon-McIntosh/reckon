@@ -58,6 +58,7 @@ import re
 import subprocess
 import tempfile
 import threading
+import urllib.request
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -460,6 +461,115 @@ def _epoch_to_iso(value: Any) -> str | None:
         return None
 
 
+# The account surface the claude-shaped harness publishes and the stored
+# credential that authenticates it. The endpoint is the client's internal
+# contract rather than a published API; a moved or unreachable surface folds
+# to an unknown reading, and the strict parse below folds a shape change to
+# unknown the same way, so a lane can be blind but never falsely clear.
+# Times attach UTC via timezone.utc, not the datetime.UTC alias, because this
+# runtime's datetime class does not define the alias despite exporting its name.
+CLAUDE_ACCOUNT_USAGE_URL = "https://claude.ai/api/usage_this_cycle"
+CLAUDE_CREDENTIAL_PATH = Path("~/.claude/.credentials.json")
+# The named window a claude lane's reading is fenced against: the account-wide
+# figure, never a scoped window whose identity the client only names by label.
+ACCOUNT_WINDOW = "weekly"
+
+
+def _load_claude_credential() -> dict[str, Any]:
+    """Read the harness's stored OAuth block for the account read.
+
+    Raises when the store is missing or carries no usable authentication, so a
+    caller reports that loudly rather than letting the transport fail later on
+    a missing token.
+    """
+    path = CLAUDE_CREDENTIAL_PATH.expanduser()
+    if not path.is_file():
+        raise FileNotFoundError(f"no stored credential at {path}")
+    with path.open() as handle:
+        try:
+            stored = json.load(handle)
+        except ValueError as exc:
+            raise ValueError(f"credential at {path} is not JSON — {exc}") from exc
+    oauth = stored.get("claudeAiOauth") if isinstance(stored, Mapping) else None
+    if not isinstance(oauth, Mapping) or not oauth.get("accessToken"):
+        raise ValueError(f"credential at {path} carries no usable authentication")
+    return oauth
+
+
+def _claude_credential_expiry(oauth: Mapping[str, Any]) -> datetime | None:
+    """Return when the stored login's lifetime ends, or None if undeclared.
+
+    The access token lapses in hours but is refreshable while its refresh token
+    lives, so the login's end is the refresh token's expiry; an access token
+    with no living refresh token is judged by its own expiry.
+    """
+    declared = oauth.get("refreshTokenExpiresAt")
+    if declared is None:
+        declared = oauth.get("expiresAt")
+    if not isinstance(declared, (int, float)) or isinstance(declared, bool):
+        return None
+    try:
+        return datetime.fromtimestamp(float(declared), tz=timezone.utc)  # noqa: UP017
+    except (OverflowError, OSError, ValueError):
+        return None
+
+
+def _fetch_claude_account(oauth: Mapping[str, Any]) -> object:
+    """Read the account position over the client's HTTPS account surface.
+
+    The read is account metadata rather than an inference request, so it runs
+    no model. A moved or unreachable surface raises; the caller folds the
+    failure into an unknown reading.
+    """
+    request = urllib.request.Request(
+        CLAUDE_ACCOUNT_USAGE_URL,
+        headers={"Authorization": f"Bearer {oauth['accessToken']}"},
+    )
+    # The URL is the module constant above, pinned to https; no scheme comes
+    # from any input, so the open cannot be steered toward a file or custom
+    # scheme.
+    with urllib.request.urlopen(request, timeout=10) as response:  # noqa: S310
+        return json.load(response)
+
+
+def _parse_claude_account(payload: object) -> dict[str, Any]:
+    """Parse the account answer strictly into the shared budget block.
+
+    The answer's shape is the client's internal contract and can change without
+    notice. The named window a lane is fenced against, a numeric utilisation
+    inside it and a reset time are required; an unrecognised shape, a missing
+    window, or a non-numeric figure resolves to an honest unknown rather than
+    to a plausible low utilisation, because the quiet failure runs toward
+    headroom.
+    """
+    if not isinstance(payload, Mapping):
+        return unknown_budget("account answer was not an object")
+    windows = payload.get("windows")
+    if not isinstance(windows, Mapping) or not windows:
+        return unknown_budget("account answer carried no named windows")
+    window = windows.get(ACCOUNT_WINDOW)
+    if not isinstance(window, Mapping):
+        return unknown_budget(f"account answer carried no {ACCOUNT_WINDOW} window")
+    utilisation = window.get("utilization")
+    if not isinstance(utilisation, (int, float)) or isinstance(utilisation, bool):
+        return unknown_budget(f"account {ACCOUNT_WINDOW} utilisation is not numeric")
+    resets_at = _epoch_to_iso(window.get("resetsAt"))
+    if resets_at is None:
+        return unknown_budget(f"account {ACCOUNT_WINDOW} window names no reset time")
+    budget = unknown_budget("")
+    budget.update(
+        {
+            "headroom": "known",
+            "utilisation_pct": round(100.0 * float(utilisation), 1),
+            "rate_limit_type": ACCOUNT_WINDOW,
+            "rate_limit_period_minutes": window.get("windowMinutes"),
+            "resets_at": resets_at,
+            "detail": "account surface reports utilisation and reset time",
+        }
+    )
+    return budget
+
+
 def _is_rate_limit_retry(event: Mapping[str, Any]) -> bool:
     """Whether a ``system/api_retry`` record names rate limiting as its cause.
 
@@ -650,6 +760,24 @@ class Dialect:
     def read_probe(self, response: Mapping[str, Any]) -> dict[str, Any]:
         """Fold a probe's answer into the shared budget block."""
         return unknown_budget("dialect declares no budget probe to interpret")
+
+    def read_account_surface(
+        self,
+        *,
+        backend: Mapping[str, Any],
+        fetch: Callable[..., object] | None = None,
+        now: datetime | None = None,
+    ) -> dict[str, Any] | None:
+        """Read remaining headroom over this dialect's own transport, or None.
+
+        None is the honest default for a dialect whose account is only reachable
+        through the shared probe exchange (:meth:`budget_probe`); a caller falls
+        back to it. A dialect that answers here owns the whole read — credential,
+        transport and strict parse — and must return an unknown block naming the
+        reason on every failure rather than raising, matching the funnel's
+        contract so a pre-flight is never stopped by its own instrument.
+        """
+        return None
 
     def classify_stream_failure(
         self,
@@ -1205,14 +1333,18 @@ class _ClaudeDialect(Dialect):
         windows = info.get("unifiedWindows")
         candidates = [
             (period, window)
-            for period, window in (windows.items() if isinstance(windows, Mapping) else ())
+            for period, window in (
+                windows.items() if isinstance(windows, Mapping) else ()
+            )
             if isinstance(window, Mapping)
             and isinstance(window.get("utilization"), (int, float))
             and not isinstance(window.get("utilization"), bool)
         ]
         if not candidates:
             return unknown_budget("rate-limit event carried no unifiedWindows")
-        period, binding = max(candidates, key=lambda item: float(item[1]["utilization"]))
+        period, binding = max(
+            candidates, key=lambda item: float(item[1]["utilization"])
+        )
         budget = unknown_budget("")
         budget.update(
             {
@@ -1227,6 +1359,47 @@ class _ClaudeDialect(Dialect):
             }
         )
         return budget
+
+    def read_account_surface(
+        self,
+        *,
+        backend: Mapping[str, Any],
+        fetch: Callable[[Mapping[str, Any]], object] | None = None,
+        now: datetime | None = None,
+    ) -> dict[str, Any]:
+        """Read remaining headroom from the harness's own account surface.
+
+        The dialect owns the whole read: the OAuth credential comes from the
+        harness's own store, the transport is an HTTPS account read that runs
+        no model, and the answer is parsed strictly so a shape change resolves
+        to an honest unknown rather than to a plausible low utilisation. The
+        one window a lane is fenced against is required; anything else — an
+        unrecognised shape, a missing window, a non-numeric figure — returns
+        unknown, because the quiet parse failure runs toward headroom.
+
+        Every way this can fail returns an unknown block naming the reason,
+        matching the probe exchange's contract, so a pre-flight is never
+        stopped by its own instrument.
+        """
+        if now is None:
+            now = datetime.now(timezone.utc)  # noqa: UP017
+        try:
+            credential = _load_claude_credential()
+        except (OSError, ValueError) as exc:
+            return unknown_budget(f"account credential unreadable — {exc}")
+        expiry = _claude_credential_expiry(credential)
+        if expiry is not None:
+            age = (now - expiry).total_seconds()
+            if age >= 0:
+                return unknown_budget(
+                    f"account credential expired {age:.0f}s ago — "
+                    "the lane's position is unknown until the login is renewed"
+                )
+        try:
+            payload = (fetch or _fetch_claude_account)(credential)
+        except (OSError, ValueError) as exc:
+            return unknown_budget(f"account read failed — {exc}")
+        return _parse_claude_account(payload)
 
 
 def _number(value: Any) -> float | None:
@@ -1456,6 +1629,8 @@ def probe_budget(
     backend_name: str,
     backend: Mapping[str, Any],
     runner: Callable[[BudgetProbe], Mapping[str, Any] | None] | None = None,
+    fetch: Callable[[Mapping[str, Any]], object] | None = None,
+    now: datetime | None = None,
 ) -> dict[str, Any]:
     """Read a backend's remaining headroom from its own account surface.
 
@@ -1469,6 +1644,12 @@ def probe_budget(
         dialect = dialect_for(backend)
     except BackendError as exc:
         return unknown_budget(str(exc))
+    try:
+        reading = dialect.read_account_surface(backend=backend, fetch=fetch, now=now)
+    except (OSError, subprocess.SubprocessError, ValueError) as exc:
+        return unknown_budget(f"account-limit read failed to run — {exc}")
+    if reading is not None:
+        return reading
     probe = dialect.budget_probe(str(backend.get("command") or ""))
     if probe is None:
         return unknown_budget(
