@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-14T23:44:08",
+  "updated": "2026-09-14T23:47:13",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -111468,6 +111468,175 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T204953573024-scope-review-version-derives-from-version-tags",
+        "plan": "version-derives-from-version-tags",
+        "section": "",
+        "node": "scope-review-version-derives-from-version-tags",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1101,
+                "cached_input_tokens": 236593,
+                "input_tokens": 237696,
+                "output_tokens": 1801,
+                "reasoning_output_tokens": 723,
+                "total_tokens": 239497,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3332e8d8-dcef-4091-9774-c9680478b165",
+            "session_id": "ship-s16-20260914"
+          },
+          "done_when": "A report at the write path accounts for every h2 section id in docs/plans/version-derives-from-version-tags.html exactly once, giving each section exactly one verdict from landed, unlanded, out-of-scope, or no-measure-stated; no-measure-stated is required for any section that states a deliverable in prose without a stated measure of its own, and such a section is reported as its own finding and never resolved into one of the other three; for every other verdict the section's own measure is quoted from the plan, the repository paths that section must write are named, and the evidence read at HEAD that justifies the verdict is given; any deliverable stated as prose inside a collapsed or landed summary is reported as its own row, because a reader stops at a summary and the dependency scan reads plans rather than section text; the number of unlanded sections and the number of no-measure-stated sections are each stated as a digit; every open followup in the plan is listed with whether its work is already done; and any section whose measure can no longer be produced is named with the reason",
+          "estimated_hours": null,
+          "goal": "Report the true remaining scope of this plan by checking every section against the code at HEAD",
+          "id": "scope-review-version-derives-from-version-tags",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T20:49:53Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T204953573024-scope-review-version-derives-from-version-tags/manifest.md",
+          "plan": "version-derives-from-version-tags",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "review",
+          "section": "",
+          "spec_level": "guided",
+          "time_budget": "20m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/scope-version-derives-from-version-tags.md"
+          ]
+        },
+        "role": "review",
+        "spec_level": "guided",
+        "member": "crew-elapsed",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "read-only",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T20:50:10Z",
+        "completed_at": "2026-09-14T21:44:53.163Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3247,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3283,
+        "stalled": true,
+        "time_budget": "20m",
+        "base_sha": "467016b86025e1dfe4d14ef803d4d923004f5b20",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_build.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T204953573024-scope-review-version-derives-from-version-tags/wheel-gate.log",
+          "log_digest": "74c2eb73b0834a0273d5a31dd78a47587cc2094c2d9a44f1fd87ec87935ce313"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T204953573024-scope-review-version-derives-from-version-tags/manifest.md",
+        "scope_changed": false,
+        "session_id": "8fcb1f0b-8e42-466d-bbee-973846ca843f",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no events yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-14T21:44:53.163Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "follow_on_paths": [
+          "1.0"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "review",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": null,
+        "no_commit": "review role: the deliverable is a scope report outside the repository, not a code change",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16-20260914/scope-review-version-derives-from-version-tags",
+          "session_id": "8fcb1f0b-8e42-466d-bbee-973846ca843f",
+          "session_source": "stream",
+          "retained_at": "2026-09-14T21:44:53.163Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 34.0,
+        "orientation_input_tokens": 2141470.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -111696,6 +111865,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1423
+    "_version": 1424
   }
 }

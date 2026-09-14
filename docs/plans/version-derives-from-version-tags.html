@@ -23,8 +23,8 @@
   <title>Only A Version Tag Sets The Version | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="3">
+<meta name="plan-modified" content="2026-09-14">
+<meta name="plan-version" content="4">
 <meta name="plan-commits" content="e89fcce">
 <meta name="plan-artifacts" content="pyproject.toml,tests/test_build.py">
 <meta name="plan-impl" content="1.0">
@@ -94,6 +94,9 @@
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260904T073150363927-version-tag-matching" data-who="s16-vtag" data-when="2026-09-04T07:48:07Z">
     <div class="r-comment-body"><p>only release-shaped tags now name a version: the selector is 'git describe --match v[0-9]*' with parser regex ^v(?P&lt;version&gt;\d+\.\d+\.\d+(?:rc\d+)?)$. Before, derivation failed because the default *[0-9]* selector chose the rescue tag; after, it derives 0.2.1.dev1275 from v0.2.0 with that tag still present. Class covered: a synthesised rescue/build-recovery-deadbeef9 in a temporary clone yields the same version, and with every v* tag removed the raised message names v[0-9]* and not the rescue tag. All five named wheel-build ids pass</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260914T204953573024-scope-review-version-derives-from-version-tags" data-who="crew-elapsed" data-when="2026-09-14T21:44:53.163Z">
+    <div class="r-comment-body"><p>Scope review: 0 unlanded, 1 no-measure-stated. The fix is verified by reproducing the class rather than the string: with the malformed rescue tag still present the wheel builds 0.2.1.dev2260 from the newest release tag, the five previously failing build ids pass (5 passed, 2 passed), a synthesised tag of the same shape is also ignored, and the diagnostic names the missing release rather than the rescue tag. Only followup f-vdvt-001 resolution remains</p></div>
 </div>
 </section>
 </main>
