@@ -7,11 +7,27 @@ from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from pathlib import Path
 
-from tests.spa_browser_harness import ROOT, ServedSpa, write_file_spa_document
+import pytest
+
+from reckon.serve import discover_plans
+from tests.spa_browser_harness import (
+    ROOT,
+    BrowserProbeError,
+    ServedSpa,
+    installed_browser_or_skip,
+    write_file_spa_document,
+)
 
 VIEWPORT_WIDTHS = (1374, 1920)
 VIEWPORT_HEIGHT = 900
 OFFSCREEN_MARKER = "data-viewport-containment"
+# The plans surface mounts the artifact index at HEAD; the readiness selector
+# must name the classes that component renders, or the walk waits out its
+# timeout on a stale selector before measuring anything.
+PLANS_READY_SELECTOR = ".r-artifact-index .r-artifact-row"
+# A renamed component leaves its readiness selector matching nothing; fail
+# loudly at this grace instead of after the generic twelve-second timeout.
+STALE_SELECTOR_GRACE_MS = 2000
 
 
 def routable_surfaces(state: Mapping[str, object]) -> tuple[dict[str, str], ...]:
@@ -30,7 +46,7 @@ def routable_surfaces(state: Mapping[str, object]) -> tuple[dict[str, str], ...]
     sprint_id = str(state.get("active_sprint_id") or sprints[0]["id"])
     return (
         {"name": "home", "hash": "#home", "ready": ".r-home-project"},
-        {"name": "plans", "hash": "#plans", "ready": ".r-list .r-row"},
+        {"name": "plans", "hash": "#plans", "ready": PLANS_READY_SELECTOR},
         {
             "name": "plan-reader",
             "hash": f"#plan/{plan_slug}",
@@ -203,6 +219,24 @@ def measurement_probe_preload(surfaces: Sequence[Mapping[str, str]]) -> str:
         return false;
       }}
 
+      // A route's readiness selector either matches shortly after navigation or
+      // never will; a selector that matches nothing is a renamed component, so
+      // report it loud and fast instead of spending the generic timeout on it.
+      async function waitForReady(selector, description) {{
+        const appeared = await waitFor(
+          () => Boolean(document.querySelector(selector)),
+          description,
+          {STALE_SELECTOR_GRACE_MS},
+          false,
+        );
+        if (!appeared) {{
+          throw new Error(
+            `stale readiness selector: ${{description}}; ${{selector}} matched nothing in the rendered surface after {STALE_SELECTOR_GRACE_MS}ms; the mounted component may have been renamed`
+          );
+        }}
+        await settle();
+      }}
+
       function selectorFor(element) {{
         if (element.id) return `#${{CSS.escape(element.id)}}`;
         const parts = [];
@@ -277,9 +311,9 @@ def measurement_probe_preload(surfaces: Sequence[Mapping[str, str]]) -> str:
 
       async function visit(surface) {{
         location.hash = surface.hash;
-        await waitFor(
-          () => location.hash === surface.hash && Boolean(document.querySelector(surface.ready)),
-          `${{surface.name}} surface (${{surface.ready}})`,
+        await waitForReady(
+          surface.ready,
+          `${{surface.name}} surface (${{surface.ready}}) at ${{surface.hash}}`,
         );
         return measure(surface.name);
       }}
@@ -288,7 +322,7 @@ def measurement_probe_preload(surfaces: Sequence[Mapping[str, str]]) -> str:
       for (const surface of surfaces) verdicts.push(await visit(surface));
 
       location.hash = '#plans';
-      await waitFor(() => Boolean(document.querySelector('.r-list .r-row')), 'plans for overlays');
+      await waitForReady({json.dumps(PLANS_READY_SELECTOR)}, 'plans for overlays');
 
       const picker = document.querySelector('details.r-project-manage');
       picker.open = true;
@@ -407,8 +441,10 @@ def run_containment_probe(
     spa: ServedSpa,
     state: Mapping[str, object],
     width: int,
+    *,
+    surfaces: Sequence[Mapping[str, str]] | None = None,
 ) -> dict[str, object]:
-    surfaces = routable_surfaces(state)
+    surfaces = surfaces if surfaces is not None else routable_surfaces(state)
     result = spa.run_probe(
         "window.__runViewportContainment()",
         viewport=(width, VIEWPORT_HEIGHT),
@@ -486,3 +522,51 @@ def assert_horizontally_contained(
         for row in violations
     )
     raise AssertionError(f"horizontal containment violations: {detail}")
+
+
+def composed_containment_state() -> dict[str, object]:
+    """Compose the fixture state the containment probes bootstrap onto."""
+
+    state = discover_plans(ROOT / "docs", "reckon", ROOT / "docs" / "state")
+    inventory = state.get("inventory", [])
+    active = [
+        sprint
+        for sprint in state.get("sprints", [])
+        if sprint.get("status") == "active"
+    ]
+    return {
+        **state,
+        "project": "reckon",
+        "projects": [{"project": "reckon", "plans_count": len(inventory)}],
+        "active_sprints": active,
+        "active_sprint_conflict": len(active) > 1,
+        "plans": {item["slug"]: item for item in inventory},
+    }
+
+
+def test_stale_readiness_selector_is_reported_loudly(tmp_path: Path) -> None:
+    """A declared readiness selector matching nothing fails loud, not by timeout.
+
+    The plans-surface selector once named classes a component rename stopped
+    rendering, and the walk spent twelve seconds waiting on it before measuring
+    anything. Re-declare that stale selector and require the loud fast failure
+    instead.
+    """
+
+    browser = installed_browser_or_skip()
+    state = composed_containment_state()
+    surfaces = [
+        {**surface, "ready": ".r-list .r-row"}
+        if surface["name"] == "plans"
+        else surface
+        for surface in routable_surfaces(state)
+    ]
+    with (
+        file_spa_with_bootstrap(tmp_path, browser, state) as spa,
+        pytest.raises(BrowserProbeError, match=r"stale readiness selector") as raised,
+    ):
+        run_containment_probe(spa, state, VIEWPORT_WIDTHS[0], surfaces=surfaces)
+    message = str(raised.value)
+    assert ".r-list .r-row" in message
+    assert "matched nothing in the rendered surface" in message
+    assert "timed out waiting for" not in message
