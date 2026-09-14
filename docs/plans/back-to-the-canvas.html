@@ -27,9 +27,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="13">
 <meta name="plan-commits" content="85844ec,8a87d07,f967b11">
-<meta name="plan-impl" content="0.38">
+<meta name="plan-impl" content="0.5">
 </head>
 <body>
 <main class="plan-doc">
@@ -239,6 +239,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260914T221120906747-figure-row-carries-the-caption-the-server-emits" data-who="disc-local" data-when="2026-09-14T22:53:28.688Z">
     <div class="r-comment-body"><p>The figures index row now renders the caption the server already emitted and the reader already printed, and emits no caption element where none exists rather than falling back to a prettified filename. 6 passed, exit 0. Caption assertions in the test file rise from 0 at the base to 11 at the head, counted independently by the coordinator rather than taken from the manifest; scope is exactly the two declared files. This closes the deliverable that was deferred by instruction and recorded inside a landed summary, where the dependency scan could not see it</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-figure-row-caption-landed" data-who="reckon-ship" data-when="2026-09-15T00:57:00Z">
+    <div class="r-comment-body">Landed — commit 2a2c0f9532754bf688250c0a078f9ac2859cd09f; gate tests/test_serve_figure_rows.py passed, 6 passed, exit 0; measure: caption assertions in that file rise from 0 at the base revision to 11 at the head, counted at both revisions by the coordinator rather than read from the manifest, and the scope is exactly the two declared files. The figures index row now renders the caption the server already emitted from the sibling capture index and the reader already printed, and emits no caption element at all where no description exists, honouring the recorded decision that a prettified filename never stands in as a caption. Tests assert both directions, through the served inventory row and through a rendered probe of the actual index row. This closes the gap that was deferred by instruction because the file was concurrently held, and then recorded inside a landed summary where the dependency scan does not read. One follow-on the review of the diff raised rather than the gate: the row sets className r-artifact-caption but carries its styling as an inline style object, because no stylesheet was inside this node's fence. Staying in scope was the right call and it leaves a class with no rule behind it, which belongs with the surface's own CSS in a later node rather than being fixed out of scope here.</div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260904T124241997265-reader-chrome-matches-the-canvas" data-who="s16-conebtn" data-when="2026-09-04T12:53:52Z">
     <div class="r-comment-body"><p>the dependency control is the canvas's inline toggle again rather than a full-width labelled bar: it renders inside the reader header, the DEPENDENCY CONE heading is gone, and its label reads the up and down counts or a dimmed standalone. The reader's in-flight, source-failure and dependency panels sit on the canvas ground instead of saturated accent. 1 gate case plus 13 focused regressions. The label is built by dependencyConeLabel in the index module and called through the published namespace, so the string has one authority rather than a copy in the titlebar</p></div>
