@@ -259,3 +259,41 @@ def test_a_severity_for_a_non_gating_period_does_not_hold(home, repo) -> None:
     assert verdict["held"] is False
     assert verdict["state"]["utilisation_pct"] == 89.0
     assert verdict["state"]["severity"] == "normal"
+
+
+# ── A raised severity holds a reading that carries no utilisation ───────────
+
+
+def test_a_raised_severity_holds_a_reading_with_no_utilisation() -> None:
+    """A known headroom with a raised severity must not be cleared by the
+    None-utilisation guard: the floor binds the account's raised label even
+    when there is no figure to compare against the ceiling."""
+    state = budget.BudgetState(
+        backend="alpha",
+        headroom="known",
+        utilisation_pct=None,
+        severity="critical",
+    )
+
+    verdict = budget.decide(state, budget.policy(CONFIG), purpose="dispatch")
+
+    assert verdict["held"] is True
+    assert "severity" in verdict["reason"]
+    assert "critical" in verdict["reason"]
+
+
+@pytest.mark.parametrize("severity", ["normal", None])
+def test_an_unraised_severity_with_no_utilisation_still_clears(severity) -> None:
+    """The guard is narrowed, not removed: without a raised label the same
+    figureless reading still clears, so severity alone is what holds."""
+    state = budget.BudgetState(
+        backend="alpha",
+        headroom="known",
+        utilisation_pct=None,
+        severity=severity,
+    )
+
+    verdict = budget.decide(state, budget.policy(CONFIG), purpose="dispatch")
+
+    assert verdict["held"] is False
+    assert "nothing to compare against the ceiling" in verdict["reason"]
