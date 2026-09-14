@@ -879,3 +879,44 @@ def test_an_archived_plan_snapshot_is_refused_by_name_not_as_missing(setup):
             expected_version=3,
             artifact_type="plan",
         )
+
+
+def test_archived_evidence_state_is_readable_so_a_write_can_version_check(setup):
+    """An archived record must read as archived, never as absent.
+
+    A caller that reads empty concludes the resource does not exist and offers
+    to create one, which writes a live duplicate shadowing the archived
+    original. The version check a safe edit depends on also needs this read.
+    """
+    docs_dir, _state_root, project = setup
+    _make_plan_html(
+        docs_dir,
+        "retired-landed",
+        {"slug": "retired-landed", "type": "evidence", "version": 4},
+        artifact_type="evidence",
+        relative="evidence/archive/retired-landed.html",
+    )
+
+    data, version = _store_module.read_plan(
+        project, "retired-landed", artifact_type="evidence"
+    )
+
+    assert version == 4, "an archived record reads its real version, not zero"
+    assert data.get("slug") == "retired-landed"
+
+
+def test_a_live_resource_still_wins_over_an_archived_one_of_the_same_slug(setup):
+    """The archive is a fallback on a miss, never a competitor to the live copy."""
+    docs_dir, _state_root, project = setup
+    _make_plan_html(
+        docs_dir,
+        "both",
+        {"slug": "both", "type": "evidence", "version": 9},
+        artifact_type="evidence",
+        relative="evidence/both.html",
+    )
+
+    resolved = _store_module._resolve_html_file(project, "both", None, "evidence")
+
+    assert resolved is not None
+    assert resolved.parent.name != "archive", "live precedence is preserved"

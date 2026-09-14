@@ -244,6 +244,19 @@ def _resolve_html_file(
     from reckon.resources import resolve_resource
 
     resource = resolve_resource(docs_dir, project, slug, artifact_type)
+    if resource is None:
+        # Fall back to the archive, live copy first. Without this a retired
+        # resource reads as absent rather than as archived, and a caller that
+        # treats an empty read as "does not exist" then offers to create one --
+        # producing a live duplicate that shadows the archived original. Live
+        # precedence is preserved by only consulting the archive on a miss, and
+        # a genuine live-plus-archived pair still raises a collision rather than
+        # being silently resolved. serve._resolve_plan_file already does this;
+        # the two resolvers disagreeing is what made an archived record
+        # readable through one path and invisible through the other.
+        resource = resolve_resource(
+            docs_dir, project, slug, artifact_type, include_archived=True
+        )
     return resource.path if resource else None
 
 

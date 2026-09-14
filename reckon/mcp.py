@@ -2438,7 +2438,10 @@ def _edit_plan(
         docs_dir = _docs_dir_for_project(project, root)
         if (
             docs_dir is None
-            or _resolve_plan_file(docs_dir, slug, "plan", project=project) is None
+            or _resolve_plan_file(
+                docs_dir, slug, selected_type or "plan", project=project
+            )
+            is None
         ):
             return {
                 "ok": False,
