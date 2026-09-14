@@ -16,7 +16,9 @@ import struct
 import termios
 
 import pytest
+from click.testing import CliRunner
 
+from reckon import cli as cli_module
 from reckon.crew import ticker as ticker_module
 
 ESCAPES = re.compile(r"\x1b\[[0-9;]*m")
@@ -1131,11 +1133,11 @@ def test_a_measure_noise_for_the_row_state_renders_blank_not_the_marker():
 
 
 def test_calibration_consumes_an_observed_cut_position():
-    """The width is the pane's cut of a ruler line — a reading, not a guess.
+    """The width is the pane's measured column count — a reading, not a guess.
 
-    The calibration path takes where the pane broke the line and adopts it as
-    the grid width, with nothing in between to adjust; only a cut too narrow
-    for the fixed columns is raised, so a line never wraps.
+    The calibration path takes the observed cut position and adopts it as the
+    grid width, with nothing in between to adjust; only a cut too narrow for
+    the fixed columns is raised, so a line never wraps.
     """
     assert ticker_module.calibrated_width(208) == 208
     assert ticker_module.calibrated_width(45) == ticker_module.MIN_WIDTH
@@ -1190,3 +1192,41 @@ def test_the_fleet_counters_precede_the_measures():
     wall, _ = _spend_columns()
     assert counters(line).end() <= wall[0]
     assert "1:47:02" in line[wall[0] :]
+
+
+def test_a_follower_opened_at_a_pane_width_emits_a_grid_at_that_width(
+    monkeypatch,
+) -> None:
+    """Every row a follower delivers is a transition, ending at the measured width.
+
+    The width is read from the terminal an ancestor owns by the same ioctl; the
+    delivered stream carries no calibration line. A follower attached to a pane
+    of a known width emits its rows at exactly that width — and every delivered
+    row carries a node and a state pair, so a coordinator reading each line as
+    a delivery never sees geometry.
+    """
+    path, master, slave = _open_terminal(208)
+    try:
+        monkeypatch.setattr(ticker_module, "_ancestor_terminal_paths", lambda: [path])
+        monkeypatch.setattr(
+            cli_module,
+            "_follow_watch_lines",
+            lambda *_a, **_kw: iter([_event(), _event(node="second-node")]),
+        )
+        result = CliRunner().invoke(
+            cli_module.main, ["crew", "follow", "--project", "proj", "--no-color"]
+        )
+    finally:
+        os.close(master)
+        os.close(slave)
+
+    assert result.exit_code == 0, result.output
+    rows = result.output.splitlines()
+    # The measured width, not a guessed one: each row ends at the pane's 208
+    # columns, and no layout line is delivered alongside the transitions.
+    assert len(rows) == 2
+    for row in rows:
+        assert len(row) == 208
+        assert ("n-west-review-pr8-cut" in row) or ("second-node" in row)
+        assert "working" in row
+        assert "blocked" in row

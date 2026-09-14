@@ -324,30 +324,14 @@ def _columns_of(path: str) -> int | None:
     return struct.unpack("HHHH", packed)[1]
 
 
-# The ruler a follower opens with: where the pane breaks the line is the width
-# the grid must fit, so every transition row renders to that measured cut rather
-# than to a guessed margin. One ruler is emitted, never repeated, so a reader
-# who missed it still sees exactly one such line. Length overruns any pane — a
-# cut that is visible tells the width, an uncut line tells nothing.
-RULER_LENGTH = 240
-
-
-def ruler_line(length: int = RULER_LENGTH) -> str:
-    """A line longer than any pane, marked so where it is cut can be read."""
-    return "".join(
-        str((index // 10) % 10) if index % 10 == 0 else "\N{EN DASH}"
-        for index in range(length)
-    )
-
-
 def calibrated_width(observed_cut: int) -> int:
-    """The grid width a pane cut the ruler line at, floored at the minimum.
+    """The grid width a pane's measured column count resolves to, floored.
 
-    The width comes from that observed cut position — where the pane broke the
-    ruler — not from a constant between a terminal's column count and the text
-    grid. A cut narrower than the fixed columns can honour is still raised so
-    no line ever wraps, and a detached follower with no ruler is handled at the
-    call site.
+    The width comes from that observed reading — the terminal's column count,
+    which is where the pane ends — not from a constant between a terminal and
+    the text grid. A cut narrower than the fixed columns can honour is still
+    raised so no line ever wraps, and a detached follower with no terminal is
+    handled at the call site.
     """
     return max(int(observed_cut), MIN_WIDTH)
 
@@ -357,12 +341,12 @@ def resolve_terminal_width() -> int:
 
     The width a line must fit is not on the stream it is written to; it lives on
     the terminal an ancestor owns and tracks a resize. Walk the ancestry to the
-    first readable terminal and read its column count as where the pane cut the
-    calibration ruler — no inset is subtracted, because where the pane breaks
-    that line IS the width the grid must fit — and floor the result at the
-    grid's minimum so a narrower pane still never wraps. A detached follower has
-    no such ancestor — collector or nohup'd — and falls back to the stated
-    default. ``--width`` overrides this at the call site.
+    first readable terminal and read its column count as the measured width — no
+    inset is subtracted, because where the pane ends IS the width the grid must
+    fit — and floor the result at the grid's minimum so a narrower pane still
+    never wraps. A detached follower has no such ancestor — collector or
+    nohup'd — and falls back to the stated default. ``--width`` overrides this
+    at the call site.
     """
     for path in _ancestor_terminal_paths():
         columns = _columns_of(path)
