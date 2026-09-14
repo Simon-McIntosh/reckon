@@ -165,6 +165,36 @@
     <code>TypeError</code>. Added-failure delta 0. It is not this node's and it is
     not fixed here.</p>
   </section>
+
+  <section id="severity-floor">
+    <h2>The fence holds no looser than the account says, including when it has no number</h2>
+    <p>Landed 2026-09-14 across two commits: <code>a9a9d02</code> put the floor on
+    the fence, and <code>b316011</code> moved it ahead of the guard that clears a
+    reading carrying no numeric utilisation. 13 tests added in total, 76 passing.</p>
+    <p><strong>Why the second commit was necessary, and how it was found.</strong>
+    The first landed with nine passing tests and a green gate, and an independent
+    review then found the floor placed <em>after</em> the no-figure clear: a reading
+    whose headroom was known, whose account severity was raised, and whose
+    utilisation was absent took the early clear without consulting the floor at all.
+    The reviewer did not infer this &mdash; it executed <code>decide()</code> with
+    severity critical and utilisation <code>None</code> and observed
+    <code>held=False</code>.</p>
+    <p><strong>That is the shape the floor exists for.</strong> An account raises a
+    severity before its own number looks bad, so the reading most worth holding on
+    is precisely the one whose utilisation is absent or unusable. The floor failed
+    in its own case, and it failed toward apparent headroom &mdash; the fifth
+    independent instance of that direction recorded in this plan's evidence.</p>
+    <p>The guard was narrowed rather than removed: an unraised severity with no
+    utilisation still clears, asserted as its own companion case so the repair
+    cannot silently become a blanket hold.</p>
+    <p><strong>A record defect, recorded because it is the sixth today.</strong> The
+    fixing run's manifest names two test-log paths in the run directory, neither of
+    which exists; the actual 76-pass result survives only in temporary files the
+    manifest never names. A reader following the recorded receipts finds nothing.
+    The result was confirmed by re-running the gate rather than by reading the
+    field &mdash; which is how every commit, scope and test figure in this record
+    was established.</p>
+  </section>
 </main>
 </body>
 </html>
