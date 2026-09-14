@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 </head>
 <body>
   <main class="plan-doc">
@@ -210,6 +210,62 @@
         exists to correct. Reading the account surface on a cadence is what
         makes the figure measurable later; the reserve is calibrated from that
         evidence once it exists, not before.
+      </p>
+    </section>
+
+    <section id="pin-the-denominator">
+      <h2><span class="sec">&sect;5b</span> &mdash; A utilisation figure inherits its denominator unless the reading pins one</h2>
+      <p>
+        Handed over by a peer coordinator on 2026-09-14 and verified here in source
+        and against the committed ledger, because it constrains what the reader
+        this plan adds is allowed to return. &sect;4 argues that the dangerous
+        parse failure is the quiet one, where a shape change still parses and
+        yields a low utilisation. This is its mirror and it is already live: a
+        figure that parses perfectly, is arithmetically self-consistent, and is
+        measured against a window nothing enforces.
+      </p>
+      <p>
+        The local lane presents <strong>four different window figures</strong> as of
+        this afternoon, and only the first governs a dispatch.
+      </p>
+      <table>
+        <caption>Window figures in play for one lane, read 2026-09-14.</caption>
+        <thead><tr><th>Figure</th><th>Where it lives</th><th>What it governs</th></tr></thead>
+        <tbody>
+          <tr><td>172,800</td><td><code>usable_input_window</code> in routing config</td><td>the pre-dispatch context-fit refusal &mdash; the only one that gates anything</td></tr>
+          <tr><td>204,800</td><td>the serve's enforced engine cap</td><td>what actually returns HTTP 400</td></tr>
+          <tr><td>1,016,576</td><td>the launcher banner, still printed on every stderr</td><td>nothing; it describes the checkpoint loaded, not the serve answering</td></tr>
+          <tr><td>200,000</td><td><code>throughput.input_budget_tokens</code> on every committed row</td><td>nothing &mdash; but it is the denominator of every <code>input_utilisation_pct</code></td></tr>
+        </tbody>
+      </table>
+      <p>
+        The mechanism is inheritance, not a hardcoded constant, which is why it
+        survives review. The dialect reads <code>contextWindow</code> from the
+        stream's own per-model usage entries and passes it through as the budget
+        the run is measured against. The local lane speaks that dialect, so it
+        reports the <em>client's</em> declared window rather than the serve's. Four
+        consecutive committed rows read 71.0, 61.1, 63.7 and 63.7&nbsp;percent
+        against peak inputs of 142,037, 122,144, 127,415 and 127,335 &mdash; each
+        one exactly that peak over 200,000.
+      </p>
+      <p>
+        <strong>This is the same defect as the inherited price, one field over.</strong>
+        The dependent plan already records that this lane totals the highest dollar
+        figure of any backend because it speaks a dialect whose per-token rates it
+        has no claim to. The denominator is that fault repeated on the window, and
+        it is quieter: a cost figure that ranks free hardware top of a spend table
+        looks absurd on sight, while 63.7&nbsp;percent of a context window looks
+        exactly like a measurement.
+      </p>
+      <p>
+        The consequence for this plan is narrow and binding. Any utilisation this
+        plan's reader returns must <strong>name the window it divided by</strong>
+        and take it from the authority that enforces it, never from whatever the
+        client happened to announce. A percentage whose denominator is unstated is
+        not a reading, and the falsifier should include a case where the client
+        announces one window while the configured lane declares another: the
+        reading must follow the configured figure or return unknown, never split
+        the difference and never silently prefer the announced one.
       </p>
     </section>
 
