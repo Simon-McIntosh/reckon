@@ -1466,6 +1466,7 @@ class DispatchPlan:
     requested_backend: str | None = None
     default_backend: str | None = None
     lane_declaration: dict[str, Any] | None = None
+    lane_reading: dict[str, Any] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         agent = _stamp_agent_display(
@@ -1483,6 +1484,9 @@ class DispatchPlan:
             "local": self.local,
             "lane_declaration": (
                 None if self.lane_declaration is None else dict(self.lane_declaration)
+            ),
+            "lane_reading": (
+                None if self.lane_reading is None else dict(self.lane_reading)
             ),
             "node": self.node.as_dict(),
             "requested_backend": self.requested_backend,
@@ -1633,6 +1637,148 @@ def _lane_declaration_finding(
             "unmetered alternatives"
         ),
     }
+
+
+def _lane_reading_unknown(*, detail: str) -> dict[str, Any]:
+    """Advisory carry for a lane reading the dispatch could not trust."""
+    return {
+        "state": "unknown",
+        "headroom": "unknown",
+        "binding_observed": "unknown",
+        "mean_context": "unknown",
+        "observed_at": None,
+        "age_seconds": None,
+        "suggested_shelf_life_seconds": None,
+        "detail": detail,
+    }
+
+
+def _metric_number(value: object) -> int | float | None:
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return value
+    return None
+
+
+def _lane_reading_carry(
+    document: Mapping[str, Any] | None, *, now: datetime | None = None
+) -> dict[str, Any]:
+    """Strictly parse one lane reading document into its advisory carry.
+
+    A lane reading document is a JSON object a lane publishes about itself:
+    ``headroom`` and ``mean_context`` as numbers, ``binding_observed`` naming
+    the window observed binding, ``observed_at`` stamping when the reading was
+    taken, and an optional ``suggested_shelf_life_seconds`` for how long the
+    reading stays trustworthy. Parsing is strict, because the quiet failure
+    runs toward apparent headroom: every missing or malformed field collapses
+    the whole carry to ``unknown`` naming the reason, a field is never
+    resolved to zero, and a reader that cannot understand the instrument says
+    so rather than guessing. A reading older than its stated shelf life is
+    equally unknown, with its age stated, so a stale figure is never carried
+    as if it were current.
+
+    ``binding_observed`` is consumed as the document's own field and is never
+    re-derived from whether the dispatch waited or was preempted — the carry
+    takes no such inputs, so the only source of the flag is the document.
+    """
+    if document is None:
+        return _lane_reading_unknown(detail="no lane document")
+    if not isinstance(document, Mapping):
+        return _lane_reading_unknown(
+            detail=f"lane document is {type(document).__name__}, not a JSON object"
+        )
+    stamp = document.get("observed_at")
+    if not isinstance(stamp, str):
+        return _lane_reading_unknown(
+            detail="lane document carries no parseable 'observed_at' timestamp"
+        )
+    try:
+        observed = datetime.fromisoformat(stamp)
+    except ValueError as exc:
+        return _lane_reading_unknown(
+            detail=f"'observed_at' {stamp!r} is not an ISO-8601 timestamp: {exc}"
+        )
+    if observed.tzinfo is None:
+        observed = observed.replace(tzinfo=UTC)
+    if now is None:
+        now = datetime.now(UTC)
+    elif now.tzinfo is None:
+        now = now.replace(tzinfo=UTC)
+    age = now - observed
+    if age.total_seconds() < 0:
+        return _lane_reading_unknown(
+            detail=f"'observed_at' {stamp!r} lies in the future"
+        )
+    headroom = _metric_number(document.get("headroom"))
+    if headroom is None:
+        return _lane_reading_unknown(
+            detail="lane document carries no numeric 'headroom'"
+        )
+    mean_context = _metric_number(document.get("mean_context"))
+    if mean_context is None:
+        return _lane_reading_unknown(
+            detail="lane document carries no numeric 'mean_context'"
+        )
+    binding = document.get("binding_observed")
+    if binding is None or (isinstance(binding, str) and not binding.strip()):
+        return _lane_reading_unknown(
+            detail="lane document carries no 'binding_observed'"
+        )
+    shelf = _metric_number(document.get("suggested_shelf_life_seconds"))
+    if shelf is not None and shelf > 0 and age.total_seconds() > shelf:
+        carry = _lane_reading_unknown(
+            detail=(
+                f"reading is {age.total_seconds():.0f}s old, older than its "
+                f"{shelf:g}s shelf life"
+            )
+        )
+        carry["age_seconds"] = int(age.total_seconds())
+        carry["suggested_shelf_life_seconds"] = shelf
+        return carry
+    return {
+        "state": "fresh",
+        "headroom": headroom,
+        "binding_observed": binding,
+        "mean_context": mean_context,
+        "observed_at": stamp,
+        "age_seconds": int(age.total_seconds()),
+        "suggested_shelf_life_seconds": shelf,
+        "detail": "",
+    }
+
+
+def _dispatch_lane_reading(backend: Mapping[str, Any]) -> dict[str, Any]:
+    """Read the resolved lane's published reading and carry it, refusing nothing.
+
+    A backend may declare ``lane_document``, a path to the local JSON the lane
+    publishes about itself. The dispatch reads it strictly and attaches the
+    carry to the plan as advisory data. No value in the document refuses,
+    holds or reroutes a dispatch — the reading is carried so a consumer can see
+    what the lane reported beside the routing decision, never instead of it.
+    An absent declaration, an unreadable file, or an unparsable document
+    collapses the carry to ``unknown`` naming the reason rather than to a
+    figure.
+    """
+    declared = backend.get("lane_document")
+    if not declared:
+        return _lane_reading_unknown(detail="backend declares no lane document")
+    path = Path(str(declared)).expanduser()
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return _lane_reading_unknown(
+            detail=f"lane document {str(path)!r} cannot be read — {exc}"
+        )
+    try:
+        payload = json.loads(raw)
+    except ValueError as exc:
+        return _lane_reading_unknown(
+            detail=f"lane document {str(path)!r} is not valid JSON — {exc}"
+        )
+    if not isinstance(payload, Mapping):
+        return _lane_reading_unknown(
+            detail=f"lane document {str(path)!r} is not a JSON object"
+        )
+    return _lane_reading_carry(payload)
 
 
 def _path_is_tmpfs(path: str | Path) -> bool:
@@ -2002,6 +2148,7 @@ def plan_dispatch(
                 for finding in verdict.findings
             ],
         )
+    lane_reading = _dispatch_lane_reading(backend)
     resolution = DispatchPlan(
         run_id=resolved_run_id,
         backend=backend_name,
@@ -2018,6 +2165,7 @@ def plan_dispatch(
         requested_backend=requested_backend or None,
         default_backend=str(config.get("default_backend") or "") or None,
         lane_declaration=lane_declaration,
+        lane_reading=lane_reading,
     )
     if verdict.ok and repo is not None:
         resolution.competence = _competence_verdict(
@@ -2814,6 +2962,7 @@ def dispatch(
         node_definition = node.as_dict()
         node_definition["requested_backend"] = resolution.requested_backend
         node_definition["lane_declaration"] = resolution.lane_declaration
+        node_definition["lane_reading"] = resolution.lane_reading
         # The token budget is resolved here, at dispatch, so the run record is
         # authoritative and a later config edit cannot silently re-charge a run
         # that launched under another allowance. It rides the node block beside
@@ -2837,6 +2986,7 @@ def dispatch(
             "backend": backend_name,
             "requested_backend": resolution.requested_backend,
             "lane_declaration": resolution.lane_declaration,
+            "lane_reading": resolution.lane_reading,
             "local": resolution.local,
             "execution_fit": resolution.execution_fit.as_dict(),
             "launch": launch_kind,
