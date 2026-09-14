@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-14T20:50:25",
+  "updated": "2026-09-14T21:36:04",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -107462,6 +107462,199 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T173252481849-recovery-tests-track-the-cut-cells",
+        "plan": "crew-observability-truth",
+        "section": "\u00a720",
+        "node": "recovery-tests-track-the-cut-cells",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1153,
+                "cached_input_tokens": 617244,
+                "input_tokens": 618399,
+                "output_tokens": 526,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 618925,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3ceb92f8-d6d4-46b5-82a8-d120cb0ddd1f",
+            "session_id": "ship-s18-20260914"
+          },
+          "done_when": "tests/test_crew_recovery.py::test_a_resumed_runs_line_carries_measured_values_not_markers passes at the merged head instead of raising AttributeError on a removed cell constant, asserted by running that file whole; its column-of-cells helper references only cell constants the renderer still defines, asserted by requiring every module attribute it names to exist; and tests/test_crew_recovery.py adds no failures against its count at the base revision, with base and after counts both recorded",
+          "estimated_hours": null,
+          "goal": "the recovery test module asserts against the cells the row renders now, rather than the spend cells the grid no longer carries",
+          "id": "recovery-tests-track-the-cut-cells",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T17:32:52Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T173252481849-recovery-tests-track-the-cut-cells/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a720",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_crew_recovery.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-drain-fence",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T17:33:06Z",
+        "completed_at": "2026-09-14T18:25:42.460Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3141,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3156,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "40a7b7006cc62a959dc0356db2541d1a15dc16f0",
+        "commits": [
+          "9f9de22b8ba70bf2fef5176edb0f1d6c7ab78370"
+        ],
+        "changed_lines": {
+          "added": 23,
+          "removed": 30,
+          "files": 1
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_recovery.py",
+          "exit_status": 0,
+          "log_path": "/tmp/recovery_after_base3.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T173252481849-recovery-tests-track-the-cut-cells/manifest.md",
+        "scope_changed": false,
+        "session_id": "29c04836-759a-4634-a3d7-80b3e849c42c",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 7125052,
+            "input_tokens_cumulative": 7125052,
+            "output_tokens": 63192,
+            "output_tokens_cumulative": 63192,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-14T18:25:42.460Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 7125052,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 3153.172,
+          "generated_tokens": 63192,
+          "generation_seconds": 3113.14,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 77.9,
+          "machine_seconds": 40.032,
+          "peak_input_tokens": 155843,
+          "tokens_per_second": 20.3,
+          "wall_tokens_per_second": 20.04
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s18-20260914/recovery-tests-track-the-cut-cells",
+          "session_id": "29c04836-759a-4634-a3d7-80b3e849c42c",
+          "session_source": "stream",
+          "retained_at": "2026-09-14T18:25:42.460Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 66.0,
+        "orientation_input_tokens": 2885348.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -107690,6 +107883,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1406
+    "_version": 1407
   }
 }
