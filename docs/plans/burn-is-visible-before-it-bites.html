@@ -27,11 +27,11 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="21">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
-<meta name="plan-commits" content="979805e1d460e5c46a15d466d64d4a674c8e3405,f26287ebeba4c4890f0965d2eb9f18c281743d26,a5254ef">
+<meta name="plan-version" content="22">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+<meta name="plan-commits" content="979805e1d460e5c46a15d466d64d4a674c8e3405,f26287ebeba4c4890f0965d2eb9f18c281743d26,a5254ef,b0ede8b">
 <meta name="plan-artifacts" content="reckon/run_store.py,tests/test_run_store.py,reckon/crew/lane_evidence.py,tests/test_binding_window_inference.py,docs/ui/crew.jsx,docs/ui/crew.css,tests/test_spa_crew_burn.py,docs/evidence/archive/burn-is-visible-before-it-bites-landed.html">
-<meta name="plan-impl" content="0.5">
+<meta name="plan-impl" content="0.67">
 </head>
 <body>
 <main class="plan-doc">
@@ -84,42 +84,20 @@
 </table>
 <p>Two further shapes follow from the same reading. <code>tokens_per_second</code> is a <strong>model speed, not a spend rate</strong> — the dialect reports it beside <code>wall_tokens_per_second</code> precisely because a node running its own test suite has a wall rate far below its generation rate, so rendering either as the other misattributes workstation load to the model or the reverse. And rework is a <strong>plan-scoped</strong> derivation, since it needs later runs against the same plan; it cannot sit on a run card whatever its coverage.</p>
 
-<h2 id="s2">&#167;2 &mdash; One mark, not two tiles</h2>
-<p>Position and rate are orthogonal, and the state that costs a session is <strong>low position with high burn</strong> — which two adjacent tiles render as reassuring, since the eye reads the small number and stops. The synthesis is a projection: at the observed rate, when is the ceiling reached, and is that before or after the window resets?</p>
-<p>So the meter is one bar carrying three marks: the position filled from <code>usedPercent</code>, the reset at its right edge labelled with the window duration the payload reported, and the <strong>projected exhaustion</strong> plotted on the same axis from position and rate together. When the projection falls left of the reset the lane will run out before it refills, and the bar says so; when it falls right, the lane is sustainable at the current rate however high the instantaneous multiple looks. That comparison is the actionable fact and no tile in the fleet currently expresses it.</p>
-<figure>
-  <svg viewBox="0 0 620 132" role="img" aria-label="A quota bar showing filled position, a projected-exhaustion mark that falls before the reset in the unsustainable case and after it in the sustainable case." style="max-width:100%;height:auto">
-    <text x="0" y="12" font-size="12" font-family="system-ui" fill="#6e7282">unsustainable &mdash; projection lands before the reset</text>
-    <rect x="0" y="22" width="520" height="18" fill="none" stroke="#c9ccd4" stroke-width="1"/>
-    <rect x="1" y="23" width="104" height="16" fill="#c9ccd4"/>
-    <line x1="232" y1="16" x2="232" y2="46" stroke="#b3261e" stroke-width="2"/>
-    <text x="238" y="14" font-size="11" font-family="system-ui" fill="#b3261e">ceiling reached</text>
-    <text x="524" y="35" font-size="11" font-family="system-ui" fill="#1c1c1e">reset</text>
-    <text x="0" y="58" font-size="11" font-family="system-ui" fill="#6e7282">20% used &middot; 7-day window &middot; burning 10.3&times;</text>
-
-    <text x="0" y="86" font-size="12" font-family="system-ui" fill="#6e7282">sustainable &mdash; projection lands past the reset</text>
-    <rect x="0" y="96" width="520" height="18" fill="none" stroke="#c9ccd4" stroke-width="1"/>
-    <rect x="1" y="97" width="104" height="16" fill="#c9ccd4"/>
-    <line x1="520" y1="90" x2="520" y2="120" stroke="#1c1c1e" stroke-width="1"/>
-    <text x="524" y="109" font-size="11" font-family="system-ui" fill="#1c1c1e">reset</text>
-    <text x="0" y="132" font-size="11" font-family="system-ui" fill="#6e7282">20% used &middot; 7-day window &middot; burning 1.7&times;</text>
-  </svg>
-  <figcaption>The same position reads differently once the projection is on the axis. Both bars are at twenty percent; only the rate distinguishes them, and only the projected mark makes the distinction visible without arithmetic.</figcaption>
-</figure>
-<p><strong>Gate for this plan, recorded when the measure runs: against this workstation's recorded backends the Crew surface renders one meter per backend that reports a window, labelled with that window's own duration, carrying the position, the reset and the projected exhaustion, beside at least two rate windows and every figure's observation time. Its evidence is a rendered capture of the unsustainable and the sustainable case with their figures recorded beside them, plus the surface rendering no meter at all for a backend whose payload reports no window.</strong></p>
-<table>
-  <thead><tr><th>Node</th><th>Goal</th><th>Done when</th><th>Exclusive write paths</th><th>Spec &middot; lane</th></tr></thead>
-  <tbody>
-    <tr>
-      <td><code>burn-meter-on-crew</code></td>
-      <td>The Crew surface renders position, rate and projected exhaustion for each backend that reports a window.</td>
-      <td><code>uv run pytest tests/test_spa_crew_burn.py -q</code> passes. Cases, each against a fixture payload rather than a live account: a backend reporting <code>windowDurationMins: 10080</code> renders one meter labelled with a seven-day window; a backend whose payload reports no window renders no meter and no default period, asserted by the absence of any meter element rather than by its text; a fixture at 20% used with a rate whose projection precedes the reset renders the projection mark left of the reset and the bar in its warning state, and the same position with the lower rate renders it right of the reset and the bar unwarned; at least two rate windows render together and a fixture with only one available renders that one labelled as the only window rather than implying a comparison; every rendered figure carries an observation timestamp; and no cache-hit figure appears anywhere in the rendered region, asserted as a negative.</td>
-      <td><code>docs/ui/crew.jsx</code>, <code>docs/ui/crew.css</code>, <code>tests/test_spa_crew_burn.py</code></td>
-      <td>guided &middot; sonnet, after the derivation this plan depends on is readable</td>
-    </tr>
-  </tbody>
-</table>
-
+<section id="s2" class="section-landed">
+  <header><span class="badge badge-shipped">&#x2713; landed 2026-09-15</span>
+  <h2 id="s2">&#167;2 &mdash; One mark, not two tiles</h2></header>
+  <p class="landed-summary">Built the Crew quota meter as one bar carrying position,
+  the reset labelled with the window's own duration, and the projected exhaustion on
+  the same axis &mdash; so a lane that runs out before it refills says so rather than
+  leaving the reader to do arithmetic. A backend reporting no window renders no meter
+  at all, asserted by the element's absence; no cache-hit figure appears anywhere,
+  asserted as a negative. Derived rates carry an upper-bound marking the meter
+  position does not, honouring the <code>derived-rate-confidence</code> decision.
+  18 tests across two commits, all fixture-driven rather than reading a live account.
+  Full record: <a href="/reckon/evidence/archive/burn-is-visible-before-it-bites-landed#crew-meter">&#167;2 landed</a>
+  (commits <code>a5254ef</code>, <code>b0ede8b</code>).</p>
+</section>
 <h2 id="s3">&#167;3 &mdash; Rendered evidence</h2>
 <p>Captures at 1374 and 1920 into <code>docs/figures/burn-is-visible-before-it-bites/after/</code> with a <code>capture-index.json</code>: the unsustainable case, the sustainable case at the same position, and a backend reporting no window. A capture of a meter at a plausible-looking twenty percent is the point of this plan, so each capture records the position, both rate windows and the projection beside it; a capture without those figures shows a bar and proves nothing.</p>
 <table>
@@ -287,6 +265,9 @@ The reasoning behind the narrowing stands and is worth keeping: what this plan n
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260914T215344778599-rate-is-marked-an-upper-bound" data-who="crew-backpressure" data-when="2026-09-14T23:05:24.484Z">
     <div class="r-comment-body"><p>Derived rate figures are rendered as a marked upper bound, honouring the derived-rate-confidence decision locked 2026-09-04 and shipped unenforced by the meter node. 10 passed, 3 tests added. The marking is asserted PRESENT on the rate figures and ABSENT on the meter position, so the distinction is between the two rather than decoration on both - the meter is authority, the rate is a trend indicator that over-counts because a resumed session records its whole accumulated context every turn</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260915T0135" data-who="reckon-ship" data-when="2026-09-15T01:35:00Z">
+    <div class="r-comment-body">rate-is-marked-an-upper-bound landed — commit b0ede8b, merged and verified at HEAD. Gate passed exit 0; measure: 10 passed, 3 tests added. Derived rate figures now carry an upper-bound marking and the meter position does not, asserted as two cases so the distinction lives BETWEEN them rather than as decoration on both. WITH THIS §2 IS COMPLETE and is collapsed to its landed summary, section_declarations reclassified s2=done, impl 0.50 -> 0.67. WHY A SECOND COMMIT WAS NEEDED, and the cause is the coordinator's: the meter shipped without honouring derived-rate-confidence, locked 2026-09-04 as 'the meter is authority, the rate is a marked upper bound'. I assembled that node's contract from this section's node table and never cross-checked it against the plan's own decisions, so a requirement locked elsewhere in the same plan was silently absent from the measure. The node did exactly what it was asked. A node contract drawn from section prose can under-specify a decision locked elsewhere in the same plan — the decisions and the node table are two places a requirement can live and only one was in front of me. FOUND BY A PEER REVIEWING THIS PLAN READ-ONLY, one step before the section would have been collapsed and marked done, which would have sealed an unenforced decision under a summary card. Not collapsing at the node's landing was itself a lapse, and it is the only reason the other error did not become permanent.</div>
 </div>
 </section>
 </main>

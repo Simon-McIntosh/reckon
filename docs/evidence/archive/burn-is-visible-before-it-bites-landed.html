@@ -194,6 +194,19 @@
     incomplete manifest while its commit had already landed cleanly, one ahead of
     base with a clean tree. Redispatching on the classification would have discarded
     two hours of work and 563 insertions.</p>
+    <p><strong>Completed 2026-09-15 by a second commit, <code>b0ede8b</code>.</strong>
+    The meter shipped without honouring <code>derived-rate-confidence</code>, locked
+    on 2026-09-04 as &ldquo;the meter is authority, the rate is a marked upper
+    bound&rdquo;. Derived rate figures now carry that marking and the meter position
+    does not, so the distinction lives between them rather than as decoration on
+    both. 3 further tests, 10 passing.</p>
+    <p><strong>The cause was the coordinator's, not the worker's.</strong> The node
+    contract was assembled from this section's node table and never cross-checked
+    against the plan's own decisions, so a requirement locked elsewhere in the same
+    plan was silently absent from the measure. The node did exactly what it was
+    asked. Found by a peer reviewing this plan read-only &mdash; and found one step
+    before the section would have been collapsed and marked done, which would have
+    sealed an unenforced decision under a landed-summary card.</p>
   </section>
 </main>
 </body>
