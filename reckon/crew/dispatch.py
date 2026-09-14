@@ -44,6 +44,7 @@ from reckon.crew.node import (
 )
 from reckon.crew.prompts import compose_prompt
 from reckon.crew.refusals import format_refusal
+from reckon.crew.review import review_store_root
 from reckon.crew.routing import (
     _agent_configuration,
     _budget_verdict,
@@ -1717,6 +1718,7 @@ def _sandbox_reachability(
         run_directory=run_directory,
         reports_directory=reports_dir(),
         manifest_path=node.manifest_path,
+        review_store_directory=review_store_root(),
     )
     if "execution_capable" not in backend:
         return roots, []

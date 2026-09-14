@@ -78,8 +78,18 @@ def sandbox_write_roots(
     run_directory: str | Path,
     reports_directory: str | Path,
     manifest_path: str | Path | None = None,
+    review_store_directory: str | Path | None = None,
 ) -> tuple[Path, ...] | None:
-    """Return writable roots for a resolved sandbox, or None if unrestricted."""
+    """Return writable roots for a resolved sandbox, or None if unrestricted.
+
+    The delivery stores a caller passes are granted to every restricted tier,
+    because a role that may not touch the repository it grades still has to
+    write the artifact it was dispatched to produce. A role's own store must
+    therefore be named here alongside the run directory and the shared reports
+    root: granting one durable store and withholding a sibling leaves a node
+    whose declared delivery path is refused as unreachable, which no amount of
+    correct work on the worker's side can overcome.
+    """
     tier = str(backend.get("sandbox") or READ_ONLY)
     if tier == WORKTREE_FULL:
         return None
@@ -88,6 +98,8 @@ def sandbox_write_roots(
         Path(reports_directory).expanduser().resolve(),
         Path(tempfile.gettempdir()).expanduser().resolve(),
     }
+    if review_store_directory:
+        roots.add(Path(review_store_directory).expanduser().resolve())
     if manifest_path:
         manifest = Path(manifest_path).expanduser()
         if manifest.is_absolute():

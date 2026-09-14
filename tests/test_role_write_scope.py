@@ -13,13 +13,22 @@ from __future__ import annotations
 
 import json
 import subprocess
+import tempfile
 from pathlib import Path
 
 import pytest
 
-from reckon import crew
+from reckon import _backends, crew
 from reckon.crew.node import role_may_write_repository_paths
-from reckon.crew.runs import _write_json, pointer_path, reports_dir, run_dir
+from reckon.crew.review import review_path, review_store_root
+from reckon.crew.runs import (
+    _write_json,
+    delivery_roots,
+    pointer_path,
+    reports_dir,
+    run_dir,
+    runs_dir,
+)
 
 PROJECT = "sample"
 
@@ -28,6 +37,20 @@ PROJECT = "sample"
 def isolated_host_config(monkeypatch, tmp_path):
     """Keep flight resolution off the workstation's real host layer."""
     monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(tmp_path / "absent" / "flight.yaml"))
+
+
+@pytest.fixture(autouse=True)
+def isolated_temporary_directory(tmp_path, monkeypatch):
+    """Keep the granted temp root off the fixture tree.
+
+    Every restricted tier grants the process temp directory, and on this host
+    pytest's own tmp_path lives under it — so without this the repository and
+    every path beside it would read as reachable and the negative case would
+    pass for the wrong reason.
+    """
+    worker_temp = tmp_path / "worker-temp"
+    worker_temp.mkdir()
+    monkeypatch.setattr(tempfile, "tempdir", str(worker_temp))
 
 
 @pytest.fixture()
@@ -199,6 +222,179 @@ def test_a_dispatched_test_node_with_no_explicit_path_resolves_the_role_default(
     for declared in resolution.node.write_paths:
         assert Path(declared).is_relative_to(run_directory)
     assert "scoped" not in resolution.validation.failed_properties
+
+
+# ── A restricted role reaches the store its own dispatch points it at ──────
+# A review node writes exactly one file and it does not live in the repository
+# it grades. The dispatch `reckon crew recover` emits as next_action carries
+# --role review and that store path, so the sandbox grant has to include the
+# review store or the node the tool itself recommends is refused as
+# unreachable before a worktree exists. The shared reports root was granted and
+# the reviews store was not — the same defect one directory over, and
+# unreachable by any amount of correct work on the worker's side.
+
+REVIEW_BACKEND_CONFIG = {
+    "default_backend": "worker",
+    "backends": {
+        "worker": {
+            "launch": "cli",
+            "command": "codex",
+            "sandbox": "worktree-full",
+            "time_budget": "20m",
+        }
+    },
+    "roles": {
+        "review": {"execution_capable": True, "sandbox": "read-only"},
+        "implement": {"execution_capable": True, "sandbox": "worktree-full"},
+    },
+    "fences": {"time_budget": "20m", "needs_help_after_failures": 2},
+}
+
+REVIEWED_RUN_ID = "r-20260914T094141156549-flight-declares-meteredness"
+
+
+@pytest.fixture()
+def review_repository(tmp_path: Path, home: Path) -> Path:
+    """A seeded repository carrying the plan section a review node names."""
+    root = tmp_path / "review-repo"
+    (root / "docs" / "plans").mkdir(parents=True)
+    (root / "package").mkdir()
+    (root / "docs" / "plans" / "plan-a.html").write_text(
+        '<meta name="docs-project" content="sample">'
+        '<meta name="reckon-type" content="plan">'
+        '<meta name="plan-slug" content="plan-a">'
+        '<h2 id="s1">Review scope</h2>',
+        encoding="utf-8",
+    )
+    (root / "package" / "input.txt").write_text("input\n", encoding="utf-8")
+    for arguments in (
+        ("init", "-q", "-b", "main"),
+        ("config", "user.email", "worker@example.invalid"),
+        ("config", "user.name", "Worker"),
+        ("add", "docs", "package"),
+        (
+            "commit",
+            "-q",
+            "-m",
+            "chore: seed review repository",
+            "-m",
+            "Provide the plan section a review dispatch resolves against.",
+        ),
+    ):
+        _git(root, *arguments)
+    (home / "mounts.json").write_text(
+        json.dumps({PROJECT: str(root / "docs")}),
+        encoding="utf-8",
+    )
+    return root
+
+
+def _review_node(home: Path, *, write_paths: list[str], role: str = "review"):
+    return _node(home, role=role, write_paths=write_paths)
+
+
+def test_the_review_role_writes_the_store_its_own_dispatch_points_at(
+    home: Path, review_repository: Path
+):
+    """The recover-emitted review dispatch validates instead of being refused."""
+    store_path = review_path(PROJECT, REVIEWED_RUN_ID)
+    assert store_path.is_relative_to(review_store_root())
+    assert review_store_root().is_relative_to(home)
+
+    resolution = crew.plan_dispatch(
+        node=_review_node(home, write_paths=[str(store_path)]),
+        config=REVIEW_BACKEND_CONFIG,
+        project=PROJECT,
+        repo=review_repository,
+    )
+
+    detail = " ".join(f["detail"] for f in resolution.validation.findings)
+    assert "scoped" not in resolution.validation.failed_properties, detail
+    assert review_store_root().resolve() in resolution.sandbox_write_roots
+    assert reports_dir().resolve() in resolution.sandbox_write_roots
+
+
+def test_a_write_path_under_no_granted_root_is_still_refused(
+    home: Path, review_repository: Path
+):
+    """The grant widens to the review store and to nothing else."""
+    resolution = crew.plan_dispatch(
+        node=_review_node(home, write_paths=["package/output.json"]),
+        config=REVIEW_BACKEND_CONFIG,
+        project=PROJECT,
+        repo=review_repository,
+    )
+
+    assert "scoped" in resolution.validation.failed_properties
+    detail = " ".join(f["detail"] for f in resolution.validation.findings)
+    assert "package/output.json" in detail
+    assert "read-only" in detail
+
+
+def test_the_worktree_full_tier_keeps_the_repository_unrestricted(
+    home: Path, review_repository: Path
+):
+    """A role that may write the repository is not scoped by the review store."""
+    resolution = crew.plan_dispatch(
+        node=_review_node(home, role="implement", write_paths=["package/output.txt"]),
+        config=REVIEW_BACKEND_CONFIG,
+        project=PROJECT,
+        repo=review_repository,
+    )
+
+    assert resolution.validation.ok, resolution.validation.findings
+    assert resolution.sandbox_write_roots is None
+
+
+def test_every_durable_delivery_root_is_granted_to_a_restricted_tier(tmp_path: Path):
+    """One store granted and a sibling withheld is the defect this closes.
+
+    Ranged over ``delivery_roots()`` rather than the live inventory, so a store
+    added later fails this check until it is granted too, instead of silently
+    joining the set a role cannot reach. The runs root is the one exception and
+    is checked through the node's own run directory, because it is deliberately
+    narrowed to that directory rather than granted wholesale.
+    """
+    repository = tmp_path / "worktree"
+    run_directory = tmp_path / "run"
+    for directory in (repository, run_directory):
+        directory.mkdir()
+    review_root = review_store_root()
+    assert review_root != reports_dir().resolve()
+    ungranted = tmp_path / "ungranted"
+    ungranted.mkdir()
+
+    for tier in (_backends.READ_ONLY, _backends.WORKSPACE_WRITE):
+        roots = _backends.sandbox_write_roots(
+            {"sandbox": tier},
+            repository=repository,
+            run_directory=run_directory,
+            reports_directory=reports_dir(),
+            review_store_directory=review_root,
+        )
+        assert roots is not None
+        for store in delivery_roots():
+            if store == runs_dir().resolve():
+                continue
+            assert _backends.sandbox_can_write(
+                store, repository=repository, write_roots=roots
+            ), f"{tier} withholds {store}"
+        assert _backends.sandbox_can_write(
+            run_directory, repository=repository, write_roots=roots
+        )
+        assert not _backends.sandbox_can_write(
+            ungranted / "artifact.md", repository=repository, write_roots=roots
+        )
+    assert (
+        _backends.sandbox_write_roots(
+            {"sandbox": _backends.WORKTREE_FULL},
+            repository=repository,
+            run_directory=run_directory,
+            reports_directory=reports_dir(),
+            review_store_directory=review_root,
+        )
+        is None
+    )
 
 
 # ── The role predicate is the single spelling of the rule ──────────────────
