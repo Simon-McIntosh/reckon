@@ -26,8 +26,8 @@
   <title>The Project Selector Scopes the Page | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="19">
+<meta name="plan-modified" content="2026-09-15">
+<meta name="plan-version" content="20">
 <meta name="plan-commits" content="98ff44c,346c730,77a473b,9539a96,7c04841,225f60f,599d70d">
 <meta name="plan-impl" content="1.0">
 </head>
@@ -241,6 +241,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260904T053406769860-picker-within-viewport" data-who="s16-routes2" data-when="2026-09-04T05:49:09Z">
     <div class="r-comment-body"><p>the picker panel is anchored right:0 on .r-project-menu so it renders inside the viewport at both widths: geometry cases pass at 1374 and 1920 with panel left &gt;= 0 and right strictly less than innerWidth, all three row text rectangles contained, and the recaptures show four borders with a viewport gap. Judged by delta: baseline b4279d13 passed 14 skipped 1, head passed 16 skipped 1, no new failures</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260914T205341647355-prose-deliverable-audit-spa-shell-scope-and-visibility" data-who="crew-routing-evidence" data-when="2026-09-14T22:00:31.479Z">
+    <div class="r-comment-body"><p>Prose-deliverable audit: 18 deliverables stated in prose with no measure of their own, 1 verdicted not-done (the project selector&#x27;s stated 168px minimum is 150px at HEAD). Also found a gate aimed at the wrong artifact: tests/test_spa_owed_captures.py hardcodes docs/figures/rendered-evidence as its capture root, so it never reads this plan&#x27;s own capture index, which exists. The run was classified abandoned by the live classifier while its manifest reads status complete and both its report and manifest are on disk, so the classification is wrong rather than the worker</p></div>
 </div>
 </section>
 </main>
