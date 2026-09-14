@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-14T22:15:53",
+  "updated": "2026-09-14T22:20:15",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -109764,6 +109764,248 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T160254183141-severity-floor-on-the-fence",
+        "plan": "a-lane-can-say-where-it-stands",
+        "section": "coordinator-share",
+        "node": "severity-floor-on-the-fence",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2917,
+                "cached_input_tokens": 667428,
+                "input_tokens": 670347,
+                "output_tokens": 2160,
+                "reasoning_output_tokens": 1214,
+                "total_tokens": 672507,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "306c1aec-df4a-489e-88c3-441bbb1f5baf",
+            "session_id": "ship-lane-aware-20260914"
+          },
+          "done_when": "uv run pytest tests/test_severity_floor.py tests/test_budget.py -q passes with: a reading whose account severity is raised holding a dispatch that the configured ceiling alone would admit; a reading below both admitting; the refusal reason naming which input produced the hold so it is arguable; and a case where the account reports a severity for a period other than the one that gates a request, which must not hold on that figure. Failure delta 0 against base a5dc512 on tests/test_budget.py",
+          "estimated_hours": null,
+          "goal": "The fence holds at its configured ceiling, never looser than the severity the account reports",
+          "id": "severity-floor-on-the-fence",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T16:02:54Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T160254183141-severity-floor-on-the-fence/manifest.md",
+          "plan": "a-lane-can-say-where-it-stands",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "coordinator-share",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/budget.py",
+            "tests/test_severity_floor.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-terminal-budget",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T16:03:10Z",
+        "completed_at": "2026-09-14T18:11:28.851Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 7691,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 7698,
+        "stalled": true,
+        "time_budget": "50m",
+        "base_sha": "90cb3c3c5474eb09c5a8aa219b8754bbe6247bad",
+        "commits": [
+          "a9a9d027b0ce92363356e120209e11b4c4f0c3bd"
+        ],
+        "changed_lines": {
+          "added": 286,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 9,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_severity_floor.py tests/test_budget.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T162254183141-severity-floor-on-the-fence.json",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T160254183141-severity-floor-on-the-fence/manifest.md",
+        "scope_changed": false,
+        "session_id": "378b1774-2427-4cc2-accf-ba8ddedd7a9a",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 11273830,
+            "input_tokens_cumulative": 11273830,
+            "output_tokens": 92384,
+            "output_tokens_cumulative": 92384,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-14T18:11:28.851Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3000,
+              "classification": "scoring",
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 2464,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 307,
+              "log_fresh": true,
+              "manifest_commits": [
+                "f26287ebeba4c4890f0965d2eb9f18c281743d26"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "06b3b346143bc1f12b291b2ed4eb7fd745197b0ee249790e0ee3cb132c7796ae",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T151642865387-binding-window-inference/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan burn-is-visible-before-it-bites --section '\u00a75' --role review --spec-level exact --node review-of-binding-window-inference --goal 'attach an independent review to run r-20260914T151642865387-binding-window-inference' --done-when 'the review for r-20260914T151642865387-binding-window-inference parses all five score dimensions' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T151642865387-binding-window-inference.json --time-budget 50m --session ship-lane-aware-20260914 --local",
+              "node": "binding-window-inference",
+              "phase": "starting",
+              "plan": "burn-is-visible-before-it-bites",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260914T151642865387-binding-window-inference",
+              "session": "ship-lane-aware-20260914",
+              "terminal_age_seconds": 338,
+              "terminal_at": "2026-09-14T15:57:27Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-lane-aware-20260914/binding-window-inference"
+            }
+          ]
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 11437618,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 7695.2,
+          "generated_tokens": 99767,
+          "generation_seconds": 7643.418,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 81.2,
+          "machine_seconds": 51.782,
+          "peak_input_tokens": 162488,
+          "tokens_per_second": 13.05,
+          "wall_tokens_per_second": 12.96
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_severity_floor.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-lane-aware-20260914/severity-floor-on-the-fence",
+          "session_id": "378b1774-2427-4cc2-accf-ba8ddedd7a9a",
+          "session_source": "stream",
+          "retained_at": "2026-09-14T18:11:28.851Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 98.0,
+        "orientation_input_tokens": 6838898.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -109992,6 +110234,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1415
+    "_version": 1416
   }
 }
