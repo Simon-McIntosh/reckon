@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 </head>
 <body>
   <main class="plan-doc">
@@ -158,14 +158,14 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="leaning-cases" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="leaning-cases" data-choice="investigate-first" data-by="reckon-ship" data-when="2026-09-14">
     <p class="r-dec-q">How are the two leaning-stale cases resolved before their assertions are touched?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="investigate-first">Establish current-behaviour correctness in a read-only step, then migrate or reclassify</button>
+      <button class="r-opt chosen" data-value="investigate-first">Establish current-behaviour correctness in a read-only step, then migrate or reclassify</button>
       <button class="r-opt" data-value="migrate-with-note">Migrate both and record the uncertainty in the commit</button>
       <button class="r-opt" data-value="split-node">Give each its own node so the finding and the change are separable</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Chosen on evidence rather than on preference, and the evidence arrived from two independent reviews that did not know about each other. Leaning case 10, the derived-flow lane count, is now mechanically explained: the test renders DerivedFlow with no injected clock, so it reads the live wall clock against fixture stamps fixed at 2026-09-02 to 09-04, and the surface&#x27;s own 60-hour retention filter drops every fixture bar, packing one lane where two are expected. Its explicitly-clocked sibling test passes, which is what establishes that the schedule logic is correct and the test is the defect. That is a stated finding, which is what this option requires, and it means case 10 is safe to migrate by injecting a clock rather than by moving the expected number. Case 8, the pager reading two of three, is the opposite and is why migrate-with-note would have been wrong: this plan&#x27;s sibling artifact-feeds-and-reader carries a section titled The readout counts one behind its own position, so the current behaviour may be a real defect that the assertion is correctly catching. Migrating it would convert a defect into a passing test. Split-node is rejected because the investigation is one read-only step over two cases, not two nodes.</p>
     </div>
 </section>
 
@@ -180,6 +180,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260914T205727455027-scope-review-spa-surface-contract-health" data-who="crew-review-reflex" data-when="2026-09-14T21:53:03.235Z">
     <div class="r-comment-body"><p>Scope review: nothing in this plan has landed. 2 unlanded sections, 0 no-measure-stated, failure delta 0 of 10. Non-landing proven rather than assumed: the census revision is an ancestor of HEAD and the diff over all eight plan test files and their surface sources is empty against both HEAD and the current main tip, so the assertions are byte-identical and the classification transfers. Both leaning cases remain unresolved AND unmigrated, which are the two outcomes the plan forbids conflating. Delivery gap recorded: the node persisted none of its three live runs to a dedicated log and cited the prior census log instead</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-scope-review-20260914" data-who="reckon-ship" data-when="2026-09-14T21:58:00Z">
+    <div class="r-comment-body">Scope review landed (run scope-review-spa-surface-contract-health, gate passed). Nothing in this plan has landed: 2 unlanded sections, 0 no-measure-stated, failure delta 0 of 10. Non-landing was proven rather than assumed, which matters because the census is five days old: the census revision is an ancestor of HEAD and the diff over all eight plan-relevant test files and their surface sources is empty against both HEAD and the current main tip, so the assertions are byte-identical and every census classification still transfers. Eight of the eleven cases were also reproduced live. This plan turns out to own every stale contract two other reviews in this wave found independently. Case 7 is the exact stylesheet dict-equality failure reported against graph-derived-schedule; case 10 is its date-encoded derived-flow failure; cases 1, 3, 4 and 5 are the six-failure set that the fleet-home review attributed away from its own plan by proving with git log -S that none of those test functions had changed since its base. So the repairs belong here and were deliberately not opened twice. One delivery gap recorded against the node: it persisted none of its three live runs to a dedicated log file and cited the earlier census log instead, so its live reproductions are attested by its manifest rather than by a log a reader can open.</div>
 </div>
 </section>
 </main>
