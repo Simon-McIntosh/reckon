@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 
 import pytest
@@ -242,3 +243,140 @@ def test_unknown_when_the_document_is_not_parsable(tmp_path: Path) -> None:
 
     assert entry["serving"] == "unknown"
     assert str(malformed) in entry["serving_detail"]
+
+
+# ── Lane observation: state, headroom and binding read from the document ─────
+
+
+def _lane_document(tmp_path: Path, payload: dict) -> str:
+    path = tmp_path / "lane.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    return str(path)
+
+
+def _lane_entry(tmp_path: Path, backend: dict) -> dict:
+    """Resolve one synthetic backend and return its availability entry."""
+    report = flight_report(
+        None,
+        overrides={"default_backend": "local", "backends": {"local": backend}},
+        host_path=tmp_path / "absent-host-flight.yaml",
+        project_path=tmp_path / "absent-project-flight.yaml",
+    )
+    return report["availability"]["local"]
+
+
+def test_a_fresh_lane_document_reports_state_headroom_and_binding(
+    tmp_path: Path,
+) -> None:
+    document = _lane_document(
+        tmp_path,
+        {
+            "state": "serving",
+            "headroom": 40,
+            "binding_observed": True,
+            "observed_at": time.time(),
+            "suggested_shelf_life_seconds": 3600,
+        },
+    )
+
+    entry = _lane_entry(tmp_path, {"launch": "in-harness", "lane_document": document})
+
+    assert entry["lane_state"] == "serving"
+    assert entry["lane_headroom"] == 40
+    assert entry["lane_binding_observed"] is True
+    assert isinstance(entry["lane_age_seconds"], (int, float))
+    assert entry["lane_shelf_life_seconds"] == 3600
+
+
+def test_a_stale_reading_reports_unknown_while_retaining_figure_and_age(
+    tmp_path: Path,
+) -> None:
+    document = _lane_document(
+        tmp_path,
+        {
+            "state": "serving",
+            "headroom": 12.5,
+            "binding_observed": False,
+            "observed_at": time.time() - 1_000_000,
+            "suggested_shelf_life_seconds": 100,
+        },
+    )
+
+    entry = _lane_entry(tmp_path, {"launch": "in-harness", "lane_document": document})
+
+    # The verdict is unknown — the reading no longer describes the present —
+    # but the figure and its age are retained so a reader still sees what was
+    # measured and how long ago.
+    assert entry["lane_state"] == "unknown"
+    assert entry["lane_headroom"] == 12.5
+    assert entry["lane_age_seconds"] > 900_000
+    assert "suggested shelf life" in entry["lane_detail"]
+
+
+def test_unknown_with_a_reason_when_the_lane_document_is_missing(
+    tmp_path: Path,
+) -> None:
+    missing = tmp_path / "does-not-exist.json"
+
+    entry = _lane_entry(
+        tmp_path,
+        {"launch": "in-harness", "lane_document": str(missing)},
+    )
+
+    assert entry["lane_state"] == "unknown"
+    assert entry["lane_headroom"] == "unknown"
+    assert str(missing) in entry["lane_detail"]
+
+
+def test_unknown_with_a_reason_when_the_lane_document_is_not_parsable(
+    tmp_path: Path,
+) -> None:
+    malformed = tmp_path / "malformed.json"
+    malformed.write_text("{not json", encoding="utf-8")
+
+    entry = _lane_entry(
+        tmp_path,
+        {"launch": "in-harness", "lane_document": str(malformed)},
+    )
+
+    assert entry["lane_state"] == "unknown"
+    assert entry["lane_headroom"] == "unknown"
+    assert str(malformed) in entry["lane_detail"]
+
+
+def test_zero_headroom_with_state_measured_is_distinct_from_unavailable(
+    tmp_path: Path,
+) -> None:
+    """A measured zero-headroom reading and an unavailable lane differ in both.
+
+    The measured direction: the lane published state and zero headroom, so the
+    reading is current, not unknown, and the zero stays a number. The unavailable
+    direction: no document on disk, so both state and headroom read unknown. One
+    report must not be able to pass for the other.
+    """
+    document = _lane_document(
+        tmp_path,
+        {
+            "state": "serving",
+            "headroom": 0,
+            "binding_observed": True,
+            "observed_at": time.time(),
+            "suggested_shelf_life_seconds": 3600,
+        },
+    )
+    measured = _lane_entry(
+        tmp_path, {"launch": "in-harness", "lane_document": document}
+    )
+
+    missing = tmp_path / "absent.json"
+    unavailable = _lane_entry(
+        tmp_path,
+        {"launch": "in-harness", "lane_document": str(missing)},
+    )
+
+    assert measured["lane_state"] != "unknown"
+    assert measured["lane_headroom"] == 0
+    assert unavailable["lane_state"] == "unknown"
+    assert unavailable["lane_headroom"] == "unknown"
+    assert measured["lane_headroom"] != unavailable["lane_headroom"]
+    assert measured["lane_state"] != unavailable["lane_state"]

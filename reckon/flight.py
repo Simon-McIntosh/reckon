@@ -32,7 +32,9 @@ import os
 import re
 import shutil
 import subprocess
+import time
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
@@ -697,7 +699,10 @@ def probe_availability(
     can also declare ``endpoints_document`` — a document publishing the endpoints
     its lane currently serves — and ``serving`` is read from that document, so a
     lane whose wrapper exists but lists no live endpoint is distinguishable from
-    one that can actually serve.
+    one that can actually serve. A backend may further declare ``lane_document``
+    — the document its lane publishes with the reading of its own state,
+    headroom and binding observation — and that reading is reported beside the
+    serving verdict.
     """
     report: dict[str, dict[str, Any]] = {}
     for name, backend in sorted((config.get("backends") or {}).items()):
@@ -713,6 +718,7 @@ def probe_availability(
                 "authenticated": None,
                 "detail": "in-harness backend needs no external command",
                 **_probe_serving(backend),
+                **_probe_lane_document(backend),
             }
             continue
         command = backend.get("command")
@@ -726,6 +732,7 @@ def probe_availability(
             "detail": "",
         }
         entry.update(_probe_serving(backend))
+        entry.update(_probe_lane_document(backend))
         unresolved = unresolved_environment_references(backend)
         if unresolved:
             variable, referenced = unresolved[0]
@@ -815,6 +822,128 @@ def _probe_serving(backend: Mapping[str, Any]) -> dict[str, Any]:
             f"offered: {served or '<endpoints carry no model id>'}"
         ),
     }
+
+
+def _observation_age(stamp: object) -> float | None:
+    """Return seconds since an observation stamp, or None if it cannot be aged.
+
+    Both an epoch-seconds number and an ISO-8601 string are accepted; a string
+    without an explicit zone is read as UTC. Anything else — a missing stamp, an
+    unparsable one — returns None, so an undated reading is never silently
+    treated as current.
+    """
+    if isinstance(stamp, bool):
+        return None
+    if isinstance(stamp, (int, float)):
+        return max(0.0, time.time() - float(stamp))
+    if not isinstance(stamp, str):
+        return None
+    try:
+        parsed = datetime.fromisoformat(stamp)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=UTC)
+    return max(0.0, (datetime.now(UTC) - parsed).total_seconds())
+
+
+def _probe_lane_document(backend: Mapping[str, Any]) -> dict[str, Any]:
+    """Report a backend's lane reading, taken from its declared lane document.
+
+    A backend declaring no ``lane_document`` reports ``unknown``: absence of a
+    declaration is not evidence the lane is down. The document is a local JSON
+    file a serving lane publishes, carrying the lane's measured ``state``, its
+    remaining ``headroom``, whether a worker binding was ``binding_observed``,
+    the ``observed_at`` stamp the reading was taken at, and the
+    ``suggested_shelf_life_seconds`` the lane itself suggests the reading stays
+    fresh for. It is read directly and never over the network.
+
+    A reading older than its own suggested shelf life reports ``lane_state:
+    "unknown"`` while keeping the measured figure and its age, so a reader can
+    see both what was measured and how stale it is. A document that is missing,
+    unreadable, unparsable, not an object, or carries no recognizable state or
+    stamp reports ``unknown`` with a reason and never raises: absence of a
+    signal is not evidence of a healthy lane. A measured zero headroom stays a
+    number and stays distinct from the ``"unknown"`` an unavailable lane reports.
+    """
+    base: dict[str, Any] = {
+        "lane_state": "unknown",
+        "lane_headroom": "unknown",
+        "lane_binding_observed": None,
+        "lane_age_seconds": None,
+        "lane_shelf_life_seconds": None,
+        "lane_detail": "",
+    }
+    document = backend.get("lane_document")
+    if not document:
+        return {**base, "lane_detail": "backend declares no lane document"}
+    path = Path(str(document)).expanduser()
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return {
+            **base,
+            "lane_detail": f"lane document {str(path)!r} cannot be read — {exc}",
+        }
+    try:
+        payload = json.loads(raw)
+    except ValueError as exc:
+        return {
+            **base,
+            "lane_detail": f"lane document {str(path)!r} is not valid JSON — {exc}",
+        }
+    if not isinstance(payload, Mapping):
+        return {
+            **base,
+            "lane_detail": f"lane document {str(path)!r} does not hold a JSON object",
+        }
+
+    state_raw = payload.get("state")
+    state_verdict = str(state_raw).strip() if state_raw is not None else ""
+    headroom = payload.get("headroom")
+    if not isinstance(headroom, (int, float)) or isinstance(headroom, bool):
+        headroom = "unknown"
+    binding = payload.get("binding_observed")
+    if not isinstance(binding, bool):
+        binding = None
+    shelf_life = payload.get("suggested_shelf_life_seconds")
+    shelf_life = (
+        float(shelf_life)
+        if isinstance(shelf_life, (int, float)) and not isinstance(shelf_life, bool)
+        else None
+    )
+    age = _observation_age(payload.get("observed_at"))
+
+    report = {
+        "lane_state": state_verdict or "unknown",
+        "lane_headroom": headroom,
+        "lane_binding_observed": binding,
+        "lane_age_seconds": age,
+        "lane_shelf_life_seconds": shelf_life,
+        "lane_detail": "",
+    }
+    if not state_verdict:
+        report["lane_state"] = "unknown"
+        report["lane_detail"] = (
+            f"lane document {str(path)!r} carries no recognizable state"
+        )
+    elif age is None:
+        report["lane_state"] = "unknown"
+        report["lane_detail"] = (
+            f"lane document {str(path)!r} carries no observation stamp; "
+            "an undated reading cannot describe the present"
+        )
+    elif shelf_life is not None and age > shelf_life:
+        report["lane_state"] = "unknown"
+        report["lane_detail"] = (
+            f"lane document {str(path)!r} reading is {age:.0f}s old, older than "
+            f"its own {shelf_life:.0f}s suggested shelf life"
+        )
+    else:
+        report["lane_detail"] = (
+            f"lane document {str(path)!r} reports state {state_verdict!r}"
+        )
+    return report
 
 
 def _probe_catalog(backend: Mapping[str, Any]) -> dict[str, Any]:

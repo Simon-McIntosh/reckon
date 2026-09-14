@@ -1072,6 +1072,18 @@ def test_in_harness_backend_needs_no_command():
     assert entry["command"] is None
 
 
+def test_a_backend_may_declare_a_lane_document(layers):
+    """The routing pre-flight reads a backend's declared lane document path."""
+    write(
+        layers["host"], "backends:\n  alpha:\n    lane_document: /srv/lane/state.json\n"
+    )
+    resolved = resolve_files(layers)
+    assert (
+        resolved.config["backends"]["alpha"]["lane_document"] == "/srv/lane/state.json"
+    )
+    assert resolved.origin("backends.alpha.lane_document") == "host"
+
+
 def test_auth_check_is_not_run_unless_asked_for():
     config = {
         "backends": {
