@@ -18,6 +18,9 @@
   <title>A Lane Can Say Where It Stands | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-north-star" content="state-that-tells-the-truth">
+<meta name="plan-modified" content="2026-09-14">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -238,50 +241,45 @@
     </section>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">&sect;</span> Decisions</h2>
-      <div class="r-dec" data-key="fence-input">
-        <p class="r-dec-q">Does the fence read the account's own severity, or reckon's configured ceiling?</p>
-        <p class="r-dec-ctx">
-          The endpoint computes a severity per window and flags which window is
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="fence-input" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Does the fence read the account&#x27;s own severity, or reckon&#x27;s configured ceiling?</p>
+    <p class="r-dec-ctx">The endpoint computes a severity per window and flags which window is
           binding. Reckon computes its own verdict from a utilisation ceiling
-          and a reserve. Taking the account's severity means one authority and
+          and a reserve. Taking the account&#x27;s severity means one authority and
           no drift, at the cost of a threshold this project does not control
           and cannot test against. Keeping the configured ceiling means the
           fence stays testable over the whole input domain, at the cost of two
-          opinions about the same window.
-        </p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="account-severity">Account severity and binding flag</button>
-          <button class="r-opt" data-value="configured-ceiling">Reckon's configured ceiling</button>
-          <button class="r-opt" data-value="ceiling-with-severity-floor">Ceiling, held no looser than the account's severity</button>
-        </p>
-      </div>
-      <div class="r-dec" data-key="lane-window-mapping">
-        <p class="r-dec-q">Do the three claude lanes map onto scoped per-model windows now, or share the account-wide figure first?</p>
-        <p class="r-dec-ctx">
-          A scoped window is the only way a lane can be fenced separately from
+          opinions about the same window.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="account-severity">Account severity and binding flag</button>
+      <button class="r-opt" data-value="configured-ceiling">Reckon&#x27;s configured ceiling</button>
+      <button class="r-opt" data-value="ceiling-with-severity-floor">Ceiling, held no looser than the account&#x27;s severity</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="lane-window-mapping" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Do the three claude lanes map onto scoped per-model windows now, or share the account-wide figure first?</p>
+    <p class="r-dec-ctx">A scoped window is the only way a lane can be fenced separately from
           its siblings, and the account-wide figure will hold a lane that has
           headroom of its own. Mapping now needs a rule from lane to model
           identity that the endpoint names only by display label, which is a
           weaker join than a model id and may not resolve for every lane.
           Sharing the account-wide figure first is always correct and never
-          precise.
-        </p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="account-wide-first">Account-wide figure first</button>
-          <button class="r-opt" data-value="scoped-now">Scoped per-model windows now</button>
-        </p>
-      </div>
-    </section>
+          precise.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="account-wide-first">Account-wide figure first</button>
+      <button class="r-opt" data-value="scoped-now">Scoped per-model windows now</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">&sect;</span> Followups</h2>
-      <article class="r-fu" data-id="read-the-account-surface" data-status="open"
-               data-written-by="reckon-create" data-written-at="2026-09-14"
-               data-recommends-skill="/reckon-ship a-lane-can-say-where-it-stands">
-        <h4 class="r-fu-title">Read the account surface, and make a stale reading say its own age</h4>
-        <div class="r-fu-body">
-          Settle both decisions first; each changes what the reader returns and
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="read-the-account-surface" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-14" data-recommends-skill="/reckon-ship a-lane-can-say-where-it-stands" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Read the account surface, and make a stale reading say its own age</h4>
+    <div class="r-fu-body">Settle both decisions first; each changes what the reader returns and
           what the fence does with it. Then give the claude dialect its own
           reading over the account surface, move transport ownership to the
           dialect while leaving the failure funnel where it is, parse strictly
@@ -292,12 +290,11 @@
           rather than over the lanes currently configured: a reading older than
           the shelf life must fail to clear at any utilisation on any lane,
           including one absent from today's configuration. Write the quiet half
-          before dispatch &mdash; a fresh reading below the ceiling clears, and
-          does not re-read inside the cadence.
-        </div>
-        <pre class="r-fu-prompt">/reckon-ship a-lane-can-say-where-it-stands</pre>
-      </article>
-    </section>
+          before dispatch — a fresh reading below the ceiling clears, and
+          does not re-read inside the cadence.</div>
+    <pre class="r-fu-prompt">/reckon-ship a-lane-can-say-where-it-stands</pre>
+    </article>
+</section>
   </main>
 </body>
 </html>
