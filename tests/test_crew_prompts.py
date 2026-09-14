@@ -17,7 +17,11 @@ mid-wait is resumable.
 from __future__ import annotations
 
 from reckon.crew.node import NEEDS_HELP_MARKER, TaskNode
-from reckon.crew.prompts import compose_prompt
+from reckon.crew.prompts import (
+    FALSIFIABLE_EVIDENCE_CONTRACT,
+    PLAN_LANDING_CONTRACT,
+    compose_prompt,
+)
 
 LIFETIME_STATEMENT = "Your process ends when this turn ends"
 NEVER_WAIT_ACROSS = "never wait across a backgrounded command"
@@ -148,3 +152,89 @@ def test_manifest_path_delivery_instruction_survives_unchanged():
     )
 
     assert expected in prompt
+
+
+# ── The worktree-landing contract reaches a repo-writing role only ──────────
+
+LANDING_HEADER = "CONTRACT — LANDING YOUR RECORD"
+LAND_OWN_SECTION = "your landing record to your own section of the plan"
+LAND_EVIDENCE_ANCHOR = "your evidence anchor to the cumulative evidence record"
+LAND_IN_WORKTREE = "both live in this worktree"
+LAND_IN_COMMIT = "both go into your final commit"
+FIGURE_WHEN_SHOWN = (
+    "Use a figure wherever a spatial, plotted or sequential relationship is clearer"
+    " shown than described"
+)
+FIGURES_DIRECTORY = "docs/figures/<topic>/"
+PROJECT_ABSOLUTE_SRC = "src /<project>/figures/"
+NO_IMAGE_OF_A_TABLE = "never an image of what is naturally a table"
+NO_META_EDIT = "Do not edit the plan-version or plan-modified meta lines"
+META_EDIT_REASON = "every worker touching them makes every merge conflict there"
+
+
+def _prompt_readonly(*, role: str = "review") -> str:
+    """The dispatch shape of a read-only role: the process operates in its
+    delivery directory and the repository at the worktree is read-only."""
+    return compose_prompt(
+        node=_node(role=role),
+        project="proj",
+        worktree="/repo/worktrees/lifetime-run",
+        working_directory="/state/runs/lifetime-run",
+        manifest_path="/state/runs/lifetime-run/manifest.md",
+        time_budget="20m",
+        needs_help_after_failures=2,
+    )
+
+
+def test_repo_writing_role_is_told_to_land_both_records_in_the_tree():
+    prompt = _flat(_prompt(role="implement"))
+
+    assert LANDING_HEADER in prompt
+    assert LAND_OWN_SECTION in prompt
+    assert LAND_EVIDENCE_ANCHOR in prompt
+    assert LAND_IN_WORKTREE in prompt
+    assert LAND_IN_COMMIT in prompt
+
+
+def test_landing_clause_names_the_figure_convention_and_src_form():
+    prompt = _flat(_prompt(role="implement"))
+
+    assert FIGURE_WHEN_SHOWN in prompt
+    assert FIGURES_DIRECTORY in prompt
+    assert PROJECT_ABSOLUTE_SRC in prompt
+    assert NO_IMAGE_OF_A_TABLE in prompt
+
+
+def test_landing_clause_forbids_editing_the_meta_lines_with_the_reason():
+    prompt = _flat(_prompt(role="implement"))
+
+    assert NO_META_EDIT in prompt
+    assert META_EDIT_REASON in prompt
+
+
+def test_a_readonly_role_without_a_repository_change_receives_no_landing_clause():
+    for role in ("review", "investigate"):
+        prompt = _prompt_readonly(role=role)
+        assert PLAN_LANDING_CONTRACT not in prompt
+        assert LANDING_HEADER not in prompt
+
+
+def test_readonly_prompt_keeps_the_unconditional_contracts():
+    prompt = _prompt_readonly(role="review")
+
+    assert FALSIFIABLE_EVIDENCE_CONTRACT in prompt
+    assert "CONTRACT — DURABLE WRITES" in prompt
+
+
+def test_landing_clause_is_a_pure_removable_insertion(monkeypatch):
+    """Mask the landing contract and recompose: the implement prompt must differ
+    from the live one by exactly that block, nothing else in the composition."""
+    import reckon.crew.prompts as prompts_mod
+
+    after = _prompt(role="implement")
+    assert after.count(PLAN_LANDING_CONTRACT) == 1
+
+    monkeypatch.setattr(prompts_mod, "PLAN_LANDING_CONTRACT", "")
+    before = _prompt(role="implement")
+
+    assert after.replace(PLAN_LANDING_CONTRACT, "", 1) == before

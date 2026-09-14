@@ -48,6 +48,29 @@ FALSIFIABLE_EVIDENCE_CONTRACT = (
     "  tree, so an unfilled field reads as no work."
 )
 
+# The worktree-landing contract, embedded only when the worker's process runs in
+# the worktree, so a repository change is the deliverable it can actually commit.
+# It lives here for the same reason its siblings do: the prompt embeds no
+# protocol reference by design, so a discipline carried only by a reference file
+# reaches nobody. The read-only tiers (review, investigate) operate in a delivery
+# directory and receive no instruction to edit a repository they cannot write -
+# the same condition that raises the RUNTIME FILESYSTEM note. Figure placement
+# and the meta-line ban are stated because they bind the act of editing the plan
+# in the tree. Kept as a standalone constant so a test can compose with it masked
+# out and diff against the live prompt, which proves the addition is removable
+# and scoped.
+PLAN_LANDING_CONTRACT = (
+    "CONTRACT — LANDING YOUR RECORD\n"
+    "  Append your landing record to your own section of the plan and your evidence\n"
+    "  anchor to the cumulative evidence record; both live in this worktree and both\n"
+    "  go into your final commit.\n"
+    "  Use a figure wherever a spatial, plotted or sequential relationship is clearer\n"
+    "  shown than described, under docs/figures/<topic>/ with the project-absolute\n"
+    "  src /<project>/figures/...; never an image of what is naturally a table.\n"
+    "  Do not edit the plan-version or plan-modified meta lines: every worker\n"
+    "  touching them makes every merge conflict there."
+)
+
 # ── Prompt composition ──────────────────────────────────────────────────────
 
 
@@ -122,6 +145,13 @@ RUNTIME FILESYSTEM
   The working directory is the delivery directory {working_directory}.
   The repository at the assigned worktree path {worktree} is read-only.
 """
+    # The landing contract is a named slot in the template like its siblings,
+    # gated to the shape where a repository change is the deliverable. Each
+    # slot is separated by blank lines so a test can mask any one constant and
+    # recompose: the result must equal the live prompt with that block deleted.
+    landing_contract = (
+        PLAN_LANDING_CONTRACT if Path(working_directory) == Path(worktree) else ""
+    )
     orientation_scope = json.dumps(list(node.write_paths), separators=(",", ":"))
     if node.role == "test":
         evidence_role_note = (
@@ -153,6 +183,8 @@ ROLE     {node.role}
 {DURABLE_WRITE_CONTRACT}
 
 {FALSIFIABLE_EVIDENCE_CONTRACT}
+
+{landing_contract}
 
 FENCE — SCOPE (exclusive write paths; nothing outside them)
 {scope_lines}
