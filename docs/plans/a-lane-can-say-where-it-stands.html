@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-section-declarations" content="{&quot;what-is-wrong&quot;:&quot;done&quot;,&quot;the-surface&quot;:&quot;done&quot;,&quot;where-the-probe-lives&quot;:&quot;implementable&quot;,&quot;parse-strictly&quot;:&quot;implementable&quot;,&quot;coordinator-share&quot;:&quot;implementable&quot;,&quot;pin-the-denominator&quot;:&quot;implementable&quot;,&quot;out-of-scope&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="5e3e041c895353a003e15954382a78b49151a2ac,fab092dafb269286fb2f6bc1dbfb1f060dd95247,50c436f3c1865e2e11a662829f87283660a13da5,fff2ca7">
 <meta name="plan-artifacts" content="reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/budget.py,reckon/_backends.py,tests/test_coordinator_reserve.py,tests/test_flight.py,tests/test_claude_account_surface.py,tests/fixtures/backends/claude-account-limits.json,docs/evidence/archive/a-lane-can-say-where-it-stands-landed.html">
@@ -459,6 +459,9 @@
 </div>
 <div class="r-comment" data-section="coordinator-share" data-id="c-run-r-20260914T192602370920-rev-severity-floor-on-the-fence" data-who="crew-gc-coverage" data-when="2026-09-14T20:17:53.299Z">
     <div class="r-comment-body"><p>Independent review attached to r-20260914T162254183141-severity-floor-on-the-fence; all five dimensions parsed</p></div>
+</div>
+<div class="r-comment" data-section="coordinator-share" data-id="c-run-r-20260914T202038117446-severity-floor-holds-without-a-utilisation" data-who="crew-admission" data-when="2026-09-14T21:56:01.259Z">
+    <div class="r-comment-body"><p>The severity floor is consulted before the no-figure clear, so a raised severity holds a reading carrying no numeric utilisation. 76 passed, 4 tests added. The guard is narrowed rather than removed - an unraised severity with no utilisation still clears, asserted as its companion case. Verified by reading the fence itself: severity is consulted at line 110 against the no-utilisation clear at 116</p></div>
 </div>
 <div class="r-comment" data-section="parse-strictly" data-id="c-run-r-20260914T162006293651-dispatch-carries-the-lane-reading" data-who="crew-codex-usage" data-when="2026-09-14T17:55:23.355Z">
     <div class="r-comment-body"><p>A dispatch carries the local lane's published reading as advisory data and refuses nothing; 20 passed, 9 tests added. The critical negative is asserted directly: three documents at headroom 122, headroom 0 and absent all yield exit 0, an unchanged resolved backend and a passing validation, so no value in the document can refuse, hold or reroute a dispatch. Manifest was empty again on this backend - commit and delta established from the worktree</p></div>
