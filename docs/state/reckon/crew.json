@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-14T13:04:23",
+  "updated": "2026-09-14T14:25:06",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -2108,6 +2108,15 @@
           "{\"backend\":\"clive\",\"effort\":\"medium\",\"launch\":\"cli\",\"local\":true,\"model\":\"deepseek-v4-flash\",\"sandbox\":\"worktree-full\"}": "3c03edc0-2541-4530-b218-3ad2f9c0871d"
         },
         "created": "2026-09-03"
+      },
+      {
+        "id": "session-f9a85ca58ee210d277ad",
+        "harness": "clive",
+        "role": "review",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-14"
       },
       {
         "id": "ship0908-a",
@@ -100705,6 +100714,562 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T111017865910-sandbox-delivery-failure-attribution",
+        "plan": "concurrency-and-schedule-visibility",
+        "section": "\u00a78",
+        "node": "sandbox-delivery-failure-attribution",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1299,
+                "cached_input_tokens": 522739,
+                "input_tokens": 524040,
+                "output_tokens": 773,
+                "reasoning_output_tokens": 186,
+                "total_tokens": 524813,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "43258b7e-3d2c-401c-abad-61285516def9",
+            "session_id": "ship-s15-20260914"
+          },
+          "done_when": "the report at /home/ITER/mcintos/.config/reckon/crew/reports/sandbox-delivery-failure-attribution.md names, for each of the five failing ids in tests/test_sandbox_delivery.py, whether it also fails at a39bd85f which precedes every commit this session landed, and states for each whether it is pre-existing or was introduced today; each verdict cites the pytest exit status and the failure id list it was read from; every revision tested is named by a sha resolved with git rev-parse --verify; the run changes no tracked file in the repository, so the report is its only delivery; and the report states plainly that a failure cannot be attributed rather than guessing when the evidence does not separate the two revisions",
+          "estimated_hours": null,
+          "goal": "attribute the five sandbox-delivery test failures to the revision that introduced them",
+          "id": "sandbox-delivery-failure-attribution",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T11:10:18Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T111017865910-sandbox-delivery-failure-attribution/manifest.md",
+          "plan": "concurrency-and-schedule-visibility",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/sandbox-delivery-failure-attribution.md"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-drain-fence",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T11:10:28Z",
+        "completed_at": "2026-09-14T11:39:04.534Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1656,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1716,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "385a6b822655a3d9ff8a0dc91d5a468b636e3aed",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_sandbox_delivery.py -q at a39bd85f and at HEAD, compared by failure id",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/sandbox-delivery-failure-attribution.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T111017865910-sandbox-delivery-failure-attribution/manifest.md",
+        "scope_changed": false,
+        "session_id": "9509906d-45a7-41d4-a679-c58eda4ff2c6",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 1094318,
+            "input_tokens_cumulative": 1094318,
+            "output_tokens": 8991,
+            "output_tokens_cumulative": 8991,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-14T11:39:04.534Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 1094318,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 1713.664,
+          "generated_tokens": 8991,
+          "generation_seconds": 1688.029,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 40.7,
+          "machine_seconds": 25.635,
+          "peak_input_tokens": 81459,
+          "tokens_per_second": 5.33,
+          "wall_tokens_per_second": 5.25
+        },
+        "follow_on_paths": [
+          "tests/test_sandbox_delivery.py",
+          "reckon/crew"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest exit",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": "an attribution node whose only delivery is its report; it changes no tracked file by design",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-20260914/sandbox-delivery-failure-attribution",
+          "session_id": "9509906d-45a7-41d4-a679-c58eda4ff2c6",
+          "session_source": "stream",
+          "retained_at": "2026-09-14T11:39:04.534Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 19.0,
+        "orientation_input_tokens": 853593.0,
+        "store_write": {
+          "status": "written"
+        }
+      },
+      {
+        "run_id": "r-20260914T110857431448-review-of-csv-landed-record",
+        "plan": "concurrency-and-schedule-visibility",
+        "section": "\u00a78",
+        "node": "review-of-csv-landed-record",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 884,
+                "cached_input_tokens": 521855,
+                "input_tokens": 522741,
+                "output_tokens": 583,
+                "reasoning_output_tokens": 149,
+                "total_tokens": 523324,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "43258b7e-3d2c-401c-abad-61285516def9",
+            "session_id": "ship-s15-20260914"
+          },
+          "done_when": "the review for r-20260914T094316532378-csv-landed-record parses all five score dimensions",
+          "estimated_hours": null,
+          "goal": "attach an independent review to run r-20260914T094316532378-csv-landed-record",
+          "id": "review-of-csv-landed-record",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T11:08:57Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T110857431448-review-of-csv-landed-record/manifest.md",
+          "plan": "concurrency-and-schedule-visibility",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "review",
+          "section": "\u00a78",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T094316532378-csv-landed-record.json"
+          ]
+        },
+        "role": "review",
+        "spec_level": "exact",
+        "member": "crew-budget-instrument",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "read-only",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T11:09:04Z",
+        "completed_at": "2026-09-14T12:21:32.107Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4294,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4348,
+        "stalled": true,
+        "time_budget": "30m",
+        "base_sha": "385a6b822655a3d9ff8a0dc91d5a468b636e3aed",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "reckon.crew.review.parse_review over the stored review, plus an independent audit-doc re-run",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T110857431448-review-of-csv-landed-record/review-store.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T110857431448-review-of-csv-landed-record/manifest.md",
+        "scope_changed": false,
+        "session_id": "b40d4d4c-186d-4b23-ae68-5513c850a8d5",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 1436035,
+            "input_tokens_cumulative": 1436035,
+            "output_tokens": 17398,
+            "output_tokens_cumulative": 17398,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-14T12:21:32.107Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 1436035,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 1447.651,
+          "generated_tokens": 17398,
+          "generation_seconds": 1443.648,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 63.7,
+          "machine_seconds": 4.003,
+          "peak_input_tokens": 127335,
+          "tokens_per_second": 12.05,
+          "wall_tokens_per_second": 12.02
+        },
+        "follow_on_paths": [
+          "docs/evidence/concurrency-and-schedule-visibility-landed.html",
+          "docs/evidence/archive/.",
+          "docs/evidence/"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "review",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": "a review node whose delivery is the review store entry; it changes no tracked file by design",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-20260914/review-of-csv-landed-record",
+          "session_id": "b40d4d4c-186d-4b23-ae68-5513c850a8d5",
+          "session_source": "stream",
+          "retained_at": "2026-09-14T12:21:32.107Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 29.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
+      },
+      {
+        "run_id": "r-20260914T110709027182-review-of-flight-declares-meteredness",
+        "plan": "dispatch-cost-per-durable-node",
+        "section": "\u00a712",
+        "node": "review-of-flight-declares-meteredness",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1635,
+                "cached_input_tokens": 510744,
+                "input_tokens": 512381,
+                "output_tokens": 474,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 512855,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "43258b7e-3d2c-401c-abad-61285516def9",
+            "session_id": "ship-s15-20260914"
+          },
+          "done_when": "the review for r-20260914T094141156549-flight-declares-meteredness parses all five score dimensions",
+          "estimated_hours": null,
+          "goal": "attach an independent review to run r-20260914T094141156549-flight-declares-meteredness",
+          "id": "review-of-flight-declares-meteredness",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T11:07:09Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T110709027182-review-of-flight-declares-meteredness/manifest.md",
+          "plan": "dispatch-cost-per-durable-node",
+          "requested_backend": null,
+          "requires_decisions": [],
+          "role": "review",
+          "section": "\u00a712",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T094141156549-flight-declares-meteredness.json"
+          ]
+        },
+        "role": "review",
+        "spec_level": "exact",
+        "member": "session-f9a85ca58ee210d277ad",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "read-only",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T11:07:18Z",
+        "completed_at": "2026-09-14T12:22:28.477Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4448,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4510,
+        "stalled": true,
+        "time_budget": "30m",
+        "base_sha": "385a6b822655a3d9ff8a0dc91d5a468b636e3aed",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "reckon.crew.review.parse_review over the stored review",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T110709027182-review-of-flight-declares-meteredness/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T110709027182-review-of-flight-declares-meteredness/manifest.md",
+        "scope_changed": false,
+        "session_id": "a4bf8b69-c21e-4ecc-9020-46fe18faa41d",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 1686145,
+            "input_tokens_cumulative": 1686145,
+            "output_tokens": 17478,
+            "output_tokens_cumulative": 17478,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-14T12:22:28.477Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 1813525,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 1504.676,
+          "generated_tokens": 17478,
+          "generation_seconds": 1494.199,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 63.7,
+          "machine_seconds": 10.477,
+          "peak_input_tokens": 127415,
+          "tokens_per_second": 11.7,
+          "wall_tokens_per_second": 11.62
+        },
+        "follow_on_paths": [
+          "reckon/_flight_schema.py:208",
+          "scripts/regen_flight_schema.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "review",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": "a review node whose delivery is the review store entry; it changes no tracked file by design",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-20260914/review-of-flight-declares-meteredness",
+          "session_id": "a4bf8b69-c21e-4ecc-9020-46fe18faa41d",
+          "session_source": "stream",
+          "retained_at": "2026-09-14T12:22:28.477Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 24.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -100933,6 +101498,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1371
+    "_version": 1375
   }
 }

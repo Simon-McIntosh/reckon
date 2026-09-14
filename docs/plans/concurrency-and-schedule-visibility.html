@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="92">
+<meta name="plan-version" content="93">
 <meta name="plan-impl" content="0.99">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/evidence/archive/concurrency-and-schedule-visibility-landed.html">
@@ -947,6 +947,9 @@ Narrowing the edge to the section that actually satisfied it took the abandoned 
 Two candidate repairs, and the choice matters. Either an abandoned or superseded member leaves the completion denominator the way a deferred one does, since a plan that will never ship is not outstanding work; or a stage-scoped dependency resolves membership to the section rather than the plan, which is the more precise reading of what the edge means and would also stop a closure inheriting sections nobody depends on. The first is a smaller change and fixes only this symptom; the second changes what a closure IS and would want its own decision.
 
 What makes this worth a section rather than a note: shipped_of_total is the figure a reader uses to decide whether an outcome is done, and it is now structurally unable to reach its own total. That is the same defect as a north star reading complete on two shipped plans and a lane reporting command_found while serving nothing - a derived figure that cannot express the truth it is asked for.</div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20260914T110857431448-review-of-csv-landed-record" data-who="crew-budget-instrument" data-when="2026-09-14T12:21:32.107Z">
+    <div class="r-comment-body"><p>independent review parsed with all five dimensions scored, total 79, absent none; it found that tests/test_schema.py exempts every path under docs/evidence/archive from its conformance scan, which I confirmed directly - 126 plan files scanned, 0 of 43 archived evidence records among them - so a landed evidence record can carry a fabricated sha and no test fails; durability scored 6 of 20 for that reason</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260825T142832299679-n-readyqueuegap" data-who="codex-a" data-when="2026-08-25T14:36:10Z">
     <div class="r-comment-body"><p>Ready-queue gap report: one unshipped deliverable, three of four requested capabilities implemented, zero automatic end-to-end loops</p></div>

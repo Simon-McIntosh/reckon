@@ -22,8 +22,8 @@
   <title>A Landed Record Should Mean Landed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="4">
+<meta name="plan-modified" content="2026-09-14">
+<meta name="plan-version" content="5">
 <meta name="plan-impl" content="0.5">
 </head>
 <body>
@@ -168,6 +168,15 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260904T085041432430" data-who="agent" data-when="2026-09-04">
     <div class="r-comment-body">TRIAGE VERDICT — the mechanism work landed, but closure is still wanted. Re-homed to S17 for one bounded synthesis-and-close continuation because the required plan-evidence-for resource is absent; terminal status is intentionally withheld.</div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260914T1430" data-who="reckon-ship" data-when="2026-09-14T14:30:00Z">
+    <div class="r-comment-body">NOTHING VERIFIES AN ARCHIVED EVIDENCE RECORD, AND THE PLAN NAMED AFTER LANDED MEANING LANDED IS WHERE THAT BELONGS. Found by an independent review of an evidence record authored today, and confirmed directly rather than taken on the reviewer's word. tests/test_schema.py's _INFRA_DIRS contains the literal "archive", and _iter_plan_files skips any file with that among its parent parts, so the conformance scan covers 126 plan files and 0 of the 43 records under docs/evidence/archive. A landed evidence record can therefore be corrupted, or can cite a commit sha that never existed, and no test fails.
+
+The reviewer scored durability 6 of 20 for exactly this and was right. The record it reviewed states that its 18 cited landing shas were each verified an ancestor of HEAD, and that verification did happen - at authoring, by the worker, once. Nothing keeps it true afterwards. The coordinator's own untrust checks did not reach it either, because those check an artifact at the moment it lands and this gap is about the guarantee over time. That is the argument for an independent review existing at all, made concretely: it found what the authoring gate and the promoting coordinator both structurally could not.
+
+The exemption is coarser than the archive alone. "archive" matches any directory of that name anywhere under docs, so the same silence covers archived plans, not only archived evidence.
+
+Deliverable: an evidence record under docs/evidence/archive is covered by the same conformance scan as a plan, so a malformed record or an unresolvable sha fails a test rather than sitting unread; and the exemption, if any survives, names the directories it means rather than matching a path component wherever it appears. The negative half matters as much - a record that is well-formed and whose shas resolve must stay quiet, or the scan becomes noise on 43 files at once.</div>
 </div>
 </section>
 </main>

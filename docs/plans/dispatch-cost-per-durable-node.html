@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="68">
+<meta name="plan-version" content="69">
 <meta name="plan-commits" content="d5811b204966f31db83bab190b6440a6eb7b9842,db329f84e6eecc232e8cf41f35e828f84365dee8,b99ccdf829c50659c34efdd354642b5a9cba6827,0b146679a6585b480b35fed528801a1bd4acedf8">
 <meta name="plan-impl" content="0.99">
 <meta name="plan-artifacts" content="reckon/crew/node.py,reckon/budget.py,reckon/crew/dispatch.py,reckon/capabilities.py,reckon/mcp.py,reckon/serve.py,tests/test_crew_node.py,tests/test_budget.py,tests/test_crew_coordinator_spend.py,tests/test_routing_surface.py,skills/reckon-ship/SKILL.md,skills/reckon-ship/references/effort-routing.md">
@@ -1155,6 +1155,9 @@ Acted on 2026-09-14: terra is slice-locked into roles.implement.by_spec_level fo
 </div>
 <div class="r-comment" data-section="s12" data-id="c-20260914T1030" data-who="reckon-ship" data-when="2026-09-14T10:30:00Z">
     <div class="r-comment-body">flight-declares-meteredness landed — commits d8e5cf7 and 14e34cd; merged; gate passed exit 0. This closes the section's last clause, the one that had no landing comment: a backend whose meteredness is unstated is now reported. Measure: the configuration-inspection surface emits undeclared_meteredness once per read as a sorted exhaustive list; on this host it names all 9 configured backends and contains both clive and native, and the overlap with explicitly declaring backends is 0. The constraint that it must NOT fire per dispatch is asserted by a valid dry-run resolution carrying no such key. The declarable field was added through the generated-schema path — reckon/schema/flight.yaml edited, scripts/regen_flight_schema.py run — and I re-ran the regeneration at the merged head independently: both committed artifacts reproduce byte-identically. tests/test_flight.py 72 to 75 passed, failures 0 either side. One honest residual, reported by the worker rather than hidden: the LinkML generator emits Optional[bool], so the generated reckon/_flight_schema.py moves from 93 to 94 ruff UP045 findings while the authored files add none. Removing it means changing the generator or the generated-code lint policy, both outside this node's scope and both able to break the byte-identity contract. impl stays 0.99 because §7 remains open and the figure is monotonic; it is bounded above by that section, not by this one.</div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20260914T110709027182-review-of-flight-declares-meteredness" data-who="session-f9a85ca58ee210d277ad" data-when="2026-09-14T12:22:28.477Z">
+    <div class="r-comment-body"><p>independent review parsed with all five dimensions scored, total 95, durability 19 and scope discipline 20; its one finding independently re-measured the generated-module lint delta the worker had self-reported, reading 72 against 73 under --select UP045 and agreeing on the +1, so the residual is confirmed rather than disputed</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20260908T205652926432-shadow-holds-the-variable-it-measures" data-who="ship0908-a" data-when="2026-09-08T21:27:50Z">
     <div class="r-comment-body"><p>a shadow now resolves the effort its primary dispatch resolved, an unhonourable override is recorded, and two arms of one pair coexist with separate retained patches; 7 passed, failure delta -3, ruff delta 0</p></div>
