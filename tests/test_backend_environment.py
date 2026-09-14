@@ -54,6 +54,32 @@ def test_backend_environment_resolves_values_and_per_key_origins(
     assert resolved.origin("backends.endpoint.environment.API_TOKEN") == "host"
 
 
+def _assert_unselected_unavailable_entry(entry: dict) -> None:
+    """Assert an unselected backend's availability entry, tolerating surface growth.
+
+    The surface this report reads may legitimately gain keys beside the
+    launcher-presence ones (a serving verdict, a lane observation). The check
+    is a required-subset over the keys the environment refusal depends on, so
+    a new key reads as a defect only if it displaces a required key or carries
+    a wrong value — never merely by being present. The synthetic-key case in
+    the caller pins that property.
+    """
+    required = {
+        "launch",
+        "command",
+        "command_found",
+        "command_path",
+        "authenticated",
+        "detail",
+    }
+    assert required <= set(entry)
+    assert entry["launch"] == "cli"
+    assert entry["command"] == "python3"
+    assert entry["command_found"] is True
+    assert "API_TOKEN" in entry["detail"]
+    assert "ABSENT_DISPATCH_TOKEN" in entry["detail"]
+
+
 def test_unselected_unset_reference_is_reported_without_blocking_resolution(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -83,17 +109,15 @@ def test_unselected_unset_reference_is_reported_without_blocking_resolution(
         "API_TOKEN": "${ABSENT_DISPATCH_TOKEN}"
     }
     unavailable = report["availability"]["unavailable"]
-    absent_command_shape = {
-        "launch",
-        "command",
-        "command_found",
-        "command_path",
-        "authenticated",
-        "detail",
-    }
-    assert set(unavailable) == absent_command_shape
-    assert "API_TOKEN" in unavailable["detail"]
-    assert "ABSENT_DISPATCH_TOKEN" in unavailable["detail"]
+    _assert_unselected_unavailable_entry(unavailable)
+
+    # A key the surface legitimately gains (e.g. a future observation beside
+    # the serving verdict) must not read as a defect: the same check must pass
+    # when the entry carries an extra synthetic key.
+    _assert_unselected_unavailable_entry(
+        {**unavailable, "unexpected-but-legitimate": "future surface key"}
+    )
+
     assert report["config"]["backends"]["available"]["environment"] == {
         "API_TOKEN": "literal-token"
     }
