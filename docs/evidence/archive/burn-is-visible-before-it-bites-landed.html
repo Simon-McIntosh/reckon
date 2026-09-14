@@ -105,6 +105,31 @@
     refusal handler that would call it sits outside this node's write scope, so the
     store exists and nothing writes to it in production yet.</p>
   </section>
+
+  <section id="binding-window">
+    <h2>The binding window is inferred, and says when it cannot be</h2>
+    <p>Landed 2026-09-14, commit <code>f26287e</code>. Two refusals of one lane
+    about five hours apart report the weekly window as binding, because the short
+    window reset in between and the lane refused anyway. Two far apart report the
+    short window. A single refusal reports <strong>undetermined</strong> rather than
+    guessing.</p>
+    <p><strong>Why this works for a lane whose probe says nothing.</strong> The
+    inference reads the durable refusal stamps rather than any live reading, so the
+    evidence is constructed from refusals the lane could not avoid emitting rather
+    than from a position it never publishes. That is the whole argument for stamping
+    refusals in the first place, arriving as a usable answer.</p>
+    <p><strong>Measure:</strong> 9 passed, 5 tests added. The three required states
+    are asserted by name &mdash;
+    <code>test_two_refusals_five_hours_apart_report_the_weekly_window</code>,
+    <code>test_two_refusals_far_apart_report_the_short_window</code>,
+    <code>test_a_single_refusal_reports_undetermined_rather_than_guessing</code>.
+    The undetermined case is the one the plan calls out as the state a surface is
+    most tempted to fake, and it is asserted explicitly rather than by omission.</p>
+    <p>The worker added two cases beyond the brief that are worth keeping: a lane
+    does not borrow another lane's refusals, and a refusal without a readable time
+    cannot place the window. Both are failure modes that would have produced a
+    confident wrong answer rather than an honest unknown.</p>
+  </section>
 </main>
 </body>
 </html>

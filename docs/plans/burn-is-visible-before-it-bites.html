@@ -27,11 +27,11 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="12">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
-<meta name="plan-commits" content="979805e1d460e5c46a15d466d64d4a674c8e3405">
-<meta name="plan-artifacts" content="reckon/run_store.py,tests/test_run_store.py,docs/evidence/archive/burn-is-visible-before-it-bites-landed.html">
-<meta name="plan-impl" content="0.17">
+<meta name="plan-commits" content="979805e1d460e5c46a15d466d64d4a674c8e3405,f26287ebeba4c4890f0965d2eb9f18c281743d26">
+<meta name="plan-artifacts" content="reckon/run_store.py,tests/test_run_store.py,reckon/crew/lane_evidence.py,tests/test_binding_window_inference.py,docs/evidence/archive/burn-is-visible-before-it-bites-landed.html">
+<meta name="plan-impl" content="0.33">
 </head>
 <body>
 <main class="plan-doc">
@@ -246,6 +246,12 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260914T151814299097-review-of-refusal-stamp-store" data-who="crew-monitor-invocation" data-when="2026-09-14T15:49:51.268Z">
     <div class="r-comment-body"><p>Independent review attached to refusal-stamp-outlives-its-run; all five score dimensions parsed</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260914T151642865387-binding-window-inference" data-who="crew-resume-evidence" data-when="2026-09-14T15:57:58.818Z">
+    <div class="r-comment-body"><p>The binding quota window is inferred from stamped refusals and says when it cannot be determined; 9 passed, all three required states asserted by name plus lane isolation and an unreadable-timestamp case the worker added</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260914T1631" data-who="reckon-ship" data-when="2026-09-14T16:31:00Z">
+    <div class="r-comment-body">binding-window-inference landed — commit f26287ebeba4c4890f0965d2eb9f18c281743d26, merged and the content verified present at HEAD by marker. Gate passed exit 0; measure: 9 passed (5 inference, 4 chassis), 5 tests added, failure delta 0. All three required states asserted by name: two refusals ~5h apart report the weekly window binding, two far apart report the short window, a single refusal reports undetermined. The undetermined case is asserted explicitly rather than by omission, being the state the plan names as most tempting to fake. The worker added two cases beyond the brief, both worth keeping because each would otherwise produce a confident wrong answer instead of an honest unknown: a lane does not borrow another lane's refusals, and a refusal without a readable time cannot place the window. The inference reads the durable stamps rather than any live probe, which is what makes it work for a lane whose probe says nothing — evidence constructed from refusals the lane could not avoid emitting, rather than from a position it never publishes. Artifacts: reckon/crew/lane_evidence.py, tests/test_binding_window_inference.py, docs/evidence/archive/burn-is-visible-before-it-bites-landed.html#binding-window.</div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260914T1200" data-who="reckon-ship" data-when="2026-09-14T12:00:00Z">
     <div class="r-comment-body">Dependency narrowed from the whole of dispatch-cost-per-durable-node to its §6, on this plan's own statement of what it needs. The followup says §2 waits on the prerequisite plan making the rate computation readable from Python, and that is §6, which shipped: crew(view="budget") reported burn_multiple 2.87 against utilisation 7 percent on 2026-09-14, derived in Python from rate_limit_period_minutes and resets_at with no new probe. The plan-level edge was holding this work behind §7, whose remaining measure is a 20-to-40 run gated pilot bounded by about two days of elapsed time rather than by effort. Nothing this plan needs is in §7, so the edge was serialising nine worker-hours behind two calendar days for no stated reason.</div>
