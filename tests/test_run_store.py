@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import sqlite3
 from pathlib import Path
 
@@ -960,3 +961,102 @@ def test_equality_check_scopes_the_store_by_project(config_home: Path) -> None:
     assert verdict["rows_in_store_absent_from_file"] == 0
     assert verdict["rows_in_file_absent_from_store"] == 0
     assert verdict["rows_present_in_both_disagreeing"] == 0
+
+
+# ── Rate-limit refusal stamps outlive the run they killed ─────────────────
+
+
+def test_a_rate_limit_refusal_stamp_outlives_its_run_directory(
+    store: Path, tmp_path: Path
+) -> None:
+    real_store = _real_store_path()
+    was_present = real_store.exists()
+    run_dir = tmp_path / "run-dir"
+    run_dir.mkdir()
+
+    # The stamp lands in the store, a sibling of the run directory — never
+    # inside the reclaimable run dir, and never in any ledger file.
+    with run_store.RunStore(store) as sqlite_store:
+        sqlite_store.stamp_refusal(
+            "codex-spark",
+            "2026-09-14T10:00:00Z",
+            "2026-09-15T00:00:00Z",
+        )
+
+    assert store.parent == tmp_path
+    assert not str(store).startswith(str(run_dir))
+
+    # The killed run's directory is reclaimed...
+    shutil.rmtree(run_dir)
+    assert not run_dir.exists()
+
+    # ...and the stamp is still readable from the store beside it, carrying
+    # both the refusal time and the return time the refusal itself stated,
+    # through a fresh store handle.
+    with run_store.RunStore(store) as sqlite_store:
+        stamps = sqlite_store.refusal_stamps()
+        # Stamping never created a run row: the refusal is not answerable as
+        # a run in the runs table.
+        assert sqlite_store.get_run("codex-spark") is None
+
+    assert stamps == [
+        {
+            "lane": "codex-spark",
+            "refused_at": "2026-09-14T10:00:00Z",
+            "returns_at": "2026-09-15T00:00:00Z",
+        }
+    ]
+    # The real crew config home was not written to.
+    assert real_store.exists() == was_present
+
+
+def test_refusal_stamps_accumulate_oldest_first_and_keep_both_readings(
+    store: Path,
+) -> None:
+    with run_store.RunStore(store) as sqlite_store:
+        sqlite_store.stamp_refusal(
+            "codex-spark",
+            "2026-09-14T10:00:00Z",
+            "2026-09-15T00:00:00Z",
+        )
+        sqlite_store.stamp_refusal(
+            "codex-spark",
+            "2026-09-14T15:00:00Z",
+            "2026-09-15T07:00:00Z",
+        )
+        sqlite_store.stamp_refusal(
+            "sol",
+            "2026-09-14T09:00:00Z",
+            "2026-09-14T14:00:00Z",
+        )
+        stamps = sqlite_store.refusal_stamps()
+
+    # Each refusal is its own row keyed by the refusal's own time, oldest
+    # first, so two refusals of one lane both survive rather than the second
+    # wiping the first — the pair of readings a later inference separates.
+    assert [(stamp["lane"], stamp["refused_at"]) for stamp in stamps] == [
+        ("sol", "2026-09-14T09:00:00Z"),
+        ("codex-spark", "2026-09-14T10:00:00Z"),
+        ("codex-spark", "2026-09-14T15:00:00Z"),
+    ]
+    assert stamps[1]["returns_at"] == "2026-09-15T00:00:00Z"
+
+
+def test_a_failed_stamp_write_leaves_the_run_append_unaffected(store: Path) -> None:
+    with run_store.RunStore(store) as sqlite_store:
+        sqlite_store.append("proj", _addressing_record("r-before"))
+
+        # The stamp's payload cannot serialize, so its transaction rolls back
+        # rather than half-landing a row.
+        with pytest.raises(TypeError):
+            sqlite_store.stamp_refusal(
+                "codex-spark", "2026-09-14T10:00:00Z", b"\x00not-a-time"
+            )
+
+        # No refusal row landed...
+        assert sqlite_store.refusal_stamps() == []
+        # ...the run row already written still answers in full...
+        assert sqlite_store.get_run("r-before")["run_id"] == "r-before"
+        # ...and the same store still accepts a later run append.
+        sqlite_store.append("proj", _addressing_record("r-after"))
+        assert sqlite_store.get_run("r-after")["run_id"] == "r-after"

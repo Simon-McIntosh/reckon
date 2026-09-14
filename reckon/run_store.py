@@ -42,6 +42,13 @@ rows), while leaving already-identical rows byte-for-byte untouched so a second
 pass is a no-op. Neither ever writes ``store_write``: that field records what
 happened at one promotion, not current state, so it never becomes store content
 and is excluded from the durable comparison.
+
+A rate-limit refusal is a second kind of durable record in the same store. A
+refused dispatch kills the run, so no ledger row is ever written for it — the
+stamp is the record the refusal would otherwise never reach, kept outside both
+the reclaimable run directory and the ledger file that will not exist. Each
+refusal is its own row keyed by the refusal's own time, and the stamps are read
+back after a run directory is reclaimed.
 """
 
 from __future__ import annotations
@@ -130,6 +137,10 @@ CREATE TABLE IF NOT EXISTS "members" (
 );
 CREATE TABLE IF NOT EXISTS "holds" (
     "hold_id" TEXT PRIMARY KEY,
+    "payload" TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS "refusals" (
+    "refused_at" TEXT PRIMARY KEY,
     "payload" TEXT NOT NULL
 );
 """
@@ -421,6 +432,47 @@ class RunStore:
                     json.dumps(dict(member), sort_keys=True, separators=(",", ":")),
                 ),
             )
+
+    def stamp_refusal(self, lane: str, refused_at: str, returns_at: str) -> None:
+        """Record one rate-limit refusal with the return time it stated.
+
+        A refused dispatch kills the run, so the refusal is one of the events
+        a killed run guarantees never reaches the ledger. The stamp lives in
+        this store — outside the reclaimable run directory and outside the
+        committed ledger file — keyed by the refusal's own time, so each
+        refusal is its own row and a re-stamp of the same refusal is an
+        idempotent replace. The return time is stored verbatim as the refusal
+        stated it.
+        """
+        with self._conn:
+            self._conn.execute(
+                'INSERT INTO "refusals" ("refused_at", "payload") VALUES (?, ?) '
+                'ON CONFLICT("refused_at") DO UPDATE SET "payload" = excluded."payload"',
+                (
+                    refused_at,
+                    json.dumps(
+                        {
+                            "lane": lane,
+                            "refused_at": refused_at,
+                            "returns_at": returns_at,
+                        },
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ),
+                ),
+            )
+
+    def refusal_stamps(self) -> list[dict[str, Any]]:
+        """Return every recorded refusal stamp, oldest refusal first.
+
+        The stamps are durable: one written before a run directory is
+        reclaimed is still answerable afterwards, which is how a later reader
+        learns that a lane refused even though the run it killed left no row.
+        """
+        rows = self._conn.execute(
+            'SELECT "payload" FROM "refusals" ORDER BY "refused_at"'
+        ).fetchall()
+        return [json.loads(row[0]) for row in rows]
 
     def close(self) -> None:
         self._conn.close()
