@@ -24,11 +24,11 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="274">
+<meta name="plan-version" content="276">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md">
 <meta name="plan-impl" content="0.97">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -860,6 +860,104 @@
         <tr><td>A complete manifest is never classified abandoned</td><td>A run whose manifest records a terminal status is classified from that status &mdash; the assertion is on the <em>classification</em>, since that is the wrong fact; the advice string is downstream of it and a coordinator who inspects the worktree finds the answer regardless. <code>abandoned</code> stays reachable only where no terminal manifest exists, asserted as the negative, because a classifier that never says abandoned is as useless as one that says it wrongly.</td></tr>
         <tr><td>The fixture is the failing shape, not the shape that looks like it</td><td>The trigger is a key-value reader continuing a value across following lines that each contain <code>": "</code> &mdash; the prose bullets beneath <code>status:</code>. The structural hypothesis was tested and <strong>refuted</strong>: blank-line count is not the trigger, because a manifest carrying one blank line above <code>node:</code> parsed correctly while the failing one carried two. A fixture built on the blank line would pass while reproducing nothing, so the fixture carries value-continuing bullets and the refuted hypothesis is recorded here to stop it being re-tested.</td></tr>
         <tr><td>Two fields disagreeing is the cheapest detector</td><td>On the same manifest, <code>manifest_commits</code> parsed cleanly to a single sha while the status field did not. So a terminal phase carrying a parsed commit beside an unusable status is unambiguous and needs no new instrument: assert that combination is never classified <code>abandoned</code>. This is stronger than checking either field alone, which is why it is stated as its own measure rather than folded into the one above.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s18">&#167;18 &mdash; Runs ending together on one backend are one lane event, not N worker failures</h2>
+    <p>Measured 2026-09-14. Eight <code>clive</code> runs reached a terminal state between
+    06:52:19 and 07:00:20, six of them within nine seconds, across four sessions. Every
+    stream's terminal record carries <code>subtype: "success"</code> while its own text reads
+    <em>there is an issue with the selected model &mdash; it may not exist or you may not have
+    access to it</em>. Zero rejected rate-limit events, so it was never quota. The serving job
+    had been replaced by a serve the router refuses, because the replacement's model cards
+    carry no routing metadata block &mdash; that block is injected only on one of the two
+    launch branches. The follower classified every one of the eight <code>abandoned</code>,
+    <em>the process is gone without a complete manifest</em>, which is true of each process and
+    wrong about all eight together, and it cost a peer coordinator an hour of hand
+    reconstruction from timestamps, stream tails and the scheduler queue.</p>
+    <p><strong>The discriminator is measured, and it is not the obvious one.</strong> The
+    unrecognised-model line appears in <code>stderr</code> for 65 of 70 September runs, 59 of
+    them healthy and committing work, so a substring search there finds nothing. The
+    <em>terminal result record's</em> own text appears in 6 of 70: with the marker present 1 of
+    6 committed, with it absent 59 of 64 committed. Discriminate on the terminal record,
+    never on the stderr line &mdash; the same shape as the local-lane saturation signature,
+    where a node whose subject is the failure quotes its signature by doing its job.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Simultaneous terminals on one backend report once</td><td>Several runs on one backend reaching a terminal state inside a correlation window are reported as a single lane event naming the backend and the member runs, not as N independent abandonments. Asserted against a recorded cluster of terminal records sharing a backend within seconds, and in the negative against terminals spread across backends or across the window, which must still report individually.</td></tr>
+        <tr><td>An unknown-model terminal is its own cause</td><td>A terminal record naming the configured model as unknown classifies as a backend catalog change, distinct both from a rate-limit rejection and from a transport outage, and the reason names which. Asserted on the terminal record's own text, with a negative control on a healthy run whose <code>stderr</code> carries the same line &mdash; 59 of 64 such runs committed work, so a classifier keying on <code>stderr</code> fails this measure by construction.</td></tr>
+        <tr><td>A locally served lane is probed where it is cheapest</td><td>Lane health for a locally served backend reads the serving job's presence in the scheduler queue before a dispatch is attempted, and reports <code>unknown</code> rather than healthy when the queue cannot be read. Absence of a queue reading is never read as a serving lane, for the same reason an absent budget signal never holds a wave.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s19">&#167;19 &mdash; Three verbs collapse into one, and the row that claims work landed carries no spend</h2>
+    <p>Two defects at one place, found independently and confirmed to compound.</p>
+    <p><strong>Disposition.</strong> Completing after a merge, discarding a dead pointer, and
+    stopping a live worker all render as <code>promoted</code>, and only the first means
+    anything landed. A peer coordinator discarded three pointers for runs that committed
+    nothing and the pane reported three promotions. The disposition belongs on the ledger row
+    as its own field &mdash; landed, discarded, stopped, superseded &mdash; with the row reading
+    it, and <code>promoted</code> reserved for a run whose commits are in the ledger. This is
+    the same defect as <a href="#s4">&#167;4</a>'s <em>one condition has one name</em>, read from
+    the other end: there, two names for one condition; here, one name for three.</p>
+    <p><strong>Spend.</strong> Measured across the whole watch corpus: promoted rows carry zero
+    spend facts in 90 of 90 cases. Not sometimes &mdash; never. Promotion removes the live
+    pointer, and the spend derivation reads the run from the live-pointer list, so the
+    transition is written after its own evidence has been deleted. Every promoted row records
+    a folded run count of zero and a measured stream count of zero. The row that claims work
+    landed is both semantically overloaded and empty of everything else, which is why a wall
+    time, a token total and a generation rate are all absent exactly where a reader wants a
+    total. The spend facts must be resolved <em>before</em> the pointer is removed, in the same
+    beat.</p>
+    <p><strong>Note before dispatch:</strong> this is a state-name change reaching promotion,
+    the ledger, the transition record, the ticker and every test asserting on state names. The
+    asserting files belong in one write scope, or a worker fences correctly and blocks &mdash;
+    which is the measured cost of a verifier whose aperture is narrower than the change's
+    reach.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>A disposition is recorded, not inferred from a pointer disappearing</td><td>The ledger row carries the verb that disposed of the run, and the rendered row reads that field. Asserted across all four dispositions of the same run shape: a completion after a merge, a discard of a pointer that committed nothing, a stop of a live worker, and a supersession &mdash; four rows that must render four ways. <code>promoted</code> appears only where commits are recorded on the row.</td></tr>
+        <tr><td>Spend is resolved before the evidence is deleted</td><td>A promoted row carries wall time, a token total and a generation rate wherever the run produced them, asserted against a run promoted from a live pointer holding a folded stream: the figures on the committed row equal the figures readable from the pointer immediately before promotion. The present state &mdash; 90 of 90 promoted rows with no spend fact at all &mdash; is the baseline this measure is read against.</td></tr>
+        <tr><td>An unmeasurable figure stays distinct from a zero</td><td>A run that genuinely generated nothing records zero; a run whose spend could not be resolved records unknown, and the two never render alike. Asserted in both directions, because collapsing them re-creates the defect one layer down &mdash; a folded count of zero is what made the present emptiness invisible.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s20">&#167;20 &mdash; The row spends its width on cells that are never populated, and clips the one that matters</h2>
+    <p>Measured over 366 watch rows carrying spend facts. Of the five spend cells, model
+    seconds is non-null in 1.9 percent and the generation rate in 1.9 percent &mdash; two dead
+    columns, ten screen columns wide, permanently rendering the absence marker. Charged tokens
+    is 49 percent and the notional dollar figure 18 percent. Wall time is 54 percent, and on
+    dispatched rows, where it is most populated at 84 of 100, it reads about two seconds: a
+    transition <em>into</em> dispatched is at time zero by definition, so the figure is noise
+    precisely where it is present.</p>
+    <p>Meanwhile every row is clipped by the pane, including rows whose reason is empty, so the
+    clip lands in the free-text field carrying the recovery clause &mdash; which is the field
+    <a href="#s4">&#167;4</a> requires never lose its predicate. The inset constant is commented
+    as provisional and awaiting calibration against a real pane; this is that calibration and
+    it is wrong. Calibrate by measurement &mdash; emit a ruler line once at follower start and
+    read where the pane cuts it &mdash; rather than by adjusting a guess.</p>
+    <p>The rule the module lacks is that <strong>a cell renders only where the row's state
+    makes the measurement meaningful</strong>, blank rather than a marker, because the marker
+    already means unmeasured and blanking noise with it collapses two different facts. Order
+    the grid so always-populated fields precede optional ones: clock, role, node, state pair,
+    model, effort, then the fleet counters, then the optional measures, then the reason last.
+    Cutting model seconds, charged tokens and the dollar figure from the row while keeping them
+    in the record frees eighteen columns and widens the reason from 57 to 75 at the measured
+    pane width.</p>
+    <p>Model time is extractable and its scarcity is plumbing rather than measurement: one
+    dialect reports an API duration on the result record directly, the other derives machine
+    seconds from event timestamps with generation as elapsed minus machine. Both need a
+    terminal record, so repairing <a href="#s19">&#167;19</a>'s promoted-row spend defect is
+    likely to populate model time and the rate on most terminal rows by itself &mdash; which is
+    why this section is sequenced behind it rather than beside it.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>The pane width is measured, not guessed</td><td>The render width comes from a reading taken against the live pane &mdash; a ruler line emitted once at follower start, and where it is cut recorded &mdash; rather than from a constant carrying a provisional comment. Asserted by requiring the calibration path to consume an observed cut position, and by the absence of any width literal whose only justification is a comment saying it awaits calibration.</td></tr>
+        <tr><td>A cell blank where the measurement is meaningless</td><td>A cell renders blank, not as the absence marker, where the row's state makes the figure meaningless &mdash; wall time on a dispatched row being the measured case at 84 of 100 populated and every one of them noise. Asserted in both directions, since the marker must survive where a figure genuinely was not measured.</td></tr>
+        <tr><td>The reason survives the clip</td><td>At the measured pane width the reason field is wider than it is today and the clip falls after the clause naming the predicate. Asserted against a reason longer than the render width, which must lose trailing detail rather than its predicate &mdash; the same assertion <a href="#s4">&#167;4</a> states, now with a width that can satisfy it.</td></tr>
       </tbody>
     </table>
 
