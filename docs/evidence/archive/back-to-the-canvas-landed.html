@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="back-to-the-canvas-landed">
+  <meta name="plan-title" content="Back to the Canvas — Execution Record">
+  <meta name="plan-summary" content="Cumulative execution evidence for the surface corrections: the rendered measure staying constant in full screen.">
+  <meta name="plan-evidence-for" content="back-to-the-canvas">
+  <meta name="plan-verifies" content="back-to-the-canvas#s5">
+  <meta name="plan-tags" content="surface,reader,evidence">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <title>Back to the Canvas — Execution Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="measure-constant">The measure stays constant in full screen</h2>
+    <p>
+      Commit <code>3e62953</code> (2026-09-15). The reading measure no longer moves when
+      full screen is entered. In the base view the content column <code>.r-reading-content</code>
+      was capped at <code>760px</code> while full screen allowed <code>820px</code>, so pressing
+      <code>f</code> reflowed the text at the moment it was read. Per the plan's recorded
+      <code>constant-reader-measure</code> decision (lead, 2026-09-04), the measure stays
+      constant at the <strong>larger</strong> of the canvas's two values, so the base view adopted
+      <code>820px</code> and full screen's own rule is unchanged.
+    </p>
+    <p>
+      Gate: <code>tests/test_spa_reading_mode.py</code>, 7 passed, exit 0. A rendered browser
+      probe (file-URL harness) reads the <em>rendered</em> width of <code>.r-reading-content</code>
+      in the base view, in full screen after the <code>f</code> key, and again after Escape, at
+      1374&times;900 and 1920&times;900:
+    </p>
+    <table>
+      <thead>
+        <tr><th>State</th><th>Base revision</th><th>Head revision</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Base view</td><td><code>760px</code></td><td><code>820px</code></td></tr>
+        <tr><td>Full screen (after <code>f</code>)</td><td><code>820px</code></td><td><code>820px</code></td></tr>
+        <tr><td>Restored (after Escape)</td><td><code>760px</code></td><td><code>820px</code></td></tr>
+      </tbody>
+    </table>
+    <p>
+      The check is demonstrated failing at the base revision &mdash; <code>760</code> vs
+      <code>820</code> &mdash; because the section's prior gate (24 assertions, one touching any
+      rendered measure) could never have caught the deviation. The failing run is recorded in the
+      manifest and gate log of the landing node.
+    </p>
+    <p>
+      One cross-fence verification found a pre-existing failure, not introduced by this change:
+      <code>tests/test_spa_reader_geometry.py::test_rendered_reader_owns_the_viewport_and_steps_the_published_list</code>
+      fails identically at the base and head revisions (readout <code>2 / 3</code> instead of
+      <code>3 / 3</code> after the ArrowRight step). Reported as a follow-on; out of this node's
+      write scope.
+    </p>
+  </main>
+</body>
+</html>
