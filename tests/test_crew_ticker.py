@@ -584,13 +584,15 @@ def _fact_event(**overrides) -> dict:
     return event
 
 
-def test_the_ruler_is_emitted_once_and_only_on_a_human_stream(monkeypatch):
-    """The pane is measured against one ruler line — and only where a pane is.
+def test_a_follower_delivers_only_lines_with_a_node_and_a_state_pair(monkeypatch):
+    """Every delivered line is a transition, never a layout artifact.
 
-    A follower opens with exactly one calibration line, before any row, so the
-    observed cut of it is what the grid below is calibrated at. A json caller
-    feeds a parser, which reads the machine stream and gets no human-facing
-    line at all.
+    A coordinator consumes each line a follower delivers as a delivery, so a
+    line that is calibration and not news — with neither a node nor a state
+    either side of an arrow — would be handed to a reader as if it were a
+    transition. Every delivered line must carry the node it happened to and the
+    state pair it moved across; a json caller reads the same pairs from the
+    machine stream.
     """
     monkeypatch.setattr(
         cli_module,
@@ -602,26 +604,24 @@ def test_the_ruler_is_emitted_once_and_only_on_a_human_stream(monkeypatch):
         .invoke(cli_module.main, ["crew", "follow", "--project", "proj", "--no-color"])
         .output.splitlines()
     )
-    assert plain_lines[0] == ticker_module.ruler_line()
-    assert plain_lines.count(ticker_module.ruler_line()) == 1
-    assert len(plain_lines[0]) == ticker_module.RULER_LENGTH
+    assert len(plain_lines) == 2
+    for line, node in zip(plain_lines, ("ticker-node", "second-node"), strict=True):
+        assert node in line, line
+        assert "working" in line, line
+        assert "blocked" in line, line
 
     json_lines = CliRunner().invoke(
         cli_module.main, ["crew", "follow", "--project", "proj", "--json"]
     )
     assert json_lines.exit_code == 0, json_lines.output
-    assert ticker_module.ruler_line() not in json_lines.output
     payloads = [json.loads(line) for line in json_lines.output.splitlines()]
     assert [row["node"] for row in payloads] == ["ticker-node", "second-node"]
+    for row in payloads:
+        assert row["from_state"] and row["to_state"], row
 
 
 def _follow_rows(monkeypatch, events, *args) -> list[str]:
-    """The rows `crew follow` prints for these log lines, colour off.
-
-    The follower opens with one calibration ruler line, so the rows here are
-    the transition lines with that single measurement line set aside; the ruler
-    itself is asserted by dedicated tests.
-    """
+    """The rows `crew follow` prints for these log lines, colour off."""
     monkeypatch.setattr(
         cli_module, "_follow_watch_lines", lambda *_a, **_kw: iter(list(events))
     )
@@ -630,11 +630,7 @@ def _follow_rows(monkeypatch, events, *args) -> list[str]:
         ["crew", "follow", "--project", "proj", "--no-color", *args],
     )
     assert result.exit_code == 0, result.output
-    return [
-        line
-        for line in result.output.splitlines()
-        if line != ticker_module.ruler_line()
-    ]
+    return result.output.splitlines()
 
 
 def _arrow_column(row: str) -> int:
@@ -867,11 +863,7 @@ def test_a_shadow_row_says_so_end_to_end_rather_than_by_identifier(
     )
 
     assert result.exit_code == 0, result.output
-    primary, shadow = [
-        line
-        for line in result.output.splitlines()
-        if line != ticker_module.ruler_line()
-    ]
+    primary, shadow = result.output.splitlines()
     assert "\x1b[38;5;" in primary
     assert "\x1b[38;5;" not in shadow
     assert "\x1b[2m" in shadow
