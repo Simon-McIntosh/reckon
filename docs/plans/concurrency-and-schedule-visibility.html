@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="89">
+<meta name="plan-version" content="91">
 <meta name="plan-impl" content="0.99">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/evidence/archive/concurrency-and-schedule-visibility-landed.html">
@@ -926,6 +926,18 @@ THIS SECTION IS REOPENED, and the reason belongs on the page. A census of every 
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260914T103218914240-review-store-is-writable-by-its-role" data-who="crew-admission" data-when="2026-09-14T11:01:29.378Z">
     <div class="r-comment-body"><p>the review role can now write the review store reckon itself prescribes; test_role_write_scope.py 8 to 12 passed with 0 failures, and the wider file set holds 5 failures identical at base and head so zero were added; verified independently at the merged head in both directions - the exact next_action command dry-runs clean with crew/reviews among the granted roots, and an ungranted path is still refused naming all three delivery directories</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20260914T111017865910-sandbox-delivery-failure-attribution" data-who="crew-drain-fence" data-when="2026-09-14T11:39:04.534Z">
+    <div class="r-comment-body"><p>all five test_sandbox_delivery.py failures are pre-existing, originating at d5811b2 on 2026-09-04 which predates base a39bd85f by ten days: it added a spec-level declaration requirement the test file was never updated for; corroborated by two on-disk suite reports from 2026-09-01 listing all five as PASSED</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-20260914T1215" data-who="reckon-ship" data-when="2026-09-14T12:15:00Z">
+    <div class="r-comment-body">THE ROADMAP ANSWERS ONE SHAPE OF THE QUESTION THIS PLAN IS NAMED AFTER, AND IS SILENT ABOUT THE OTHER. Asked what should run next, it returns sprints, pending_work, ready_now and a critical path - all sprint-and-plan shaped - and it answers that well. It also derives graph endpoints and reports them in an endpoints array. But an endpoint whose graph_handle is null cannot be shipped as a target at all, and NOTHING SAYS SO: roadmap emits 30 wiring finding codes covering dangling, invalid, inactive, non-executable, contradictory and cyclic dependencies, sprint-order inversion, duplicate and missing sprint membership, unoriented plans and undeclared north stars, and not one concerns a missing handle. The only handle errors are raised when a caller already names one that does not resolve, which requires knowing the handle exists.
+
+Measured on this session. A coordinator asked for the dispatch order of a capability spanning four sprints, observed handle null on both endpoints in the payload, and still produced a list of per-plan invocations rather than proposing a graph target - because the sprint shape is the one the surface presents and the graph shape has to be reconstructed by hand. Authoring one handle afterwards turned eleven plans into a single addressable closure reporting 6 of 11 shipped, depth 7 and average width 1.571, none of which any sprint view could have shown. The information was all derived already; only the actionable gap was unreported.
+
+Two deliverables, and they are the same defect at two altitudes. FIRST, roadmap returns both shapes from one call: what is ready in this sprint, and which outcome each ready item serves together with whether that outcome is shippable as one target. SECOND, a wiring finding when a plan is structurally an endpoint - a sink with live members below it - and carries no handle, so an unshippable outcome announces itself the way an unoriented plan already does.
+
+This is recorded as a comment and not as a section, which is the wrong shape for executable work and is a tool limit rather than a choice: the edit_plan op vocabulary can append followups, research, questions, comments and decisions, and cannot author a section. Until it can, discovered work on a live plan either becomes a comment nobody dispatches from or needs a direct HTML edit.</div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260825T142832299679-n-readyqueuegap" data-who="codex-a" data-when="2026-08-25T14:36:10Z">
     <div class="r-comment-body"><p>Ready-queue gap report: one unshipped deliverable, three of four requested capabilities implemented, zero automatic end-to-end loops</p></div>
