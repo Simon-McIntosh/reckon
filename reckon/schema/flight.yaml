@@ -359,6 +359,24 @@ slots:
     minimum_value: 0
     maximum_value: 100
 
+  coordinator_reserve_pct:
+    description: >-
+      Headroom withheld from new dispatches, in percentage points, so the
+      coordinator that must survive a wave keeps headroom of its own. The
+      reported account position already counts the coordinator's traffic, but
+      reckon cannot see the total; a wave sized to fill the remaining headroom
+      leaves nothing for the audit, merge and outcome-recording the coordinator
+      does after the workers finish, so it can be refused mid-wave with every
+      worker's output stranded in a worktree and nobody left to land it. A
+      fresh dispatch stops at the ceiling less both this reserve and the resume
+      reserve; a resume may spend either, because answering a stuck worker is
+      the expenditure the reserves were withheld for. The figure is declared,
+      not measured: there is no coordinator burn-rate record on this machine,
+      and reading the account surface on a cadence is what calibrates it later.
+    range: float
+    minimum_value: 0
+    maximum_value: 100
+
   exhausted_statuses:
     description: >-
       Threshold-status values that count as exhausted whatever the utilisation
@@ -600,6 +618,7 @@ classes:
     slots:
       - utilisation_ceiling_pct
       - resume_reserve_pct
+      - coordinator_reserve_pct
       - exhausted_statuses
       - evidence_shelf_life_minutes
 

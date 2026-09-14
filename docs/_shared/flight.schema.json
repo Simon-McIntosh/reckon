@@ -412,6 +412,15 @@
             "additionalProperties": false,
             "description": "Thresholds that decide whether a wave opens. They are compared against whatever a backend actually reported; a backend that reports nothing is never held by them.",
             "properties": {
+                "coordinator_reserve_pct": {
+                    "description": "Headroom withheld from new dispatches, in percentage points, so the coordinator that must survive a wave keeps headroom of its own. The reported account position already counts the coordinator's traffic, but reckon cannot see the total; a wave sized to fill the remaining headroom leaves nothing for the audit, merge and outcome-recording the coordinator does after the workers finish, so it can be refused mid-wave with every worker's output stranded in a worktree and nobody left to land it. A fresh dispatch stops at the ceiling less both this reserve and the resume reserve; a resume may spend either, because answering a stuck worker is the expenditure the reserves were withheld for. The figure is declared, not measured: there is no coordinator burn-rate record on this machine, and reading the account surface on a cadence is what calibrates it later.",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
                 "evidence_shelf_life_minutes": {
                     "description": "Minutes a refusal that names no reset time keeps describing the present before it is treated as stale and stops holding the wave on its own. Has no effect on a refusal that named a reset, since a stated reset is stronger evidence than an age and already carries its own expiry. A value at or below zero disables ageing and restores an indefinite hold.",
                     "type": [

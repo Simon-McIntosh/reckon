@@ -529,10 +529,14 @@ def test_the_shipped_layer_carries_the_budget_thresholds(layers):
 
     assert thresholds["utilisation_ceiling_pct"] == 100
     assert thresholds["resume_reserve_pct"] == 5
+    # A coordinator reserve is declared, not computed, so it ships like any other
+    # default and a host can recognise or override it.
+    assert thresholds["coordinator_reserve_pct"] == 3
     # Empty by default: naming which threshold statuses count as exhausted is the
     # config's job, so no backend's vocabulary is enumerated by the schema.
     assert thresholds["exhausted_statuses"] == []
     assert resolved.origin("budget.resume_reserve_pct") == "shipped"
+    assert resolved.origin("budget.coordinator_reserve_pct") == "shipped"
     # No shipped layer declares a shelf life, so a host that never opts in
     # observes no change to the module's own fallback.
     assert thresholds.get("evidence_shelf_life_minutes") is None

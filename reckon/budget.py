@@ -155,6 +155,7 @@ def policy(config: Mapping[str, Any] | None) -> dict[str, Any]:
     block = (config or {}).get("budget") or {}
     ceiling = block.get("utilisation_ceiling_pct")
     reserve = block.get("resume_reserve_pct")
+    coordinator_reserve = block.get("coordinator_reserve_pct")
     statuses = block.get("exhausted_statuses") or ()
     shelf_life = block.get("evidence_shelf_life_minutes")
     resolved = {
@@ -162,6 +163,11 @@ def policy(config: Mapping[str, Any] | None) -> dict[str, Any]:
             UNSET_CEILING_PCT if ceiling is None else float(ceiling)
         ),
         "resume_reserve_pct": UNSET_RESERVE_PCT if reserve is None else float(reserve),
+        "coordinator_reserve_pct": (
+            UNSET_RESERVE_PCT
+            if coordinator_reserve is None
+            else float(coordinator_reserve)
+        ),
         "exhausted_statuses": [str(status) for status in statuses],
         "evidence_shelf_life_minutes": (
             DEFAULT_SHELF_LIFE_MINUTES if shelf_life is None else float(shelf_life)
@@ -188,17 +194,38 @@ def availability_probe_cache_seconds(policy_block: Mapping[str, Any]) -> float:
 def effective_ceiling(policy_block: Mapping[str, Any], purpose: str) -> float:
     """Return the utilisation a dispatch of this purpose will not cross.
 
-    A fresh dispatch stops at the ceiling less the reserve; answering a worker
-    that stopped and asked for help may spend the reserve, because that is the
-    exact expenditure the reserve was withheld for. Spending it on a new node
-    instead strands the wave in its worst state — work in flight and nothing left
-    to unblock it with.
+    A fresh dispatch stops at the ceiling less the reserves; answering a worker
+    that stopped and asked for help may spend them, because that is the exact
+    expenditure the reserves were withheld for. The coordinator reserve keeps
+    headroom for the coordinator that must survive the wave to audit manifests,
+    merge commits and record outcomes; a wave that spends it on a new node
+    strands the wave in its worst state — work in flight and nothing left to
+    unblock or close it with.
     """
     ceiling = float(policy_block.get("utilisation_ceiling_pct", UNSET_CEILING_PCT))
     if purpose == "resume":
         return ceiling
-    reserve = float(policy_block.get("resume_reserve_pct", UNSET_RESERVE_PCT))
-    return max(0.0, ceiling - reserve)
+    resume = float(policy_block.get("resume_reserve_pct", UNSET_RESERVE_PCT))
+    coordinator = float(policy_block.get("coordinator_reserve_pct", UNSET_RESERVE_PCT))
+    return max(0.0, ceiling - resume - coordinator)
+
+
+def withheld_reserves(policy_block: Mapping[str, Any]) -> list[str]:
+    """Name each nonzero reserve a fresh dispatch is withheld by.
+
+    The reason a hold carries must say which headroom was withheld, or a reader
+    who sees a lane stop below the ceiling cannot tell what was protecting whom.
+    """
+    labels = (
+        ("resume_reserve_pct", "resume reserve"),
+        ("coordinator_reserve_pct", "coordinator reserve"),
+    )
+    withheld = []
+    for key, label in labels:
+        value = float(policy_block.get(key, 0.0) or 0.0)
+        if value > 0:
+            withheld.append(f"{value:g}% {label}")
+    return withheld
 
 
 # ── Reading what was already recorded ───────────────────────────────────────
@@ -1193,7 +1220,12 @@ def decide(
         return verdict
     if utilisation >= limit:
         verdict["held"] = True
-        margin = "" if purpose == "resume" else f" (ceiling {ceiling}% less reserve)"
+        if purpose == "resume":
+            margin = ""
+        else:
+            withheld = withheld_reserves(policy_block)
+            suffix = " and ".join(withheld) if withheld else ""
+            margin = f" (ceiling {ceiling:g}% less {suffix})" if suffix else ""
         verdict["reason"] = format_refusal(
             "D02",
             f"{_position(state)} is at or above the {limit}% ceiling for a "
