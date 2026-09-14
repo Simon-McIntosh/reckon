@@ -15,6 +15,8 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
+from datetime import datetime
+from itertools import pairwise
 from typing import Any
 
 from reckon.crew.quota_weight import (
@@ -24,6 +26,11 @@ from reckon.crew.quota_weight import (
 )
 
 MINIMUM_LANE_SAMPLE = 10
+
+# The window period a lane's quota probe measures, and how close two refusals
+# may sit to it and still count as the short window resetting between them.
+SHORT_WINDOW_HOURS = 5.0
+RESET_CROSSING_TOLERANCE = 0.30
 
 
 def _number(value: object) -> float | None:
@@ -188,3 +195,90 @@ def lane_evidence(
     if not rows:
         rows = [_row(None, ())]
     return {"shape": shape, "lanes": rows}
+
+
+def _moment(value: object) -> datetime | None:
+    """Parse an ISO timestamp, or None when it cannot be read."""
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(str(value))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=datetime.UTC)
+    return parsed
+
+
+def infer_binding_window(
+    stamps: Sequence[Mapping[str, Any]],
+    lane: str,
+    *,
+    short_window_hours: float = SHORT_WINDOW_HOURS,
+    reset_crossing_tolerance: float = RESET_CROSSING_TOLERANCE,
+) -> dict[str, object]:
+    """Place the quota window whose exhaustion binds a lane, or say it is unknown.
+
+    A lane that reports no quota reading is constrained by whichever window
+    keeps refusing it, and only the lane's own refusals can say which. Two
+    refusals whose separation matches the short window's own period are a reset
+    crossing: the short window came back and the lane still refused, so the
+    weekly window is what binds. Two refusals separated by far more show a lane
+    that was served after the short window returned and then drained it again,
+    so the short window binds. A single refusal cannot distinguish the two and
+    is reported as undetermined rather than guessed.
+
+    Callers pass ``stamps`` as returned by ``RunStore.refusal_stamps()``; the
+    lane's own records are selected here because the store carries every lane's
+    refusals in one list. Each refusal carries the time it happened and the
+    return time it itself stated.
+    """
+    chrono: list[tuple[datetime, Mapping[str, Any]]] = []
+    for stamp in stamps:
+        if stamp.get("lane") != lane:
+            continue
+        moment = _moment(stamp.get("refused_at"))
+        if moment is None:
+            continue
+        chrono.append((moment, stamp))
+    chrono.sort(key=lambda item: item[0])
+
+    if len(chrono) < 2:
+        return {
+            "lane": lane,
+            "binding_window": "undetermined",
+            "refusal_count": len(chrono),
+            "reason": (
+                "one refusal cannot say whether the short window reset between "
+                "refusals; only a second refusal can"
+            ),
+        }
+
+    lower = short_window_hours * (1.0 - reset_crossing_tolerance)
+    upper = short_window_hours * (1.0 + reset_crossing_tolerance)
+    pairs: list[dict[str, object]] = []
+    crossed_reset = False
+    for (first_moment, _), (second_moment, second) in pairwise(chrono):
+        gap_hours = (second_moment - first_moment).total_seconds() / 3600.0
+        weekly = lower <= gap_hours <= upper
+        crossed_reset = crossed_reset or weekly
+        pairs.append(
+            {
+                "refused_at": second.get("refused_at"),
+                "returns_at": second.get("returns_at"),
+                "gap_hours": gap_hours,
+                "reset_crossed": weekly,
+            }
+        )
+
+    return {
+        "lane": lane,
+        "binding_window": "weekly" if crossed_reset else "short",
+        "refusal_count": len(chrono),
+        "pairs": pairs,
+        "reason": (
+            "the short window reset between refusals and the lane refused anyway"
+            if crossed_reset
+            else "the lane was served after the short window returned and then refused again"
+        ),
+    }
