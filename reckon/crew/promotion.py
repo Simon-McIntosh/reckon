@@ -9,7 +9,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Iterable, Mapping, Sequence
 
 from reckon import _backends, _store, capabilities, ledger
 from reckon.crew import review as review_module
@@ -1143,6 +1143,127 @@ def _record_landing_comment(
     )
 
 
+def _require_committable_checkout(checkout: Path | None, run_id: str) -> None:
+    """Refuse before writing when the checkout cannot host the landing commit.
+
+    Promotion writes two tracked stores (the ledger row and the plan landing
+    comment) and commits them as one landing. A checkout that is not a git
+    worktree cannot host that commit, so promotion refuses here, before either
+    store is written, rather than writing stores it could not commit.
+    """
+    if checkout is None:
+        raise CrewError(
+            f"run {run_id!r} cannot be promoted: no checkout is known for it, "
+            "so the landing commit would have nowhere to land; promotion "
+            "refuses before writing either store"
+        )
+    probe = _git(checkout, "rev-parse", "--is-inside-work-tree", check=False)
+    if probe.returncode != 0 or probe.stdout.strip() != "true":
+        raise CrewError(
+            f"run {run_id!r} cannot be promoted: the checkout {checkout} is not "
+            "a git worktree, so the ledger row and plan comment it would write "
+            "could not be committed in one landing; promotion refuses before "
+            "writing either store"
+        )
+
+
+def _plan_comment_store_path(
+    *,
+    project: str,
+    plan: str,
+    comment: Mapping[str, Any],
+    root: str | Path | None,
+) -> list[Path]:
+    """The tracked plan path changed by a newly recorded landing comment.
+
+    The ledger path is never returned here: a caller that appended a row adds
+    it explicitly, while the already-landed branch rewrote no ledger of its
+    own. The plan file is returned only when the comment was newly recorded,
+    since an idempotent retry leaves the plan file unchanged.
+    """
+    if not str(plan) or not comment.get("recorded") or comment.get("already_recorded"):
+        return []
+    plan_file = _store._resolve_html_file(
+        project, str(plan), root, artifact_type="plan"
+    )
+    return [plan_file] if plan_file is not None else []
+
+
+def _restore_landing_writes(checkout: Path, paths: Sequence[Path]) -> None:
+    """Best-effort reversal of a refused landing's uncommitted store writes.
+
+    Each path promotion wrote returns to its committed state: tracked paths
+    are restored from HEAD; a path absent from HEAD (created by this
+    promotion) is dropped from the index and the working tree. Recovery is
+    best-effort because the refusal that triggers it (a stuck index or other
+    git failure) can itself block these git calls.
+    """
+    for path in paths:
+        target = str(path)
+        restored = _git(
+            checkout,
+            "restore",
+            "--source=HEAD",
+            "--staged",
+            "--worktree",
+            "--",
+            target,
+            check=False,
+        )
+        if restored.returncode == 0:
+            continue
+        _git(checkout, "rm", "--cached", "--force", "--", target, check=False)
+        Path(path).unlink(missing_ok=True)
+
+
+def _commit_landing_writes(
+    *,
+    run_id: str,
+    verdict: str,
+    checkout: Path,
+    paths: Sequence[Path],
+) -> dict[str, Any]:
+    """Commit promotion's own store writes in one landing commit.
+
+    Stages exactly the given paths (never a whole-tree add) and commits them
+    under a subject naming the promoted run and its gate verdict, so a landing
+    leaves the checkout with no uncommitted change at the paths promotion
+    wrote. A write that cannot be staged or committed resets those paths to
+    their committed state and refuses, leaving neither store written.
+    """
+    targets = sorted(
+        {Path(p).expanduser().resolve() for p in paths if Path(p).is_file()}
+    )
+    if not targets:
+        return {"committed": False, "reason": "no_write"}
+    staged = _git(checkout, "add", "--", *(str(p) for p in targets), check=False)
+    if staged.returncode != 0:
+        _restore_landing_writes(checkout, targets)
+        raise CrewError(
+            f"could not stage the landing writes for run {run_id!r} in "
+            f"{checkout}: {staged.stderr.strip() or staged.stdout.strip()}"
+        )
+    subject = f"promote({run_id}): {verdict}"
+    committed = _git(
+        checkout,
+        "commit",
+        "-m",
+        subject,
+        "-m",
+        "Record the landing: append the run to the project ledger and its "
+        "plan comment in one commit, so a promotion leaves the checkout "
+        "without uncommitted state at the paths it wrote.",
+        check=False,
+    )
+    if committed.returncode != 0:
+        _restore_landing_writes(checkout, targets)
+        raise CrewError(
+            f"could not commit the landing writes for run {run_id!r} in "
+            f"{checkout}: {committed.stderr.strip() or committed.stdout.strip()}"
+        )
+    return {"committed": True, "subject": subject, "paths": [str(p) for p in targets]}
+
+
 def _terminal_stream_data(
     record: Mapping[str, Any],
 ) -> StreamMeasures:
@@ -2159,6 +2280,13 @@ def _complete_locked(
     node = record.get("node") or {}
     shadow = _is_shadow(record)
     ledger_root = root if root is not None else record.get("repo")
+    checkout = (
+        Path(ledger_root).expanduser().resolve() if ledger_root is not None else None
+    )
+    # Promotion commits the stores it writes, so a checkout that cannot host
+    # that commit refuses before either store is written rather than leaving a
+    # half-landed, uncommitted state behind.
+    _require_committable_checkout(checkout, run_id)
     ledger_data, ledger_version = ledger.load(project, root=ledger_root)
     existing = next(
         (
@@ -2182,6 +2310,17 @@ def _complete_locked(
                 when=str(existing.get("completed_at") or _utc_now()),
                 root=ledger_root,
             )
+        )
+        _commit_landing_writes(
+            run_id=run_id,
+            verdict=str(gate).strip().lower(),
+            checkout=checkout,
+            paths=_plan_comment_store_path(
+                project=project,
+                plan=str(node.get("plan") or ""),
+                comment=comment,
+                root=ledger_root,
+            ),
         )
         capture = _capture_member_session(record)
         path = pointer_path(run_id)
@@ -2511,6 +2650,24 @@ def _complete_locked(
     if store_outcome is None:
         recorded = written["run"].get("store_write")
         store_outcome = dict(recorded) if isinstance(recorded, Mapping) else None
+
+    # The two tracked stores this promotion wrote (the ledger row and, when a
+    # narrative landed, the plan comment) are committed as one landing, so the
+    # checkout carries no uncommitted state the next reader would trip on.
+    _commit_landing_writes(
+        run_id=run_id,
+        verdict=str(gate).strip().lower(),
+        checkout=checkout,
+        paths=[
+            ledger.ledger_path(project, ledger_root),
+            *_plan_comment_store_path(
+                project=project,
+                plan=str(node.get("plan") or ""),
+                comment=comment,
+                root=ledger_root,
+            ),
+        ],
+    )
 
     # The session id lives only in the pointer until it reaches the roster, so
     # it has to be captured before the pointer goes.

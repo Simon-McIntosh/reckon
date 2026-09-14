@@ -11,6 +11,7 @@ from click.testing import CliRunner, Result
 
 from reckon import _plan_html, _store, crew, ledger
 from reckon.cli import main as cli_main
+from reckon.crew import promotion
 from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, pointer_path
 
@@ -47,6 +48,17 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
             "comments": {},
         },
     )
+    # Promotion commits the two tracked stores it writes, so a fixture that
+    # promotes must be a git worktree with a committed head to land into.
+    for arguments in (
+        ("init", "-q", "-b", "main"),
+        ("config", "user.email", "worker@example.invalid"),
+        ("config", "user.name", "Worker"),
+    ):
+        _git(root, *arguments)
+    (root / "seed.txt").write_text("seed\n", encoding="utf-8")
+    _git(root, "add", "seed.txt", "docs")
+    _git(root, "commit", "-q", "-m", "test: seed repository")
     (config_home / "mounts.json").write_text(
         json.dumps({PROJECT: str(root / "docs")}), encoding="utf-8"
     )
@@ -224,7 +236,7 @@ def _stored_review(run_id: str, values: dict[str, int]) -> None:
     review_module.store_review(record)
 
 
-def _promote(repository: Path, run_id: str) -> dict:
+def _promote(repository: Path, run_id: str, *, outcome: str = "") -> dict:
     _write_json(
         pointer_path(run_id),
         {
@@ -246,7 +258,7 @@ def _promote(repository: Path, run_id: str) -> dict:
             },
         },
     )
-    return crew.complete(run_id, gate="passed", root=repository)
+    return crew.complete(run_id, gate="passed", outcome=outcome, root=repository)
 
 
 def test_a_reviewed_run_carries_its_dimensions_on_the_ledger_row(
@@ -802,21 +814,11 @@ def _linked_worktree(
     *,
     divergent: bool = False,
 ) -> Path:
-    """Create the clean linked tree that promotion is responsible for."""
-    commands = (
-        ("init", "-q", "-b", "main"),
-        ("config", "user.email", "worker@example.invalid"),
-        ("config", "user.name", "Worker"),
-        ("add", "docs"),
-        ("commit", "-q", "-m", "test: seed repository"),
-    )
-    for arguments in commands:
-        subprocess.run(
-            ["git", *arguments],
-            cwd=repository,
-            check=True,
-            capture_output=True,
-        )
+    """Create the clean linked tree that promotion is responsible for.
+
+    The repository fixture already seeds and commits the git repo, so a
+    linked tree is created straight from HEAD.
+    """
     worktree = tmp_path / "worktrees" / name
     worktree.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(
@@ -1235,7 +1237,11 @@ def test_promotion_audits_only_its_own_worktree(
         root=repository,
     )
 
-    assert len(git_invocations) <= 6
+    # Three bounded git calls belong to the landing itself (commitability
+    # probe, explicit add of the two stores, and the single commit) and are
+    # constant no matter how many peer worktrees exist; the audit must not
+    # enumerate them regardless.
+    assert len(git_invocations) <= 9
     assert promoted["release"]["worktree_released"] is False
     rows = promoted["release"]["worktree_audit"]["worktrees"]
     assert [row["path"] for row in rows] == [str(worktree.resolve())]
@@ -1438,3 +1444,181 @@ def test_promotion_records_stream_figures_on_the_committed_row(
     assert promoted["record"]["orientation_input_tokens"] == 220.0
     assert row["tool_steps"] == 2.0
     assert row["orientation_input_tokens"] == 220.0
+
+
+# ── a promotion commits the two stores it writes ─────────────────────────────
+#
+# A landing appends the run to the project ledger and records its plan
+# comment, then commits both in one landing whose subject names the promoted
+# run and its gate verdict. Exactly those two paths are staged, never a
+# whole-tree add, and a checkout that cannot host the commit refuses before
+# either store is written.
+
+
+def _porcelain(repository: Path) -> list[str]:
+    result = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=repository,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return [line for line in result.stdout.splitlines() if line.strip()]
+
+
+def _landing_commit_paths(repository: Path) -> list[str]:
+    return _git(repository, "show", "--format=", "--name-only", "HEAD").split()
+
+
+def test_a_successful_promotion_leaves_its_two_stores_committed_and_clean(
+    repository: Path,
+) -> None:
+    run_id = "r-20260914T190321183448-landing"
+    _promote(repository, run_id, outcome="the landing leaves no dirty state")
+
+    ledger_file = repository / "docs" / "state" / PROJECT / "crew.json"
+    plan_file = repository / "docs" / "plans" / f"{PLAN}.html"
+    assert ledger_file.is_file()
+    assert run_id in plan_file.read_text(encoding="utf-8")
+
+    # No uncommitted change remains at either path promotion wrote.
+    porcelain = _porcelain(repository)
+    assert not any(
+        "crew.json" in line or f"docs/plans/{PLAN}.html" in line for line in porcelain
+    )
+
+
+def test_the_landing_commit_names_the_run_id_and_the_gate_verdict(
+    repository: Path,
+) -> None:
+    run_id = "r-20260914T190322000000-verdict"
+    _promote(repository, run_id, outcome="the landing carries both stores")
+
+    subject = _git(repository, "log", "-1", "--format=%s")
+    assert run_id in subject
+    assert "passed" in subject
+    assert _git(repository, "log", "-1", "--format=%b").strip()
+    assert set(_landing_commit_paths(repository)) == {
+        f"docs/state/{PROJECT}/crew.json",
+        f"docs/plans/{PLAN}.html",
+    }
+
+
+def test_a_landing_commit_never_stages_an_unrelated_dirty_file(
+    repository: Path,
+) -> None:
+    untracked = repository / "loose.txt"
+    untracked.write_text("uncommitted\n", encoding="utf-8")
+    tracked = repository / "seed.txt"
+    tracked.write_text("seed\nmodified\n", encoding="utf-8")
+
+    run_id = "r-20260914T190323000000-scoped"
+    _promote(repository, run_id, outcome="the landing is scoped to its own paths")
+
+    porcelain = _porcelain(repository)
+    assert any(line.endswith("loose.txt") for line in porcelain)
+    assert any(
+        line.startswith(" M ") and line.endswith("seed.txt") for line in porcelain
+    )
+    committed = _landing_commit_paths(repository)
+    assert "loose.txt" not in committed
+    assert "seed.txt" not in committed
+    assert set(committed) == {
+        f"docs/state/{PROJECT}/crew.json",
+        f"docs/plans/{PLAN}.html",
+    }
+
+
+def test_a_checkout_that_cannot_commit_refuses_before_any_store_is_written(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    root = tmp_path / "nongit"
+    (root / "docs" / "state" / PROJECT).mkdir(parents=True)
+    plan_file = root / "docs" / "plans" / f"{PLAN}.html"
+    _write_resource(
+        plan_file,
+        {
+            "type": "plan",
+            "slug": PLAN,
+            "title": "Plan A",
+            "status": "active",
+            "version": 0,
+            "comments": {},
+        },
+    )
+    (config_home / "mounts.json").write_text(
+        json.dumps({PROJECT: str(root / "docs")}), encoding="utf-8"
+    )
+    before = plan_file.read_text(encoding="utf-8")
+
+    run_id = "r-20260914T190324000000-refused"
+    _write_json(
+        pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": PROJECT,
+            "repo": str(root),
+            "launch": "in-harness",
+            "role": "implement",
+            "member": "worker-a",
+            "backend": "native",
+            "created_at": "2026-09-14T19:03:00Z",
+            "manifest_path": "/durable/manifest.md",
+            "node": {
+                "id": "node-a",
+                "plan": PLAN,
+                "section": "§2",
+                "time_budget": "25m",
+                "write_paths": [],
+            },
+        },
+    )
+
+    with pytest.raises(crew.CrewError, match="not a git worktree"):
+        crew.complete(
+            run_id,
+            gate="passed",
+            outcome="cannot land into a checkout that cannot commit",
+            root=root,
+        )
+
+    # Neither store was written: no ledger row and an untouched plan file.
+    assert not (root / "docs" / "state" / PROJECT / "crew.json").exists()
+    assert plan_file.read_text(encoding="utf-8") == before
+
+
+def test_a_commit_failure_restores_both_stores_and_refuses(
+    repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_id = "r-20260914T190325000000-commit-fails"
+    _promote_failing(repository, run_id, monkeypatch)
+
+    # The refusal left neither store: the ledger row was committed to nobody,
+    # the plan file returned to its committed state, and the pointer survives
+    # for a retry.
+    assert not (repository / "docs" / "state" / PROJECT / "crew.json").exists()
+    plan_file = repository / "docs" / "plans" / f"{PLAN}.html"
+    assert "commit-fails" not in plan_file.read_text(encoding="utf-8")
+    assert pointer_path(run_id).exists()
+
+
+def _promote_failing(
+    repository: Path, run_id: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Promote a run whose landing commit is made to fail."""
+    real_git = promotion._git
+
+    def _failing_landing_commit(checkout, *arguments, **kwargs):
+        if arguments and arguments[0] == "commit":
+            return subprocess.CompletedProcess(
+                arguments, returncode=1, stdout="", stderr="simulated commit failure"
+            )
+        return real_git(checkout, *arguments, **kwargs)
+
+    monkeypatch.setattr(promotion, "_git", _failing_landing_commit)
+    with pytest.raises(crew.CrewError, match="could not commit the landing writes"):
+        _promote(repository, run_id, outcome="the landing commit fails and is restored")
+    assert pointer_path(run_id).is_file()
