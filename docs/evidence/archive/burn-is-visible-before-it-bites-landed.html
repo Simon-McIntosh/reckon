@@ -165,6 +165,36 @@
     the authoritative deliverable rather than quietly extending itself.</p>
     <p>Stating what it could not determine is what makes the zero usable.</p>
   </section>
+
+  <section id="crew-meter">
+    <h2>One mark, not two tiles</h2>
+    <p>Landed 2026-09-14, commit <code>a5254ef</code>. The Crew surface renders a
+    quota meter carrying the position, the reset at its right edge labelled with the
+    window's own duration, and the projected exhaustion plotted on the same axis.
+    When the projection falls left of the reset the lane will run out before it
+    refills, and the bar says so.</p>
+    <p><strong>Why one mark rather than two tiles.</strong> Position and rate are
+    orthogonal, and the state that costs a session is low position with high burn
+    &mdash; which two adjacent tiles render as reassuring, because the eye reads the
+    small number and stops. That is what happened on 2026-09-03: the lane read
+    thirteen percent used while burning at seven and a half times sustainable, and
+    the position figure only became alarming once it was too late to act on.</p>
+    <p><strong>Measure:</strong> 8 passed, 298 lines of new tests, every case driven
+    by a fixture payload rather than a live account &mdash; so the tests measure the
+    surface rather than the lane, which matters more than usual given the lane's
+    figures moved by a factor of eight within thirty seconds today.</p>
+    <p>Two assertions are negatives, and both exist because a surface is most
+    tempted to fake exactly these. A backend whose payload reports no window renders
+    <em>no meter at all</em>, asserted by the absence of the element rather than by
+    its text, because a surface that assumes a period is inventing state. And no
+    cache-hit figure appears anywhere in the rendered region &mdash; placed beside a
+    burn figure it implies a lever that does not exist, since the meter charges
+    cached re-reads anyway.</p>
+    <p><strong>The run was classified <code>abandoned</code></strong> on an
+    incomplete manifest while its commit had already landed cleanly, one ahead of
+    base with a clean tree. Redispatching on the classification would have discarded
+    two hours of work and 563 insertions.</p>
+  </section>
 </main>
 </body>
 </html>

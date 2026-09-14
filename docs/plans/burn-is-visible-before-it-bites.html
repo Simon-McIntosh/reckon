@@ -27,11 +27,11 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="17">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
-<meta name="plan-commits" content="979805e1d460e5c46a15d466d64d4a674c8e3405,f26287ebeba4c4890f0965d2eb9f18c281743d26">
-<meta name="plan-artifacts" content="reckon/run_store.py,tests/test_run_store.py,reckon/crew/lane_evidence.py,tests/test_binding_window_inference.py,docs/evidence/archive/burn-is-visible-before-it-bites-landed.html">
-<meta name="plan-impl" content="0.33">
+<meta name="plan-commits" content="979805e1d460e5c46a15d466d64d4a674c8e3405,f26287ebeba4c4890f0965d2eb9f18c281743d26,a5254ef">
+<meta name="plan-artifacts" content="reckon/run_store.py,tests/test_run_store.py,reckon/crew/lane_evidence.py,tests/test_binding_window_inference.py,docs/ui/crew.jsx,docs/ui/crew.css,tests/test_spa_crew_burn.py,docs/evidence/archive/burn-is-visible-before-it-bites-landed.html">
+<meta name="plan-impl" content="0.5">
 </head>
 <body>
 <main class="plan-doc">
@@ -269,6 +269,12 @@
     <div class="r-comment-body">The staged dependency on that plan's section 6 is reverted to the plan, because the staged form raises missing-dependency-section at error severity: plan_section_anchors derives referenceable sections from gate sections and from comment keys only when comments parse as a Mapping, the target carries no gates, and its comments parse as a list, so its anchor set is empty however many sections the page has.
 
 The reasoning behind the narrowing stands and is worth keeping: what this plan needs is the rate computation readable from Python, which is that section and has shipped, and the rest of that prerequisite is a measure bounded by elapsed time rather than effort. The coarse edge is the only form the resolver accepts today, so this plan blocks until the prerequisite ships as a whole. That is now a shorter wait than it was: the evidence for retiring the prerequisite's remaining pilot is recorded against it, since the figure the pilot would produce already exists in the ledger.</div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260914T162707540226-crew-meter-renders-position-and-projection" data-who="crew-elapsed" data-when="2026-09-14T18:28:24.023Z">
+    <div class="r-comment-body"><p>The Crew surface renders a quota meter carrying position, reset and projected exhaustion; 8 passed, 298 lines of new tests. The run was classified abandoned on an incomplete manifest while its commit had already landed cleanly one ahead of base with a clean tree</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260914T2000" data-who="reckon-ship" data-when="2026-09-14T20:00:00Z">
+    <div class="r-comment-body">crew-meter-renders-position-and-projection landed — commit a5254ef, merged and content verified present at HEAD by marker. Gate passed exit 0; measure: 8 passed, 298 lines of new tests, 563 insertions across docs/ui/crew.jsx, docs/ui/crew.css and tests/test_spa_crew_burn.py. Every case is driven by a fixture payload rather than a live account, so the tests measure the surface rather than the lane — which matters more than usual given the lane's own figures moved by a factor of eight within thirty seconds today. Two assertions are NEGATIVES and both exist because a surface is most tempted to fake exactly these: a backend whose payload reports no window renders no meter at all, asserted by the absence of the element rather than by its text; and no cache-hit figure appears anywhere in the rendered region, since placed beside a burn figure it implies a lever that does not exist. THE RUN WAS CLASSIFIED ABANDONED on an incomplete manifest while its commit had already landed cleanly one ahead of base with a clean tree — redispatching on the classification would have discarded the whole of it. This is the second node today where abandoned meant an unfinished manifest rather than lost work. Record: docs/evidence/archive/burn-is-visible-before-it-bites-landed.html#crew-meter.</div>
 </div>
 </section>
 </main>

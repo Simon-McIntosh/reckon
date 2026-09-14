@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-14T21:53:47",
+  "updated": "2026-09-14T21:57:15",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -108892,6 +108892,308 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T162707540226-crew-meter-renders-position-and-projection",
+        "plan": "burn-is-visible-before-it-bites",
+        "section": "\u00a72",
+        "node": "crew-meter-renders-position-and-projection",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 958,
+                "cached_input_tokens": 733741,
+                "input_tokens": 734701,
+                "output_tokens": 667,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 735368,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "306c1aec-df4a-489e-88c3-441bbb1f5baf",
+            "session_id": "ship-lane-aware-20260914"
+          },
+          "done_when": "uv run pytest tests/test_spa_crew_burn.py -q passes. Write that test file first, then the surface, so the measure exists before the thing it measures. Six cases, all from fixture payloads: a backend reporting a 10080-minute window renders one meter labelled with that period; a backend whose payload reports no window renders NO meter, asserted by the absence of the element rather than by its text; a fixture at 20 percent whose projection precedes the reset renders the projection mark left of the reset and the bar warned; the same position with a lower rate renders it right of the reset and unwarned; every rendered figure carries an observation timestamp; and no cache-hit figure appears in the rendered region, asserted as a negative. Extend the existing r-crew-meter primitive in docs/ui/crew.css rather than adding a second bar",
+          "estimated_hours": null,
+          "goal": "The Crew surface renders a quota meter carrying position, reset and projected exhaustion",
+          "id": "crew-meter-renders-position-and-projection",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T16:27:07Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T162707540226-crew-meter-renders-position-and-projection/manifest.md",
+          "plan": "burn-is-visible-before-it-bites",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "docs/ui/crew.jsx",
+            "docs/ui/crew.css",
+            "tests/test_spa_crew_burn.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-elapsed",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T16:27:19Z",
+        "completed_at": "2026-09-14T18:28:24.023Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 7213,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 7265,
+        "stalled": true,
+        "time_budget": "45m",
+        "base_sha": "641a5ca64081041ba25b7f62c97eda9674b8b26b",
+        "commits": [
+          "a5254ef06d8a05faa01f024f0696f0edce3b8ecc"
+        ],
+        "changed_lines": {
+          "added": 563,
+          "removed": 1,
+          "files": 3
+        },
+        "tests_added": 8,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_crew_burn.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T162707540226-crew-meter-renders-position-and-projection.json",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T162707540226-crew-meter-renders-position-and-projection/manifest.md",
+        "scope_changed": false,
+        "session_id": "594b4cf2-82a6-4fd8-bc1e-569c25f029a6",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 9893886,
+            "input_tokens_cumulative": 9893886,
+            "output_tokens": 103178,
+            "output_tokens_cumulative": 103178,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-14T18:28:24.023Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3000,
+              "classification": "scoring",
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 2920,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1570,
+              "log_fresh": false,
+              "manifest_commits": [
+                "fab092d feat(backends): claude dialect owns the account-surface budget read"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "9b5618eb93fb5c8c4fe527370e889bd0c7b50324411f565dcef0b870d15d3232",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T143020550066-lane-account-reading/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan a-lane-can-say-where-it-stands --section where-the-probe-lives --role review --spec-level exact --node review-of-lane-account-reading --goal 'attach an independent review to run r-20260914T143020550066-lane-account-reading' --done-when 'the review for r-20260914T143020550066-lane-account-reading parses all five score dimensions' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T143020550066-lane-account-reading.json --time-budget 50m --session ship-lane-aware-20260914 --local",
+              "node": "lane-account-reading",
+              "phase": "working",
+              "plan": "a-lane-can-say-where-it-stands",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260914T143020550066-lane-account-reading",
+              "session": "ship-lane-aware-20260914",
+              "terminal_age_seconds": 1602,
+              "terminal_at": "2026-09-14T16:00:34Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-lane-aware-20260914/lane-account-reading"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3000,
+              "classification": "scoring",
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 2464,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1758,
+              "log_fresh": false,
+              "manifest_commits": [
+                "f26287ebeba4c4890f0965d2eb9f18c281743d26"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "06b3b346143bc1f12b291b2ed4eb7fd745197b0ee249790e0ee3cb132c7796ae",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T151642865387-binding-window-inference/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan burn-is-visible-before-it-bites --section '\u00a75' --role review --spec-level exact --node review-of-binding-window-inference --goal 'attach an independent review to run r-20260914T151642865387-binding-window-inference' --done-when 'the review for r-20260914T151642865387-binding-window-inference parses all five score dimensions' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T151642865387-binding-window-inference.json --time-budget 50m --session ship-lane-aware-20260914 --local",
+              "node": "binding-window-inference",
+              "phase": "starting",
+              "plan": "burn-is-visible-before-it-bites",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260914T151642865387-binding-window-inference",
+              "session": "ship-lane-aware-20260914",
+              "terminal_age_seconds": 1788,
+              "terminal_at": "2026-09-14T15:57:27Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-lane-aware-20260914/binding-window-inference"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 17,
+            "fit": 19,
+            "goal_fidelity": 17,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 91
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 10060281,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 7261.96,
+          "generated_tokens": 110423,
+          "generation_seconds": 6996.652,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 82.5,
+          "machine_seconds": 265.308,
+          "peak_input_tokens": 165095,
+          "tokens_per_second": 15.78,
+          "wall_tokens_per_second": 15.21
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_spa_crew_burn.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-lane-aware-20260914/crew-meter-renders-position-and-projection",
+          "session_id": "594b4cf2-82a6-4fd8-bc1e-569c25f029a6",
+          "session_source": "stream",
+          "retained_at": "2026-09-14T18:28:24.023Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 94.0,
+        "orientation_input_tokens": 3533335.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -109120,6 +109422,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1412
+    "_version": 1413
   }
 }
