@@ -305,15 +305,31 @@ def _run_budget_probe(
     return _backends.probe_budget(backend_name=backend_name, backend=settings)
 
 
+def _owns_account_surface_reading(dialect: _backends.Dialect) -> bool:
+    """Whether a dialect reads remaining headroom without the probe exchange.
+
+    The base dialect answers None on both surfaces, so overriding
+    ``read_account_surface`` is the declaration that this dialect owns the whole
+    read — credential, transport and parse. Inspecting the class is a statement
+    about the dialect, not a call into it: declaration never runs the reading.
+    """
+    return (
+        type(dialect).read_account_surface is not _backends.Dialect.read_account_surface
+    )
+
+
 def _declared_probe_command(settings: Mapping[str, Any]) -> tuple[str | None, str]:
     command = str(settings.get("command") or "").strip()
     if not command:
         return None, "backend declares no probe command"
     try:
         dialect = _backends.dialect_for(settings)
-        probe = dialect.budget_probe(command)
+        owns_surface = _owns_account_surface_reading(dialect)
+        probe = None if owns_surface else dialect.budget_probe(command)
     except (_backends.BackendError, OSError, ValueError) as exc:
         return None, f"dialect declares no quota probe — {exc}"
+    if owns_surface:
+        return command, "account-surface probe declared"
     if probe is None:
         return None, "dialect declares no quota probe"
     return command, "quota probe declared"

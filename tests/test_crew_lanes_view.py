@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
@@ -10,7 +11,7 @@ from typing import Any
 
 import pytest
 
-from reckon import mcp, mcp_views
+from reckon import _backends, mcp, mcp_views
 from reckon._mcp_tools import CrewArgs
 from reckon.crew.rollout import Unmeasured
 
@@ -240,3 +241,110 @@ def test_tool_description_names_both_horizons_and_disclaims_recommendation() -> 
     assert "before choosing a lane" in description
     assert "never selects" in description
     assert "recommends" in description
+
+
+class _RaisingSurfaceDialect(_backends.Dialect):
+    """A dialect whose own reading would raise, so any execution is fatal."""
+
+    name = "raising-surface"
+
+    def read_account_surface(self, **_kwargs) -> dict[str, Any] | None:
+        raise AssertionError("the account reading must not run")
+
+
+def test_declaration_never_executes_an_owned_account_surface_reading(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    dialect = _RaisingSurfaceDialect()
+    monkeypatch.setattr(mcp_views._backends, "dialect_for", lambda settings: dialect)
+
+    command, detail = mcp_views._declared_probe_command(
+        {"launch": "cli", "command": "claude"}
+    )
+
+    assert command == "claude"
+    assert detail == "account-surface probe declared"
+
+
+def test_an_owned_account_surface_is_reported_declared_without_reading_it() -> None:
+    def raise_reader(backend_name: str, settings: Mapping[str, Any]) -> None:
+        raise AssertionError("the account reading must not run")
+
+    view = mcp_views.crew_lanes_view(
+        {"backends": {"plain": {"launch": "cli", "command": "claude"}}},
+        [
+            {
+                "backend": "plain",
+                "session_id": "plain-session",
+                "completed_at": "2030-01-02T03:04:05Z",
+            }
+        ],
+        receipt_reader=lambda session: SimpleNamespace(
+            model_context_window=None,
+            quota_readings=Unmeasured.MISSING_ROLLOUT,
+        ),
+        probe_reader=raise_reader,
+        composed_at="2030-01-02T03:05:06Z",
+    )
+    lane = view["lanes"][0]
+
+    assert lane["probe_status"] == "unavailable"
+    assert "the account reading must not run" in lane["probe_detail"]
+
+
+def test_a_dialect_declaring_nothing_stays_not_declared_and_unread(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    invocations = 0
+
+    def probe_reader(backend_name: str, settings: Mapping[str, Any]) -> None:
+        nonlocal invocations
+        invocations += 1
+
+    monkeypatch.setattr(
+        mcp_views._backends,
+        "dialect_for",
+        lambda settings: _backends.Dialect(),
+    )
+    view = mcp_views.crew_lanes_view(
+        {"backends": {"plain": {"launch": "cli", "command": "no-surface"}}},
+        [],
+        probe_reader=probe_reader,
+        composed_at="2030-01-02T03:05:06Z",
+    )
+
+    assert invocations == 0
+    assert view["lanes"][0]["probe_status"] == "not_declared"
+
+
+def test_two_backends_sharing_one_command_resolve_to_a_single_read() -> None:
+    invocations = 0
+
+    def probe_reader(backend_name: str, settings: Mapping[str, Any]) -> dict[str, Any]:
+        nonlocal invocations
+        invocations += 1
+        return {
+            "quota_windows": {
+                300: {
+                    "window_minutes": 300,
+                    "used_percent": 50,
+                    "resets_at": "2030-01-03T03:04:05Z",
+                }
+            },
+            "detail": "account quota probe answered",
+        }
+
+    backends = {
+        name: {"launch": "cli", "command": "claude"} for name in ("left", "right")
+    }
+    view = mcp_views.crew_lanes_view(
+        {"backends": backends},
+        [],
+        probe_reader=probe_reader,
+        composed_at="2030-01-02T03:05:06Z",
+    )
+    lanes = _lanes_by_backend(view)
+
+    assert invocations == 1
+    assert lanes["left"]["probe_status"] == "answered"
+    assert lanes["right"]["probe_status"] == "answered"
