@@ -26,8 +26,8 @@
   <title>What the Server Must Serve Before the Canvas Can Land | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="5">
+<meta name="plan-modified" content="2026-09-14">
+<meta name="plan-version" content="7">
 <meta name="plan-commits" content="4611f38,ec16a7a">
 <meta name="plan-impl" content="1.0">
 </head>
@@ -144,6 +144,12 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260904T035040670936-fleet-index-live-counts" data-who="s16-serve" data-when="2026-09-04T04:19:52.051Z">
     <div class="r-comment-body"><p>every mounted project's fleet-index row is computed from its own repository rather than a superseded index file, including a thirty-day plan-edit series that reports an empty list for a silent project so the surface can tell silence from a flat line: 70 passed (8 new plus 62 regression)</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260914T204503809575-scope-review-served-surface-data-contracts" data-who="crew-backpressure" data-when="2026-09-14T21:07:22.092Z">
+    <div class="r-comment-body"><p>Scope review: 4 sections accounted for, 0 unlanded; s2 and s3 landed and verified at HEAD with 84 tests green; only followup resolution remains</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-scope-review-20260914" data-who="reckon-ship" data-when="2026-09-14T21:12:00Z">
+    <div class="r-comment-body">Scope review landed (run r-20260914T204503809575-scope-review-served-surface-data-contracts, gate passed). All four sections accounted for exactly once: 0 unlanded, 0 no-measure-stated. s2 (figure rows, edited stamps) and s3 (live fleet index) both verified landed at HEAD 467016b; s1 and s4 carry no measure by construction (premise and out-of-scope declaration). Gate: 84 passed, exit 0, over tests/test_serve_figure_rows.py, test_spa_state_boundary.py, test_discovery_cache.py, test_fleet_index.py, test_project_state.py. Gate evidence reproduced against the real checkout rather than fixtures: 58 figure rows discovered, an example row carrying dims 720 x 300 and its for_plan link, an ISO-8601 edited stamp at time resolution, and activity30 of length 30 with a non-flat series. The plan's own stated figure count of 40 predates later additions and is a moving number, not a discrepancy. Only remaining scope is bookkeeping: followup f-ssdc-001 describes work already landed. Close held pending the prose-deliverable audit now in flight, which exists to catch deliverables stated in prose without a measure of their own -- the one failure mode a section-verdict census cannot see.</div>
 </div>
 </section>
 </main>
