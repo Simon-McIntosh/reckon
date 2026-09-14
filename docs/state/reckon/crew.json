@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-14T18:58:42",
+  "updated": "2026-09-14T20:06:35",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -106194,6 +106194,538 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T160938925813-review-of-lane-account-reading",
+        "plan": "a-lane-can-say-where-it-stands",
+        "section": "where-the-probe-lives",
+        "node": "review-of-lane-account-reading",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1719,
+                "cached_input_tokens": 695267,
+                "input_tokens": 696988,
+                "output_tokens": 955,
+                "reasoning_output_tokens": 183,
+                "total_tokens": 697943,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "306c1aec-df4a-489e-88c3-441bbb1f5baf",
+            "session_id": "ship-lane-aware-20260914"
+          },
+          "done_when": "the review for r-20260914T143020550066-lane-account-reading parses all five score dimensions",
+          "estimated_hours": null,
+          "goal": "attach an independent review to run r-20260914T143020550066-lane-account-reading",
+          "id": "review-of-lane-account-reading",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T16:09:39Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T160938925813-review-of-lane-account-reading/manifest.md",
+          "plan": "a-lane-can-say-where-it-stands",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "review",
+          "section": "where-the-probe-lives",
+          "spec_level": "exact",
+          "time_budget": "15m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T143020550066-lane-account-reading.json"
+          ]
+        },
+        "role": "review",
+        "spec_level": "exact",
+        "member": "crew-attention",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "read-only",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T16:09:52Z",
+        "completed_at": "2026-09-14T16:59:18.562Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2927,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2966,
+        "stalled": true,
+        "time_budget": "15m",
+        "base_sha": "279394870f8bcb300c40260c185746e33cc3a168",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "review parsed for all five score dimensions",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T143020550066-lane-account-reading.json",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T160938925813-review-of-lane-account-reading/manifest.md",
+        "scope_changed": false,
+        "session_id": "1871ebe1-5538-4147-ba19-5d1ec04da3f5",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 2349861,
+            "input_tokens_cumulative": 2349861,
+            "output_tokens": 30059,
+            "output_tokens_cumulative": 30059,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-14T16:59:18.562Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3000,
+              "classification": "scoring",
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 2920,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 523,
+              "log_fresh": true,
+              "manifest_commits": [
+                "fab092d feat(backends): claude dialect owns the account-surface budget read"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "9b5618eb93fb5c8c4fe527370e889bd0c7b50324411f565dcef0b870d15d3232",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T143020550066-lane-account-reading/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan a-lane-can-say-where-it-stands --section where-the-probe-lives --role review --spec-level exact --node review-of-lane-account-reading --goal 'attach an independent review to run r-20260914T143020550066-lane-account-reading' --done-when 'the review for r-20260914T143020550066-lane-account-reading parses all five score dimensions' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T143020550066-lane-account-reading.json --time-budget 50m --session ship-lane-aware-20260914 --local",
+              "node": "lane-account-reading",
+              "phase": "working",
+              "plan": "a-lane-can-say-where-it-stands",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260914T143020550066-lane-account-reading",
+              "session": "ship-lane-aware-20260914",
+              "terminal_age_seconds": 555,
+              "terminal_at": "2026-09-14T16:00:34Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-lane-aware-20260914/lane-account-reading"
+            },
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3000,
+              "classification": "scoring",
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 2464,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 711,
+              "log_fresh": true,
+              "manifest_commits": [
+                "f26287ebeba4c4890f0965d2eb9f18c281743d26"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "06b3b346143bc1f12b291b2ed4eb7fd745197b0ee249790e0ee3cb132c7796ae",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T151642865387-binding-window-inference/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan burn-is-visible-before-it-bites --section '\u00a75' --role review --spec-level exact --node review-of-binding-window-inference --goal 'attach an independent review to run r-20260914T151642865387-binding-window-inference' --done-when 'the review for r-20260914T151642865387-binding-window-inference parses all five score dimensions' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T151642865387-binding-window-inference.json --time-budget 50m --session ship-lane-aware-20260914 --local",
+              "node": "binding-window-inference",
+              "phase": "starting",
+              "plan": "burn-is-visible-before-it-bites",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260914T151642865387-binding-window-inference",
+              "session": "ship-lane-aware-20260914",
+              "terminal_age_seconds": 742,
+              "terminal_at": "2026-09-14T15:57:27Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-lane-aware-20260914/binding-window-inference"
+            }
+          ]
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 2349861,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 2963.808,
+          "generated_tokens": 30059,
+          "generation_seconds": 2951.065,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 58.9,
+          "machine_seconds": 12.743,
+          "peak_input_tokens": 117748,
+          "tokens_per_second": 10.19,
+          "wall_tokens_per_second": 10.14
+        },
+        "follow_on_paths": [
+          "endpoint/credential"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "review",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": "review role; deliverable is the review JSON outside every git repository",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-lane-aware-20260914/review-of-lane-account-reading",
+          "session_id": "1871ebe1-5538-4147-ba19-5d1ec04da3f5",
+          "session_source": "pointer",
+          "retained_at": "2026-09-14T16:59:18.562Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 32.0,
+        "orientation_input_tokens": 1882753.0,
+        "store_write": {
+          "status": "written"
+        }
+      },
+      {
+        "run_id": "r-20260914T152451139662-row-renders-only-measured-cells",
+        "plan": "crew-observability-truth",
+        "section": "\u00a720",
+        "node": "row-renders-only-measured-cells",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 961,
+                "cached_input_tokens": 519547,
+                "input_tokens": 520510,
+                "output_tokens": 739,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 521249,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3ceb92f8-d6d4-46b5-82a8-d120cb0ddd1f",
+            "session_id": "ship-s18-20260914"
+          },
+          "done_when": "at the measured pane width the reason field is at least 75 columns wide against the present 57; the render width comes from an observed cut position rather than a constant whose comment says it awaits calibration; a cell whose row state makes its figure meaningless renders blank rather than the absence marker, asserted in both directions so the marker survives where a figure was genuinely unmeasured; and tests/test_crew_ticker.py tests/test_crew_ticker_layout.py tests/test_recovery_state_typing.py tests/test_crew_monitor_output.py add no failures against the base revision, with the base and after counts both recorded",
+          "estimated_hours": null,
+          "goal": "the follower row renders a grid calibrated from a measured pane width, carrying only cells whose measurement is meaningful for the row state",
+          "id": "row-renders-only-measured-cells",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T15:24:51Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T152451139662-row-renders-only-measured-cells/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a720",
+          "spec_level": "exact",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/ticker.py",
+            "tests/test_crew_ticker.py",
+            "tests/test_crew_ticker_layout.py",
+            "tests/test_recovery_state_typing.py",
+            "tests/test_crew_monitor_output.py",
+            "reckon/cli.py",
+            "tests/test_monitor_invocation_docs.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-backpressure",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T15:25:05Z",
+        "completed_at": "2026-09-14T17:29:35.898Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 7453,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 7470,
+        "stalled": true,
+        "time_budget": "50m",
+        "base_sha": "0533d5cb8cc35924b7265d78d10076d117e885c1",
+        "commits": [
+          "b876427a7bc4e7d920f3d8c296755d7ad7095d3b"
+        ],
+        "changed_lines": {
+          "added": 281,
+          "removed": 130,
+          "files": 4
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_ticker.py tests/test_crew_ticker_layout.py tests/test_recovery_state_typing.py tests/test_crew_monitor_output.py",
+          "exit_status": 0,
+          "log_path": "/tmp/rowrenders_head.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T152451139662-row-renders-only-measured-cells/manifest.md",
+        "scope_changed": false,
+        "session_id": "c58187cd-c8f6-40fc-8d34-29237d2c09d2",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 10778209,
+            "input_tokens_cumulative": 11207698,
+            "output_tokens": 106190,
+            "output_tokens_cumulative": 109414,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-14T17:29:35.898Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 2400,
+              "classification": "scoring",
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 160,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 3543,
+              "log_fresh": false,
+              "manifest_commits": [
+                "none (investigate node; deliverable is a report file outside the repo)"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "8346c69451505fd6a64727d1e6e78efd05c11e6794ae430dbb6c4405489b6d5b",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T125143724366-display-truth-reuse-map-refusal-and-classifier/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan crew-observability-truth --section '\u00a715' --role review --spec-level exact --node review-of-display-truth-reuse-map-refusal-and-classifier --goal 'attach an independent review to run r-20260914T125143724366-display-truth-reuse-map-refusal-and-classifier' --done-when 'the review for r-20260914T125143724366-display-truth-reuse-map-refusal-and-classifier parses all five score dimensions' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T125143724366-display-truth-reuse-map-refusal-and-classifier.json --time-budget 40m --session ship-s18-20260914 --local",
+              "node": "display-truth-reuse-map-refusal-and-classifier",
+              "phase": "working",
+              "plan": "crew-observability-truth",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260914T125143724366-display-truth-reuse-map-refusal-and-classifier",
+              "session": "ship-s18-20260914",
+              "terminal_age_seconds": 3629,
+              "terminal_at": "2026-09-14T14:24:33Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s18-20260914/display-truth-reuse-map-refusal-and-classifier"
+            }
+          ]
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 11531047,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 7467.149,
+          "generated_tokens": 126989,
+          "generation_seconds": 7441.035,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 82.0,
+          "machine_seconds": 26.114,
+          "peak_input_tokens": 163962,
+          "tokens_per_second": 17.07,
+          "wall_tokens_per_second": 17.01
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s18-20260914/row-renders-only-measured-cells",
+          "session_id": "c58187cd-c8f6-40fc-8d34-29237d2c09d2",
+          "session_source": "pointer",
+          "retained_at": "2026-09-14T17:29:35.898Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 100.0,
+        "orientation_input_tokens": 3679804.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -106422,6 +106954,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1401
+    "_version": 1403
   }
 }
