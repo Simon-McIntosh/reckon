@@ -474,6 +474,80 @@ after writing that section: a check aimed where the failure could not be, and a
 reading taken as an authority it was not.</p>
 </section>
 
+  <section id="prior-art-maps-for-the-pending-sections">
+    <h3>&#167;13/&#167;15&ndash;&#167;20 &mdash; Three reuse maps covering every unlanded measure</h3>
+    <p>Runs <code>r-20260914T125035036163</code>, <code>r-20260914T124917554255</code> and
+    <code>r-20260914T125143724366</code>, members crew-attention, crew-review-reflex and
+    crew-manifest-keys on the local lane, dispatched 12:49&ndash;12:51Z against 40-minute budgets and
+    delivered at 15:44 and 16:24 local. All three commitless by design: the declared write path is
+    the crew reports directory, which is outside every git repository.</p>
+    <p><strong>Measure:</strong> 35 measure rows mapped across seven pending sections, one row each
+    with a satisfied / partial / absent verdict and a <code>file:line</code> citation on every
+    satisfied and partial row, plus per-section exclusive write-path sets naming the asserting test
+    files beside each source. The wave-lifecycle and runtime-gate map alone carries 17 rows
+    (3 satisfied, 8 partial, 6 absent) and 33 citations.</p>
+    <p><strong>Independently reviewed, not self-gated.</strong> The first map scored 79/100 &mdash;
+    goal fidelity 19, evidence 19, scope discipline 19, fit 17, durability 5. The reviewer
+    reproduced every sampled citation and all six absence greps against the base revision, caught
+    the same heading-versus-table row-count defect the coordinator caught independently, and caught
+    one the coordinator missed: a retracted-mechanism paragraph attributed to the fourth measure row
+    when it sits in the third row's cell.</p>
+    <p><strong>Durability 5 is the finding that changed practice.</strong> The maps live in a
+    directory with no version control and no test reading them, so an edited verdict or a citation
+    pointing at a line that no longer exists fails nothing. That is this plan's own subject aimed at
+    its own artifacts, and it is why this record exists: the substance is here, in the repository,
+    rather than only in the config home.</p>
+    <p><strong>Two measures must not be redone</strong> &mdash; wave assignment on dispatch with its
+    explicit-wins and empty-legacy negatives, and the token-denominated budget keeping the wall clock
+    separately as a hang ceiling &mdash; both already satisfied at base. <strong>One constraint
+    governs the wave:</strong> <code>recovery.py</code> appears in all three sections' write-path
+    sets and <code>ticker.py</code> in two, so &#167;18, &#167;19 and &#167;20 serialise rather than
+    fanning out. And the promoted-row section narrowed on the map's evidence: its spend measure is
+    partial rather than absent, because promotion already resolves wall, budget and throughput
+    <em>before</em> the pointer unlink &mdash; the code says so in its own comment directly above it
+    &mdash; leaving only the rendered transition empty.</p>
+  </section>
+
+  <section id="a-day-of-lane-events">
+    <h3>&#167;18 &mdash; Four endpoint drops in one day, and the reason string that covers two causes</h3>
+    <p>Recorded 2026-09-14 across three coordinators sharing one locally served lane. The endpoints
+    document went to zero four times: a cluster of eight terminals between 06:52:19 and 07:00:20Z
+    across four sessions, one near 09:11Z, one at 13:39:05 with the document rewritten one second
+    later that ended four of five of a peer's workers, and a deliberate deployment swap at 14:11:41Z
+    that this plan's own fleet was inside for.</p>
+    <p><strong>The improvement is measured, not asserted.</strong> The morning cluster classified all
+    eight runs <code>abandoned</code> individually and cost a peer an hour of hand reconstruction. The
+    afternoon event held all three affected runs instead: each kept a session id resolved from its own
+    stream, a resume command, and an in-progress manifest recording what had already been delivered.
+    All three resumed with every turn intact. Recovery from a lane event is resume, never redispatch
+    &mdash; a peer's run in the 13:39 event held 87 lines of uncommitted work a redispatch would have
+    destroyed.</p>
+    <p><strong>One reason string, two causes, both measured 22 minutes apart.</strong> At 14:11:41Z
+    three runs were held reading <em>the backend refused the turn on a rate-limit (consumer queue
+    backpressure)</em> while the endpoints document held zero endpoints and the serve was being
+    replaced &mdash; the reason was wrong. At 14:33:48Z a review was held with the identical string
+    while the document listed one endpoint and the lane served normally, and the reason was right:
+    11 records carrying <code>error: rate_limit</code>, 10 <code>api_retry</code> system records,
+    against 20 live pointers and 7 working. The string cannot discriminate; the endpoints document
+    can, and the routing pre-flight already reads it while the classifier does not consult it. In
+    both cases the terminal record's own <code>subtype</code> read <code>success</code>.</p>
+    <p><strong>A resume crosses models and no surface says so.</strong> Settled by probing the
+    cheapest of three held runs rather than by reasoning. The resumed run's stream carries the
+    replacement model on all thirteen records, so it genuinely ran on it; the live pointer's agent
+    block still read the old model, alias and window, all captured at dispatch, and the ticker
+    rendered the old alias on the very transition reporting the resume. A promotion would commit the
+    dispatch-time model onto the ledger row, attributing a run's whole wall time, token total,
+    generation rate and imputed cost to a deployment that produced only part of it. The model stamp
+    exists, it is written once, and a resume is precisely the event that invalidates it. Today's
+    three resumed rows are excluded from lane calibration for that reason.</p>
+    <p><strong>Why the overruns were not node size.</strong> All three maps overran their 40-minute
+    budgets by 150&ndash;160 percent. The serve was running at a median 8.6 tokens per second against
+    17.5&ndash;101.4 on the ten prior days, from 1,353 of 1,453 prefill batches carrying zero cached
+    tokens &mdash; a serving-build defect rather than contention or brief size. Reading three
+    consecutive overruns as evidence the briefs were too large would have shrunk future nodes for a
+    reason that disappeared when the deployment was replaced.</p>
+  </section>
+
 </main>
 </body>
 </html>
