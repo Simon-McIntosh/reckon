@@ -19,12 +19,12 @@
   <meta name="plan-sprint" content="S17">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
-  <meta name="plan-depends-on" content="dispatch-cost-per-durable-node,clive-local-workers,burn-is-visible-before-it-bites,a-lane-can-say-where-it-stands">
+  <meta name="plan-depends-on" content="dispatch-cost-per-durable-node,clive-local-workers#s3,burn-is-visible-before-it-bites,a-lane-can-say-where-it-stands">
   <title>Advise The Lane, Never Force It | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 <meta name="plan-graph-handle" content="lane-aware-dispatch">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -253,6 +253,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s6" data-id="c-20260908T171000" data-who="reckon-create" data-when="2026-09-08T17:10:00Z">
     <div class="r-comment-body">THE RECOMMENDATION HAS THREE AXES, NOT TWO, AND ONLY TWO ARE CURRENTLY MEASURABLE. Quality is answered by rework charged per durable node, which the ledger already derives and which discriminates where pass rate cannot: measured 2026-09-08, the local lane runs 0.51 rework on implement work against the metered lane's 0.23, while both sit at zero on read-and-report work. Burn is answered by utilisation against a window, with a rate and a projected exhaustion the pre-flight already computes. Speed is the axis with no honest instrument yet: wall clock on a worker is dominated by local suite execution rather than by inference, so a median that mixes them ranks the machine rather than the model. The paired measurement taken today makes that concrete — one node ran 131 seconds on a loaded lane and 133 on a free one, so at small node sizes there is nothing to recover and a speed recommendation derived from wall clock would have been noise. Until tool time is recorded separately from generation, speed should be reported and not recommended on, which is what the speed-enters-routing decision has to settle.</div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260914T1240" data-who="reckon-ship" data-when="2026-09-14T12:40:00Z">
+    <div class="r-comment-body">Dependency on the local-worker plan narrowed to its section 3 after that plan was closed as will-not-do on 2026-09-14. What this plan needs from it is the local lane being a first-class backend reachable through a declared key, which is section 3 and landed on 2026-09-02; what was abandoned is the remainder gated on a second model serve the H200 server cannot host. Left at plan scope the edge put an abandoned plan on this closure's critical path and capped its completion at six of eleven permanently, because an abandoned member never ships. This is the second coarse edge on this closure in one session and the same repair both times: the edge named a plan where the requirement was a section.</div>
 </div>
 </section>
 </main>

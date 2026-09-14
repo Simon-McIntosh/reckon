@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="91">
+<meta name="plan-version" content="92">
 <meta name="plan-impl" content="0.99">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/evidence/archive/concurrency-and-schedule-visibility-landed.html">
@@ -938,6 +938,15 @@ Measured on this session. A coordinator asked for the dispatch order of a capabi
 Two deliverables, and they are the same defect at two altitudes. FIRST, roadmap returns both shapes from one call: what is ready in this sprint, and which outcome each ready item serves together with whether that outcome is shippable as one target. SECOND, a wiring finding when a plan is structurally an endpoint - a sink with live members below it - and carries no handle, so an unshippable outcome announces itself the way an unoriented plan already does.
 
 This is recorded as a comment and not as a section, which is the wrong shape for executable work and is a tool limit rather than a choice: the edit_plan op vocabulary can append followups, research, questions, comments and decisions, and cannot author a section. Until it can, discovered work on a live plan either becomes a comment nobody dispatches from or needs a direct HTML edit.</div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-20260914T1245" data-who="reckon-ship" data-when="2026-09-14T12:45:00Z">
+    <div class="r-comment-body">A THIRD INSTANCE OF THE SAME SHAPE, FOUND BY CAUSING IT. A closure member closed as will-not-do stays in the denominator and never ships, so shipped_of_total caps below total permanently and the closure can never report complete. Measured on lane-aware-dispatch on 2026-09-14: closing the local-worker plan as abandoned left completion at six of eleven with four members still to land, so the best reachable figure is ten of eleven, forever.
+
+Narrowing the edge to the section that actually satisfied it took the abandoned plan off the critical path, depth seven to six and average width 1.571 to 1.833, which is the right repair for the SCHEDULE. It does not repair the COUNT, because membership derives from depends_on and a stage-scoped ref still resolves to its plan, so the member stays.
+
+Two candidate repairs, and the choice matters. Either an abandoned or superseded member leaves the completion denominator the way a deferred one does, since a plan that will never ship is not outstanding work; or a stage-scoped dependency resolves membership to the section rather than the plan, which is the more precise reading of what the edge means and would also stop a closure inheriting sections nobody depends on. The first is a smaller change and fixes only this symptom; the second changes what a closure IS and would want its own decision.
+
+What makes this worth a section rather than a note: shipped_of_total is the figure a reader uses to decide whether an outcome is done, and it is now structurally unable to reach its own total. That is the same defect as a north star reading complete on two shipped plans and a lane reporting command_found while serving nothing - a derived figure that cannot express the truth it is asked for.</div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260825T142832299679-n-readyqueuegap" data-who="codex-a" data-when="2026-08-25T14:36:10Z">
     <div class="r-comment-body"><p>Ready-queue gap report: one unshipped deliverable, three of four requested capabilities implemented, zero automatic end-to-end loops</p></div>
