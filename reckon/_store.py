@@ -492,7 +492,7 @@ def _write_state(
                 project,
                 slug,
                 candidate_type,
-                include_archived=False,
+                include_archived=True,
             )
             if resource is not None:
                 matches.append(resource)
@@ -503,6 +503,8 @@ def _write_state(
                 "supply artifact_type"
             )
         selected = matches[0] if matches else None
+        if selected is not None:
+            _refuse_immutable_snapshot(selected)
         html_file = selected.path if selected else None
         selected_resource_type = selected.type if selected else selected_type
     if html_file is None or not html_file.is_file():
@@ -758,6 +760,28 @@ def _replace_authored_html(
     return replaced
 
 
+# An archived EVIDENCE record stays writable; an archived plan or research
+# snapshot does not. The distinction is the documented contract rather than a
+# convenience: a frozen snapshot is a record of what a plan said at a moment and
+# rewriting it destroys the thing it exists to preserve, while a cumulative
+# execution record is appendable by design and outlives the plan that prompted
+# it. Measured 2026-09-14: a withdrawn measurement in an archived evidence
+# record still carried the sizing conclusions drawn from it, and correcting them
+# through this path was refused, so the correction was made by hand outside the
+# version check that exists to make such edits safe.
+_ARCHIVED_WRITABLE_TYPES = frozenset({"evidence"})
+
+
+def _refuse_immutable_snapshot(resource) -> None:
+    """Refuse a write to a frozen snapshot, naming why rather than 'not found'."""
+    if resource.archived and resource.type not in _ARCHIVED_WRITABLE_TYPES:
+        raise ValueError(
+            f"archived {resource.type} {resource.slug!r} is a frozen snapshot "
+            "and is immutable; edit the live resource, or append to its "
+            "evidence record"
+        )
+
+
 def replace_plan_text(
     project: str,
     slug: str,
@@ -794,7 +818,7 @@ def replace_plan_text(
             project,
             slug,
             candidate_type,
-            include_archived=False,
+            include_archived=True,
         )
         if resource is not None:
             matches.append(resource)
@@ -807,6 +831,7 @@ def replace_plan_text(
             "supply artifact_type"
         )
     resource = matches[0]
+    _refuse_immutable_snapshot(resource)
     html_file = resource.path
     text = html_file.read_text(encoding="utf-8", errors="strict")
     current_state = _plan_html.read_state(text)

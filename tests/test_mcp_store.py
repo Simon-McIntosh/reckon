@@ -822,3 +822,60 @@ def test_edit_project_warns_when_north_stars_exceed_advisory_cap(setup):
     stored, version = _store_module.read_plan(project, "project")
     assert version == result["new_version"] == 1
     assert stored["north_stars"] == north_stars
+
+
+def test_archived_evidence_is_reachable_by_the_write_path(setup):
+    """A cumulative execution record stays correctable after its plan retires.
+
+    Measured 2026-09-14: a withdrawn measurement in an archived evidence record
+    still carried the sizing conclusions drawn from it, and every write path
+    refused with "does not exist" because it excluded archived resources. The
+    correction was then made by hand, outside the version check that exists to
+    make such an edit safe.
+    """
+    docs_dir, _state_root, project = setup
+    _make_plan_html(
+        docs_dir,
+        "sweep-landed",
+        {"slug": "sweep-landed", "type": "evidence", "version": 1},
+        artifact_type="evidence",
+        relative="evidence/archive/sweep-landed.html",
+    )
+
+    version, written_path = _store_module.replace_plan_text(
+        project,
+        "sweep-landed",
+        old_html='<main class="plan-doc"></main>',
+        new_html='<main class="plan-doc"><p>withdrawn</p></main>',
+        expected_version=1,
+        artifact_type="evidence",
+    )
+
+    assert version == 2
+    assert written_path.parent.name == "archive", "the archived copy is written"
+    assert "withdrawn" in written_path.read_text(encoding="utf-8")
+
+
+def test_an_archived_plan_snapshot_is_refused_by_name_not_as_missing(setup):
+    """A frozen snapshot is immutable, and the refusal must say so.
+
+    Reporting it as absent invites the caller to create a live duplicate that
+    shadows the snapshot, which is a worse outcome than a clear refusal.
+    """
+    docs_dir, _state_root, project = setup
+    _make_plan_html(
+        docs_dir,
+        "frozen",
+        {"slug": "frozen", "type": "plan", "version": 3},
+        relative="plans/archive/frozen.html",
+    )
+
+    with pytest.raises(ValueError, match="frozen snapshot"):
+        _store_module.replace_plan_text(
+            project,
+            "frozen",
+            old_html='<main class="plan-doc"></main>',
+            new_html='<main class="plan-doc"><p>edited</p></main>',
+            expected_version=3,
+            artifact_type="plan",
+        )
