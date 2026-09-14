@@ -1788,13 +1788,19 @@ def plan_dispatch(
     # node that the real dispatch then refuses on a missing precondition.
     _fleet_script()
     requested_backend = str(backend_override or default_backend_override or "").strip()
+    # The configured local lane, named here so a ``--local`` dispatch has one
+    # concrete backend to agree or disagree with. The CLI has already merged it
+    # into ``default_backend``, so this is the same value role routing would
+    # fall through to; reading it directly is what makes the flag a request
+    # rather than a silent default a member's harness can displace.
+    local_backend_name = str(config.get("local_backend") or "").strip() if local else ""
     caller_declared_backend = str(
         requested_backend if declared_backend is None else declared_backend
     ).strip()
     # The command passes an empty string when its option is omitted. ``None``
     # belongs to internal callers that did not invoke that routing surface.
     if member and (
-        backend_override is not None or default_backend_override is not None
+        local or backend_override is not None or default_backend_override is not None
     ):
         if repo is None:
             raise CrewError(
@@ -1817,6 +1823,23 @@ def plan_dispatch(
                 )
             )
         member_harness = str(roster_member.get("harness") or "").strip()
+        # A ``--local`` request names the local lane, so a member whose harness
+        # is a different backend cannot run the node: refuse rather than let the
+        # harness silently displace the flag and report a local run that landed
+        # on a metered lane.
+        if (
+            local_backend_name
+            and member_harness
+            and member_harness != local_backend_name
+        ):
+            raise CrewError(
+                format_refusal(
+                    "D15",
+                    f"--local resolves the configured local backend "
+                    f"{local_backend_name!r}, but crew member {member!r} declares "
+                    f"harness {member_harness!r}",
+                )
+            )
         if requested_backend and member_harness and requested_backend != member_harness:
             raise CrewError(
                 format_refusal(
@@ -1845,6 +1868,13 @@ def plan_dispatch(
                 "expected 'cli' or 'in-harness'",
             )
         )
+    # Local is a property of where the dispatch actually landed, not of the
+    # flag the caller passed: a request that resolved onto another backend — a
+    # budget fallback, or a lane the caller named alongside the flag — is not a
+    # local run and must not be recorded as one.
+    local_resolved = bool(
+        local and local_backend_name and backend_name == local_backend_name
+    )
     default_budget = resolved_time_budget(config, backend)
     budget_ceiling = resolved_time_ceiling(config)
     default_token_budget = _resolved_token_budget(config, backend)
@@ -1982,7 +2012,7 @@ def plan_dispatch(
         token_budget=default_token_budget,
         validation=verdict,
         execution_fit=execution_fit,
-        local=local,
+        local=local_resolved,
         warnings=warnings,
         authority=resolved_authority,
         requested_backend=requested_backend or None,
@@ -2652,7 +2682,7 @@ def dispatch(
     agent = _stamp_agent_display(
         _agent_configuration(backend_name, launch_kind, backend), backend
     )
-    if local:
+    if resolution.local:
         agent["local"] = True
     committed_runs = ledger.runs(project, root=ledger_root)
     reuse_session = (
@@ -2807,7 +2837,7 @@ def dispatch(
             "backend": backend_name,
             "requested_backend": resolution.requested_backend,
             "lane_declaration": resolution.lane_declaration,
-            "local": local,
+            "local": resolution.local,
             "execution_fit": resolution.execution_fit.as_dict(),
             "launch": launch_kind,
             "sandbox": backend.get("sandbox"),
