@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="93">
+<meta name="plan-version" content="94">
 <meta name="plan-impl" content="0.99">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/evidence/archive/concurrency-and-schedule-visibility-landed.html">
@@ -740,10 +740,16 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-csv-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship concurrency-and-schedule-visibility §3" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-csv-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-08-24" data-recommends-skill="/reckon-ship concurrency-and-schedule-visibility §3" data-resolved-at="2026-09-14T13:09:26+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Start with the claim registry, because it is the gate that already cost a session its parallelism</h4>
     <div class="r-fu-body"><p>§3 is first on evidence rather than preference: the file-scope gate is what forced a three-node wave into one lane while fifteen members sat idle, and it is the only one of the three gates with no representation at all in the model. It also needs no new store — the claims are already in the live pointers and already expire with them. Take the derived peer scopes and the containment rule before the planner, since a refusal that names the owning run is useful on its own and the planner is only worth building once the comparison it depends on is trusted. §4 can run in parallel with it: <code>roadmap</code> readiness shares no file with the dispatch guard. §6 follows §3, since the channel is wired from the adjacency §3 computes. Settle <code>scope-declaration-site</code> before the planner and <code>schedule-horizon-width</code> before §4 lands, because both change what the deliverable is rather than how it is written.</p></div>
     <pre class="r-fu-prompt">/reckon-ship concurrency-and-schedule-visibility §3</pre>
+    <p class="r-fu-outcome">Superseded by this session's census rather than by its own completion. It directed work to the claim registry in section 3, and that section is closed - the refusal, the derivation map, the scopes view and the lane planner all landed. The plan is not finished: section 8 is reopened on a deliverable written as prose with no Done-when, which a clause census could not see and which today's refusal proved unlanded.</p>
+    </article>
+<article class="r-fu" data-id="f-csv-002" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-14" data-recommends-skill="/reckon-ship concurrency-and-schedule-visibility §8" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The delivery-path repair in the residual section</h4>
+    <div class="r-fu-body"><p>Section 8 is the only open section and carries three recorded deliverables, none with a Done-when of its own, which is why a census of 36 clauses read 36 landed while the section was not.</p><p>The narrow repair landed today: the review store is granted to restricted tiers, so the dispatch that <code>crew recover</code> emits as its own next_action now validates instead of being refused. What remains is the class rather than the instance - a node whose declared write path is unreachable in its resolved sandbox should be refused at dispatch for that reason, rather than each delivery directory being granted one at a time as somebody trips over it.</p><p>The other two carry their measurements: the roadmap returning both sprint-shaped and graph-shaped dispatches, since thirty wiring findings cover sprint and DAG health and none reports an endpoint that cannot be shipped; and an abandoned closure member leaving the completion denominator, since a member that will never ship is not outstanding work. The second was observed by causing it and then avoided by removing the edge, so it needs a case where the dependency is genuine before it can be asserted.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship concurrency-and-schedule-visibility §8</pre>
     </article>
 </section>
 
@@ -953,6 +959,23 @@ What makes this worth a section rather than a note: shipped_of_total is the figu
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260825T142832299679-n-readyqueuegap" data-who="codex-a" data-when="2026-08-25T14:36:10Z">
     <div class="r-comment-body"><p>Ready-queue gap report: one unshipped deliverable, three of four requested capabilities implemented, zero automatic end-to-end loops</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260914T1520" data-who="reckon-ship" data-when="2026-09-14T15:20:00Z">
+    <div class="r-comment-body">DRAIN LEDGER - ship-s15-20260914 @ 2026-09-14T15:20:00Z
+
+  f-csv-001  concurrency-and-schedule-visibility  folded -> f-csv-002, section 8 reopened with three recorded deliverables
+  f-dcdn-003 dispatch-cost-per-durable-node        already resolved before this pass; its section 7 remainder is below
+  section 7 pilot retirement                        authority-required -> retiring a declared measure is the lead's call; the evidence that it is answerable from merged ledger runs is recorded on the section, 66 and 18 samples against a stated band of 20 to 40
+  f-atl-001  advise-the-lane-never-force-it        foreign-owner -> ship-lane-aware-20260914, dispatching now
+  f-bvb-001  burn-is-visible-before-it-bites       foreign-owner -> ship-lane-aware-20260914, dispatching now
+  read-the-account-surface  a-lane-can-say         foreign-owner -> ship-lane-aware-20260914, dispatching now
+  f-lrc-002  landed-record-at-closure              foreign-owner -> S17, outside this session's target; a finding was added to it, not work
+  ---
+  rows: 7   foldable-remaining: 0   unreconciled-runs: 0
+
+The run count is session-scoped and reads zero. Six peer pointers are live in this repository across three other coordinators and are reported separately with their owning sessions named, which is the drain split doing exactly what it was built for - under the behaviour it replaced this session could not have closed without waiving on work it must not touch.
+
+SPRINT NOT CLOSED, and the reason is not unfinished effort. Of the three plans this sprint opened with, one is closed will-not-do on a hardware constraint and two remain active carrying sections no amount of worker time moves: section 7's remainder is bounded by elapsed time and a spend decision, and section 8's is carried by the followup above. Closing the sprint would report a completion the code does not support.</div>
 </div>
 </section>
 
