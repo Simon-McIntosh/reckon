@@ -750,9 +750,12 @@ def _probe_serving(backend: Mapping[str, Any]) -> dict[str, Any]:
     A backend declaring no ``endpoints_document`` reports ``unknown``: absence of
     a declaration is not evidence the lane is down. The document is a local JSON
     file listing the live endpoints; it is read directly and never over the
-    network. A document listing at least one endpoint reports ``serving``, an
-    empty list reports ``not-serving``, and a document that is missing,
-    unreadable or unparsable reports ``unknown`` rather than a guess.
+    network. An empty list reports ``not-serving``. A document listing at least
+    one endpoint whose ``model_id`` equals the backend's configured ``model``
+    reports ``serving``; the same document whose listed models match none of the
+    configured model reports ``mismatch``, so a lane that is up but serving the
+    wrong checkpoint is told apart from one that is down. A document that is
+    missing, unreadable or unparsable reports ``unknown`` rather than a guess.
     """
     document = backend.get("endpoints_document")
     if not document:
@@ -785,16 +788,32 @@ def _probe_serving(backend: Mapping[str, Any]) -> dict[str, Any]:
                 f"endpoints document {str(path)!r} has no 'endpoints' list"
             ),
         }
-    if endpoints:
+    if not endpoints:
+        return {
+            "serving": "not-serving",
+            "serving_detail": f"endpoints document {str(path)!r} lists no endpoints",
+        }
+    configured_model = backend.get("model")
+    offered = [
+        endpoint.get("model_id") if isinstance(endpoint, Mapping) else None
+        for endpoint in endpoints
+    ]
+    if configured_model and configured_model in offered:
         return {
             "serving": "serving",
             "serving_detail": (
-                f"endpoints document {str(path)!r} lists {len(endpoints)} endpoint(s)"
+                f"endpoints document {str(path)!r} lists {len(endpoints)} endpoint(s), "
+                f"serving configured model {configured_model!r}"
             ),
         }
+    served = ", ".join(str(model) for model in offered if model is not None)
     return {
-        "serving": "not-serving",
-        "serving_detail": f"endpoints document {str(path)!r} lists no endpoints",
+        "serving": "mismatch",
+        "serving_detail": (
+            f"endpoints document {str(path)!r} lists {len(endpoints)} endpoint(s), "
+            f"none serving configured model {configured_model!r}; "
+            f"offered: {served or '<endpoints carry no model id>'}"
+        ),
     }
 
 
