@@ -26,8 +26,8 @@
   <title>Read It Against The Canvas | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="10">
+<meta name="plan-modified" content="2026-09-15">
+<meta name="plan-version" content="11">
 <meta name="plan-commits" content="85844ec,8a87d07,f967b11">
 <meta name="plan-impl" content="0.38">
 </head>
@@ -242,6 +242,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260914T205005655670-prose-deliverable-audit-back-to-the-canvas" data-who="crew-sweep-cadence" data-when="2026-09-14T21:44:53.004Z">
     <div class="r-comment-body"><p>Prose-deliverable audit: 10 deliverables stated in prose without a measure of their own, 2 verdicted not-done. Both trace to one gap deferred by instruction inside a landed summary — the figures index row does not render the caption the server already emits and the reader already prints. Independently confirmed: figures.py emits caption, plan.jsx prints it, shell-plans.jsx figure row does not, and test_serve_figure_rows.py carries zero caption assertions. The audit also found s8 unlanded: both of its done-when test files are absent at HEAD</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260914T210133247216-surface-prior-art-reuse-map" data-who="crew-surface-consistent" data-when="2026-09-14T21:41:59.285Z">
+    <div class="r-comment-body"><p>Prior-art reuse map delivered across all seven named capabilities with file:line and a call signature per candidate; spot-checked three cited anchors and each resolves to the named symbol. Directly usable by this sprint&#x27;s remaining nodes: _capture_metadata for the figure caption, artifactIndexRows and ArtifactIndex for any new index kind, ReckonGraph.layout and geometry for DAG surfaces, collect_project_rows for the rollup</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-prose-audit-fidelity-check-absent" data-who="reckon-ship" data-when="2026-09-14T21:49:45Z">
     <div class="r-comment-body">Prose-deliverable audit finding: this section is not landed at HEAD. Both files its own done-when names, tests/test_spa_canvas_fidelity.py and tests/spa_canvas_values.py, are absent from the tree, while every done-when test for s2 through s7 is tracked. This matters more than one unlanded section because s8 is the node that is supposed to stop the drift recurring, and the plan's own aggregate gate in s7 closes on it. A gate that depends on an absent check cannot close, so the plan's acceptance condition is currently unreachable rather than merely unmet.</div>
