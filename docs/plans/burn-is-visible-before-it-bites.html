@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="19">
+<meta name="plan-version" content="20">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="979805e1d460e5c46a15d466d64d4a674c8e3405,f26287ebeba4c4890f0965d2eb9f18c281743d26,a5254ef">
 <meta name="plan-artifacts" content="reckon/run_store.py,tests/test_run_store.py,reckon/crew/lane_evidence.py,tests/test_binding_window_inference.py,docs/ui/crew.jsx,docs/ui/crew.css,tests/test_spa_crew_burn.py,docs/evidence/archive/burn-is-visible-before-it-bites-landed.html">
@@ -281,6 +281,9 @@ The reasoning behind the narrowing stands and is worth keeping: what this plan n
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260914T2000" data-who="reckon-ship" data-when="2026-09-14T20:00:00Z">
     <div class="r-comment-body">crew-meter-renders-position-and-projection landed — commit a5254ef, merged and content verified present at HEAD by marker. Gate passed exit 0; measure: 8 passed, 298 lines of new tests, 563 insertions across docs/ui/crew.jsx, docs/ui/crew.css and tests/test_spa_crew_burn.py. Every case is driven by a fixture payload rather than a live account, so the tests measure the surface rather than the lane — which matters more than usual given the lane's own figures moved by a factor of eight within thirty seconds today. Two assertions are NEGATIVES and both exist because a surface is most tempted to fake exactly these: a backend whose payload reports no window renders no meter at all, asserted by the absence of the element rather than by its text; and no cache-hit figure appears anywhere in the rendered region, since placed beside a burn figure it implies a lever that does not exist. THE RUN WAS CLASSIFIED ABANDONED on an incomplete manifest while its commit had already landed cleanly one ahead of base with a clean tree — redispatching on the classification would have discarded the whole of it. This is the second node today where abandoned meant an unfinished manifest rather than lost work. Record: docs/evidence/archive/burn-is-visible-before-it-bites-landed.html#crew-meter.</div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260914T192759433285-rev-crew-meter-renders-position-and-projection" data-who="crew-manifest-keys" data-when="2026-09-14T19:55:42.866Z">
+    <div class="r-comment-body"><p>Independent review attached to r-20260914T162707540226-crew-meter-renders-position-and-projection; all five dimensions parsed</p></div>
 </div>
 </section>
 </main>
