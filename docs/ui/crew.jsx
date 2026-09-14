@@ -389,7 +389,7 @@ function crewScopedProjects(selectedProject, visibleProjects, allVisible) {
   return [selectedProject];
 }
 
-function CrewView({ visibleProjects, mountedProjectCount, selectedProject }) {
+function CrewView({ visibleProjects, mountedProjectCount, selectedProject, quota }) {
   const [runs, setRuns] = useState([]);
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
@@ -459,6 +459,8 @@ function CrewView({ visibleProjects, mountedProjectCount, selectedProject }) {
 
       <DerivedFlow plans={flowPlans} runs={flowRuns} project={flowProject} />
 
+      <CrewQuotaMeters readings={quota} />
+
       {!loaded ? (
         <div className="r-crew-empty">Loading live runs…</div>
       ) : visibleRuns.length === 0 ? (
@@ -472,10 +474,171 @@ function CrewView({ visibleProjects, mountedProjectCount, selectedProject }) {
   );
 }
 
+function crewFormatStamp(stamp) {
+  if (!stamp) return "";
+  const parsed = new Date(stamp);
+  if (Number.isNaN(parsed.getTime())) return String(stamp);
+  return parsed.toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
+function crewClampPercent(value) {
+  return Math.max(0, Math.min(100, value));
+}
+
+function crewPeriodLabel(minutes) {
+  const value = Number(minutes);
+  if (!Number.isFinite(value) || value <= 0) return null;
+  if (value % 1440 === 0) {
+    return `${Math.round(value / 1440)}-day window`;
+  }
+  if (value % 60 === 0 && value < 1440) {
+    return `${Math.round(value / 60)}-hour window`;
+  }
+  return `${value}-minute window`;
+}
+
+function crewQuotaWindow(reading) {
+  if (!reading || typeof reading !== "object") return null;
+  const used = reading.used_percent ?? reading.utilisation_pct;
+  if (typeof used !== "number" || !Number.isFinite(used)) return null;
+  const period = reading.rate_limit_period_minutes ?? reading.window_minutes ?? reading.windowDurationMins;
+  const periodLabel = crewPeriodLabel(period);
+  if (!periodLabel) return null;
+  const resetMs = new Date(reading.resets_at).getTime();
+  if (!Number.isFinite(resetMs)) return null;
+  const windowDurationMs = Number(period) * 60000;
+  const windowStartMs = resetMs - windowDurationMs;
+  const observedStamp = reading.observed_at || null;
+  const projectedStamp = reading.projected_exhaustion_at || null;
+  const projectedMs = projectedStamp ? new Date(projectedStamp).getTime() : NaN;
+  let projectionPct = null;
+  let warned = false;
+  if (Number.isFinite(projectedMs)) {
+    projectionPct = crewClampPercent(((projectedMs - windowStartMs) / windowDurationMs) * 100);
+    warned = projectedMs < resetMs;
+  }
+  return {
+    usedPct: crewClampPercent(used),
+    periodLabel,
+    resetStamp: reading.resets_at,
+    observedStamp,
+    projectedStamp,
+    projectionPct,
+    warned,
+  };
+}
+
+function crewRateFigures(reading) {
+  if (!reading || typeof reading !== "object") return [];
+  const rows =
+    Array.isArray(reading.rate_windows) && reading.rate_windows.length
+      ? reading.rate_windows
+      : null;
+  const figures = [];
+  if (rows) {
+    rows.forEach(row => {
+      const burn = Number(row?.burn_multiple);
+      const periodLabel = crewPeriodLabel(row?.period_minutes ?? row?.window_minutes);
+      if (!Number.isFinite(burn) || burn <= 0 || !periodLabel) return;
+      figures.push({
+        burn,
+        periodLabel,
+        observedStamp: row.observed_at || reading.observed_at || null,
+      });
+    });
+  } else {
+    const burn = Number(reading.burn_multiple);
+    const periodLabel = crewQuotaWindow(reading)?.periodLabel || null;
+    if (Number.isFinite(burn) && burn > 0 && periodLabel) {
+      figures.push({ burn, periodLabel, observedStamp: reading.observed_at || null });
+    }
+  }
+  return figures.map(figure => ({ ...figure, only: figures.length === 1 }));
+}
+
+function crewFormatBurn(multiple) {
+  const value = Number(multiple);
+  if (!Number.isFinite(value)) return "—";
+  return `${parseFloat(value.toFixed(2))}×`;
+}
+
+function renderCrewQuotaMeter(reading) {
+  const quotaWindow = crewQuotaWindow(reading);
+  if (!quotaWindow) return null;
+  const figures = crewRateFigures(reading);
+  const warningText = quotaWindow.warned
+    ? "projected exhaustion before the reset"
+    : "projection at or after the reset";
+  return (
+    <article className="r-crew-quota-row" data-backend={reading.backend || ""}>
+      <header className="r-crew-quota-row-head">
+        <strong>{reading.backend || "backend"}</strong>
+        <span>{quotaWindow.periodLabel}</span>
+        <span className="r-crew-figure" data-observed-at={quotaWindow.observedStamp || ""}>
+          observed {crewFormatStamp(quotaWindow.observedStamp)}
+        </span>
+      </header>
+      <div
+        className={`r-crew-meter r-crew-meter--quota${quotaWindow.warned ? " r-crew-meter--warn" : ""}`}
+        aria-label={`${quotaWindow.usedPct}% used in ${quotaWindow.periodLabel}; ${warningText}`}
+      >
+        <i className="r-crew-position" style={{ width: `${quotaWindow.usedPct}%` }}></i>
+        {quotaWindow.projectionPct != null && (
+          <i
+            className="r-crew-projection"
+            data-observed-at={quotaWindow.observedStamp || ""}
+            style={{ left: `${quotaWindow.projectionPct}%` }}
+            title={`projected exhaustion ${crewFormatStamp(quotaWindow.projectedStamp)}`}
+          ></i>
+        )}
+      </div>
+      <footer className="r-crew-quota-row-foot">
+        <span>reset {crewFormatStamp(quotaWindow.resetStamp)}</span>
+        <span className="r-crew-rate-figures">
+          {figures.length === 0 ? (
+            <span className="r-crew-norate">no rate recorded</span>
+          ) : (
+            figures.map((figure, index) => (
+              <span
+                key={`${figure.periodLabel}-${index}`}
+                className="r-crew-figure"
+                data-observed-at={figure.observedStamp || ""}
+              >
+                {crewFormatBurn(figure.burn)} <em>{figure.periodLabel}</em>
+                {figure.only && <span className="r-crew-only-window">· only window</span>}
+              </span>
+            ))
+          )}
+        </span>
+      </footer>
+    </article>
+  );
+}
+
+function CrewQuotaMeter({ reading }) {
+  return renderCrewQuotaMeter(reading);
+}
+
+function CrewQuotaMeters({ readings }) {
+  if (!Array.isArray(readings) || readings.length === 0) return null;
+  const meters = readings.map(renderCrewQuotaMeter).filter(Boolean);
+  if (meters.length === 0) return null;
+  return (
+    <section className="r-crew-quota" aria-label="Backend quota meters">
+      <header className="r-crew-quota-head">
+        <span className="r-crew-label">Lane quota</span>
+        <span>one meter per backend reporting a window, the projection beside its reset</span>
+      </header>
+      <div className="r-crew-quota-list">{meters}</div>
+    </section>
+  );
+}
+
 window.ReckonCrewSchedule = {
   build: derivedFlowSchedule,
   farEnd(plans, runs, project, now) {
     return derivedFlowSchedule(plans, runs, project, now).high;
   },
 };
+window.ReckonCrewQuota = { CrewQuotaMeter, CrewQuotaMeters };
 window.CrewView = CrewView;
