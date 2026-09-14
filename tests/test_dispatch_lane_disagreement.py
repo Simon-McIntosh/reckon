@@ -21,8 +21,11 @@ def _invoke(
     *,
     node: str,
     extra: list[str] | None = None,
+    local_backend: str | None = None,
 ):
     config = deepcopy(existing_backend_tests.CONFIG)
+    if local_backend is not None:
+        config["local_backend"] = local_backend
 
     def resolve_flight(_module, _project, _checkout_path, overrides):
         for override in overrides:
@@ -140,3 +143,71 @@ def test_member_harness_without_override_meets_lane_declaration_refusal(
     assert payload["agent"]["backend"] == "beta"
     assert payload["lane_declaration"]["backend"] is None
     assert payload["lane_declaration"]["resolved_backend"] == "beta"
+
+
+def test_local_refuses_a_member_whose_harness_names_another_backend(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ledger.register_member("proj", "worker", harness="beta", root=dispatch_repo)
+    payload, result = _invoke(
+        dispatch_repo,
+        monkeypatch,
+        node="local-harness-disagreement",
+        extra=["--member", "worker", "--local"],
+        local_backend="clive",
+    )
+
+    assert result.exit_code == 1
+    assert payload["error"] == "dispatch-refused"
+    assert "clive" in payload["detail"]
+    assert "beta" in payload["detail"]
+    assert "agent" not in payload
+
+
+def test_local_routes_a_member_declaring_the_local_harness_unchanged(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ledger.register_member("proj", "worker", harness="clive", root=dispatch_repo)
+    payload, result = _invoke(
+        dispatch_repo,
+        monkeypatch,
+        node="local-harness-agreement",
+        extra=["--member", "worker", "--local"],
+        local_backend="clive",
+    )
+
+    assert result.exit_code == 0
+    assert payload["requested_backend"] == "clive"
+    assert payload["backend"] == "clive"
+    assert payload["agent"]["backend"] == "clive"
+    assert payload["local"] is True
+    assert payload["agent"]["local"] is True
+
+
+def test_local_is_reported_only_when_the_resolved_backend_is_the_local_one(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    local_payload, local_result = _invoke(
+        dispatch_repo,
+        monkeypatch,
+        node="local-resolved",
+        extra=["--local"],
+        local_backend="clive",
+    )
+    other_payload, other_result = _invoke(
+        dispatch_repo,
+        monkeypatch,
+        node="local-displaced",
+        extra=["--local", "--backend", "beta"],
+        local_backend="clive",
+    )
+
+    assert local_result.exit_code == 0
+    assert local_payload["backend"] == "clive"
+    assert local_payload["local"] is True
+    assert local_payload["agent"]["local"] is True
+
+    assert other_result.exit_code == 0
+    assert other_payload["backend"] == "beta"
+    assert other_payload["local"] is False
+    assert "local" not in other_payload["agent"]
