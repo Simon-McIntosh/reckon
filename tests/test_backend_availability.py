@@ -1,4 +1,4 @@
-"""Dispatch refuses a selected backend whose declared model is not served."""
+"""Dispatch refuses an unserved model; flight reports whether a lane can serve."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from click.testing import CliRunner
 
 from reckon import cli as cli_module
 from reckon import crew
+from reckon.flight import flight_report
 
 
 @pytest.fixture()
@@ -92,3 +93,97 @@ def test_unserved_model_is_a_typed_capability_refusal(
         "refusal": "model-unavailable",
     }
     assert crew.list_live() == []
+
+
+# ── Serving state: whether the lane can serve, not only that it exists ───────
+
+
+def _serving_report(tmp_path: Path, backend: dict) -> dict:
+    """Resolve a synthetic config and return one backend's availability entry.
+
+    The host and project layers are pointed away from the live ones, so the
+    probe reads only what the caller synthesised under ``tmp_path`` and touches
+    neither the live endpoints document nor the cluster.
+    """
+    report = flight_report(
+        None,
+        overrides={"default_backend": "local", "backends": {"local": backend}},
+        host_path=tmp_path / "absent-host-flight.yaml",
+        project_path=tmp_path / "absent-project-flight.yaml",
+    )
+    return report["availability"]["local"]
+
+
+def _endpoints_document(tmp_path: Path, endpoints: list) -> str:
+    path = tmp_path / "endpoints.json"
+    path.write_text(json.dumps({"endpoints": endpoints}), encoding="utf-8")
+    return str(path)
+
+
+def test_serving_when_the_document_lists_an_endpoint(tmp_path: Path) -> None:
+    document = _endpoints_document(tmp_path, [{"model_id": "synthetic-model"}])
+
+    entry = _serving_report(
+        tmp_path,
+        {"launch": "cli", "command": "sh", "endpoints_document": document},
+    )
+
+    assert entry["serving"] == "serving"
+    assert document in entry["serving_detail"]
+
+
+def test_not_serving_when_the_document_lists_no_endpoint(tmp_path: Path) -> None:
+    document = _endpoints_document(tmp_path, [])
+
+    entry = _serving_report(
+        tmp_path,
+        {"launch": "cli", "command": "sh", "endpoints_document": document},
+    )
+
+    assert entry["serving"] == "not-serving"
+    # command_found keeps its launcher-presence meaning: the wrapper exists, so
+    # only the serving field carries the lane being down.
+    assert entry["command_found"] is True
+
+
+def test_unknown_when_no_document_is_declared(tmp_path: Path) -> None:
+    entry = _serving_report(
+        tmp_path,
+        {"launch": "cli", "command": "sh"},
+    )
+
+    assert entry["serving"] == "unknown"
+    assert entry["command_found"] is True
+
+
+def test_unknown_when_the_document_is_unreadable(tmp_path: Path) -> None:
+    missing = tmp_path / "does-not-exist.json"
+
+    entry = _serving_report(
+        tmp_path,
+        {
+            "launch": "cli",
+            "command": "synthetic-worker",
+            "endpoints_document": str(missing),
+        },
+    )
+
+    assert entry["serving"] == "unknown"
+    assert str(missing) in entry["serving_detail"]
+
+
+def test_unknown_when_the_document_is_not_parsable(tmp_path: Path) -> None:
+    malformed = tmp_path / "malformed.json"
+    malformed.write_text("{not json", encoding="utf-8")
+
+    entry = _serving_report(
+        tmp_path,
+        {
+            "launch": "cli",
+            "command": "synthetic-worker",
+            "endpoints_document": str(malformed),
+        },
+    )
+
+    assert entry["serving"] == "unknown"
+    assert str(malformed) in entry["serving_detail"]
