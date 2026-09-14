@@ -107,7 +107,6 @@ RECORD_FIELDS = (
     "completed_at",
     "completed_at_source",
     "wall_seconds",
-    "throughput",
     "duration_measurement",
     "worker_seconds",
     "worker_seconds_source",
@@ -125,9 +124,6 @@ RECORD_FIELDS = (
     "failure_classification",
     "outcome",
     "worktree_retention",
-    "dispute_count",
-    "follow_on_paths",
-    "predecessor_run",
     "manifest_path",
     "scope_changed",
     "scope_acceptances",
@@ -1065,14 +1061,6 @@ def build_record(
     record.setdefault("execution_fit", None)
     record.setdefault("attempt_kind", None)
     record.setdefault("attempt", None)
-    if follow_on_paths is None:
-        record.setdefault("follow_on_paths", None)
-    else:
-        record.setdefault(
-            "follow_on_paths",
-            [str(path) for path in follow_on_paths],
-        )
-    record.setdefault("throughput", None)
     if duration_measurement_state(record) == "missing":
         reason = (
             "wall_clock_unavailable_at_promotion"
@@ -1086,8 +1074,6 @@ def build_record(
     record.setdefault("no_commit", None)
     record.setdefault("commit_resolution", None)
     record.setdefault("worktree_retention", None)
-    record.setdefault("dispute_count", None)
-    record.setdefault("predecessor_run", None)
     record.setdefault("boundary_waiver", None)
     record.setdefault("resume_waiver", None)
     record.setdefault("watch_override", None)
@@ -1439,8 +1425,6 @@ def append_run(
         raise LedgerError("a run record must carry a run_id")
     ledger_root = _run_ledger_root(project, root)
     stored_record = dict(record)
-    if stored_record.get("throughput") is None and str(stored_record.get("manifest_path") or ""):
-        stored_record.pop("throughput", None)
     last: LedgerError | None = None
     store_outcome: dict[str, Any] | None = None
     for _attempt in range(max(1, attempts)):
