@@ -21,13 +21,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling,spa">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
-  <meta name="plan-depends-on" content="dispatch-cost-per-durable-node">
+  <meta name="plan-depends-on" content="dispatch-cost-per-durable-node#s6">
   <meta name="plan-informs" content="derived-state-parity">
   <title>Where You Are, And How Fast | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-09">
-<meta name="plan-version" content="2">
+<meta name="plan-modified" content="2026-09-14">
+<meta name="plan-version" content="3">
 </head>
 <body>
 <main class="plan-doc">
@@ -226,7 +226,10 @@
 </section>
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s5" data-id="c-20260909-spark-section-provenance" data-who="reckon-ship" data-when="2026-09-09T16:20:00Z">
-    <div class="r-comment-body"><p><strong>Authored here rather than on either plan that found it, and the routing is worth recording because two sessions got it wrong first.</strong> The measurements came from <code>ship-clw-2026-09-09</code> while shipping <a href="/reckon/plans/clive-local-workers">clive-local-workers</a>, and the corpus count from <code>ship-worker-spend-20260909</code>. Neither plan owns it. The spend plan owns a <em>pricing store</em> &mdash; dated public rates and a notional per-run figure &mdash; and its coordinator declined this correctly on the grounds that quota observation is a different subject with a different lifetime, which is the same argument it had made for keeping burn out of the rate ledger. The local-workers plan owns one lane and this is about another. This plan already owns the two-window meter and its summary already says that a meter and a rate answer different questions, so the work belongs where the thesis already is.</p><p><strong>Effort raised from 6 to 9 hours</strong> for the added section; the five measures are one durable store, one inference with three asserted states, and three display properties.</p><p>One sequencing note for whoever ships it: &#167;2 was waiting on the rate derivation being readable from Python, and that landed in the prerequisite plan today, so the original blocker is gone. &#167;5 does not depend on it at all &mdash; a refusal stamp needs no rate computation &mdash; so it can run first if the dependency edge is still closed.</p></div>
+    <div class="r-comment-body"><p><strong>Authored here rather than on either plan that found it, and the routing is worth recording because two sessions got it wrong first.</strong> The measurements came from <code>ship-clw-2026-09-09</code> while shipping <a href="/reckon/plans/clive-local-workers">clive-local-workers</a>, and the corpus count from <code>ship-worker-spend-20260909</code>. Neither plan owns it. The spend plan owns a <em>pricing store</em> — dated public rates and a notional per-run figure — and its coordinator declined this correctly on the grounds that quota observation is a different subject with a different lifetime, which is the same argument it had made for keeping burn out of the rate ledger. The local-workers plan owns one lane and this is about another. This plan already owns the two-window meter and its summary already says that a meter and a rate answer different questions, so the work belongs where the thesis already is.</p><p><strong>Effort raised from 6 to 9 hours</strong> for the added section; the five measures are one durable store, one inference with three asserted states, and three display properties.</p><p>One sequencing note for whoever ships it: §2 was waiting on the rate derivation being readable from Python, and that landed in the prerequisite plan today, so the original blocker is gone. §5 does not depend on it at all — a refusal stamp needs no rate computation — so it can run first if the dependency edge is still closed.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260914T1200" data-who="reckon-ship" data-when="2026-09-14T12:00:00Z">
+    <div class="r-comment-body">Dependency narrowed from the whole of dispatch-cost-per-durable-node to its §6, on this plan's own statement of what it needs. The followup says §2 waits on the prerequisite plan making the rate computation readable from Python, and that is §6, which shipped: crew(view="budget") reported burn_multiple 2.87 against utilisation 7 percent on 2026-09-14, derived in Python from rate_limit_period_minutes and resets_at with no new probe. The plan-level edge was holding this work behind §7, whose remaining measure is a 20-to-40 run gated pilot bounded by about two days of elapsed time rather than by effort. Nothing this plan needs is in §7, so the edge was serialising nine worker-hours behind two calendar days for no stated reason.</div>
 </div>
 </section>
 </main>
