@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T01:08:15",
+  "updated": "2026-09-15T01:11:57",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -116363,6 +116363,209 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T221224856242-graph-mounts-on-a-page-that-loads",
+        "plan": "spa-surface-contract-health",
+        "section": "\u00a73",
+        "node": "graph-mounts-on-a-page-that-loads",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1879,
+                "cached_input_tokens": 397648,
+                "input_tokens": 399529,
+                "output_tokens": 970,
+                "reasoning_output_tokens": 238,
+                "total_tokens": 400499,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3332e8d8-dcef-4091-9774-c9680478b165",
+            "session_id": "ship-s16-20260914"
+          },
+          "done_when": "tests/test_spa_browser_harness.py::test_file_spa_graph_probe_is_populated_and_repeatable passes, with the probe's own repeat assertion passing so one lucky render does not count, and the readiness selectors r-graph-node-card and r-graph-handle-token present in the rendered document; the manifest states the cause as a mechanism naming why the component did not mount on a document that did load, rather than as a symptom such as a timeout or an absent selector, because a symptom restated is what leaves the next reader where this one started; verification is on the file-scheme path and does not depend on a served navigation, since served navigation does not work on this host and anything resting on it is unverified here; and the manifest states as a digit how many of at least three consecutive probe runs were populated, so repeatability is measured rather than claimed",
+          "estimated_hours": null,
+          "goal": "Make the file-scheme graph probe render a populated graph repeatably",
+          "id": "graph-mounts-on-a-page-that-loads",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T22:12:25Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T221224856242-graph-mounts-on-a-page-that-loads/manifest.md",
+          "plan": "spa-surface-contract-health",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_spa_browser_harness.py",
+            "docs/ui/graph.jsx",
+            "docs/ui/state-loader.js"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "disc-local-b",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T22:12:37Z",
+        "completed_at": "2026-09-14T22:59:40.885Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2804,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2823,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "7a4ceb8d2f287cecea961f8190a483bb0cd0d3fd",
+        "commits": [
+          "1d9e90cc391bd2fa99ce6e0cb8bcd4cd14e986f2"
+        ],
+        "changed_lines": {
+          "added": 8,
+          "removed": 2,
+          "files": 1
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_browser_harness.py::test_file_spa_graph_probe_is_populated_and_repeatable",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T221224856242-graph-mounts-on-a-page-that-loads/graph-probe-final-3x.log",
+          "log_digest": "a8501f224a44dfe5d0daa5d795313e32fb8c7ed1c63a1f14bf1b04381df925bb"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T221224856242-graph-mounts-on-a-page-that-loads/manifest.md",
+        "scope_changed": false,
+        "session_id": "d48b11ca-7dae-4907-9147-ea4faa71befd",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 5280037,
+            "input_tokens_cumulative": 5280037,
+            "output_tokens": 35228,
+            "output_tokens_cumulative": 35228,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-14T22:59:40.885Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 5280037,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 2820.805,
+          "generated_tokens": 35228,
+          "generation_seconds": 2647.93,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 70.3,
+          "machine_seconds": 172.875,
+          "peak_input_tokens": 140657,
+          "tokens_per_second": 13.3,
+          "wall_tokens_per_second": 12.49
+        },
+        "follow_on_paths": [
+          "tests/test_spa_graph_geometry.py::test_graph_surface_header_and_handle_match_canvas_geometry",
+          "tests/test_spa_browser_harness.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16-20260914/graph-mounts-on-a-page-that-loads",
+          "session_id": "d48b11ca-7dae-4907-9147-ea4faa71befd",
+          "session_source": "stream",
+          "retained_at": "2026-09-14T22:59:40.885Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 53.0,
+        "orientation_input_tokens": 3058187.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -116591,6 +116794,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1444
+    "_version": 1445
   }
 }
