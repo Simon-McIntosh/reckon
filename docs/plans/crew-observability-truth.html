@@ -24,11 +24,11 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="294">
+<meta name="plan-version" content="297">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.97">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -990,6 +990,74 @@
         <tr><td>The reason survives the clip</td><td>At the measured pane width the reason field is wider than it is today and the clip falls after the clause naming the predicate. Asserted against a reason longer than the render width, which must lose trailing detail rather than its predicate &mdash; the same assertion <a href="#s4">&#167;4</a> states, now with a width that can satisfy it.</td></tr>
       </tbody>
     </table>
+
+    <h2 id="s21">&#167;21 &mdash; The review is scored, stored in three durable places, and read by nothing</h2>
+    <p>Directed by the lead 2026-09-14, on seeing a dimension score of 5 pass unremarked
+    inside a total of 78: <em>review is not just for scoring, we need to act on the
+    scores.</em> The state of the mechanism is worse than not acting on them. The only
+    occurrence of a score being handled anywhere in this repository is the parser writing
+    one &mdash; <code>review.py:143</code>, <code>scores[dimension] = value</code> &mdash;
+    and there is no consumer at any later point. No floor exists on any dimension; every
+    match for one in the tree is an unrelated context, burn or render-width constant. So a
+    five-dimension score is emitted by a second reader, parsed, and written to three
+    durable places chosen because each survives a different loss, and then nothing ever
+    reads it back.</p>
+    <p><strong>This is the plan's own subject at the layer built to enforce it.</strong> It
+    is the same shape as <a href="#s17">&#167;17</a>'s budget overrun, which is computed
+    exactly and delivered to nobody: a measurement whose only reader is a person who
+    happens to look. The review was introduced precisely because the previous signal had
+    that defect in its stronger form &mdash; <code>gate</code> saturated at 1.00 on every
+    lane, carrying no information and separating nothing.</p>
+    <p><strong>Reading only the total rebuilds the saturated measure one level up.</strong>
+    Measured on this plan's own first two landings: totals of 79 and 78, each carrying a
+    durability of 5 against 17-to-20 on every other dimension. Averaging is what makes a 5
+    disappear, and a scored review that is consulted only as a total has re-created the
+    single saturated number it replaced, one layer higher and at the cost of a second
+    worker per landing.</p>
+    <p><strong>A low dimension does not imply a worker at fault, and today's did not.</strong>
+    Both durability 5s have one cause and it is the coordinator's: the nodes were fenced to
+    an unversioned directory where the dimension's own definition &mdash; <em>a test exists
+    that fails if this change regresses</em> &mdash; cannot be satisfied by any conduct of
+    the worker. The worker wrote exactly where it was told; writing anywhere else would have
+    been a scope violation. So weighting the dimension harder in a worker's brief aims at
+    the wrong actor and invites either a compliant low score or a broken fence. The rubric
+    needs a per-role definition, not a heavier weight.</p>
+    <p><strong>The finding was right for a reason the rubric did not intend</strong>, and
+    that is worth preserving rather than tidying away. The rubric asked whether a regression
+    test exists and the honest answer for a document is no; what the reviewer actually
+    surfaced was that an edited verdict or a citation pointing at a vanished line fails
+    nothing. That was true, it was acted on in the same session by moving the substance into
+    the repository's evidence record, and it would have been lost under a rubric that
+    scored documents leniently instead of defining them properly.</p>
+    <p><strong>Work generated here is a drain-queue row, never a followup.</strong>
+    <a href="#s7a-bis-note">The rule this plan operates under</a> holds that a followup on
+    an active plan is hidden work: it renders on the page, satisfies the continuation check,
+    and appears nowhere a reader looks to decide what to do next. A sub-floor dimension must
+    therefore enter the same triage queue as every other discovered item, where it is either
+    folded into a dispatched node with an id or exempted with a recorded reason, and where a
+    complete pass cannot report nothing foldable while it sits unexplained.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>A score has a reader</td><td>Some code path consults an attached review's dimensions after the review is stored, and a change to a stored score changes an observable outcome. Asserted by altering one dimension on a stored review and requiring a different result from the surface that consumes it. The negative half matters as much: today the assertion fails at the first step, because <code>review.py:143</code> is the only place a dimension is handled and nothing downstream names it &mdash; so the test is written against the absence first and inverted when the consumer lands.</td></tr>
+        <tr><td>A dimension below its floor is not averaged away</td><td>A review whose total passes while one dimension falls below its floor is treated as a finding, not as a pass. Asserted against the measured pair from this plan's own landings &mdash; totals 79 and 78, durability 5 &mdash; which must produce a row rather than a clean promotion. The floor is per dimension and is declared in flight config beside the other gate settings rather than compiled in, so it is readable by whoever is deciding.</td></tr>
+        <tr><td>The row it produces requires a disposition</td><td>A sub-floor dimension enters the session-closure queue and carries one disposition from the closed set, exactly as a followup row does: folded with a dispatched node id, or exempted with its recorded authority, dissent, owner or context figure. Asserted by requiring the drain ledger's foldable-remaining to count an undisposed sub-floor dimension, so a session cannot report a clean close over one. It is never written as a followup on this plan, for the reason the completed-container rule gives.</td></tr>
+        <tr><td>The rubric defines each dimension per role</td><td>Durability means <em>a test fails if this regresses</em> for a node that changes code, and <em>the record is versioned and something reads it</em> for a node whose deliverable is a document. Asserted by scoring one document node and one code node against the same rubric and requiring the definition applied to differ; and in the negative, by requiring a document node that is version-controlled and asserted-over to be able to reach a high durability score at all, which no document node can do under the present single definition.</td></tr>
+        <tr><td>Each dimension names the actor who owns it</td><td>The review record states, per dimension, whether the score is attributable to the worker's conduct or to the brief, fence or write path the coordinator set. Asserted against the two measured cases, whose durability is coordinator-owned and whose scope discipline is worker-owned, and by requiring a repair routed from a sub-floor dimension to reach the owning actor &mdash; the roster member for a worker-owned dimension, the coordinator's own queue for a brief-owned one. Without this the floor generates correctly-refused work, which is worse than no floor because it spends a worker to learn nothing.</td></tr>
+        <tr><td>The dimensions reach the committed ledger row</td><td>Each reviewed run's committed row carries its per-dimension scores, so a score survives the loss of the config home and can be read from the repository by anyone with a checkout. Measured 2026-09-14 across all 854 committed rows in this project: <strong>zero carry any review or score field</strong>, the two promoted in this session included. Asserted by promoting a reviewed run and requiring its dimensions on the ledger row, and in the negative by requiring a run promoted without a review to be distinguishable from one whose review scored zero &mdash; an absent review and a bad one must not read alike.</td></tr>
+        <tr><td>A score is queryable against the job that earned it and the work it generated</td><td>Per-dimension scores join to their parent run and onward to the rows that run produced, so a question like <em>which dimension was low on the jobs that later generated repair work</em> is answerable from committed state rather than by reading files by hand. The join key exists already &mdash; every review record carries <code>reviewed_run_id</code> &mdash; and the reviewed side does not, which is what makes the join impossible today. Asserted by querying dimensions filtered on a parent run's attributes and requiring a non-empty, correct result from the ledger alone.</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Of the three durable places this mechanism was designed with, one exists.</strong>
+    The design named them and said why each was chosen: the record survives run-directory
+    cleanup, the ledger row survives config loss, and the prompt in git makes the question
+    that produced a score re-readable at the version it was asked. Measured today, the
+    record and the prompt exist and the ledger row does not, so the stated redundancy is
+    absent and the only copy of every score sits in a directory that is not a git repository
+    &mdash; six records, unversioned, machine-local, and reapable by the same cleanup that
+    clears run directories. That is the identical finding the reviewers raised against the
+    reuse maps, one layer up and aimed at the reviews themselves: <em>an unguarded record
+    that nothing reads.</em> The mechanism built to catch that defect currently exhibits it.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
