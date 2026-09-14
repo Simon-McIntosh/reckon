@@ -214,6 +214,28 @@ def test_store_path_resolves_under_the_test_config_home(
     assert not str(resolved).startswith(str(home))
 
 
+def test_the_store_location_override_is_honoured(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    override = Path("/elsewhere/run_store.db")
+    monkeypatch.setenv("RECKON_RUN_STORE", str(override))
+    assert run_store.store_path() == override
+    # An override wins over the config home entirely, not alongside it.
+    monkeypatch.setenv("RECKON_HOME", "/elsewhere/config-home")
+    assert run_store.store_path() == override
+
+
+def test_the_store_location_default_is_the_crew_config_home(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    home = _real_config_home()
+    monkeypatch.setenv("RECKON_HOME", str(home.parent / "isolated"))
+    monkeypatch.delenv("RECKON_RUN_STORE", raising=False)
+    assert run_store.store_path() == (
+        Path(str(home.parent / "isolated")) / "crew" / "run_store.db"
+    )
+
+
 def test_store_is_created_on_first_use_with_separate_tables(
     store: Path,
 ) -> None:
