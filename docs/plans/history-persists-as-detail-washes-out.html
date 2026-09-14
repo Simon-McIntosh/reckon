@@ -217,6 +217,23 @@
     dispatch, and is undone by pointing one reader back. Cutting over the cheap
     readers first buys confidence about the case that was never in doubt.</p>
 
+    <p><strong>A gate on the cutover stage: the store's filesystem must not be able to
+    corrupt it silently.</strong> The crew config home is on GPFS and is reachable from
+    more than one login node &mdash; the live-pointer directory is already known to be visible
+    across hosts. SQLite's locking is unreliable on a network filesystem, and two hosts
+    writing one database file is the classic way to get a corrupted page rather than a
+    refused write. While the store is a shadow this is harmless: a failure is recorded and
+    the promotion still succeeds, which is exactly what was observed during the schema
+    outage. It stops being harmless the moment a reader depends on it.</p>
+
+    <p>So before any reader is cut over, the store's location is settled on evidence:
+    whether concurrent writers from two hosts can be produced at all here, what the database
+    does when they are, and whether the file is better held host-local with the committed
+    export remaining the only cross-host truth. That last shape is where the design already
+    leans, since the store is derivable and the committed file is what travels. The measure
+    is a demonstration rather than an assurance &mdash; either a reproduced failure or a stated
+    reason one cannot be produced, and in both cases a recorded choice of location.</p>
+
     <h2 id="s4">&sect;4 &mdash; The committed file does not go away; it becomes the export</h2>
 
     <p>The 542 commits are the point. That file is not only a store, it is the
@@ -245,6 +262,16 @@
     them, rotation deletes detail whose derived value was never computed, and the
     row becomes permanently unmeasurable. One row in the current corpus has
     already crossed that line.</p>
+
+    <p><strong>The two open decisions are one decision, and saying so changes what
+    rotation is for.</strong> If detail washes out of the store while the committed export
+    still carries everything, the file keeps growing and the constraint that motivated this
+    plan is untouched &mdash; rotation would bound the database and nothing else. Bounding the
+    growth that actually hurts requires the export to shed detail too. So the detail horizon
+    and the export scope are not independent choices: together they are the only genuinely
+    irreversible act here, and they are taken together or not at all. Until they are, the
+    store is derivable from the committed files and nothing lives only in it, which is the
+    property that makes every earlier stage safe to reverse.</p>
 
     <h2 id="s6">&sect;6 &mdash; What each stage has to prove before the next one starts</h2>
     <table>
