@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-lane-can-say-where-it-stands">
   <meta name="plan-title" content="A Lane Can Say Where It Stands">
   <meta name="plan-summary" content="The subscription account publishes its own quota position for free; read it instead of inferring one from worker streams that stop arriving">
-  <meta name="plan-status" content="draft">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-wall-clock-hours" content="4.0">
@@ -20,7 +20,8 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="6">
+<meta name="plan-section-declarations" content="{&quot;what-is-wrong&quot;:&quot;done&quot;,&quot;the-surface&quot;:&quot;done&quot;,&quot;where-the-probe-lives&quot;:&quot;implementable&quot;,&quot;parse-strictly&quot;:&quot;implementable&quot;,&quot;coordinator-share&quot;:&quot;implementable&quot;,&quot;pin-the-denominator&quot;:&quot;implementable&quot;,&quot;out-of-scope&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -225,19 +226,31 @@
         measured against a window nothing enforces.
       </p>
       <p>
-        The local lane presents <strong>four different window figures</strong> as of
-        this afternoon, and only the first governs a dispatch.
+        The local lane carries <strong>two live window figures</strong> that
+        disagree, and they disagree by 16&nbsp;percent in the direction that
+        flatters.
       </p>
       <table>
-        <caption>Window figures in play for one lane, read 2026-09-14.</caption>
+        <caption>Live window figures for one lane, read 2026-09-14.</caption>
         <thead><tr><th>Figure</th><th>Where it lives</th><th>What it governs</th></tr></thead>
         <tbody>
-          <tr><td>172,800</td><td><code>usable_input_window</code> in routing config</td><td>the pre-dispatch context-fit refusal &mdash; the only one that gates anything</td></tr>
-          <tr><td>204,800</td><td>the serve's enforced engine cap</td><td>what actually returns HTTP 400</td></tr>
-          <tr><td>1,016,576</td><td>the launcher banner, still printed on every stderr</td><td>nothing; it describes the checkpoint loaded, not the serve answering</td></tr>
-          <tr><td>200,000</td><td><code>throughput.input_budget_tokens</code> on every committed row</td><td>nothing &mdash; but it is the denominator of every <code>input_utilisation_pct</code></td></tr>
+          <tr><td>172,800</td><td><code>usable_input_window</code> in routing config, derived from a 204,800 engine cap less a 32,000 output reservation</td><td>the pre-dispatch context-fit refusal &mdash; the only figure that gates anything</td></tr>
+          <tr><td>200,000</td><td><code>throughput.input_budget_tokens</code> on every committed row of this lane</td><td>nothing &mdash; but it is the denominator of every <code>input_utilisation_pct</code></td></tr>
         </tbody>
       </table>
+      <p>
+        <strong>An earlier draft of this section listed four figures and that was
+        wrong</strong>, in a way worth keeping because it is this plan's own subject
+        turned on its author. Two further figures exist in the record &mdash; a
+        1,016,576 launcher banner and the same value on an
+        <code>agent.usable_input_window</code> ledger field &mdash; and both were
+        first reported as live staleness. They are neither. They appear only on runs
+        launched before the cap landed, where they correctly record what was true at
+        the time. A log is not stale for describing its own moment. Checking that
+        claim took one grep over three run logs and it inverted the finding:
+        the banner on every post-cap run reads 172,800 with its output reservation
+        named. A smaller finding survived the check, and it is the real one.
+      </p>
       <p>
         The mechanism is inheritance, not a hardcoded constant, which is why it
         survives review. The dialect reads <code>contextWindow</code> from the
