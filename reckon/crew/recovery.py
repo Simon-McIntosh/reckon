@@ -85,7 +85,15 @@ WAITING_STATUS = "waiting"
 # also sits in the action set while remaining a member of this family.
 WAITING_STATES = frozenset({"waiting", "wait-aged", "paused"})
 TERMINAL_MANIFEST_STATUSES = frozenset({"complete", "blocked", "failed"})
-NON_TERMINAL_MANIFEST_STATUSES = frozenset({"in-progress"})
+# The spellings a worker writes while the node is still working — dispatch
+# templates and the harnesses that fill them produce exactly these. The set is
+# the single statement of the vocabulary; every surface that decides "the
+# worker was working, not done" checks this set rather than reproducing the
+# list. A declared wait is its own outcome and never appears here, and an
+# unrecognised spelling is not proof of work, so neither is a member.
+NON_TERMINAL_MANIFEST_STATUSES = frozenset(
+    {"in-progress", "in_progress", "running", "pending"}
+)
 WAIT_CONDITION_STATES = frozenset({"pending", "met", "unknown"})
 WAIT_PROBE_TIMEOUT_SECONDS = 1.0
 
@@ -1188,6 +1196,10 @@ def classify_pointer(
     manifest_commits = list(manifest_data.get("commits") or [])
     manifest_blockers = list(manifest_data.get("blockers") or [])
     needs_help = manifest_data.get("needs_help")
+    # Populated only on the abandoned tail, where a dead process would
+    # otherwise read as a vanished worker: asking git costs a subprocess, so
+    # the question is asked only for the runs that need it.
+    commits_beyond_base = 0
     # Liveness is read at the moment it is used, not carried from the fleet
     # read that loaded the pointer. The process table answers only when the
     # record's launching host is the reading host: a pid is meaningful only on
@@ -1611,6 +1623,42 @@ def classify_pointer(
             f"{manifest} cannot be read — repair or replace it before judging "
             "the run"
         )
+    elif manifest_status in NON_TERMINAL_MANIFEST_STATUSES:
+        # A worker-reported working status is evidence of life, not death. What
+        # the process table says now happened after the worker's last word, so
+        # the row reads working — the status stays on it rather than being
+        # dropped — and never abandoned, whatever state the process is in.
+        classification = "running"
+        if alive is True:
+            detail = (
+                f"the worker manifest reports it is still working: {manifest_status}"
+            )
+        else:
+            detail = (
+                f"the worker manifest reports it was still working "
+                f"({manifest_status}) when the process ended; the run is not "
+                "reported dead"
+            )
+        action = f"reckon crew observe --run {run_id}"
+    elif alive is False and _commits_beyond_base(record):
+        # Committed work is proof the worker delivered, and the fact lives in
+        # git rather than in any manifest format, so it survives a missing or
+        # unreported manifest. A dead process with commits past its base to
+        # show is not a vanished worker; it reads running and names the
+        # committed work as what survived.
+        commits_beyond_base = _commits_beyond_base(record)
+        classification = "running"
+        detail = (
+            f"the worktree at {record.get('worktree')} carries "
+            f"{commits_beyond_base} commit"
+            f"{'s' if commits_beyond_base != 1 else ''} beyond its recorded "
+            "base; the delivered work survives in git"
+        )
+        action = (
+            f"inspect the worktree at {record.get('worktree')}; the committed "
+            "work is safe and can be promoted or resumed once a manifest "
+            "documents it"
+        )
     elif terminal and alive is False:
         # Abandoned requires positive proof of death: the process table says
         # the worker is gone AND nothing eligible for promotion was delivered.
@@ -1783,6 +1831,10 @@ def classify_pointer(
         "manifest_reported_status": manifest_reported_status or None,
         "manifest_derived": manifest_derived,
         "manifest_commits": manifest_commits,
+        # Committed work past the recorded base, read from git on the abandoned
+        # tail only. A surface that would otherwise read the same run dead
+        # consults this field, so classification and the pane never disagree.
+        "commits_beyond_base": commits_beyond_base,
         # The refusal text when a present manifest could not be read, carried on
         # the row so a surface that discards nothing has it one field away.
         "manifest_error": manifest_error or None,
@@ -1832,6 +1884,34 @@ def classify_pointer(
     if resume_remedy is not None:
         classified["resume_remedy"] = resume_remedy
     return classified
+
+
+def _commits_beyond_base(record: Mapping[str, Any]) -> int:
+    """Count commits in the worktree past the pointer's recorded base.
+
+    The count lives in git, so it survives any manifest format: a worktree
+    whose history carries commits after the base the run launched from
+    delivered work, whatever the manifest says, and that fact is never erased
+    by a missing or unreported manifest. Zero when the worktree or base is
+    absent or the count cannot be read — an unreadable tree proves nothing, so
+    it must not fabricate a rescue.
+    """
+    worktree = Path(str(record.get("worktree") or ""))
+    base = str(record.get("base_sha") or record.get("base") or "").strip()
+    if not base or not worktree.is_dir():
+        return 0
+    count = subprocess.run(
+        ["git", "rev-list", "--count", f"{base}..HEAD"],
+        cwd=worktree,
+        capture_output=True,
+        check=False,
+    )
+    if count.returncode != 0:
+        return 0
+    try:
+        return max(0, int(count.stdout.decode().strip()))
+    except (ValueError, UnicodeDecodeError):
+        return 0
 
 
 def _worktree_diff_paths(record: Mapping[str, Any]) -> list[str]:
@@ -1902,6 +1982,11 @@ def _derive_missing_manifest(
         return record
     manifest = Path(manifest_value)
     if manifest.exists():
+        return record
+    if _commits_beyond_base(record):
+        # The work is already committed past the recorded base: git is the
+        # evidence, and no recovery artifact should be fabricated over it with
+        # a "commits: none" that the history contradicts.
         return record
     paths = _worktree_diff_paths(record)
     final_message = str(record.get("final_message") or "").strip()
@@ -2205,7 +2290,18 @@ def _watch_snapshot(
     elif phase == "stopped":
         state = "stopped"
     elif alive is False:
-        state = "abandoned"
+        # Abandoned means the worker died with nothing of the run surviving it.
+        # A dead process whose manifest reported it was still working, or whose
+        # worktree carries commits past its base, left work that outlived the
+        # process: the classifier reads it running, and this reducer must not
+        # paint the same run dead or the pane would disagree with the reader.
+        if classification == "running" and (
+            (row.get("manifest_status") or "") in NON_TERMINAL_MANIFEST_STATUSES
+            or row.get("commits_beyond_base")
+        ):
+            state = "working"
+        else:
+            state = "abandoned"
     elif classification == "running" or phase in {"working", "running"}:
         state = "dispatched" if phase == "starting" else "working"
     else:
