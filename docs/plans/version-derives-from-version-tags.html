@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 <meta name="plan-commits" content="e89fcce">
 <meta name="plan-artifacts" content="pyproject.toml,tests/test_build.py">
 <meta name="plan-impl" content="1.0">
@@ -97,6 +97,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260914T204953573024-scope-review-version-derives-from-version-tags" data-who="crew-elapsed" data-when="2026-09-14T21:44:53.163Z">
     <div class="r-comment-body"><p>Scope review: 0 unlanded, 1 no-measure-stated. The fix is verified by reproducing the class rather than the string: with the malformed rescue tag still present the wheel builds 0.2.1.dev2260 from the newest release tag, the five previously failing build ids pass (5 passed, 2 passed), a synthesised tag of the same shape is also ignored, and the diagnostic names the missing release rather than the rescue tag. Only followup f-vdvt-001 resolution remains</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-scope-review-20260914" data-who="reckon-ship" data-when="2026-09-14T21:49:00Z">
+    <div class="r-comment-body">Scope review landed (run scope-review-version-derives-from-version-tags, gate passed). Sections accounted for exactly once: 0 unlanded, 1 no-measure-stated (s1, motivation prose whose factual claims were checked anyway and hold). The fix is verified the way the plan asked for it, by reproducing the class rather than one string: with the malformed rescue tag still present in the repository and on the remote, the constrained describe selects v0.2.0 and a wheel builds as 0.2.1.dev2260 with no local segment. The five previously failing build ids each pass, 5 passed and 2 passed across the two files. A synthesised tag of the same malformed shape is also ignored, which is what shows the fix covers the class, and the diagnostic names the missing release pattern rather than the rescue tag. One incidental finding worth keeping: the plan's prose says the repository carries four tags and it now carries twelve. The extra tags end in digit-bearing shas too, so the change reinforces the plan's premise rather than undermining it, but the figure itself is a snapshot of a moving number and should not be read as current. Only followup f-vdvt-001 resolution remains.</div>
 </div>
 </section>
 </main>

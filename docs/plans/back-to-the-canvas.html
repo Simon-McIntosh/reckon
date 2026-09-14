@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-commits" content="85844ec,8a87d07,f967b11">
 <meta name="plan-impl" content="0.38">
 </head>
@@ -234,11 +234,17 @@
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260904T122634656283-figure-caption-and-zoom" data-who="s16-figview" data-when="2026-09-04T12:39:31Z">
     <div class="r-comment-body"><p>a figure now carries its caption from the sibling capture index onto its inventory row and into the reader, emitting nothing rather than a prettified filename where no description exists, and the figure reader zooms and pans so a 1920-wide capture can be read rather than only glanced at. The figures-index row rendering was deferred by instruction because that file was concurrently held; the manifest names the file, the holding node and the exact remaining change, so the follow-on is dispatchable rather than rediscoverable</p></div>
 </div>
+<div class="r-comment" data-section="s6" data-id="c-prose-audit-figure-caption-row-half" data-who="reckon-ship" data-when="2026-09-14T21:49:30Z">
+    <div class="r-comment-body">Prose-deliverable audit finding: this section's landed summary states two deliverables, and one of them is not done. The summary says a figure carries its caption onto its inventory row and into the reader. The reader half is real, and so is the server half. The inventory-row half is not: reckon/figures.py:163 emits caption, docs/ui/plan.jsx:890 renders it in a figcaption, and the figures index row in docs/ui/shell-plans.jsx renders thumbnail, title, slug and dimensions with no caption element at all. tests/test_serve_figure_rows.py carries zero caption assertions, so nothing would have caught it. The summary itself records the reason, that the file was concurrently held and the row rendering was deferred by instruction. That deferral is correct practice and the record of it is exactly right; what failed is that a deferred deliverable written into a landed summary is invisible to the dependency scan, which reads plans rather than section text, so it never became work anyone could see. Both halves of this finding are one gap, and it is the remaining scope of s6.</div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260904T124241997265-reader-chrome-matches-the-canvas" data-who="s16-conebtn" data-when="2026-09-04T12:53:52Z">
     <div class="r-comment-body"><p>the dependency control is the canvas's inline toggle again rather than a full-width labelled bar: it renders inside the reader header, the DEPENDENCY CONE heading is gone, and its label reads the up and down counts or a dimmed standalone. The reader's in-flight, source-failure and dependency panels sit on the canvas ground instead of saturated accent. 1 gate case plus 13 focused regressions. The label is built by dependencyConeLabel in the index module and called through the published namespace, so the string has one authority rather than a copy in the titlebar</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260914T205005655670-prose-deliverable-audit-back-to-the-canvas" data-who="crew-sweep-cadence" data-when="2026-09-14T21:44:53.004Z">
     <div class="r-comment-body"><p>Prose-deliverable audit: 10 deliverables stated in prose without a measure of their own, 2 verdicted not-done. Both trace to one gap deferred by instruction inside a landed summary — the figures index row does not render the caption the server already emits and the reader already prints. Independently confirmed: figures.py emits caption, plan.jsx prints it, shell-plans.jsx figure row does not, and test_serve_figure_rows.py carries zero caption assertions. The audit also found s8 unlanded: both of its done-when test files are absent at HEAD</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-prose-audit-fidelity-check-absent" data-who="reckon-ship" data-when="2026-09-14T21:49:45Z">
+    <div class="r-comment-body">Prose-deliverable audit finding: this section is not landed at HEAD. Both files its own done-when names, tests/test_spa_canvas_fidelity.py and tests/spa_canvas_values.py, are absent from the tree, while every done-when test for s2 through s7 is tracked. This matters more than one unlanded section because s8 is the node that is supposed to stop the drift recurring, and the plan's own aggregate gate in s7 closes on it. A gate that depends on an absent check cannot close, so the plan's acceptance condition is currently unreachable rather than merely unmet.</div>
 </div>
 </section>
 </main>
