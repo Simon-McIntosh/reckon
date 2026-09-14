@@ -78,6 +78,33 @@
     than by plan section — the partition that produced four independent nodes across
     two plans.</p>
   </section>
+
+  <section id="refusal-stamp">
+    <h2>A refusal outlives the run it killed</h2>
+    <p>Landed 2026-09-14, commit <code>979805e</code>. The store gained a refusals
+    table and a stamp/read pair; a rate-limit refusal is now written with both its
+    own time and the return time the refusal states, into the run store on the
+    shared config home &mdash; outside the run directory, which is reclaimable, and
+    outside the committed ledger row, which a killed run never reaches.</p>
+    <p><strong>Measure:</strong> 28 passed against a base of 25, added-failure
+    count 0, with the three new cases each asserting a property rather than an
+    implementation. The outlive property is asserted by actually deleting the run
+    directory and reading the stamp back through a fresh handle. The fail-safety
+    property is asserted by driving the stamp's own transaction to raise and showing
+    the run rows beside it still answer in full. Two refusals of one lane are
+    retained separately, each keyed by its own refusal time, which is the pair a
+    later window inference reads.</p>
+    <p><strong>A record that would have been wrong.</strong> The worker's manifest
+    reported commit <code>979805eb70b55e17d&hellip;</code>, which resolves to no
+    object in the repository. The real head is
+    <code>979805e1d460e5c46&hellip;</code> &mdash; the same seven-character prefix
+    with an invented tail. Caught before promotion by resolving the sha rather than
+    checking its width, so the ledger carries the commit that exists. Had it not
+    been caught, the row would have recorded a passing gate against nothing.</p>
+    <p><strong>Carried forward:</strong> the stamp's call site is not yet wired. The
+    refusal handler that would call it sits outside this node's write scope, so the
+    store exists and nothing writes to it in production yet.</p>
+  </section>
 </main>
 </body>
 </html>

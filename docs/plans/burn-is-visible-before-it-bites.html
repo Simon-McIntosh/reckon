@@ -27,8 +27,11 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="9">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+<meta name="plan-commits" content="979805e1d460e5c46a15d466d64d4a674c8e3405">
+<meta name="plan-artifacts" content="reckon/run_store.py,tests/test_run_store.py,docs/evidence/archive/burn-is-visible-before-it-bites-landed.html">
+<meta name="plan-impl" content="0.17">
 </head>
 <body>
 <main class="plan-doc">
@@ -234,6 +237,12 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260914T142740833304-review-of-burn-visible-reuse-map" data-who="crew-drain-fence" data-when="2026-09-14T14:41:12.139Z">
     <div class="r-comment-body"><p>Independent review attached to r-20260914T130210419244-burn-visible-reuse-map; all five score dimensions parsed</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260914T143527286774-refusal-stamp-outlives-its-run" data-who="crew-no-zombies" data-when="2026-09-14T14:51:51.657Z">
+    <div class="r-comment-body"><p>A rate-limit refusal is stamped durably outside both the run directory and the committed ledger, surviving reclamation of the run directory. 28 passed against a base of 25, added-failure count 0. NOTE: the manifest reported commit 979805eb70b55e17dc1a135740a2e92d03be7dd2, which resolves to no object; the real head is 979805e1d460e5c46a15d466d64d4a674c8e3405, recorded here. Same seven-character prefix, invented tail — caught by rev-parse --verify before promotion</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260914T1550" data-who="reckon-ship" data-when="2026-09-14T15:50:00Z">
+    <div class="r-comment-body">refusal-stamp-outlives-its-run landed — commit 979805e1d460e5c46a15d466d64d4a674c8e3405, merged and the content verified present at HEAD by marker rather than by reachability. Gate passed exit 0; measure: 28 passed against a base of 25 on tests/test_run_store.py, added-failure count 0, three tests added. The store's declared-but-unwritten holds table was the durable slot, so no new storage was needed. Both survivorship exclusions hold by construction: the stamp is outside the run directory (reclaimable) and outside the committed ledger row (which a killed run never reaches). Asserted by making the evidence happen rather than reading it from absence — the run directory is actually deleted and the stamp read back through a fresh handle. Artifacts: reckon/run_store.py, tests/test_run_store.py, docs/evidence/archive/burn-is-visible-before-it-bites-landed.html#refusal-stamp. RECORD DEFECT CAUGHT: the manifest reported commit 979805eb70b55e17d…, which resolves to no object; the real head is 979805e1d460e5c46…, same seven-character prefix with an invented tail. Resolved with rev-parse --verify before promotion, so the ledger carries the commit that exists rather than a passing gate against nothing. CARRIED FORWARD: the stamp's call site is unwired — the refusal handler that would call it sits outside this node's write scope, so the store exists and production writes nothing to it yet.</div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260914T1200" data-who="reckon-ship" data-when="2026-09-14T12:00:00Z">
     <div class="r-comment-body">Dependency narrowed from the whole of dispatch-cost-per-durable-node to its §6, on this plan's own statement of what it needs. The followup says §2 waits on the prerequisite plan making the rate computation readable from Python, and that is §6, which shipped: crew(view="budget") reported burn_multiple 2.87 against utilisation 7 percent on 2026-09-14, derived in Python from rate_limit_period_minutes and resets_at with no new probe. The plan-level edge was holding this work behind §7, whose remaining measure is a 20-to-40 run gated pilot bounded by about two days of elapsed time rather than by effort. Nothing this plan needs is in §7, so the edge was serialising nine worker-hours behind two calendar days for no stated reason.</div>

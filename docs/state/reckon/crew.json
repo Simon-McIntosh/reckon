@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-14T17:46:23",
+  "updated": "2026-09-14T17:48:56",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -104205,6 +104205,288 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T143527286774-refusal-stamp-outlives-its-run",
+        "plan": "burn-is-visible-before-it-bites",
+        "section": "\u00a75",
+        "node": "refusal-stamp-outlives-its-run",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1209,
+                "cached_input_tokens": 493348,
+                "input_tokens": 494559,
+                "output_tokens": 437,
+                "reasoning_output_tokens": 90,
+                "total_tokens": 494996,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "306c1aec-df4a-489e-88c3-441bbb1f5baf",
+            "session_id": "ship-lane-aware-20260914"
+          },
+          "done_when": "uv run pytest tests/test_run_store.py -q passes with: a stamp carrying both the refusal time and the return time the refusal itself states, written outside the run directory and the committed ledger, still readable after that run directory is removed; a stamp write that fails leaving the run append unaffected; and the existing store schema and durable/detail split assertions showing a failure delta of 0 against base b48887e",
+          "estimated_hours": null,
+          "goal": "A rate-limit refusal is stamped in a durable store that survives its run directory being reclaimed",
+          "id": "refusal-stamp-outlives-its-run",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T14:35:28Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T143527286774-refusal-stamp-outlives-its-run/manifest.md",
+          "plan": "burn-is-visible-before-it-bites",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/run_store.py",
+            "tests/test_run_store.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-no-zombies",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T14:35:40Z",
+        "completed_at": "2026-09-14T14:51:51.657Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 858,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 971,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "d07b79db24aa4f479472b40ed99ebf9c5dc5942f",
+        "commits": [
+          "979805e1d460e5c46a15d466d64d4a674c8e3405"
+        ],
+        "changed_lines": {
+          "added": 152,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_run_store.py",
+          "exit_status": 0,
+          "log_path": "/tmp/sfo_final_head.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T143527286774-refusal-stamp-outlives-its-run/manifest.md",
+        "scope_changed": false,
+        "session_id": "94b0db3f-d7d6-4ba1-be3e-d243cae12e26",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": null,
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "run completed after 8 rate-limit retries; retries alone are not a refusal"
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-14T14:51:51.657Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 3573,
+              "budget_seconds": 720,
+              "classification": "scoring",
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 4293,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1813,
+              "log_fresh": false,
+              "manifest_commits": [
+                "none \u2014 investigate node; the sole deliverable is outside the repository",
+                "under the config-home write path",
+                "so no repository file was created",
+                "modified or staged (git status clean at revision 8d4e6f3)"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "9040e283086a1585ecc3012aecbeeed1970b63c6089db709d60ac210b8415743",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T125344512535-lane-stands-reuse-map/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan a-lane-can-say-where-it-stands --section where-the-probe-lives --role review --spec-level exact --node review-of-lane-stands-reuse-map --goal 'attach an independent review to run r-20260914T125344512535-lane-stands-reuse-map' --done-when 'the review for r-20260914T125344512535-lane-stands-reuse-map parses all five score dimensions' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T125344512535-lane-stands-reuse-map.json --time-budget 12m --session ship-lane-aware-20260914 --local",
+              "node": "lane-stands-reuse-map",
+              "phase": "working",
+              "plan": "a-lane-can-say-where-it-stands",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260914T125344512535-lane-stands-reuse-map",
+              "session": "ship-lane-aware-20260914",
+              "terminal_age_seconds": 2227,
+              "terminal_at": "2026-09-14T13:58:30Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-lane-aware-20260914/lane-stands-reuse-map"
+            },
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 1877,
+              "budget_seconds": 720,
+              "classification": "scoring",
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 2597,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 3003,
+              "log_fresh": false,
+              "manifest_commits": [
+                "none \u2014 the assigned write path is under ~/.config/reckon (not a git repository: `git -C ~/.config/reckon rev-parse --show-toplevel` -> fatal: not a git repository); delivery is the file itself; worktree left clean at base sha"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "17cfe932140aa1294eee507407422d2f636a0ecd3b5b2b5b8cd6f8458dcd493b",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T130210419244-burn-visible-reuse-map/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan burn-is-visible-before-it-bites --section '\u00a75' --role review --spec-level exact --node review-of-burn-visible-reuse-map --goal 'attach an independent review to run r-20260914T130210419244-burn-visible-reuse-map' --done-when 'the review for r-20260914T130210419244-burn-visible-reuse-map parses all five score dimensions' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T130210419244-burn-visible-reuse-map.json --time-budget 12m --session ship-lane-aware-20260914 --local",
+              "node": "burn-visible-reuse-map",
+              "phase": "working",
+              "plan": "burn-is-visible-before-it-bites",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260914T130210419244-burn-visible-reuse-map",
+              "session": "ship-lane-aware-20260914",
+              "terminal_age_seconds": 3363,
+              "terminal_at": "2026-09-14T13:39:34Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-lane-aware-20260914/burn-visible-reuse-map"
+            }
+          ]
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 3820235,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 967.279,
+          "generated_tokens": 43887,
+          "generation_seconds": 855.128,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 77.6,
+          "machine_seconds": 112.151,
+          "peak_input_tokens": 155135,
+          "tokens_per_second": 51.32,
+          "wall_tokens_per_second": 45.37
+        },
+        "follow_on_paths": [
+          "reckon/run_store.py",
+          "tests/test_run_store.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_run_store.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-lane-aware-20260914/refusal-stamp-outlives-its-run",
+          "session_id": "94b0db3f-d7d6-4ba1-be3e-d243cae12e26",
+          "session_source": "pointer",
+          "retained_at": "2026-09-14T14:51:51.657Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 37.0,
+        "orientation_input_tokens": 1418227.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -104433,6 +104715,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1393
+    "_version": 1394
   }
 }
