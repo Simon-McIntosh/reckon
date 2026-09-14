@@ -94,6 +94,7 @@ def _node(
     role: str = "investigate",
     manifest: str | Path,
     node_id: str = "sandbox-candidate",
+    spec_level: str = "guided",
 ) -> crew.TaskNode:
     return crew.TaskNode(
         id=node_id,
@@ -101,6 +102,7 @@ def _node(
         plan="sandbox-delivery",
         section="dispatch",
         role=role,
+        spec_level=spec_level,
         done_when="command output records 1 sandbox delivery finding",
         write_paths=[str(path)],
         manifest_path=str(manifest),
