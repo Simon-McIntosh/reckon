@@ -292,6 +292,71 @@ def test_a_malformed_declared_wait_is_unreadable_not_abandoned(
     assert "wait_terminal" in str(row["manifest_error"])
 
 
+def test_a_dead_run_on_a_declared_wait_is_parked_with_its_resume_path(
+    tmp_path: Path,
+) -> None:
+    # The process is gone but the manifest declares the external wait the
+    # worker parked on, naming the condition and its terminal values; the run
+    # parks with its resume path offered and is never reported dead.
+    pointer = _pointer(tmp_path, "parked-path", alive=False)
+    _manifest(
+        pointer,
+        "status: waiting\n"
+        "wait_condition: scheduler job 42\n"
+        'wait_probe: ["scheduler-status", "--job", "42"]\n'
+        'wait_terminal: ["COMPLETED", "FAILED"]\n'
+        "resume_brief: collect the scheduler result\n",
+    )
+
+    row = recovery.classify_pointer(pointer, now_seconds=1_788_853_900.0)
+
+    assert row["classification"] == recovery.WAITING_STATUS
+    assert row["classification"] != "abandoned"
+    assert "resume" in row["next_action"]
+
+
+@pytest.mark.parametrize(
+    "spelling", ["in-progress", "in_progress", "running", "pending"]
+)
+def test_a_dead_process_with_a_working_manifest_never_reads_abandoned(
+    tmp_path: Path, spelling: str
+) -> None:
+    # Each spelling workers actually write on an unfinished node keeps the run
+    # in working even though the process has ended, and the reported status is
+    # kept on the row rather than dropped.
+    pointer = _pointer(tmp_path, f"working-{spelling}", alive=False)
+    _manifest(pointer, f"status: {spelling}\ncommits: none\n")
+
+    row = recovery.classify_pointer(pointer, now_seconds=1_800_000_000.0)
+
+    assert spelling in recovery.NON_TERMINAL_MANIFEST_STATUSES
+    assert row["classification"] == "running"
+    assert row["classification"] != "abandoned"
+    assert row["manifest_status"] == spelling
+    snapshot = recovery._watch_snapshot(
+        pointer, moment=1_800_000_001.0, stall_seconds=900
+    )
+    assert snapshot["state"] not in {"abandoned", "unreadable", "blocked"}
+    assert snapshot["state"] in recovery.FLEET_WORKING_STATES
+
+
+def test_the_recognised_working_vocabulary_is_stated_once() -> None:
+    # The set is the single statement of the spellings; a comparison must
+    # reference it, so the members are asserted exactly here and only here.
+    assert (
+        frozenset({"in-progress", "in_progress", "running", "pending"})
+        == recovery.NON_TERMINAL_MANIFEST_STATUSES
+    )
+    assert recovery.WAITING_STATUS not in recovery.NON_TERMINAL_MANIFEST_STATUSES
+    assert recovery.WAITING_STATUS not in recovery.TERMINAL_MANIFEST_STATUSES
+    assert all(
+        recovery.TERMINAL_MANIFEST_STATUSES.isdisjoint(
+            set(recovery.NON_TERMINAL_MANIFEST_STATUSES)
+        )
+        for spelling in recovery.NON_TERMINAL_MANIFEST_STATUSES
+    )
+
+
 def test_every_actionable_type_declares_one_recovery_verb() -> None:
     assert recovery.ACTIONABLE_RECOVERY_CLASSIFICATIONS
     assert set(recovery.RECOVERY_CLASSIFICATIONS) == set(recovery.RECOVERY_VERBS)

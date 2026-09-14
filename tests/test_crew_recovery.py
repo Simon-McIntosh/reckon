@@ -194,6 +194,102 @@ def test_recover_never_overwrites_a_worker_manifest(
     assert "delivery_gap" not in crew.read_pointer(pointer["run_id"])
 
 
+def test_committed_work_is_never_abandoned_even_with_a_clean_worktree(
+    home, tmp_path
+) -> None:
+    # The run's delivery survives in git, not in any manifest format: a dead
+    # process whose worktree carries one commit past its recorded base is work
+    # that landed, so it must never read as a vanished worker even though the
+    # tree is clean and no manifest was written.
+    pointer = _terminal_pointer(home, tmp_path, "r-committed")
+    worktree = Path(pointer["worktree"])
+    (worktree / "result.txt").write_text("committed work\n")
+    subprocess.run(["git", "add", "result.txt"], cwd=worktree, check=True)
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=Test User",
+            "-c",
+            "user.email=test@example.invalid",
+            "commit",
+            "-qm",
+            "test: worker committed the work",
+        ],
+        cwd=worktree,
+        check=True,
+    )
+    clean = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=worktree,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert clean.stdout == ""
+
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+
+    assert row["classification"] == "running"
+    assert row["classification"] != "abandoned"
+    assert row["commits_beyond_base"] == 1
+    snapshot = recovery._watch_snapshot(pointer, moment=time.time(), stall_seconds=3600)
+    assert snapshot["state"] != "abandoned"
+    assert snapshot["state"] in recovery.FLEET_WORKING_STATES
+
+
+def test_recover_fabricates_no_derived_manifest_over_committed_work(
+    home, tmp_path, monkeypatch
+) -> None:
+    # A recovery artifact with "commits: none" would contradict the history, so
+    # the evidence is left in git and nothing is derived over it.
+    pointer = _terminal_pointer(home, tmp_path, "r-committed-recover")
+    worktree = Path(pointer["worktree"])
+    (worktree / "result.txt").write_text("committed work\n")
+    subprocess.run(["git", "add", "result.txt"], cwd=worktree, check=True)
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=Test User",
+            "-c",
+            "user.email=test@example.invalid",
+            "commit",
+            "-qm",
+            "test: worker committed the work",
+        ],
+        cwd=worktree,
+        check=True,
+    )
+    pointer["final_message"] = "Implemented the work and committed it."
+    crew._write_json(crew.pointer_path(pointer["run_id"]), pointer)
+    monkeypatch.setattr(
+        importlib.import_module("reckon.crew.dispatch"),
+        "observe",
+        lambda _run_id, config=None: pointer,
+    )
+
+    result = recovery.recover(project="proj")
+
+    row = result["runs"][0]
+    assert row["classification"] == "running"
+    assert row["classification"] != "abandoned"
+    assert row["commits_beyond_base"] == 1
+    assert not Path(pointer["manifest_path"]).exists()
+
+
+def test_no_manifest_no_wait_and_no_commits_still_abandons(home) -> None:
+    # The negative the new survival arms must not blur: a run that is gone with
+    # no manifest, no declared wait and no committed work is exactly the
+    # vanished worker abandoned is reserved for, on the classifier and on the
+    # pane.
+    pointer = _cli_pointer(home, "r-nowhere", "codex-failed-turn.jsonl")
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+    assert row["classification"] == "abandoned"
+    snapshot = recovery._watch_snapshot(pointer, moment=time.time(), stall_seconds=3600)
+    assert snapshot["state"] == "abandoned"
+
+
 def test_follow_watch_emits_three_terminal_runs_once_then_ends(home) -> None:
     _write_pointer(home, "r-first", terminal=True)
     _write_pointer(home, "r-second", terminal=False)
