@@ -47,6 +47,7 @@ and is excluded from the durable comparison.
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 from collections.abc import Mapping
 from pathlib import Path
@@ -134,8 +135,25 @@ CREATE TABLE IF NOT EXISTS "holds" (
 """
 
 
+# The single place the store's location is resolved. The default keeps the
+# database beside the committed ledger under the crew config home; the
+# override moves it wholesale, so a deployment can hold the single-writer
+# database on a host-local filesystem while the committed ledger file remains
+# the only cross-host truth.
+_RUN_STORE_ENV = "RECKON_RUN_STORE"
+
+
 def store_path() -> Path:
-    """Return the store's SQLite path under the crew config home."""
+    """Return the store's SQLite path, resolved in one place.
+
+    The default is ``<config-home>/crew/run_store.db`` (the crew config home,
+    shared across projects). ``RECKON_RUN_STORE`` overrides the location
+    wholesale and always wins, matching the shared override precedence used
+    elsewhere in reckon (e.g. ``RECKON_HOME``).
+    """
+    override = os.environ.get(_RUN_STORE_ENV, "").strip()
+    if override:
+        return Path(override).expanduser()
     return _store._config_home() / "crew" / "run_store.db"
 
 
