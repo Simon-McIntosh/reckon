@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-lane-can-say-where-it-stands">
+  <meta name="plan-title" content="A Lane Can Say Where It Stands">
+  <meta name="plan-summary" content="The subscription account publishes its own quota position for free; read it instead of inferring one from worker streams that stop arriving">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-wall-clock-hours" content="4.0">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-sprint" content="S17">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-blocks" content="burn-is-visible-before-it-bites">
+  <title>A Lane Can Say Where It Stands | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Budget signal &middot; measured 2026-09-14</p>
+      <h1>A Lane Can Say Where It Stands</h1>
+      <p class="lead">
+        The subscription account publishes its own quota position, for free, on
+        demand. Reckon does not read it. Instead it infers a position from
+        worker streams, which stop arriving the moment nobody dispatches to that
+        lane &mdash; so the reading decays exactly when a coordinator most wants
+        to know whether it may start again. On the morning this plan was
+        written the recorded claude reading was <strong>186 hours old</strong>,
+        the fence reported the lane clear, and the account was at
+        <strong>89&nbsp;percent</strong> of its weekly window with a scoped
+        window at 93&nbsp;percent marked critical.
+      </p>
+    </header>
+
+    <section id="what-is-wrong">
+      <h2><span class="sec">&sect;1</span> &mdash; The fence is open, and it is open by construction</h2>
+      <p>
+        Every figure below was read on 2026-09-14 rather than recalled. The
+        preflight surface already carries the complete shape a heartbeat needs
+        &mdash; utilisation, burn multiple, projected exhaustion, seconds until
+        reset, headroom and a threshold status, per horizon. Nothing is missing
+        from the data model. What is missing is an input.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Lane</th><th>Signal source</th><th>Reading age</th><th>Headroom</th><th>Burn</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>codex, -luna, -spark, -terra</td><td>account surface</td><td>0.0 h</td><td>known</td><td>2.05</td></tr>
+          <tr><td>claude</td><td>ledger</td><td>186 h</td><td>unknown</td><td>&mdash;</td></tr>
+          <tr><td>claude-opus</td><td>ledger</td><td>199 h</td><td>unknown</td><td>&mdash;</td></tr>
+          <tr><td>claude-haiku</td><td>ledger</td><td>145 h</td><td>unknown</td><td>&mdash;</td></tr>
+          <tr><td>clive</td><td>ledger</td><td>74 h</td><td>unknown</td><td>&mdash;</td></tr>
+          <tr><td>native</td><td>none</td><td>never</td><td>unknown</td><td>&mdash;</td></tr>
+        </tbody>
+      </table>
+      <p>
+        The chain that produces this is mechanical and each link was confirmed.
+        No claude worker has been dispatched for days, because current work
+        routes to other lanes. No claude worker means no claude stream. The
+        quota position is emitted only inside a stream, as a rate-limit record,
+        so no stream means no new reading. The stored reading ages past the
+        policy's declared five-minute shelf life, is marked expired, and its
+        headroom is correctly reduced to unknown. The fence then declines to
+        hold, because absence of a signal is never read as exhaustion &mdash;
+        which is the right rule. The result is a wave admitted at full width
+        against a window the fence cannot see.
+      </p>
+      <p>
+        The policy declares <code>evidence_shelf_life_minutes</code> of five.
+        The claude reading is past that by a factor of roughly two thousand,
+        and the surface reports the lane clear. This is the failure that is
+        silent rather than loud: a stale hold announces itself every time
+        someone is refused, while a stale clearance says nothing at all until a
+        wave is already spending.
+      </p>
+    </section>
+
+    <section id="the-surface">
+      <h2><span class="sec">&sect;2</span> &mdash; The account answers for free, and the answer disagrees with the cache</h2>
+      <p>
+        The client publishes an account usage endpoint. Read with the
+        credential already on this machine it answered in 0.27&nbsp;seconds
+        with 2018&nbsp;bytes and consumed no model tokens at all &mdash; it is
+        an account metadata read, not an inference request, and it is directly
+        analogous to the surface the codex lanes already use. There is no cost
+        to declare, no cadence to ration, and no reason a poll should be rare.
+      </p>
+      <p>
+        What it returns is richer than what the codex lanes offer. Several
+        named windows, each with its own utilisation and reset time; a
+        server-computed severity rather than a locally derived ceiling; an
+        explicit flag naming which window is currently binding; and a scoped
+        per-model window. That last field matters beyond this plan: the four
+        codex lanes share one account reading and therefore cannot be fenced
+        apart, while a scoped window makes per-lane fencing possible here.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Window</th><th>Utilisation</th><th>Severity</th><th>Binding</th><th>Resets</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>five hour</td><td>38&nbsp;%</td><td>normal</td><td>no</td><td>10:30</td></tr>
+          <tr><td>weekly, all models</td><td>89&nbsp;%</td><td>warning</td><td>no</td><td>20:00</td></tr>
+          <tr><td>weekly, scoped to one model</td><td>93&nbsp;%</td><td>critical</td><td><strong>yes</strong></td><td>20:00</td></tr>
+        </tbody>
+      </table>
+      <p>
+        There is also a copy of this block cached on disk by the client, and it
+        is not a substitute. It carries its own fetch stamp, which is the one
+        thing that makes it usable at all, and at the time of writing that
+        stamp was 92&nbsp;hours old and reported 53 and 60&nbsp;percent against
+        the live 38 and 89. The cache is a last-known position, not a
+        heartbeat. It has a place in this design only as a fallback that is
+        always rendered beside its age, never as a bare figure.
+      </p>
+    </section>
+
+    <section id="where-the-probe-lives">
+      <h2><span class="sec">&sect;3</span> &mdash; The probe belongs to the dialect, not to a shared data structure</h2>
+      <p>
+        The existing probe type models a request-response exchange written to a
+        held-open standard input. Its own docstring explains why: that is what
+        the one harness offering such a surface needs, because it serves over a
+        line protocol and exits the moment its input closes. That assumption is
+        now false. A second harness offers a surface over HTTP, and forcing an
+        HTTP read into a structure whose fields are an argument vector and a
+        list of protocol requests would distort both.
+      </p>
+      <p>
+        The change is to invert the relationship. Today a caller asks a dialect
+        for a probe description and then executes it. Instead the dialect
+        should be asked for the reading and should own its own transport
+        &mdash; the line protocol for one, an HTTPS read for the other. The
+        existing structure survives as an implementation detail of the dialect
+        that needs it. The one thing that must not move is the failure
+        contract: every way a reading can fail already funnels into a single
+        place that returns an explicit unknown naming the reason, because a
+        pre-flight must never be stopped by its own instrument. That funnel
+        stays exactly where it is.
+      </p>
+    </section>
+
+    <section id="parse-strictly">
+      <h2><span class="sec">&sect;4</span> &mdash; Parse strictly, because the silent failure runs toward headroom</h2>
+      <p>
+        This is an internal endpoint of the client rather than a published
+        contract, so its shape can change without notice. The obvious failures
+        are safe: a not-found, an unauthorised answer, an expired credential,
+        a timeout. Each is loud, each is caught by the existing funnel, and
+        each correctly produces an unknown that the fence declines to read as
+        exhaustion.
+      </p>
+      <p>
+        The dangerous failure is the quiet one. A shape change that still
+        parses, but yields a low utilisation, reads as headroom and opens the
+        fence wider than reality. So the reader must require the named window
+        and a numeric utilisation, and must return unknown rather than a
+        default when either is absent. A missing field must never resolve to
+        zero. This is the same asymmetry the fence already encodes at the
+        policy level, applied one layer down at the parser, where it currently
+        is not.
+      </p>
+      <p>
+        The credential itself needs the same treatment. It expires on the order
+        of hours and carries a refresh token beside it. An expiry must produce
+        an unknown reading, never a clear one, and never an exhausted one
+        either &mdash; the honest answer when the instrument cannot read is
+        that the position is not known.
+      </p>
+    </section>
+
+    <section id="coordinator-share">
+      <h2><span class="sec">&sect;5</span> &mdash; The coordinator spends the window it is fencing</h2>
+      <p>
+        The account position already includes every consumer: dispatched
+        workers, interactive sessions, and the coordinator running the wave.
+        That is a property of the figure rather than a defect, and it corrects
+        a natural assumption &mdash; the reading is not under-counting the
+        coordinator, it is counting it and reckon simply cannot see the total.
+        On the morning this plan was written the weekly window stood at
+        89&nbsp;percent while no claude worker had run for days, so
+        substantially all of that consumption was coordinator traffic.
+      </p>
+      <p>
+        The consequence for batch dispatch is specific and it runs in the
+        dangerous direction. A wave sized to fill the remaining headroom leaves
+        nothing for the coordinator that must survive the wave to audit
+        manifests, merge commits, and record outcomes. If the coordinator is
+        refused mid-wave, every worker's output is stranded in a worktree with
+        nobody to land it &mdash; the workers succeed and the wave is lost.
+        A reserve already exists for resume, which is a different quantity
+        reserved for a different purpose. A coordinator reserve is not modelled
+        at all.
+      </p>
+      <p>
+        The first version of that reserve should be declared rather than
+        computed, with its reasoning recorded beside it. There is no
+        measurement of coordinator burn rate on this machine, the client's own
+        transcripts do not persist the quota position, and inventing a figure
+        and presenting it as measured would be the precise error this plan
+        exists to correct. Reading the account surface on a cadence is what
+        makes the figure measurable later; the reserve is calibrated from that
+        evidence once it exists, not before.
+      </p>
+    </section>
+
+    <section id="out-of-scope">
+      <h2><span class="sec">&sect;6</span> &mdash; What this plan does not cover</h2>
+      <p>
+        The four codex lanes share one account reading and therefore report
+        identical figures, while the configuration for one of them states that
+        it has its own smaller meter which a single wave can exhaust. That is a
+        real per-lane attribution defect and it is not repaired here; this plan
+        establishes that a scoped per-model window exists and can be read,
+        which is the evidence that work would build on.
+      </p>
+      <p>
+        Rendering the position in the fleet pane is also out of scope. A
+        heartbeat shipped before the reading is fresh would display an unknown
+        for every claude lane and one shared figure for four codex lanes, which
+        is worse than no display: it looks live and says nothing. The display
+        work is owned by the plans that already hold the pane and the meter,
+        and it should follow this rather than accompany it.
+      </p>
+      <p>
+        Whether a lane whose only signal is the ledger can ever be a heartbeat
+        is settled in the negative and needs no further work: such a reading is
+        a by-product of dispatch and decays when dispatch stops. What those
+        lanes need is not a fresher figure but an honest age beside the figure
+        they have.
+      </p>
+    </section>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">&sect;</span> Decisions</h2>
+      <div class="r-dec" data-key="fence-input">
+        <p class="r-dec-q">Does the fence read the account's own severity, or reckon's configured ceiling?</p>
+        <p class="r-dec-ctx">
+          The endpoint computes a severity per window and flags which window is
+          binding. Reckon computes its own verdict from a utilisation ceiling
+          and a reserve. Taking the account's severity means one authority and
+          no drift, at the cost of a threshold this project does not control
+          and cannot test against. Keeping the configured ceiling means the
+          fence stays testable over the whole input domain, at the cost of two
+          opinions about the same window.
+        </p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="account-severity">Account severity and binding flag</button>
+          <button class="r-opt" data-value="configured-ceiling">Reckon's configured ceiling</button>
+          <button class="r-opt" data-value="ceiling-with-severity-floor">Ceiling, held no looser than the account's severity</button>
+        </p>
+      </div>
+      <div class="r-dec" data-key="lane-window-mapping">
+        <p class="r-dec-q">Do the three claude lanes map onto scoped per-model windows now, or share the account-wide figure first?</p>
+        <p class="r-dec-ctx">
+          A scoped window is the only way a lane can be fenced separately from
+          its siblings, and the account-wide figure will hold a lane that has
+          headroom of its own. Mapping now needs a rule from lane to model
+          identity that the endpoint names only by display label, which is a
+          weaker join than a model id and may not resolve for every lane.
+          Sharing the account-wide figure first is always correct and never
+          precise.
+        </p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="account-wide-first">Account-wide figure first</button>
+          <button class="r-opt" data-value="scoped-now">Scoped per-model windows now</button>
+        </p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">&sect;</span> Followups</h2>
+      <article class="r-fu" data-id="read-the-account-surface" data-status="open"
+               data-written-by="reckon-create" data-written-at="2026-09-14"
+               data-recommends-skill="/reckon-ship a-lane-can-say-where-it-stands">
+        <h4 class="r-fu-title">Read the account surface, and make a stale reading say its own age</h4>
+        <div class="r-fu-body">
+          Settle both decisions first; each changes what the reader returns and
+          what the fence does with it. Then give the claude dialect its own
+          reading over the account surface, move transport ownership to the
+          dialect while leaving the failure funnel where it is, parse strictly
+          so that an unrecognised shape returns unknown rather than a low
+          utilisation, fall back to the on-disk cache only with its fetch age
+          attached, and add a declared coordinator reserve with its reasoning
+          recorded beside it. The falsifier must range over the input domain
+          rather than over the lanes currently configured: a reading older than
+          the shelf life must fail to clear at any utilisation on any lane,
+          including one absent from today's configuration. Write the quiet half
+          before dispatch &mdash; a fresh reading below the ceiling clears, and
+          does not re-read inside the cadence.
+        </div>
+        <pre class="r-fu-prompt">/reckon-ship a-lane-can-say-where-it-stands</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
