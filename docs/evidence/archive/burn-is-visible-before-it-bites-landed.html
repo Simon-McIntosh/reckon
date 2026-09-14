@@ -130,6 +130,41 @@
     cannot place the window. Both are failure modes that would have produced a
     confident wrong answer rather than an honest unknown.</p>
   </section>
+
+  <section id="merged-head-attribution">
+    <h2>Attribution at the merged head &mdash; and what the suite could not answer</h2>
+    <p>Run against the merged head <code>1b59345</code> and the base
+    <code>91d4275</code>, because a focused gate measures its own node and cannot
+    see breakage outside its fence. <strong>Zero failures attributable to this
+    wave</strong>; the head's failing set is an exact subset of the base's.</p>
+    <table>
+      <caption>Observable failures at the merged head.</caption>
+      <thead><tr><th>Category</th><th>Count</th></tr></thead>
+      <tbody>
+        <tr><td>introduced by this wave</td><td><strong>0</strong></td></tr>
+        <tr><td>pre-existing at base, environment mechanism confirmed</td><td>5</td></tr>
+        <tr><td>pre-existing at base, mechanism uncharacterised</td><td>13</td></tr>
+        <tr><td>observable total</td><td>18</td></tr>
+      </tbody>
+    </table>
+    <p><strong>The node passed and the suite did not, and the distinction is the
+    point.</strong> The full suite cannot complete on this host: both runs stalled
+    at roughly 660 of 4,228 tests and were killed at 33 minutes, at <em>both</em>
+    revisions, so the stall is a host defect rather than anything this wave landed.
+    Roughly 3,500 tests are therefore recorded as <strong>unknown</strong> rather
+    than attributed-as-passing, and the suite's own verdict is <code>not-run</code>.
+    A failure count drawn from the completed prefix is a floor with an unknown tail,
+    and reporting it as a total would be the day's recurring error &mdash; a true
+    number answering a narrower question than its name implies.</p>
+    <p>Two further cautions the node raised about its own method, both of which
+    would otherwise have cost someone time. Five apparent base-only failures in the
+    build suite are an <strong>artifact of the comparison method</strong>: the base
+    export carries no <code>.git</code>, so clone and version resolution exit 128,
+    and the same tests pass at a real worktree. And the node declared in an addendum
+    that it had exceeded its own forty-minute fence, marking the pre-fence report as
+    the authoritative deliverable rather than quietly extending itself.</p>
+    <p>Stating what it could not determine is what makes the zero usable.</p>
+  </section>
 </main>
 </body>
 </html>

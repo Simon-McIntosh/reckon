@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-14T21:47:00",
+  "updated": "2026-09-14T21:53:47",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -108644,6 +108644,254 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T163318285945-merged-head-attribution-for-this-wave",
+        "plan": "burn-is-visible-before-it-bites",
+        "section": "\u00a75",
+        "node": "merged-head-attribution-for-this-wave",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 686,
+                "cached_input_tokens": 747936,
+                "input_tokens": 748624,
+                "output_tokens": 1512,
+                "reasoning_output_tokens": 810,
+                "total_tokens": 750136,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "306c1aec-df4a-489e-88c3-441bbb1f5baf",
+            "session_id": "ship-lane-aware-20260914"
+          },
+          "done_when": "The report at the write path records: the full-suite command run against the merged head 1b59345, its exit status, its total pass/fail counts, and for EVERY failing test id a cause of either pre-existing-at-base, introduced-by-this-wave naming which merged commit, or environment. The base for comparison is 91d4275 and both runs are captured to log files named in the report. A failure that cannot be attributed is listed as unattributed rather than omitted, and the report states the count of each category so the three sum to the total",
+          "estimated_hours": null,
+          "goal": "Attribute every suite failure at the merged head of this wave to a cause",
+          "id": "merged-head-attribution-for-this-wave",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T16:33:18Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T163318285945-merged-head-attribution-for-this-wave/manifest.md",
+          "plan": "burn-is-visible-before-it-bites",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "test",
+          "section": "\u00a75",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/lane-wave-merged-head-attribution.md"
+          ]
+        },
+        "role": "test",
+        "spec_level": "exact",
+        "member": "crew-matrix-currency",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T16:33:40Z",
+        "completed_at": "2026-09-14T18:28:27.330Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 6837,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 6887,
+        "stalled": true,
+        "time_budget": "40m",
+        "base_sha": "1b5934554cecc8550489a54ba95c9c4841a16066",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -q -rf at merged head 1b59345 and base 91d4275, plus isolation batches at both trees",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reports/lane-wave-merged-head-attribution.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T163318285945-merged-head-attribution-for-this-wave/manifest.md",
+        "scope_changed": false,
+        "session_id": "9bbe6722-6a76-42ba-981c-8e484df8b86b",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 5116594,
+            "input_tokens_cumulative": 5116594,
+            "output_tokens": 70036,
+            "output_tokens_cumulative": 70036,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-14T18:28:27.330Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": false,
+              "budget_overrun_seconds": 0,
+              "budget_seconds": 3000,
+              "classification": "scoring",
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 2920,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1951,
+              "log_fresh": false,
+              "manifest_commits": [
+                "fab092d feat(backends): claude dialect owns the account-surface budget read"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "9b5618eb93fb5c8c4fe527370e889bd0c7b50324411f565dcef0b870d15d3232",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T143020550066-lane-account-reading/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan a-lane-can-say-where-it-stands --section where-the-probe-lives --role review --spec-level exact --node review-of-lane-account-reading --goal 'attach an independent review to run r-20260914T143020550066-lane-account-reading' --done-when 'the review for r-20260914T143020550066-lane-account-reading parses all five score dimensions' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T143020550066-lane-account-reading.json --time-budget 50m --session ship-lane-aware-20260914 --local",
+              "node": "lane-account-reading",
+              "phase": "working",
+              "plan": "a-lane-can-say-where-it-stands",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260914T143020550066-lane-account-reading",
+              "session": "ship-lane-aware-20260914",
+              "terminal_age_seconds": 1982,
+              "terminal_at": "2026-09-14T16:00:34Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-lane-aware-20260914/lane-account-reading"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 14,
+            "evidence": 17,
+            "fit": 18,
+            "goal_fidelity": 18,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 87
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 5116594,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 6884.029,
+          "generated_tokens": 70036,
+          "generation_seconds": 5234.903,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 77.0,
+          "machine_seconds": 1649.126,
+          "peak_input_tokens": 154026,
+          "tokens_per_second": 13.38,
+          "wall_tokens_per_second": 10.17
+        },
+        "follow_on_paths": [
+          "crew/dispatch"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "test",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": "test role, repo read-only; the deliverable is the attribution report under the crew config home with its run logs beside it",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-lane-aware-20260914/merged-head-attribution-for-this-wave",
+          "session_id": "9bbe6722-6a76-42ba-981c-8e484df8b86b",
+          "session_source": "stream",
+          "retained_at": "2026-09-14T18:28:27.330Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 59.0,
+        "orientation_input_tokens": 4359430.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -108872,6 +109120,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1411
+    "_version": 1412
   }
 }
