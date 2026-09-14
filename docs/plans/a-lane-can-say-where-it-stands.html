@@ -20,11 +20,11 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="14">
 <meta name="plan-section-declarations" content="{&quot;what-is-wrong&quot;:&quot;done&quot;,&quot;the-surface&quot;:&quot;done&quot;,&quot;where-the-probe-lives&quot;:&quot;implementable&quot;,&quot;parse-strictly&quot;:&quot;implementable&quot;,&quot;coordinator-share&quot;:&quot;implementable&quot;,&quot;pin-the-denominator&quot;:&quot;implementable&quot;,&quot;out-of-scope&quot;:&quot;done&quot;}">
-<meta name="plan-commits" content="5e3e041c895353a003e15954382a78b49151a2ac">
-<meta name="plan-artifacts" content="reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/budget.py,tests/test_coordinator_reserve.py,tests/test_flight.py,docs/evidence/archive/a-lane-can-say-where-it-stands-landed.html">
-<meta name="plan-impl" content="0.25">
+<meta name="plan-commits" content="5e3e041c895353a003e15954382a78b49151a2ac,fab092dafb269286fb2f6bc1dbfb1f060dd95247">
+<meta name="plan-artifacts" content="reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/budget.py,reckon/_backends.py,tests/test_coordinator_reserve.py,tests/test_flight.py,tests/test_claude_account_surface.py,tests/fixtures/backends/claude-account-limits.json,docs/evidence/archive/a-lane-can-say-where-it-stands-landed.html">
+<meta name="plan-impl" content="0.5">
 </head>
 <body>
   <main class="plan-doc">
@@ -426,6 +426,12 @@
 </div>
 <div class="r-comment" data-section="where-the-probe-lives" data-id="c-run-r-20260914T142620647055-review-of-lane-stands-reuse-map" data-who="crew-surface-consistent" data-when="2026-09-14T14:40:48.811Z">
     <div class="r-comment-body"><p>Independent review attached to r-20260914T125344512535-lane-stands-reuse-map; all five score dimensions parsed</p></div>
+</div>
+<div class="r-comment" data-section="where-the-probe-lives" data-id="c-run-r-20260914T143020550066-lane-account-reading" data-who="crew-admission" data-when="2026-09-14T16:01:06.143Z">
+    <div class="r-comment-body"><p>The claude dialect owns its account-surface reading with credential handling and strict parsing; 13 new tests, 86 passed across the three suites, no regressions. TWO COORDINATOR FINDINGS: the manifest recorded status complete with commits, changed_paths and tests all EMPTY, so the commit and delta were established by the coordinator rather than reported; and the node did not touch reckon/mcp_views.py despite declaring it, leaving _declared_probe_command reporting the old answer - exactly the seam the prior-art scout predicted would be missed. Followed up as lanes-view-reports-the-claude-probe rather than treated as failure, since the node's stated goal was the dialect reading and that is met</p></div>
+</div>
+<div class="r-comment" data-section="where-the-probe-lives" data-id="c-20260914T1700" data-who="reckon-ship" data-when="2026-09-14T17:00:00Z">
+    <div class="r-comment-body">lane-account-reading landed — commit fab092dafb269286fb2f6bc1dbfb1f060dd95247, merged and content verified present at HEAD by marker. Gate passed exit 0; measure: 13 tests added, 86 passed across tests/test_claude_account_surface.py, tests/test_budget.py and tests/test_lanes_view_is_live.py, no regressions. The dialect now owns its reading and its transport; parsing requires a named window and a numeric utilisation and returns unknown otherwise, with a missing field never resolving to zero and credential expiry producing unknown rather than clear or exhausted. Artifacts on the plan; record at docs/evidence/archive/a-lane-can-say-where-it-stands-landed.html#account-reading. TWO FINDINGS FROM VERIFICATION RATHER THAN FROM THE MANIFEST. First, the manifest reported status complete with commits, changed_paths and tests all EMPTY while a real commit sat one ahead with a clean tree — commit, scope and delta were all established by reading the worktree, and a promotion trusting the manifest would have recorded nothing. Second, the prior-art scout predicted the exact gap forty minutes before the node ran: its map warned that a node adding only a method on Dialect would leave _declared_probe_command reporting the old answer, and that is what happened — reckon/mcp_views.py was declared in scope and never touched, so the lane can now read its own position while the lanes view still reports it as having no probe. Followed up as lanes-view-reports-the-claude-probe rather than treated as a failure, the node's stated goal being the dialect reading.</div>
 </div>
 <div class="r-comment" data-section="coordinator-share" data-id="c-run-r-20260914T143307893065-coordinator-reserve-declared" data-who="crew-gc-coverage" data-when="2026-09-14T15:32:17.197Z">
     <div class="r-comment-body"><p>A declared coordinator reserve is subtracted from the dispatch ceiling with its reasoning recorded beside it; 144 passed, 0 failed across the reserve, flight and budget suites</p></div>

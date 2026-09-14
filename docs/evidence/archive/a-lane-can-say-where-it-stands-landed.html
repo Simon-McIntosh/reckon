@@ -100,6 +100,47 @@
     <p>The refusal reason names which reserve was subtracted, so a held dispatch is
     arguable rather than opaque.</p>
   </section>
+
+  <section id="account-reading">
+    <h2>The dialect owns its reading, and its transport</h2>
+    <p>Landed 2026-09-14, commit <code>fab092d</code>. The claude dialect now
+    returns its own quota reading from the account surface instead of describing a
+    probe for a module-level function to execute. The surface answers for free
+    &mdash; an account metadata read rather than an inference request &mdash; so
+    the position no longer has to be inferred from worker streams that stop
+    arriving the moment nobody dispatches to that lane, which is the decay this
+    plan is named against.</p>
+    <p><strong>Parsing is strict in the direction that matters.</strong> A named
+    window and a numeric utilisation are required; anything else returns unknown
+    rather than a low figure, and a missing field never resolves to zero. Credential
+    expiry produces unknown too &mdash; never a clear reading and never an exhausted
+    one &mdash; because the honest answer when the instrument cannot read is that
+    the position is not known.</p>
+    <p><strong>Measure:</strong> 13 tests added, 86 passed across the account,
+    budget and lanes-view suites, no regressions.</p>
+
+    <h3>Two findings the coordinator's verification produced, not the manifest</h3>
+    <p><strong>The manifest was empty.</strong> It reported <code>status:
+    complete</code> with <code>commits</code>, <code>changed_paths</code> and
+    <code>tests</code> all blank, while a real commit sat one ahead of the base with
+    a clean tree. The commit, the scope and the test delta were all established by
+    reading the worktree rather than by reading the report. A promotion trusting the
+    manifest would have recorded nothing.</p>
+    <p><strong>The prior-art scout predicted the exact gap, forty minutes before the
+    node ran.</strong> Its map warned that a node which only adds a method on the
+    dialect would leave <code>_declared_probe_command</code> reporting the old
+    answer, because that function asks whether a probe is <em>declared</em> without
+    executing one. That is precisely what happened: the worker added a new reading
+    method, never overrode the base method the lanes view consults, and did not
+    touch <code>mcp_views.py</code> despite declaring it in scope. So the lane can
+    now read its own position while the surface still reports it as having no probe.
+    Followed up rather than treated as failure &mdash; the node's stated goal was
+    the dialect reading, and that is met and tested.</p>
+    <p>The value there is the instrument existing beforehand. A scout costs one
+    read-only node; the alternative is finding the same gap weeks later through a
+    surface quietly saying &ldquo;unobserved&rdquo; about a lane that knows exactly
+    where it stands.</p>
+  </section>
 </main>
 </body>
 </html>
