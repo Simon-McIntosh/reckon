@@ -216,6 +216,11 @@ function artifactIsDone(item, kind) {
   return false;
 }
 
+function artifactCaptionPresent(value) {
+  const text = value === null || value === undefined ? "" : String(value).trim();
+  return text !== "" && text !== "-" && text !== "—";
+}
+
 function artifactIndexRows(items, kind, sortBy, sortDir, status, hideDone) {
   let rows = (items || []).filter(item => (item.type || "plan") === kind);
   if (kind === "plan" && status) {
@@ -333,6 +338,14 @@ function ArtifactIndex({ kind, onSelect, filters, setFilters, sortBy, setSortBy,
                   </span>
                 )}
                 {showsImages && <span className="r-artifact-dimensions">{item.dims || "dimensions unknown"}</span>}
+                {showsImages && artifactCaptionPresent(item.caption) && (
+                  <span
+                    className="r-artifact-caption"
+                    style={{ color: "var(--ink-2)", font: "12px/1.4 var(--sans)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                  >
+                    {item.caption}
+                  </span>
+                )}
               </span>
               <span className="r-artifact-row-trailing">
                 <span className="r-artifact-stamps">

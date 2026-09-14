@@ -1,7 +1,8 @@
-"""Figure discovery rows: dimensions, plan linkage, and edited stamps."""
+"""Figure discovery rows: dimensions, plan linkage, edited stamps, and captions."""
 
 from __future__ import annotations
 
+import json
 import os
 import struct
 import subprocess
@@ -10,6 +11,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from reckon import serve
+from tests.spa_browser_harness import file_spa, installed_browser_or_skip
 
 _CREATED_TS = 1_000_000
 _LAST_COMMIT_TS = 2_000_000
@@ -204,3 +206,124 @@ def test_discovery_cache_signature_changes_when_a_figure_is_added(repo, monkeypa
         item["slug"] for item in second["inventory"] if item["type"] == "figure"
     }
     assert "host-plan/added-later.png" in second_figure_slugs
+
+
+def test_figure_caption_comes_from_the_sibling_capture_index(repo, monkeypatch):
+    _repo_dir, docs_dir = repo
+    (docs_dir / "figures" / "host-plan" / "capture-index.json").write_text(
+        json.dumps(
+            {
+                "captures": [
+                    {
+                        "capture": "linked",
+                        "image": "linked.png",
+                        "description": "The host plan's linked capture at reading width",
+                    },
+                    {"capture": "orphan", "image": "orphan.svg"},
+                ]
+            }
+        )
+    )
+    created = (
+        f"COMMIT {_CREATED_TS}\n"
+        "docs/plans/host-plan.html\n"
+        "docs/figures/host-plan/linked.png\n"
+        "docs/figures/no-such-plan/orphan.svg\n"
+    )
+    last_modified = (
+        f"COMMIT {_LAST_COMMIT_TS}\n"
+        "docs/plans/host-plan.html\n"
+        "docs/figures/host-plan/linked.png\n"
+        "docs/figures/no-such-plan/orphan.svg\n"
+    )
+    _mock_git(monkeypatch, head="head-1", created=created, last_modified=last_modified)
+
+    result = serve.discover_plans(docs_dir, "sample", None)
+    figures = {
+        item["slug"]: item for item in result["inventory"] if item["type"] == "figure"
+    }
+
+    assert figures["host-plan/linked.png"]["caption"] == (
+        "The host plan's linked capture at reading width"
+    )
+    assert figures["no-such-plan/orphan.svg"]["caption"] == ""
+    assert figures["no-such-plan/orphan.svg"]["caption"] != "orphan"
+
+
+@pytest.fixture(scope="module")
+def rendered_browser() -> str:
+    return installed_browser_or_skip()
+
+
+def _figure_index_state() -> dict[str, object]:
+    described = {
+        "nav_key": "figure:work/described.svg",
+        "slug": "work/described.svg",
+        "href": "data:image/svg+xml;base64,PHN2Zy8+",
+        "type": "figure",
+        "title": "Described capture",
+        "caption": "Control layout at reading width",
+        "dims": "1920 \u00d7 1080",
+        "status": "done",
+    }
+    undescribed = {
+        "nav_key": "figure:work/undescribed.svg",
+        "slug": "work/undescribed.svg",
+        "href": "data:image/svg+xml;base64,PHN2Zy8+",
+        "type": "figure",
+        "title": "Undescribed capture",
+        "caption": "",
+        "dims": "1920 \u00d7 1080",
+        "status": "done",
+    }
+    inventory = [described, undescribed]
+    return {
+        "project": "reckon",
+        "projects": [{"project": "reckon", "plans_count": len(inventory)}],
+        "inventory": inventory,
+        "plans": {item["nav_key"]: item for item in inventory},
+        "sprints": [],
+        "milestones": [],
+        "north_stars": [],
+        "timeline": [],
+        "blockers": [],
+        "attachment_relations": [],
+    }
+
+
+def test_figure_index_row_renders_only_recorded_captions(
+    tmp_path, rendered_browser: str
+):
+    probe = """(() => {
+      const described = document.querySelector(
+        '.r-artifact-row[data-artifact-slug="figure:work/described.svg"]'
+      );
+      const undescribed = document.querySelector(
+        '.r-artifact-row[data-artifact-slug="figure:work/undescribed.svg"]'
+      );
+      return {
+        figureRows: document.querySelectorAll('.r-artifact-row-figure').length,
+        describedCaptionCount: described ? described.querySelectorAll('.r-artifact-caption').length : -1,
+        describedCaption: described ? (described.querySelector('.r-artifact-caption')?.textContent.trim() || '') : '',
+        undescribedCaptionCount: undescribed ? undescribed.querySelectorAll('.r-artifact-caption').length : -1,
+      };
+    })()"""
+    with file_spa(
+        tmp_path,
+        rendered_browser,
+        _figure_index_state(),
+        route="#figures",
+    ) as spa:
+        measurement = spa.run_probe(
+            probe,
+            ready_expression=(
+                "document.querySelectorAll('.r-artifact-row-figure').length === 2"
+            ),
+        )
+
+    assert measurement == {
+        "figureRows": 2,
+        "describedCaptionCount": 1,
+        "describedCaption": "Control layout at reading width",
+        "undescribedCaptionCount": 0,
+    }
