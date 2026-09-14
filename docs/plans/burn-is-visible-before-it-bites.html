@@ -21,13 +21,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling,spa">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
-  <meta name="plan-depends-on" content="dispatch-cost-per-durable-node#s6">
+  <meta name="plan-depends-on" content="dispatch-cost-per-durable-node">
   <meta name="plan-informs" content="derived-state-parity">
   <title>Where You Are, And How Fast | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 </head>
 <body>
 <main class="plan-doc">
@@ -230,6 +230,11 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260914T1200" data-who="reckon-ship" data-when="2026-09-14T12:00:00Z">
     <div class="r-comment-body">Dependency narrowed from the whole of dispatch-cost-per-durable-node to its §6, on this plan's own statement of what it needs. The followup says §2 waits on the prerequisite plan making the rate computation readable from Python, and that is §6, which shipped: crew(view="budget") reported burn_multiple 2.87 against utilisation 7 percent on 2026-09-14, derived in Python from rate_limit_period_minutes and resets_at with no new probe. The plan-level edge was holding this work behind §7, whose remaining measure is a 20-to-40 run gated pilot bounded by about two days of elapsed time rather than by effort. Nothing this plan needs is in §7, so the edge was serialising nine worker-hours behind two calendar days for no stated reason.</div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260914T1452" data-who="reckon-ship" data-when="2026-09-14T14:52:00Z">
+    <div class="r-comment-body">The staged dependency on that plan's section 6 is reverted to the plan, because the staged form raises missing-dependency-section at error severity: plan_section_anchors derives referenceable sections from gate sections and from comment keys only when comments parse as a Mapping, the target carries no gates, and its comments parse as a list, so its anchor set is empty however many sections the page has.
+
+The reasoning behind the narrowing stands and is worth keeping: what this plan needs is the rate computation readable from Python, which is that section and has shipped, and the rest of that prerequisite is a measure bounded by elapsed time rather than effort. The coarse edge is the only form the resolver accepts today, so this plan blocks until the prerequisite ships as a whole. That is now a shorter wait than it was: the evidence for retiring the prerequisite's remaining pilot is recorded against it, since the figure the pilot would produce already exists in the ledger.</div>
 </div>
 </section>
 </main>

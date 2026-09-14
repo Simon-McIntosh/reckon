@@ -19,12 +19,12 @@
   <meta name="plan-sprint" content="S17">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
-  <meta name="plan-depends-on" content="dispatch-cost-per-durable-node,clive-local-workers#s3,burn-is-visible-before-it-bites,a-lane-can-say-where-it-stands">
+  <meta name="plan-depends-on" content="dispatch-cost-per-durable-node,burn-is-visible-before-it-bites,a-lane-can-say-where-it-stands">
   <title>Advise The Lane, Never Force It | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 <meta name="plan-graph-handle" content="lane-aware-dispatch">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -256,6 +256,11 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260914T1240" data-who="reckon-ship" data-when="2026-09-14T12:40:00Z">
     <div class="r-comment-body">Dependency on the local-worker plan narrowed to its section 3 after that plan was closed as will-not-do on 2026-09-14. What this plan needs from it is the local lane being a first-class backend reachable through a declared key, which is section 3 and landed on 2026-09-02; what was abandoned is the remainder gated on a second model serve the H200 server cannot host. Left at plan scope the edge put an abandoned plan on this closure's critical path and capped its completion at six of eleven permanently, because an abandoned member never ships. This is the second coarse edge on this closure in one session and the same repair both times: the edge named a plan where the requirement was a section.</div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260914T1450" data-who="reckon-ship" data-when="2026-09-14T14:50:00Z">
+    <div class="r-comment-body">The local-worker dependency is REMOVED rather than narrowed, and the stage-scoped form that replaced it is withdrawn because it does not resolve. A dependency on an abandoned plan can never be satisfied, so left in any form it blocks this endpoint permanently; what this plan needed from it - the local lane reachable as a first-class backend through a declared key - landed on 2026-09-02 and is not lost by dropping the edge.
+
+The stage form is withdrawn on measurement, not preference. reckon/roadmap.py derives referenceable sections through plan_section_anchors, which reads gate sections and comment keys only when comments parse as a Mapping. Both plans carry zero gates and their comments parse as a list of elements each holding its own data-section, so the anchor set is empty and every staged ref against them raises missing-dependency-section at error severity. The sections exist on the page and are invisible to the resolver. Two staged refs were authored in this session on the strength of the schema documenting the form, and both had to come out.</div>
 </div>
 </section>
 </main>
