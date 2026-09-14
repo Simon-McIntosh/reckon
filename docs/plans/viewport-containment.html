@@ -24,8 +24,8 @@
   <title>Nothing Leaves the Window | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-04">
-<meta name="plan-version" content="4">
+<meta name="plan-modified" content="2026-09-15">
+<meta name="plan-version" content="5">
 <meta name="plan-commits" content="6e717b0">
 <meta name="plan-artifacts" content="tests/test_spa_viewport_containment.py,tests/spa_containment_harness.py,~/.config/reckon/crew/reports/s16-containment-violations.md">
 <meta name="plan-impl" content="1.0">
@@ -144,6 +144,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260904T080631248154-containment-violations" data-who="s16-viol" data-when="2026-09-04T08:10:36Z">
     <div class="r-comment-body"><p>zero real-surface violations fixed, because there were none to fix. The first unbiased verdict walked 22 surface-width rows across 11,892 elements with 0 real violations; the current run walks 22 rows across 15,834 elements, also 0. Both runs' only violations are the deliberately shifted harness element proving the guard fails at 40px overflow. The current run measures the command palette at both widths, which the first could not because of the crash the guard itself discovered, and cockpit has left the routable inventory because its retirement landed</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260914T204805796284-scope-review-viewport-containment" data-who="crew-drain-fence" data-when="2026-09-14T22:01:44.025Z">
+    <div class="r-comment-body"><p>Scope review: 2 unlanded, 3 no-measure-stated, 0 landed. The finding that matters reattributes a failure three sessions have been treating as the host browser boundary: tests/test_spa_viewport_containment.py does not fail from navigation, it hangs on a stale selector. The harness waits on .r-list .r-row for the plans surface, and a later commit replaced the mounted component with ArtifactIndex, which renders .r-artifact-index and .r-artifact-row. Independently confirmed at harness line 33, shell.jsx line 28, and the rendered class names. The guard times out before walking any surface, so it writes no verdict and has never run; the surface itself is healthy</p></div>
 </div>
 </section>
 </main>

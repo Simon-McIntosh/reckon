@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T00:04:02",
+  "updated": "2026-09-15T00:05:55",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -112910,6 +112910,200 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T204805796284-scope-review-viewport-containment",
+        "plan": "viewport-containment",
+        "section": "",
+        "node": "scope-review-viewport-containment",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2096,
+                "cached_input_tokens": 223021,
+                "input_tokens": 225119,
+                "output_tokens": 83,
+                "reasoning_output_tokens": 54,
+                "total_tokens": 225202,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3332e8d8-dcef-4091-9774-c9680478b165",
+            "session_id": "ship-s16-20260914"
+          },
+          "done_when": "A report at the write path accounts for every h2 section id in docs/plans/viewport-containment.html exactly once, giving each section exactly one verdict from landed, unlanded, out-of-scope, or no-measure-stated; no-measure-stated is required for any section that states a deliverable in prose without a stated measure of its own, and such a section is reported as its own finding and never resolved into one of the other three; for every other verdict the section's own measure is quoted from the plan, the repository paths that section must write are named, and the evidence read at HEAD that justifies the verdict is given; any deliverable stated as prose inside a collapsed or landed summary is reported as its own row, because a reader stops at a summary and the dependency scan reads plans rather than section text; the number of unlanded sections and the number of no-measure-stated sections are each stated as a digit; every open followup in the plan is listed with whether its work is already done; and any section whose measure can no longer be produced is named with the reason",
+          "estimated_hours": null,
+          "goal": "Report the true remaining scope of this plan by checking every section against the code at HEAD",
+          "id": "scope-review-viewport-containment",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T20:48:06Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T204805796284-scope-review-viewport-containment/manifest.md",
+          "plan": "viewport-containment",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "review",
+          "section": "",
+          "spec_level": "guided",
+          "time_budget": "20m",
+          "token_budget": null,
+          "write_paths": [
+            "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/scope-viewport-containment.md"
+          ]
+        },
+        "role": "review",
+        "spec_level": "guided",
+        "member": "crew-drain-fence",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "xhigh",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "read-only",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T20:48:22Z",
+        "completed_at": "2026-09-14T22:01:44.025Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4386,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4402,
+        "stalled": true,
+        "time_budget": "20m",
+        "base_sha": "467016b86025e1dfe4d14ef803d4d923004f5b20",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "coordinator audit of the report's causal claim: read the ready selector at tests/spa_containment_harness.py:33, the component shell.jsx mounts for the plans view, and the class names ArtifactIndex actually renders",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/3332e8d8-dcef-4091-9774-c9680478b165/scratchpad/containment-verify2.log",
+          "log_digest": "9096adadb66073e7ac9f5d5134ce520dc7d704ca22f9c57a3874f3019c81fed1"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T204805796284-scope-review-viewport-containment/manifest.md",
+        "scope_changed": false,
+        "session_id": "8ef87ae9-1ce1-4c44-a8b5-5a67ed8cad4a",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 4360961,
+            "input_tokens_cumulative": 4360961,
+            "output_tokens": 38598,
+            "output_tokens_cumulative": 38598,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-14T22:01:44.025Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 4360961,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 4398.539,
+          "generated_tokens": 38598,
+          "generation_seconds": 4260.183,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 64.4,
+          "machine_seconds": 138.356,
+          "peak_input_tokens": 128898,
+          "tokens_per_second": 9.06,
+          "wall_tokens_per_second": 8.78
+        },
+        "follow_on_paths": [
+          "/"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": false,
+          "matched_measure": null,
+          "override": false,
+          "role": "review",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": "review role: the deliverable is a scope report outside the repository, not a code change",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16-20260914/scope-review-viewport-containment",
+          "session_id": "8ef87ae9-1ce1-4c44-a8b5-5a67ed8cad4a",
+          "session_source": "stream",
+          "retained_at": "2026-09-14T22:01:44.025Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 54.0,
+        "orientation_input_tokens": 4104155.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -113138,6 +113332,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1430
+    "_version": 1431
   }
 }
