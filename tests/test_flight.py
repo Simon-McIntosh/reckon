@@ -32,6 +32,7 @@ from reckon.cli import main as cli_main
 from reckon.crew.quota_weight import backend_rate_statuses
 from reckon.flight import (
     FlightConfigError,
+    configured_backends_without_meteredness,
     deep_merge,
     flight_report,
     mounted_project_docs,
@@ -596,6 +597,63 @@ def test_account_limit_checks_are_an_explicit_host_opt_in(layers):
     assert resolved.origin("backends.native.budget_check") == "host"
 
 
+def test_backend_meteredness_is_an_explicit_boolean_declaration(layers):
+    write(
+        layers["host"],
+        "backends:\n"
+        "  paid:\n"
+        "    metered: true\n"
+        "  free:\n"
+        "    metered: false\n"
+        "  unstated:\n"
+        "    launch: in-harness\n",
+    )
+
+    resolved = resolve_files(layers)
+
+    assert resolved.config["backends"]["paid"]["metered"] is True
+    assert resolved.config["backends"]["free"]["metered"] is False
+    assert "metered" not in resolved.config["backends"]["unstated"]
+    assert resolved.origin("backends.paid.metered") == "host"
+    assert resolved.origin("backends.free.metered") == "host"
+    assert resolved.origin("backends.unstated.metered") is None
+    assert "metered" in BackendConfig.model_fields
+
+
+def test_undeclared_meteredness_ranges_over_every_configured_backend():
+    config = {
+        "backends": {
+            "metered": {"metered": True},
+            "unmetered": {"metered": False},
+            "missing": {"launch": "in-harness"},
+            "null": {"metered": None},
+        }
+    }
+
+    assert configured_backends_without_meteredness(config) == ["missing", "null"]
+
+
+def test_dispatch_dry_run_payload_does_not_repeat_the_inspection_report():
+    config = resolve(host_path=Path("/nonexistent/flight.yaml")).config
+    resolution = crew.plan_dispatch(
+        node=crew.TaskNode(
+            id="inspect-flight-payload",
+            goal="record one dispatch payload",
+            plan="routing-contract",
+            done_when="the command output reports exactly 1 JSON payload",
+            role="investigate",
+            spec_level="exact",
+            write_paths=["reports/dispatch.json"],
+        ),
+        config=config,
+        backend_override="native",
+    )
+    payload = {"ok": resolution.validation.ok, "dry_run": True, **resolution.as_dict()}
+
+    assert resolution.validation.ok
+    assert "undeclared_meteredness" not in payload
+
+
 def test_backend_input_window_resolves_with_leaf_provenance(layers):
     write(
         layers["host"],
@@ -1156,8 +1214,10 @@ def test_default_stdout_parses_as_json_and_exits_zero():
         "layers",
         "project",
         "provenance",
+        "undeclared_meteredness",
         "warnings",
     }
+    assert "native" in payload["undeclared_meteredness"]
     assert payload["warnings"] == []
 
 
@@ -1226,3 +1286,4 @@ def test_report_includes_availability_and_layer_inventory():
         "override",
     ]
     assert "native" in report["availability"]
+    assert report["undeclared_meteredness"] == ["native"]

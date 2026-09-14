@@ -818,6 +818,21 @@ def _probe_auth(
     }
 
 
+def configured_backends_without_meteredness(
+    config: Mapping[str, Any],
+) -> list[str]:
+    """Return configured backend names lacking a boolean meteredness value."""
+    backends = config.get("backends")
+    if not isinstance(backends, Mapping):
+        return []
+    return sorted(
+        str(name)
+        for name, backend in backends.items()
+        if not isinstance(backend, Mapping)
+        or not isinstance(backend.get("metered"), bool)
+    )
+
+
 def flight_report(
     project: str | None = None,
     *,
@@ -836,6 +851,9 @@ def flight_report(
         ],
         "project": project,
         "provenance": resolved.provenance,
+        "undeclared_meteredness": configured_backends_without_meteredness(
+            resolved.config
+        ),
         "warnings": list(resolved.warnings),
     }
 
