@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Mapping
+from datetime import datetime
 from typing import Any
 
 from reckon._schema import (
@@ -29,6 +30,7 @@ from reckon.lifecycle import (
 )
 from reckon.mcp_views import compose_review, in_flight_by_plan, load_composed_review
 from reckon.resources import read_plan_record, read_sprint_record
+from reckon.schedule import derive_schedule
 
 _EFFORT_UNIT = "worker-hours"
 _ROI_ORDER = {"high": 0, "mid": 1, "med": 1, "low": 2}
@@ -570,6 +572,35 @@ def _schedule_horizon(project_manifest: dict[str, Any] | None) -> int | None:
     if isinstance(value, bool) or not isinstance(value, int) or value < 1:
         return None
     return value
+
+
+def schedule_report(
+    project: str,
+    inventory: list[dict[str, Any]],
+    runs: list[dict[str, Any]],
+    *,
+    reference: datetime,
+) -> dict[str, Any]:
+    """Compact schedule read for roadmap consumers: the chain's far end and
+    the realisable lane width, with the full bar list beneath.
+
+    ``reference`` is required and never the wall clock, so a caller asking
+    "when does this chain finish" and the surface drawing it agree on the same
+    instant. Far end is the high axis bound the surface's chain figure reads;
+    the latest actual bar end is reported separately.
+    """
+
+    schedule = derive_schedule(inventory, runs, project, reference)
+    return {
+        "reference": reference.isoformat(),
+        "far_end_hours": schedule["high"],
+        "latest_end_hours": schedule["latest_end"],
+        "lane_count": len(schedule["lanes"]),
+        "item_count": len(schedule["items"]),
+        "low": schedule["low"],
+        "high": schedule["high"],
+        "bars": schedule["items"],
+    }
 
 
 def _sprint_of(
