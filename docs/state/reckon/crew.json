@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-14T14:43:54",
+  "updated": "2026-09-14T14:50:11",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -101467,6 +101467,199 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T110655225994-local-flag-refuses-a-disagreeing-member",
+        "plan": "clive-local-workers",
+        "section": "\u00a73",
+        "node": "local-flag-refuses-a-disagreeing-member",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 728,
+                "cached_input_tokens": 510016,
+                "input_tokens": 510746,
+                "output_tokens": 1215,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 511961,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "43258b7e-3d2c-401c-abad-61285516def9",
+            "session_id": "ship-s15-20260914"
+          },
+          "done_when": "dispatching with --local and a member whose declared harness names a backend other than the configured local_backend is refused through the existing lane-disagreement refusal naming both the local backend and the member harness, reproduced against member local-avail whose harness is codex, which today launches on codex instead; the same dispatch with a clive-harness member still launches unchanged; the resolved payload reports agent.local true only when the resolved backend equals the configured local_backend, so a resolution that lands on codex never reports local true, asserted in both directions; and tests/test_dispatch_lane_disagreement.py failure count against base 385a6b8 does not rise",
+          "estimated_hours": null,
+          "goal": "a local dispatch refuses a member whose declared harness names another backend and reports the lane that actually resolved",
+          "id": "local-flag-refuses-a-disagreeing-member",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T11:06:55Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T110655225994-local-flag-refuses-a-disagreeing-member/manifest.md",
+          "plan": "clive-local-workers",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "tests/test_dispatch_lane_disagreement.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-attention",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T11:07:03Z",
+        "completed_at": "2026-09-14T12:42:29.339Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 5716,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 5726,
+        "stalled": true,
+        "time_budget": "30m",
+        "base_sha": "385a6b822655a3d9ff8a0dc91d5a468b636e3aed",
+        "commits": [
+          "8a14d68060c610ace05321d19ba7c00832b6be8c"
+        ],
+        "changed_lines": {
+          "added": 105,
+          "removed": 4,
+          "files": 2
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_dispatch_lane_disagreement.py -q, measured against the same file at base",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T110655225994-local-flag-refuses-a-disagreeing-member/after_lane_disagreement.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T110655225994-local-flag-refuses-a-disagreeing-member/manifest.md",
+        "scope_changed": false,
+        "session_id": "0cf648c6-1066-4822-82b3-5e80384a4372",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6826813,
+            "input_tokens_cumulative": 6826813,
+            "output_tokens": 26533,
+            "output_tokens_cumulative": 26533,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-14T12:42:29.339Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6826813,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 2705.554,
+          "generated_tokens": 26533,
+          "generation_seconds": 2568.247,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 71.0,
+          "machine_seconds": 137.307,
+          "peak_input_tokens": 142037,
+          "tokens_per_second": 10.33,
+          "wall_tokens_per_second": 9.81
+        },
+        "follow_on_paths": [
+          "tests/test_dispatch_lane_disagreement.py::test_member_harness_without_override_meets_lane_declaration_refusal",
+          "tests/test_crew.py",
+          "tests/test_dispatch_names_its_backend.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-20260914/local-flag-refuses-a-disagreeing-member",
+          "session_id": "0cf648c6-1066-4822-82b3-5e80384a4372",
+          "session_source": "stream",
+          "retained_at": "2026-09-14T12:42:29.339Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 23.0,
+        "orientation_input_tokens": 3074891.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -101695,6 +101888,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1376
+    "_version": 1377
   }
 }
