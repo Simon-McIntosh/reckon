@@ -2443,6 +2443,121 @@ def test_backfill_fills_two_figures_and_reports_missing_streams_as_skipped(
     assert again["rows_skipped"] == 0
 
 
+def test_duration_backfill_uses_shared_observation_and_marks_real_gaps(
+    repo: Path, tmp_path: Path, monkeypatch
+) -> None:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    try:
+        import backfill_run_durations as duration_backfill
+    finally:
+        sys.path.pop(0)
+
+    streams = tmp_path / "streams"
+    measured_stream = streams / "r-measured" / "stream.jsonl"
+    measured_stream.parent.mkdir(parents=True)
+    measured_stream.write_text(
+        (FIXTURES / "claude-turn.jsonl").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    spanless_stream = streams / "r-spanless" / "stream.jsonl"
+    spanless_stream.parent.mkdir(parents=True)
+    spanless_stream.write_text(
+        json.dumps({"type": "assistant", "message": {"content": []}}) + "\n",
+        encoding="utf-8",
+    )
+
+    rows = []
+    for run_id in ("r-measured", "r-spanless", "r-missing"):
+        row = ledger.build_record(
+            run_id=run_id,
+            plan="work",
+            gate="passed",
+            backend="claude",
+            worker_seconds=20,
+        )
+        # These rows model records committed before duration status existed.
+        row.pop("duration_measurement")
+        rows.append(row)
+    ledger.write(
+        PROJECT,
+        {"members": [], "runs": rows, "holds": []},
+        0,
+        root=repo,
+    )
+
+    shared_observe = duration_backfill.observe_stream
+    observed = []
+
+    def recording_observe(**kwargs):
+        observed.append(kwargs["backend"]["command"])
+        return shared_observe(**kwargs)
+
+    monkeypatch.setattr(duration_backfill, "observe_stream", recording_observe)
+
+    result = duration_backfill.backfill_run_durations(
+        PROJECT, root=repo, streams_root=streams
+    )
+
+    assert result == {
+        "project": PROJECT,
+        "rows_processed": 3,
+        "rows_measured": 1,
+        "rows_underivable": 2,
+        "streams_found": 2,
+        "streams_missing": 1,
+        "ledger_version": 2,
+    }
+    assert observed == ["claude", "claude"]
+    data, _version = ledger.load(PROJECT, root=repo)
+    by_id = {row["run_id"]: row for row in data["runs"]}
+    measured = by_id["r-measured"]
+    assert ledger.duration_measurement_state(measured) == "measured"
+    assert measured["wall_seconds"] == pytest.approx(
+        measured["throughput"]["generation_seconds"]
+        + measured["throughput"]["machine_seconds"]
+    )
+    assert by_id["r-spanless"]["duration_measurement"]["reason"] == (
+        "stream_has_no_model_span"
+    )
+    assert by_id["r-missing"]["duration_measurement"] == {
+        "status": "underivable",
+        "reason": "stream_missing",
+    }
+    assert by_id["r-missing"]["duration_measurement"] != 0
+
+    again = duration_backfill.backfill_run_durations(
+        PROJECT, root=repo, streams_root=streams
+    )
+    assert again["rows_processed"] == 0
+
+
+def test_committed_runs_measure_or_explain_every_duration() -> None:
+    repository = Path(__file__).resolve().parents[1]
+    data, _version = ledger.load("reckon", root=repository)
+
+    missing = [
+        str(row.get("run_id") or "")
+        for row in data["runs"]
+        if ledger.duration_measurement_state(row) == "missing"
+    ]
+    underivable = [
+        row
+        for row in data["runs"]
+        if ledger.duration_measurement_state(row) == "underivable"
+    ]
+
+    assert missing == []
+    assert underivable
+    assert all(
+        str(row["duration_measurement"].get("reason") or "").strip()
+        for row in underivable
+    )
+    assert any(
+        row["duration_measurement"]["reason"] == "stream_missing"
+        for row in underivable
+    )
+
+
 # ── The run store exists beside the committed file ─────────────────────────
 #
 # The expand stage of the store swap: every promotion writes one durable row
