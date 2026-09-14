@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-14T12:30:25",
+  "updated": "2026-09-14T13:04:23",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -100508,6 +100508,203 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T103218914240-review-store-is-writable-by-its-role",
+        "plan": "concurrency-and-schedule-visibility",
+        "section": "\u00a78",
+        "node": "review-store-is-writable-by-its-role",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 835,
+                "cached_input_tokens": 489870,
+                "input_tokens": 490707,
+                "output_tokens": 1431,
+                "reasoning_output_tokens": 714,
+                "total_tokens": 492138,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "43258b7e-3d2c-401c-abad-61285516def9",
+            "session_id": "ship-s15-20260914"
+          },
+          "done_when": "sandbox_write_roots grants the review store root that reckon/crew/review.py resolves, which is /home/ITER/mcintos/.config/reckon/crew/reviews on this host, alongside the reports directory for every restricted tier; the dispatch that reckon crew recover emits as next_action for a completed run, carrying --role review and write path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T094141156549-flight-declares-meteredness.json, then validates on a dry run instead of being refused with the scoped property naming it unreachable; a write path under no granted root is still refused, asserted as the negative case; the worktree-full tier remains unrestricted; and tests/test_role_write_scope.py failure count against base 3b83c0f does not rise",
+          "estimated_hours": null,
+          "goal": "the review role can write the review store its own dispatch instructions prescribe",
+          "id": "review-store-is-writable-by-its-role",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T10:32:19Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T103218914240-review-store-is-writable-by-its-role/manifest.md",
+          "plan": "concurrency-and-schedule-visibility",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "guided",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/_backends.py",
+            "reckon/crew/dispatch.py",
+            "tests/test_role_write_scope.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-admission",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T10:32:29Z",
+        "completed_at": "2026-09-14T11:01:29.378Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1729,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1740,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "3b83c0feac834c9f05263bb6502119605a5a3b1b",
+        "commits": [
+          "5111aee8fa1d0894c9bced75212d4dda1a4738fa"
+        ],
+        "changed_lines": {
+          "added": 213,
+          "removed": 3,
+          "files": 3
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_role_write_scope.py tests/test_sandbox_delivery.py tests/test_backend_sandbox_delivery.py -q",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T103218914240-review-store-is-writable-by-its-role/after-pytest.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T103218914240-review-store-is-writable-by-its-role/manifest.md",
+        "scope_changed": false,
+        "session_id": "1b2306bd-d221-4f2e-8c64-06f1f2dc2a2d",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6761634,
+            "input_tokens_cumulative": 6761634,
+            "output_tokens": 34239,
+            "output_tokens_cumulative": 34239,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-14T11:01:29.378Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6761634,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 1737.401,
+          "generated_tokens": 34239,
+          "generation_seconds": 1706.095,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 12.3,
+          "machine_seconds": 31.306,
+          "peak_input_tokens": 124580,
+          "tokens_per_second": 20.07,
+          "wall_tokens_per_second": 19.71
+        },
+        "follow_on_paths": [
+          "tests/test_sandbox_delivery.py",
+          "tests/test_backends.py",
+          "headroom/rate-limit",
+          "reckon/crew/node.py",
+          "node.py",
+          "tests/test_backend_sandbox_delivery.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-20260914/review-store-is-writable-by-its-role",
+          "session_id": "1b2306bd-d221-4f2e-8c64-06f1f2dc2a2d",
+          "session_source": "stream",
+          "retained_at": "2026-09-14T11:01:29.378Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 81.0,
+        "orientation_input_tokens": 1361161.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -100736,6 +100933,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1370
+    "_version": 1371
   }
 }
