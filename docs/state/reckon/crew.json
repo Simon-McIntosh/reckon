@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-14T14:25:06",
+  "updated": "2026-09-14T14:43:54",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -101270,6 +101270,203 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T110700344836-availability-reports-whether-a-lane-can-serve",
+        "plan": "clive-local-workers",
+        "section": "\u00a71",
+        "node": "availability-reports-whether-a-lane-can-serve",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1635,
+                "cached_input_tokens": 510744,
+                "input_tokens": 512381,
+                "output_tokens": 474,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 512855,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "43258b7e-3d2c-401c-abad-61285516def9",
+            "session_id": "ship-s15-20260914"
+          },
+          "done_when": "a backend may declare, through the generated-schema path by editing reckon/schema/flight.yaml and running scripts/regen_flight_schema.py, where its serving state is published, and the clive backend declares the endpoint document at /home/ITER/mcintos/public/imas-ambix/endpoints.json; reckon flight then reports for that backend a serving field reading serving when the document lists at least one endpoint, not-serving when it lists zero, and unknown when no such declaration exists or the document is unreadable, while command_found keeps its present meaning of launcher presence only; all three cases are asserted against synthesised document files under tmp_path rather than the live one and no assertion contacts the network or the cluster; the byte-identity regeneration test still passes; and tests/test_backend_availability.py failure count against base 385a6b8 does not rise",
+          "estimated_hours": null,
+          "goal": "backend availability reports whether a lane can actually serve rather than only that its launcher exists",
+          "id": "availability-reports-whether-a-lane-can-serve",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T11:07:00Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T110700344836-availability-reports-whether-a-lane-can-serve/manifest.md",
+          "plan": "clive-local-workers",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a71",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/flight.py",
+            "reckon/schema/flight.yaml",
+            "reckon/_flight_schema.py",
+            "docs/_shared/flight.schema.json",
+            "tests/test_backend_availability.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-backpressure",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T11:07:08Z",
+        "completed_at": "2026-09-14T12:30:16.314Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4965,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4988,
+        "stalled": true,
+        "time_budget": "35m",
+        "base_sha": "385a6b822655a3d9ff8a0dc91d5a468b636e3aed",
+        "commits": [
+          "ff87e61866921c079b009d91eaae45a9ecbeacd4"
+        ],
+        "changed_lines": {
+          "added": 187,
+          "removed": 1,
+          "files": 5
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_backend_availability.py -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T110700344836-availability-reports-whether-a-lane-can-serve/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T110700344836-availability-reports-whether-a-lane-can-serve/manifest.md",
+        "scope_changed": false,
+        "session_id": "db6daddb-e569-4bb5-ade3-9164319ecb1c",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 2991879,
+            "input_tokens_cumulative": 2991879,
+            "output_tokens": 16799,
+            "output_tokens_cumulative": 16799,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-14T12:30:16.314Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 2991879,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 1981.551,
+          "generated_tokens": 16799,
+          "generation_seconds": 1951.928,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 61.1,
+          "machine_seconds": 29.623,
+          "peak_input_tokens": 122144,
+          "tokens_per_second": 8.61,
+          "wall_tokens_per_second": 8.48
+        },
+        "follow_on_paths": [
+          "tests/test_backend_environment.py::test_unselected_unset_reference_is_reported_without_blocking_resolution",
+          "related-tests.log",
+          "/",
+          "tests/test_backend_environment.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s15-20260914/availability-reports-whether-a-lane-can-serve",
+          "session_id": "db6daddb-e569-4bb5-ade3-9164319ecb1c",
+          "session_source": "stream",
+          "retained_at": "2026-09-14T12:30:16.314Z"
+        },
+        "predecessor_run": null,
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 27.0,
+        "orientation_input_tokens": 1214536.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -101498,6 +101695,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1375
+    "_version": 1376
   }
 }
