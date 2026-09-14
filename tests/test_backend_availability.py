@@ -120,16 +120,71 @@ def _endpoints_document(tmp_path: Path, endpoints: list) -> str:
     return str(path)
 
 
-def test_serving_when_the_document_lists_an_endpoint(tmp_path: Path) -> None:
+def test_serving_when_a_listed_endpoint_serves_the_configured_model(
+    tmp_path: Path,
+) -> None:
     document = _endpoints_document(tmp_path, [{"model_id": "synthetic-model"}])
 
     entry = _serving_report(
         tmp_path,
-        {"launch": "cli", "command": "sh", "endpoints_document": document},
+        {
+            "launch": "cli",
+            "command": "sh",
+            "model": "synthetic-model",
+            "endpoints_document": document,
+        },
     )
 
     assert entry["serving"] == "serving"
-    assert document in entry["serving_detail"]
+    assert "synthetic-model" in entry["serving_detail"]
+
+
+def test_mismatch_when_no_listed_endpoint_serves_the_configured_model(
+    tmp_path: Path,
+) -> None:
+    document = _endpoints_document(
+        tmp_path,
+        [{"model_id": "served-alpha"}, {"model_id": "served-beta"}],
+    )
+
+    entry = _serving_report(
+        tmp_path,
+        {
+            "launch": "cli",
+            "command": "sh",
+            "model": "wanted-gamma",
+            "endpoints_document": document,
+        },
+    )
+
+    assert entry["serving"] == "mismatch"
+    # The lane is up: the document lists endpoints, so this is not the lane
+    # being down, and the detail names what the lane is actually offering.
+    assert "2 endpoint(s)" in entry["serving_detail"]
+    assert "wanted-gamma" in entry["serving_detail"]
+    assert "served-alpha, served-beta" in entry["serving_detail"]
+
+
+def test_mismatch_when_the_configured_model_is_not_a_listed_one(
+    tmp_path: Path,
+) -> None:
+    """Reproduce the measured wrong-checkpoint state: the document serves one
+    model, the backend declares another, and the verdict must not read serving.
+    """
+    document = _endpoints_document(tmp_path, [{"model_id": "deepseek-v4-flash"}])
+
+    entry = _serving_report(
+        tmp_path,
+        {
+            "launch": "cli",
+            "command": "sh",
+            "model": "deepseek-v4.1-flash",
+            "endpoints_document": document,
+        },
+    )
+
+    assert entry["serving"] == "mismatch"
+    assert "deepseek-v4-flash" in entry["serving_detail"]
 
 
 def test_not_serving_when_the_document_lists_no_endpoint(tmp_path: Path) -> None:
