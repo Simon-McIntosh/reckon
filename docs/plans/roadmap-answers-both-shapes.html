@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="roadmap-answers-both-shapes">
+  <meta name="plan-title" content="Both Shapes Of What Should Run Next">
+  <meta name="plan-summary" content="The roadmap answers what is ready in a sprint and stays silent about which outcome it serves, so the graph shape is rebuilt by hand or missed">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="10.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint" content="S18">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling">
+  <meta name="plan-north-star" content="state-that-tells-the-truth">
+  <meta name="plan-depends-on" content="concurrency-and-schedule-visibility">
+  <title>Both Shapes Of What Should Run Next | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-14">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">&sect;1 &mdash; A coordinator asked for a dispatch order and got the wrong shape, twice</h2>
+
+    <p>Reckon derives two different answers to <em>what should run next</em> and presents
+    one of them. Asked about a sprint it returns pending work, a ready set, a critical path
+    and a schedule window, and it answers well. Asked about an <em>outcome</em> &mdash; a
+    capability that spans several sprints &mdash; it derives the closure, reports it in an
+    <code>endpoints</code> array, and says nothing about whether that closure can be shipped
+    at all.</p>
+
+    <p>Measured on 2026-09-14, on this repository, by a coordinator that had the evidence in
+    front of it. Asked for the dispatch order of a capability spanning four sprints, it read
+    <code>handle: null</code> on both derived endpoints in the payload it had already
+    fetched, wrote that the capability &ldquo;is a graph, not a sprint&rdquo;, and then
+    produced a list of per-plan invocations anyway. Authoring one handle afterwards turned
+    eleven plans into a single addressable target reporting six of eleven shipped, depth
+    seven and average width 1.571 &mdash; none of which any sprint view can show. The
+    information was all derived already. Only the actionable gap was unreported.</p>
+
+    <p>The sprint shape is not wrong; it is the only shape that presents itself. That is a
+    property of the surface rather than of the reader, and it is why this plan exists
+    separately from the one that discovered it.</p>
+
+    <h2 id="s2">&sect;2 &mdash; Thirty findings about graph health, none about an unshippable outcome</h2>
+
+    <p><code>roadmap</code> emits thirty wiring finding codes. They cover dangling, invalid,
+    inactive, non-executable, contradictory and cyclic dependencies; sprint-order inversion;
+    duplicate and missing sprint membership; unoriented plans; undeclared north stars; stale
+    reviews. Not one concerns a graph handle.</p>
+
+    <p>The only handle errors are raised on the way <em>in</em>: a caller who already names a
+    handle that does not resolve is told so. A plan that is structurally an endpoint &mdash;
+    a sink with live members beneath it &mdash; and carries no handle is silent, and its
+    closure is unaddressable by any invocation. Discovering that requires reading the
+    <code>endpoints</code> array and noticing a null, which is exactly what did not happen
+    above.</p>
+
+    <p>Compare the treatment of orientation. A live actionable plan declaring no north star
+    raises <code>unoriented-plan</code>, so the gap announces itself. An unshippable outcome
+    has no equivalent, and the two defects have the same character: a relationship the
+    schema supports, that nothing requires, and whose absence no surface reports.</p>
+
+    <p><strong>Done when</strong> a plan that is structurally an endpoint and carries no
+    graph handle raises a wiring finding naming it and the members it would reach; a plan
+    that carries one raises nothing; the finding is severity-graded so that it is visible to
+    a reader without refusing execution, since an unshippable outcome is a reporting gap
+    rather than a malformed graph; and the finding is absent for a sink with no live members
+    beneath it, which is an ordinary leaf rather than an outcome.</p>
+
+    <h2 id="s3">&sect;3 &mdash; One call, both answers</h2>
+
+    <p>A coordinator deciding what to start needs the sprint answer and the outcome answer
+    together, because they optimise different things and disagree in useful ways. A sprint
+    concentrates work on one theme and therefore on one set of files; a closure follows
+    dependency edges and picks up disjoint work naturally. The same ready node can be first
+    in its sprint and irrelevant to the outcome the lead actually wants, or the reverse.</p>
+
+    <p>Today those are two calls with different targets, and the second requires knowing the
+    handle exists. What a reader deciding dispatch order needs is: for each ready item, which
+    outcome it serves, and whether that outcome is shippable as one target.</p>
+
+    <p><strong>Done when</strong> a single <code>roadmap</code> read reports, for every item
+    in the ready set, the endpoint closures that item is a member of and whether each is
+    addressable as a ship target; an item belonging to no closure says so explicitly rather
+    than by omission; the sprint-shaped fields keep their present meanings and their existing
+    tests pass unchanged; and the addition is derived rather than stored, so no closure
+    membership is written to any resource.</p>
+
+    <h2 id="s4">&sect;4 &mdash; A completion figure that cannot reach its own total</h2>
+
+    <p>A closure member closed as will-not-do stays in the denominator and never ships, so
+    <code>shipped_of_total</code> caps below <code>total</code> permanently and the closure
+    can never report complete. Measured on 2026-09-14 by causing it: closing the local-worker
+    plan as abandoned left <code>lane-aware-dispatch</code> at six of eleven with four
+    members still to land, making ten of eleven the best reachable figure, forever.</p>
+
+    <p>Removing the dependency took the member out of the closure entirely and the total fell
+    to ten, which repaired that instance and does not repair the class: it worked only
+    because the dependency turned out to be unnecessary. A closure whose abandoned member is
+    genuinely depended upon has no such escape.</p>
+
+    <p><strong>Two candidate repairs, and the choice is not obvious.</strong> Either an
+    abandoned or superseded member leaves the completion denominator the way a deferred one
+    does, on the reasoning that a plan which will never ship is not outstanding work; or a
+    stage-scoped dependency resolves membership to the section rather than the plan, which is
+    the more precise reading of what such an edge means and would also stop a closure
+    inheriting sections nobody depends on. The first is smaller and fixes only this symptom.
+    The second changes what a closure <em>is</em>.</p>
+
+    <p><strong>Done when</strong> a closure containing a member in a terminal non-shipped
+    state can reach a completion figure that reports the outcome as complete when every
+    member that can ship has shipped; a closure whose members are all live is unaffected,
+    proven by its figure being unchanged; and the reported total states which members it
+    counts, so a reader can tell a closure that is finished from one that is capped.</p>
+
+    <h2 id="s5">&sect;5 &mdash; Why this is a plan and not a section on the one that found it</h2>
+
+    <p>Both findings were discovered while closing
+    <code>concurrency-and-schedule-visibility</code>, whose subject is which nodes may run
+    together and what should run next. The roadmap-shape finding is adjacent to that subject;
+    the completion-denominator finding is about closure accounting and is not. Neither was in
+    that plan&rsquo;s declared scope, and landing them there would have grown it past what it
+    was authored for &mdash; the pattern its own residual section already records as the way
+    two deliverables were nearly lost.</p>
+
+    <p>It also would have blocked a sprint. That plan is the last open item in S15, its
+    declared scope is complete, and holding it open on two findings that are not its subject
+    would report a sprint as unfinished for work it never owned. Recording where discovered
+    work goes is the point of the rule, not paperwork around it.</p>
+
+    <p>The dependency on that plan is real rather than decorative: &sect;4 here needs the
+    closure machinery that plan&rsquo;s residual section describes, and both findings are
+    documented in its comments with the measurements that produced them.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="denominator-repair" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">How does a closure containing an abandoned member reach a complete completion figure?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="terminal-leaves-denominator">A terminal non-shipped member leaves the denominator, as a deferred one does</button>
+      <button class="r-opt" data-value="stage-scoped-membership">A stage-scoped dependency resolves membership to the section rather than the plan</button>
+      <button class="r-opt" data-value="both">Both, with the denominator change first and membership as its own change</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="handle-finding-severity" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">At what severity does an endpoint with no handle report?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="info">info, matching the unoriented-plan precedent</button>
+      <button class="r-opt" data-value="warn">warn, visible to a reader without refusing execution</button>
+      <button class="r-opt" data-value="error">error, refusing execution until a handle is authored</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-rabs-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-14" data-recommends-skill="/reckon-ship roadmap-answers-both-shapes §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Report the unshippable outcome before answering both shapes</h4>
+    <div class="r-fu-body"><p>Take §2 first. It is the smallest of the three, it needs no decision, and it is what would have prevented the measured failure: a coordinator read <code>handle: null</code> in a payload it had already fetched and still produced a sprint-shaped answer, because nothing reported the gap as actionable. A finding makes it announce itself the way <code>unoriented-plan</code> already does for orientation.</p><p>§3 follows §2 rather than preceding it, because a combined read that reports closures a reader cannot ship is worse than the two calls we have now — it would surface an outcome and then fail to act on it. Settle <code>handle-finding-severity</code> before §2 is dispatched; it changes whether the finding blocks execution, and the precedent it is measured against is one that reports sixteen times and gates nothing.</p><p>§4 is independent of both and should not be dispatched until <code>denominator-repair</code> is locked, because the two candidates differ in what a closure is rather than in how the same thing is written. Its evidence lives on <code>concurrency-and-schedule-visibility</code> §8 with the measurement that produced it.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship roadmap-answers-both-shapes §2</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>
