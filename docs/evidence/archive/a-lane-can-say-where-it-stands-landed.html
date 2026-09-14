@@ -70,6 +70,36 @@
     the second pass's zero means the references resolve rather than that the
     instrument found nothing to look at.</p>
   </section>
+
+  <section id="coordinator-reserve">
+    <h2>The coordinator gets its own reserve</h2>
+    <p>Landed 2026-09-14, commit <code>5e3e041</code>. A declared coordinator
+    reserve is now subtracted from the dispatch ceiling, alongside the resume
+    reserve that was already there and withheld for a different purpose.</p>
+    <p><strong>Why it is declared rather than computed.</strong> There is no
+    measurement of coordinator burn on this machine; the client's transcripts do
+    not persist a quota position, and inventing a figure and presenting it as
+    measured would be the precise error this plan exists to correct. The reserve
+    therefore ships as a declared default with its reasoning recorded in the
+    schema description beside it, and a cadence of account-surface readings is what
+    calibrates it later.</p>
+    <p><strong>The consequence it prevents</strong> runs in the dangerous direction
+    and is worth restating: the account position already counts every consumer,
+    including the coordinator running the wave. A wave sized to fill the remaining
+    headroom leaves nothing for the coordinator that must survive it to audit
+    manifests, merge commits and record outcomes. If that coordinator is refused
+    mid-wave, every worker's output is stranded in a worktree with nobody to land
+    it &mdash; the workers succeed and the wave is lost.</p>
+    <p><strong>Measure:</strong> 144 passed, 0 failed across the reserve, flight and
+    budget suites; 12 tests added. The chain mirrors the existing resume reserve end
+    to end &mdash; schema entry, shipped default, generated model, policy read,
+    subtrahend in the effective ceiling, and a fence test proving the reserve holds
+    a dispatch while permitting a resume. Re-running the schema generator produces
+    no diff, which is the check that the generated module was regenerated rather
+    than hand-edited.</p>
+    <p>The refusal reason names which reserve was subtracted, so a held dispatch is
+    arguable rather than opaque.</p>
+  </section>
 </main>
 </body>
 </html>
