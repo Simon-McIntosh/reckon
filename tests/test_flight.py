@@ -596,6 +596,29 @@ def test_account_limit_checks_are_an_explicit_host_opt_in(layers):
     assert resolved.origin("backends.native.budget_check") == "host"
 
 
+def test_backend_meteredness_is_an_explicit_boolean_declaration(layers):
+    write(
+        layers["host"],
+        "backends:\n"
+        "  paid:\n"
+        "    metered: true\n"
+        "  free:\n"
+        "    metered: false\n"
+        "  unstated:\n"
+        "    launch: in-harness\n",
+    )
+
+    resolved = resolve_files(layers)
+
+    assert resolved.config["backends"]["paid"]["metered"] is True
+    assert resolved.config["backends"]["free"]["metered"] is False
+    assert "metered" not in resolved.config["backends"]["unstated"]
+    assert resolved.origin("backends.paid.metered") == "host"
+    assert resolved.origin("backends.free.metered") == "host"
+    assert resolved.origin("backends.unstated.metered") is None
+    assert "metered" in BackendConfig.model_fields
+
+
 def test_backend_input_window_resolves_with_leaf_provenance(layers):
     write(
         layers["host"],

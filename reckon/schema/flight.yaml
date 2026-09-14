@@ -278,6 +278,14 @@ slots:
     description: Whether a finished worker session can be resumed rather than respawned.
     range: boolean
 
+  metered:
+    description: >-
+      Whether using this backend consumes a metered provider allowance.
+      Optional operator data; absence leaves the backend's meteredness
+      undeclared rather than inferring it from the backend name or another
+      routing property.
+    range: boolean
+
   budget_check:
     description: >-
       Whether a pre-flight may read this backend's own account-limit surface
@@ -504,6 +512,7 @@ classes:
       - effort_spelling
       - sandbox
       - session_reuse
+      - metered
       - budget_check
       - usable_input_window
       - max_concurrent_runs
