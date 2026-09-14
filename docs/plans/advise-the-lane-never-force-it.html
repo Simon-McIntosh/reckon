@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 <meta name="plan-graph-handle" content="lane-aware-dispatch">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -270,6 +270,19 @@ The lock was withdrawn the same day it was added and the lane is now chosen per 
 The verified matrix after withdrawal, all five from dry runs of one node: --local with no member resolves clive; --local with a clive-harness member resolves clive; --local with a codex-harness member is refused naming both the backend the flag resolved and the harness the member declares; no flag and no member resolves clive; and --backend codex-terra resolves terra. So specifying the local lane now either lands on it or refuses, and never silently goes metered.
 
 The general rule for this plan's advisory surface: precedence must run explicit flag, then member declaration, then role or specification overlay, then host default, and a resolution that discards a higher-precedence input has to refuse rather than proceed. An advisory that can be silently overridden by configuration is the same defect as a lane that reports the wrong position - the caller acts on something other than what they asked for.</div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260914T1700" data-who="reckon-ship" data-when="2026-09-14T17:00:00Z">
+    <div class="r-comment-body">THE PREMISE OF THE LOCKED SCARCITY-SIGNAL DECISION CHANGED THIS AFTERNOON AND THE LOCK IS NOT REOPENED HERE, DELIBERATELY. Recording it so the next node to touch section 5 does not build against a figure that no longer exists.
+
+What was locked at 15:00Z: local-lane-scarcity-signal = in-flight-requests, on the reasoning that router admission is instantaneous in-flight requests rather than workers, with the admission figure to be measured later. At the time the local relay enforced AdmissionLimits with max_in_flight 2 and max_queued 4, keyed per consumer, and the consumer id fell back to client host joined with user-agent - so every Claude Code process on the login node shared one bucket of two. Measured at 16:37Z: seven workers across three coordinators, 48% of router requests refused, and the engine at 0.0% KV occupancy against max_num_seqs 1024. Nothing was saturated except a filter in front of it.
+
+What changed: the operator removed the bound entirely rather than fixing its keying. Verified independently at the source rather than taken on report - commit 76a6a23 'let the engine schedule; remove the router's request bound', zero occurrences of AdmissionLimits, _AdmissionController, max_in_flight or _consumer_id remaining in the agent modules, and an explicit TCPConnector limit replacing aiohttp's invisible default of 100 so that deleting one bound did not leave a lower undocumented one behind it. The reckon-09 session measured 8, 16 and 32 concurrent through the relay, served 32 of 32 with zero errors, against 435 of 1202 refused an hour earlier.
+
+WHAT THAT DOES TO THE DECISION. The choice of unit survives: worker count is still a bad proxy, because a worker reading files or running a suite is not making a request, and that argument never depended on the filter. What does not survive is the comparison. There is no relay-side admission constant any more; the only control left is the engine's own scheduler, which degrades by QUEUEING and never by refusing. So there is no rejection rate to count and no fixed number to count against, and an in-flight figure on its own advises nothing - it can say how many requests are outstanding and not whether that is many.
+
+The option this now favours is latency-curve, which section 5's own decision offered and which I argued against at 15:00Z on the grounds that it measures the consequence and needs a long observation before it can advise. That objection was sound while a crisp refusal signal existed to prefer instead. It does not survive the refusal signal being deleted: where degradation is graceful, the consequence IS the observable.
+
+WHY THIS IS A COMMENT AND NOT A REOPEN. An open non-deferred decision inside a closure makes its graph target refuse, and ship-lane-aware-20260914 is shipping this closure now with two members in flight. Reopening would block a peer's live wave to correct a decision whose implementing section is the deepest member and not yet being built. The staleness is recorded where the implementing node will read it; the reopen is the lead's call and costs a peer nothing if taken after their wave drains.</div>
 </div>
 </section>
 </main>
