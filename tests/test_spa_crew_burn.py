@@ -162,9 +162,25 @@ const figures = regionIsNull
   ? []
   : findAll(region, node => hasClass(node, "r-crew-figure"))
       .map(node => ({ text: textContent(node), observedAt: node.props["data-observed-at"] }));
+const rateFigures = regionIsNull
+  ? []
+  : findAll(region, node => hasClass(node, "r-crew-figure--rate"))
+      .map(node => ({
+        text: textContent(node),
+        boundTexts: findAll(node, child => hasClass(child, "r-crew-bound"))
+          .map(child => textContent(child)),
+      }));
+const positionNodes = regionIsNull ? [] : findAll(region, node => hasClass(node, "r-crew-position"));
 const summary = {
   regionIsNull,
   meterCount: meters.length,
+  rateFigureMarks: rateFigures,
+  positionMarkCounts: positionNodes.map(node =>
+    findAll(node, child => hasClass(child, "r-crew-bound")).length
+  ),
+  positionMarkTexts: positionNodes.map(node =>
+    findAll(node, child => hasClass(child, "r-crew-bound")).map(child => textContent(child))
+  ),
   meterAria: meters.map(node => node.props["aria-label"] || ""),
   fillWidths: meters.map(node => {
     const fill = findAll(node, child => hasClass(child, "r-crew-position"))[0];
@@ -296,3 +312,31 @@ def test_a_single_available_rate_window_is_labelled_as_the_only_window() -> None
     assert not re.search(
         r"\d+\.\d+\u00d7.*(?:1-hour|5-hour) window", rateFigures[0]["text"]
     )
+
+
+def test_every_derived_rate_figure_is_marked_as_an_upper_bound() -> None:
+    result = _render([UNSUSTAINABLE])
+
+    rateMarks = result["rateFigureMarks"]
+    # Two rate windows render, and every derived rate figure is marked.
+    assert len(rateMarks) == 2
+    for figure in rateMarks:
+        assert len(figure["boundTexts"]) == 1
+        mark = figure["boundTexts"][0]
+        # The marking names that it is an upper bound, not a measurement...
+        assert "upper bound" in mark
+        # ...and why it is one: a resumed session re-reads its whole
+        # accumulated context on every turn, so input over-counts.
+        assert "resumed" in mark.lower()
+        assert "context" in mark.lower()
+
+
+def test_the_meter_position_carries_no_upper_bound_marking() -> None:
+    result = _render([UNSUSTAINABLE])
+
+    assert result["meterCount"] == 1
+    # The position is the authority; it carries no bound mark, so the
+    # distinction is between the derived rate and the meter position rather
+    # than decoration on both.
+    assert result["positionMarkCounts"] == [0]
+    assert result["positionMarkTexts"] == [[]]
