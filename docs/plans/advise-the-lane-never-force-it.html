@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-graph-handle" content="lane-aware-dispatch">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -261,6 +261,15 @@
     <div class="r-comment-body">The local-worker dependency is REMOVED rather than narrowed, and the stage-scoped form that replaced it is withdrawn because it does not resolve. A dependency on an abandoned plan can never be satisfied, so left in any form it blocks this endpoint permanently; what this plan needed from it - the local lane reachable as a first-class backend through a declared key - landed on 2026-09-02 and is not lost by dropping the edge.
 
 The stage form is withdrawn on measurement, not preference. reckon/roadmap.py derives referenceable sections through plan_section_anchors, which reads gate sections and comment keys only when comments parse as a Mapping. Both plans carry zero gates and their comments parse as a list of elements each holding its own data-section, so the anchor set is empty and every staged ref against them raises missing-dependency-section at error severity. The sections exist on the page and are invisible to the resolver. Two staged refs were authored in this session on the strength of the schema documenting the form, and both had to come out.</div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260914T1500" data-who="reckon-ship" data-when="2026-09-14T15:00:00Z">
+    <div class="r-comment-body">A CONFIG DEFAULT OUTRANKS AN EXPLICIT FLAG, AND THIS PLAN IS WHERE THAT BELONGS, BECAUSE ITS WHOLE PREMISE IS ADVISING RATHER THAN OVERRIDING. Measured by causing it on 2026-09-14. A backend named in roles.implement.by_spec_level wins over --local on the same dispatch, so an operator asking for the local lane on an implement node silently received the metered one: --local with no member resolved codex-terra rather than clive, while the review role, which carries no overlay backend, resolved clive correctly from the same invocation.
+
+The lock was withdrawn the same day it was added and the lane is now chosen per dispatch instead. The measurement behind it stands - terra is 59% and 40% cheaper per durable node at exact and guided on the worker-plus-coordinator column - so what is missing is a mechanism for expressing a preferred lane that LOSES to an explicit flag, not a reason to stop preferring terra.
+
+The verified matrix after withdrawal, all five from dry runs of one node: --local with no member resolves clive; --local with a clive-harness member resolves clive; --local with a codex-harness member is refused naming both the backend the flag resolved and the harness the member declares; no flag and no member resolves clive; and --backend codex-terra resolves terra. So specifying the local lane now either lands on it or refuses, and never silently goes metered.
+
+The general rule for this plan's advisory surface: precedence must run explicit flag, then member declaration, then role or specification overlay, then host default, and a resolution that discards a higher-precedence input has to refuse rather than proceed. An advisory that can be silently overridden by configuration is the same defect as a lane that reports the wrong position - the caller acts on something other than what they asked for.</div>
 </div>
 </section>
 </main>
