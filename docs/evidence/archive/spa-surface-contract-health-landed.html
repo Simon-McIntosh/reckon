@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="spa-surface-contract-health-landed">
+  <meta name="plan-title" content="Eleven surface failures that are not the browser — landed evidence">
+  <meta name="plan-summary" content="Nine stale contracts migrated to the values the surface now produces, one real defect behind them fixed, and one assertion deliberately left red because it is catching a live bug another plan owns.">
+  <meta name="plan-evidence-for" content="reckon:spa-surface-contract-health">
+  <meta name="plan-verifies" content="reckon:spa-surface-contract-health#s2,reckon:spa-surface-contract-health#s3">
+  <meta name="plan-recorded-at" content="2026-09-15">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; the rendered topbar gate skips in the worker sandbox on both sides of the run">
+  <meta name="plan-commits" content="1d9e90c,2b43c6f">
+  <meta name="plan-artifacts" content="docs/ui/graph.jsx,tests/test_build.py,tests/test_spa_composition.py,tests/test_spa_shell_geometry.py,tests/test_spa_graph_geometry.py,tests/test_spa_derived_flow.py,tests/fixtures/crew-public-surface.txt">
+  <title>Eleven surface failures that are not the browser — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Eleven surface failures that are not the browser &mdash; landed evidence</h1>
+    <p class="plan-summary">The count is nine failures and four errors gone with none added. The
+    result worth recording is the one assertion that is still red on purpose, and the reason a
+    node was told not to fix it.</p>
+  </header>
+
+  <section id="overview">
+    <h2>Record scope</h2>
+    <p>Twenty-six surface tests were failing. Fifteen are the host's navigation fault and belong
+    to another plan. This plan separated the remaining eleven into ten stale contracts &mdash;
+    assertions describing what the code used to do &mdash; and one real defect hiding among
+    them.</p>
+    <p>Non-landing was proven rather than assumed before any work began: the census revision is
+    an ancestor of the head and the diff over all eight plan-relevant test files and their
+    surface sources was empty, so every census classification still transferred five days
+    later.</p>
+  </section>
+
+  <section id="leaning-cases">
+    <h2>The two leaning cases, resolved before the sweep rather than during it</h2>
+    <p>Two of the failures were consistent both with the code having moved deliberately and with
+    the code being wrong. The plan's locked decision required each to be settled by a stated
+    finding first, in a read-only step. They landed on opposite verdicts, which is the whole
+    argument for the decision.</p>
+    <table class="r-table">
+      <thead><tr><th>Case</th><th>Evidence</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Derived-flow lane count reads 1, test asserts 2</td>
+          <td>Lane count is 1 under the live clock and 2 under an injected one, measured both ways on the same component. Its three sibling schedule tests all inject a clock and all pass.</td>
+          <td><strong>Migrate the assertion</strong> — the schedule is right, the test reads the wall clock</td>
+        </tr>
+        <tr>
+          <td>Reader pager reads 2 / 3, test asserts 3 / 3</td>
+          <td>Navigation arrives at the third item and the content is correct; only the printed numerator lags. Byte-for-byte the defect a sibling plan documents in its own section, with an open repair node.</td>
+          <td><strong>Repair the code</strong> — the test is right and must not be touched</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>The migration for the first was to inject a clock, <em>not</em> to change the expected
+    number: 1 is itself wall-clock-dependent and would fail on fixture-era dates. Both assertion
+    sites still read 2, verified at the integrated head.</p>
+  </section>
+
+  <section id="s2">
+    <h2>&sect;2 &mdash; Nine contracts migrated</h2>
+    <p>Measured over the six files at the revision the plan was authored at and again at the
+    migrated head, same interpreter:</p>
+    <table class="r-table">
+      <thead><tr><th></th><th>Base</th><th>After</th></tr></thead>
+      <tbody>
+        <tr><td>Failed</td><td>9</td><td>0</td></tr>
+        <tr><td>Errors</td><td>4</td><td>0</td></tr>
+        <tr><td>Passed</td><td>39</td><td>52</td></tr>
+        <tr><td>Skipped</td><td>5</td><td>5</td></tr>
+      </tbody>
+    </table>
+    <p>No assertion was deleted, skipped, marked expected-failure, or widened to accept either
+    the old or the new value. The two stylesheet cases were repaired by asserting the property
+    the test is about rather than a whole-object snapshot, so a later unrelated declaration can
+    no longer fail a test about something else &mdash; which is how one of them broke in the
+    first place, when a viewport fix added <code>min-height: 0</code> to a rule asserted by
+    exact dict equality.</p>
+    <p><strong>One case is not covered by that delta and says so.</strong> The rendered topbar
+    ordering gate skips on both sides in the worker sandbox, so its migration rests on the
+    census's recorded rendered text and has not been executed. It needs a rendered run on a host
+    where that gate runs.</p>
+  </section>
+
+  <section id="s3">
+    <h2>&sect;3 &mdash; The one real defect, and its section title was a symptom</h2>
+    <p>The section read <em>the graph does not mount on a page that loads</em>. It mounted. It
+    rendered its empty branch &mdash; <em>no plan in this project depends on another</em> &mdash;
+    while the inventory it had been handed held dependency edges. The pre-fix probe returning
+    zero node cards <em>beside</em> that message is what separates a component that failed to
+    mount from one that mounted with nothing to draw.</p>
+    <p>The view derived endpoint rows only from the roadmap-computed field, which a document
+    carrying just the plan inventory does not have. The fix falls back to deriving the same rows
+    from the inventory when that field is absent or empty, so the roadmap stays authoritative
+    wherever it is present and the empty branch stays reachable where there genuinely are no
+    edges. Verified on the file scheme, since served navigation does not complete on this host:
+    populated on each of six consecutive probe runs against a stated floor of three.</p>
+  </section>
+
+  <section id="what-this-protects">
+    <h2>What the deliberate red protects</h2>
+    <p>The sweep was dispatched with an explicit instruction to leave
+    <code>tests/test_spa_reader_geometry.py</code> untouched and failing, and that assertion
+    still reads <code>3 / 3</code> at the integrated head. Had the leaning-cases decision gone
+    the other way &mdash; migrating both on the lean, which was one of the three options and the
+    cheapest-looking &mdash; the sweep would have rewritten that expectation to
+    <code>2 / 3</code>, the board would have gone green, and the only thing currently reporting a
+    live reader defect would have been deleted.</p>
+    <p>The cost of avoiding that was one read-only investigation node.</p>
+  </section>
+</main>
+</body>
+</html>

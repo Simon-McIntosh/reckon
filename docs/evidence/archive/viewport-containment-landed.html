@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="viewport-containment-landed">
+  <meta name="plan-title" content="Nothing leaves the window — landed evidence">
+  <meta name="plan-summary" content="A guard for the class of defect a field assertion cannot express: a box that renders correctly and sits outside the viewport. It existed, it had never run, and it now walks 22 surfaces at two widths and finds nothing.">
+  <meta name="plan-evidence-for" content="reckon:viewport-containment">
+  <meta name="plan-verifies" content="reckon:viewport-containment#s2,reckon:viewport-containment#s3">
+  <meta name="plan-recorded-at" content="2026-09-15">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; headless Chrome on the file scheme, since served navigation does not complete on this host">
+  <meta name="plan-commits" content="0cf4ddb,e4b4e13">
+  <meta name="plan-artifacts" content="tests/spa_containment_harness.py,tests/test_spa_viewport_containment.py">
+  <title>Nothing leaves the window — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Nothing leaves the window &mdash; landed evidence</h1>
+    <p class="plan-summary">The guard's first verdict is clean, and that is the less interesting
+    half. The interesting half is that this guard had never produced a verdict at all, and
+    everyone who looked at it had a ready explanation that was wrong.</p>
+  </header>
+
+  <section id="overview">
+    <h2>Record scope</h2>
+    <p>A capture found a dropdown clipped off-screen at both widths while five gates stayed
+    green, and none of the five could have been strengthened into the catch &mdash; a box can
+    render with every correct field and still sit outside the viewport. This plan built the
+    guard for that class.</p>
+  </section>
+
+  <section id="s2">
+    <h2>&sect;2 &mdash; The guard walks, for the first time</h2>
+    <p>At the base revision the guard expired twelve seconds into its run, at the first
+    routable surface, and wrote no verdict. It waited on <code>.r-list .r-row</code> for the
+    plans surface; a commit two hours after the harness was authored replaced the mounted
+    component with one rendering <code>.r-artifact-index</code> and
+    <code>.r-artifact-row</code>. The wait could never become ready.</p>
+    <p>After the repair, measured in one recorded run:</p>
+    <table class="r-table">
+      <thead><tr><th>Measure</th><th>Before</th><th>After</th></tr></thead>
+      <tbody>
+        <tr><td>Surfaces walked</td><td>0</td><td>22</td></tr>
+        <tr><td>Surfaces measured / not measured</td><td>—</td><td>22 / 0</td></tr>
+        <tr><td>Elements examined</td><td>0</td><td>9,720</td></tr>
+        <tr><td>Containment violations</td><td>unknown</td><td>0</td></tr>
+        <tr><td>Declared exemptions</td><td>—</td><td>2</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="misattribution">
+    <h2>Eleven days under the wrong explanation</h2>
+    <p>This failure had been filed by three separate sessions under the host's documented
+    browser-navigation fault. It is not that: the surface renders healthily, and a direct probe
+    at the same revision shows <code>#plans</code> drawing 27 rows with zero JavaScript errors.
+    That probe is the positive control, and it is the only thing that separates a guard which
+    cannot navigate from one that navigates fine and waits on a name that moved.</p>
+    <p>The general shape, which is worth more than the fix: <strong>a documented fault is a
+    ready-made explanation, so anything failing near it gets filed under it and stops being
+    investigated.</strong> The louder cause absorbs the quieter one. Checking the positive
+    control before filing a failure as environmental is what breaks that.</p>
+  </section>
+
+  <section id="s3">
+    <h2>&sect;3 &mdash; Whatever it finds</h2>
+    <p>It found nothing. The first verdict is recorded and carries zero violations across all
+    22 surfaces, so this section's deliverable is the recorded negative result rather than a
+    list of repairs. That is a real outcome and not an empty one: the guard is now the thing
+    that would report the next clipped control, and the clipped dropdown that motivated the
+    plan has since been fixed by the surface work it prompted.</p>
+  </section>
+
+  <section id="guard-of-the-guard">
+    <h2>The guard that guards the guard, and why it needed a second commit</h2>
+    <p>A stale selector is exactly what disabled this guard, so the repair added a case that
+    fails loudly when a declared readiness selector matches nothing rendered. That case was
+    first written into <code>tests/spa_containment_harness.py</code> &mdash; a filename pytest
+    collects under neither of its patterns. A default collection over <code>tests/</code> found
+    it zero times. A guard written to make the next rename loud did not itself run.</p>
+    <p>The corrective moved it into <code>tests/test_spa_viewport_containment.py</code>, which
+    already imported the harness, rather than renaming a module other files import by name. The
+    measure was the collection count, not the case's existence, because <em>the test exists</em>
+    was precisely the claim that had already failed once: <strong>0 before, 1 after</strong>,
+    counted in both trees and re-counted on the integrated branch.</p>
+  </section>
+</main>
+</body>
+</html>
