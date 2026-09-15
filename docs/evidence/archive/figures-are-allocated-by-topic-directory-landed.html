@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="figures-are-allocated-by-topic-directory-landed">
+  <meta name="plan-title" content="Figures are allocated by topic directory — cumulative execution-evidence record">
+  <meta name="plan-summary" content="Execution evidence for figures-are-allocated-by-topic-directory. §2 landed: the topic-directory claim refuses a second node, demonstrated by six figure-focused dispatch-guard cases and a mutation control proving they measure the containment guard; the walk reads three live claims at refusal.">
+  <meta name="plan-evidence-for" content="figures-are-allocated-by-topic-directory">
+  <meta name="plan-recorded-at" content="2026-09-15">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; git worktrees; node dispatched through reckon crew to a detached worktree">
+  <title>Figures are allocated by topic directory — cumulative execution-evidence record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Figures are allocated by topic directory — cumulative execution-evidence record</h1>
+    <p class="plan-summary">One anchor per material outcome, accumulating as nodes land.</p>
+  </header>
+
+  <section id="s2-topic-directory-claims-the-tree">
+    <h2>The topic directory is an exclusive claim that refuses a second node</h2>
+    <p>Landed 2026-09-15, commit <code>4437fbf3</code>, run
+    <code>r-20260915T100103055425-the-topic-directory-is-the-claim</code>.
+    202 insertions over 2 files (one source, one test).</p>
+    <p><strong>Measure:</strong> <code>tests/test_crew_dispatch_guard.py</code> passes
+    14 of 14 — the eight pre-existing cases unchanged plus six new figure-topic cases,
+    each added without modifying a pre-existing assertion (the diff is additions-only).</p>
+    <p>The six new cases demonstrate the three refusals the section's done-when names,
+    each as an actual dispatch refusal rather than an assertion about the rule:</p>
+    <ul>
+      <li><strong>A second node on a claimed topic is refused naming the owner.</strong>
+      First dispatch declares <code>docs/figures/capture</code>; the second declares the
+      same topic. The <code>ScopeConflict</code> carries the owner's run id and node id in
+      the exception fields and in the message, the refused node never reaches worktree
+      creation, and the topic directory has not been created on disk at any point.</li>
+      <li><strong>A path inside a claimed topic is refused the same way.</strong> The owner
+      claims <code>docs/figures/capture</code>; the second declares
+      <code>docs/figures/capture/after/plot.png</code> and is refused naming the owner.
+      The reverse direction is asserted separately: an owner that claims the leaf
+      <code>docs/figures/geo/plot.png</code> refuses a second node declaring the topic
+      directory <code>docs/figures/geo</code>, so the claim covers the tree both ways.</li>
+      <li><strong>Both hold for a topic directory that does not exist on disk.</strong> The
+      fixture repository never creates <code>docs/figures</code> at all; the assertion checks
+      the root is absent before dispatch and that declaring the claim creates nothing. This
+      is the ordinary capture-node case, where an empty path is easy to mistake for no claim
+      at all — the walk is path-based, so a topic with no contents binds exactly like one
+      that does.</li>
+    </ul>
+    <p>The never-combined corollary is pinned too: two nodes declaring the same figure
+    filename (<code>docs/figures/deploy/plot.png</code>) is refused as a scope defect — a
+    figure is replaced wholesale, and the same filename cannot be written twice. The
+    disjoint-topics control proves the rule refuses overlap rather than figure writes:
+    <code>docs/figures/alpha</code> and <code>docs/figures/beta</code> dispatch
+    concurrently.</p>
+    <p><strong>The count of claims the check walks, as a digit:</strong> at the moment the
+    refusing dispatch is judged, the exclusive-claim walk reads <strong>3</strong> live
+    claims for a single owner — the plan file, the owner's cumulative evidence record, and
+    the claimed figure topic directory. Asserted by instrumenting the walk itself
+    (<code>_raise_repository_scope_conflict</code> wrapped to count its claims), so a
+    regression that stops walking a claim changes the count and fails the test.</p>
+    <p><strong>Proving the refusals are the guard, not an incidental failure.</strong> A
+    mutation control run replaces the containment predicate so that no two paths overlap and
+    re-runs the file: <em>exactly</em> the six refusal tests fail with
+    <code>DID NOT RAISE ScopeConflict</code>, while the eight non-refusal tests — including
+    the disjoint-topics positive control — pass. A containment rule that admitted everything
+    would leave those six green; the guard fires, and the tests measure it.</p>
+    <p><strong>What changed in the source.</strong> The enforcement already existed as the
+    generic live-claim containment walk in <code>reckon/crew/dispatch.py</code>; the node
+    verified it rather than reimplementing a working guard, and added a five-line
+    mechanism comment at the refusal site stating the allocation unit the plan names — a
+    topic directory is claimed as a tree, a figure is replaced wholesale and never merged,
+    and the walk is path-based so an empty topic binds like a full one. No runtime
+    behaviour changed. The two touched files add no new lint findings (the file's pre-existing
+    findings are unchanged), and the added test region is format-clean.</p>
+    <p><strong>Open decision left to the plan, not decided here:</strong> two nodes writing
+    <em>different</em> filenames under one topic are admitted today, because each claims a
+    leaf rather than the topic; whether that is allowed is the plan's own
+    <code>sibling-writers-in-one-topic</code> decision, which this node does not foreclose.</p>
+  </section>
+
+</main>
+</body>
+</html>
