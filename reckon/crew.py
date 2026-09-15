@@ -173,6 +173,7 @@ _MODULE_EXPORTS = {
         "complete",
         "_complete_locked",
         "discard",
+        "record_gate_rerun_at_integrated_revision",
     ),
     "recovery": (
         "RECOVERY_CLASSES",

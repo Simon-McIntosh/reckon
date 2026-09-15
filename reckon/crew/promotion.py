@@ -612,6 +612,95 @@ def rerun_gate_at_integrated_revision(
     return report
 
 
+def record_gate_rerun_at_integrated_revision(
+    *,
+    project: str,
+    run_id: str,
+    repository: Path,
+    integrated_revision: str = "HEAD",
+    timeout_seconds: float = 300.0,
+    root: str | Path | None = None,
+) -> dict[str, Any]:
+    """Production caller: re-run a run's gate at the integrated revision and record it.
+
+    A run's gate is measured at the base its worktree branched from, so a
+    contract that lands after that base never binds the run; only the merged
+    tree can tell whether a base-green gate still holds. This is the surface a
+    coordinator reaches after merging: it reads the run's stored gate command
+    and base verdict from its committed ledger row, re-runs that command
+    against the merged checkout, writes the full re-run report back onto the
+    run's ledger row (finding present or absent, so a reader sees the merged
+    tree was re-checked either way), keeps the shadow store in agreement, and
+    commits the edit in one landing.
+    """
+    checkout = Path(repository).expanduser().resolve()
+    ledger_root = root if root is not None else checkout
+    probe = _git(checkout, "rev-parse", "--is-inside-work-tree", check=False)
+    if probe.returncode != 0 or probe.stdout.strip() != "true":
+        raise CrewError(
+            f"run {run_id!r} gate cannot be re-run at the integrated revision: "
+            f"{checkout} is not a git worktree, so the recorded report could not "
+            "be committed; run `reckon crew verify-gate` against a checkout that "
+            "is a git worktree"
+        )
+    data, version = ledger.load(project, root=ledger_root)
+    row = next(
+        (item for item in data["runs"] if str(item.get("run_id") or "") == run_id),
+        None,
+    )
+    if row is None:
+        raise CrewError(
+            f"run {run_id!r} has no row in the {project!r} ledger, so its gate "
+            "cannot be re-run at the integrated revision; a promoted run's gate "
+            "comes from its committed row. Run `reckon crew complete --run "
+            f"{run_id}` to promote it first, then rerun this"
+        )
+    stored_gate_check = row.get("gate_check")
+    report = rerun_gate_at_integrated_revision(
+        repository=checkout,
+        gate_check=stored_gate_check if isinstance(stored_gate_check, Mapping) else None,
+        base_verdict=str(row.get("gate") or "passed"),
+        integrated_revision=integrated_revision,
+        timeout_seconds=timeout_seconds,
+    )
+    patched = [dict(item) for item in data["runs"]]
+    for index, item in enumerate(patched):
+        if str(item.get("run_id") or "") == run_id:
+            patched[index]["integrated_gate_check"] = report
+            break
+    new_version = ledger.write(
+        project, {**data, "runs": patched}, version, ledger_root
+    )
+    from reckon import run_store
+
+    store_synopsis = run_store.import_ledger(project, root=ledger_root)
+    landing = _commit_landing_writes(
+        run_id=run_id,
+        verdict=str(report.get("integrated_verdict") or "not-run"),
+        checkout=checkout,
+        paths=[ledger.ledger_path(project, ledger_root)],
+        subject=f"record({run_id}): re-run gate at integrated {integrated_revision}",
+        body=(
+            "Re-run the run's stored gate command against the merged tree and "
+            "record the report on its ledger row, so a gate the integrated "
+            "revision no longer satisfies is recorded against the run rather "
+            "than only printed."
+        ),
+    )
+    return {
+        "run_id": run_id,
+        "project": project,
+        "ledger_path": str(ledger.ledger_path(project, ledger_root)),
+        "ledger_version": new_version,
+        "checkout_on_integrated_revision": report.get("checkout_on_integrated_revision"),
+        "checkout_revision": report.get("checkout_revision"),
+        "report": report,
+        "finding": report.get("finding"),
+        "landing": landing,
+        "store_synopsis": store_synopsis,
+    }
+
+
 def _prose_changed_paths_name_no_paths(manifest: Mapping[str, Any]) -> bool:
     """True when the manifest's changed_paths declare none in prose.
 
@@ -1429,6 +1518,8 @@ def _commit_landing_writes(
     verdict: str,
     checkout: Path,
     paths: Sequence[Path],
+    subject: str | None = None,
+    body: str | None = None,
 ) -> dict[str, Any]:
     """Commit promotion's own store writes in one landing commit.
 
@@ -1437,6 +1528,10 @@ def _commit_landing_writes(
     leaves the checkout with no uncommitted change at the paths promotion
     wrote. A write that cannot be staged or committed resets those paths to
     their committed state and refuses, leaving neither store written.
+
+    ``subject`` and ``body`` override the promotion-flavoured defaults; a
+    caller that records a non-promotion landing (a gate re-run at the
+    integrated revision) passes its own subject naming what it did.
     """
     targets = sorted(
         {Path(p).expanduser().resolve() for p in paths if Path(p).is_file()}
@@ -1450,16 +1545,19 @@ def _commit_landing_writes(
             f"could not stage the landing writes for run {run_id!r} in "
             f"{checkout}: {staged.stderr.strip() or staged.stdout.strip()}"
         )
-    subject = f"promote({run_id}): {verdict}"
+    subject = subject or f"promote({run_id}): {verdict}"
+    body = body or (
+        "Record the landing: append the run to the project ledger and its "
+        "plan comment in one commit, so a promotion leaves the checkout "
+        "without uncommitted state at the paths it wrote."
+    )
     committed = _git(
         checkout,
         "commit",
         "-m",
         subject,
         "-m",
-        "Record the landing: append the run to the project ledger and its "
-        "plan comment in one commit, so a promotion leaves the checkout "
-        "without uncommitted state at the paths it wrote.",
+        body,
         check=False,
     )
     if committed.returncode != 0:

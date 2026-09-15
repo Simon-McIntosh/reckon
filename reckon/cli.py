@@ -2843,6 +2843,59 @@ def crew_complete(
     _emit({"ok": True, **result}, pretty)
 
 
+@crew.command(name="verify-gate")
+@click.option("--project", required=True, help="Project owning the run ledger.")
+@click.option("--run", "run_id", required=True, help="Run id whose gate is re-run.")
+@click.option(
+    "--checkout-path",
+    required=True,
+    type=click.Path(path_type=Path),
+    help="Checked-out repository holding the merged integrated revision.",
+)
+@click.option(
+    "--revision",
+    default="HEAD",
+    help="Integrated revision to re-run the gate against (default: HEAD).",
+)
+@click.option(
+    "--timeout-seconds",
+    "timeout_seconds",
+    type=float,
+    default=300.0,
+    help="Bound on the gate re-run before it is reported as timed out.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_verify_gate(project, run_id, checkout_path, revision, timeout_seconds, pretty):
+    """Re-run one run's gate at the integrated revision, recording the report on the run.
+
+    Reads the run's stored gate command and base verdict from its committed
+    ledger row, re-runs that command against the tree at --checkout-path — the
+    head the coordinator merged — and patches the re-run report back onto the
+    run's ledger row, so a gate the integrated revision no longer satisfies is
+    recorded against the run rather than only printed. The report is recorded
+    whether or not a finding exists.
+    """
+    crew_module, _ = _crew_modules()
+    try:
+        result = crew_module.record_gate_rerun_at_integrated_revision(
+            project=project,
+            run_id=run_id,
+            repository=checkout_path,
+            integrated_revision=revision,
+            timeout_seconds=timeout_seconds,
+            root=checkout_path,
+        )
+    except crew_module.CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    except _ledger_module().LedgerError as exc:
+        raise click.ClickException(
+            f"{exc}; the ledger moved while the re-run was being recorded, so "
+            f"run `reckon crew verify-gate --project {project} --run {run_id} "
+            f"--checkout-path {checkout_path}` again"
+        ) from exc
+    _emit({"ok": True, **result}, pretty)
+
+
 @crew.command(name="recover")
 @click.option("--project", default=None, help="Limit to one project's runs.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
