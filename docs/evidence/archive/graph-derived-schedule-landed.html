@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="graph-derived-schedule-landed">
+  <meta name="plan-title" content="Schedule from the graph, not from dates — landed evidence">
+  <meta name="plan-summary" content="One DAG layout helper, a Graph tab that renders every endpoint named or not, a sprint detail drawing its own prerequisites, and a flow derived from dependencies and hours rather than from a fixed window. Every section landed; two of its five gates had stopped being able to run, and both are repaired.">
+  <meta name="plan-evidence-for" content="reckon:graph-derived-schedule">
+  <meta name="plan-verifies" content="reckon:graph-derived-schedule#s2,reckon:graph-derived-schedule#s3,reckon:graph-derived-schedule#s4,reckon:graph-derived-schedule#s5,reckon:graph-derived-schedule#s6">
+  <meta name="plan-recorded-at" content="2026-09-15">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; headless Chrome on the file scheme; the gate repairs measured at the plan-authored base and again at the migrated head">
+  <meta name="plan-commits" content="5672128,3d7dc1a,da169d2,1528204,dcb540b,2b43c6f">
+  <meta name="plan-artifacts" content="docs/ui/graph.jsx,docs/ui/sprint.jsx,docs/ui/crew.jsx,tests/test_spa_dag_layout.py,tests/test_spa_graph_geometry.py,tests/test_spa_derived_flow.py,docs/figures/graph-derived-schedule/after/capture-index.json">
+  <title>Schedule from the graph, not from dates — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Schedule from the graph, not from dates &mdash; landed evidence</h1>
+    <p class="plan-summary">Five sections, all landed, every landing commit proven an ancestor
+    rather than read off its own summary. The plan sat at full implementation for eleven days
+    while two of its five gates could no longer be run at all &mdash; that is the part of this
+    record worth keeping.</p>
+  </header>
+
+  <section id="overview">
+    <h2>Record scope</h2>
+    <p>The Graph tab blanked for every endpoint without a handle, a sprint could not open its own
+    graph, and the flow strip was empty for any sprint with no dispatched runs because it drew a
+    fixed 48-hour window rather than a derived schedule. All three were one layout helper and one
+    schedule away from the handoff canvas.</p>
+  </section>
+
+  <section id="landed">
+    <h2>What landed</h2>
+    <table class="r-table">
+      <thead><tr><th>Section</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>&sect;2 one DAG layout helper</td><td>published as a shared helper with its geometry constants; consumed by both the graph and the sprint surfaces</td></tr>
+        <tr><td>&sect;3 a Graph tab for every endpoint</td><td>unnamed endpoints render a populated closure with a chip naming the missing handle rather than an invented command</td></tr>
+        <tr><td>&sect;4 sprint table and detail</td><td>out-of-sprint prerequisites drawn as dashed ghosts; the fixed-horizon constant retired, grep count 0</td></tr>
+        <tr><td>&sect;5 the derived flow</td><td>pending plans placed at max(prerequisite end, now) and packed into best-fit lanes</td></tr>
+        <tr><td>&sect;6 rendered evidence</td><td>eight captures at two widths, each recording its width and a non-zero card or lane count</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="dead-gates">
+    <h2>Two gates that had stopped being able to run</h2>
+    <p>A scope review found this plan at full implementation with every deliverable present and
+    <strong>two of its five stated measures unable to produce a green result</strong>. Neither
+    failure was in the feature. Both were repaired by the surface-contract plan, which owns
+    assertions that describe what the code used to do, so one repair was made once rather than
+    three times across the plans that tripped over it.</p>
+    <table class="r-table">
+      <thead><tr><th>Gate</th><th>Why it could not run</th><th>Repair</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>&sect;3 &mdash; graph surface geometry</td>
+          <td>Asserted a stylesheet rule by exact dict equality. A later, unrelated viewport-containment fix added <code>min-height: 0</code> to that rule, so a test about the header failed because of a change to something else.</td>
+          <td>Assert the property the test is about rather than a snapshot of the whole object.</td>
+        </tr>
+        <tr>
+          <td>&sect;5 &mdash; rendered derived flow</td>
+          <td>Rendered against the live wall clock with fixture stamps fixed at 2026-09-02&ndash;04. The surface's own 60-hour retention filter dropped every fixture bar, packing one lane where two were expected. Red since roughly 2026-09-06 and failing on every later date.</td>
+          <td>Inject a fixed clock, as the three sibling schedule tests already did. The expected lane count stays at two.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>The second repair had a wrong answer available that would have looked right: change the
+    expectation to one lane. That passes today only because the fixtures have aged out of the
+    window, and it fails on fixture-era dates &mdash; replacing a date fuse with a differently
+    dated one. The clock injection is what makes the assertion true on every date.</p>
+    <p>Measured over the six migrated files at the surface-health plan's authored base and again
+    at its head: <strong>9 failed, 39 passed, 5 skipped, 4 errors</strong> becomes
+    <strong>52 passed, 5 skipped</strong>. Nine fewer failures, four fewer errors, none added.</p>
+  </section>
+
+  <section id="what-this-cost">
+    <h2>What the eleven days cost, and what would have caught it</h2>
+    <p>Nothing reported this. The plan read complete, sat on the sprint's critical path, and its
+    two dead gates were invisible to every surface that decides what runs next. The plan carries
+    no gate element, so its measures existed only as prose and could not block or be reported
+    unmet &mdash; and no plan in this sprint carried one, so strict gate enforcement was
+    configured and firing on nothing.</p>
+    <p>The instrument that found it was a section-level review that quoted each stated measure
+    and then tried to run it, rather than reading the implementation percentage. That is the
+    difference between a number that is true as a recorded value and a number that says whether
+    the work holds.</p>
+  </section>
+</main>
+</body>
+</html>
