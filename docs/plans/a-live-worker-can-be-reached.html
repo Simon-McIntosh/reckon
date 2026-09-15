@@ -117,6 +117,16 @@
     that the skill reference directories are symlinks into this checkout, so this
     is a repository edit fenced as one.</p>
 
+    <p><strong>Landed 2026-09-15.</strong> The orchestration reference's recovery order now names a
+    mechanism where it previously said to message the worker: the step for evidence-without-a-report
+    invokes <code>reckon crew resume --run &lt;run-id&gt; --advice "&hellip;"</code>, which continues
+    the session whose turn has ended, and records that a run still mid-turn has no channel today and
+    that the peer-message channel has delivered nothing in 3,949 worker streams against 11,939 in
+    244 interactive transcripts. Measure: <code>grep -n 'message the worker'</code> over the
+    reference fell from one unqualified line to none. The workstation-wide order in
+    <code>~/.agents/AGENTS.md</code> already names the mechanism and needs no change. Full record:
+    <a href="/reckon/evidence/archive/a-live-worker-can-be-reached-landed#recovery-order-names-a-mechanism">s5 landed</a>.</p>
+
     <h2 id="s6">&sect;6 &mdash; What is deliberately not proposed</h2>
     <p>Making the worker's permission mode match the coordinator's so the hold
     never fires. This would route around a permission decision rather than

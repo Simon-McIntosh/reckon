@@ -188,9 +188,16 @@ Detect and recover in this order, and do not redispatch first:
 2. **No manifest file** — check for the other on-disk evidence the prompt
    required (test logs, artifacts, benchmark output). Their presence proves the
    work ran and shows how far it got.
-3. **Evidence exists but no report** — message the worker and tell it to write
-   the deliverable to the named path and reply with the path only. This recovers
-   reports the message channel will not carry, including long ones.
+3. **Evidence exists but no report** — the run's turn has ended, so resume the
+   session and have it write the deliverable:
+   `reckon crew resume --run <run-id> --advice "write the deliverable to the
+   named path and reply with the path only"`. Resume continues the same session
+   with its prior context intact, and recovers reports the return channel will
+   not carry, including long ones. The obvious-looking alternative, telling the
+   worker over its peer channel, is not a mechanism: that channel has delivered
+   nothing in 3,949 worker streams against 11,939 in 244 interactive
+   transcripts. A run still mid-turn has no channel today, so read the on-disk
+   evidence and wait rather than expecting an answer from a live process.
 4. **No evidence at all after a bounded wait** — only now treat the node as
    failed and dispatch a corrective worker.
 
