@@ -469,6 +469,28 @@ def _surface_opt_in(backend_name: str | None, config: Mapping[str, Any] | None) 
     return bool(isinstance(settings, Mapping) and settings.get("budget_check"))
 
 
+def _stamp_refusal(*, lane: str, refused_at: str, returns_at: str) -> dict[str, str]:
+    """Persist an observed refusal somewhere the refusal's own run cannot reach.
+
+    A refusal keeps the run that observed it from promoting, so the ledger never
+    records it and the run's own directory gets reclaimed with the run. The
+    shadow store lives outside both, keyed by the refusal's own time. Writing it
+    is best-effort the same way promotion-time shadow writes are: a store that
+    cannot be written must not break the budget read that just observed the
+    refusal — the hold the reading carries still works, only its durable mirror
+    is lost. The failure is returned, never raised, so the caller can record it
+    where the reading is visible.
+    """
+    from reckon import run_store
+
+    try:
+        with run_store.RunStore() as store:
+            store.stamp_refusal(lane=lane, refused_at=refused_at, returns_at=returns_at)
+    except Exception as exc:  # noqa: BLE001 — a shadow write never interrupts the read it mirrors
+        return {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
+    return {"status": "written"}
+
+
 def _readings(
     project: str,
     *,
@@ -515,6 +537,22 @@ def _readings(
             refusal_stamp = fresh_stamp
             age_source = "observed-at"
         backend_name = str(pointer.get("backend") or "")
+        # A refused dispatch kills the run, so the refusal is exactly the event a
+        # promoted ledger row (and the run it died in) would never record. A
+        # rate-limit-event stamp is the only reading with the refusal's own
+        # observation time AND the return time it stated; earlier-bound refusals
+        # and served-turn refutations must not be minted here, because a fabricated
+        # or already-refuted record would mislead anyone reading the store. The
+        # outcome is recorded on the reading so a failed shadow write stays
+        # visible rather than failing the read that observed the refusal.
+        if age_source == "rate-limit-event":
+            stamp_outcome = _stamp_refusal(
+                lane=backend_name,
+                refused_at=str(refusal_stamp),
+                returns_at=str(budget_block.get("resets_at") or ""),
+            )
+            if stamp_outcome["status"] != "written":
+                budget_block["_refusal_stamp_error"] = stamp_outcome["error"]
         found.append(
             _Reading(
                 backend=backend_name,
@@ -887,6 +925,12 @@ def _from_block(
         detail = (
             f"the measured window reset at {resets_at}, so the recorded "
             "utilisation no longer describes it"
+        )
+    refusal_stamp_error = block.get("_refusal_stamp_error")
+    if isinstance(refusal_stamp_error, str) and refusal_stamp_error:
+        detail = (
+            "the refusal survives only in this reading, not in the durable "
+            f"store: {refusal_stamp_error}"
         )
     served_status = block.get("_refuted_by_served_turn")
     if served_status is not None:
