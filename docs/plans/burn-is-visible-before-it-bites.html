@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="30">
+<meta name="plan-version" content="31">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="979805e1d460e5c46a15d466d64d4a674c8e3405,f26287ebeba4c4890f0965d2eb9f18c281743d26,a5254ef,b0ede8b,6c18dd4">
 <meta name="plan-artifacts" content="reckon/run_store.py,tests/test_run_store.py,reckon/crew/lane_evidence.py,tests/test_binding_window_inference.py,docs/ui/crew.jsx,docs/ui/crew.css,tests/test_spa_crew_burn.py,reckon/mcp_views.py,tests/test_crew_lanes_view.py,docs/evidence/archive/burn-is-visible-before-it-bites-landed.html">
@@ -276,6 +276,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260915T053607306958-the-month-figure-cannot-be-mistaken-for-the-gate" data-who="crew-attention" data-when="2026-09-15T07:36:33.062Z">
     <div class="r-comment-body"><p>The account's month-scale overage figure cannot reach the verdict a dispatch consults: one preflight carrying the measured shape (top-level utilization 1.21 beside rateLimitType overage and a month-boundary reset, five_hour at 5% against a near reset) reports the lane open, and neither the month figure nor its reset appears in the emitted state or its reason. Behaviour was verified, not reimplemented — the windowed parse already held, nothing pinned it at the deciding surface. No production code changed. 86 passed / 0 failed at head against 85 / 0 at base a736189.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260915T101130458844-the-declared-group-reaches-the-reader" data-who="crew-backpressure" data-when="2026-09-15T14:21:56.293Z">
+    <div class="r-comment-body"><p>The lanes view reads the declared budget_group slot, one spelling end to end: _declared_quota_pool is gone, the emitted map is budget_groups, and the fixtures no longer supply a key the schema never contained. A guard asserts the dead spelling groups nothing even when its value names a live group verbatim, so a reader-side alias fails that test rather than passing silently. Gate exit 1 carries the two pre-existing lanes-view failures reproduced at base and head — 100 passed / 2 failed at base, 101 / 2 at head, zero added. The five docs occurrences of the old key are prose recording this defect and were deliberately preserved.</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260914T1200" data-who="reckon-ship" data-when="2026-09-14T12:00:00Z">
     <div class="r-comment-body">Dependency narrowed from the whole of dispatch-cost-per-durable-node to its §6, on this plan's own statement of what it needs. The followup says §2 waits on the prerequisite plan making the rate computation readable from Python, and that is §6, which shipped: crew(view="budget") reported burn_multiple 2.87 against utilisation 7 percent on 2026-09-14, derived in Python from rate_limit_period_minutes and resets_at with no new probe. The plan-level edge was holding this work behind §7, whose remaining measure is a 20-to-40 run gated pilot bounded by about two days of elapsed time rather than by effort. Nothing this plan needs is in §7, so the edge was serialising nine worker-hours behind two calendar days for no stated reason.</div>

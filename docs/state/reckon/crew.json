@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T16:26:45",
+  "updated": "2026-09-15T16:27:26",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -136568,6 +136568,213 @@
           "status": "failed",
           "error": "IntegrityError: UNIQUE constraint failed: runs.run_id"
         }
+      },
+      {
+        "run_id": "r-20260915T101130458844-the-declared-group-reaches-the-reader",
+        "plan": "burn-is-visible-before-it-bites",
+        "section": "\u00a75",
+        "node": "the-declared-group-reaches-the-reader",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1984,
+                "cached_input_tokens": 353432,
+                "input_tokens": 355418,
+                "output_tokens": 1321,
+                "reasoning_output_tokens": 116,
+                "total_tokens": 356739,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "306c1aec-df4a-489e-88c3-441bbb1f5baf",
+            "session_id": "ship-lane-aware-20260914"
+          },
+          "done_when": "reckon/schema/flight.yaml declares budget_group (landed f9aabc9) while reckon/mcp_views.py:437 _declared_quota_pool reads settings.get('quota_pool'), a key absent from the schema \u2014 so the reader was dead before the slot existed and the halves are spelled differently. Pick ONE spelling, state in the commit body why, make the reader read the declared slot. uv run pytest tests/test_crew_lanes_view.py tests/test_flight.py -q passes with: a backend declaring the slot in flight config reaching the grouping THROUGH THE LANES VIEW a reader consults, not the helper alone; two backends declaring one group appearing as one pool there; a backend declaring none staying ungrouped there. Quiet half: an identical resets_at across two backends still groups nothing in that view. NOTE test_crew_lanes_view.py::test_crew_tool_accepts_lanes_and_keeps_unknown_view_refusal and test_lanes_view_is_live.py::test_a_dialect_without_a_probe_never_calls_the_probe_reader FAIL AT BASE (mcp_views.py:526) \u2014 reproduce at base, report the delta, do not count them as yours, do not fix them here. Failure delta 0 against base HEAD",
+          "estimated_hours": null,
+          "goal": "The configuration slot that names a quota pool is the one the reader reads",
+          "id": "the-declared-group-reaches-the-reader",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T10:11:31Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 25,
+            "binding_observed": false,
+            "detail": "",
+            "headroom": 12,
+            "mean_context": 51589,
+            "observed_at": "2026-09-15T10:11:06Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 120
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T101130458844-the-declared-group-reaches-the-reader/manifest.md",
+          "plan": "burn-is-visible-before-it-bites",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/mcp_views.py",
+            "tests/test_crew_lanes_view.py",
+            "docs/evidence/archive/burn-is-visible-before-it-bites-landed.html",
+            "docs/plans/burn-is-visible-before-it-bites.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-backpressure",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T10:12:09Z",
+        "completed_at": "2026-09-15T14:21:56.293Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 14955,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 14987,
+        "stalled": true,
+        "time_budget": "60m",
+        "base_sha": "be162a172557f9562c3627efa7875bcedb3eb73e",
+        "commits": [
+          "53a3932a9ef1b9dafa0b2fb0b739878ef2f012b7",
+          "5b23d45a398daee9e667eb4b3db849e8c27b5426",
+          "c140761a18db686bde172ac5a9634846d0b9e57f"
+        ],
+        "changed_lines": {
+          "added": 147,
+          "removed": 53,
+          "files": 4
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_crew_lanes_view.py tests/test_flight.py tests/test_lanes_view_is_live.py",
+          "exit_status": 1,
+          "log_path": "/tmp/the-declared-group-head.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T101130458844-the-declared-group-reaches-the-reader/manifest.md",
+        "scope_changed": false,
+        "session_id": "c58187cd-c8f6-40fc-8d34-29237d2c09d2",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 0,
+            "input_tokens_cumulative": 3143821,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 20431,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T14:21:56.293Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 3143821,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 1537.914,
+          "generated_tokens": 20431,
+          "generation_seconds": 1498.667,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 72.6,
+          "machine_seconds": 39.247,
+          "peak_input_tokens": 145111,
+          "tokens_per_second": 13.63,
+          "wall_tokens_per_second": 13.28
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_crew_lanes_view.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "resume",
+        "attempt": 3,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-lane-aware-20260914/the-declared-group-reaches-the-reader",
+          "session_id": "c58187cd-c8f6-40fc-8d34-29237d2c09d2",
+          "session_source": "pointer",
+          "retained_at": "2026-09-15T14:21:56.293Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 26.0,
+        "orientation_input_tokens": 3322259.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -136796,6 +137003,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1535
+    "_version": 1536
   }
 }
