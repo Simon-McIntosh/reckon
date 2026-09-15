@@ -1801,3 +1801,96 @@ def _write_resource_html(repository: Path, state: dict) -> str:
         '</head><body><main class="plan-doc"></main></body></html>\n'
     )
     return _plan_html.write_state(bare, state)
+
+
+def _write_green_gate(repository: Path) -> str:
+    """Land an in-tree gate that passes against the node deliverable."""
+    (repository / "gate.sh").write_text(
+        '#!/bin/sh\ngrep -q "satisfied" node.txt\n', encoding="utf-8"
+    )
+    (repository / "node.txt").write_text("satisfied\n", encoding="utf-8")
+    _git(repository, "add", "gate.sh", "node.txt")
+    _git(repository, "commit", "-q", "-m", "test: gate green at the base revision")
+    return _git(repository, "rev-parse", "HEAD")
+
+
+def test_rerun_catches_a_contract_landing_after_the_workers_base(
+    repository: Path,
+) -> None:
+    base = _write_green_gate(repository)
+    # The contract lands after the worker's base, so it never bound the
+    # worker's own run. The merged tree now adds a requirement the node
+    # deliverable does not satisfy, and the very same gate command exits red
+    # at the integrated head: the base verdict was passed, the one that ships
+    # is not.
+    (repository / "gate.sh").write_text(
+        '#!/bin/sh\ngrep -q "satisfied" node.txt '
+        '&& grep -q "contract-marker" node.txt\n',
+        encoding="utf-8",
+    )
+    _git(repository, "add", "gate.sh")
+    _git(repository, "commit", "-q", "-m", "test: the contract test lands")
+    integrated = _git(repository, "rev-parse", "HEAD")
+    assert integrated != base
+
+    rerun = promotion.rerun_gate_at_integrated_revision(
+        repository=repository,
+        gate_check={"command": "sh gate.sh", "exit_status": 0, "log_digest": "x"},
+        base_verdict="passed",
+        integrated_revision=integrated,
+    )
+
+    assert rerun["base_verdict"] == "passed"
+    assert rerun["integrated_verdict"] == "failed"
+    assert rerun["ran"] is True
+    assert rerun["checkout_revision"] == integrated
+    finding = rerun["finding"]
+    assert finding is not None
+    assert finding["base_verdict"] == "passed"
+    assert finding["integrated_verdict"] == "failed"
+
+
+def test_rerun_produces_no_finding_when_base_and_the_merged_head_agree(
+    repository: Path,
+) -> None:
+    base = _write_green_gate(repository)
+
+    rerun = promotion.rerun_gate_at_integrated_revision(
+        repository=repository,
+        gate_check={"command": "sh gate.sh", "exit_status": 0, "log_digest": "x"},
+        base_verdict="passed",
+        integrated_revision=base,
+    )
+
+    assert rerun["base_verdict"] == "passed"
+    assert rerun["integrated_verdict"] == "passed"
+    assert rerun["ran"] is True
+    assert rerun["finding"] is None
+
+
+def test_rerun_refuses_to_verify_a_tree_that_is_not_the_integrated_revision(
+    repository: Path,
+) -> None:
+    base = _write_green_gate(repository)
+    # A later commit moves the checkout off the integrated revision the caller
+    # names. The re-run must never execute against the wrong tree, and the
+    # refusal is the behaviour under test: silent non-verification is the
+    # failure this guard exists to prevent.
+    (repository / "seed.txt").write_text("seed\nchanged\n", encoding="utf-8")
+    _git(repository, "add", "seed.txt")
+    _git(repository, "commit", "-q", "-m", "test: a later integration commit")
+
+    rerun = promotion.rerun_gate_at_integrated_revision(
+        repository=repository,
+        gate_check={"command": "sh gate.sh", "exit_status": 0, "log_digest": "x"},
+        base_verdict="passed",
+        integrated_revision=base,
+    )
+
+    assert rerun["ran"] is False
+    assert rerun["integrated_verdict"] == "not-run"
+    assert rerun["checkout_on_integrated_revision"] is False
+    assert "wrong tree" in (rerun["reason"] or "")
+    # A base-green gate the re-run could not establish on the tree that ships
+    # is surfaced, never allowed to read as verified.
+    assert rerun["finding"] is not None

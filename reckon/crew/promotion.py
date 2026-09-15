@@ -470,6 +470,148 @@ def _require_gate_log_agrees(
         )
 
 
+def _merged_gate_finding(
+    base_verdict: str,
+    integrated_verdict: str,
+    *,
+    integrated_revision: str,
+    exit_status: int | None,
+    reason: str | None,
+) -> dict[str, Any] | None:
+    """The divergence a merge-time re-run exists to surface, or None.
+
+    A finding exists exactly when a gate that passed at the worker's base is
+    not passed by the tree that ships. A base that was not already green is
+    never a finding — the merge cannot turn a red gate red — so the check
+    cannot manufacture a merge finding where the worker's own gate was
+    already failing. Anything other than ``passed`` at the integrated tree
+    (failed, or a re-run that could not establish a pass) is surfaced, because
+    a base-green gate the merged tree does not re-confirm is the silent gap
+    this mechanism exists to close.
+    """
+    if base_verdict != "passed" or integrated_verdict == "passed":
+        return None
+    return {
+        "base_verdict": "passed",
+        "integrated_verdict": integrated_verdict,
+        "integrated_revision": integrated_revision,
+        "exit_status": exit_status,
+        "reason": reason,
+        "message": (
+            f"the gate passed at the worker's base but reports "
+            f"{integrated_verdict} on the integrated revision "
+            f"{integrated_revision[:12]}: the merge changes what this node's "
+            "gate proves, so a base-green run alone is not enough to push. "
+            "Re-run the node's gate on the merged tree, land the code the "
+            "merged tree requires, or record explicitly why this finding is "
+            "accepted"
+        ),
+    }
+
+
+def rerun_gate_at_integrated_revision(
+    *,
+    repository: Path,
+    gate_check: Mapping[str, Any] | None,
+    base_verdict: str = "passed",
+    integrated_revision: str = "HEAD",
+    timeout_seconds: float = 300.0,
+) -> dict[str, Any]:
+    """Re-run one gate against the tree that ships, and compare its verdict.
+
+    A worker's gate runs against the base revision its worktree branched from,
+    so a contract that lands after that base never binds the worker's run: the
+    run is legitimately green, nothing re-checks the merged tree, and the merge
+    turns the primary branch red. This re-runs the gate's own command against a
+    repository on the integrated revision — the tree the coordinator is about
+    to push — and reports whether a base-green gate still holds there.
+
+    The command is executed only when the repository actually sits on the
+    integrated revision: a run against any other tree verifies the wrong tree,
+    so it never executes and the reason is stated. The base verdict is taken as
+    given — it is the gate the run already recorded, which this check tests
+    rather than re-creates.
+
+    A gate that did not run, or did not finish within the bound, is reported
+    as ``not-run`` with its reason, never as passed: an unmeasured re-run must
+    not read as a verified one.
+    """
+    base = str(base_verdict).strip().lower()
+    if base not in ledger.GATE_VERDICTS:
+        raise CrewError(
+            f"base gate verdict {base_verdict!r} is not one of "
+            f"{', '.join(ledger.GATE_VERDICTS)}; the base verdict is the gate "
+            "the run already recorded, which this re-run is compared against"
+        )
+    command = str((gate_check or {}).get("command") or "").strip()
+    integrated = _commit_canonical_id(repository, str(integrated_revision))
+    checkout = _commit_canonical_id(repository, "HEAD")
+    report: dict[str, Any] = {
+        "base_verdict": base,
+        "integrated_verdict": "not-run",
+        "integrated_revision": integrated or str(integrated_revision),
+        "checkout_revision": checkout or "",
+        "checkout_on_integrated_revision": bool(
+            integrated and checkout and integrated == checkout
+        ),
+        "gate_command": command or None,
+        "ran": False,
+        "exit_status": None,
+        "timed_out": False,
+        "reason": None,
+        "finding": None,
+    }
+    if not command:
+        reason = "no gate command is stored to re-run"
+    elif integrated is None:
+        reason = (
+            f"integrated revision {integrated_revision!r} does not resolve to "
+            "a commit in the repository"
+        )
+    elif not checkout:
+        reason = "the repository has no resolvable HEAD to run the gate against"
+    elif checkout != integrated:
+        reason = (
+            f"the checkout is at {checkout[:12]}, not the integrated revision "
+            f"{integrated[:12]}: a gate run here would verify the wrong tree. "
+            "Check the integrated revision out, or name the revision the "
+            "checkout actually carries"
+        )
+    else:
+        reason = None
+        try:
+            result = subprocess.run(
+                ["sh", "-c", command],
+                cwd=str(repository),
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=timeout_seconds,
+            )
+        except subprocess.TimeoutExpired:
+            report.update(ran=True, timed_out=True)
+        else:
+            report["ran"] = True
+            report["exit_status"] = result.returncode
+            report["integrated_verdict"] = (
+                "passed" if result.returncode == 0 else "failed"
+            )
+    if reason is not None:
+        report["reason"] = reason
+    elif report["timed_out"]:
+        report["reason"] = (
+            f"the gate did not finish within the {timeout_seconds:g}s re-run bound"
+        )
+    report["finding"] = _merged_gate_finding(
+        report["base_verdict"],
+        report["integrated_verdict"],
+        integrated_revision=report["integrated_revision"],
+        exit_status=report["exit_status"],
+        reason=report["reason"],
+    )
+    return report
+
+
 def _prose_changed_paths_name_no_paths(manifest: Mapping[str, Any]) -> bool:
     """True when the manifest's changed_paths declare none in prose.
 
