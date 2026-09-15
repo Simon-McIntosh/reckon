@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-commits" content="42104d3,f5fbac7,77d0edf">
 <meta name="plan-impl" content="0.8">
 </head>
@@ -281,6 +281,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-schedule-reaches-its-reader" data-who="reckon-ship" data-when="2026-09-15T04:46:00Z">
     <div class="r-comment-body">Section complete — commits 965b0d9 and bec8557, merged as a pair. The served payload carries the Python schedule from _attach_schedule at reckon/serve.py:1458, the loader carries the key, the surface reads it, and the surface's own derivation is gone: 115 lines removed, and the count of derivedFlowSchedule in docs/ui/crew.jsx is 0 at the merged head. The section's vacuous grep is retired as part of this. The old form read 'function schedule' or '_schedule(' and returned 0 at both the base and the head, which is the passing value in both worlds; the restated form counts the name the code actually uses and reads 5 at the base and 0 at the head. All four counts were taken by the coordinator at both revisions rather than read from a manifest. The pairing is the part worth recording as process rather than outcome. The surface commit was held unmerged for half an hour because on its own it removes a working derivation and reads a key nothing served, which would have rendered 'no schedule payload served' where a flow used to be. That was a coordinator error, not a worker one: the node was fenced to docs/ui/crew.jsx alone while its done-when said the surface renders from the payload, so the worker could not have wired the entry point even had it seen the gap. The second node's measure named the entry point explicitly for that reason, and the pair was merged together so the combined state is what was proven rather than either half.</div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20260915T025140880544-the-check-that-makes-parity-hold" data-who="disc-local" data-when="2026-09-15T03:14:18.326Z">
+    <div class="r-comment-body"><p>The parity check exists: 11 passed exit 0 over 78 compared value pairs, with the pair count asserted arithmetically rather than written as a literal. The property that makes it a check rather than a mirror is demonstrated, not claimed: a companion case patches one value on one side through six mutators and requires the comparison to fail, so agreement is distinguishable from comparing a value with itself. Judged by delta against a stated base: 5 failed at base and 5 at the head over the same six files, added_failures empty. ATTRIBUTION: those 5 base failures are mine, not this node&#x27;s. They assert against derivedFlowSchedule, which my own paired merge of bec8557 removed from the surface — 5 occurrences at bec8557^ and 0 at HEAD, counted at both. Four sit in test_spa_derived_flow.py and one in test_schedule_derivation.py, which compared the Python schedule against the surface&#x27;s own derivation and now compares it against nothing. This is the third time tonight I have fenced a change away from the tests that assert on it, and the second caused by this same merge. A corrective follows</p></div>
 </div>
 </section>
 </main>
