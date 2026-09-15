@@ -119,6 +119,12 @@ _MANIFEST_KEY_ALTERNATION = "|".join(
 _MANIFEST_KEY_ON_LINE_RE = re.compile(
     rf"\b({_MANIFEST_KEY_ALTERNATION})\s*:", re.IGNORECASE
 )
+_MARKDOWN_MANIFEST_FIELD_RE = re.compile(
+    rf"^\s*(?:[-*]\s+)?(?:\*\*)?"
+    rf"(?P<key>{_MANIFEST_KEY_ALTERNATION})\s*:"
+    rf"(?:\*\*)?\s*(?P<value>.*)$",
+    re.IGNORECASE,
+)
 _SAME_LINE_FIELD_PAIRS = {"commits": frozenset({"changed_paths"})}
 
 
@@ -241,6 +247,21 @@ def _parse_text_manifest(text: str, *, path: str | None = None) -> dict[str, Any
         block_key = None
         block_lines = []
 
+    def read_field(raw: str, line: str) -> re.Match[str] | None:
+        # Workers commonly present manifest fields as Markdown list items or
+        # emphasize their keys. Restrict the decorated form to the manifest
+        # vocabulary so a prose bullet containing a colon stays prose.
+        decorated = _MARKDOWN_MANIFEST_FIELD_RE.match(raw)
+        if decorated:
+            return decorated
+        if raw[:1] in (" ", "\t"):
+            return None
+        return re.match(
+            r"^(?P<key>[a-z][a-z0-9_-]*)\s*:\s*(?P<value>.*)$",
+            line,
+            re.IGNORECASE,
+        )
+
     for line_no, raw in enumerate(text.splitlines(), start=1):
         line = raw.strip()
         if block_key is not None:
@@ -250,19 +271,12 @@ def _parse_text_manifest(text: str, *, path: str | None = None) -> dict[str, Any
                 block_lines.append(line)
                 continue
             flush_block()
-        if raw[:1] in (" ", "\t"):
-            # Indented content continues the current key only as a list item;
-            # an indented key line is nested data and must not be read at the
-            # top level, where it silently replaces the node fact the surfaces
-            # present as runnable.
-            if key and line.startswith(("-", "*")):
-                addition = line.lstrip("-* ").strip()
-                fields[key] = f"{fields[key]}, {addition}" if fields[key] else addition
-            continue
-        match = re.match(r"^([a-z][a-z0-9_-]*)\s*:\s*(.*)$", line, re.IGNORECASE)
+        match = read_field(raw, line)
         if match:
-            key = match.group(1).lower().replace("-", "_")
-            value = match.group(2).strip()
+            key = match.group("key").lower().replace("-", "_")
+            value = match.group("value").strip()
+            if key == "status" and re.fullmatch(r"`[^`]+`", value):
+                value = value[1:-1].strip()
             embedded = _embedded_manifest_key(key, value)
             if embedded:
                 raise ManifestParseError(
