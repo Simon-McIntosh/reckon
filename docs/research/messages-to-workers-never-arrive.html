@@ -334,10 +334,41 @@
       </p>
       <p>
         Five coordinators had each sized a fleet against their own dependency
-        graph width, which is the correct local rule, and the aggregate was
-        three times what the endpoint could serve. Nobody was wrong. The
+        graph width, which is the correct local rule. Nobody was wrong. The
         surface that would have prevented it does not exist to be consulted, so
         calling it a coordination failure misnames it: it is a missing signal.
+      </p>
+      <p>
+        What the governing quantity actually is came from the session that owns
+        the deployment, and it corrects the obvious reading — including the one
+        first written here. It is not a worker-count ceiling. The lane was
+        serving 190 tokens per second aggregate while performing 22,557 tokens
+        per second of prefill, of which 18,863 was recomputing prefixes the
+        engine had already built; the cache turned over completely in 98
+        seconds while a single reply took 54 seconds plus tool time, so each
+        session's cached prefix was evicted on the same timescale as its own
+        turn gap, and the recomputation was what evicted the next session's.
+        Draining the fleet from 36 concurrent requests to 20 moved the
+        aggregate from 198 to 190 tokens per second. Shedding workers raises
+        per-worker throughput and does almost nothing for total output.
+      </p>
+      <p>
+        That was corroborated here without being sought: this fleet watched the
+        lane fall from 34 live workers to 19 over two hours while its own
+        remaining nodes held steady at roughly one tool call every four
+        minutes, neither speeding up nor slowing down.
+      </p>
+      <p>
+        The correction sharpens the point rather than softening it. The
+        quantity that governs is cache residency — concurrent requests
+        multiplied by mean context against the pool, where the safe bound is
+        <code>(pool &times; 0.5) / mean context</code> because the pool must
+        hold reusable prefixes as well as active contexts. Mean context ranged
+        from 15,000 to 167,000 tokens in one day, which moves that bound from
+        about 31 concurrent requests to about 7. So the roster's free-member
+        count is not merely the wrong number to read, it is a number that
+        cannot be corrected by scaling: no fixed worker count is right for
+        more than one node mix.
       </p>
       <p>
         What makes it the same defect is the substitution. A free roster member
