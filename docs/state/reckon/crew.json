@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T03:04:29",
+  "updated": "2026-09-15T03:22:05",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -119625,6 +119625,206 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T003311744309-readout-matches-the-arrived-position",
+        "plan": "artifact-feeds-and-reader",
+        "section": "\u00a710",
+        "node": "readout-matches-the-arrived-position",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1418,
+                "cached_input_tokens": 568597,
+                "input_tokens": 570017,
+                "output_tokens": 1640,
+                "reasoning_output_tokens": 802,
+                "total_tokens": 571657,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3332e8d8-dcef-4091-9774-c9680478b165",
+            "session_id": "ship-s16-20260914"
+          },
+          "done_when": "tests/test_spa_reader_geometry.py::test_rendered_reader_owns_the_viewport_and_steps_the_published_list passes, with the readout reading 3 of 3 after stepping to the third item of a three-item published list; that assertion is currently red at the merged head and was deliberately left red by the surface-contract sweep because it is catching this defect rather than asserting a stale value, so a green run here is the measure. State the cause as a mechanism in the manifest, naming why the printed numerator lagged, and note that three prior attempts did not move it: the last applied the correction section 4 predicted, publishing the position from the rendered list rather than recomputing it, and the failure was unchanged, so a node looking for a second derivation of the list will keep not finding one. This plan's own section 10 records the remaining hypothesis, that the readout is sampled before the navigation it describes has committed and so reports the position being left; confirm or refute that with evidence rather than assuming it, and if it is refuted say what the cause is instead. Do not change the assertion",
+          "estimated_hours": null,
+          "goal": "Make the reader readout report the position it arrived at rather than the one it left",
+          "id": "readout-matches-the-arrived-position",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T00:33:11Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T003311744309-readout-matches-the-arrived-position/manifest.md",
+          "plan": "artifact-feeds-and-reader",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a710",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "docs/ui/plan.jsx",
+            "docs/ui/shell-titlebar.jsx",
+            "tests/test_spa_reader_geometry.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "disc-local",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T00:33:19Z",
+        "completed_at": "2026-09-15T01:19:28.569Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2748,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2769,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "51b31e84a09b5ca92eb488bcabfa1c3440f62ea3",
+        "commits": [
+          "b3ab0b04b6d8d24e790aff2ec335f06b30831d0f"
+        ],
+        "changed_lines": {
+          "added": 11,
+          "removed": 6,
+          "files": 1
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_reader_geometry.py and two sibling reader files",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T003311744309-readout-matches-the-arrived-position/gate-final.log",
+          "log_digest": "6b478fe13cd057cce1277b1d29d564b0f4039cf92dfbe39138c6eca304c95e7e"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T003311744309-readout-matches-the-arrived-position/manifest.md",
+        "scope_changed": false,
+        "session_id": "f055851b-adc7-416a-a1fc-e0ec1aee8f6b",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 11171524,
+            "input_tokens_cumulative": 11171524,
+            "output_tokens": 127923,
+            "output_tokens_cumulative": 127923,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T01:19:28.569Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 11502364,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 2766.706,
+          "generated_tokens": 142558,
+          "generation_seconds": 2571.334,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 83.2,
+          "machine_seconds": 195.372,
+          "peak_input_tokens": 166302,
+          "tokens_per_second": 55.44,
+          "wall_tokens_per_second": 51.53
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16-20260914/readout-matches-the-arrived-position",
+          "session_id": "f055851b-adc7-416a-a1fc-e0ec1aee8f6b",
+          "session_source": "stream",
+          "retained_at": "2026-09-15T01:19:28.569Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 103.0,
+        "orientation_input_tokens": 2209148.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -119853,6 +120053,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1458
+    "_version": 1459
   }
 }
