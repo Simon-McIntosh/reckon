@@ -160,6 +160,42 @@
     the skew regression and the isolated module-bundle load check. Reverting the
     fallback produces the recorded 0-child failure.</p>
 
+    <h2 id="blank-surface-guard">Visible-root guard</h2>
+
+    <p>Landed 2026-09-15 in
+    <code>tests/test_spa_blank_surface_guard.py</code>. The guard compiles and
+    evaluates the composition root directly, without browser navigation, and
+    reads the rendered root's child count. This matches the documented fault:
+    the readiness module is absent, no exception is thrown, and the verdict is
+    derived from the actual rendered object rather than an asset request.</p>
+
+    <table>
+      <thead>
+        <tr><th>Guard half</th><th>Cases</th><th>Observed receipt</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Reject the blank root</td>
+          <td>1 repaired skew, 1 local fallback replay</td>
+          <td>Repaired skew: 4 children, <code>role="alert"</code>;
+          replay: 0 children and the guard raises
+          <code>mounted project surface rendered no children</code>.</td>
+        </tr>
+        <tr>
+          <td>Ignore unrelated movement</td>
+          <td>3</td>
+          <td>Original payload, a changed neighbouring project's payload, and
+          an added unrelated module each retain 4 children.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>The focused gate recorded <strong>2 passed</strong>. Its first test
+    proves the guard can fail by constructing the pre-repair fallback from the
+    current source, then calling the same assertion that accepts the repaired
+    root. Its second test proves the guard's result is not a proxy for unrelated
+    state or module-list movement.</p>
+
   </main>
 </body>
 </html>
