@@ -233,6 +233,31 @@
     keeps its own receipt renders &ldquo;answered&rdquo; &mdash; so one status
     conflates two meanings. Recorded rather than fixed here.</p>
   </section>
+
+  <section id="budget-group">
+    <h2>Grouping is declared, not inferred</h2>
+    <p>Landed 2026-09-15. The flight schema now declares the quota-group slot a
+    backend carries, so an account pool is named by the operator who owns it rather
+    than inferred from identical readings. Four tests assert the slot: it resolves
+    from the shipped layer and reports the layer that supplied it; two backends
+    declaring the same group resolve as one pool; two backends sharing an identical
+    reset time with no declared group stay ungrouped, asserted directly so a shared
+    reset time can never group; and an invented reset-time key is refused by the
+    schema, because a reset time is not a legal configuration key for grouping to
+    quietly rest on.</p>
+    <p><strong>Measure:</strong> the gate ran the same two test files at the base
+    commit and at this worktree in one environment &mdash; 1358 passed and zero
+    failed at the base, 1362 passed and zero failed here, the four added being this
+    node's own. The regenerated schema pair is proven honest by the LinkML
+    byte-identity round-trip tests, which fail on any hand edit of the generated
+    files.</p>
+    <p><strong>Carried forward:</strong> the background reader
+    <code>mcp_views._declared_quota_pool</code> still reads a legacy
+    <code>quota_pool</code> key. Reconciling it with the declared
+    <code>budget_group</code> slot, and adopting the slot in the real host
+    configuration, are the operator's next steps and sit outside this node's write
+    scope.</p>
+  </section>
 </main>
 </body>
 </html>

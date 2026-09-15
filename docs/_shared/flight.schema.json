@@ -36,6 +36,13 @@
                         "null"
                     ]
                 },
+                "budget_group": {
+                    "description": "Name shared by backends that draw on the same account quota. A pool is declared, never inferred: identical probe readings or reset times are evidence only that two backends were observed the same way, never that they share a budget, so a backend with no declared group stays ungrouped however alike its siblings read. Optional operator data naming the owner's own pool; the schema supplies none.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
                 "catalog": {
                     "anyOf": [
                         {
@@ -245,6 +252,13 @@
                     "description": "Whether a pre-flight may read this backend's own account-limit surface instead of relying on what earlier runs recorded. Off by default, because a read that has to be asked for cannot happen by accident, and because a backend exposing no such surface reports unknown rather than a guess. It is never a model call and consumes no worker budget.",
                     "type": [
                         "boolean",
+                        "null"
+                    ]
+                },
+                "budget_group": {
+                    "description": "Name shared by backends that draw on the same account quota. A pool is declared, never inferred: identical probe readings or reset times are evidence only that two backends were observed the same way, never that they share a budget, so a backend with no declared group stays ungrouped however alike its siblings read. Optional operator data naming the owner's own pool; the schema supplies none.",
+                    "type": [
+                        "string",
                         "null"
                     ]
                 },
