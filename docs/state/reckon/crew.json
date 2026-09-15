@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T02:05:48",
+  "updated": "2026-09-15T02:17:21",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -117937,6 +117937,205 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T223825480190-canvas-fidelity-check-exists-and-runs",
+        "plan": "back-to-the-canvas",
+        "section": "\u00a78",
+        "node": "canvas-fidelity-check-exists-and-runs",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 812,
+                "cached_input_tokens": 421175,
+                "input_tokens": 421989,
+                "output_tokens": 2825,
+                "reasoning_output_tokens": 1352,
+                "total_tokens": 424814,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3332e8d8-dcef-4091-9774-c9680478b165",
+            "session_id": "ship-s16-20260914"
+          },
+          "done_when": "tests/test_spa_canvas_fidelity.py and tests/spa_canvas_values.py both exist, which they do not at the base revision, and one recorded run reports a verdict for every surface the canvas specifies rather than erroring out; the values the check compares against are read from the canvas import at design/reckon-spa-handoff.dc.html or its triage at design/reckon-spa-handoff.md rather than retyped as literals, because a retyped literal drifts from the canvas silently and this plan exists because six surfaces drifted; the run states as a digit how many surfaces were compared and how many matched, and a mismatch is recorded as a verdict rather than being repaired in this node, since the deliverable is the instrument and not a green result; and the check fails loudly when a named canvas value cannot be found in the import, so a renamed canvas key is reported rather than silently skipped",
+          "estimated_hours": null,
+          "goal": "Build the fidelity check that compares the rendered surfaces against the handoff canvas",
+          "id": "canvas-fidelity-check-exists-and-runs",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T22:38:25Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T223825480190-canvas-fidelity-check-exists-and-runs/manifest.md",
+          "plan": "back-to-the-canvas",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a78",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_spa_canvas_fidelity.py",
+            "tests/spa_canvas_values.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "doc-deploy-matrix",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T22:38:35Z",
+        "completed_at": "2026-09-15T00:14:25.644Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 5737,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 5750,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "e7325edbd748aa619e35b6695aab0ec6542e3ac4",
+        "commits": [
+          "ec15c79e64582171da0c6107ef4b750ef3256a5c"
+        ],
+        "changed_lines": {
+          "added": 681,
+          "removed": 0,
+          "files": 2
+        },
+        "tests_added": 13,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_canvas_fidelity.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T223825480190-canvas-fidelity-check-exists-and-runs/pytest-test_spa_canvas_fidelity.log",
+          "log_digest": "a015a63f4cf5259eaa3bb7e60983effd6ef64f648fc5bab9c9ae6ba0c1191660"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T223825480190-canvas-fidelity-check-exists-and-runs/manifest.md",
+        "scope_changed": false,
+        "session_id": "d863896a-31a4-4612-9005-9f163f2b548e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 7575958,
+            "input_tokens_cumulative": 7575958,
+            "output_tokens": 105084,
+            "output_tokens_cumulative": 105084,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T00:14:25.644Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 7737213,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 5747.098,
+          "generated_tokens": 112934,
+          "generation_seconds": 5726.346,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 80.0,
+          "machine_seconds": 20.752,
+          "peak_input_tokens": 159955,
+          "tokens_per_second": 19.72,
+          "wall_tokens_per_second": 19.65
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16-20260914/canvas-fidelity-check-exists-and-runs",
+          "session_id": "d863896a-31a4-4612-9005-9f163f2b548e",
+          "session_source": "stream",
+          "retained_at": "2026-09-15T00:14:25.644Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 84.0,
+        "orientation_input_tokens": 3415965.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -118165,6 +118364,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1451
+    "_version": 1452
   }
 }
