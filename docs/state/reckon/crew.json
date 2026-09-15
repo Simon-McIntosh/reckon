@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T02:20:25",
+  "updated": "2026-09-15T02:20:34",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -118452,6 +118452,206 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T224442989658-capture-gate-reads-the-plans-own-index",
+        "plan": "spa-shell-scope-and-visibility",
+        "section": "\u00a76",
+        "node": "capture-gate-reads-the-plans-own-index",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1427,
+                "cached_input_tokens": 438452,
+                "input_tokens": 439881,
+                "output_tokens": 1419,
+                "reasoning_output_tokens": 722,
+                "total_tokens": 441300,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3332e8d8-dcef-4091-9774-c9680478b165",
+            "session_id": "ship-s16-20260914"
+          },
+          "done_when": "tests/test_spa_owed_captures.py measures the capture index of the plan whose captures it is gating, rather than the single hardcoded docs/figures/rendered-evidence directory it reads at the base revision; asserted by a case that FAILS when a named plan's capture index is absent or empty, demonstrated by pointing it at a synthesised plan with no captures and recording that it goes red, because the defect being repaired is a gate that passes whatever the plan did. State in the manifest, as digits, how many plan capture indexes the gate now reads and how many it read before, and name the three plans whose sections cite this file as their capture measure, since their evidence currently rests on a gate aimed at a directory none of them writes",
+          "estimated_hours": null,
+          "goal": "Make the owed-captures gate read each plan's own capture index instead of one hardcoded directory",
+          "id": "capture-gate-reads-the-plans-own-index",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T22:44:43Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T224442989658-capture-gate-reads-the-plans-own-index/manifest.md",
+          "plan": "spa-shell-scope-and-visibility",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_spa_owed_captures.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s15-planwarn",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T22:44:56Z",
+        "completed_at": "2026-09-15T00:18:05.587Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 5561,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 5589,
+        "stalled": true,
+        "time_budget": "40m",
+        "base_sha": "116bdb6eb75b8b08e267cab31d502f34cc27aba1",
+        "commits": [
+          "78e2a77931d4bc25ec5b91075bf54b010ae11429"
+        ],
+        "changed_lines": {
+          "added": 141,
+          "removed": 43,
+          "files": 1
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_owed_captures.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T224442989658-capture-gate-reads-the-plans-own-index/gate_after.log",
+          "log_digest": "566b533769efda184c621fadcbb3499a3de7b732897627c27b430e8565082bbb"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T224442989658-capture-gate-reads-the-plans-own-index/manifest.md",
+        "scope_changed": false,
+        "session_id": "343b016e-ab74-4ef4-89a8-381deca92067",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 5851121,
+            "input_tokens_cumulative": 5851121,
+            "output_tokens": 106444,
+            "output_tokens_cumulative": 106444,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T00:18:05.587Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6009941,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 5585.824,
+          "generated_tokens": 111862,
+          "generation_seconds": 5558.813,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 78.8,
+          "machine_seconds": 27.011,
+          "peak_input_tokens": 157520,
+          "tokens_per_second": 20.12,
+          "wall_tokens_per_second": 20.03
+        },
+        "follow_on_paths": [
+          "docs/figures/rendered-evidence"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16-20260914/capture-gate-reads-the-plans-own-index",
+          "session_id": "343b016e-ab74-4ef4-89a8-381deca92067",
+          "session_source": "stream",
+          "retained_at": "2026-09-15T00:18:05.587Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 66.0,
+        "orientation_input_tokens": 3648912.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -118680,6 +118880,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1453
+    "_version": 1454
   }
 }

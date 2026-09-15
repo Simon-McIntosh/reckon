@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="22">
 <meta name="plan-commits" content="98ff44c,346c730,77a473b,9539a96,7c04841,225f60f,599d70d">
 <meta name="plan-impl" content="1.0">
 </head>
@@ -238,6 +238,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260904T042707879700-shell-captures" data-who="s16-shots" data-when="2026-09-04T04:33:50Z">
     <div class="r-comment-body"><p>six populated captures of the landed shell at 1374 and 1920 with an index: the sheet shows 3 hidden rows and 1 locked disabled row, Crew shows 14 cards all from the selected project with scrollHeight 2162 against clientHeight 853 while the document stays at 900, and the topbar picker lists only reckon on a #ffffff ground. The captures also surfaced a defect no DOM gate caught: the project picker dropdown overflows the right viewport edge at both widths</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20260914T224442989658-capture-gate-reads-the-plans-own-index" data-who="s15-planwarn" data-when="2026-09-15T00:18:05.587Z">
+    <div class="r-comment-body"><p>The capture gate now reads each plan&#x27;s own capture index instead of one hardcoded directory: capture indexes read rise from 1 to 3, covering fleet-home, graph-derived-schedule and spa-shell-scope-and-visibility, the three plans whose sections cite this file as their capture measure and whose evidence therefore rested on a gate aimed at a directory none of them writes. 4 passed where the old gate passed 3. The part that makes it a gate rather than a formality is the recorded red: pointed at a synthesised plan with an empty capture index it fails with capture index holds no captures, so it is demonstrated able to refuse rather than only to pass</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20260904T053406769860-picker-within-viewport" data-who="s16-routes2" data-when="2026-09-04T05:49:09Z">
     <div class="r-comment-body"><p>the picker panel is anchored right:0 on .r-project-menu so it renders inside the viewport at both widths: geometry cases pass at 1374 and 1920 with panel left &gt;= 0 and right strictly less than innerWidth, all three row text rectangles contained, and the recaptures show four borders with a viewport gap. Judged by delta: baseline b4279d13 passed 14 skipped 1, head passed 16 skipped 1, no new failures</p></div>
