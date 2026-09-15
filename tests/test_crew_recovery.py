@@ -1147,6 +1147,113 @@ def test_unreadable_pointer_snapshots_unreadable_in_the_ticker_path(home) -> Non
     assert absent_snapshot["state"] == "abandoned"
 
 
+# The markdown-heading shape: status and commits sit under headings, so no
+# ``key: value`` field is read and no reader can judge the delivery. It once
+# returned the partial mapping with no status and no commits, which the
+# classifier read as a vanished worker.
+_MARKDOWN_HEADING_MANIFEST = """\
+# Delivered manifest
+
+## status
+
+complete
+
+## commits
+
+- 9160ae5026055533316a35f467c8c692fe5a028e
+"""
+
+
+def test_a_heading_manifest_classifies_unreadable_not_abandoned(home) -> None:
+    pointer = _cli_pointer(
+        home,
+        "r-heading",
+        "codex-failed-turn.jsonl",
+        manifest=_MARKDOWN_HEADING_MANIFEST,
+        process_alive=False,
+        phase="complete",
+    )
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+    assert row["classification"] == "unreadable"
+    assert row["classification"] not in {"abandoned", "completed_unpromoted"}
+    assert row["manifest_present"] is True
+    assert row["manifest_error"]
+    assert "could not be read" in row["detail"]
+    # The next action names the manifest file to repair; it never reads as the
+    # abandoned instruction, which points at the launch log and offers a
+    # redispatch. The manifest_path is on the row, so the action carries it.
+    assert "manifest" in row["next_action"]
+    assert str(pointer["manifest_path"]) in row["next_action"]
+    assert "read launch log" not in row["next_action"]
+    assert "redispatch" not in row["next_action"]
+    snapshot = recovery._watch_snapshot(
+        pointer, moment=time.time(), stall_seconds=3600
+    )
+    assert snapshot["state"] == "unreadable"
+
+
+def test_the_unreadable_detail_asserts_only_what_is_established(home) -> None:
+    # The detail states what the reader verified — the file is present and no
+    # supported reader could parse it — and never claims the manifest is
+    # incomplete, which would guess at a cause when only the process being gone
+    # was checked.
+    pointer = _cli_pointer(
+        home,
+        "r-heading-detail",
+        "codex-failed-turn.jsonl",
+        manifest=_MARKDOWN_HEADING_MANIFEST,
+        process_alive=False,
+    )
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+    assert row["classification"] == "unreadable"
+    assert "manifest" in row["detail"]
+    assert "could not be read" in row["detail"]
+    assert "incomplete" not in row["detail"]
+
+
+def test_a_missing_manifest_still_abandons_with_its_existing_detail(home) -> None:
+    # The refusal must not widen into the catch-all: a genuinely absent
+    # manifest keeps its abandoned classification and detail, so the negative
+    # half of the outcome space stays distinct from present-but-unreadable.
+    pointer = _cli_pointer(
+        home, "r-absent-still", "codex-failed-turn.jsonl", process_alive=False
+    )
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+    assert row["classification"] == "abandoned"
+    assert row["classification"] != "unreadable"
+    assert "the process is gone without a complete manifest" in row["detail"]
+    assert "repair" not in row["next_action"]
+
+
+def test_every_reader_of_the_manifest_tolerates_an_unparseable_body(home) -> None:
+    # Each production reader of a worker-authored manifest keeps working on a
+    # body no reader can judge rather than crashing: the classifier and the
+    # external-wait probe return their refusal/absence, the audit reports a
+    # finding, the continuation reader returns no ops, and the promotion-facing
+    # ledger count answers "unknown" through its ValueError arm.
+    pointer = _cli_pointer(
+        home,
+        "r-heading-tolerated",
+        "codex-failed-turn.jsonl",
+        manifest=_MARKDOWN_HEADING_MANIFEST,
+        process_alive=False,
+    )
+    assert recovery.classify_pointer(pointer, now_seconds=time.time())[
+        "classification"
+    ] == "unreadable"
+    assert recovery.external_wait(pointer) is None
+    audit = reports.audit_manifest(_MARKDOWN_HEADING_MANIFEST)
+    assert audit["ok"] is False
+    assert audit["findings"]
+    assert (
+        reports.followup_ops_from_manifest(
+            _MARKDOWN_HEADING_MANIFEST, slug="proj", section=""
+        )
+        == []
+    )
+    assert ledger.stated_correction_count(_MARKDOWN_HEADING_MANIFEST) == "unknown"
+
+
 def test_refusal_blocked_pointer_snapshots_as_blocked_in_the_ticker_path(home) -> None:
     pointer = _cli_pointer(home, "r-refused", "codex-usage-limit.jsonl")
     snapshot = recovery._watch_snapshot(pointer, moment=time.time(), stall_seconds=3600)

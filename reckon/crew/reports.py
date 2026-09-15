@@ -68,8 +68,12 @@ def parse_manifest(text: str, *, path: str | None = None) -> dict[str, Any]:
     :class:`ManifestParseError` rather than falling back to the text reader —
     the text reader would return a well-formed-looking partial mapping, which
     is how a JSON manifest carrying ``"status": "complete"`` once came back
-    with eight recognised keys and no status. Unknown keys are kept in both
-    forms so nothing a worker took the trouble to state is silently dropped.
+    with eight recognised keys and no status. A non-blank text body that yields
+    no ``key: value`` field at all — its ``status`` and ``commits`` under
+    markdown headings, say — raises the same error, because the reader cannot
+    judge it and the normalised partial mapping with no status reads as a dead
+    worker. Unknown keys are kept in both forms so nothing a worker took the
+    trouble to state is silently dropped.
 
     Tolerant on purpose for the text form: a worker writes prose around its
     manifest and a strict parser would reject a delivered report over
@@ -79,6 +83,14 @@ def parse_manifest(text: str, *, path: str | None = None) -> dict[str, Any]:
         fields = _read_json_manifest(text, path=path)
     else:
         fields = _parse_text_manifest(text)
+        if not fields and text.strip():
+            # A non-blank text body from which no ``key: value`` field could be
+            # read at all — a markdown-heading layout, say, where ``status`` and
+            # ``commits`` sit under headings rather than at column 0 — parses to
+            # an empty field set and then to the normalised shape with no
+            # status and no commits, which the classifier reads as a vanished
+            # worker. Such a body raises rather than half-succeeding.
+            raise ManifestParseError(_unreadable_text_manifest_message(path))
     fields = _normalise_manifest_fields(fields)
     fields["needs_help"] = parse_needs_help(text) if NEEDS_HELP_MARKER in text else None
     return fields
@@ -150,6 +162,15 @@ def _unreadable_manifest_message(path: str | None) -> str:
         f"cannot read manifest{where}: the body starts as JSON but is not a "
         "well-formed JSON object; expected a JSON object or the "
         "'key: value' text form"
+    )
+
+
+def _unreadable_text_manifest_message(path: str | None) -> str:
+    where = f" at {path}" if path else ""
+    return (
+        f"cannot read manifest{where}: the body is present but no 'key: value' "
+        "field could be read, so its status cannot be determined; expected a "
+        "JSON object or the 'key: value' text form"
     )
 
 
@@ -342,7 +363,13 @@ def audit_manifest(
     suite_armed: bool = False,
 ) -> dict[str, Any]:
     """Judge a delivered manifest: is it complete, and does it stay in scope?"""
-    manifest = parse_manifest(text)
+    try:
+        manifest = parse_manifest(text)
+    except ManifestParseError as exc:
+        # An unreadable manifest is a finding, not an exception: the audit is
+        # itself a reader of the file and must survive a body no reader can
+        # judge, reporting the refusal instead of escaping it to the caller.
+        return {"manifest": {}, "findings": [f"manifest could not be read: {exc}"], "ok": False}
     findings: list[str] = []
     status = str(manifest.get("status", "")).lower()
     if status not in ("complete", "blocked", "failed"):
@@ -476,9 +503,14 @@ def followup_ops_from_manifest(
     This is the worker end of the continuation chain. A worker fenced out of
     work it discovered has nowhere to put it but prose, where it is lost; an op
     per candidate carries it into plan state, and the one-line invocation keeps
-    the live plan as the only place guidance lives.
+    the live plan as the only place guidance lives. An unreadable manifest names
+    no follow-ons: the refusal lands on the classification surfaces, and this
+    reader stays tolerant so nothing downstream of it crashes.
     """
-    manifest = parse_manifest(text)
+    try:
+        manifest = parse_manifest(text)
+    except ManifestParseError:
+        return []
     stamp = now or _utc_now()
     invocation = f"/reckon-ship {slug}" + (f" {section}" if section else "")
     ops: list[dict[str, Any]] = []
