@@ -108,3 +108,256 @@ def test_audit_project_filter_limits_output(tmp_path, monkeypatch):
     assert "proj-b" in result.output
     assert "stale-a" not in result.output
     assert "proj-a" not in result.output
+
+
+def _open_followup(followup_id: str, **kwargs) -> dict:
+    return {
+        "id": followup_id,
+        "status": "open",
+        "recommends_skill": "",
+        "prompt": "",
+        "title": "Followup",
+        "body": "Body",
+        **kwargs,
+    }
+
+
+def _mounts(tmp_path, monkeypatch, mounts: dict) -> None:
+    mounts_file = tmp_path / "mounts.json"
+    mounts_file.write_text(json.dumps(mounts), encoding="utf-8")
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts_file))
+
+
+def test_audit_reports_followup_to_foreign_terminal_plan(tmp_path, monkeypatch):
+    from reckon.doccheck import (
+        FOLLOWUP_FOREIGN_TERMINAL,
+        ForeignFollowupFinding,
+        audit_lifecycle,
+    )
+
+    docs_a = tmp_path / "docs-a"
+    docs_b = tmp_path / "docs-b"
+    docs_a.mkdir()
+    docs_b.mkdir()
+    _mounts(tmp_path, monkeypatch, {"proj-a": str(docs_a), "proj-b": str(docs_b)})
+    _write_plan(
+        docs_a,
+        "holder",
+        {
+            "slug": "holder",
+            "title": "Holder",
+            "status": "active",
+            "impl": 0.5,
+            "followups": [
+                _open_followup(
+                    "f1",
+                    recommends_skill="/reckon-ship proj-b:foreign-terminal",
+                    prompt="/reckon-ship proj-b:foreign-terminal",
+                )
+            ],
+        },
+    )
+    _write_plan(
+        docs_b,
+        "foreign-terminal",
+        {
+            "slug": "foreign-terminal",
+            "title": "Shipped Elsewhere",
+            "status": "shipped",
+            "impl": 1.0,
+        },
+    )
+
+    followup_findings = [
+        item for item in audit_lifecycle() if isinstance(item, ForeignFollowupFinding)
+    ]
+    assert len(followup_findings) == 1
+    finding = followup_findings[0]
+    assert finding.flag == FOLLOWUP_FOREIGN_TERMINAL
+    assert finding.project == "proj-a"
+    assert finding.slug == "holder"  # the holding plan
+    assert finding.target_project == "proj-b"
+    assert finding.target_slug == "foreign-terminal"  # the foreign target
+    assert finding.target_status == "shipped"
+
+    result = CliRunner().invoke(main, ["audit"])
+    assert result.exit_code == 0
+    assert "FOLLOWUP_FOREIGN_TERMINAL" in result.output
+    assert "holder" in result.output
+    assert result.output.count("FOLLOWUP_FOREIGN_TERMINAL") == 1
+
+
+def test_audit_silent_for_followup_to_live_foreign_plan(tmp_path, monkeypatch):
+    from reckon.doccheck import ForeignFollowupFinding, audit_lifecycle
+
+    docs_a = tmp_path / "docs-a"
+    docs_b = tmp_path / "docs-b"
+    docs_a.mkdir()
+    docs_b.mkdir()
+    _mounts(tmp_path, monkeypatch, {"proj-a": str(docs_a), "proj-b": str(docs_b)})
+    _write_plan(
+        docs_a,
+        "holder",
+        {
+            "slug": "holder",
+            "title": "Holder",
+            "status": "active",
+            "impl": 0.5,
+            "followups": [
+                _open_followup("f1", recommends_skill="/reckon-ship proj-b:live-plan")
+            ],
+        },
+    )
+    _write_plan(
+        docs_b,
+        "live-plan",
+        {
+            "slug": "live-plan",
+            "title": "Live Elsewhere",
+            "status": "active",
+            "impl": 0.5,
+        },
+    )
+
+    followup_findings = [
+        item for item in audit_lifecycle() if isinstance(item, ForeignFollowupFinding)
+    ]
+    assert followup_findings == []
+    result = CliRunner().invoke(main, ["audit"])
+    assert "FOLLOWUP_FOREIGN" not in result.output
+
+
+def test_audit_reports_unmounted_foreign_target_distinctly(tmp_path, monkeypatch):
+    from reckon.doccheck import (
+        FOLLOWUP_FOREIGN_UNMOUNTED,
+        ForeignFollowupFinding,
+        audit_lifecycle,
+    )
+
+    docs_a = tmp_path / "docs-a"
+    docs_a.mkdir()
+    _mounts(tmp_path, monkeypatch, {"proj-a": str(docs_a)})
+    _write_plan(
+        docs_a,
+        "holder",
+        {
+            "slug": "holder",
+            "title": "Holder",
+            "status": "active",
+            "impl": 0.5,
+            "followups": [
+                _open_followup("f1", recommends_skill="/reckon-ship proj-c:elsewhere")
+            ],
+        },
+    )
+
+    followup_findings = [
+        item for item in audit_lifecycle() if isinstance(item, ForeignFollowupFinding)
+    ]
+    assert len(followup_findings) == 1
+    finding = followup_findings[0]
+    assert finding.flag == FOLLOWUP_FOREIGN_UNMOUNTED
+    assert finding.target_project == "proj-c"
+    assert finding.target_slug == "elsewhere"
+
+    result = CliRunner().invoke(main, ["audit"])
+    assert "FOLLOWUP_FOREIGN_UNMOUNTED" in result.output
+    assert "FOLLOWUP_FOREIGN_TERMINAL" not in result.output
+
+
+def test_audit_followup_finding_count_over_registered_mounts(tmp_path, monkeypatch):
+    from reckon.doccheck import (
+        FOLLOWUP_FOREIGN_TERMINAL,
+        ForeignFollowupFinding,
+        audit_lifecycle,
+    )
+
+    docs_a = tmp_path / "docs-a"
+    docs_b = tmp_path / "docs-b"
+    docs_a.mkdir()
+    docs_b.mkdir()
+    _mounts(tmp_path, monkeypatch, {"proj-a": str(docs_a), "proj-b": str(docs_b)})
+    for project, docs, holder_slug in (
+        ("proj-a", docs_a, "holder-one"),
+        ("proj-b", docs_b, "holder-two"),
+    ):
+        target_project = "proj-a" if project == "proj-b" else "proj-b"
+        _write_plan(
+            docs,
+            holder_slug,
+            {
+                "slug": holder_slug,
+                "title": holder_slug,
+                "status": "active",
+                "impl": 0.5,
+                "followups": [
+                    _open_followup(
+                        f"f-{holder_slug}",
+                        recommends_skill=f"/reckon-ship {target_project}:terminator",
+                    )
+                ],
+            },
+        )
+    for docs in (docs_a, docs_b):
+        _write_plan(
+            docs,
+            "terminator",
+            {"slug": "terminator", "title": "Done", "status": "done", "impl": 1.0},
+        )
+
+    followup_findings = [
+        item for item in audit_lifecycle() if isinstance(item, ForeignFollowupFinding)
+    ]
+    assert len(followup_findings) == 2
+    assert all(item.flag == FOLLOWUP_FOREIGN_TERMINAL for item in followup_findings)
+
+    result = CliRunner().invoke(main, ["audit"])
+    assert result.output.count("FOLLOWUP_FOREIGN") == 2
+
+
+def test_audit_ignores_local_and_resolved_followup_refs(tmp_path, monkeypatch):
+    from reckon.doccheck import ForeignFollowupFinding, audit_lifecycle
+
+    docs_a = tmp_path / "docs-a"
+    docs_b = tmp_path / "docs-b"
+    docs_a.mkdir()
+    docs_b.mkdir()
+    _mounts(tmp_path, monkeypatch, {"proj-a": str(docs_a), "proj-b": str(docs_b)})
+    _write_plan(
+        docs_a,
+        "holder",
+        {
+            "slug": "holder",
+            "title": "Holder",
+            "status": "active",
+            "impl": 0.5,
+            "followups": [
+                # Local ref (no project qualifier) — never foreign.
+                _open_followup("local", recommends_skill="/reckon-ship a-local-plan"),
+                # Resolved followup naming a foreign terminal plan — not pending.
+                {
+                    **_open_followup(
+                        "resolved",
+                        recommends_skill="/reckon-ship proj-b:foreign-terminal",
+                    ),
+                    "resolved_at": "2026-09-01T00:00:00+00:00",
+                    "resolved_by": "agent",
+                    "outcome": "done",
+                },
+                # Same-project-qualified ref — reads as local, not foreign.
+                _open_followup(
+                    "self-qualified", recommends_skill="/reckon-ship proj-a:holder"
+                ),
+            ],
+        },
+    )
+    _write_plan(
+        docs_b,
+        "foreign-terminal",
+        {"slug": "foreign-terminal", "title": "Done", "status": "done", "impl": 1.0},
+    )
+
+    followup_findings = [
+        item for item in audit_lifecycle() if isinstance(item, ForeignFollowupFinding)
+    ]
+    assert followup_findings == []

@@ -36,6 +36,7 @@ import os
 import re
 import sys
 import time
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
@@ -45,6 +46,7 @@ from urllib.parse import urlsplit
 from bs4 import BeautifulSoup
 
 from reckon import _plan_html
+from reckon._schema import parse_plan_ref
 from reckon._store import (
     PLAN_SUMMARY_MAX_LENGTH,
     _mounts_path,
@@ -97,6 +99,34 @@ class LifecycleFinding:
     impl: float | None
     last_modified: str
     summary_length: int | None = None
+
+
+@dataclass(frozen=True)
+class ForeignFollowupFinding:
+    """An open followup names a plan outside its own project.
+
+    ``flag`` distinguishes the resolution condition so an unmounted or missing
+    target can never be mistaken for a terminal one:
+      - ``FOLLOWUP_FOREIGN_TERMINAL``: target resolves and its status is terminal
+        (shipped/done/archived/superseded/abandoned/historical/reference)
+      - ``FOLLOWUP_FOREIGN_UNMOUNTED``: the target project is not a registered
+        mount (or its docs directory is absent)
+      - ``FOLLOWUP_FOREIGN_MISSING``: the target project is mounted but no plan
+        with that slug resolves there
+    ``slug``/``project`` are the holding plan; the finding names both the
+    holder and its foreign target.
+    """
+
+    project: str
+    slug: str
+    flag: str
+    age_days: int
+    impl: float | None
+    last_modified: str
+    target_project: str
+    target_slug: str
+    target_status: str
+    followup_id: str
 
 
 def modified_age_days(
@@ -233,7 +263,136 @@ def _read_lifecycle_state(path: Path) -> dict[str, Any]:
         "status": ((state.get("status") or "").strip().lower()),
         "impl": float(impl) if impl is not None else None,
         "summary": str(state.get("summary") or ""),
+        "followups": state.get("followups") or [],
     }
+
+
+#: Flag codes for followups that point outside their owning project. The
+#: unmounted and missing conditions are deliberately distinct codes from the
+#: terminal one so a target the audit cannot resolve is never read as shipped.
+FOLLOWUP_FOREIGN_TERMINAL = "FOLLOWUP_FOREIGN_TERMINAL"
+FOLLOWUP_FOREIGN_UNMOUNTED = "FOLLOWUP_FOREIGN_UNMOUNTED"
+FOLLOWUP_FOREIGN_MISSING = "FOLLOWUP_FOREIGN_MISSING"
+
+# A project-qualified plan ref ``project:slug[#stage]`` — the only ref form
+# that can point outside the owning project. Segments mirror the grammar in
+# ``_schema.parse_plan_ref``, which confirms each match.
+_FOREIGN_REF_RE = re.compile(
+    r"(?P<project>[A-Za-z0-9][A-Za-z0-9_-]*):"
+    r"(?P<slug>[A-Za-z0-9][A-Za-z0-9._-]*)"
+    r"(?:#(?P<stage>[A-Za-z0-9][A-Za-z0-9._-]*))?"
+)
+
+
+def _external_followup_refs(followup: Mapping[str, Any]) -> list[str]:
+    """Return project-qualified plan refs an open followup names.
+
+    Ref extraction reads the machine-facing invocation fields (the skill it
+    recommends and the dispatch prompt it carries), not the prose body, so a
+    ``word:word`` resemblance in free text is not treated as a target.
+    """
+
+    raw = " ".join(
+        value
+        for value in (
+            followup.get("recommends_skill"),
+            followup.get("prompt"),
+        )
+        if isinstance(value, str)
+    )
+    refs: list[str] = []
+    for match in _FOREIGN_REF_RE.finditer(raw):
+        token = match.group(0)
+        if parse_plan_ref(token) is not None and token not in refs:
+            refs.append(token)
+    return refs
+
+
+def _foreign_followup_findings(
+    *,
+    followups: list[Any],
+    holding_project: str,
+    holding_slug: str,
+    age_days: int,
+    impl: float | None,
+    last_modified: str,
+    mounts: dict[str, Path],
+) -> list[ForeignFollowupFinding]:
+    """Audit one plan's open followups for refs to foreign plans.
+
+    A followup naming a foreign plan whose status is terminal is work neither
+    roadmap can show; the finding names the holder and the target. Live targets
+    emit nothing. Unmounted and unresolved targets use distinct codes so they
+    are not mistaken for terminal ones.
+    """
+
+    from reckon.lifecycle import TERMINAL_STATUSES
+    from reckon.resources import read_plan_record
+
+    findings: list[ForeignFollowupFinding] = []
+    for followup in followups:
+        if not isinstance(followup, Mapping):
+            continue
+        if str(followup.get("status") or "open") != "open":
+            continue
+        followup_id = str(followup.get("id") or "")
+        for raw_ref in _external_followup_refs(followup):
+            parsed = parse_plan_ref(raw_ref)
+            if parsed is None or not parsed.is_external(holding_project):
+                continue
+            target_project = str(parsed.project)
+            target_slug = parsed.slug
+            docs_dir = mounts.get(target_project)
+            if docs_dir is None or not docs_dir.is_dir():
+                findings.append(
+                    ForeignFollowupFinding(
+                        project=holding_project,
+                        slug=holding_slug,
+                        flag=FOLLOWUP_FOREIGN_UNMOUNTED,
+                        age_days=age_days,
+                        impl=impl,
+                        last_modified=last_modified,
+                        target_project=target_project,
+                        target_slug=target_slug,
+                        target_status="",
+                        followup_id=followup_id,
+                    )
+                )
+                continue
+            target = read_plan_record(docs_dir, target_project, target_slug)
+            target_status = str(target.get("status") or "").strip().lower()
+            if not target_status:
+                findings.append(
+                    ForeignFollowupFinding(
+                        project=holding_project,
+                        slug=holding_slug,
+                        flag=FOLLOWUP_FOREIGN_MISSING,
+                        age_days=age_days,
+                        impl=impl,
+                        last_modified=last_modified,
+                        target_project=target_project,
+                        target_slug=target_slug,
+                        target_status="",
+                        followup_id=followup_id,
+                    )
+                )
+                continue
+            if target_status in TERMINAL_STATUSES:
+                findings.append(
+                    ForeignFollowupFinding(
+                        project=holding_project,
+                        slug=holding_slug,
+                        flag=FOLLOWUP_FOREIGN_TERMINAL,
+                        age_days=age_days,
+                        impl=impl,
+                        last_modified=last_modified,
+                        target_project=target_project,
+                        target_slug=target_slug,
+                        target_status=target_status,
+                        followup_id=followup_id,
+                    )
+                )
+    return findings
 
 
 def audit_lifecycle(
@@ -241,7 +400,7 @@ def audit_lifecycle(
     project: str | None = None,
     docs_dir: Path | None = None,
     now_ts: float | None = None,
-) -> list[LifecycleFinding]:
+) -> list[LifecycleFinding | ForeignFollowupFinding]:
     if docs_dir is not None:
         if project is None:
             raise ValueError("project is required when docs_dir is provided")
@@ -254,12 +413,15 @@ def audit_lifecycle(
             mounts = {project: mounts[project]}
 
     current_ts = time.time() if now_ts is None else now_ts
-    findings: list[LifecycleFinding] = []
+    findings: list[LifecycleFinding | ForeignFollowupFinding] = []
     flag_order = {
         "MISSING_IMPL": 0,
         "SUMMARY_TOO_LONG": 1,
         "STALE": 2,
         "STALE_RCA": 3,
+        FOLLOWUP_FOREIGN_TERMINAL: 4,
+        FOLLOWUP_FOREIGN_UNMOUNTED: 5,
+        FOLLOWUP_FOREIGN_MISSING: 6,
     }
 
     for project_name, docs_dir in mounts.items():
@@ -333,6 +495,17 @@ def audit_lifecycle(
                         last_modified=last_modified,
                     )
                 )
+            findings.extend(
+                _foreign_followup_findings(
+                    followups=state.get("followups") or [],
+                    holding_project=project_name,
+                    holding_slug=state["slug"],
+                    age_days=age_days,
+                    impl=impl,
+                    last_modified=last_modified,
+                    mounts=mounts,
+                )
+            )
 
     findings.sort(key=lambda item: (item.project, flag_order[item.flag], item.slug))
     return findings
