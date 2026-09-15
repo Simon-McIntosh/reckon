@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 <meta name="plan-commits" content="edd448891e6ab661fecc7cd9a3a7c42bd4c64837,35dfb5b,5d28be8,3d329e8">
 <meta name="plan-artifacts" content="docs/research/spa-project-render-fault.html,docs/evidence/archive/blank-project-surface-landed.html,docs/research/shell-fallback-and-authoring-prior-art.html">
 <meta name="plan-impl" content="0.5">
@@ -305,6 +305,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260904T085040922989" data-who="agent" data-when="2026-09-04">
     <div class="r-comment-body">TRIAGE VERDICT — still wanted. Re-homed to S17. Root-cause discovery already landed, so the old §2 instruction is resolved; the remaining home is the fallback and regression work beginning at §3.</div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260915T075410484832-the-blank-surface-guard-fires-and-stays-quiet" data-who="implement-terra-c" data-when="2026-09-15T08:01:48Z">
+    <div class="r-comment-body"><p>Browser-free guard with both halves demonstrated, not asserted. Fires: it reads the real docs/ui/shell.jsx, synthesises the pre-repair source by replacing the shellRoot branch with the original empty main, and asserts childCount 4 with role=alert on the repaired source against childCount 0 on the reverted one, plus a pytest.raises proving the guard&#x27;s own assertion trips on the revert. Stays quiet: 3 unrelated-change checks - a neighbour project&#x27;s title changing and an unrelated module appearing - all return childCount 4. Recorded fragility, not blocking: the revert is produced by string surgery keyed on literal source structure, so a refactor of shell.jsx errors the helper rather than failing meaningfully.</p></div>
 </div>
 </section>
 </main>
