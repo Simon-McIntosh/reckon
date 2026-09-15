@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T14:41:12",
+  "updated": "2026-09-15T14:47:27",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -132188,6 +132188,208 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T105127272217-the-store-exists-before-anything-writes-to-it",
+        "plan": "history-persists-as-detail-washes-out",
+        "section": "\u00a73",
+        "node": "the-store-exists-before-anything-writes-to-it",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 4025,
+                "cached_input_tokens": 835399,
+                "input_tokens": 839426,
+                "output_tokens": 2273,
+                "reasoning_output_tokens": 1088,
+                "total_tokens": 841699,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "f0d4bf08-978e-48fd-803d-0d5f1cdbb55a",
+            "session_id": "ship-s17-20260915"
+          },
+          "done_when": "tests/test_ledger.py gains cases creating the store from empty and tearing it down, asserting the committed file is byte-identical before and after so the expand stage is reversible, with the store's row count stated as a number and the count of readers cut over stated as zero; the existing ledger tests pass unchanged with their count reported before and after",
+          "estimated_hours": null,
+          "goal": "Create the queryable run store alongside the committed file without any reader or writer being cut over",
+          "id": "the-store-exists-before-anything-writes-to-it",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T10:51:29Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 20,
+            "binding_observed": false,
+            "detail": "",
+            "headroom": 0,
+            "mean_context": 58669,
+            "observed_at": "2026-09-15T10:51:09Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 120
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T105127272217-the-store-exists-before-anything-writes-to-it/manifest.md",
+          "plan": "history-persists-as-detail-washes-out",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/ledger.py",
+            "tests/test_ledger.py",
+            "docs/evidence/archive/history-persists-as-detail-washes-out-landed.html",
+            "docs/plans/history-persists-as-detail-washes-out.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-resume-refusal",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T10:52:43Z",
+        "completed_at": "2026-09-15T12:35:49.496Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 6150,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 6186,
+        "stalled": true,
+        "time_budget": "50m",
+        "base_sha": "7352116458bd4233757667512c91dcbe2f30a7c8",
+        "commits": [
+          "7764b522884d9db5c936d4608606d6abca470346",
+          "dff74cb0c7ea3b36117d40ce2b480be492fa1bb1"
+        ],
+        "changed_lines": {
+          "added": 145,
+          "removed": 0,
+          "files": 3
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_ledger.py",
+          "exit_status": 1,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/f0d4bf08-978e-48fd-803d-0d5f1cdbb55a/scratchpad/ledger_merged.log",
+          "log_digest": "4eeb2f6b2bccda61b2e84059f1bfb9dd40e227b78d00064c8a00f8ccfdbd7a95"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T105127272217-the-store-exists-before-anything-writes-to-it/manifest.md",
+        "scope_changed": false,
+        "session_id": "24ef4398-7855-4270-ba02-63e9dbcf55c2",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6023945,
+            "input_tokens_cumulative": 6023945,
+            "output_tokens": 28029,
+            "output_tokens_cumulative": 28029,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T12:35:49.496Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6023945,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 2929.048,
+          "generated_tokens": 28029,
+          "generation_seconds": 2915.772,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 81.5,
+          "machine_seconds": 13.276,
+          "peak_input_tokens": 163047,
+          "tokens_per_second": 9.61,
+          "wall_tokens_per_second": 9.57
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s17-20260915/the-store-exists-before-anything-writes-to-it",
+          "session_id": "24ef4398-7855-4270-ba02-63e9dbcf55c2",
+          "session_source": "pointer",
+          "retained_at": "2026-09-15T12:35:49.496Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 35.0,
+        "orientation_input_tokens": 3396066.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -132416,6 +132618,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1524
+    "_version": 1525
   }
 }
