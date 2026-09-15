@@ -71,6 +71,23 @@ PLAN_LANDING_CONTRACT = (
     "  touching them makes every merge conflict there."
 )
 
+# The closure-authority contract, embedded only beside the landing contract, so a
+# worker told how to land a record is also told what it may never close. It lives
+# here for the same reason its siblings do: the prompt embeds no protocol reference
+# by design, so a discipline carried only by a reference file reaches nobody. Both
+# statements are about what the worker can see rather than about merge mechanics:
+# only the coordinator observes the other nodes, so a worker knows its node landed
+# but not whether the section closed. Kept as a standalone constant so a test can
+# compose with it masked out and diff against the live prompt, which proves the
+# addition is removable and scoped.
+CLOSURE_AUTHORITY_CONTRACT = (
+    "CONTRACT — WHO CLOSES THE NODE\n"
+    "  A worker does not close its own node: it must not resolve its own\n"
+    "  driving followup and must not set a terminal status, because only the\n"
+    "  coordinator observes the other nodes — a worker knows its node landed,\n"
+    "  not whether the section closed."
+)
+
 
 # This portion is deliberately constant for every worker, regardless of the
 # project, node, role, or delivery configuration.  Its declared length is the
@@ -177,6 +194,7 @@ RUNTIME FILESYSTEM
     else:
         can_land = can_write_worktree
     landing_contract = PLAN_LANDING_CONTRACT if can_land else ""
+    closure_authority_contract = CLOSURE_AUTHORITY_CONTRACT if can_land else ""
     orientation_scope = json.dumps(list(node.write_paths), separators=(",", ":"))
     if node.role == "test":
         evidence_role_note = (
@@ -203,6 +221,8 @@ ROLE     {node.role}
 {specification_guidance}{delivery_directory_note}
 
 {landing_contract}
+
+{closure_authority_contract}
 
 FENCE — SCOPE (exclusive write paths; nothing outside them)
 {scope_lines}

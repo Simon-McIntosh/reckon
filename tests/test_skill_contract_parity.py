@@ -25,7 +25,11 @@ from pathlib import Path
 import pytest
 
 from reckon.crew.node import TaskNode
-from reckon.crew.prompts import PLAN_LANDING_CONTRACT, compose_prompt
+from reckon.crew.prompts import (
+    CLOSURE_AUTHORITY_CONTRACT,
+    PLAN_LANDING_CONTRACT,
+    compose_prompt,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -81,24 +85,63 @@ def _slice_between(text: str, start: str, end: str) -> str:
 
 def _landing_requirement() -> str:
     """The positive sentence, sliced from the prompt's own constant."""
-    return _flat(_slice_between(_flat(PLAN_LANDING_CONTRACT),
-                                "Append your landing record to your own section",
-                                "go into your final commit."))
+    return _flat(
+        _slice_between(
+            _flat(PLAN_LANDING_CONTRACT),
+            "Append your landing record to your own section",
+            "go into your final commit.",
+        )
+    )
 
 
 def _meta_line_ban() -> str:
     """The version/meta-line sentence, sliced from the prompt's own constant."""
-    return _flat(_slice_between(_flat(PLAN_LANDING_CONTRACT),
-                                "Do not edit the plan-version or plan-modified",
-                                "every merge conflict there."))
+    return _flat(
+        _slice_between(
+            _flat(PLAN_LANDING_CONTRACT),
+            "Do not edit the plan-version or plan-modified",
+            "every merge conflict there.",
+        )
+    )
 
 
 def _narrowed_prohibition() -> str:
     """The narrowed shared-state ban, sliced from the composed prompt's own
     worktree rules rather than from a second copy here."""
-    return _flat(_slice_between(_flat(_prompt()),
-                                "Never mutate the shared project index",
-                                "you are landing against."))
+    return _flat(
+        _slice_between(
+            _flat(_prompt()),
+            "Never mutate the shared project index",
+            "you are landing against.",
+        )
+    )
+
+
+# The coordinator-side closure limits travel in two skill files, not three. The
+# worker-half sentences above reach every one of SKILL_FILES, but the two limits
+# are stated only where a coordinator is told how a section closes, which is
+# SKILL.md and references/sprint-orchestration.md; references/worker-protocol.md
+# carries the worker's landing requirement and not the coordinator's closure
+# authority. An expectation derived from the prompt is therefore checked against
+# exactly the files that state the sentence, so a prompt rewording that is not
+# mirrored into either one fails on the next run.
+LIMIT_SKILL_FILES = (
+    ROOT / "skills" / "reckon-ship" / "SKILL.md",
+    ROOT / "skills" / "reckon-ship" / "references" / "sprint-orchestration.md",
+)
+
+
+def _closure_authority_limit() -> str:
+    """The two limits with their see-based reason, sliced from the prompt's own
+    constant so a skill sentence must match the prompt's words or the test
+    fails, exactly as with the landing requirement above."""
+    return _flat(
+        _slice_between(
+            _flat(CLOSURE_AUTHORITY_CONTRACT),
+            "must not resolve its own driving followup",
+            "not whether the section closed.",
+        )
+    )
 
 
 @pytest.mark.parametrize("path", SKILL_FILES, ids=lambda p: p.name)
@@ -123,6 +166,11 @@ def test_paths_carry_the_meta_line_ban_from_the_prompt(path: Path) -> None:
     assert _meta_line_ban() in _flat(path.read_text()), path
 
 
+@pytest.mark.parametrize("path", LIMIT_SKILL_FILES, ids=lambda p: p.name)
+def test_paths_carry_the_closure_limits_from_the_prompt(path: Path) -> None:
+    assert _closure_authority_limit() in _flat(path.read_text()), path
+
+
 def test_the_extracted_sentences_are_the_prompt_s_own_words() -> None:
     """The locators must still resolve for the derivations to mean anything; a
     prompt reword of an anchor fails loudly here rather than coercing a pass."""
@@ -131,3 +179,4 @@ def test_the_extracted_sentences_are_the_prompt_s_own_words() -> None:
     assert _landing_requirement() in prompt
     assert _meta_line_ban() in prompt
     assert _narrowed_prohibition() in prompt
+    assert _closure_authority_limit() in prompt
