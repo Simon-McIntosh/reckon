@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T18:24:26",
+  "updated": "2026-09-15T19:47:12",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -141487,6 +141487,212 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T162515158690-the-reconstruction-keeps-its-settings",
+        "plan": "a-lane-can-say-where-it-stands",
+        "section": "\u00a75d",
+        "node": "the-reconstruction-keeps-its-settings",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 509,
+                "cached_input_tokens": 567168,
+                "input_tokens": 567679,
+                "output_tokens": 665,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 568344,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3332e8d8-dcef-4091-9774-c9680478b165",
+            "session_id": "ship-s16-20260914"
+          },
+          "done_when": "ANCHOR BY SYMBOL, NEVER BY LINE NUMBER: another session edits these files, and a coordinate is stale the moment anyone inserts above it.\n\nREPAIR THE FUNCTION, NOT A CALLER. _backend_settings in reckon/crew/dispatch.py returns {launch, command} from argv[0] as soon as a recorded argv is present, BEFORE it consults config, discarding the configured window, the model and the effort. Make that branch MERGE: argv supplies the command, config supplies the rest, neither discards the other.\n\nOne candidate is already dead - do not re-measure it. Passing a config in from the config-less call in promotion.py that builds StreamMeasures changes nothing, because the argv branch returns first. Measured: live pointers 37/37 carry top-level argv, ledger rows 0/977 do. The same short-circuit silently defeats the three dispatch.py call sites that ALREADY pass a real config, so repairing the function fixes those too - the larger half, invisible from the promotion call alone. It also carries the config-less call in resumption.py without editing it, which is why resumption.py is not in your scope.\n\nDONE WHEN, each clause emitting evidence:\n\n(1) A backend rebuilt from recorded argv resolves utilisation against the configured window, asserted through the dispatch path AND through the promotion call that writes the promoted row's input_utilisation_pct. Both are in your scope and must be asserted at the combined state; a worker asserting one half cannot see what the pair does.\n\n(2) An unresolvable window yields unknown utilisation, never an announced or constant fallback. Demonstrate as a refusal that fails if any figure is substituted.\n\n(3) A resumed run carries its recorded model and effort: assert the mapping resume_plan hands launch_plan contains both from the recorded argv.\n\n(4) A resumed run is context-checked or says so explicitly. _context_fit_verdict has one call site, in routing.py inside dispatch resolution, and the resume path never reaches it. Prefer an explicit unchecked state from resume_plan; routing.py is NOT in your scope, so block rather than reach. Silence fails this clause - it is indistinguishable from a check that passed.\n\n(5) State as digits how many of the five _backend_settings callers lose a setting before and after. After is zero.\n\nA RECORDED ROW'S WINDOW IS NEVER RESOLVED BY LOOKUP. Take it from that row's own agent.usable_input_window. Config resolution is correct ONLY for a run being dispatched now. Measured: alias dsv4-flash carries windows 1016576 AND 492288; dsv4.1-flash carries 172800 AND 1016576, because a row holds what was configured when it ran. An alias lookup gets the nine understating rows wrong again, for a new reason.\n\nTHE FALSIFIER RANGES OVER WINDOW SIZES AND BOTH DIRECTIONS, NEVER OVER THE LIVE LANE INVENTORY. Of 983 ledger rows, 125 divide by something other than the window beside them: 116 overstate about fivefold, 9 UNDERSTATE - worst reports 81.9 percent where the truth is 94.8. Understatement admits a node that should be held, and it lands on the smallest window in the fleet, so the error is unsafe exactly where headroom is scarcest. Carry at least one fixture window BELOW the divisor and one ABOVE, and report both as numbers. A test asserting only that the overstatement collapses leaves the understating path untouched.\n\nTHE SINGLE-MODEL FIXTURE TRAP. This lane serves one model, so a fixture built from configured lanes cannot express the model defect at all - nothing in the code preserves the model, it survives only because the settings payload offers one option. Build a synthetic config with at least two models. Effort is the positive control: it is dropped on every lane, so an effort assertion fails against the unrepaired function even with one model. Prove the test is aimed with effort before trusting the model assertion, and say so in the docstring.\n\nJudge by delta against a stated base: record the base revision and its failure ids, report added failures as a digit, zero added against a red base is a pass. Gate the focused set covering your changed files plus your new test, captured to one log; no full suite. Author your own landing record - a plan comment and an evidence anchor - and commit both in your worktree. Do not resolve the driving followup or set a terminal status. Conventional commit subject AND a body.",
+          "estimated_hours": null,
+          "goal": "Make _backend_settings merge rather than discard: the recorded argv supplies the command, the config supplies the window and model, and neither drops the other",
+          "id": "the-reconstruction-keeps-its-settings",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T16:25:15Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no numeric 'mean_context'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T162515158690-the-reconstruction-keeps-its-settings/manifest.md",
+          "plan": "a-lane-can-say-where-it-stands",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75d",
+          "spec_level": "guided",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/dispatch.py",
+            "reckon/crew/promotion.py",
+            "tests/test_backend_reconstruction_settings.py",
+            "docs/evidence/archive/a-lane-can-say-where-it-stands-landed.html",
+            "docs/plans/a-lane-can-say-where-it-stands.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-drain-fence",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T16:25:29Z",
+        "completed_at": "2026-09-15T17:21:50.264Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3291,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3381,
+        "stalled": false,
+        "time_budget": "60m",
+        "base_sha": "2ffa333a42242b3cc166dd5afe268bd2dd375065",
+        "commits": [
+          "fe3e92316697ee805400ec406f6c2fe83bb6055c"
+        ],
+        "changed_lines": {
+          "added": 438,
+          "removed": 14,
+          "files": 2
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_backend_reconstruction_settings.py tests/test_crew_promotion.py tests/test_backend_observation.py tests/test_crew_routes.py tests/test_budget.py",
+          "exit_status": 1,
+          "log_path": "/tmp/recon-merged-head.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T162515158690-the-reconstruction-keeps-its-settings/manifest.md",
+        "scope_changed": false,
+        "session_id": "5673e6f9-a86b-40ba-b78f-88ca348eecd3",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 910036,
+            "input_tokens_cumulative": 910036,
+            "output_tokens": 9131,
+            "output_tokens_cumulative": 9131,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T17:21:50.264Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": {
+          "attempt": 3,
+          "kind": "redispatch",
+          "previous_run_id": "r-20260915T161848926966-the-reconstruction-keeps-its-settings",
+          "root_run_id": "r-20260915T134345728165-the-reconstruction-keeps-its-settings"
+        },
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 910036,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 1016576",
+          "elapsed_seconds": 1312.854,
+          "generated_tokens": 9131,
+          "generation_seconds": 108.41,
+          "input_budget_tokens": 1016576,
+          "input_utilisation_pct": 10.5,
+          "machine_seconds": 1204.444,
+          "peak_input_tokens": 106954,
+          "tokens_per_second": 84.23,
+          "wall_tokens_per_second": 6.96
+        },
+        "dispute_count": "unknown",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 4,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16-20260914/the-reconstruction-keeps-its-settings",
+          "session_id": "5673e6f9-a86b-40ba-b78f-88ca348eecd3",
+          "session_source": "pointer",
+          "retained_at": "2026-09-15T17:21:50.264Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 146.0,
+        "orientation_input_tokens": 10327204.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -141715,6 +141921,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1552
+    "_version": 1553
   }
 }
