@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="messages-to-workers-never-arrive">
+  <meta name="plan-title" content="Messages to workers never arrive">
+  <meta name="plan-summary" content="The peer-message channel to a crew worker has delivered nothing in 3,949 runs, and both surfaces report success">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-informs" content="a-live-worker-can-be-reached">
+  <meta name="plan-source" content="process table, run streams and session transcripts on this workstation">
+  <meta name="plan-source-quality" content="primary">
+  <meta name="plan-reviewed-at" content="2026-09-15">
+  <meta name="plan-read" content="1">
+  <meta name="plan-tags" content="crew,delivery,analysis">
+  <title>Messages to workers never arrive | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Research input</p>
+      <h1>Messages to workers never arrive</h1>
+      <p class="lead">
+        A coordinator can address a crew worker by name, is told the send
+        succeeded, and the worker never receives anything — in 3,949 runs, not
+        once. The approval hold that swallows the message is the mechanism; the
+        defect is that the channel is advertised as available at all.
+      </p>
+    </header>
+
+    <section id="observed">
+      <h2>What was observed</h2>
+      <p>
+        A sprint-review coordinator checked in on four measurement runs and
+        judged that three of them were about to submit a batch job without
+        committing the benchmark script first. It sent each worker a one-line
+        instruction — <em>commit the benchmark before submitting the job</em> —
+        by peer message, addressing them by the names its own session listing
+        had shown.
+      </p>
+      <p>
+        All three sends returned success. Each was then reported held:
+        <code>the recipient's session has different permission-mode settings,
+        so their user must approve it before Claude sees it</code>. One later
+        reported <code>expired without approval</code>. The coordinator read
+        the holds as belt-and-braces redundancy — the briefs already said to
+        commit first — and moved on. That reading was reasonable and wrong:
+        no worker received anything, and none ever could have.
+      </p>
+    </section>
+
+    <section id="recipients">
+      <h2>What the recipients actually are</h2>
+      <p>
+        The three recipients resolve to process ids 1354598, 1362438 and
+        1369929. Every one is the same shape:
+      </p>
+      <pre><code>claude … -p --output-format stream-json --verbose \
+       --effort high --dangerously-skip-permissions \
+       --add-dir …/.reckon-worktrees/…/&lt;node&gt;</code></pre>
+      <p>
+        Measured from the process table and <code>/proc</code>:
+      </p>
+      <table>
+        <thead>
+          <tr><th>Property</th><th>Measured value</th><th>Consequence</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>controlling terminal</td>
+            <td><code>?</code> — none, on all three</td>
+            <td>no interactive surface exists</td>
+          </tr>
+          <tr>
+            <td>file descriptor 0</td>
+            <td><code>…/runs/&lt;run&gt;/prompt.txt</code></td>
+            <td>stdin is a regular file, already consumed</td>
+          </tr>
+          <tr>
+            <td>file descriptor 1</td>
+            <td><code>…/runs/&lt;run&gt;/stream.jsonl</code></td>
+            <td>stdout is an append-only log, read by tooling</td>
+          </tr>
+          <tr>
+            <td>parent process</td>
+            <td><code>1</code></td>
+            <td>detached; no shell, no session leader</td>
+          </tr>
+          <tr>
+            <td>permission mode</td>
+            <td><code>bypassPermissions</code></td>
+            <td>differs from an ordinary coordinator's mode</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        These are headless print-mode processes. There is no user attached to
+        any of them, so an approval gate in front of their inbox is a gate
+        nobody can open.
+      </p>
+    </section>
+
+    <section id="measurement">
+      <h2>The measurement</h2>
+      <p>
+        The holds could have been an intermittent condition — a busy recipient,
+        a slow approval. They are not. Every delivered peer message arrives in
+        the recipient's transcript wrapped in a <code>cross-session-message</code>
+        element, so the marker is countable on both sides.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Population</th><th>Files</th><th>Occurrences of the marker</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Interactive session transcripts (positive control)</td>
+            <td>244</td>
+            <td>11,939</td>
+          </tr>
+          <tr>
+            <td>Crew worker run streams, every run on this host</td>
+            <td>3,949</td>
+            <td><strong>0</strong></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        The control is what makes the zero mean anything: an absent signal and
+        a mis-aimed instrument return the same empty result, so the same grep
+        was first required to find the case known present. It finds 11,939 of
+        them. Against every crew worker stream ever written on this
+        workstation it finds none, in zero files.
+      </p>
+      <p>
+        The delivery rate of this channel is not low. It is zero, and it has
+        been zero for the life of the fleet.
+      </p>
+    </section>
+
+    <section id="why-it-was-used">
+      <h2>Why a coordinator uses a channel that has never worked</h2>
+      <p>
+        Three surfaces agree that the channel is available, and nothing
+        contradicts them until the message has already expired.
+      </p>
+      <ol>
+        <li>
+          <strong>The session listing advertises workers as peers.</strong>
+          A crew worker appears in it as
+          <code>cca-wall-at-cell-pitch-5a · interactive · busy</code> — the
+          same row shape, and the same word <em>interactive</em>, as a genuine
+          coordinator session sitting at a terminal. Of 31 peers listed during
+          this analysis, roughly twenty were headless workers. Nothing in the
+          row distinguishes them. Confirmed independently from a second
+          coordinator session on the same host, which found the same
+          proportion &mdash; about twenty of its thirty-four rows &mdash; and
+          its own three in-flight workers listed among them as
+          <em>interactive</em>. On a busy host the peer list is mostly workers,
+          and the genuinely addressable sessions are the minority.
+        </li>
+        <li>
+          <strong>The send reports success.</strong> The call returns
+          <code>success: true</code> with a message id. That is literally
+          true — the message reached the recipient's socket — and it is read,
+          reasonably, as delivery.
+        </li>
+        <li>
+          <strong>Reckon's own instructions say to do it.</strong> The
+          orchestration reference tells a coordinator, on finding evidence but
+          no report, to <em>message the worker and tell it to write the
+          deliverable to the named path</em>. The workstation-wide recovery
+          order for a silent worker reads <em>manifest file → on-disk logs →
+          message the worker → only then redispatch</em>. Neither names a
+          mechanism, because at the time they were written the only mechanism
+          in view was the peer channel.
+        </li>
+      </ol>
+      <p>
+        So the coordinator followed a written instruction, using a surface that
+        listed the recipient and a call that confirmed the send. Every
+        available signal said the message landed. This is the failure shape
+        this repository has recorded repeatedly and under several names: a
+        protection, a record or a channel that reports success while doing
+        nothing, where the silent clearance is worse than a loud refusal.
+      </p>
+    </section>
+
+    <section id="the-chain">
+      <h2>One direction is built; the other is advertised</h2>
+      <p>
+        The worker-to-coordinator direction was analysed and repaired
+        previously: run state is pull-only, and turning a worker's file change
+        into something a coordinator hears takes a pointer, a producer, an
+        event stream and a session-local follower. That chain now exists, and
+        dispatch refuses to launch without the last link armed.
+      </p>
+      <p>
+        The reverse direction has no chain at all. It has a name in a listing
+        and a call that returns success.
+      </p>
+      <figure>
+        <svg viewBox="0 0 880 300" width="100%" role="img"
+             aria-label="Two directions between coordinator and worker: a built delivery chain upward, and an advertised but unbuilt channel downward">
+          <g fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="20" y="30" width="150" height="54" rx="6"/>
+            <rect x="710" y="30" width="150" height="54" rx="6"/>
+            <rect x="20" y="216" width="150" height="54" rx="6"/>
+            <rect x="710" y="216" width="150" height="54" rx="6"/>
+            <rect x="250" y="34" width="110" height="46" rx="5" opacity="0.65"/>
+            <rect x="390" y="34" width="110" height="46" rx="5" opacity="0.65"/>
+            <rect x="530" y="34" width="110" height="46" rx="5" opacity="0.65"/>
+          </g>
+          <g fill="currentColor" font-size="13" font-family="inherit">
+            <text x="95" y="53" text-anchor="middle">worker</text>
+            <text x="95" y="70" text-anchor="middle" opacity="0.7">writes a file</text>
+            <text x="305" y="55" text-anchor="middle" opacity="0.8">pointer</text>
+            <text x="305" y="71" text-anchor="middle" opacity="0.55">per run</text>
+            <text x="445" y="55" text-anchor="middle" opacity="0.8">producer</text>
+            <text x="445" y="71" text-anchor="middle" opacity="0.55">per project</text>
+            <text x="585" y="55" text-anchor="middle" opacity="0.8">follower</text>
+            <text x="585" y="71" text-anchor="middle" opacity="0.55">per session</text>
+            <text x="785" y="53" text-anchor="middle">coordinator</text>
+            <text x="785" y="70" text-anchor="middle" opacity="0.7">hears it</text>
+            <text x="785" y="239" text-anchor="middle">coordinator</text>
+            <text x="785" y="256" text-anchor="middle" opacity="0.7">sends by name</text>
+            <text x="95" y="239" text-anchor="middle">worker</text>
+            <text x="95" y="256" text-anchor="middle" opacity="0.7">receives nothing</text>
+          </g>
+          <g stroke="currentColor" stroke-width="1.5" fill="none">
+            <path d="M170 57 L250 57"/><path d="M360 57 L390 57"/>
+            <path d="M500 57 L530 57"/><path d="M640 57 L710 57"/>
+            <path d="M710 243 L420 243" stroke-dasharray="6 5"/>
+          </g>
+          <g fill="currentColor" font-size="12">
+            <text x="440" y="120" text-anchor="middle" opacity="0.75">
+              built, measured, and enforced — dispatch refuses without the follower
+            </text>
+            <text x="415" y="237" text-anchor="end" opacity="0.75">held for an approval</text>
+            <text x="415" y="254" text-anchor="end" opacity="0.75">no headless session can give</text>
+            <text x="440" y="292" text-anchor="middle" opacity="0.75">
+              advertised by the listing, confirmed by the send, delivered 0 times in 3,949 runs
+            </text>
+          </g>
+          <g stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.6">
+            <path d="M300 228 L320 243 L300 258"/>
+          </g>
+        </svg>
+        <figcaption>
+          The two directions are not symmetric. Upward, every link is built and
+          the last one is fenced at dispatch. Downward, the message stops at an
+          approval gate with nobody behind it — and both the listing and the
+          send report that the path is open.
+        </figcaption>
+      </figure>
+    </section>
+
+    <section id="what-exists">
+      <h2>What exists instead, and the case it does not cover</h2>
+      <p>
+        There is a real coordinator-to-worker channel:
+        <code>reckon crew resume --run &lt;id&gt; --advice "…"</code>. It
+        continues the worker's own session so the advice reaches something that
+        still remembers what it tried. It is the right answer to a worker that
+        has stopped and asked for help, and it is what the recovery order
+        should have named.
+      </p>
+      <p>
+        It does not cover the case that produced this incident. Resume
+        continues a session whose turn has ended; a run whose process is still
+        alive is classified <code>working</code>, and the code says so directly
+        — a lingering process means <em>its slot stays held and its own resume
+        is refused while it lingers</em>. The four runs here were mid-turn and
+        healthy. The coordinator did not want to recover them; it wanted to
+        change what they did next, before they did it.
+      </p>
+      <p>
+        For that — an instruction to a live worker, delivered while it is still
+        working — there is no channel, refused or otherwise. The useless one
+        was used because it was the only one that appeared to exist.
+      </p>
+    </section>
+
+    <section id="finding">
+      <h2>Finding</h2>
+      <p>
+        Two defects, and they are separable.
+      </p>
+      <p>
+        <strong>The advertised channel.</strong> Headless workers are listed as
+        interactive peers and accept sends that return success, while their
+        measured delivery rate is zero. This is a false clearance: it costs a
+        coordinator a real decision every time it is believed. The remedy is
+        for the attempt to fail loudly and name the working alternative, not
+        for it to be held pending an approval that cannot come.
+      </p>
+      <p>
+        <strong>The missing channel.</strong> Reckon has no way to put an
+        instruction in front of a live worker. Resume covers the stopped
+        worker; nothing covers the working one. Until that exists, the written
+        recovery order contains a step no mechanism implements — a rule with no
+        check, which is the condition this repository treats as equivalent to
+        having no rule at all.
+      </p>
+      <p>
+        The second is why the first is dangerous. An advertised channel is
+        merely wrong; an advertised channel standing in for a capability the
+        system genuinely lacks is what makes a coordinator believe a fleet was
+        steered when it was not.
+      </p>
+    </section>
+
+    <section id="method">
+      <h2>Method and limitations</h2>
+      <p>
+        Process facts read from <code>ps</code> and <code>/proc/&lt;pid&gt;/fd</code>
+        while the three runs were live. Marker counts taken over every
+        <code>stream.jsonl</code> under the crew run directory and every session
+        transcript under the harness project directory on this host, on
+        2026-09-15.
+      </p>
+      <p>
+        Limitations worth stating. The count covers this workstation only, and
+        a stream is truncated when a run is promoted, so a delivered message in
+        a long-since-archived run would not be counted — the positive control
+        bounds how wrong that could be, but does not eliminate it. The claim
+        that resume is refused against a live process is read from the code and
+        its comment rather than exercised against a live run, because probing
+        another session's fleet to confirm it was judged the wrong trade. The
+        permission-mode explanation for the hold is the harness's own stated
+        reason, not an independently verified cause.
+      </p>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-live-worker-can-be-reached">
+  <meta name="plan-title" content="A Live Worker Can Be Reached">
+  <meta name="plan-summary" content="A coordinator is told its message to a crew worker succeeded while nothing is delivered; close the false clearance and give a live worker a channel.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="4.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="low">
+  <meta name="plan-sprint" content="">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,delivery,reckon-tooling">
+  <title>A Live Worker Can Be Reached | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">&sect;1 &mdash; What fails, and what it costs</h2>
+    <p>A coordinator can name a crew worker, send it an instruction, and be told
+    the send succeeded. The worker receives nothing. Measured across every run
+    on this workstation: <strong>0 delivered messages in 3,949 worker streams</strong>,
+    against a positive control of 11,939 in 244 interactive transcripts. The
+    channel has never worked once.</p>
+    <p>The full measurement, the process facts behind it, and the reason a
+    coordinator reasonably believes the channel exists are in
+    <a href="/research/messages-to-workers-never-arrive">Messages to workers never arrive</a>.
+    This plan does not restate them.</p>
+    <p>The cost is not the undelivered message. It is that a coordinator makes a
+    real decision on the strength of a false confirmation &mdash; judging a
+    fleet steered, and standing down &mdash; which is the same failure shape as
+    a guard that reports a protection it does not provide.</p>
+
+    <h2 id="s2">&sect;2 &mdash; Two defects, separable and differently urgent</h2>
+    <p>They are worth keeping apart, because one is cheap and self-contained and
+    the other touches a contended surface.</p>
+    <p><strong>The false clearance.</strong> Headless workers are advertised as
+    interactive peers and accept sends that report success. A coordinator is
+    told twice that the path is open. Closing this does not require the missing
+    capability to exist &mdash; a refusal naming the working alternative is
+    strictly better than a silent expiry, today.</p>
+    <p><strong>The missing channel.</strong> Nothing can put an instruction in
+    front of a worker that is still working.
+    <code>reckon crew resume --advice</code> continues a session whose turn has
+    ended and is refused while the process lingers, so it answers the stopped
+    worker and not the working one. Until something answers the working one,
+    the written recovery order contains a step no mechanism implements.</p>
+    <p>The second is why the first is dangerous: an advertised channel standing
+    in for a capability the system genuinely lacks is what makes the substitution
+    invisible.</p>
+
+    <h2 id="s3">&sect;3 &mdash; Refuse the send at the layer that knows</h2>
+    <p>Reckon does not own the session listing or the send, but it already owns a
+    proven interception point: the pre-tool hook that refuses a harness-native
+    background-agent spawn in a crew-managed repository and composes the
+    crew-dispatch re-route so the caller fixes it in one step rather than
+    diagnosing a bare refusal.</p>
+    <p>The same shape applies here. When a send names a recipient that resolves
+    to a live crew worker &mdash; matched against this host's live run pointers
+    rather than against a name pattern, so a coordinator session that happens to
+    share a node's name is not caught &mdash; refuse it, and name the channel
+    that does work for that run's current state: resume when the run has
+    stopped, the inbox of &sect;4 when it is live.</p>
+    <p>Done when a send addressed to a live worker is refused immediately, the
+    refusal names the run id and the working command, and a send to a genuine
+    coordinator session is untouched. The falsifier is the second half: a guard
+    that refuses peer messaging generally would pass a test that only checks the
+    first, so the quiet half is written before the loud one.</p>
+    <p>Self-contained: a hook module and its settings wiring, plus tests. It
+    touches nothing under <code>reckon/crew/</code>.</p>
+
+    <h2 id="s4">&sect;4 &mdash; An inbox a working worker reads</h2>
+    <p>A headless worker cannot be interrupted &mdash; its stdin is a consumed
+    file and its approval gate has nobody behind it. But it can read. A
+    coordinator writes a message into the run's own directory; the worker's
+    prompt contract obliges it to read that directory at points where an
+    instruction could still change what it does: before submitting a long job,
+    before committing, between phases, and whenever it is about to report.</p>
+    <p>This is deliberately not an interrupt. Delivery is at the next checkpoint,
+    which is the honest guarantee the process model can support, and the one the
+    incident actually needed &mdash; the four workers were minutes away from
+    submitting jobs, not mid-syscall. It inherits the properties the fleet
+    already relies on: the message is a file, so it is durable across a turn
+    boundary, auditable after the fact, and readable by a resumed session.</p>
+    <p>Done when a message written to a live run is quoted back in that worker's
+    manifest, and when a run that received none says so rather than being silent
+    about it. An unread inbox must be visible: a channel whose delivery cannot
+    be distinguished from silence is the defect this plan exists to remove, and
+    reproducing it one layer down would be worse than leaving it alone.</p>
+    <p><strong>Contended.</strong> The prompt contract lives in
+    <code>reckon/crew/prompts.py</code>, which is mid-repair under another
+    coordinator. This section serialises behind that work rather than fencing
+    around it.</p>
+
+    <h2 id="s5">&sect;5 &mdash; Make the written instruction name a mechanism</h2>
+    <p>Two documents tell a coordinator to message a worker and neither names
+    how. The orchestration reference's recovery order says to message the worker
+    when evidence exists but no report does; the workstation-wide order for a
+    silent worker says the same. Both predate the measurement and both are read
+    as authorising the channel that does not work.</p>
+    <p>Correct them to name the mechanism for the run's state, and record why the
+    obvious-looking one is absent &mdash; an instruction that merely drops the
+    step teaches nothing and will be re-invented.</p>
+    <p>Done when neither document contains an unqualified instruction to message
+    a worker, and each names the command for the state it is describing. Note
+    that the skill reference directories are symlinks into this checkout, so this
+    is a repository edit fenced as one.</p>
+
+    <h2 id="s6">&sect;6 &mdash; What is deliberately not proposed</h2>
+    <p>Making the worker's permission mode match the coordinator's so the hold
+    never fires. This would route around a permission decision rather than
+    answer it, and it would make delivery depend on a coincidence of settings
+    between two sessions &mdash; fragile, and wrong in the direction that matters.</p>
+    <p>Signalling the process, or writing to its descriptors. Its stdin is a
+    consumed regular file and its stdout is the run's own event log; both are
+    load-bearing for observation.</p>
+    <p>A second transport of any kind. The run directory is already the durable,
+    audited, per-run surface both sides agree on.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">&sect;</span> Decisions</h2>
+      <div class="r-dec" data-key="channel-scope"
+           data-by="" data-when="">
+        <p class="r-dec-q">How far does this go?</p>
+        <p class="r-dec-ctx">Closing the false clearance is cheap and touches no
+        contended file. Building the inbox gives the capability that is actually
+        missing but waits on a surface another coordinator is repairing.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="guard-and-docs">Guard and documents only</button>
+          <button class="r-opt" data-value="guard-docs-inbox">Guard, documents, then the inbox</button>
+          <button class="r-opt" data-value="docs-only">Documents only</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">&sect;</span> Followups</h2>
+      <article class="r-fu" data-id="lock-channel-scope" data-status="open"
+               data-written-by="Simon McIntosh" data-written-at="2026-09-15"
+               data-recommends-skill="/reckon-edit a-live-worker-can-be-reached">
+        <h4 class="r-fu-title">Lock how far the channel work goes</h4>
+        <div class="r-fu-body">
+          The measurement is complete and the options are costed. What remains is
+          a scope choice: the guard alone closes the false clearance immediately;
+          the inbox adds the missing capability but serialises behind the prompt
+          contract repair in flight under another coordinator.
+        </div>
+        <pre class="r-fu-prompt">/reckon-edit a-live-worker-can-be-reached</pre>
+      </article>
+    </section>
+
+    <section data-reckon="research" id="research" class="r-research-list">
+      <h2><span class="sec">&sect;</span> Research</h2>
+      <div class="r-research" data-id="delivery-measurement" data-type="primary"
+           data-source="repository" data-added-by="Simon McIntosh" data-when="2026-09-15">
+        <span class="r-research-title">Messages to workers never arrive &mdash; 0 delivered in 3,949 worker streams against an 11,939 control</span>
+      </div>
+    </section>
+
+  </main>
+</body>
+</html>
