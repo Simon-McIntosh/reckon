@@ -208,6 +208,31 @@
     before the section would have been collapsed and marked done, which would have
     sealed an unenforced decision under a landed-summary card.</p>
   </section>
+
+  <section id="borrowed-figure">
+    <h2>A borrowed figure is never shown as the lane's own</h2>
+    <p>Landed 2026-09-15, commit <code>6c18dd4</code>. All four codex lanes declare
+    the same command, so one account-level probe is rendered against each backend
+    name. Identical readings prove they were probed identically, never that they
+    share a budget &mdash; and an identical reset time is not a discriminator
+    either. A lane whose figure came from a probe shared across diverging declared
+    pools is now marked <em>borrowed</em> rather than carrying another account's
+    number as its own.</p>
+    <p><strong>Grouping is declared, not inferred.</strong> Backends declaring the
+    same pool carry the shared probe legitimately; identical reset schedules never
+    group without one, asserted directly. The worker drew a sharper distinction than
+    the brief asked for: sharing a probe <em>command</em> is not the same fact as
+    sharing a <em>budget</em>, and only a declared pool settles which.</p>
+    <p><strong>Measure:</strong> 12 passed, 5 tests added. The single failure in that
+    file is the known pre-existing one at <code>mcp_views.py:526</code>, confirmed
+    identical on main with none of this node's changes, so the added-failure delta is
+    zero.</p>
+    <p><strong>Carried forward from the review:</strong> a lane rendered
+    <code>quota_source</code> borrowed carries <code>probe_status</code>
+    &ldquo;unmatched&rdquo;, while the same pool-divergence refusal on a lane that
+    keeps its own receipt renders &ldquo;answered&rdquo; &mdash; so one status
+    conflates two meanings. Recorded rather than fixed here.</p>
+  </section>
 </main>
 </body>
 </html>

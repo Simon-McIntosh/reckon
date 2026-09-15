@@ -27,11 +27,11 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="25">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
-<meta name="plan-commits" content="979805e1d460e5c46a15d466d64d4a674c8e3405,f26287ebeba4c4890f0965d2eb9f18c281743d26,a5254ef,b0ede8b">
-<meta name="plan-artifacts" content="reckon/run_store.py,tests/test_run_store.py,reckon/crew/lane_evidence.py,tests/test_binding_window_inference.py,docs/ui/crew.jsx,docs/ui/crew.css,tests/test_spa_crew_burn.py,docs/evidence/archive/burn-is-visible-before-it-bites-landed.html">
-<meta name="plan-impl" content="0.67">
+<meta name="plan-commits" content="979805e1d460e5c46a15d466d64d4a674c8e3405,f26287ebeba4c4890f0965d2eb9f18c281743d26,a5254ef,b0ede8b,6c18dd4">
+<meta name="plan-artifacts" content="reckon/run_store.py,tests/test_run_store.py,reckon/crew/lane_evidence.py,tests/test_binding_window_inference.py,docs/ui/crew.jsx,docs/ui/crew.css,tests/test_spa_crew_burn.py,reckon/mcp_views.py,tests/test_crew_lanes_view.py,docs/evidence/archive/burn-is-visible-before-it-bites-landed.html">
+<meta name="plan-impl" content="0.71">
 </head>
 <body>
 <main class="plan-doc">
@@ -248,6 +248,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260915T003709760304-rev-borrowed-figure" data-who="crew-both-reasons" data-when="2026-09-15T00:52:17.659Z">
     <div class="r-comment-body"><p>Independent review attached to borrowed-figure-is-not-the-lanes-own; all five dimensions parsed, with a finding that probe_status conflates two meanings for a borrowed lane</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260915T0056" data-who="reckon-ship" data-when="2026-09-15T00:56:00Z">
+    <div class="r-comment-body">borrowed-figure-is-not-the-lanes-own landed — commit 6c18dd4, merged and content verified at HEAD by marker (7 borrowed markers present). Gate passed exit 0; measure: 12 passed, 5 tests added, added-failure delta 0 — the single failure in that file is the known pre-existing mcp_views.py:526 one, confirmed identical on main with none of this node's changes. This closes two of §5's five measures at once. A lane whose figure came from a probe shared across DIVERGING declared pools is marked borrowed rather than carrying another account's number; backends declaring the SAME pool carry the shared probe legitimately; and identical reset schedules never group without a declared pool, asserted directly. THE WORKER DREW A SHARPER DISTINCTION THAN THE BRIEF ASKED FOR and it is the right one: sharing a probe command is not the same fact as sharing a budget, and only a declared pool settles which. My brief said 'rendered as unobserved'; borrowed-where-pools-diverge is more accurate and keeps the legitimate shared-pool case. THIS RUN WAS CLASSIFIED ABANDONED and had committed cleanly — the fourth today, and its review was the fifth abandoned run whose deliverable existed regardless. CARRIED FORWARD from the review: a lane rendered quota_source borrowed carries probe_status 'unmatched' while the same pool-divergence refusal on a lane keeping its own receipt renders 'answered', so one status conflates two meanings. Recorded, not fixed here. Record: docs/evidence/archive/burn-is-visible-before-it-bites-landed.html#borrowed-figure.</div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260914T1200" data-who="reckon-ship" data-when="2026-09-14T12:00:00Z">
     <div class="r-comment-body">Dependency narrowed from the whole of dispatch-cost-per-durable-node to its §6, on this plan's own statement of what it needs. The followup says §2 waits on the prerequisite plan making the rate computation readable from Python, and that is §6, which shipped: crew(view="budget") reported burn_multiple 2.87 against utilisation 7 percent on 2026-09-14, derived in Python from rate_limit_period_minutes and resets_at with no new probe. The plan-level edge was holding this work behind §7, whose remaining measure is a 20-to-40 run gated pilot bounded by about two days of elapsed time rather than by effort. Nothing this plan needs is in §7, so the edge was serialising nine worker-hours behind two calendar days for no stated reason.</div>
