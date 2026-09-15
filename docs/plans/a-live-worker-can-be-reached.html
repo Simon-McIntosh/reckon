@@ -22,8 +22,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="12">
-<meta name="plan-impl" content="0.5">
+<meta name="plan-version" content="13">
+<meta name="plan-impl" content="0.7">
 </head>
 <body>
   <main class="plan-doc">
@@ -197,9 +197,15 @@
     <div class="r-fu-body">The document half is done. The guard refusing a send addressed to a live worker is in flight. The inbox — the worker reading its own run directory at checkpoints — is queued behind the prompt contract held by another coordinator's run, and the local lane is saturated at 34 concurrent workers against one deployment, so queueing is the correct state rather than something to route around. A merged-head verification is owed for the wave once the nodes land, and it belongs on a lane that is not the saturated one.</div>
     <pre class="r-fu-prompt">/reckon-ship a-live-worker-can-be-reached</pre>
     </article>
-<article class="r-fu" data-id="qualify-the-three-remaining-instruction-sites" data-status="open" data-written-by="Simon McIntosh" data-written-at="2026-09-15" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="qualify-the-three-remaining-instruction-sites" data-status="resolved" data-written-by="Simon McIntosh" data-written-at="2026-09-15" data-recommends-skill="" data-resolved-at="2026-09-15T11:20:05+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Three instruction sites remain unqualified, and one is another plan&#x27;s designed behaviour</h4>
     <div class="r-fu-body">Correcting this plan's own scope: an inventory across skills, references, repository docs and agent guideline files found five written instructions telling a coordinator to message a worker, where this plan named two. The two it named are qualified. Three are live and unqualified. sprint-orchestration.md:479-480 tells a coordinator to ask the worker to split or rework a commit, which is a step and needs the same treatment. crew-observability-truth.html section 17 makes messaging the worker the designed response to a runtime overrun, so that plan would ship a soft limit whose response cannot be delivered; its coordinator has been told and it is their call, not this plan's. sprint-orchestration.md:106 is a coordinator authority grant rather than a step, and is recorded as a grant. The document half of this plan is therefore not complete, and the earlier followup saying so was written before the inventory landed.</div>
+    <pre class="r-fu-prompt">/reckon-ship a-live-worker-can-be-reached</pre>
+    <p class="r-fu-outcome">All five sites are resolved. The out-of-scope correction step now dispatches a corrective worker under a new node id and names resume for an ended run whose correction stays in declared scope; case-sensitive 'Ask the worker' over the reference fell from one to zero, and the surviving case-insensitive match is a prohibition against asking a worker to shrink its work, correctly left. The coordinator authority clause was left unchanged with its criterion stated: it sits inside an enumeration of what the coordinator may do, so it grants a capability rather than instructing an action. The fifth site belongs to another plan, whose coordinator has marked its measure blocked rather than shipping a protection that cannot be delivered.</p>
+    </article>
+<article class="r-fu" data-id="land-the-inbox-and-clear-two-ledger-rows" data-status="open" data-written-by="Simon McIntosh" data-written-at="2026-09-15" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The inbox, and two ledger rows held on promotion defects</h4>
+    <div class="r-fu-body">The document half and the guard are done; the inbox is what remains of the locked scope. Both its halves are blocked on contention rather than on design: the worker read contract needs the prompt-composing module, held by another coordinator, and the coordinator-side writer needs the CLI module, held by this plan's own unreconciled guard run. Two ledger rows are outstanding behind two separate defects in the promotion surface, each reproduced and owned elsewhere with a repair dispatched: a gate check that greps a cited log for a shell diagnostic its own test file writes as fixture data, and a predicate that demands a commit for any changed path without asking whether the path is inside the repository. Neither was worked around; the runs stay unreconciled so the record stays honest.</div>
     <pre class="r-fu-prompt">/reckon-ship a-live-worker-can-be-reached</pre>
     </article>
 </section>
@@ -220,7 +226,7 @@
     <div class="r-comment-body">The inventory node found five instruction sites against the two this section named, and the brief is the reason: it required the node to name every tree searched and said that finding only the known two would not count as success unless the search scope was stated. That clause was written to stop a lazy pass and caught incomplete scoping in the section itself instead.</div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260915T100718761747-the-remaining-instruction-sites-name-a-mechanism" data-who="crew-admission" data-when="2026-09-15T11:16:20.045Z">
-    <div class="r-comment-body"><p>The out-of-scope correction step now names a corrective dispatch under a new node id, and resume for an ended run whose correction stays in scope. Case-sensitive &#x27;Ask the worker&#x27; fell 1 to 0 over the reference; the case-insensitive survivor at line 347 is a prohibition against asking a worker to shrink the work, correctly left. The coordinator authority clause at line 106 was left unchanged with its criterion stated: it sits inside an enumeration of what the coordinator may do, so it grants a capability rather than instructing an action.</p></div>
+    <div class="r-comment-body"><p>The out-of-scope correction step now names a corrective dispatch under a new node id, and resume for an ended run whose correction stays in scope. Case-sensitive 'Ask the worker' fell 1 to 0 over the reference; the case-insensitive survivor at line 347 is a prohibition against asking a worker to shrink the work, correctly left. The coordinator authority clause at line 106 was left unchanged with its criterion stated: it sits inside an enumeration of what the coordinator may do, so it grants a capability rather than instructing an action.</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260915T060128606337-how-resume-answers-a-live-run" data-who="crew-codex-usage" data-when="2026-09-15T07:42:04.145Z">
     <div class="r-comment-body"><p>Resume refuses a live run: exit 1, no structured error key, stderr 'still has a live process; observe or stop it before resuming'. The refusal names the reason but no alternative command. Confirms the code comment at runs.py:2081-2089 and removes the inferred claim from the research record.</p></div>
