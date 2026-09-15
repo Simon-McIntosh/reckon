@@ -105,22 +105,24 @@ def _is_block_indicator(value: str) -> bool:
 
 # A manifest field key appearing later on the same line as another key's value.
 # The tolerant reader captures the whole remainder of the line as the first
-# key's value, so a second ``key:`` there turns the earlier value into a
-# corrupted string and the later field into an empty list — the shape the
-# promotion guard for changed paths without a commit was built to catch. Only
-# the manifest vocabulary is matched, so a URL scheme or prose containing a
-# colon cannot raise; and a value that is itself a JSON literal (a structured
-# evidence block) is read whole rather than scanned, because the keys inside it
-# are nested data, not a second top-level field.
+# key's value, so ``commits: ...; changed_paths: ...`` turns the commit into a
+# corrupted string and the changed paths into an empty list — the shape the
+# promotion guard for changed paths without a commit was built to catch. That
+# pair is unambiguously structural because both fields are machine attributes.
+# Other manifest words may occur naturally inside free prose, so matching the
+# whole vocabulary would invent a top-level field that the author never wrote.
+# A value that is itself a JSON literal is read whole because its keys are
+# nested data rather than another top-level field.
 _MANIFEST_KEY_ALTERNATION = "|".join(
     re.escape(key) for key in sorted(_MANIFEST_FIELD_KEYS, key=len, reverse=True)
 )
 _MANIFEST_KEY_ON_LINE_RE = re.compile(
     rf"\b({_MANIFEST_KEY_ALTERNATION})\s*:", re.IGNORECASE
 )
+_SAME_LINE_FIELD_PAIRS = {"commits": frozenset({"changed_paths"})}
 
 
-def _embedded_manifest_key(value: str) -> str | None:
+def _embedded_manifest_key(first: str, value: str) -> str | None:
     """Return the manifest key a top-level value carries, or None."""
     if not value:
         return None
@@ -130,8 +132,12 @@ def _embedded_manifest_key(value: str) -> str | None:
         pass
     else:
         return None
-    match = _MANIFEST_KEY_ON_LINE_RE.search(value)
-    return match.group(1).lower() if match else None
+    permitted_seconds = _SAME_LINE_FIELD_PAIRS.get(first, ())
+    for match in _MANIFEST_KEY_ON_LINE_RE.finditer(value):
+        second = match.group(1).lower()
+        if second in permitted_seconds:
+            return second
+    return None
 
 
 def _two_keys_on_one_line_message(
@@ -257,7 +263,7 @@ def _parse_text_manifest(text: str, *, path: str | None = None) -> dict[str, Any
         if match:
             key = match.group(1).lower().replace("-", "_")
             value = match.group(2).strip()
-            embedded = _embedded_manifest_key(value)
+            embedded = _embedded_manifest_key(key, value)
             if embedded:
                 raise ManifestParseError(
                     _two_keys_on_one_line_message(path, line_no, line, key, embedded)

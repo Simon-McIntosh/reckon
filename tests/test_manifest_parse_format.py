@@ -487,3 +487,43 @@ def test_the_two_keys_on_separate_lines_still_parse_unharmed() -> None:
 
     assert fields["commits"] == ["dfe14da2ab"]
     assert fields["changed_paths"] == ["a.py", "b.py"]
+
+
+def test_guard_refuses_commits_followed_by_changed_paths_on_one_line() -> None:
+    with pytest.raises(reports.ManifestParseError):
+        reports.parse_manifest(
+            "status: complete\ncommits: dfe14da2ab; changed_paths: a.py, b.py\n"
+        )
+
+
+def test_manifest_field_word_inside_tests_prose_is_not_a_top_level_key() -> None:
+    fields = reports.parse_manifest(
+        "status: complete\ntests: ran the suite; artifacts: none were produced\n"
+    )
+
+    assert fields["tests"] == "ran the suite; artifacts: none were produced"
+
+
+def test_non_manifest_colon_inside_tests_prose_parses() -> None:
+    fields = reports.parse_manifest(
+        "status: complete\ntests: pytest result: 41 passed\n"
+    )
+
+    assert fields["tests"] == "pytest result: 41 passed"
+
+
+def test_url_port_inside_a_value_parses() -> None:
+    fields = reports.parse_manifest(
+        "status: complete\nartifacts: http://host.example:8080/report\n"
+    )
+
+    assert fields["artifacts"] == ["http://host.example:8080/report"]
+
+
+def test_guard_leaves_commits_and_changed_paths_on_separate_lines_unchanged() -> None:
+    fields = reports.parse_manifest(
+        "status: complete\ncommits: dfe14da2ab\nchanged_paths: a.py, b.py\n"
+    )
+
+    assert fields["commits"] == ["dfe14da2ab"]
+    assert fields["changed_paths"] == ["a.py", "b.py"]
