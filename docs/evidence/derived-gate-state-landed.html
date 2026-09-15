@@ -610,6 +610,38 @@ effective_status('blocked', [{...}])   -&gt; 'blocked'   # a live blocker still 
     remainder had to be recorded.</p>
   </section>
 
+  <section id="reckon-index">
+    <h2>Reckon's own index carries zero persisted item statuses</h2>
+
+    <p>The in-repository row of the sweep — eight persisted sprint-item statuses in
+    <code>docs/state/reckon/index.json</code> — is measured at <strong>0 persisted item statuses
+    on 2026-09-15T14:03:25Z</strong>. The fields were already gone: commit <code>ea82ad93</code>
+    (2026-08-12, "remove derived item lifecycle labels") dropped them, and the pre-removal index
+    counts the eight the census recorded. Before 8 → after 0.</p>
+
+    <p>Three strands confirm the removal is durable and complete.</p>
+
+    <ul>
+      <li><strong>Writes are refused.</strong> <code>_validate_resource</code> raises
+      <code>sprint item {slug!r} must not persist {field}</code> for any lifecycle field, and
+      <code>test_typed_sprint_legacy_status_reads_derived_but_is_rejected_on_write</code> shows a
+      guarded write refuses. The compatibility path still reads legacy status under a warning while
+      composition hydrates the derived value.</li>
+      <li><strong>Audit is clear.</strong> <code>reckon audit --project reckon</code> exits 0 with
+      32 pre-existing findings (29 <code>SUMMARY_TOO_LONG</code>, 3
+      <code>FOLLOWUP_FOREIGN_UNMOUNTED</code>) and zero <code>MISSING_IMPL</code> — none added by
+      this change. The baseline was recorded 2026-09-15T14:03:25Z.</li>
+      <li><strong>Derived state is unchanged.</strong> The roadmap payload for this distributed
+      project was built twice from one scratch checkout — once with the eight item statuses
+      restored onto the current index, once without — and the payloads are identical after
+      canonicalization (the only raw differences were array ordering, not content). This matches
+      the by-construction reason: for a distributed project the roadmap composes sprint state from
+      typed sprint resources, not from index item fields.</li>
+    </ul>
+
+    <p>Recorded <a href="/reckon/plans/derived-gate-state#reckon-index">on the plan</a>.</p>
+  </section>
+
   <section id="open">
     <h2>What is still open</h2>
 
