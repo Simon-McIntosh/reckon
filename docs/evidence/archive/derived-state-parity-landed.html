@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="derived-state-parity-landed">
+  <meta name="plan-title" content="Derived State Parity — landed record">
+  <meta name="plan-summary" content="Cumulative execution evidence for the derived-state-parity plan: commits, gate measures, tests and negative findings per landed node.">
+  <meta name="plan-evidence-for" content="derived-state-parity">
+  <meta name="plan-verifies" content="derived-state-parity#s5">
+  <title>Derived State Parity — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h1>Derived State Parity — cumulative execution record</h1>
+    <p>
+      One anchor per landed node. Each entry records the commit, the gate measure as executed,
+      the tests, and anything negative found on the way. The evergreen plan holds the design;
+      this record holds what actually happened.
+    </p>
+
+    <h2 id="flow-tests-assert-the-served-schedule">Test alignment: the schedule assertions that named the removed surface derivation</h2>
+    <p>
+      Commit <code>c43cd08</code> (2026-09-15) over <code>tests/test_spa_derived_flow.py</code>
+      and <code>tests/test_schedule_derivation.py</code>.
+    </p>
+    <ul>
+      <li><strong>The five failures are gone and none is added.</strong> Four were in
+        <code>tests/test_spa_derived_flow.py</code> and one in
+        <code>tests/test_schedule_derivation.py</code>, all asserting against
+        <code>derivedFlowSchedule</code>, which the surface no longer exports. Its count in
+        <code>docs/ui/crew.jsx</code> is 5 at the base and 0 at the head, counted at both. The
+        focused gate over the two files reads 12 passed; the served-payload block beside them
+        (<code>tests/test_served_schedule_payload.py</code>) reads 15 passed.</li>
+      <li><strong>Re-aimed where the subject survives.</strong> The rendered-flow case keeps its
+        injected clock and its expected lane count of 2, and seeds
+        <code>window.STATE.schedule</code> from the roadmap schedule read before rendering, so
+        what it asserts is what the surface renders from the served payload rather than what it
+        used to compute. The parity case in <code>tests/test_schedule_derivation.py</code> now
+        feeds the served payload to the surface's own layout functions and requires the resulting
+        lanes and ticks to equal <code>reckon.schedule.derive_schedule</code>'s, so the two sides
+        are shown to agree rather than assumed to.</li>
+      <li><strong>Coverage stated for the removed probes.</strong> The three JSX probes that
+        asserted derivation properties have no surviving subject — the surface derives nothing —
+        so they are removed. Every property they carried is now asserted against
+        <code>derive_schedule</code>: chaining to a prerequisite's end, best-fit lane packing, the
+        axis bounds and their clamp, the elapsed-seconds fallback when a live row omits its
+        dispatch stamp, and the retention-window cut at 60 hours. The reference stays a required
+        positional parameter, so the wall clock cannot be read by accident — the sibling test that
+        became a fuse by reading it keeps its injected clock.</li>
+      <li><strong>Negative finding, fixed in this commit.</strong> A comment in the parity test
+        still cited the removed <code>derivedFlowSchedule(...)</code> as what the chain figure
+        reads; the figure now reads <code>window.STATE?.schedule?.high</code>, and the comment
+        now names that.</li>
+    </ul>
+
+  </main>
+</body>
+</html>
