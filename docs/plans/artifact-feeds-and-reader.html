@@ -125,6 +125,19 @@
     </tr>
   </tbody>
 </table>
+<p><strong>Landed 2026-09-15.</strong> The loader diffs each change-event inventory against a
+module-level rendered snapshot keyed by resource id and version, holds new rows as
+<code>pending</code> and publishes <code>window.STATE.arrival</code> with a <code>receipt</code>
+that reads <code>2 new</code> instead of <code>live</code>; the affected index renders the banner
+<code>2 new &lt;kind&gt; since you opened this list &middot; show</code>, and the show control
+inserts the held rows in sort position with a one-shot three-second tint and clears the receipt.
+The list is never re-sorted or re-scrolled under the reader, and an in-place update moves no row;
+the order-equality assertion is demonstrated failing against the pre-change behaviour, recorded.
+Measure: <code>tests/test_spa_live_arrival.py tests/test_spa_state_boundary.py</code>, 9 passed,
+boundary gate green. The topbar receipt and tab badge are rendered by <code>shell-topbar.jsx</code>
+and <code>topbar.css</code>, which this node does not write; the loader publishes their data and
+the DOM surfaces are recorded as follow-ons. Full record:
+<a href="/reckon/evidence/archive/artifact-feeds-and-reader-landed#measure">s6 landed</a>.</p>
 
 <h2 id="s7">&#167;7 &mdash; Rendered evidence</h2>
 <p>Captures at 1374 and 1920 into <code>docs/figures/artifact-feeds-and-reader/after/</code> with a <code>capture-index.json</code>: the evidence index with its banner showing, the figures index, a figure open in the reader with its trail, and a plan in full screen with the cone open.</p>

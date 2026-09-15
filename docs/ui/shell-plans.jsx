@@ -233,6 +233,27 @@ function artifactIndexRows(items, kind, sortBy, sortDir, status, hideDone) {
   return sortItems(rows, sortBy, sortDir, kind);
 }
 
+function artifactKeyOf(item) {
+  return item && (item.nav_key || item.slug);
+}
+
+// Recompute the arrival summary for a keep/pending split; used only when the
+// state loader is absent (composed static documents) to mirror its contract.
+function summarizeArrival(pending) {
+  const list = Array.isArray(pending) ? pending : [];
+  const byKind = {};
+  for (const item of list) {
+    const kind = item.type || "plan";
+    byKind[kind] = (byKind[kind] || 0) + 1;
+  }
+  return {
+    pending: list,
+    byKind,
+    total: list.length,
+    receipt: list.length ? `${list.length} new` : "live",
+  };
+}
+
 function ArtifactIndex({ kind, onSelect, filters, setFilters, sortBy, setSortBy, sortDir, toggleSortDir }) {
   const state = window.STATE || {};
   const inventory = state.inventory || [];
@@ -253,10 +274,67 @@ function ArtifactIndex({ kind, onSelect, filters, setFilters, sortBy, setSortBy,
     () => inventory.filter(item => (item.type || "plan") === kind),
     [inventory, kind]
   );
-  const rows = React.useMemo(
-    () => artifactIndexRows(inventory, kind, sortBy, sortDir, status, hideDone),
-    [inventory, kind, sortBy, sortDir, status, hideDone]
+
+  // Held arrivals: rows that were new to the state after this list opened stay
+  // out of the rendered feed until the reader reveals them. The rendered order
+  // is frozen per view definition, so an arriving payload or an in-place edit
+  // can update a row's content without moving or re-sorting it underneath the
+  // reader; the order rebuilds only when the view (kind, sort, filter,
+  // hide-done) itself changes.
+  const arrival = state.arrival || {};
+  const pendingRows = React.useMemo(
+    () => (arrival.pending || []).filter(item => (item.type || "plan") === kind),
+    [arrival.pending, kind]
   );
+  const pendingKeys = React.useMemo(
+    () => new Set(pendingRows.map(artifactKeyOf).filter(Boolean)),
+    [pendingRows]
+  );
+  const viewKey = `${kind}|${sortBy}|${sortDir}|${status}|${hideDone}`;
+  const [frozenOrder, setFrozenOrder] = React.useState({ viewKey: "", keys: [] });
+  const [arrivingKeys, setArrivingKeys] = React.useState(() => new Set());
+  React.useEffect(() => {
+    setFrozenOrder({
+      viewKey,
+      keys: artifactIndexRows(inventory, kind, sortBy, sortDir, status, hideDone)
+        .filter(item => !pendingKeys.has(artifactKeyOf(item)))
+        .map(artifactKeyOf),
+    });
+    setArrivingKeys(new Set());
+  }, [viewKey]);
+  const rows = React.useMemo(() => {
+    const settledKeys =
+      frozenOrder.viewKey === viewKey
+        ? frozenOrder.keys
+        : artifactIndexRows(inventory, kind, sortBy, sortDir, status, hideDone)
+            .filter(item => !pendingKeys.has(artifactKeyOf(item)))
+            .map(artifactKeyOf);
+    const byKey = new Map(inventory.map(item => [artifactKeyOf(item), item]));
+    return settledKeys
+      .filter(key => byKey.has(key) && !pendingKeys.has(key))
+      .map(key => byKey.get(key));
+  }, [inventory, kind, sortBy, sortDir, status, hideDone, pendingKeys, frozenOrder, viewKey]);
+  const revealPending = React.useCallback(() => {
+    let revealed;
+    if (typeof window.revealArrivals === "function") {
+      revealed = window.revealArrivals(kind);
+    } else if (window.STATE) {
+      const kept = (window.STATE.arrival?.pending || []).filter(
+        item => (item.type || "plan") !== kind
+      );
+      window.STATE.arrival = summarizeArrival(kept);
+      revealed = pendingRows;
+    } else {
+      revealed = [];
+    }
+    setFrozenOrder({
+      viewKey,
+      keys: artifactIndexRows(inventory, kind, sortBy, sortDir, status, hideDone)
+        .map(artifactKeyOf),
+    });
+    setArrivingKeys(new Set(revealed.map(artifactKeyOf).filter(Boolean)));
+    window.setTimeout(() => setArrivingKeys(new Set()), 3000);
+  }, [inventory, kind, sortBy, sortDir, status, hideDone, pendingRows, viewKey]);
   React.useLayoutEffect(() => {
     window.dispatchEvent(new CustomEvent("reckon:rendered-reader-list", {
       detail: { kind, items: rows },
@@ -277,6 +355,17 @@ function ArtifactIndex({ kind, onSelect, filters, setFilters, sortBy, setSortBy,
 
   return (
     <section className="r-artifact-index" aria-label={`${label} index`}>
+      {pendingRows.length > 0 && (
+        <div className="r-arrival-banner" role="status">
+          <span className="r-arrival-banner-text">
+            {pendingRows.length} new {label.toLowerCase()} since you opened this list
+          </span>
+          <i aria-hidden="true">·</i>
+          <button type="button" className="r-arrival-show" onClick={revealPending}>
+            show
+          </button>
+        </div>
+      )}
       <header className="r-artifact-index-head">
         <div className="r-artifact-index-title">
           <p>{label}</p>
@@ -325,7 +414,7 @@ function ArtifactIndex({ kind, onSelect, filters, setFilters, sortBy, setSortBy,
           const percent = Math.round(Number(item.impl || 0) * 100);
           const hours = Number(item.effort_hours);
           return (
-            <button type="button" key={navKey} className={`r-artifact-row r-artifact-row-${kind}`} data-artifact-slug={navKey} onClick={() => onSelect(navKey)}>
+            <button type="button" key={navKey} className={`r-artifact-row r-artifact-row-${kind}${arrivingKeys.has(navKey) ? " is-arriving" : ""}`} data-artifact-slug={navKey} onClick={() => onSelect(navKey)}>
               <span className={`r-artifact-dot ${kind}-${itemState}`} aria-hidden="true"></span>
               {showsImages && <img className="r-artifact-thumb" src={item.href} alt="" width="50" height="34" />}
               <span className="r-artifact-row-main">

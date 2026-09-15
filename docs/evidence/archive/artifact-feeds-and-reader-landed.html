@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="artifact-feeds-and-reader-landed">
+  <meta name="plan-title" content="Arrival is non-destructive &mdash; landed evidence">
+  <meta name="plan-summary" content="A change event that brings new documents to an open page no longer re-sorts the list underneath the reader: the loader holds the new rows as pending against a rendered snapshot, the receipt reads 2 new, the affected index shows a banner with a show control, and revealing the held rows is the only thing that moves the list.">
+  <meta name="plan-evidence-for" content="reckon:artifact-feeds-and-reader">
+  <meta name="plan-verifies" content="reckon:artifact-feeds-and-reader#s6">
+  <meta name="plan-recorded-at" content="2026-09-15">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; detached git worktrees; node module-eval drivers against the live loader and a headless Chrome via the SPA browser harness">
+  <meta name="plan-commits" content="8f6e675,2d602d0,ff6711a">
+  <meta name="plan-artifacts" content="docs/ui/state-loader.js,docs/ui/shell-plans.jsx,tests/test_spa_live_arrival.py">
+  <title>Arrival is non-destructive &mdash; landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Arrival is non-destructive &mdash; landed evidence</h1>
+    <p class="plan-summary">The section's own done-when and the boundary gate both pass, and the
+    part of this record worth reading is the assertion that carries the whole point: the order of
+    the rendered list before a change event arrives is kept equal after it, and differs only once
+    the reader asks for the new rows. That assertion is demonstrated failing against the
+    pre-change behaviour, because a hold that has never been shown to break a re-sort could not be
+    told apart from an arrival that never happened.</p>
+  </header>
+
+  <section id="overview">
+    <h2>Record scope</h2>
+    <p>This node covers the loader diff and the render-level hold for &sect;6 of
+    <code>artifact-feeds-and-reader</code>. The topbar receipt and the tab badge that the section
+    names are rendered by <code>shell-topbar.jsx</code> and styled by <code>topbar.css</code>,
+    which this node does not write; the loader publishes the arrival data they would read, and the
+    two DOM surfaces are recorded as follow-ons rather than claimed here.</p>
+  </section>
+
+  <section id="diff">
+    <h2>The loader diff, held against a rendered snapshot</h2>
+    <p>The loader keeps a module-level rendered snapshot of the keys and version stamps
+    (<code>edited || last || version</code>) that were on the page. Each change event refetches
+    discovery and diffs the fresh inventory against that snapshot. Keys new to the snapshot become
+    <code>pending</code> rows, never inserted; keys whose stamp moved become <code>updates</code>;
+    keys that leave the inventory are pruned. The snapshot advances only when the reader reveals a
+    held row, so an unrelated later change cannot silently absorb the pending set into the
+    snapshot and drop the banner early.</p>
+    <p><code>window.STATE.arrival</code> publishes <code>pending</code>, <code>updates</code>,
+    <code>byKind</code>, <code>total</code> and a <code>receipt</code> that reads
+    <code>2 new</code> instead of <code>live</code>. The load keeps the inventory in state
+    complete &mdash; nothing is removed at load time, so the hold is a view concern and the
+    boundary gate, which requires new rows to remain in the inventory after a change event, is
+    undisturbed.</p>
+  </section>
+
+  <section id="hold">
+    <h2>The render-level hold</h2>
+    <p>Artifact indexes freeze their rendered order while arrival metadata is present. The memo
+    that previously re-derived the rows from the fresh inventory now runs against a frozen order
+    that excludes the pending keys, keyed by the view state (kind, sort key and direction, status
+    filter, hide-done) so a sort change rebuilds it. An in-place update keeps its position because
+    the frozen order is keyed by resource id and the row's contents refresh in place.</p>
+    <p>The banner reads <code>N new &lt;kind&gt; since you opened this list &middot; show</code>.
+    The show control calls the loader's reveal, which adopts the held keys into the rendered
+    snapshot, rebuilds the order to insert them in sort position, applies a one-shot three-second
+    arrive tint, and clears the receipt back to <code>live</code>. A kind whose rows arrive does
+    not disturb an index open on another kind.</p>
+  </section>
+
+  <section id="measure">
+    <h2>Measure</h2>
+    <p><code>tests/test_spa_live_arrival.py tests/test_spa_state_boundary.py</code>, 9 passed,
+    exit 0. The node driver evaluates the live loader against a mocked discovery stream:
+    the first payload leaves the receipt <code>live</code>; a second carrying two new evidence rows
+    and one changed plan yields receipt <code>2 new</code>, total 2, <code>byKind
+    {"evidence": 2}</code>, pending exactly the two new rows, updates exactly the changed plan, and
+    a complete inventory; reveal adopts them and a later revalidation leaves the receipt
+    <code>live</code> with nothing pending. An unchanged payload leaves the receipt
+    <code>live</code> with empty pending and updates.</p>
+    <p>The rendered suite drives a headless Chrome against a composed state at the evidence route
+    with a created-desc sort: the base order <code>[gamma, beta, alpha]</code> is asserted equal
+    across the event (the assertion below), the banner reads
+    <code>2 new evidence since you opened this list</code> with a <code>show</code> control, a
+    row that changed in place reads its new title without moving, and after the show the order is
+    the full five rows with the two new rows carrying the arrive class. A pending plan leaves an
+    open evidence index untouched. The boundary gate stays green, so the render-level hold does
+    not break the load-level invariant that new rows remain in the inventory.</p>
+    <p>Regression confirms the arrival machinery changes nothing outside its own surface:
+    <code>test_spa_artifact_index.py</code>, <code>test_spa_reader_geometry.py</code> and
+    <code>test_spa_artifact_routes.py</code>, 10 passed; the remaining suites that render
+    shell-plans, 45 passed, 11 skipped.</p>
+  </section>
+
+  <section id="guard">
+    <h2>The order-equality guard, and the demonstration that it fires</h2>
+    <p>The assertion that carries the whole point is that the rendered row order before the click
+    equals the order after the arrival payload: <code>arrival_result["before"] == order0</code>. A
+    list that re-sorts under a reader loses the reader's place, and a test that only counts the
+    pending rows cannot see that. The demonstration ran the suite against the base
+    <code>shell-plans.jsx</code> and recorded the guard failing: the arriving rows re-sorted the
+    list under the reader, <code>baseline ['evidence:gamma', 'evidence:beta', 'evidence:alpha'] !=
+    post-payload ['evidence:gamma', 'evidence:delta', 'evidence:beta', 'evidence:epsilon',
+    'evidence:alpha']</code>, the exact defect the section exists to stop. On the landed code the
+    same assertion holds, and the order differs only once the show control is used.</p>
+  </section>
+
+  <section id="scope">
+    <h2>Scope and follow-ons</h2>
+    <p>Recorded, not claimed: the topbar receipt DOM, the Evidence tab count badge, and the
+    arrive-tint appearance. The loader already publishes the data they need (<code>receipt</code>,
+    <code>byKind</code>) and the index applies the <code>is-arriving</code> class, but
+    <code>shell-topbar.jsx</code>, <code>topbar.css</code> and <code>plans.css</code> sit outside
+    this node's write paths.</p>
+  </section>
+</main>
+</body>
+</html>
