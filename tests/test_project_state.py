@@ -30,6 +30,7 @@ from reckon.project_state import (
     _sha256_path,
     _write_staged_resource,
     append_timeline_event,
+    apply_resource_ops,
     audit_project_state,
     compose_project_state,
     create_project_state,
@@ -1647,3 +1648,139 @@ def test_stamping_an_unmigrated_project_changes_nothing(tmp_path) -> None:
     assert result["changed"] is False
     assert "not in distributed mode" in result["reason"]
     assert "superseded" not in json.loads(index.read_text())
+
+
+def test_closing_a_sprint_carries_held_incomplete_items_forward(tmp_path) -> None:
+    """Closing a sprint whose incomplete items are all held succeeds, marks the
+    sprint done, and moves the held items to the advancing sprint with their
+    blocker references intact, leaving completed items in place."""
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    create_project_state(docs, "sample")
+    _write_plan(docs, "held-work", "blocked", 0.4)
+    _write_plan(docs, "done-work", "done", 1.0)
+    write_resource(
+        docs,
+        "sample",
+        "blocker",
+        "hold-1",
+        {"summary": "reservation", "kind": "held"},
+        0,
+        create=True,
+    )
+    write_resource(
+        docs,
+        "sample",
+        "sprint",
+        "S1",
+        {
+            "theme": "First",
+            "status": "active",
+            "items": [
+                {"slug": "held-work", "blocked_by": ["hold-1"]},
+                {"slug": "done-work"},
+            ],
+        },
+        0,
+        create=True,
+    )
+    write_resource(
+        docs,
+        "sample",
+        "sprint",
+        "S2",
+        {"theme": "Second", "status": "planned", "items": []},
+        0,
+        create=True,
+    )
+
+    created_version = read_resource(docs, "sample", "sprint", "S1")[1]
+    new_version, warnings = apply_resource_ops(
+        docs,
+        "sample",
+        "sprint",
+        "S1",
+        [{"op": "set", "path": "status", "value": "done"}],
+        created_version,
+    )
+
+    closing, closing_version = read_resource(docs, "sample", "sprint", "S1")
+    advancing, _ = read_resource(docs, "sample", "sprint", "S2")
+    assert closing_version == created_version + 1
+    assert new_version == created_version + 1
+    assert closing["status"] == "done"
+    assert [row["slug"] for row in closing["items"]] == ["done-work"]
+    carried = [row["slug"] for row in advancing["items"]]
+    assert carried == ["held-work"]
+    held_row = next(row for row in advancing["items"] if row["slug"] == "held-work")
+    assert held_row["blocked_by"] == ["hold-1"]
+    assert any("carried 1 item(s) to sprint S2" in w for w in warnings)
+
+    # The roadmap surface must report the carried work as pending.
+    from reckon.roadmap import build_roadmap
+    from reckon.serve import _derive_lifecycle, discover_plans
+
+    composed = compose_project_state(docs, "sample")
+    inventory, sprints = _derive_lifecycle(
+        "sample",
+        discover_plans(docs, "sample", None)["inventory"],
+        composed["sprints"],
+        composed["blockers"],
+    )
+    roadmap = build_roadmap("sample", inventory, sprints)
+    pending = {row["slug"] for row in roadmap["pending_work"]}
+    assert {"held-work"}.issubset(pending)
+    assert "done-work" not in pending
+
+
+def test_closing_a_sprint_refuses_a_single_unheld_incomplete_item(tmp_path) -> None:
+    """A single un-held incomplete item is named by the refusal, the held item
+    is not named, and the closing resource is left untouched."""
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    create_project_state(docs, "sample")
+    _write_plan(docs, "held-work", "blocked", 0.4)
+    _write_plan(docs, "open-work", "active", 0.4)
+    write_resource(
+        docs,
+        "sample",
+        "blocker",
+        "hold-1",
+        {"summary": "reservation", "kind": "held"},
+        0,
+        create=True,
+    )
+    write_resource(
+        docs,
+        "sample",
+        "sprint",
+        "S1",
+        {
+            "theme": "First",
+            "status": "active",
+            "items": [
+                {"slug": "held-work", "blocked_by": ["hold-1"]},
+                {"slug": "open-work"},
+            ],
+        },
+        0,
+        create=True,
+    )
+    created_version = read_resource(docs, "sample", "sprint", "S1")[1]
+
+    with pytest.raises(ProjectStateError) as captured:
+        apply_resource_ops(
+            docs,
+            "sample",
+            "sprint",
+            "S1",
+            [{"op": "set", "path": "status", "value": "done"}],
+            created_version,
+        )
+    message = str(captured.value)
+    assert "open-work" in message
+    assert "held-work" not in message
+
+    closing, version = read_resource(docs, "sample", "sprint", "S1")
+    assert closing["status"] == "active"
+    assert version == created_version

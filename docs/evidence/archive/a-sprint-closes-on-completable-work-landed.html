@@ -7,14 +7,14 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="a-sprint-closes-on-completable-work-landed">
   <meta name="plan-title" content="A sprint closes on completable work &mdash; landed evidence">
-  <meta name="plan-summary" content="A blocker whose subject is outside the sprint's reach is authored kind=held in its own resource and now reads as held rather than explicit everywhere a caller reads the payload: the lifecycle derivation carries the resource kind into the blocking rows, and roadmap reports held rows under a distinct held_blockers key beside an unchanged explicit_blockers.">
+  <meta name="plan-summary" content="A blocker whose subject is outside the sprint's reach is authored kind=held in its own resource and now reads as held rather than explicit everywhere a caller reads the payload: the lifecycle derivation carries the resource kind into the blocking rows, roadmap reports held rows under a distinct held_blockers key beside an unchanged explicit_blockers, and the sprint close is gated so a sprint carrying an item that is not held is refused while one whose incomplete items are all held closes and carries the held work to the advancing sprint.">
   <meta name="plan-evidence-for" content="reckon:a-sprint-closes-on-completable-work">
-  <meta name="plan-verifies" content="reckon:a-sprint-closes-on-completable-work#s2">
+  <meta name="plan-verifies" content="reckon:a-sprint-closes-on-completable-work#s2,reckon:a-sprint-closes-on-completable-work#s3">
   <meta name="plan-recorded-at" content="2026-09-15">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; detached git worktree; pytest">
-  <meta name="plan-commits" content="d6715087,b297348d">
-  <meta name="plan-artifacts" content="reckon/serve.py,reckon/roadmap.py,reckon/mcp.py,tests/test_roadmap.py">
+  <meta name="plan-commits" content="d6715087,b297348d,e3b160c7">
+  <meta name="plan-artifacts" content="reckon/serve.py,reckon/roadmap.py,reckon/mcp.py,reckon/project_state.py,tests/test_roadmap.py,tests/test_project_state.py,docs/figures/sprint-close-carry-forward/close-carry-forward.svg">
   <title>A sprint closes on completable work &mdash; landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -23,26 +23,25 @@
 <main class="plan-doc">
   <header class="plan-header">
     <h1>A sprint closes on completable work &mdash; landed evidence</h1>
-    <p class="plan-summary">The &sect;2 done-when passes: a plan carrying a held blocker is
-    reported by <code>roadmap</code> as held rather than merely blocked, distinguishable by a
-    caller reading the payload &mdash; the row carries <code>kind=held</code> &mdash; and the
-    explicit-blocker behaviour is unchanged, asserted by a case written first that fails if a
-    held row is treated as explicit. The record below is the part worth reading: the two plans
-    counted separately as digits, the explicit plan unchanged in every reported field, and the
-    existing endpoint-row <code>held</code> key left alone because it counts a different
-    quantity.</p>
+    <p class="plan-summary">The &sect;2 and &sect;3 done-whens pass. A plan carrying a held
+    blocker is reported by <code>roadmap</code> as held rather than merely blocked, the row
+    carrying <code>kind=held</code> with explicit-blocker behaviour unchanged. And a sprint is
+    closable only when every incomplete item is held: closing one carrying a single un-held
+    incomplete item is refused, naming that item. The record below is the part worth reading
+    &mdash; the two sections counted and refused separately, the explicit plan unchanged in
+    every reported field, and the existing endpoint-row <code>held</code> key left alone
+    because it counts a different quantity.</p>
   </header>
 
   <section id="record-scope">
     <h2>Record scope</h2>
-    <p>This record covers &sect;2 only. It is the first section of the plan to land; &sect;3,
-    the closure rule that reads this section's vocabulary, is a follow-on on the same files.
-    The holder therefore cannot be in the same record: the closure rule must be demonstrated
-    refusing a sprint that still has one un-held incomplete item, and that measure is owned by
-    the section that implements it.</p>
-    <p>One decision already recorded on the plan constrains this section without being part of
-    it: who may clear a held blocker and what the clearing must record. That decision is locked
-    and unchanged.</p>
+    <p>This record covers &sect;2 and &sect;3, the two implementable sections of the plan.
+    They land as separate commits: &sect;2 established the held vocabulary, and &sect;3, the
+    closure rule that reads that vocabulary, is the follow-on this record now closes.
+    &sect;4 is a deferral and is recorded as f-ascocw-003 rather than implemented here.</p>
+    <p>Two decisions already recorded on the plan constrain these sections without being part
+    of them: who may clear a held blocker and what the clearing must record, and where the
+    executable probe's evaluating code lives. Both are locked and unchanged.</p>
   </section>
 
   <section id="held-blocker">
@@ -85,28 +84,61 @@
     the held plan as held and the explicit plan unchanged, both blocked.</p>
   </section>
 
+  <section id="closure-rule">
+    <h2>A closing sprint is refused while any incomplete item is not held</h2>
+    <p>Commit <code>e3b160c7</code>. Closing a sprint is now a gated operation on the sprint
+    resource itself: setting its status to a completed status runs a closability check in the
+    close path. The check reads every item whose plan is not lifecycle-terminal and refuses
+    the close, naming the offending plan, unless each such item is held by a blocker resource
+    of kind <code>held</code>. The refusal leaves the closing sprint byte-identical.</p>
+    <p><strong>The carry-forward mirrors an item move.</strong> A sprint whose incomplete
+    items are all held closes normally; the held items move to the next open sprint in
+    composed order, retaining their blocker references, under the same two-resource version
+    check, move journal, and compensating recovery as <code>move_sprint_item</code>, so an
+    interrupted close restores both resources. Completed items stay on the closing sprint. A
+    held-incomplete sprint with no open advancing sprint to receive its work is also refused.</p>
+    <p><strong>Both measures are the refusals the plan demands.</strong> The refusal case is
+    demonstrated as its own test rather than only the success, and the carry-forward is proven
+    by set membership: after the close, the moved item is asserted present in
+    <code>roadmap</code>'s <code>pending_work</code> over the returned set, never as a count.
+    The failing case was observed at the base revision before any implementation, exactly as
+    the &sect;2 record describes for its own first-written test.</p>
+    <p><strong>Reading held, not re-deriving it.</strong> Held is read from the same
+    composed blocker state the &sect;2 work defined &mdash; the resource's blocker
+    <code>kind == held</code> &mdash; not re-implemented in this section. The measure drives
+    <code>apply_resource_ops</code>, the operation a caller performs to close a sprint, so the
+    surface exercised is the one an agent, a CLI caller, and the MCP reach.</p>
+  </section>
+
   <section id="measure">
     <h2>Measure</h2>
     <p>Gate <code>PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p
     no:cacheprovider tests/test_roadmap.py tests/test_project_state.py tests/test_edit_plan.py
-    -q</code>: at the landed commit <strong>181 passed &mdash; 0 failed</strong> against a base
-    of 179 passed &mdash; 0 failed at <code>b9a0fa41</code>, so the delta is +2 tests, both the
-    new ones in <code>tests/test_roadmap.py</code>:
-    <code>test_held_blocker_reads_held_while_explicit_plan_is_unchanged</code> and
-    <code>test_derive_lifecycle_carries_the_blocker_kind_from_the_resource</code>. No new
-    failures. Ruff findings over the staged paths are unchanged against the base tree.</p>
+    -q</code>: at the landed &sect;2 state <strong>181 passed &mdash; 0 failed</strong>
+    against a base of 179 passed &mdash; 0 failed at <code>b9a0fa41</code> (+2 tests, both the
+    new ones in <code>tests/test_roadmap.py</code>); after &sect;3 the same gate reports
+    <strong>183 passed &mdash; 0 failed</strong> against the &sect;2 state, a +2 delta from
+    the two new tests in <code>tests/test_project_state.py</code>
+    (<code>test_closing_a_sprint_carries_held_incomplete_items_forward</code> and
+    <code>test_closing_a_sprint_refuses_a_single_unheld_incomplete_item</code>). No new
+    failures at either step. Ruff findings over the staged paths are unchanged against the
+    base tree.</p>
   </section>
 
   <section id="scope">
     <h2>Scope and follow-ons</h2>
-    <p><code>reckon/project_state.py</code> and <code>reckon/lifecycle.py</code> are in the
-    write scope and needed no change: the composed blocker rows already carry the resource
-    dict through intact, and no lifecycle rule reads a blocker kind. The endpoint-row
-    <code>held</code> count and the schedule it derives from are untouched by design.</p>
-    <p>What remains is &sect;3, the closure rule: a sprint is closable when every incomplete
-    item is held, and closing one carrying a single un-held incomplete item is refused. It was
-    sequenced after this section precisely so its rule reads real vocabulary, and it is
-    recorded as a follow-on on the plan rather than folded into this record.</p>
+    <p><code>reckon/project_state.py</code> gained the closability check and carry-forward
+    (plus a life-cycle import it already had precedent for); <code>reckon/lifecycle.py</code>
+    and <code>reckon/serve.py</code> needed no change this time, because held is read from
+    the same composed blocker rows the &sect;2 work defined. The endpoint-row
+    <code>held</code> count in <code>roadmap</code> and the schedule it derives from remain
+    untouched by design &mdash; a per-execution-path count, not a blocker kind. The close
+    path rejects a plan whose status is missing entirely, treating it as incomplete and
+    un-held, which is the conservative direction.</p>
+    <p>What remains is the &sect;4 deferral: the executable probe that validates and clears a
+    held blocker's subject. It is a separate plan by the locked probe-execution-boundary
+    decision, unblocked now that the closure rule reads a held blocker's kind, and it is
+    recorded as f-ascocw-003 on the plan rather than folded into this record.</p>
   </section>
 </main>
 </body>

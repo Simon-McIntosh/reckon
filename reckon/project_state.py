@@ -44,7 +44,7 @@ from reckon._schema import (
     parse_plan_ref,
     resolve_plan_ref,
 )
-from reckon.lifecycle import COMPLETED_STATUSES
+from reckon.lifecycle import COMPLETED_STATUSES, TERMINAL_STATUSES
 
 MARKER_RELATIVE = Path(".reckon/project-state-migration.json")
 RESOURCE_SCRIPT_ID = "reckon-resource-state"
@@ -1941,6 +1941,165 @@ def move_sprint_item(
         return {"from_version": new_from, "to_version": new_to}
 
 
+def _sprint_item_payload(row: Any) -> dict[str, Any]:
+    return {"slug": row} if isinstance(row, str) else dict(row)
+
+
+def _close_sprint_with_carry_forward(
+    docs_dir: Path,
+    project: str,
+    sprint_id: str,
+    working: dict[str, Any],
+    expected_version: int,
+) -> tuple[int, list[str]]:
+    """Enforce closability and carry held work into the next open sprint.
+
+    A sprint is closable only when every item whose plan is not lifecycle-
+    terminal is held by a blocker resource of kind "held"; otherwise a
+    ProjectStateError names the item(s) that are not.  Held incomplete items
+    move to the next non-terminal sprint in composed order, retaining their
+    blocker references; completed items stay on the closing sprint.  Uses the
+    same two-version check, journal, and compensating recovery as
+    move_sprint_item so an interrupted close restores both resources.
+    """
+    items = [_sprint_item_payload(row) for row in working.get("items", [])]
+    plan_states = _plan_state_by_slug(
+        docs_dir, project, {str(item.get("slug", "")) for item in items}
+    )
+    composed = compose_project_state(docs_dir, project)
+    blocker_kind = {
+        str(blocker.get("id")): str(blocker.get("kind") or "").strip() or "explicit"
+        for blocker in composed.get("blockers", [])
+    }
+
+    incomplete: list[dict[str, Any]] = []
+    unheld: list[str] = []
+    for item in items:
+        slug = str(item.get("slug", ""))
+        plan_status = (plan_states.get(slug) or {}).get("status")
+        if slug and str(plan_status or "") in TERMINAL_STATUSES:
+            continue
+        held = any(
+            blocker_kind.get(str(blocker_id)) == "held"
+            for blocker_id in item.get("blocked_by", [])
+        )
+        if held:
+            incomplete.append(item)
+        else:
+            unheld.append(slug)
+    if unheld:
+        raise ProjectStateError(
+            f"sprint {sprint_id!r} cannot close: incomplete item(s) not held: "
+            + ", ".join(unheld)
+        )
+
+    if not incomplete:
+        return (
+            write_resource(
+                docs_dir, project, "sprint", sprint_id, working, expected_version
+            ),
+            [],
+        )
+
+    ordered = [str(sprint.get("id", "")) for sprint in composed.get("sprints", [])]
+    position = ordered.index(sprint_id) if sprint_id in ordered else None
+    advancing_id = None
+    for candidate in ordered[position + 1 :] if position is not None else []:
+        rows = [
+            s for s in composed.get("sprints", []) if str(s.get("id", "")) == candidate
+        ]
+        status = str((rows[0].get("status") if rows else "") or "").lower()
+        if status not in {"done", "shipped", "archived"}:
+            advancing_id = candidate
+            break
+    if advancing_id is None:
+        raise ProjectStateError(
+            f"sprint {sprint_id!r} cannot close: held incomplete item(s) have no "
+            "open sprint to advance to"
+        )
+
+    closing_path = resource_path(docs_dir, project, "sprint", sprint_id)
+    advancing_path = resource_path(docs_dir, project, "sprint", advancing_id)
+    journal = _move_journal_path(docs_dir, project, sprint_id, advancing_id, "<close>")
+    with _resource_locks(
+        docs_dir,
+        project,
+        [("sprint", sprint_id), ("sprint", advancing_id)],
+    ):
+        closing, closing_version = _read_resource_unchecked(
+            docs_dir, project, "sprint", sprint_id
+        )
+        advancing, advancing_version = _read_resource_unchecked(
+            docs_dir, project, "sprint", advancing_id
+        )
+        if closing_version != expected_version:
+            raise ProjectStateConflict(expected_version, closing_version, closing)
+        carried_slugs = {str(item.get("slug", "")) for item in incomplete}
+        existing = {
+            str(item if isinstance(item, str) else item.get("slug", ""))
+            for item in advancing.get("items", [])
+        }
+        clashes = sorted(carried_slugs & existing)
+        if clashes:
+            raise ProjectStateError(
+                f"sprint {advancing_id!r} already contains carried item(s): "
+                + ", ".join(clashes)
+            )
+        closing_items = [
+            item for item in items if str(item.get("slug", "")) not in carried_slugs
+        ]
+        advancing_items = list(advancing.get("items", [])) + incomplete
+        closing_bytes = closing_path.read_bytes()
+        advancing_bytes = advancing_path.read_bytes()
+        _publish_move_journal(
+            journal,
+            project,
+            sprint_id,
+            advancing_id,
+            closing_bytes,
+            advancing_bytes,
+        )
+        try:
+            new_closing = _write_resource_unlocked(
+                docs_dir,
+                project,
+                "sprint",
+                sprint_id,
+                {**working, "items": closing_items},
+                closing_version,
+            )
+            _write_resource_unlocked(
+                docs_dir,
+                project,
+                "sprint",
+                advancing_id,
+                {**advancing, "items": advancing_items},
+                advancing_version,
+            )
+        except Exception:
+            for path, content in (
+                (closing_path, closing_bytes),
+                (advancing_path, advancing_bytes),
+            ):
+                fd, tmp_name = tempfile.mkstemp(
+                    prefix=f".{path.name}.",
+                    suffix=".recover",
+                    dir=path.parent,
+                )
+                os.close(fd)
+                tmp = Path(tmp_name)
+                try:
+                    tmp.write_bytes(content)
+                    _durable_replace(tmp, path)
+                finally:
+                    tmp.unlink(missing_ok=True)
+            _durable_unlink(journal)
+            raise
+        _mark_move_journal_committed(journal)
+        _durable_unlink(journal)
+    return new_closing, [f"carried {len(incomplete)} item(s) to sprint {advancing_id}"]
+
+
 def apply_resource_ops(
     docs_dir: Path,
     project: str,
@@ -2043,6 +2202,16 @@ def apply_resource_ops(
             ]
         else:
             raise ValueError(f"unsupported {resource_type} op {verb!r}")
+    if (
+        not create
+        and resource_type == "sprint"
+        and str(working.get("status") or "").lower() in COMPLETED_STATUSES
+    ):
+        version, close_warnings = _close_sprint_with_carry_forward(
+            docs_dir, project, resource_id, working, expected_version
+        )
+        warnings.extend(close_warnings)
+        return version, warnings
     version = write_resource(
         docs_dir,
         project,

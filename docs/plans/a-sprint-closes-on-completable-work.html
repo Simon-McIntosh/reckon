@@ -102,6 +102,28 @@
     membership check over the returned set rather than as a count, because a count agrees by
     coincidence.</p>
 
+    <section class="section-landed">
+      <header><span class="badge badge-shipped">landed 2026-09-15</span></header>
+      <figure>
+        <img src="/reckon/figures/sprint-close-carry-forward/close-carry-forward.svg" alt="Closing a sprint: a sprint whose incomplete items are all held closes and moves them to the advancing sprint carrying their blocker; an incomplete item that is not held refuses the close.">
+        <figcaption>Closability and carry-forward: the close is refused while any incomplete item is not held; a successful close moves held work to the next open sprint.</figcaption>
+      </figure>
+      <p class="landed-summary">Closing a sprint is now a gated operation on the sprint
+      resource itself: setting its status to a completed status runs a closability check
+      against the composed state and refuses, naming the offending plan, while any
+      incomplete item is not held by a blocker of kind <code>held</code>. When every
+      incomplete item is held the close succeeds, carrying the held items to the next open
+      sprint in composed order with their blocker references, using the same two-version
+      check, journal and compensating recovery as an item move; completed items stay on the
+      closing sprint. The refusal is demonstrated as its own case leaving the resource
+      untouched, and the carry-forward is proven by set membership: after a successful close
+      the moved item appears in <code>roadmap</code>'s <code>pending_work</code>, asserted
+      as a membership check over the returned set, never as a count.</p>
+      <p class="landed-summary">Full record:
+      <a href="/reckon/evidence/a-sprint-closes-on-completable-work-landed#closure-rule">a
+      closing sprint carries held work and refuses what is not held</a>.</p>
+    </section>
+
     <h2 id="s4">&sect;4 &mdash; What this does not do</h2>
     <p>It does not evaluate anything. A held blocker is set and cleared by hand here, and the
     executable probe that would clear it automatically is a separate plan, constrained by the
@@ -143,10 +165,32 @@
     <pre class="r-fu-prompt">/reckon-ship a-sprint-closes-on-completable-work</pre>
     <p class="r-fu-outcome">§2 landed; the sequencing this followup exists to enforce was followed, and §3 is now unblocked because the state it reads exists. A blocker resource may declare kind=held, and that kind now survives from the resource through serve._derive_lifecycle — which previously hardcoded every blocked_by as explicit — into the roadmap payload under a new held_blockers key beside an unchanged explicit_blockers, with the ids exposed as held_by on the plan resource view. A held blocker still holds its plan open across status, readiness and effective-status derivation, and does not feed the synthetic persisted fallback. Commits d67150875d2a2705221573a46452027bacf67f97 (mechanism), b297348d (landing record) and 8199d182 (evidence back-link), merged. Gate 181 passed / 0 failed against 179 / 0 at base, +2 cases, both new. VERIFIED AT THE MERGED HEAD, not from the manifest: serve.py carries blocker_kind and no longer carries the hardcoded explicit row (the removed marker greps to 0), roadmap.py carries held_blockers 6 times, mcp.py carries held_by, and roadmap's pre-existing endpoint-row 'held' key — a count of blocked members per execution path, a different quantity — survives untouched. THE REFUTING CONDITION WAS RUN: at base a held kind does not reach the roadmap payload, so the implementation was required rather than already present. Two fenced files, reckon/project_state.py and reckon/lifecycle.py, needed no change and the reason is recorded: composed blocker rows already carry the resource dict intact, and no lifecycle rule reads a blocker kind. §3 remains, carried by f-ascocw-002.</p>
     </article>
-<article class="r-fu" data-id="f-ascocw-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-ship" data-written-at="2026-09-15" data-recommends-skill="/reckon-ship a-sprint-closes-on-completable-work §3" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-ascocw-002" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-ship" data-written-at="2026-09-15" data-recommends-skill="/reckon-ship a-sprint-closes-on-completable-work §3" data-resolved-at="2026-09-15T15:50:28+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Teach closure to read held — §3, and make it refuse</h4>
     <div class="r-fu-body"><p><strong>There is no closability check today, and that is the finding that shapes this node.</strong> Closing a sprint is a bare <code>edit_plan</code> setting <code>status</code> to <code>done</code> on the sprint resource — no rule, no refusal, no carry-forward. The discipline exists only as prose in the sprint skill (<em>do not close a sprint while <code>roadmap(project, sprint=&lt;id&gt;)</code> returns ready or in-progress work</em>), which is a rule with nothing that runs it. §3 is that check.</p><p><strong>Both measures are refusals rather than successes, and neither may be weakened.</strong> A closure rule never demonstrated <em>refusing</em> a sprint that still holds one un-held incomplete item cannot be told from one that always closes. And the carry-forward must be proven by <strong>set membership</strong> in <code>roadmap</code>'s <code>pending_work</code> after the close, never by a count — a count agrees by coincidence, and this is precisely the check that separates carrying work forward from hiding it in a closed container.</p><p><strong>Done when</strong> closing a sprint whose incomplete items are all held succeeds and moves them to the advancing sprint carrying their blockers; closing one holding a single un-held incomplete item is refused, <em>naming that item</em>; the refusal is demonstrated as its own case; and after a successful close every moved item is asserted present in <code>pending_work</code> as a membership check over the returned set. Name the surface a caller reaches — the operation that performs the close — rather than only the function that computes closability.</p></div>
     <pre class="r-fu-prompt">/reckon-ship a-sprint-closes-on-completable-work §3</pre>
+    <p class="r-fu-outcome">§3 landed. The close path is now gated: setting a sprint resource's
+    status to a completed status runs a closability check that reads every item whose plan
+    is not lifecycle-terminal and refuses, naming the offending plan, unless each is held by
+    a blocker of kind <code>held</code>; the refusal leaves the closing sprint
+    byte-identical. A sprint whose incomplete items are all held closes and carries the held
+    items to the next open sprint in composed order, retaining their blocker references,
+    under the same two-version check, journal and compensating recovery as an item move;
+    completed items stay on the closed sprint. Both measures landed as written: the refusal
+    is demonstrated as its own case, and the carry-forward is proven by set membership —
+    after a successful close the moved item is asserted present in <code>roadmap</code>'s
+    <code>pending_work</code> over the returned set. The door to the executable probe that
+    would clear a held blocker on its own (f-ascocw-003) is open.</p>
+    </article>
+<article class="r-fu" data-id="f-ascocw-003" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-15" data-recommends-skill="/reckon-create" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the held-clearing probe as its own plan</h4>
+    <div class="r-fu-body"><p>The executable probe §4 defers is now unblocked: the closure
+    rule reads a held blocker's kind, so the mechanism that validates the subject of a held
+    blocker (and clears it when that subject arrives) can be the separate, tested plan named
+    by the locked probe-execution-boundary decision — Python in the repository, reviewed and
+    tested like any other code, never inline in a document and never evaluated in the
+    surface.</p></div>
+    <pre class="r-fu-prompt">/reckon-create</pre>
     </article>
 </section>
   </main>
