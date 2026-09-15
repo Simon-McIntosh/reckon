@@ -74,6 +74,7 @@
         <tr><td>§21</td><td><a href="#landing-not-also-denied">landing-not-also-denied</a></td><td>93806e6</td><td>run outcome</td></tr>
         <tr><td>§20</td><td><a href="#reason-keeps-its-predicate-at-the-measured-width">reason-keeps-its-predicate-at-the-measured-width</a></td><td>ba487aa</td><td>run outcome</td></tr>
         <tr><td>§12</td><td><a href="#manifest-two-keys-on-one-line-refused">manifest-two-keys-on-one-line-refused</a></td><td>9a2f95e</td><td>run outcome</td></tr>
+        <tr><td>§12</td><td><a href="#manifest-prose-word-not-top-level-key">manifest-prose-word-not-top-level-key</a></td><td>ac8621b</td><td>run outcome</td></tr>
       </tbody>
     </table>
   </section>
@@ -629,6 +630,27 @@ reading taken as an authority it was not.</p>
     the separate-line form is asserted unchanged. The promotion guard for changed paths without
     a commit still swallows a parse refusal as a skip rather than refusing; making that guard
     speak is a promotion-layer change recorded as a follow-on.</p>
+  </section>
+
+  <section id="manifest-prose-word-not-top-level-key">
+    <h3>§12 &mdash; A manifest word in free prose is not a second top-level key</h3>
+    <p>Run
+    <code>r-20260915T074439374137-the-second-key-check-does-not-fire-on-prose</code>.
+    Commit <code>ac8621b</code>, 57 insertions and 11 deletions across one source file and
+    one test file.</p>
+    <p><strong>Defect reproduction:</strong> before the repair,
+    <code>tests: ran the suite; artifacts: none were produced</code> raised
+    <code>ManifestParseError</code> and named <code>artifacts</code> as a second key. That word
+    is part of the tests value&rsquo;s free prose; no top-level artifacts field was authored.</p>
+    <p><strong>Measure:</strong> the detector now reserves its same-line refusal for the
+    unambiguous machine-field pair <code>commits</code> followed by
+    <code>changed_paths</code>, whose misparse suppresses the changed-paths fact the promotion
+    guard reads. Five new cases prove that pair is still refused, the exact tests prose parses,
+    an ordinary colon parses, a URL carrying port <code>8080</code> parses, and separate lines
+    parse unchanged. <code>tests/test_manifest_parse_format.py</code> advances from 41 passing
+    cases at base <code>c65b458</code> to 46 at <code>ac8621b</code>, with zero failures in
+    either run. The two pre-existing Ruff findings in <code>reckon/crew/reports.py</code> remain
+    unchanged, and both touched files pass the formatter check.</p>
   </section>
 
   <section id="landing-not-also-denied">
