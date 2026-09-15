@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="derived-state-parity">
   <meta name="plan-title" content="One Derivation, Every Surface">
   <meta name="plan-summary" content="Move the four derivations the surface invented into Python, so an agent reading MCP sees the sprint state, endpoints, rollup and schedule a human sees.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="13.0">
   <meta name="plan-wall-clock-hours" content="7.0">
@@ -22,14 +22,14 @@
   <meta name="plan-tags" content="reckon-tooling,spa">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-depends-on" content="graph-derived-schedule,fleet-home">
-  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,reckon/fleet_index.py,reckon/roadmap.py,reckon/mcp_views.py,tests/test_fleet_rollup_surfaces.py,tests/test_roadmap_sprint_derivation.py">
+  <meta name="plan-artifacts" content="reckon/schedule.py,reckon/roadmap.py,reckon/serve.py,reckon/fleet_index.py,docs/ui/crew.jsx,docs/ui/state-loader.js,tests/test_schedule_derivation.py,tests/test_served_schedule_payload.py,tests/test_surface_parity.py,tests/spa_parity_harness.py,docs/evidence/archive/derived-state-parity-landed.html">
   <title>One Derivation, Every Surface | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="21">
 <meta name="plan-commits" content="42104d3,f5fbac7,77d0edf">
-<meta name="plan-impl" content="0.8">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
 <main class="plan-doc">
@@ -222,10 +222,11 @@
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-dsp-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship derived-state-parity" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-dsp-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship derived-state-parity" data-resolved-at="2026-09-15T05:11:09+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Move the derivations in module order, then bind the check</h4>
     <div class="r-fu-body"><p>§2, §3 and §5 all write <code>reckon/roadmap.py</code>, so they are one serial lane in section order; §4 touches different modules and runs alongside them. §6 lands last, because it compares what the four produce and is the node that keeps parity from rotting.</p></div>
     <pre class="r-fu-prompt">/reckon-ship derived-state-parity</pre>
+    <p class="r-fu-outcome">done — no followup. All five work sections landed in the module order this followup set, with the check bound last. The four derivations the surface had invented now exist in Python and reach a reader without a browser: sprint state and drift, endpoint enumeration, the fleet rollup, and the schedule, the last served through _attach_schedule and consumed by a surface that derives nothing. s6 binds them with a parity check over 78 compared pairs whose count is asserted arithmetically rather than written down, and whose companion patches one value through six mutators and requires the comparison to fail — so agreement is distinguishable from comparing a value with itself. Two things are recorded rather than smoothed over. The schedule section took two nodes because I fenced the first to the surface file while asking it to render from a payload nothing served, which is a coordinator error and not a worker one; the pair was merged together so the combined state was proven rather than either half. And five assertions naming the removed surface derivation were re-aimed rather than deleted, with the surviving home of every dropped property named and verified. The evidence record was authored by the workers themselves and merged here: two of them wrote the same path independently from different bases, and the coordinator combined them, which is the model working as intended rather than a conflict. Record at docs/evidence/archive/derived-state-parity-landed.html.</p>
     </article>
 <article class="r-fu" data-id="f-dsp-active-sprint-id-agrees-with-nothing" data-status="open" data-written-by="reckon-ship-s15" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship derived-state-parity" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">The reported active sprint agrees with neither store, and disagrees with its own response</h4>
