@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="derived-state-parity-landed">
+  <meta name="plan-title" content="One derivation, every surface &mdash; landed evidence">
+  <meta name="plan-summary" content="A bound check that renders each surface and requires the rendered value to equal the returned value, over one fixture project carrying all four derivations at once. It compares 78 value pairs between the two surfaces, never a literal on either side, and a companion case patches one value and demands a red.">
+  <meta name="plan-evidence-for" content="reckon:derived-state-parity">
+  <meta name="plan-verifies" content="reckon:derived-state-parity#s6">
+  <meta name="plan-recorded-at" content="2026-09-15">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; node-based module evaluation of the authored JSX helpers &mdash; no browser, no network, no runtime clock">
+  <meta name="plan-commits" content="9c1308ba">
+  <meta name="plan-artifacts" content="tests/test_surface_parity.py,tests/spa_parity_harness.py">
+  <title>One derivation, every surface &mdash; landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>One derivation, every surface &mdash; landed evidence</h1>
+    <p class="plan-summary">Moving four derivations to Python is worth little on its own, because
+    nothing would stop the next surface node from inventing a fifth. This plan's last section builds
+    the bound check: for one fixture project, render each surface, call each read, and require the
+    rendered value to equal the returned value. The check compares the two surfaces, never a literal
+    on either side &mdash; the only form that fails when one copy drifts.</p>
+  </header>
+
+  <section id="scope">
+    <h2>Record scope</h2>
+    <p>The deliverable is two test files. <code>tests/spa_parity_harness.py</code> builds one fixture
+    project &mdash; a single inventory that carries both the dependency graph behind the endpoint
+    closures and the schedule chain behind the lane packing &mdash; and renders both sides of every
+    comparison. The rendered side is a node evaluation of the <em>authored</em> JSX helpers (the
+    sprint rows, the two graph endpoint adapters, the crew-flow lane pack, the fleet-home summary),
+    with no React runtime and no re-implementation. The returned side is the Python read the rest of
+    the codebase uses. <code>tests/test_surface_parity.py</code> asserts the equality and carries the
+    companion case.</p>
+
+    <figure>
+      <svg viewBox="0 0 660 240" width="100%" style="max-width:660px" role="img"
+           aria-label="One fixture project feeds the authored JSX helpers on the rendered side and the Python readers on the returned side; seventy-eight field pairs compare the two, and a companion case patches one value on either side and requires a mismatch.">
+        <g fill="none" stroke="currentColor" stroke-width="1">
+          <rect x="8" y="20" width="200" height="34" rx="3"/>
+          <rect x="8" y="76" width="200" height="34" rx="3" stroke="#3b82c4"/>
+          <rect x="8" y="132" width="200" height="34" rx="3"/>
+          <path d="M208 37 L268 37"/>
+          <path d="M260 30 l8 7 -8 7"/>
+          <path d="M208 93 L268 93"/>
+          <path d="M260 86 l8 7 -8 7"/>
+          <path d="M208 149 L268 149"/>
+          <path d="M260 142 l8 7 -8 7"/>
+          <rect x="268" y="22" width="180" height="120" rx="3"/>
+          <rect x="508" y="22" width="144" height="120" rx="3"/>
+          <path d="M448 52 L508 52"/>
+          <path d="M500 45 l8 7 -8 7"/>
+          <path d="M268 176 h180"/>
+          <path d="M448 176 v18"/>
+          <path d="M268 194 h180"/>
+          <path d="M448 194 v18"/>
+          <rect x="508" y="170" width="144" height="52" rx="3" stroke="#c4473b"/>
+        </g>
+        <g fill="currentColor" font-family="system-ui,sans-serif" font-size="13">
+          <text x="18" y="41">one fixture project</text>
+          <text x="278" y="41">rendered &mdash; authored JSX</text>
+          <text x="518" y="41">returned &mdash; Python read</text>
+        </g>
+        <g fill="currentColor" font-family="system-ui,sans-serif" font-size="11">
+          <text x="18" y="96">dependency graph</text>
+          <text x="18" y="110">sprints &middot; endpoints &middot; schedule</text>
+          <text x="18" y="152">schedule chain</text>
+          <text x="278" y="70">sprintStateRows</text>
+          <text x="278" y="84">_roadmapEndpointRows / _graphEndpointRows</text>
+          <text x="278" y="98">flowPackLanes &middot; home summary</text>
+          <text x="278" y="133">78 pairs, each naming its two sources</text>
+          <text x="518" y="70">build_roadmap</text>
+          <text x="518" y="84">schedule_report</text>
+          <text x="518" y="98">compute_project_row</text>
+          <text x="278" y="187">patch one value on either side</text>
+          <text x="518" y="187">companion case</text>
+          <text x="518" y="201">requires a mismatch &mdash; the</text>
+          <text x="518" y="215">check is not a mirror</text>
+        </g>
+      </svg>
+      <figcaption>One fixture, two surfaces, 78 compared fields. 8 sprint (state and drift flag for
+      four sprints), 62 endpoint (10 per closure across both graph adapters plus the two endpoint-set
+      memberships), 2 schedule (lane count and chain far end), 6 rollup (counts, series length and
+      series total for the one project). A literal on either side would drift silently in step; only
+      the comparison fails when a copy changes, so the companion what-if is part of the recorded
+      verdict.</figcaption>
+    </figure>
+  </section>
+
+  <section id="comparison">
+    <h2>What the 78 pairs compare</h2>
+    <table>
+      <thead><tr><th>Surface</th><th>Rendered side</th><th>Returned side</th><th>Pairs</th></tr></thead>
+      <tbody>
+        <tr><td>Sprint state</td><td><code>sprintStateRows</code> state and flag</td><td><code>build_roadmap</code> <code>derived_state</code> and drift</td><td>8</td></tr>
+        <tr><td>Endpoint set</td><td>the two graph adapters, field for field</td><td><code>build_roadmap</code> endpoint rows</td><td>60 + 2 membership</td></tr>
+        <tr><td>Schedule</td><td>crew-flow lane pack, axis far end</td><td><code>schedule_report</code></td><td>2</td></tr>
+        <tr><td>Rollup</td><td>fleet-home summary and activity projection</td><td><code>compute_project_row</code></td><td>6</td></tr>
+      </tbody>
+    </table>
+    <p>Every comparison is one <code>Pair</code> whose failure message names both sources, so a
+    mismatch report reads like &ldquo;<code>sprint scaffold state: rendered
+    <code>sprintStateRows(served.sprints)['scaffold'].state</code> = 'active' &ne; returned
+    <code>build_roadmap(...)['sprints'] id 'scaffold' derived_state</code> = 'shipped'</code>&rdquo;
+    &mdash; the two sides it found disagreeing, not a number the author happened to write down. The
+    pair count itself is asserted against the fixture's endpoint count, so it cannot silently shrink.</p>
+  </section>
+
+  <section id="red">
+    <h2>The red is part of the check, not a one-off demonstration</h2>
+    <p>A parity test that has never failed cannot tell agreement from comparing a value with itself.
+    The companion case patches exactly one value on one side &mdash; a sprint's rendered state, a
+    drift's stored half, an endpoint's closure total, a rollup count, a schedule's lane count &mdash;
+    rebuilds the pairs, and requires the comparison to report a mismatch. Six parameterised mutations
+    cover a both-sides sample of the four dimensions, and each failure message names the mutate that
+    should have been caught. The red is asserted on every run, so the check cannot silently become a
+    mirror while the source fixtures stay green.</p>
+  </section>
+
+  <section id="measure">
+    <h2>Measured against a stated base</h2>
+    <p>Base revision <code>8446668</code>, judged by delta rather than absolute green. The six
+    sibling coverage files that exercise the same surfaces carried five pre-existing failures
+    (four in the crew-flow derivation probes and one served-schedule agreement case, all from the
+    surface that still derives rather than reads). After the addition:</p>
+    <table>
+      <thead><tr><th>Run</th><th>Passed</th><th>Failed</th></tr></thead>
+      <tbody>
+        <tr><td>Base &mdash; six sibling files</td><td>41</td><td>5</td></tr>
+        <tr><td>After &mdash; siblings + the parity gate</td><td>52</td><td>5</td></tr>
+      </tbody>
+    </table>
+    <p>The gate adds 11 green tests and zero added failures. The schedule agreement case is recorded
+    as a follow-on rather than a fix: it reds against the residual derivation in one surface, which
+    is out of this node's scope to remove.</p>
+  </section>
+
+  <section id="determinism">
+    <h2>Why the check is stable on any host</h2>
+    <p>The schedule is anchored to one reference instant carried by the fixture: every recorded plan
+    carries an <code>edited</code> ISO stamp and the live run a <code>dispatched_at</code>, all
+    derived from the same constant, so bars, lane count and chain far end are the same numbers on any
+    host and any day. Rollup uses a synthesized one-project repository committed inside the activity
+    window, so the series is populated without touching anything outside the test. Both surfaces run
+    through node evaluation of the authored JSX &mdash; no browser, no network, no runtime clock.</p>
+  </section>
+</main>
+</body>
+</html>

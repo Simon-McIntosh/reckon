@@ -179,6 +179,29 @@
   </tbody>
 </table>
 
+<h3>The check landed &mdash; 78 pairs, both surfaces, a demanded red</h3>
+<p>Landed in <code>9c1308ba</code>: <code>tests/test_surface_parity.py</code> passes with 11 cases
+against one fixture project that carries all four derivations at once. The comparison is 78 value
+pairs between the two surfaces and never a literal on either side, and every failure message names
+the two sources it found disagreeing. The companion what-if is continuous rather than a one-off
+demonstration: a parameterised case patches exactly one value on one side and requires the
+comparison to fail, so the check cannot silently become a mirror.</p>
+<table>
+  <thead><tr><th>Compared value</th><th>Rendered side</th><th>Returned side</th><th>Pairs</th></tr></thead>
+  <tbody>
+    <tr><td>Sprint derived state and drift flag</td><td><code>sprintStateRows</code></td><td><code>build_roadmap</code></td><td>8</td></tr>
+    <tr><td>Endpoint closures through both adapters, plus the two set memberships</td><td><code>_roadmapEndpointRows</code> and <code>_graphEndpointRows</code></td><td><code>build_roadmap</code></td><td>60 + 2</td></tr>
+    <tr><td>Lane count and chain far end</td><td><code>flowPackLanes</code> and the served axis</td><td><code>schedule_report</code></td><td>2</td></tr>
+    <tr><td>Rollup counts, series length and series total</td><td>home summary and activity projection</td><td><code>compute_project_row</code></td><td>6</td></tr>
+  </tbody>
+</table>
+<p>Judged by delta against base <code>8446668</code>: the six sibling coverage files ran 41 passed
+and 5 failed before, 52 passed and 5 failed after &mdash; 11 new tests, zero added failures. The
+five pre-existing failures (four crew-flow derivation probes and one served-schedule agreement case)
+all red against the residual schedule derivation in <code>docs/ui/crew.jsx</code>, which is out of
+scope for this node to remove and is reported as a follow-on. The full record, including the figure,
+is at <code>docs/evidence/archive/derived-state-parity-landed.html</code>.</p>
+
 <h2 id="s7">&#167;7 &mdash; Out of scope</h2>
 <p>Presentation stays in the surface: the DAG geometry helper, card and lane dimensions, edge routing, colour and the capture harness are not moved and have no agent-side counterpart. No new store and no caching layer &mdash; each read computes from the same discovery and ledger inputs the surface uses today, and a cache would be a fifth place for the truth to differ. The plan-state write path is unchanged; every read here is read-only. Whether the SPA should degrade when a derivation is unavailable is a surface question for a later plan, not a parity question.</p>
 
