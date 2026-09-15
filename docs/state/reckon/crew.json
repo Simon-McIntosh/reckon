@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T17:34:06",
+  "updated": "2026-09-15T17:35:06",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -139897,6 +139897,206 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T100528833708-archived-evidence-enters-the-conformance-scan",
+        "plan": "landed-record-at-closure",
+        "section": "\u00a75",
+        "node": "archived-evidence-enters-the-conformance-scan",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 3940,
+                "cached_input_tokens": 809385,
+                "input_tokens": 813327,
+                "output_tokens": 1202,
+                "reasoning_output_tokens": 172,
+                "total_tokens": 814529,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "f0d4bf08-978e-48fd-803d-0d5f1cdbb55a",
+            "session_id": "ship-s17-20260915"
+          },
+          "done_when": "the conformance scan covers the evidence records under docs/evidence/archive so a malformed record or an unresolvable sha fails a test, with the count of records now scanned stated as a number and greater than the zero scanned before; a well-formed record whose shas resolve produces no finding, asserted explicitly as the quiet half; and any surviving exemption names the directories it means rather than matching a path component at any depth",
+          "estimated_hours": null,
+          "goal": "Bring the archived evidence records inside the conformance scan instead of excluding the directory wholesale",
+          "id": "archived-evidence-enters-the-conformance-scan",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T10:05:29Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 29,
+            "binding_observed": false,
+            "detail": "",
+            "headroom": 21,
+            "mean_context": 92157,
+            "observed_at": "2026-09-15T10:05:00Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 120
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T100528833708-archived-evidence-enters-the-conformance-scan/manifest.md",
+          "plan": "landed-record-at-closure",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_schema.py",
+            "docs/evidence/archive/landed-record-at-closure-landed.html",
+            "docs/plans/landed-record-at-closure.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-resume-evidence",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T10:05:50Z",
+        "completed_at": "2026-09-15T15:31:26.084Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 19529,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 19536,
+        "stalled": true,
+        "time_budget": "45m",
+        "base_sha": "0ca966ba7410031a3f5a862d7f2784e671e351bf",
+        "commits": [
+          "3897203c65f1868f011d6a21529924b1ae23343b",
+          "5ad4d5f5584d662f8f3253dc9e8ba787f329e2c3"
+        ],
+        "changed_lines": {
+          "added": 192,
+          "removed": 5,
+          "files": 3
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_schema.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/f0d4bf08-978e-48fd-803d-0d5f1cdbb55a/scratchpad/conformance_gate.log",
+          "log_digest": "064fa5a4a084e7e188e5ba60990c3aa97fac127af31f417a31d33d735fb21c80"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T100528833708-archived-evidence-enters-the-conformance-scan/manifest.md",
+        "scope_changed": false,
+        "session_id": "5ba7dd93-9eff-4c14-80b9-b52cce328b87",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 7554824,
+            "input_tokens_cumulative": 7554824,
+            "output_tokens": 126854,
+            "output_tokens_cumulative": 126854,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T15:31:26.084Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 7885959,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 6265.335,
+          "generated_tokens": 142655,
+          "generation_seconds": 6034.219,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 83.1,
+          "machine_seconds": 231.116,
+          "peak_input_tokens": 166297,
+          "tokens_per_second": 23.64,
+          "wall_tokens_per_second": 22.77
+        },
+        "dispute_count": "unknown",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 3,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s17-20260915/archived-evidence-enters-the-conformance-scan",
+          "session_id": "5ba7dd93-9eff-4c14-80b9-b52cce328b87",
+          "session_source": "stream",
+          "retained_at": "2026-09-15T15:31:26.084Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 32.0,
+        "orientation_input_tokens": 4659644.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -140125,6 +140325,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1544
+    "_version": 1545
   }
 }
