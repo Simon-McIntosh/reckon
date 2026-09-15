@@ -903,7 +903,7 @@ def _shared_landing_paths(
 ) -> set[Path]:
     """Return the plan file and cumulative evidence record for this node.
 
-    Every node on a plan appends its landing record to the plan's own section
+    Every node on a plan appends its landing record to its plan section
     and its evidence anchor to the cumulative evidence record, so those two
     repository paths are shared by all of them rather than owned by any one.
     Resolved absolutely so the exclusive-claim machinery recognises them in
@@ -995,6 +995,51 @@ def _candidate_scope_entries(
     # reconciles their appends would never be reached. They are exempted from
     # the exclusive-claim machinery, never from the declared write scope.
     return [entry for entry in entries if entry[2].resolve() not in shared]
+
+
+def _peer_scopes_without_shared_landing_paths(
+    peer_scopes: Mapping[str, Iterable[str]],
+    *,
+    node: TaskNode,
+    project: str,
+    repo: Path,
+    authority: Mapping[str, Any],
+) -> dict[str, list[str]]:
+    """Keep peer disclosure limited to paths that are exclusive claims."""
+    shared = _shared_landing_paths(node, project=project, authority=authority)
+    if not shared:
+        return {
+            name: sorted(str(path) for path in paths)
+            for name, paths in peer_scopes.items()
+        }
+    repository_projects = mounted_repository_projects()
+    repositories = tuple(
+        repository_identity(root) or Path(str(root)).expanduser().resolve()
+        for root in authority.get("repositories") or (repo,)
+    )
+    write = authority.get("write")
+    write = write if isinstance(write, Mapping) else {}
+    filtered: dict[str, list[str]] = {}
+    for name, paths in peer_scopes.items():
+        kept = []
+        for path in paths:
+            declared = str(path)
+            entries = _resolved_scope_entries(
+                [declared],
+                base_repository=repository_identity(repo) or Path(repo).resolve(),
+                repositories=repositories,
+                project=project,
+                repository_projects=repository_projects,
+                preferred_projects=tuple(
+                    str(item) for item in write.get("projects") or ()
+                ),
+            )
+            if any(absolute.resolve() in shared for _, _, absolute, _, _ in entries):
+                continue
+            kept.append(declared)
+        if kept:
+            filtered[name] = sorted(kept)
+    return filtered
 
 
 def _live_conflict_rows(
@@ -2894,6 +2939,13 @@ def dispatch(
     _refuse_over_concurrency_ceiling(backend_name, backend)
     explicitly_named_peers = set() if shadow_lineage else set(node.peer_scopes)
     peers = {} if shadow_lineage else _merge_peer_scopes(peer_claims, node.peer_scopes)
+    peers = _peer_scopes_without_shared_landing_paths(
+        peers,
+        node=node,
+        project=project,
+        repo=repo_root,
+        authority=authority,
+    )
     node.peer_scopes = peers
 
     reap_idle_session_members(

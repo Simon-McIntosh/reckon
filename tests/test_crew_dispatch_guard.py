@@ -128,6 +128,7 @@ def _dispatch(
     name: str,
     *,
     watch_override: bool = False,
+    write_paths: list[str] | None = None,
 ) -> dict:
     """Dispatch with this session's delivery registered, as a coordinator does.
 
@@ -136,9 +137,12 @@ def _dispatch(
     question that a peer's seat cannot answer for you.
     """
     session = f"session-{name}"
+    node = _node(config_home, name)
+    if write_paths is not None:
+        node.write_paths = write_paths
     with runs.follower_claim("sample", session, delivery="stream"):
         return crew.dispatch(
-            node=_node(config_home, name),
+            node=node,
             project="sample",
             repo=repo,
             config=CONFIG,
@@ -211,6 +215,28 @@ def test_two_concurrent_nodes_both_hold_the_shared_landing_paths(
         crew.read_pointer(second["run_id"])["node"]["write_paths"]
         == second["node"]["write_paths"]
     )
+
+
+def test_peer_prompt_omits_shared_landing_paths(
+    isolated_project: tuple[Path, Path],
+) -> None:
+    config_home, repo = isolated_project
+    peer = _dispatch(
+        config_home,
+        repo,
+        "landing-peer",
+        write_paths=["reckon/crew/ticker.py"],
+    )
+
+    dispatched = _dispatch(config_home, repo, "landing-prompt")
+
+    prompt = Path(dispatched["prompt_path"]).read_text(encoding="utf-8")
+    peer_scope = next(
+        line for line in prompt.splitlines() if peer["node"]["id"] in line
+    )
+    assert "docs/plans/fixture.html" not in peer_scope
+    assert "docs/evidence/archive/fixture-landed.html" not in peer_scope
+    assert "reckon/crew/ticker.py" in peer_scope
 
 
 def test_no_watch_override_is_recorded_for_an_occupied_project(
@@ -299,7 +325,7 @@ def test_member_lookup_uses_project_mount_from_another_repository(
     assert record["repo"] == str(work_repo.resolve())
     assert record["authority"]["plan"]["repository"] == str(plan_repo.resolve())
     # The node's own delivery path plus the shared landing paths dispatch grants
-    # the fixture plan, still declared relative to the plan's repository.
+    # the fixture plan, still declared relative to the repository that owns it.
     assert sorted(record["node"]["write_paths"]) == sorted(
         [
             str(report),
