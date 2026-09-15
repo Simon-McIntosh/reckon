@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
 </head>
 <body>
   <main class="plan-doc">
@@ -127,6 +127,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="_top" data-id="c-20260915T055500" data-who="reckon-ship" data-when="2026-09-15T05:55:00Z">
     <div class="r-comment-body">Re-homed S17 to S18 to clear a sprint-order inversion: this plan depends on crew-observability-truth, which is scheduled in S18, so scheduling it in S17 placed it before its own prerequisite and guaranteed S17 could not close on it. Same sprint as the prerequisite is the minimal correction; the DAG orders them within the sprint. No status or scope change, and the plan remains blocked on its own open decision (skill-wording-source) independently of this.</div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-read-only-tier-cannot-author" data-who="reckon-ship" data-when="2026-09-15T07:55:00Z">
+    <div class="r-comment-body">A limit on this plan's own rule, found by a peer session and measured here before recording it. The rule as written — the worker authors its landing record and its plan comment in its own worktree — holds only for execution-capable roles. A read-only reviewer or investigator cannot write docs/research/ at all: every writable grant on that tier is outside the repository, so the roles that produce investigative output are fenced out of the directory this repository's own rules say it belongs in. The consequence is measured rather than argued: 638 files in the crew reports directory against 15 tracked in docs/research/, counted independently here after a peer reported the same ratio. Essentially all investigative output this project has produced is machine-local and unversioned, and nobody chose that. Two things follow. First, anyone implementing this plan must not write the rule as though it holds for every role, because a worker on a read-only tier told to author its record will be unable to comply and the contract will be wrong for it in the same way the old prohibition was wrong for implement roles. Second, this is not this plan's defect to fix: the fence behaviour belongs to the session that reported it, which is tracking it as one class rather than four separate defects, and a role regression at 86aafc6 today has made review and investigate undispatchable entirely. Until that lands, read-only-shaped work is dispatched at implement role with the report as its only declared write path, which keeps the fence and changes only the tier.</div>
 </div>
 </section>
 </main>
