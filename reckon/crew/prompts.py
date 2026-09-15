@@ -228,7 +228,8 @@ WORKTREE AND PARALLEL-SAFETY RULES (binding)
   1. Work only in {worktree}. Do not create, checkout or switch branches.
   2. Never use git stash, rebase, clean, reset --hard, or path restoration.
   3. Stage explicit assigned paths only. Never git add -A/./*, commit -a/-am.
-  4. Do not edit reckon plan or index state. Return outcome data instead.
+  4. Never mutate the shared project index, sprint state, or a plan other
+     than the one you are landing against. Return outcome data instead.
   5. Commit locally with a conventional subject AND a body. Do not merge or
      push the primary branch.
   6. No AI attribution, and no plan, sprint or ticket identifiers in commit
