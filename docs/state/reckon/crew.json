@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T17:23:34",
+  "updated": "2026-09-15T17:34:06",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -139693,6 +139693,210 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T144420265941-the-coordinator-reviews-an-authored-record",
+        "plan": "worker-authors-its-own-record",
+        "section": "\u00a73",
+        "node": "the-coordinator-reviews-an-authored-record",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 796,
+                "cached_input_tokens": 451483,
+                "input_tokens": 452281,
+                "output_tokens": 691,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 452972,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3332e8d8-dcef-4091-9774-c9680478b165",
+            "session_id": "ship-s16-20260914"
+          },
+          "done_when": "The worker half of this contract landed in commit 08173e65: the four clauses forbidding a worker to write plan state are gone (prohibiting-phrase grep 4 before, 0 after) and three skill files now carry the positive landing requirement quoted verbatim from reckon/crew/prompts.py. This node is the coordinator half, and it is not merely the absence of the old rule.\n\nDONE WHEN, and every clause emits evidence:\n\n(1) The skill's landing-beat description says the coordinator READS the worker's committed edits, MERGES them, and MAY EDIT OR APPEND to the worker's comments. The landing beat becomes a review of an authored record rather than a transcription of a manifest, and the skill currently describes the transcription. Quote the sentences you changed, before and after.\n\n(2) Both worker limits are stated, and both are about what a worker can SEE rather than about merge mechanics: a worker must not resolve its own driving followup, and must not set a terminal status. The reason is the measure of whether you have written them correctly - only the coordinator observes the other nodes, so a worker knows its node landed but not whether the section closed. A sentence that states the limit without that reason is a rule someone will reasonably break.\n\n(3) NO sentence in the skill instructs the coordinator to write a record the worker is required to author. This is the falsifiable half and it is a REMOVAL, so state it as a digit: grep for the transcription instructions before and after, name the phrasings you counted, and report both numbers. A non-zero after is a finding, not an error to suppress.\n\n(4) The parity test at tests/test_skill_contract_parity.py already derives its expectations from prompts.py's own strings rather than from literals. If you add assertions there, follow that form - a check comparing the skill against a literal copy reproduces the defect the whole plan is fixing, because two copies of one rule drift silently while the test keeps passing. Read the file before extending it.\n\nWATCH THE READ-SET BUDGET, AND DO NOT SHAVE A RULE TO FIT. tests/test_skill_contracts.py carries FIXED_READ_SET_TOKEN_BUDGET, raised to 17_000 in the last commit because SKILL.md now carries the landing contract verbatim. The comment beside that constant states the ordering: relocate reference material first, raise this second, shave a rule never. If your additions push SKILL.md over, follow that order and record which step you took and why, beside the constant. Do not shorten a rule to pass a budget.\n\nRANGE OVER BOTH AUDIENCES. These two limits are owed to the runtime prompt as well as the skill, so the two audiences receive the same rule. reckon/crew/prompts.py is NOT in your write scope and is held by another session - do not edit it. If the prompt does not yet carry the limits, record that in your manifest as a follow-on naming the file and the two sentences, so the coordinator can route it.\n\nJudge by delta against a stated base: record the base revision and its failure ids, report added failures as a digit, and zero added against a red base is a pass. Gate the focused set - tests/test_skill_contracts.py and tests/test_skill_contract_parity.py - captured to one log; no full suite. Author your own landing record: a comment on section 3 of the plan and an anchor in the cumulative evidence record, both committed in your worktree. Do NOT resolve the driving followup f-waor-001 and do NOT set a terminal plan status - those are the coordinator's, and this node is the one that writes down why. Conventional commit subject AND a body.",
+          "estimated_hours": null,
+          "goal": "Make the ship skill's landing beat describe the coordinator reading, merging and appending to a worker-authored record, and state the two limits a worker cannot see past",
+          "id": "the-coordinator-reviews-an-authored-record",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T14:44:20Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 15,
+            "binding_observed": false,
+            "detail": "",
+            "headroom": 9,
+            "mean_context": 89122,
+            "observed_at": "2026-09-15T14:44:05Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 120
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T144420265941-the-coordinator-reviews-an-authored-record/manifest.md",
+          "plan": "worker-authors-its-own-record",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "skills/reckon-ship/SKILL.md",
+            "skills/reckon-ship/references/sprint-orchestration.md",
+            "tests/test_skill_contracts.py",
+            "docs/evidence/archive/worker-authors-its-own-record-landed.html",
+            "docs/plans/worker-authors-its-own-record.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-backpressure",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T14:44:37Z",
+        "completed_at": "2026-09-15T15:30:28.045Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 2731,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 2751,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "a9a4f4551c5743798a732517ccaa38a16ef75c91",
+        "commits": [
+          "cd7428c13e43a8f8b407dfaaadedeb5ebb13e97b"
+        ],
+        "changed_lines": {
+          "added": 85,
+          "removed": 42,
+          "files": 5
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_skill_contracts.py tests/test_skill_contract_parity.py",
+          "exit_status": 0,
+          "log_path": "/tmp/coord-merged.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T144420265941-the-coordinator-reviews-an-authored-record/manifest.md",
+        "scope_changed": false,
+        "session_id": "c58187cd-c8f6-40fc-8d34-29237d2c09d2",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 3909750,
+            "input_tokens_cumulative": 7053571,
+            "output_tokens": 42699,
+            "output_tokens_cumulative": 63130,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T15:30:28.045Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 7385759,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 2747.064,
+          "generated_tokens": 81005,
+          "generation_seconds": 2725.445,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 82.7,
+          "machine_seconds": 21.619,
+          "peak_input_tokens": 165410,
+          "tokens_per_second": 29.72,
+          "wall_tokens_per_second": 29.49
+        },
+        "follow_on_paths": [
+          "reckon/crew/prompts.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": "Single commit cd7428c1 carries all five paths; the node changed skill prose and one test constant's surrounding assertions, adding no new test files.",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16-20260914/the-coordinator-reviews-an-authored-record",
+          "session_id": "c58187cd-c8f6-40fc-8d34-29237d2c09d2",
+          "session_source": "pointer",
+          "retained_at": "2026-09-15T15:30:28.045Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 55.0,
+        "orientation_input_tokens": 2440799.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -139921,6 +140125,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1543
+    "_version": 1544
   }
 }
