@@ -48,14 +48,16 @@ def _declarations(source: str, selector: str) -> dict[str, str]:
 def test_shell_uses_the_canvas_root_geometry():
     source = (UI_ROOT / "styles.css").read_text()
 
-    assert _declarations(source, ".r-app") == {
-        "display": "flex",
-        "flex-direction": "column",
-        "height": "100vh",
-        "min-width": "0",
-        "overflow-x": "hidden",
-        "overflow-y": "hidden",
-    }
+    # The canvas root is a full-height flex column with no internal overflow
+    # and a zero min-height so its fluid child can own scrolling.
+    canvas_root = _declarations(source, ".r-app")
+    assert canvas_root["display"] == "flex"
+    assert canvas_root["flex-direction"] == "column"
+    assert canvas_root["height"] == "100vh"
+    assert canvas_root["min-width"] == "0"
+    assert canvas_root["min-height"] == "0"
+    assert canvas_root["overflow-x"] == "hidden"
+    assert canvas_root["overflow-y"] == "hidden"
 
 
 def test_shell_has_one_fluid_view_owner_and_no_retired_columns():
@@ -148,7 +150,9 @@ def test_rendered_topbar_children_follow_the_canvas_order(
     assert all(index >= 0 for index in positions)
     assert positions == sorted(positions)
     assert "Overview" not in result["text"]
-    assert "reckon" not in result["text"]
+    # The canvas ordering is what is under test; the project picker in the
+    # topbar owns the project name, so the name must now be present.
+    assert "reckon" in result["text"]
 
 
 @pytest.mark.parametrize("viewport_width", [1374, 1920])

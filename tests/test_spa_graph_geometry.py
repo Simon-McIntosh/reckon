@@ -28,11 +28,13 @@ def _rule(source: str, selector: str) -> dict[str, str]:
 def test_graph_surface_header_and_handle_match_canvas_geometry() -> None:
     source = STYLESHEET.read_text(encoding="utf-8")
 
-    assert _rule(source, ".r-graph") == {
-        "flex": "1",
-        "overflow": "auto",
-        "padding": "20px 26px 40px",
-    }
+    # The graph surface flexes to fill the canvas column with a zero min-height
+    # so it, not the shell, scrolls.
+    graph = _rule(source, ".r-graph")
+    assert graph["flex"] == "1"
+    assert graph["min-height"] == "0"
+    assert graph["overflow"] == "auto"
+    assert graph["padding"] == "20px 26px 40px"
     header = _rule(source, ".r-graph-header")
     assert header["display"] == "flex"
     assert header["align-items"] == "center"
