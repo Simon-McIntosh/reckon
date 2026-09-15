@@ -278,6 +278,41 @@
     a dispatch consults. 85 passed / 0 failed at base <code>a736189</code>, 86
     passed / 0 failed at head, zero added failures.</p>
   </section>
+
+  <section id="refusal-outlives">
+    <h2>The refusal that kills the run outlives the run</h2>
+    <p>Landed 2026-09-15, commit <code>ea9c9a3a</code>. The survivorship trap is
+    that the one event proving a lane has a limit is the one event guaranteed not
+    to reach the ledger: a rate-limit refusal kills the run, a killed run never
+    promotes, so no row is written. When the budget's live-read observes a
+    genuine rate-limit event, the refusal is now stamped with both its own
+    observation time and the return time the refusal itself states, and the
+    stamp is written to the shadow run store &mdash; outside the run directory,
+    which is reclaimable, and outside the ledger row, which will not exist.</p>
+    <p><strong>Only the reading that owns the refusal's time stamps.</strong> The
+    budget distinguishes the age-source of each recorded refusal. A
+    <code>rate-limit-event</code> is the one reading carrying the refusal's own
+    observation time <em>and</em> its stated return time, and it is the only one
+    minted: an earlier-bound refusal with no own time, and a served-turn
+    refutation that the lane later satisfied, must not fabricate a record for
+    anyone reading the store.</p>
+    <p><strong>Survivorship is asserted, not argued.</strong> A stamp is written,
+    its run directory is removed, and the stamp is read back from the store.
+    The quiet half is asserted too: a served request writes no stamp, so the
+    store holds refusals only and its emptiness means no refusal was seen rather
+    than no lane was used.</p>
+    <p><strong>Isolated writes, verified as isolated.</strong> Every test path
+    points the store at a temp location through the environment; the real store
+    is asserted untouched afterwards. A failed shadow write is recorded on the
+    reading and surfaced in its detail &mdash; the failure is visible, never
+    silent &mdash; and it never raises, because a dispatch consults this read
+    outside a try/except.</p>
+    <p><strong>Measure:</strong> five tests over the live-read path a dispatch
+    consults. 70 passed / 0 failed at head against 65 / 0 at base
+    <code>4f221447</code>, zero added failures. The called-out follow-on &mdash;
+    the denial seat a non-cli launch experiences sits outside this node's write
+    scope &mdash; is recorded in a section comment on the owning plan.</p>
+  </section>
 </main>
 </body>
 </html>
