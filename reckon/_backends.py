@@ -590,6 +590,95 @@ def _parse_claude_account(payload: object) -> dict[str, Any]:
     return budget
 
 
+# The on-disk copy of the account block is a last-known position, never a
+# heartbeat. It is read only as a fallback and only ever rendered beside the
+# age of the stamp the copy carries, because a past position shown bare reads
+# as now. The cache payload is the same answer shape the live surface returns,
+# plus one key naming when it was written; a stamp that cannot be trusted
+# leaves the reading unknown rather than showing a figure with no age.
+ACCOUNT_CACHE_STAMP = "fetch_stamp"
+
+
+def _parse_cached_fetch_stamp(payload: object) -> datetime | None:
+    """Return when the cached block was written, or None when untrustworthy.
+
+    The stamp is accepted as epoch seconds or a zoned ISO-8601 string, the
+    shapes a durable cache can write without a zone, and read as UTC. A
+    missing, malformed or unzoned value returns None: without a trusted moment
+    the copy's age cannot be stated, so the copy must not be shown bare.
+    """
+    if not isinstance(payload, Mapping):
+        return None
+    stamp = payload.get(ACCOUNT_CACHE_STAMP)
+    if isinstance(stamp, bool) or not isinstance(stamp, (int, float, str)):
+        return None
+    if isinstance(stamp, (int, float)):
+        try:
+            return datetime.fromtimestamp(float(stamp), tz=timezone.utc)  # noqa: UP017
+        except (OverflowError, OSError, ValueError):
+            return None
+    try:
+        moment = datetime.fromisoformat(stamp)
+    except ValueError:
+        return None
+    if moment.tzinfo is None:
+        return None
+    return moment.astimezone(timezone.utc)  # noqa: UP017
+
+
+def _human_age(seconds: float) -> str:
+    """Render a span compactly, in the shapes a reader scans by eye."""
+    whole = round(seconds)
+    sign = "-" if whole < 0 else ""
+    whole = abs(whole)
+    minutes, seconds = divmod(whole, 60)
+    hours, minutes = divmod(minutes, 60)
+    days, hours = divmod(hours, 24)
+    if days:
+        return f"{sign}{days}d{hours:02d}h"
+    if hours:
+        return f"{sign}{hours}h{minutes:02d}m"
+    if minutes:
+        return f"{sign}{minutes}m"
+    return f"{sign}{seconds}s"
+
+
+def cached_account_budget(
+    *,
+    path: str | Path,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Read the on-disk copy of the account block as a fallback position.
+
+    The copy is a last-known position, never a substitute for a live read, so
+    any figure this returns is rendered beside the age of the copy's own fetch
+    stamp — the numeric age and the stamp are carried in the same block as the
+    figure, and the detail string names the age too. A copy with no trusted
+    stamp yields unknown rather than a figure, because a bare past position
+    reads as now. The body is parsed under the same strict rule as a live
+    answer, so an unrecognised cached shape also stays unknown.
+    """
+    if now is None:
+        now = datetime.now(timezone.utc)  # noqa: UP017
+    try:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, TypeError, ValueError) as exc:
+        return unknown_budget(f"account cache unreadable — {exc}")
+    stamp = _parse_cached_fetch_stamp(payload)
+    if stamp is None:
+        return unknown_budget(
+            f"account cache carries no usable {ACCOUNT_CACHE_STAMP!r} stamp"
+        )
+    block = _parse_claude_account(payload)
+    if block.get("headroom") != "known":
+        return block
+    age = (now - stamp).total_seconds()
+    block["fetch_stamp"] = stamp.isoformat()
+    block["fetch_age_seconds"] = round(age, 1)
+    block["detail"] = f"cached account surface, fetched {_human_age(age)} ago"
+    return block
+
+
 def _is_rate_limit_retry(event: Mapping[str, Any]) -> bool:
     """Whether a ``system/api_retry`` record names rate limiting as its cause.
 
@@ -1688,6 +1777,7 @@ def probe_budget(
     runner: Callable[[BudgetProbe], Mapping[str, Any] | None] | None = None,
     fetch: Callable[[Mapping[str, Any]], object] | None = None,
     now: datetime | None = None,
+    cache_path: str | Path | None = None,
 ) -> dict[str, Any]:
     """Read a backend's remaining headroom from its own account surface.
 
@@ -1696,6 +1786,13 @@ def probe_budget(
     must never be stopped by its own instrument: an unreadable probe leaves the
     caller exactly where it was, reading what earlier runs recorded, whereas a
     raised error would turn a missing measurement into a blocked wave.
+
+    A caller that keeps the last-known position on disk may pass ``cache_path``;
+    it is consulted only when the live surface yields no known reading, and the
+    fallback carries the copy's fetch age beside any figure it shows, so a stale
+    position is never presented as a freshly read one. A known live reading wins
+    outright and carries no age markers, because the age marks provenance of a
+    fallback rather than decorating every reading.
     """
     try:
         dialect = dialect_for(backend)
@@ -1704,7 +1801,16 @@ def probe_budget(
     try:
         reading = dialect.read_account_surface(backend=backend, fetch=fetch, now=now)
     except (OSError, subprocess.SubprocessError, ValueError) as exc:
-        return unknown_budget(f"account-limit read failed to run — {exc}")
+        reading = unknown_budget(f"account-limit read failed to run — {exc}")
+    # The on-disk copy mirrors the account surface, so it is consulted only
+    # when that surface yields nothing, and only on an explicit request: a
+    # stale figure served by default would be mistaken for a freshly read one.
+    if cache_path is not None and (
+        reading is None or reading.get("headroom") != "known"
+    ):
+        cached = cached_account_budget(path=cache_path, now=now)
+        if cached.get("headroom") == "known":
+            return cached
     if reading is not None:
         return reading
     probe = dialect.budget_probe(str(backend.get("command") or ""))

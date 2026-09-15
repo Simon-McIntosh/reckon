@@ -195,6 +195,32 @@
     field &mdash; which is how every commit, scope and test figure in this record
     was established.</p>
   </section>
+
+  <section id="cache-fallback-age">
+    <h2>A cached reading is rendered beside the age of its fetch stamp</h2>
+    <p>Landed 2026-09-15, commit <code>44ccaa7</code>. The on-disk copy of the
+    account block is a last-known position, never a heartbeat, so
+    <code>probe_budget</code> gains an explicit <code>cache_path</code>: when the
+    live account surface yields no known reading, the copy is parsed under the same
+    strict rule as a live answer and returned with the figure, the fetch stamp, the
+    numeric age and a detail string naming the age all in one block. A block with
+    no resolvable stamp is unknown rather than a figure, and a missing or unreadable
+    cache is an unknown reason, never a raise.</p>
+    <p><strong>The quiet half is asserted as its own case.</strong> A known live
+    reading wins outright and carries no age markers at all, because the age marks
+    provenance of a fallback rather than decorating every reading; and without an
+    explicit <code>cache_path</code> no cached figure surfaces, so a stale position
+    is never served by default. The invariant walker flags a cache-sourced structure
+    that shows a figure without its sibling age, and the fixture's fetch stamp is
+    made hours old so the age the assertion requires is derived from the fixture
+    itself rather than frozen as a literal.</p>
+    <p><strong>Measure:</strong> 31 passed in <code>test_backend_observation.py</code>,
+    7 test cases added, exit 0. Failure delta 0 against the stated base across the
+    directly-asserting cohort &mdash; the two lanes-view failures reproduce
+    identically without this node's changes and belong to that file, not this node.
+    The reconstructed-backend half of the same prose requirement is not taken:
+    blocked on a peer's live claim over <code>reckon/crew/recovery.py</code>.</p>
+  </section>
 </main>
 </body>
 </html>
