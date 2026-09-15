@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T14:21:48",
+  "updated": "2026-09-15T14:24:16",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -130762,6 +130762,208 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T101243166457-the-gate-runs-again-at-the-integrated-revision",
+        "plan": "execution-orchestration-hardening",
+        "section": "\u00a74",
+        "node": "the-gate-runs-again-at-the-integrated-revision",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2644,
+                "cached_input_tokens": 821959,
+                "input_tokens": 824605,
+                "output_tokens": 1092,
+                "reasoning_output_tokens": 230,
+                "total_tokens": 825697,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "f0d4bf08-978e-48fd-803d-0d5f1cdbb55a",
+            "session_id": "ship-s17-20260915"
+          },
+          "done_when": "tests/test_crew_promotion.py gains a case in which a contract landing after a worker's base turns a base-green node red at the merged head, asserting the base verdict passed while the merged-head verdict failed, plus a second case where base and merged head agree and the re-run produces no finding; the two verdicts and the added-case count are each stated as numbers and the file's total passing count is reported before and after",
+          "estimated_hours": null,
+          "goal": "Re-run a node's gate against the merge result before the coordinator pushes, not only against the worker's base",
+          "id": "the-gate-runs-again-at-the-integrated-revision",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T10:12:44Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 8,
+            "binding_observed": false,
+            "detail": "",
+            "headroom": 2,
+            "mean_context": 75185,
+            "observed_at": "2026-09-15T10:12:36Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 120
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T101243166457-the-gate-runs-again-at-the-integrated-revision/manifest.md",
+          "plan": "execution-orchestration-hardening",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/promotion.py",
+            "tests/test_crew_promotion.py",
+            "docs/evidence/archive/execution-orchestration-hardening-landed.html",
+            "docs/plans/execution-orchestration-hardening.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-terminal-budget",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T10:13:25Z",
+        "completed_at": "2026-09-15T12:19:00.449Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 7495,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 7535,
+        "stalled": true,
+        "time_budget": "50m",
+        "base_sha": "be162a172557f9562c3627efa7875bcedb3eb73e",
+        "commits": [
+          "d3a27bc8411deb609b4a64bcfdc5469fc5430868",
+          "c277109459143bd79256036ecad7576e7c44d1a9"
+        ],
+        "changed_lines": {
+          "added": 289,
+          "removed": 0,
+          "files": 4
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest tests/test_crew_promotion.py -p no:cacheprovider -q",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/f0d4bf08-978e-48fd-803d-0d5f1cdbb55a/scratchpad/merged_gate.log",
+          "log_digest": "b35f9768eea97648a132e9dd8624e3c5fbc05624ce9ea618e9442a35c4392ea2"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T101243166457-the-gate-runs-again-at-the-integrated-revision/manifest.md",
+        "scope_changed": false,
+        "session_id": "745a9877-7166-491d-b0f3-994774444033",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 1782877,
+            "input_tokens_cumulative": 1782877,
+            "output_tokens": 10562,
+            "output_tokens_cumulative": 10562,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T12:19:00.449Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 1949387,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 1924.2,
+          "generated_tokens": 15991,
+          "generation_seconds": 1920.502,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 82.6,
+          "machine_seconds": 3.698,
+          "peak_input_tokens": 165210,
+          "tokens_per_second": 8.33,
+          "wall_tokens_per_second": 8.31
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s17-20260915/the-gate-runs-again-at-the-integrated-revision",
+          "session_id": "745a9877-7166-491d-b0f3-994774444033",
+          "session_source": "stream",
+          "retained_at": "2026-09-15T12:19:00.449Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 39.0,
+        "orientation_input_tokens": 2296315.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -130990,6 +131192,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1519
+    "_version": 1520
   }
 }
