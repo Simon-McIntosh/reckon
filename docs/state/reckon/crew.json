@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T01:57:59",
+  "updated": "2026-09-15T02:03:25",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -117532,6 +117532,205 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T233549054893-the-stale-selector-guard-is-collected",
+        "plan": "viewport-containment",
+        "section": "\u00a72",
+        "node": "the-stale-selector-guard-is-collected",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1820,
+                "cached_input_tokens": 502720,
+                "input_tokens": 504542,
+                "output_tokens": 701,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 505243,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3332e8d8-dcef-4091-9774-c9680478b165",
+            "session_id": "ship-s16-20260914"
+          },
+          "done_when": "A default collection over tests/ finds the stale-readiness-selector case, verified by running pytest --collect-only -q over tests/ and grepping its output for the case name, which returns zero at the base revision and at least one after; state both counts as digits. The case keeps its current behaviour, failing when a declared readiness selector matches nothing in the rendered surface, and that failure is demonstrated once and recorded. It currently lives at tests/spa_containment_harness.py line 547, and that filename matches neither of pytest's collection patterns, so the guard passes whenever anyone names the file and never runs otherwise \u2014 which is the same defect class the guard itself exists to report. Prefer moving the case into tests/test_spa_viewport_containment.py, which already imports that harness, over renaming the harness file, because other modules import it by name and a rename has a wider blast radius than the defect",
+          "estimated_hours": null,
+          "goal": "Move the stale-readiness-selector case into a file pytest collects, so the guard that reports a renamed selector actually runs",
+          "id": "the-stale-selector-guard-is-collected",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T23:35:49Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T233549054893-the-stale-selector-guard-is-collected/manifest.md",
+          "plan": "viewport-containment",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_spa_viewport_containment.py",
+            "tests/spa_containment_harness.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "disc-local",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T23:35:57Z",
+        "completed_at": "2026-09-14T23:56:20.482Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1211,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1223,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "83d5a1b867db43a3caddc30909219c4654d8c967",
+        "commits": [
+          "e4b4e13e4f37deed6c8023fe09c5594155699a20"
+        ],
+        "changed_lines": {
+          "added": 31,
+          "removed": 54,
+          "files": 2
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider --collect-only -q tests/ | grep -c stale_readiness_selector, run at the base and at the head",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T233549054893-the-stale-selector-guard-is-collected/collect-after-HEAD.log",
+          "log_digest": "69f4be0261ea16a2b7f82d677afa1a2420b07707dd9bd79f9690902b4e6217c3"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T233549054893-the-stale-selector-guard-is-collected/manifest.md",
+        "scope_changed": false,
+        "session_id": "55e52833-8125-4e29-8a62-8b0915f23d52",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 2866990,
+            "input_tokens_cumulative": 2866990,
+            "output_tokens": 20863,
+            "output_tokens_cumulative": 20863,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-14T23:56:20.482Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 2866990,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 1220.534,
+          "generated_tokens": 20863,
+          "generation_seconds": 1185.2,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 48.3,
+          "machine_seconds": 35.334,
+          "peak_input_tokens": 96605,
+          "tokens_per_second": 17.6,
+          "wall_tokens_per_second": 17.09
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest --collect-only",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16-20260914/the-stale-selector-guard-is-collected",
+          "session_id": "55e52833-8125-4e29-8a62-8b0915f23d52",
+          "session_source": "stream",
+          "retained_at": "2026-09-14T23:56:20.482Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 37.0,
+        "orientation_input_tokens": 1391754.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -117760,6 +117959,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1449
+    "_version": 1450
   }
 }
