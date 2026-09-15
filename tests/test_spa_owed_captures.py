@@ -11,6 +11,7 @@ regenerates captures under docs/figures/rendered-evidence.
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -653,6 +654,45 @@ def test_plan_capture_gate_refuses_missing_file_and_zero_row_count(
     )
     with pytest.raises(AssertionError, match="rowCount"):
         assert_plan_capture_index(zero_rows)
+
+
+def _rostered_spec(figures_name: str) -> _CaptureSpec:
+    return next(
+        spec for spec in _PLAN_CAPTURE_SPECS if spec.figures_dir.name == figures_name
+    )
+
+
+def test_plan_capture_gate_refuses_an_emptied_own_index(tmp_path: Path) -> None:
+    """A roster entry is load bearing: empty the owned index and the gate trips.
+
+    The committed artifact-feeds-and-reader index and its eight PNGs are
+    copied whole into the temporary tree, so the only mutation from the known
+    good state is the captures list being emptied. The gate must refuse where
+    the live index passes.
+    """
+    source = _rostered_spec("artifact-feeds-and-reader")
+    figures_dir = tmp_path / "artifact-feeds-and-reader"
+    after = figures_dir / "after"
+    shutil.copytree(source.figures_dir / "after", after)
+    index = json.loads(
+        (after / "capture-index.json").read_text(encoding="utf-8")
+    )
+    emptied = dict(index)
+    emptied["captures"] = []
+    emptied["captureCount"] = 0
+    (after / "capture-index.json").write_text(
+        json.dumps(emptied, indent=2) + "\n", encoding="utf-8"
+    )
+    spec = _CaptureSpec(
+        figures_dir=figures_dir,
+        surfaces=source.surfaces,
+        widths=source.widths,
+        population_fields=source.population_fields,
+        population_any_of=source.population_any_of,
+        require_populated=source.require_populated,
+    )
+    with pytest.raises(AssertionError, match="holds no captures"):
+        assert_plan_capture_index(spec)
 
 
 if __name__ == "__main__":
