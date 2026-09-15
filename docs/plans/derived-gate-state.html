@@ -262,6 +262,20 @@ effective_status('active',  [])        -&gt; 'active'</pre>
       number retired; this landing records the current inventory so the gate can be met against it.</p>
     </section>
 
+    <section id="reckon-index" class="section-landed">
+      <header><span class="badge badge-shipped">✓ landed 2026-09-15</span>
+      <h2>The reckon index carries zero persisted item statuses</h2></header>
+      <p class="landed-summary">before 8 → after 0. The eight persisted sprint-item statuses this
+      row dispatched have been gone since commit <code>ea82ad93</code> (2026-08-12) and the count is
+      freshly re-measured at zero in <code>docs/state/reckon/index.json</code>. The composed view
+      hydrates item lifecycle from live documents, so persisting the fields is refused on write and
+      a guarded write is shown to refuse; <code>reckon audit</code> reports no new findings against
+      the recorded baseline (32 pre-existing, none added), and the roadmap's derived sprint state is
+      unchanged by the removal — the derived payload with the eight statuses restored is
+      canonicalized-identical to the payload without them. Full record:
+      <a href="/reckon/evidence/derived-gate-state-landed#reckon-index">reckon index clearance</a>.</p>
+    </section>
+
     <section id="s6" class="section-landed">
       <header><span class="badge badge-shipped">✓ landed 2026-09-02</span>
       <h2>§6 — Migrating an authored table has no op</h2></header>
