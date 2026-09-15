@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="suite-failures-have-an-owner-landed">
+  <meta name="plan-title" content="Every Suite Failure Has An Owner — landed evidence">
+  <meta name="plan-summary" content="Cumulative evidence record: the fourteen inventoried failures carried causes and repairs, and the remaining boundary — the tests/test_crew.py bounded-run stall — is now characterised on the login node and completes within a stated bound on the compute node.">
+  <meta name="plan-evidence-for" content="suite-failures-have-an-owner">
+  <meta name="plan-verifies" content="suite-failures-have-an-owner#s1,suite-failures-have-an-owner#s2,suite-failures-have-an-owner#s3,suite-failures-have-an-owner#s4">
+  <meta name="plan-commits" content="25f1a7d,0a54596,4da7a99,e81672a">
+  <meta name="plan-recorded-at" content="2026-09-15">
+  <title>Every Suite Failure Has An Owner — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header class="plan-header">
+      <h1>Every Suite Failure Has An Owner — landed evidence</h1>
+      <p class="plan-summary">This cumulative record preserves the measured failure inventory, the one claimed residual boundary and its characterisation. The four prior sections carry their findings inline in the plan; this file archives the boundary measure that §4 left open.</p>
+    </header>
+
+    <section id="bounded-run-characterised">
+      <h2>The unchanged-file bound: tests/test_crew.py completes within a bound, at a measured cost</h2>
+      <p>The plan's §4 measure asked that <code>tests/test_crew.py</code> either run to completion within a stated wall-clock bound or have its stall characterised — the point it reaches, whether one test or an interaction, and whether unbuffered output changes it — "recorded so the next reader does not rediscover silence." The full measurement is <a href="/reckon/research/crew-test-file-stall">crew-test-file-stall</a>; the values are reproduced here because they answer §4's measure directly.</p>
+      <p><strong>Stated bound and revision:</strong> 300 s for the whole-file runs, at <code>e81672a8001806818ebfe0b31fd6f54f9e6e1053</code>, 204 tests collected in <code>tests/test_crew.py</code>.</p>
+      <p><strong>Result, stated both ways the plan allowed.</strong> On a compute node the file <em>completes</em>: 11 failed / 193 passed in 29.35 s and 32.16 s (two runs, identical 11 failure ids), no stall, last node <code>test_an_unwritable_manifest_path_is_a_blocker_not_a_fallback</code>. On the login node it <em>stalls</em> at a single test — <code>tests/test_crew.py::test_first_dispatch_proceeds_with_a_freshly_armed_project_watch</code>, collection ordinal 78 of 204 — and the stall is a single test and not an interaction, because the same node id hangs in isolation (three separate 60–75 s bounded runs; a fourth strace-overhead run completes in 19.09 s but trips its own internal 5 s watchdog) and whole-file runs stop at exactly it. Unbuffered output does not change the observation: a buffered whole-file run stalls at the same test. The stall is environment-timed, not content-fixed: the compute path passes the same body of code in 0.16 s.</p>
+      <p><strong>What this means for the plan's remaining obligation.</strong> The named-subset discipline §4 requires (a delta over an unnamed subset is not a delta) still governs on the login node. The compute node now offers the alternative leg the measure named first: a full-file delta within a stated bound, at ~29–32 s plus scheduling. The residual mechanism (why the shared login host crosses the 5 s internal watchdog) is outside this plan's fence and recorded in the research document.</p>
+    </section>
+  </main>
+</body>
+</html>
