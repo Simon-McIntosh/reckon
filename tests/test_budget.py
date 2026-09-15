@@ -23,6 +23,7 @@ The measures this file exists to demonstrate:
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
@@ -30,7 +31,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from reckon import _backends, budget, crew, ledger
+from reckon import _backends, budget, crew, ledger, run_store
 from reckon.cli import main as cli_main
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "backends"
@@ -1621,8 +1622,13 @@ def _refused_stream_pointer(
     created_at: str,
     refusal_at: datetime,
     include_rate_limit_event: bool = True,
+    result: str | None = None,
 ) -> dict:
-    """Write a live CLI pointer whose stream ends in a real quota refusal."""
+    """Write a live CLI pointer whose stream ends in a real quota refusal.
+
+    ``result`` overrides the refusal the endpoint returned, so a test can state
+    the reset the refusal itself names rather than relying on the default.
+    """
     before = (refusal_at - timedelta(seconds=1)).isoformat().replace("+00:00", "Z")
     after = refusal_at.isoformat().replace("+00:00", "Z")
     events = [
@@ -1649,7 +1655,7 @@ def _refused_stream_pointer(
             {
                 "type": "result",
                 "is_error": True,
-                "result": "You've hit your usage limit.",
+                "result": result or "You've hit your usage limit.",
             },
         ]
     )
@@ -2014,3 +2020,196 @@ def test_a_reset_bearing_hold_and_an_unreported_backend_are_not_probed(
     assert alpha["state"]["resets_at"] is not None
     assert beta["held"] is False
     assert beta["state"]["headroom"] == "unknown"
+
+
+def _drive_event_stamped_refusal(
+    home, *, run_id: str, refused_at: datetime, created_at: datetime, result: str
+) -> dict:
+    """Fold a live CLI stream refusal and return the folded pointer."""
+    record = _refused_stream_pointer(
+        "proj",
+        run_id,
+        stream=home / f"{run_id}.jsonl",
+        created_at=created_at.isoformat().replace("+00:00", "Z"),
+        refusal_at=refused_at,
+        result=result,
+    )
+    crew.observe(record["run_id"], config=CONFIG)
+    return crew.read_pointer(run_id)
+
+
+def test_a_rate_limit_refusal_is_stamped_with_its_own_time_and_stated_return(
+    home, repo, monkeypatch, tmp_path
+) -> None:
+    """A refusal is stored with BOTH the time it was observed and the return
+    time the refusal itself states, so the event that kills the run survives.
+    """
+    store_path = tmp_path / "shared-store" / "run_store.db"
+    monkeypatch.setenv("RECKON_RUN_STORE", str(store_path))
+
+    now = datetime.now(tz=UTC)
+    refused_at = now - timedelta(minutes=5)
+    created_at = now - timedelta(hours=3)
+    reset_moment = now + timedelta(hours=4)
+    local = reset_moment.astimezone()
+    result = (
+        "You've hit your usage limit. "
+        f"try again at {local:%b} {local.day}, {local.year}, "
+        f"{local:%I}:{local:%M} {local:%p}"
+    )
+
+    pointer = _drive_event_stamped_refusal(
+        home,
+        run_id="r-stamped-refusal",
+        refused_at=refused_at,
+        created_at=created_at,
+        result=result,
+    )
+    budget.preflight("proj", CONFIG, backends=["beta"], root=repo, now=now)
+
+    with run_store.RunStore(path=store_path) as store:
+        stamps = store.refusal_stamps()
+    assert [s["lane"] for s in stamps] == ["beta"]
+    # The refusal's own observation time comes from its stream position, not
+    # the mutable observed_at the observe rewrites.
+    assert [s["refused_at"] for s in stamps] == [
+        refused_at.isoformat().replace("+00:00", "Z")
+    ]
+    # The return time is the one the refusal itself stated: the value the
+    # stream interpreter already parsed into the folded budget.
+    stated = pointer["budget"]["resets_at"]
+    assert stated
+    assert [s["returns_at"] for s in stamps] == [stated]
+
+
+def test_a_stamped_refusal_outlives_its_run_directory(
+    home, repo, monkeypatch, tmp_path
+):
+    """Writing a stamp, reclaiming the run directory, and reading the stamp back
+    shows the durable record is outside the run's reclaimable surface.
+
+    This is the refusal's guaranteed escape from the survivorship trap: the run
+    directory that held the event is gone, yet the refusal is still answerable.
+    """
+    store_path = tmp_path / "shared-store" / "run_store.db"
+    monkeypatch.setenv("RECKON_RUN_STORE", str(store_path))
+
+    now = datetime.now(tz=UTC)
+    refused_at = now - timedelta(minutes=5)
+    created_at = now - timedelta(hours=3)
+    run_dir = crew.run_dir("r-outlives-its-run")
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    record = _refused_stream_pointer(
+        "proj",
+        "r-outlives-its-run",
+        stream=run_dir / "stream.jsonl",
+        created_at=created_at.isoformat().replace("+00:00", "Z"),
+        refusal_at=refused_at,
+    )
+    crew.observe(record["run_id"], config=CONFIG)
+    budget.preflight("proj", CONFIG, backends=["beta"], root=repo, now=now)
+
+    with run_store.RunStore(path=store_path) as store:
+        stamps_before = store.refusal_stamps()
+    assert len(stamps_before) == 1
+
+    shutil.rmtree(run_dir)
+    assert not run_dir.exists()
+
+    with run_store.RunStore(path=store_path) as store:
+        stamps_after = store.refusal_stamps()
+    assert stamps_after == stamps_before
+
+
+def _stamps_now(store_path: Path) -> list[dict]:
+    with run_store.RunStore(path=store_path) as store:
+        return store.refusal_stamps()
+
+
+def test_a_served_request_writes_no_refusal_stamp(home, repo, monkeypatch, tmp_path):
+    """The quiet half: a served request leaves the store empty.
+
+    Emptiness therefore means no refusal was seen, not that no lane was used —
+    the served reading above went through the same ``latest_recorded`` path
+    that stamps refusals, and wrote nothing.
+    """
+    store_path = tmp_path / "shared-store" / "run_store.db"
+    monkeypatch.setenv("RECKON_RUN_STORE", str(store_path))
+
+    now = datetime.now(tz=UTC)
+    _live_pointer(
+        "proj",
+        "r-served-quietly",
+        backend="beta",
+        budget_block=_window_budget(40.0, now=now, elapsed_fraction=0.1),
+        created_at=(now - timedelta(hours=1)).isoformat().replace("+00:00", "Z"),
+    )
+    report = budget.preflight("proj", CONFIG, backends=["beta"], root=repo, now=now)
+    # The served request really was read by the budget, not silently skipped.
+    assert report["backends"][0]["held"] is False
+    assert report["backends"][0]["state"]["headroom"] == "known"
+    assert _stamps_now(store_path) == []
+
+
+def test_a_failed_refusal_stamp_stays_visible_and_never_breaks_the_read(
+    home, repo, monkeypatch, tmp_path
+) -> None:
+    """A store that cannot accept the stamp must not fail the budget read that
+    just observed the refusal — and the lost durable mirror stays visible in
+    the verdict, so the failure is loud where the refusal is seen.
+    """
+    blocker = tmp_path / "not" / "a" / "directory"
+    blocker.parent.mkdir(parents=True)
+    blocker.write_text("an ordinary file, not a directory")
+    # The store path's parent is a regular file, so the create-parents mkdir
+    # (and then the open) raise before any write — exactly the shadow-failure
+    # case the read must survive.
+    monkeypatch.setenv("RECKON_RUN_STORE", str(blocker / "run_store.db"))
+
+    now = datetime.now(tz=UTC)
+    refused_at = now - timedelta(minutes=5)
+    created_at = now - timedelta(hours=3)
+    _drive_event_stamped_refusal(
+        home,
+        run_id="r-failed-stamp",
+        refused_at=refused_at,
+        created_at=created_at,
+        result="You've hit your usage limit.",
+    )
+    verdict = budget.preflight("proj", CONFIG, backends=["beta"], root=repo, now=now)[
+        "backends"
+    ][0]
+
+    assert verdict["held"] is True
+    assert verdict["state"]["age_source"] == "rate-limit-event"
+    assert "not in the durable store: " in verdict["state"]["detail"]
+
+
+def test_refusal_stamps_never_reach_the_default_store(
+    home, repo, monkeypatch, tmp_path
+):
+    """Pointing every path at a temp store via the environment keeps the
+    default store clean — an isolated read from the override does not prove the
+    write stayed off the default, so the default itself is asserted empty.
+    """
+    override_path = tmp_path / "shared-store" / "run_store.db"
+    monkeypatch.setenv("RECKON_RUN_STORE", str(override_path))
+
+    now = datetime.now(tz=UTC)
+    refused_at = now - timedelta(minutes=5)
+    created_at = now - timedelta(hours=3)
+    _drive_event_stamped_refusal(
+        home,
+        run_id="r-isolation",
+        refused_at=refused_at,
+        created_at=created_at,
+        result="You've hit your usage limit.",
+    )
+    budget.preflight("proj", CONFIG, backends=["beta"], root=repo, now=now)
+
+    assert len(_stamps_now(override_path)) == 1
+    # The default store resolves under the temp RECKON_HOME the home fixture
+    # installed, so opening it here is still a read inside the test tree.
+    default_path = crew.crew_home() / "run_store.db"
+    assert _stamps_now(default_path) == []
