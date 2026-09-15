@@ -22,8 +22,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="2">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;}">
+<meta name="plan-version" content="3">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+<meta name="plan-commits" content="59526eb,16f4a0b7">
+<meta name="plan-impl" content="0.5">
 </head>
 <body>
   <main class="plan-doc">
@@ -174,16 +176,25 @@ but much smaller improvement is consistent with the hypothesis, not against it.<
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-wpl-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-15" data-recommends-skill="/reckon-ship worker-prompts-lead-with-what-they-share" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-wpl-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-09-15" data-recommends-skill="/reckon-ship worker-prompts-lead-with-what-they-share" data-resolved-at="2026-09-15T09:15:24+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Reorder the prompt so the invariant contract is the prefix</h4>
     <div class="r-fu-body">The measurement is complete and the before-half is secured: 152 shared bytes across eight prompts that are 88% identical. What remains is the reordering in reckon/crew/prompts.py and the byte-identity gate that keeps it honest. The gate is the deliverable as much as the reorder is - a single varying value ahead of the boundary destroys the prefix and still reviews as correct. The serve owner reruns the byte computation in under a minute once it lands, and has written the refutation condition down: no movement in the shared prefix refutes the hypothesis.</div>
+    <pre class="r-fu-prompt">/reckon-ship worker-prompts-lead-with-what-they-share</pre>
+    <p class="r-fu-outcome">The reordering landed at 59526eb with its byte-identity gate: shared prefix 152 to 1311 bytes across three projects, boundary and measurement agreeing, and a regression that fails when a variable value moves ahead of the boundary. 36 tests green. What remains is not construction but confirmation - the engine-side rerun, which the serve owner holds and can run in under a minute.</p>
+    </article>
+<article class="r-fu" data-id="f-wpl-002" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-15" data-recommends-skill="/reckon-ship worker-prompts-lead-with-what-they-share" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Read the engine-side rerun, then decide whether the boundary moves again</h4>
+    <div class="r-fu-body">Two things are outstanding and they are linked. The serve owner reruns the byte and hit-rate measurement against the reordered prompts; the refutation condition written in section 4 is no movement, and the byte half has already cleared it at 1311 against 152. The open boundary-placement decision should be taken on that result rather than before it: contract-only bought 1311 bytes, and whether contract-plus-fences is worth the extra surface where a varying value can hide depends on whether the engine-side effect tracks the byte figure closely. Expect the fleet-wide movement to be smaller than 8.6x regardless, because this bounds the cross-worker prefix on a first turn and the live fleet is mostly hours-old conversations where accumulated history dominates - thirteen of fifteen runs were over two hours old when last measured.</div>
     <pre class="r-fu-prompt">/reckon-ship worker-prompts-lead-with-what-they-share</pre>
     </article>
 </section>
 
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260915T085950058206-the-contract-is-the-prefix" data-who="implement-terra-d" data-when="2026-09-15T09:08:47Z">
-    <div class="r-comment-body"><p>The invariant contract is now the prompt&#x27;s prefix: shared prefix across three prompts from three distinct projects measured 1311 bytes against the 152 reproduced before the repair, an 8.6x increase, with the declared boundary and the measured prefix agreeing at 1311 and the first differing value being the node id. 36 tests passed across the four prompt-contract suites. Below the ~6900 the coordinator estimated, which is consistent with the conservative boundary the plan leaves as an open decision - contract only rather than contract plus fences.</p></div>
+    <div class="r-comment-body"><p>The invariant contract is now the prompt's prefix: shared prefix across three prompts from three distinct projects measured 1311 bytes against the 152 reproduced before the repair, an 8.6x increase, with the declared boundary and the measured prefix agreeing at 1311 and the first differing value being the node id. 36 tests passed across the four prompt-contract suites. Below the ~6900 the coordinator estimated, which is consistent with the conservative boundary the plan leaves as an open decision - contract only rather than contract plus fences.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260915T092000" data-who="reckon-ship" data-when="2026-09-15T09:20:00Z">
+    <div class="r-comment-body">Section landed. Commits 59526eb (renderer and regression gate) and 16f4a0b7 (record), gate passed, 1 test added. MEASURE: the shared prefix across three prompts from three distinct projects is 1311 bytes against the 152 reproduced before the repair, an 8.6-fold increase; the declared boundary and the measured prefix agree exactly at 1311, and the first differing value is now the node id. 36 tests passed across the four prompt-contract suites, and I re-ran the prefix-identity gate at the merged head after pulling a peer's work on top, because a merge can drop a committed change while leaving the commit reachable. MY ESTIMATE WAS WRONG AND THE DIRECTION IS WORTH RECORDING: I predicted roughly 6900 bytes, which was the total identical content between two prompts. What can actually move ahead of the boundary is the invariant contract alone. The rest of the 88 percent is shared but not invariant - it interleaves node-specific values, so it cannot join the prefix by reordering, only by rewriting. I had treated identical content and relocatable invariant content as one quantity and they are not, which is the same class of error as reading a figure without checking what it counts. The plan's refutation condition was no movement in the shared prefix; the prefix moved materially and in the predicted direction, so the placement hypothesis survives on the arm the serve owner designed.</div>
 </div>
 </section>
 </main>
