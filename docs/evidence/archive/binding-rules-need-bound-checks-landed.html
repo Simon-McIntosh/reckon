@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="binding-rules-need-bound-checks-landed">
+  <meta name="plan-title" content="Declared tools must match configured tools — cumulative execution-evidence record">
+  <meta name="plan-summary" content="Execution evidence for binding-rules-need-bound-checks. One anchor: the declared-tooling check's before-and-after demonstration pinned as a test against a synthesised pre-declaration pyproject.">
+  <meta name="plan-evidence-for" content="binding-rules-need-bound-checks">
+  <meta name="plan-recorded-at" content="2026-09-15">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; local lane deepseek-v4-flash on 4xH200 via vLLM; nodes dispatched through reckon crew to detached worktrees">
+  <title>Declared tools must match configured tools — cumulative execution-evidence record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Declared tools must match configured tools — cumulative execution-evidence record</h1>
+    <p class="plan-summary">One anchor per material outcome, accumulating as nodes land.</p>
+  </header>
+
+  <section id="before-after-pinned-as-a-test">
+    <h2>The red-before-green demonstration is now a test, not a report</h2>
+
+    <p>The section's done-when asked that the namespace check be shown to fail on
+    the tree before the declaration was added and to pass after. That demonstration
+    was performed exactly once, at the node that authored the check in 2026-08-25,
+    and recorded as a one-off claim (1 failed on unresolved ruff before the
+    declaration, 1 passed after). It was never runnable.</p>
+
+    <p>Commit <code>41c2c83</code> pins it. <code>tests/test_declared_tooling.py</code>
+    factors the check into <code>_tooling_failures</code> — a pure function of a
+    parsed pyproject returning the unknown and unresolved configured namespaces —
+    and adds <code>test_configured_but_undeclared_tool_fails_until_declared</code>.
+    The pre-declaration tree is synthesised from the live pyproject rather than
+    hardcoded: <code>[tool.ruff]</code> stays configured while <code>ruff</code> is
+    removed from the dev dependency group. The check is then asserted to fail with
+    exactly <strong>1 failing namespace</strong> (<code>ruff</code>) against that
+    synthetic tree and <strong>0 failing namespaces</strong> against the current
+    tree, the failing and passing counts each stated as a number in the test. The
+    existing test asserting every configured namespace is declared remains the
+    canonical green check on the live tree.</p>
+
+    <p><strong>Measure:</strong> <code>pytest tests/test_declared_tooling.py</code>
+    at this worktree — 2 passed, 0 failed. The refusal was demonstrated directly
+    rather than inferred from the pass: running <code>_tooling_failures</code>
+    against the synthesised pre-declaration config reports
+    <code>unresolved={'ruff': ['ruff']}</code> (failing count 1), and against the
+    current tree <code>unresolved={}</code> (failing count 0). The demonstration
+    the clause demanded is reproducible from the test.</p>
+
+    <p><strong>Carried forward:</strong> ruff is declared at pyproject.toml in the
+    dev dependency group with an upper bound, which is what makes the current-tree
+    side of this check pass. Nothing here asserts the upper bound itself; that is
+    the repository's declared-selection guidance and sits outside this node's
+    scope.</p>
+  </section>
+</main>
+</body>
+</html>
