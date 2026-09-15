@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-scoped-follower-counts-its-own-session">
+  <meta name="plan-title" content="A Scoped Follower Counts Its Own Session">
+  <meta name="plan-summary" content="A follower scoped to one session reports the whole workstation&#x27;s fleet in its trailing counts, so a reader sees six workers where they have one.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="2.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="low">
+  <meta name="plan-sprint" content="S18">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <title>A Scoped Follower Counts Its Own Session | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-15">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">&sect;1 &mdash; The rows are scoped and the numbers are not</h2>
+    <p><code>reckon crew follow --session S</code> selects which runs it reports, and every line
+    it prints ends with three figures partitioning <em>the whole project's fleet</em>. A reader
+    who asked for one session's runs is shown a count that includes every other session's
+    workers, with nothing on the line saying so.</p>
+    <p>Measured on this workstation at 07:30 on 2026-09-15: a session with exactly
+    <strong>one</strong> run in flight was reading <code>6w &middot; 1b &middot; 0u</code>. The
+    six were four sessions' work; the one blocked row belonged to a session that had stopped
+    eighteen hours earlier and had already been dispositioned by its owner. Neither figure was
+    wrong about the fleet and neither was about the reader.</p>
+    <p>This matters more than a cosmetic mismatch because of what a coordinator does with those
+    numbers. The closure discipline says a session does not end while work remains, and the
+    posture line is what a reader checks before believing the fleet is quiet. A scoped follower
+    showing other sessions' workers reads as work still running when the reader has none, and
+    &mdash; the dangerous direction &mdash; a reader whose own last worker has stopped sees a
+    non-zero working count and waits for a transition that will never come, because the workers
+    it is counting are not the ones it is following.</p>
+
+    <h2 id="s2">&sect;2 &mdash; Count the population the reader asked for</h2>
+    <p>The session is already threaded through the follow path: the command passes it to the
+    generator, and the renderer already uses it to decide whether a row carries an owner glyph.
+    Only the counts ignore it. When a session is given, the partition is computed over that
+    session's live pointers; with no session the behaviour is unchanged, because an unscoped
+    follower is watching the fleet and its figures are about the fleet.</p>
+    <p>The counted population and the reported rows then come from one selection rather than
+    two, which is what stops them disagreeing again when either changes.</p>
+    <p><strong>Done when</strong> a scoped follower's trailing figures count only the runs of
+    the session it was given, asserted against a fixture holding runs from two sessions where
+    the two populations differ &mdash; the assertion fails if the counts are taken over the
+    fleet, and both the scoped and unscoped totals are stated as digits. An unscoped follower's
+    figures are unchanged over the same fixture, asserted rather than assumed, since the
+    unscoped path is the one every peer coordinator is reading right now. The fixture includes
+    a foreign run that is blocked, because the observed defect was a blocked count a reader
+    could not act on.</p>
+
+    <h2 id="s3">&sect;3 &mdash; Out of scope</h2>
+    <p>The grid, the column widths and the row text are not touched; this changes which runs
+    are counted, not how a line is drawn. The renderer is held by another session's node at the
+    time of writing and needs no change for this.</p>
+    <p>Whether the figures should carry their own age is a separate question. They are a
+    snapshot taken when a transition printed, and a fleet that goes quiet leaves the last line's
+    numbers on screen indefinitely &mdash; correct when printed, silently stale afterwards. That
+    is a real defect and it is not this one; fixing the population first means the number that
+    goes stale is at least the reader's own.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="observed-sessions-in-the-count" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">When a follower observes additional sessions, do their runs join the counts?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="count-every-session-the-reader-follows">count-every-session-the-reader-follows</button>
+      <button class="r-opt" data-value="count-only-the-owning-session">count-only-the-owning-session</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-asfcios-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-15" data-recommends-skill="/reckon-ship a-scoped-follower-counts-its-own-session" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Count the session the reader asked for</h4>
+    <div class="r-fu-body"><p>One node. The session already reaches the follow path and the renderer already consumes it; only the partition ignores it, so the change is where the counted population comes from rather than how a line is drawn.</p><p>The measure has two halves and the second is the one that protects every other coordinator: the scoped count must change, and the unscoped count must not. Assert both over one fixture holding two sessions whose populations differ, with a blocked foreign run included, because the observed defect was a blocked figure the reader could do nothing about.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship a-scoped-follower-counts-its-own-session</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>
