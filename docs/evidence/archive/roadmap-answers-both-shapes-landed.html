@@ -7,13 +7,13 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="roadmap-answers-both-shapes-landed">
   <meta name="plan-title" content="An endpoint without a handle reports itself &mdash; landed evidence">
-  <meta name="plan-summary" content="A structural endpoint &mdash; a sink with live members beneath it &mdash; that carries no graph handle now raises a warn-severity wiring finding naming the plan and the members its closure would reach. The four gate cases are asserted in tests/test_roadmap.py: the finding fires at warn without a handle, is absent with one, is absent for an ordinary leaf, and changes no readiness or execution verdict.">
+  <meta name="plan-summary" content="A structural endpoint with live members beneath it that carries no graph handle raises a warn-severity wiring finding naming the plan and the members its closure would reach, even when the endpoint plan itself is terminal. Six focused gate cases distinguish addressable endpoints, live closures, and sinks whose descendants are all terminal.">
   <meta name="plan-evidence-for" content="reckon:roadmap-answers-both-shapes">
   <meta name="plan-verifies" content="reckon:roadmap-answers-both-shapes#s2">
   <meta name="plan-recorded-at" content="2026-09-15">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; Python 3.12; unit tests over the roadmap analyzer with fixture inventory &mdash; no network, no runtime clock">
-  <meta name="plan-commits" content="981e323">
+  <meta name="plan-commits" content="981e323,894406f">
   <meta name="plan-artifacts" content="reckon/roadmap.py,tests/test_roadmap.py,docs/evidence/archive/roadmap-answers-both-shapes-landed.html">
   <title>An endpoint without a handle reports itself &mdash; landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -36,11 +36,12 @@
     <code>endpoint-without-handle</code> at severity <strong>warn</strong> for every structural
     endpoint &mdash; a sink with live members beneath it, in the same closure sense the
     <code>endpoints</code> payload already computes &mdash; whose plan carries no
-    <code>graph_handle</code> and is not itself terminal. The message names the plan and counts its
-    closure; the <code>extra.members</code> list names every member the closure would reach. A
-    terminal endpoint plan stays silent, matching how the orientation precedent skips terminal
-    status. The finding is advisory: it is appended to <code>wiring_findings</code>, a diagnostic
-    surface no readiness or execution verdict reads, so it can never shift what runs.</p>
+    <code>graph_handle</code> while at least one descendant remains live. The message names the plan
+    and counts its closure; the <code>extra.members</code> list names every member the closure would
+    reach. An endpoint whose own plan is terminal still reports when live work remains beneath it;
+    a sink whose descendants are all terminal stays silent. The finding is advisory: it is appended
+    to <code>wiring_findings</code>, a diagnostic surface no readiness or execution verdict reads,
+    so it can never shift what runs.</p>
 
     <figure>
       <svg viewBox="0 0 660 210" width="100%" style="max-width:660px" role="img"
@@ -72,8 +73,8 @@
   </section>
 
   <section id="gate">
-    <h2>The four gate cases, asserted as tests</h2>
-    <p>All four live in <code>tests/test_roadmap.py</code> and each supplies the fixture itself, so
+    <h2>The six gate cases, asserted as tests</h2>
+    <p>All six live in <code>tests/test_roadmap.py</code> and each supplies the fixture itself, so
     the finding is shown to fire and to stay silent rather than inferred from an absence in a
     fixture that happened not to trigger it:</p>
     <table>
@@ -82,6 +83,8 @@
         <tr><td>Endpoint, no handle</td><td><code>endpoint-without-handle</code> at severity <code>warn</code>, message names the plan, <code>extra.members</code> lists every member of the closure</td><td><code>test_structural_endpoint_without_handle_raises_a_wiring_finding</code></td></tr>
         <tr><td>Endpoint, with handle</td><td>no <code>endpoint-without-handle</code> finding; the endpoint still reports its handle</td><td><code>test_structural_endpoint_with_handle_raises_nothing</code></td></tr>
         <tr><td>Leaf sink, no live members beneath</td><td>not an endpoint, so no finding</td><td><code>test_leaf_sink_without_live_members_yields_no_endpoint_finding</code></td></tr>
+        <tr><td>Terminal endpoint, live descendant</td><td><code>endpoint-without-handle</code> still fires and names the full closure</td><td><code>test_terminal_endpoint_with_live_descendant_raises_a_wiring_finding</code></td></tr>
+        <tr><td>Terminal endpoint, all descendants terminal</td><td>the endpoint remains visible in the payload but raises no handle finding</td><td><code>test_endpoint_without_live_descendants_yields_no_endpoint_finding</code></td></tr>
         <tr><td>Verdict neutrality</td><td>readiness and execution fields (<code>ready_now</code>, <code>blocked</code>, <code>pending_work</code>, <code>critical_path</code>) identical whether or not the finding fires</td><td><code>test_endpoint_handle_finding_does_not_change_readiness_or_execution</code></td></tr>
       </tbody>
     </table>
@@ -108,6 +111,29 @@
     <code>test_sprint_membership_refs</code>, <code>test_graph_target</code>,
     <code>test_skill_contracts</code>) reads 116 passed, exit 0. Ruff over the two changed files
     adds no findings over its base and both files stay format-clean.</p>
+  </section>
+
+  <section id="terminal-endpoint-repair">
+    <h2>The silence is now keyed to live descendants</h2>
+    <p>The first implementation suppressed the finding whenever the endpoint plan&rsquo;s own status
+    was terminal. That was broader than the authored contract: a shipped umbrella with live work
+    beneath it is still an outcome a reader needs to address. On base revision <code>a898134</code>,
+    a direct <code>build_roadmap</code> probe over this project found terminal endpoint
+    <code>reckon-schema-and-tooling</code> with live descendant <code>agent-plan-authoring</code>,
+    while <code>terminal_findings=[]</code>. The instrument also saw the known-present endpoint, so
+    the empty finding set measured the suppression rather than a failed discovery.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Before repair</th><th>After <code>894406f</code></th></tr></thead>
+      <tbody>
+        <tr><td>Focused endpoint cases</td><td>4 passed</td><td>6 passed, including both terminal-endpoint predicates</td></tr>
+        <tr><td>Complete <code>tests/test_roadmap.py</code></td><td>34 tests recorded by the preceding landing</td><td>36 passed</td></tr>
+        <tr><td>Direct project finding</td><td><code>terminal_findings=[]</code></td><td>one warn finding for <code>reckon-schema-and-tooling</code>, naming all four closure members</td></tr>
+      </tbody>
+    </table>
+    <p>The repair replaces the endpoint-status exception with a direct check for live descendants,
+    excluding the endpoint itself. This preserves the one granted silence: a structural sink whose
+    descendants are all terminal raises nothing. Ruff reported the same three pre-existing findings
+    on the two touched Python files before and after the change, and formatting changed neither file.</p>
   </section>
 </main>
 </body>
