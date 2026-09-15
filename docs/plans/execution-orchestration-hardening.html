@@ -69,6 +69,16 @@
     </aside>
     <h2 id="s4">§4 — Acceptance and observability</h2>
     <p>Tests cover interrupted/resumed execution, version conflicts, worker failure, partial landings, checkout mismatch, absent subagent support, evidence gate failure and archive migration. A structured error log records tool, operation, request projection, response size, error class, retry and resolution. The input research is <a href="../research/reckon-plan-management-audit.html">Reckon Plan Management Audit</a>.</p>
+    <aside class="callout">
+      <strong>The gate re-run gained a production caller — 2026-09-15.</strong>
+      <code>crew verify-gate</code> re-runs one run's stored gate command
+      against the merged checkout and records the full report on the run's
+      ledger row, so a gate the integrated revision no longer satisfies is
+      recorded against the run rather than only printed. Demonstrated twice
+      through the CLI, and the caller is reachable from shipped code outside
+      tests.
+      <a href="../evidence/archive/execution-orchestration-hardening-landed.html">Read the evidence record.</a>
+    </aside>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>

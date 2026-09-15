@@ -10,8 +10,8 @@
   <meta name="plan-summary" content="The node's gate is re-run against the integrated revision, not only the worker's base.">
   <meta name="plan-evidence-for" content="execution-orchestration-hardening">
   <meta name="plan-verifies" content="execution-orchestration-hardening#s4">
-  <meta name="plan-commits" content="d3a27bc">
-  <meta name="plan-artifacts" content="reckon/crew/promotion.py,tests/test_crew_promotion.py">
+  <meta name="plan-commits" content="d3a27bc,ab19ab37">
+  <meta name="plan-artifacts" content="reckon/crew/promotion.py,reckon/crew.py,reckon/cli.py,tests/test_crew_promotion.py,tests/test_crew_help_names_its_state.py">
   <meta name="plan-recorded-at" content="2026-09-15">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-environment" content="reckon project virtual environment">
@@ -45,6 +45,20 @@
     <section id="verification">
       <h2>Verification</h2>
       <p><code>pytest tests/test_crew_promotion.py -p no:cacheprovider -q</code> passed: <strong>42 passed before</strong> the change, <strong>45 passed after</strong> — the file gains <strong>3</strong> cases and all pass, exit 0, recorded log <code>/tmp/gate_rerun_after2.log</code>. Ruff delta is clean: the two touched files report no new findings against their base revision (15 baseline lines, 13 after; format state unchanged).</p>
+      <p>Commit <code>ab19ab37</code> lands the production caller and drives it through the CLI. The node's gate command (the same gate test command used earlier, <code>pytest -p no:cacheprovider -q</code>) ran at the base revision — 1 failed (<code>test_removed_flag_migration.py::test_the_delivery_path_itself_carries_no_state_filter</code>, a pre-existing watch-timing failure outside this record's scope) / 54 passed — and after the change 1 failed / 58 passed, the <em>same</em> failure id and four new passing cases. No new failures against the base. Log: <code>/tmp/after_gate_reckon_c8f839407e49_final.log</code> (sha256 <code>d71dcbd9a3e595532d3aed00d03abc4a8ed42d893dc51decbd240a72a1063a50</code>).</p>
+    </section>
+
+    <section id="production-caller">
+      <h2>&sect;4 &mdash; The re-run has a production caller</h2>
+      <p>Commit <code>ab19ab37</code> gives <code>rerun_gate_at_integrated_revision</code> a surface a coordinator reaches: the new crew verb <code>verify-gate</code> reads the run's stored gate command and base verdict from its committed ledger row, re-runs that command against the checkout the coordinator merged, patches the report back onto the run's row, keeps the shadow store in agreement, and commits the edit in one landing. The report is recorded whether or not a finding exists, so a reader can tell an unchecked merge from a green one.</p>
+      <table>
+        <thead><tr><th>Demonstration (through the CLI)</th><th>Base verdict</th><th>Integrated-tree verdict</th><th>Outcome</th></tr></thead>
+        <tbody>
+          <tr><td>A contract lands after the promoted run's base</td><td><code>passed</code></td><td><code>failed</code></td><td>finding produced <em>and</em> recorded on the run's ledger row</td></tr>
+          <tr><td>Base and the merged head agree</td><td><code>passed</code></td><td><code>passed</code></td><td>no finding, yet the re-check is still recorded</td></tr>
+        </tbody>
+      </table>
+      <p>A run the coordinator never promoted is refused with the repair named (<code>crew complete</code> first) rather than re-run from nothing, because the run's stored gate comes from its committed row. A grep of the shipped tree for the caller hits <code>reckon/crew/promotion.py</code>, <code>reckon/crew.py</code> and <code>reckon/cli.py</code> — none of them under <code>tests/</code> — so the re-run is reachable without the tests importing it, and the new verb appears in <code>test_every_crew_verb_help_names_its_state_or_condition</code> with help text naming the state it acts on.</p>
     </section>
   </main>
 </body>
