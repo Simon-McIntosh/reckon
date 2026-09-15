@@ -887,6 +887,15 @@
         classifier decide against; the dispatch template placeholder and recovery's own
         derived sentinel still pass through. Landed under commit <code>220848e</code>. Full
         record: <a href="/reckon/evidence/archive/crew-observability-truth-landed#manifest-status-undetermined-refused">&#167;16 landed</a>.</p>
+      <p class="landed-summary">The refusal above left one shape open: a body whose parsed
+        fields read as manifest fields but omit the status key entirely. A review report wearing
+        a <code>node:</code> identity line is exactly that shape &mdash; it parsed to the
+        normalised mapping with thirteen keys and no status, which the classifier again read as a
+        vanished worker. The reader now refuses it naming the missing status key, while a bare
+        list-attribute excerpt (commits without a status) still parses and a body declaring a
+        recovery artifact through a truthy <code>derived</code> field is never refused, so the
+        repair does not block recovery reading its own fabricated manifest. Landed under commit
+        <code>c133d0e</code>. Full record: <a href="/reckon/evidence/archive/crew-observability-truth-landed#manifest-status-key-absent-refused">&#167;16 residual shape closed</a>.</p>
     </section>
 
     <h2 id="s18">&#167;18 &mdash; Runs ending together on one backend are one lane event, not N worker failures</h2>
