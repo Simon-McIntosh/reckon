@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T11:21:41",
+  "updated": "2026-09-15T11:26:00",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -128584,6 +128584,206 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T053811647583-the-crew-test-file-stall-is-characterised",
+        "plan": "suite-failures-have-an-owner",
+        "section": "\u00a74",
+        "node": "the-crew-test-file-stall-is-characterised",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1442,
+                "cached_input_tokens": 213007,
+                "input_tokens": 214451,
+                "output_tokens": 2488,
+                "reasoning_output_tokens": 896,
+                "total_tokens": 216939,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "f0d4bf08-978e-48fd-803d-0d5f1cdbb55a",
+            "session_id": "ship-s17-20260915"
+          },
+          "done_when": "running pytest over tests/test_crew.py yields docs/research/crew-test-file-stall.html stating, each as a value rather than prose: the revision measured at, the wall-clock bound attempted, the last node id reached before the stall, whether the stall is a single test or an interaction with the evidence distinguishing them, and whether unbuffered output changes the observation",
+          "estimated_hours": null,
+          "goal": "Characterise why tests/test_crew.py cannot complete in a bounded run, or demonstrate that it completes within a stated wall-clock bound",
+          "id": "the-crew-test-file-stall-is-characterised",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T05:38:12Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T053811647583-the-crew-test-file-stall-is-characterised/manifest.md",
+          "plan": "suite-failures-have-an-owner",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "docs/research/crew-test-file-stall.html",
+            "docs/evidence/archive/suite-failures-have-an-owner-landed.html",
+            "docs/plans/suite-failures-have-an-owner.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-terminal-budget",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T05:38:28Z",
+        "completed_at": "2026-09-15T09:07:02.648Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 12455,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 12514,
+        "stalled": true,
+        "time_budget": "60m",
+        "base_sha": "e81672a8001806818ebfe0b31fd6f54f9e6e1053",
+        "commits": [
+          "5f75c16bf7c1012e6964d9149c289c3060dd4f15"
+        ],
+        "changed_lines": {
+          "added": 109,
+          "removed": 0,
+          "files": 3
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_crew.py on compute and login nodes; reckon.doccheck on both documents",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T053811647583-the-crew-test-file-stall-is-characterised/manifest.md",
+          "log_digest": "03cf5bed12f50b957f9ed147670118a9a815e4580b974caa5ef4ead0b633f103"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T053811647583-the-crew-test-file-stall-is-characterised/manifest.md",
+        "scope_changed": false,
+        "session_id": "190d7cc3-b100-4970-b6ec-b3c7f8dab52e",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 0,
+            "input_tokens_cumulative": 0,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 0,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T09:07:02.648Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 0,
+          "detail": "generation and wall clock reported separately by the backend; no window resolved, so utilisation is unknown",
+          "elapsed_seconds": 0.488,
+          "generated_tokens": 0,
+          "generation_seconds": 0.0,
+          "machine_seconds": 0.488,
+          "wall_tokens_per_second": 0.0
+        },
+        "follow_on_paths": [
+          "test_crew.py",
+          "no-such-executable/refusal-text",
+          "runA.log"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest over",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s17-20260915/the-crew-test-file-stall-is-characterised",
+          "session_id": "190d7cc3-b100-4970-b6ec-b3c7f8dab52e",
+          "session_source": "stream",
+          "retained_at": "2026-09-15T09:07:02.648Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 99.0,
+        "orientation_input_tokens": 8845135.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -128812,6 +129012,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1503
+    "_version": 1504
   }
 }
