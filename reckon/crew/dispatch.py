@@ -868,6 +868,93 @@ def _repository_scope_claims() -> list[_RepositoryScopeClaim]:
     )
 
 
+def _receives_landing_contract(backend: Mapping[str, Any]) -> bool:
+    """Whether the worker keeps the worktree as its process directory.
+
+    The landing contract is composed only when the working directory is the
+    worktree rather than a delivery directory. Only the codex dialect relocates,
+    and only on the read-only tier; an in-harness backend stays in the worktree
+    whatever its sandbox. This mirrors the launch-plan switch that decides where
+    the prompt's contract gate lands, so a grant here never disagrees with the
+    contract a worker is actually handed.
+    """
+    if backend.get("launch") != "cli":
+        return True
+    if backend.get("sandbox") != _backends.READ_ONLY:
+        return True
+    command = str(backend.get("command") or "")
+    return Path(command).name != "codex"
+
+
+def _shared_landing_paths(
+    node: TaskNode,
+    *,
+    project: str,
+    authority: Mapping[str, Any],
+) -> set[Path]:
+    """Return the plan file and cumulative evidence record for this node.
+
+    Every node on a plan appends its landing record to the plan's own section
+    and its evidence anchor to the cumulative evidence record, so those two
+    repository paths are shared by all of them rather than owned by any one.
+    Resolved absolutely so the exclusive-claim machinery recognises them in
+    whichever repository carries the plan. The grant is advisory: a plan that
+    cannot be resolved contributes no plan-file path, and the evidence record
+    path is deterministic and survives regardless.
+    """
+    plan = authority.get("plan")
+    if not isinstance(plan, Mapping) or not node.plan:
+        return set()
+    try:
+        docs_dir = Path(str(plan["docs"])).expanduser().resolve()
+    except (KeyError, TypeError, ValueError):
+        return set()
+    paths: set[Path] = {
+        (docs_dir / "evidence" / "archive" / f"{node.plan}-landed.html").resolve()
+    }
+    from reckon.resources import resolve_resource
+
+    try:
+        resource = resolve_resource(
+            docs_dir, project, node.plan, "plan", include_archived=False
+        )
+    except (ValueError, OSError):
+        return paths
+    if resource is not None:
+        try:
+            resolved = resource.path.resolve()
+        except (ValueError, OSError):
+            resolved = None
+        if resolved is not None:
+            paths.add(resolved)
+    return paths
+
+
+def _grant_landing_write_paths(
+    node: TaskNode,
+    *,
+    project: str,
+    authority: Mapping[str, Any],
+) -> None:
+    """Declare the shared landing paths in the node's write scope."""
+    plan = authority.get("plan")
+    if not isinstance(plan, Mapping):
+        return
+    try:
+        plan_repo = Path(str(plan["repository"])).expanduser().resolve()
+    except (KeyError, TypeError, ValueError):
+        return
+    shared = sorted(_shared_landing_paths(node, project=project, authority=authority))
+    for absolute in shared:
+        try:
+            relative = absolute.relative_to(plan_repo)
+        except ValueError:
+            continue
+        declared = relative.as_posix()
+        if declared not in node.write_paths:
+            node.write_paths.append(declared)
+
+
 def _candidate_scope_entries(
     node: TaskNode,
     *,
@@ -882,7 +969,7 @@ def _candidate_scope_entries(
     )
     write = authority.get("write")
     write = write if isinstance(write, Mapping) else {}
-    return _resolved_scope_entries(
+    entries = _resolved_scope_entries(
         node.write_paths,
         base_repository=repository_identity(repo) or Path(repo).resolve(),
         repositories=repositories,
@@ -890,6 +977,15 @@ def _candidate_scope_entries(
         repository_projects=repository_projects,
         preferred_projects=tuple(str(item) for item in write.get("projects") or ()),
     )
+    shared = _shared_landing_paths(node, project=project, authority=authority)
+    if not shared:
+        return entries
+    # The plan file and cumulative evidence record are write claims every node
+    # on the plan holds, so they cannot be exclusive to one of them: exclusivity
+    # would admit only the first of two concurrent nodes and the merge that
+    # reconciles their appends would never be reached. They are exempted from
+    # the exclusive-claim machinery, never from the declared write scope.
+    return [entry for entry in entries if entry[2].resolve() not in shared]
 
 
 def _live_conflict_rows(
@@ -2069,6 +2165,10 @@ def plan_dispatch(
         resolved_authority = dict(
             authority or resolve_dispatch_authority(project, repo)
         )
+        if _receives_landing_contract(backend):
+            _grant_landing_write_paths(
+                node, project=project, authority=resolved_authority
+            )
         _require_write_paths_in_authority(node, resolved_authority)
         plan_commit = require_plan_section_visible(
             node=node,

@@ -484,3 +484,204 @@ def test_a_test_run_that_slipped_through_is_still_refused_at_promotion(
         )
 
     assert pointer_path(run_id).is_file()
+
+
+# ── The landing contract and the write fence agree ─────────────────────────
+# A worker told to append its landing record and evidence anchor is granted
+# those paths — the plan file and the cumulative evidence record — without the
+# coordinator naming them, and only a role whose backend keeps the worker in
+# the worktree (and so composes the contract) receives them. They are shared by
+# every node on the plan, so on a promotion the run that wrote both is no
+# longer refused for undeclared companions.
+
+PLAN_FILE = "docs/plans/plan-a.html"
+EVIDENCE_RECORD = "docs/evidence/archive/plan-a-landed.html"
+PLAN_SECTION = "landing-fence"
+
+
+def _landing_plan(project: str = "sample") -> str:
+    return (
+        "<!doctype html>"
+        "<html><head>"
+        f'<meta name="docs-project" content="{project}">'
+        '<meta name="reckon-type" content="plan">'
+        '<meta name="plan-slug" content="plan-a">'
+        '<meta name="plan-status" content="active">'
+        f'<h2 id="{PLAN_SECTION}">Landing fence</h2>'
+        "</head></html>"
+    )
+
+
+READ_ONLY_ROLES_CONFIG = {
+    "default_backend": "worker",
+    "backends": {
+        "worker": {
+            "launch": "cli",
+            "command": "codex",
+            "sandbox": "worktree-full",
+            "time_budget": "20m",
+        }
+    },
+    "roles": {
+        "review": {"execution_capable": True, "sandbox": "read-only"},
+        "investigate": {"execution_capable": True, "sandbox": "read-only"},
+    },
+    "fences": {"time_budget": "20m", "needs_help_after_failures": 2},
+}
+
+
+def test_an_implement_role_receives_the_landing_paths_in_its_write_scope(
+    home: Path, review_repository: Path
+):
+    """The dispatch payload carries the plan and evidence paths un-named."""
+    deliverable = f"package/{PLAN_SECTION}.py"
+    resolution = crew.plan_dispatch(
+        node=_node(
+            home,
+            role="implement",
+            write_paths=[deliverable],
+            manifest_path=str(run_dir("r-landing-implement") / "manifest.md"),
+        ),
+        config=REVIEW_BACKEND_CONFIG,
+        project=PROJECT,
+        repo=review_repository,
+    )
+    assert resolution.validation.ok, resolution.validation.findings
+    declared = list(resolution.as_dict()["write_paths"])
+    assert PLAN_FILE in declared
+    assert EVIDENCE_RECORD in declared
+    assert deliverable in declared
+    assert set(resolution.node.write_paths) == set(declared)
+
+
+@pytest.mark.parametrize("role", ["review", "investigate"])
+def test_a_read_only_role_does_not_receive_the_landing_paths(
+    home: Path, review_repository: Path, role: str
+):
+    """The negative: a role whose worker never composes the contract gains nothing."""
+    store_path = review_path(PROJECT, REVIEWED_RUN_ID)
+    resolution = crew.plan_dispatch(
+        node=_node(
+            home,
+            role=role,
+            write_paths=[str(store_path)],
+        ),
+        config=READ_ONLY_ROLES_CONFIG,
+        project=PROJECT,
+        repo=review_repository,
+    )
+    assert resolution.validation.ok, resolution.validation.findings
+    declared = list(resolution.node.write_paths)
+    assert PLAN_FILE not in declared
+    assert EVIDENCE_RECORD not in declared
+
+
+def test_the_contract_gate_tracks_the_launch_shape():
+    """Guard the guard: only a relocated read-only worker loses the contract."""
+    import importlib
+
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+
+    in_harness = {"launch": "in-harness", "sandbox": "read-only"}
+    worktree = {"launch": "cli", "command": "codex", "sandbox": "worktree-full"}
+    relocated = {
+        "launch": "cli",
+        "command": "codex",
+        "sandbox": "read-only",
+        "execution_capable": True,
+    }
+    assert dispatch_module._receives_landing_contract(in_harness)
+    assert dispatch_module._receives_landing_contract(worktree)
+    assert not dispatch_module._receives_landing_contract(relocated)
+
+
+def _promotion_repository(tmp_path: Path, home: Path) -> Path:
+    """A repository whose plan is committed and whose landing paths are clean."""
+    root = tmp_path / "promote-root"
+    (root / "docs" / "state" / PROJECT).mkdir(parents=True)
+    (root / "docs" / "plans").mkdir(parents=True)
+    (home / "mounts.json").write_text(
+        json.dumps({PROJECT: str(root / "docs")}),
+        encoding="utf-8",
+    )
+    (root / "docs" / "plans" / "plan-a.html").write_text(
+        _landing_plan(), encoding="utf-8"
+    )
+    for arguments in (
+        ("init", "-q", "-b", "main"),
+        ("config", "user.email", "worker@example.invalid"),
+        ("config", "user.name", "Worker"),
+        ("add", "docs"),
+        (
+            "commit",
+            "-q",
+            "-m",
+            "test: seed promotion repository",
+            "-m",
+            "Provide the committed plan a landing run appends to.",
+        ),
+    ):
+        _git(root, *arguments)
+    return root
+
+
+def test_promoting_a_run_that_wrote_both_landing_paths_is_accepted(
+    tmp_path: Path, home: Path
+):
+    """End to end: the dispatch grant lets the landing run promote unchanged."""
+    root = _promotion_repository(tmp_path, home)
+    base = _git(root, "rev-parse", "HEAD")
+    (root / "docs" / "plans" / "plan-a.html").write_text(
+        _landing_plan().replace("landing-fence", "landed-by-run"),
+        encoding="utf-8",
+    )
+    (root / "docs" / "evidence" / "archive").mkdir(parents=True)
+    (root / "docs" / "evidence" / "archive" / "plan-a-landed.html").write_text(
+        "<!doctype html><html><head>"
+        '<meta name="docs-project" content="sample">'
+        '<meta name="reckon-type" content="plan">'
+        '<meta name="plan-slug" content="plan-a-landed">'
+        "</head></html>",
+        encoding="utf-8",
+    )
+    _git(root, "add", "docs")
+    _git(
+        root,
+        "commit",
+        "-q",
+        "-m",
+        "test: land plan edit and evidence anchor",
+        "-m",
+        "Exercise promotion of a run that wrote both landing paths.",
+    )
+    commit = _git(root, "rev-parse", "HEAD")
+    manifest = tmp_path / "landing-manifest.md"
+    manifest.write_text(
+        "node: landing-run\n"
+        "status: complete\n"
+        f"commits: {commit}\n"
+        "changed_paths: docs/plans/plan-a.html "
+        "docs/evidence/archive/plan-a-landed.html\n"
+        "tests: landing promotion exercised\n",
+        encoding="utf-8",
+    )
+    run_id = "r-landing-promotion"
+    _write_test_pointer(
+        run_id=run_id,
+        repository=root,
+        base=base,
+        manifest=manifest,
+        write_paths=[PLAN_FILE, EVIDENCE_RECORD],
+        role="implement",
+    )
+
+    result = crew.complete(
+        run_id,
+        gate="passed",
+        commits=[commit],
+        outcome="the plan and cumulative evidence record landed in scope",
+        root=root,
+    )
+
+    assert result.get("scope_exceptions", []) == []
+    assert not pointer_path(run_id).is_file()
