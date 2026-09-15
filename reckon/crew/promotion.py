@@ -425,8 +425,10 @@ def _require_gate_log_agrees(
       terminal ``EXIT=<n>`` capture record differs from the asserted status
       has filed contradictory evidence.
     * no evidence the command ran — a line carrying the shell's own
-      command-not-found diagnostic states the command never executed, so the
-      log cannot evidence the pass being asserted.
+      command-not-found diagnostic, without a positive terminal ``EXIT=0``
+      record, states the command never executed. A runner log may quote that
+      phrase in fixture or assertion output, so the diagnostic cannot override
+      a positive record from the capture shell.
     """
     if verdict != "passed" or not isinstance(gate_check, Mapping):
         return
@@ -462,7 +464,7 @@ def _require_gate_log_agrees(
             "that contradicts the asserted one. Re-run the check and cite its "
             "log, or re-promote with the verdict the evidence actually shows"
         )
-    if re.search(r"\bcommand not found\b", log_text):
+    if recorded != 0 and re.search(r"\bcommand not found\b", log_text):
         raise CrewError(
             f"run {run_id!r} asserts gate 'passed' but its cited log "
             f"{log_path!r} carries the shell's 'command not found' "
