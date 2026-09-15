@@ -626,6 +626,36 @@ reading taken as an authority it was not.</p>
     change adds three cases and no failures.</p>
   </section>
 
+  <section id="manifest-template-matches-the-reader">
+    <h3>&#167;12 &mdash; The manifest block the worker is handed matches the schema the reader enforces</h3>
+    <p>Run <code>r-20260915T065527954756-the-manifest-template-matches-the-reader</code>. Commit
+    <code>8417c0f</code>, 119 insertions over 2 files (1 source template, 1 new test).</p>
+    <p><strong>Measure:</strong> the composed worker prompt&rsquo;s manifest block taught both
+    manifest defects instead of their repair. It offered
+    <code>commits: &lt;sha list&gt;; changed_paths: &lt;explicit list&gt;</code> &mdash; two keys
+    and two values on one line, semicolon-separated, the exact malformed form this section
+    documents and the reader misparses with changed paths silently emptied &mdash; and its
+    status vocabulary omitted <code>waiting</code> and carried none of
+    <code>wait_condition</code>, <code>wait_probe</code>, <code>wait_terminal</code> or
+    <code>resume_brief</code>, so a worker that parked a detached job declared an external wait
+    the reader found incomplete and unreadable. Both defects shared one root cause: a contract
+    and a fence disagreeing about what a worker may write, this time the fence requiring what
+    the contract never mentioned. The block now puts <code>commits</code> and
+    <code>changed_paths</code> on separate lines, offers <code>status: waiting</code> in the
+    vocabulary, and carries the four wait fields a complete declaration requires; the time
+    fence names the same four keys, so the prose that tells a worker to leave a record of what
+    it waits on and the block that makes that record machine-readable no longer disagree.
+    Asserted in <code>tests/test_worker_prompt_contract.py</code> against the composed prompt:
+    <code>commits</code> and <code>changed_paths</code> each start their own line and no
+    manifest line carries both keys; the status vocabulary offers <code>waiting</code>
+    alongside <code>complete</code>, <code>blocked</code> and <code>failed</code>; and each of
+    the four required wait fields is present in the manifest block. The gate passes 49 of 49
+    (4 new over the four asserting files, 45 pre-existing prompt-composition assertions
+    unchanged); the wider prompt-composing modules carry the identical pre-existing failures at
+    base (<code>b5480ee</code>) and after &#8212; 12 in <code>test_crew_orientation</code> and
+    <code>test_gate_evidence</code> &#8212; so the change adds no failures.</p>
+  </section>
+
 </main>
 </body>
 </html>
