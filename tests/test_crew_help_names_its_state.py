@@ -36,6 +36,7 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("shadow",): "committed run",
     ("stop",): "running spawned worker",
     ("unwatch",): "registered project watcher",
+    ("verify-gate",): "one run's gate at the integrated revision",
     ("watch",): "project-wide live runs",
 }
 
@@ -106,7 +107,7 @@ def test_every_crew_verb_help_names_its_state_or_condition() -> None:
     leaves = _leaf_commands(cli_module.crew)
 
     assert set(leaves) == set(STATE_PHRASES)
-    assert len(leaves) == 23
+    assert len(leaves) == 24
     for path, command in leaves.items():
         first_line = _first_help_line(command)
         result = _help_result(path)

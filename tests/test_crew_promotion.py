@@ -1894,3 +1894,149 @@ def test_rerun_refuses_to_verify_a_tree_that_is_not_the_integrated_revision(
     # A base-green gate the re-run could not establish on the tree that ships
     # is surfaced, never allowed to read as verified.
     assert rerun["finding"] is not None
+
+
+def _promote_into_ledger(repository: Path, run_id: str) -> None:
+    """Seed a promoted run with a stored gate, as a completed run records."""
+    ledger.append_run(
+        PROJECT,
+        {
+            "run_id": run_id,
+            "gate": "passed",
+            "gate_check": {
+                "command": "sh gate.sh",
+                "exit_status": 0,
+                "log_digest": "x",
+            },
+        },
+        root=repository,
+    )
+
+
+def test_verify_gate_cli_records_a_finding_against_the_run(repository: Path) -> None:
+    """One direction: a contract landing after base leaves the gate red at the
+    merged head, the verb re-runs it, and the finding is recorded on the run."""
+    _write_green_gate(repository)
+    run_id = "r-20260914T190400000000-verify-gate-perished"
+    _promote_into_ledger(repository, run_id)
+    # A contract lands after the promoted run's base, so the very same gate
+    # command that was green when the run completed now exits red at the
+    # integrated head: the re-run must produce a finding, not silence.
+    (repository / "gate.sh").write_text(
+        '#!/bin/sh\ngrep -q "satisfied" node.txt '
+        '&& grep -q "contract-marker" node.txt\n',
+        encoding="utf-8",
+    )
+    _git(repository, "add", "gate.sh")
+    _git(repository, "commit", "-q", "-m", "test: a contract lands after the base")
+    integrated = _git(repository, "rev-parse", "HEAD")
+
+    result = CliRunner().invoke(
+        cli_main,
+        [
+            "crew",
+            "verify-gate",
+            "--project",
+            PROJECT,
+            "--run",
+            run_id,
+            "--checkout-path",
+            str(repository),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["ok"] is True
+    finding = payload["finding"]
+    assert finding["base_verdict"] == "passed"
+    assert finding["integrated_verdict"] == "failed"
+    assert payload["checkout_revision"] == integrated
+    # The finding is recorded against the run, not only printed: the committed
+    # ledger row the verb re-ran now carries the full re-run report.
+    row = ledger.load(PROJECT, root=repository)[0]["runs"][0]
+    report = row["integrated_gate_check"]
+    assert report["integrated_verdict"] == "failed"
+    assert report["checkout_revision"] == integrated
+    assert report["finding"]["integrated_verdict"] == "failed"
+
+
+def test_verify_gate_cli_records_an_agreeing_head_without_a_finding(
+    repository: Path,
+) -> None:
+    """The other direction: base and merged head agree, so the re-run finds
+    nothing — but the re-check is still recorded, so a reader can tell an
+    unchecked merge from a green one."""
+    _write_green_gate(repository)
+    run_id = "r-20260914T190401000000-verify-gate-withstand"
+    _promote_into_ledger(repository, run_id)
+
+    result = CliRunner().invoke(
+        cli_main,
+        [
+            "crew",
+            "verify-gate",
+            "--project",
+            PROJECT,
+            "--run",
+            run_id,
+            "--checkout-path",
+            str(repository),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["ok"] is True
+    assert payload["finding"] is None
+    assert payload["report"]["integrated_verdict"] == "passed"
+    row = ledger.load(PROJECT, root=repository)[0]["runs"][0]
+    assert row["integrated_gate_check"]["integrated_verdict"] == "passed"
+    assert row["integrated_gate_check"]["finding"] is None
+
+
+def test_verify_gate_cli_refuses_a_run_without_a_ledger_row(repository: Path) -> None:
+    """The verb reads the run's stored gate from its committed row, so a run the
+    coordinator never promoted is refused with the repair named, not re-run."""
+    _write_green_gate(repository)
+    run_id = "r-20260914T190402000000-verify-gate-unpromoted"
+
+    result = CliRunner().invoke(
+        cli_main,
+        [
+            "crew",
+            "verify-gate",
+            "--project",
+            PROJECT,
+            "--run",
+            run_id,
+            "--checkout-path",
+            str(repository),
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "has no row in the 'proj' ledger" in result.output
+
+
+def test_the_gate_rerun_caller_is_reachable_from_shipped_code() -> None:
+    """The production caller is a CLI-reachable verb, not a test-only helper:
+    its name must appear in the shipped tree — the promotion implementation,
+    the crew facade export, and the CLI registration — none of them under
+    tests/."""
+    repo_root = Path(__file__).resolve().parent.parent
+    shipped = sorted(
+        path for path in (repo_root / "reckon").rglob("*.py") if "test" not in path.name
+    )
+    assert shipped, "expected shipped python under reckon/"
+    hits = {
+        str(path.relative_to(repo_root))
+        for path in shipped
+        if "record_gate_rerun_at_integrated_revision"
+        in path.read_text(encoding="utf-8")
+    }
+    assert {
+        "reckon/crew/promotion.py",
+        "reckon/crew.py",
+        "reckon/cli.py",
+    } <= hits
