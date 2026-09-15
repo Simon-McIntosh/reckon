@@ -140,6 +140,26 @@
     <code>docs/ui/shell-ready.jsx</code>) both already exist; the §4 guard's
     full-bundle assembly already exists as <code>test_spa_module_scope.py</code>.</p>
 
+    <h2 id="shell-modules">Legible failure when shell modules are absent</h2>
+
+    <p>Landed 2026-09-15, commit <code>5d28be8</code>, node
+    <code>the-shell-says-so-when-its-modules-are-missing</code>. The composition
+    root in <code>docs/ui/shell.jsx</code> now renders an accessible
+    <code>&lt;main role="alert"&gt;</code> with the existing shell failure
+    panel's label, heading, explanation and operator guidance when
+    <code>shell-ready</code> is unavailable. This keeps the root self-contained:
+    the reused <code>ProjectStateLoadPanel</code> vocabulary cannot itself be
+    imported in the skew being handled.</p>
+
+    <p>The browser-free composed probe in
+    <code>tests/test_spa_composition.py</code> deliberately leaves the ready
+    module out. Before the repair, that composition root rendered
+    <strong>0 children</strong>; after it, the asserted root has
+    <strong>4 children</strong>, <code>role="alert"</code>, and text containing
+    “Shell modules unavailable”. The focused gate passed <strong>2 tests</strong>:
+    the skew regression and the isolated module-bundle load check. Reverting the
+    fallback produces the recorded 0-child failure.</p>
+
   </main>
 </body>
 </html>

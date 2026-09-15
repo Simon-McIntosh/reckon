@@ -199,6 +199,16 @@
     because it is indistinguishable from an unreachable server and sends the
     reader to the wrong diagnosis.</p>
 
+    <h3 id="s3-shell-modules">Landed: unavailable shell modules stay visible</h3>
+
+    <p>Commit <code>5d28be8</code> replaces the composition root's empty
+    <code>data-shell-modules="unavailable"</code> fallback with an accessible
+    failure panel. The browser-free skew probe deliberately omits
+    <code>shell-ready</code>: the recorded fallback had <strong>0 children</strong>;
+    the repaired root has <strong>4 children</strong>, <code>role="alert"</code>,
+    and names “Shell modules unavailable”. Full record:
+    <a href="/reckon/evidence/archive/blank-project-surface-landed#shell-modules">shell modules landed</a>.</p>
+
     <h2 id="s4">§4 — A blank surface becomes a caught failure</h2>
 
     <p>The defect reached a user because nothing in the suite asserts that a
