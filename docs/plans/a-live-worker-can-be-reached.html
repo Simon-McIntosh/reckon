@@ -22,8 +22,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="9">
-<meta name="plan-impl" content="0.3">
+<meta name="plan-version" content="10">
+<meta name="plan-impl" content="0.5">
 </head>
 <body>
   <main class="plan-doc">
@@ -230,6 +230,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260915T055338893744-worker-channel-attempt-census" data-who="session-4dbe861e20e6f9c77514" data-when="2026-09-15T08:08:54.977Z">
     <div class="r-comment-body"><p>2,232 send attempts across 98 of 1,026 interactive transcripts; 0 delivered into 3,971 worker streams against a 1,204-record positive control; 84 percent of classifiable coordinators stood down believing delivery. No file-based inbox exists in any of 3,979 run directories, confirming the missing channel empirically.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="guard-landed-and-verified" data-who="Simon McIntosh" data-when="2026-09-15">
+    <div class="r-comment-body">The guard is merged and verified at the merged head: zero failures added against a twenty-failure base, identical failure ids either side by set difference, and 505 passing before against 518 after. None of the twenty pre-existing failures touches the hook, the CLI wiring or the guard tests. An independent review scored it 20 goal fidelity, 20 scope discipline, 19 evidence, 19 durability, 19 fit. The worker wrote the quiet half first and added, unprompted, a test that a live pointer launched on a different host is not matched — the pointer directory is shared across login nodes, so a pid from another host reads alive or dead by coincidence. The ledger row is still outstanding: promotion is refused by a defect in the gate's own log check, which greps a cited log for a shell diagnostic that the gate's own test file writes as fixture data. That is reproduced, owned elsewhere and has a repair in flight.</div>
 </div>
 </section>
 </main>
