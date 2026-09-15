@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T04:12:56",
+  "updated": "2026-09-15T04:24:10",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -120655,6 +120655,220 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T020035374166-liveness-outranks-unreadability",
+        "plan": "crew-observability-truth",
+        "section": "\u00a716",
+        "node": "liveness-outranks-unreadability",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1639,
+                "cached_input_tokens": 866147,
+                "input_tokens": 867788,
+                "output_tokens": 2056,
+                "reasoning_output_tokens": 945,
+                "total_tokens": 869844,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3ceb92f8-d6d4-46b5-82a8-d120cb0ddd1f",
+            "session_id": "ship-s18-20260914"
+          },
+          "done_when": "a run whose process is alive with a fresh log classifies from its liveness and never as unreadable, asserted against a live pointer whose manifest the parser refuses - both live shapes measured on this workstation reproduce it, one carrying a status corrupted by a run-on into an unrecognised word and one carrying a declared waiting status corrupted the same way; unreadable remains reachable for a run whose process is gone and whose manifest cannot be judged, asserted as the positive so the state is not simply disabled; a live run whose manifest is genuinely absent still classifies from liveness rather than from the missing file, asserted explicitly; the classification order is stated once where a reader can see it, so liveness is consulted before the manifest status rather than the precedence being implied by branch order; and tests/test_crew_recovery.py tests/test_recovery_state_typing.py add no failures beyond the single environmental id already failing at base, with base and after ids both recorded",
+          "estimated_hours": null,
+          "goal": "a worker whose process is alive is never reported unreadable, so a strictness added for manifests at rest cannot misreport work in progress",
+          "id": "liveness-outranks-unreadability",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T02:00:35Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T020035374166-liveness-outranks-unreadability/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a716",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_crew_recovery.py",
+            "tests/test_recovery_state_typing.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-backpressure",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T02:00:41Z",
+        "completed_at": "2026-09-15T02:19:52.349Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1104,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1151,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "4776d83fc5819dcd95dc84f11efe138fe1129da3",
+        "commits": [
+          "8183a63ac491a5c16274906214917086b45a1c08",
+          "fdeeb9839e314342c8c4f475193ce053dce38026"
+        ],
+        "changed_lines": {
+          "added": 142,
+          "removed": 4,
+          "files": 4
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "reckon crew list across all projects, before and after: unreadable count 2 -> 0, live-process unreadable 0",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T020035374166-liveness-outranks-unreadability/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T020035374166-liveness-outranks-unreadability/manifest.md",
+        "scope_changed": false,
+        "session_id": "c58187cd-c8f6-40fc-8d34-29237d2c09d2",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 702419,
+            "input_tokens_cumulative": 9652873,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 50021,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T02:19:52.349Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 9813251,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 1145.969,
+          "generated_tokens": 56225,
+          "generation_seconds": 1062.234,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 81.4,
+          "machine_seconds": 83.735,
+          "peak_input_tokens": 162782,
+          "tokens_per_second": 52.93,
+          "wall_tokens_per_second": 49.06
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": [
+          {
+            "path": "docs/evidence/archive/crew-observability-truth-landed.html",
+            "reason": "same contract, same gap"
+          },
+          {
+            "path": "docs/plans/crew-observability-truth.html",
+            "reason": "the landing contract instructs this write; the fence node granting it is still in flight"
+          }
+        ],
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s18-20260914/liveness-outranks-unreadability",
+          "session_id": "c58187cd-c8f6-40fc-8d34-29237d2c09d2",
+          "session_source": "pointer",
+          "retained_at": "2026-09-15T02:19:52.349Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 75.0,
+        "orientation_input_tokens": 3186582.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -120883,6 +121097,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1463
+    "_version": 1464
   }
 }
