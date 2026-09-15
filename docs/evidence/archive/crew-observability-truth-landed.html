@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="crew-observability-truth-landed">
   <meta name="plan-title" content="Crew observability truth — cumulative execution-evidence record">
-  <meta name="plan-summary" content="Nineteen anchors: one per distinct run-outcome comment recorded against crew-observability-truth (15), plus three corrections and one refuted peer finding kept as their own anchors so the reason a reading changed is not lost. Covers §2 liveness, §3 gc repository scoping, §4 the working-bucket honesty defect surfaced by the plan's own execution, §5 budget visibility and the duplicate-backend-key refusal, §6 provider-refusal classification, §16 the reader refusing an undetermined manifest status, a manifest that carries no status key at all, and never reporting a live worker unreadable, and §21 a composed prompt no longer denying the landing write it grants, against the backdrop of one Anthropic spend-limit outage that killed seven local workers in two waves.">
+  <meta name="plan-summary" content="Twenty anchors: one per distinct run-outcome comment recorded against crew-observability-truth (16), plus three corrections and one refuted peer finding kept as their own anchors so the reason a reading changed is not lost. Covers §2 liveness, §3 gc repository scoping, §4 the working-bucket honesty defect surfaced by the plan's own execution, §5 budget visibility and the duplicate-backend-key refusal, §6 provider-refusal classification, §16 the reader refusing an undetermined manifest status, a manifest that carries no status key at all, and never reporting a live worker unreadable, §19 the landing comment no longer duplicating a worker-authored record, and §21 a composed prompt no longer denying the landing write it grants, against the backdrop of one Anthropic spend-limit outage that killed seven local workers in two waves.">
   <meta name="plan-evidence-for" content="crew-observability-truth">
   <meta name="plan-verifies" content="crew-observability-truth#s2,crew-observability-truth#s3,crew-observability-truth#s4,crew-observability-truth#s5,crew-observability-truth#s6,crew-observability-truth#s16">
   <meta name="plan-recorded-at" content="2026-09-03">
@@ -21,7 +21,7 @@
 <main class="plan-doc">
   <header class="plan-header">
     <h1>Crew observability truth — cumulative execution-evidence record</h1>
-    <p class="plan-summary">Thirteen run-outcome comments recorded against
+    <p class="plan-summary">Sixteen run-outcome comments recorded against
     <code>crew-observability-truth</code>, each with its own anchor below naming its commit and
     the quantitative measure it reported. Four more anchors record the plan's own corrections and
     a refuted peer finding — kept separate from the run outcomes because a record that keeps only
@@ -49,7 +49,7 @@
   </section>
 
   <section id="anchors">
-    <h2>Nineteen anchors</h2>
+    <h2>Twenty anchors</h2>
     <table>
       <thead><tr><th>Section</th><th>Anchor</th><th>Commit</th><th>Kind</th></tr></thead>
       <tbody>
@@ -72,6 +72,7 @@
         <tr><td>§16</td><td><a href="#manifest-status-key-absent-refused">manifest-status-key-absent-refused</a></td><td>c133d0e</td><td>run outcome</td></tr>
         <tr><td>§16</td><td><a href="#live-worker-never-unreadable">live-worker-never-unreadable</a></td><td>8183a63</td><td>run outcome</td></tr>
         <tr><td>§21</td><td><a href="#landing-not-also-denied">landing-not-also-denied</a></td><td>93806e6</td><td>run outcome</td></tr>
+        <tr><td>§19</td><td><a href="#landing-comment-does-not-duplicate-the-worker-record">landing-comment-does-not-duplicate-the-worker-record</a></td><td>8bc1083</td><td>run outcome</td></tr>
       </tbody>
     </table>
   </section>
@@ -624,6 +625,22 @@ reading taken as an authority it was not.</p>
     prompts-only gate passes 15 at base against 18 after; the wider two-file gate carries the
     identical pre-existing promotion-environmental failures (10 at base, 10 after), so the
     change adds three cases and no failures.</p>
+  </section>
+
+  <section id="landing-comment-does-not-duplicate-the-worker-record">
+    <h3>§19 — The landing comment does not duplicate the worker's record</h3>
+    <p>Run <code>r-20260915T050810199778-promotion-stops-authoring-the-record-the-worker-writes</code>,
+    member crew-review-reflex on the local lane. Commit <code>8bc1083</code> merged against the
+    shared object store, 254 insertions over 2 files, two tests added.</p>
+    <p><strong>Measure:</strong> <code>tests/test_crew_promotion.py</code> 42 passed against a 40
+    baseline, zero added failures. The collision this plan's first worker-authored conflict
+    recorded is now closed in promotion: the landing path reads the plan at the run's submitted
+    commit via the object store and, when that committed plan already carries the run's comment
+    id, appends no second comment and leaves the plan file untouched. Both directions are
+    asserted — the worker-authored case lands a comment-free plan with only the ledger row
+    committed, and a worker with no record still lands exactly one comment plus the plan write.
+    This anchor is that run's own worker-authored record carrying the same comment id the landing
+    path was changed to skip.</p>
   </section>
 
 </main>
