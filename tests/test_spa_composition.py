@@ -9,7 +9,7 @@ from urllib.parse import quote
 
 import pytest
 
-from reckon.serve import discover_plans
+from reckon.serve import compile_jsx, discover_plans
 from tests.spa_browser_harness import (
     BROWSER_NAMES,
     BrowserProbeError,
@@ -96,6 +96,62 @@ def _evaluate_sprint_helpers(expression: str):
         text=True,
     )
     return json.loads(result.stdout)
+
+
+def _render_shell_without_ready_module() -> dict[str, object]:
+    root = Path(__file__).parents[1]
+    source = (root / "docs/ui/shell.jsx").read_text(encoding="utf-8")
+    compiled = compile_jsx(
+        source,
+        filename="shell.jsx",
+    ).decode()
+    script = (
+        r"""
+const window = Object.create(null);
+const noop = () => {};
+let rendered = null;
+const document = { getElementById() { return {}; }, querySelector() { return null; } };
+const React = {
+  createElement(type, props, ...children) { return { type, props: props || {}, children }; },
+  useCallback: value => value,
+  useEffect: noop,
+  useMemo: value => value(),
+  useRef: value => ({ current: value }),
+  useState: value => [value, noop],
+};
+const ReactDOM = { createRoot() { return { render(value) { rendered = value; } }; } };
+"""
+        + compiled
+        + r"""
+function renderedText(node) {
+  if (node == null || node === false) return "";
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  return node.children.map(renderedText).join(" ");
+}
+process.stdout.write(JSON.stringify({
+  childCount: rendered.children.length,
+  text: renderedText(rendered),
+  role: rendered.props.role || null,
+}));
+"""
+    )
+    result = subprocess.run(
+        ["node", "-e", script],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    return json.loads(result.stdout)
+
+
+def test_shell_module_skew_renders_a_legible_failure() -> None:
+    rendered = _render_shell_without_ready_module()
+
+    assert rendered["childCount"] == 4
+    assert rendered["role"] == "alert"
+    assert "Shell modules unavailable" in rendered["text"]
 
 
 def test_sprint_surface_consumes_composed_review_without_a_review_fetch() -> None:

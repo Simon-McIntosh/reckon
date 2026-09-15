@@ -457,6 +457,51 @@ function App() {
 const ShellReadyGate = window.ReckonShell?.ready?.ReadyGate;
 const shellRoot = ShellReadyGate
   ? React.createElement(ShellReadyGate, null, React.createElement(App))
-  : React.createElement("main", { "data-shell-modules": "unavailable" });
+  : React.createElement(
+      "main",
+      {
+        "data-shell-modules": "unavailable",
+        role: "alert",
+        style: {
+          maxWidth: 640,
+          margin: "64px auto",
+          padding: "28px 32px",
+          border: "1px solid var(--line)",
+          borderRadius: "var(--radius-lg)",
+          background: "var(--bg)",
+          boxShadow: "var(--shadow)",
+        },
+      },
+      React.createElement(
+        "p",
+        {
+          style: {
+            margin: 0,
+            color: "var(--bad)",
+            fontFamily: "var(--mono)",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: ".08em",
+            textTransform: "uppercase",
+          },
+        },
+        "Shell modules unavailable",
+      ),
+      React.createElement(
+        "h1",
+        { style: { margin: "8px 0 10px", fontSize: 22, color: "var(--ink)" } },
+        "Project shell unavailable",
+      ),
+      React.createElement(
+        "p",
+        { style: { margin: "0 0 20px", color: "var(--ink-2)", lineHeight: 1.55 } },
+        "The project shell could not load the modules it needs to render this page.",
+      ),
+      React.createElement(
+        "p",
+        { style: { margin: 0, color: "var(--muted)", fontFamily: "var(--mono)", fontSize: 12 } },
+        "Reload after the server is updated, or ask an operator to inspect its served module list.",
+      ),
+    );
 
 ReactDOM.createRoot(document.getElementById("root")).render(shellRoot);
