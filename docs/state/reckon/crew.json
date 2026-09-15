@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T02:03:25",
+  "updated": "2026-09-15T02:05:48",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -117731,6 +117731,212 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T224043278140-schedule-derivation-exists-in-python",
+        "plan": "derived-state-parity",
+        "section": "\u00a75",
+        "node": "schedule-derivation-exists-in-python",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 589,
+                "cached_input_tokens": 425864,
+                "input_tokens": 426455,
+                "output_tokens": 1474,
+                "reasoning_output_tokens": 538,
+                "total_tokens": 427929,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3332e8d8-dcef-4091-9774-c9680478b165",
+            "session_id": "ship-s16-20260914"
+          },
+          "done_when": "tests/test_schedule_derivation.py exists, which it does not at the base revision, and passes: the Python derivation places a pending plan at the later of its prerequisite end and the reference instant, packs bars into best-fit lanes, reports the axis bounds, places an unknown prerequisite at the reference instant rather than dropping it, and excludes bars beyond the retention window. The reference instant is a parameter of the function and never the wall clock, asserted by a case that passes a fixed instant and would fail if the clock were read, because this plan's sibling test became a fuse by reading the clock and has been red for nine days. One case compares the Python result against the values the rendered surface produces for the same input, so the two are shown to agree rather than assumed to. This node does NOT edit docs/ui/crew.jsx, which another coordinator's run holds; removing the residual JSX derivation is a separate node and its absence here is deliberate rather than forgotten. The prior-art reuse map at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/surface-prior-art-reuse-map.md names window.ReckonGraph.layout at docs/ui/graph.jsx:1010 and roadmap.resolve_graph_target at reckon/roadmap.py:707; state in one line which was reused or why each failed",
+          "estimated_hours": null,
+          "goal": "Build the schedule derivation in Python so a reader without a browser can compute the same schedule",
+          "id": "schedule-derivation-exists-in-python",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T22:40:43Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T224043278140-schedule-derivation-exists-in-python/manifest.md",
+          "plan": "derived-state-parity",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/schedule.py",
+            "reckon/roadmap.py",
+            "tests/test_schedule_derivation.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s15-plandrop",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T22:40:51Z",
+        "completed_at": "2026-09-15T00:00:36.606Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4487,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4785,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "e7325edbd748aa619e35b6695aab0ec6542e3ac4",
+        "commits": [
+          "0c0b15183f39c84319a534456d68b61018e29398"
+        ],
+        "changed_lines": {
+          "added": 586,
+          "removed": 0,
+          "files": 3
+        },
+        "tests_added": 9,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_schedule_derivation.py",
+          "exit_status": 0,
+          "log_path": "/tmp/sched_gate_final.log",
+          "log_digest": "4271b0d70d2afe45004c9a7514ebfc72f7f68dde0ab2ec96b5f19bb8243c6454"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T224043278140-schedule-derivation-exists-in-python/manifest.md",
+        "scope_changed": false,
+        "session_id": "3d3e745d-d0ac-4c6c-aae0-a051325bacfc",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 0,
+            "input_tokens_cumulative": 6821800,
+            "output_tokens": 7487,
+            "output_tokens_cumulative": 73060,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T00:00:36.606Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 7167228,
+          "detail": "generation and wall clock reported separately by the backend",
+          "elapsed_seconds": 4782.55,
+          "generated_tokens": 85414,
+          "generation_seconds": 4741.076,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 82.7,
+          "machine_seconds": 41.474,
+          "peak_input_tokens": 165366,
+          "tokens_per_second": 18.02,
+          "wall_tokens_per_second": 17.86
+        },
+        "follow_on_paths": [
+          "crew.jsx",
+          "/",
+          "roadmap.py",
+          "reckon/schedule.py",
+          "tests/test_schedule_derivation.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16-20260914/schedule-derivation-exists-in-python",
+          "session_id": "3d3e745d-d0ac-4c6c-aae0-a051325bacfc",
+          "session_source": "pointer",
+          "retained_at": "2026-09-15T00:00:36.606Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 68.0,
+        "orientation_input_tokens": 1312501.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -117959,6 +118165,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1450
+    "_version": 1451
   }
 }

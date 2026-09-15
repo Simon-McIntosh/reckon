@@ -26,8 +26,8 @@
   <title>One Derivation, Every Surface | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-14">
-<meta name="plan-version" content="13">
+<meta name="plan-modified" content="2026-09-15">
+<meta name="plan-version" content="14">
 <meta name="plan-commits" content="42104d3,f5fbac7,77d0edf">
 <meta name="plan-impl" content="0.4">
 </head>
@@ -266,6 +266,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-scope-review-s5-gate-cannot-discriminate" data-who="reckon-ship" data-when="2026-09-14T21:38:00Z">
     <div class="r-comment-body">Scope review finding, recorded before this section is worked: the grep half of this section's own measure cannot discriminate landed from unlanded. It reads grep -c 'function schedule|_schedule(' docs/ui/crew.jsx and expects 0, but the residual JSX derivation is named derivedFlowSchedule, so the count is 0 today and would still be 0 after the derivation moved to Python. It prints the passing value in both worlds. The section is genuinely unlanded at HEAD on the evidence that does discriminate: reckon/schedule.py and tests/test_schedule_derivation.py are both absent, while docs/ui/crew.jsx:98-133 still builds items, lanes, low, high and ticks and computes the schedule in a useMemo. Whoever lands this section must first restate the grep half against the name the code actually uses, or replace it with an assertion that fails today; a gate that passes before the work is done is worse than no gate, because it reports a protection that is not there.</div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260914T224043278140-schedule-derivation-exists-in-python" data-who="s15-plandrop" data-when="2026-09-15T00:00:36.606Z">
+    <div class="r-comment-body"><p>The flow schedule now derives in Python: 9 passed, exit 0, with a roadmap reader reporting far end, lane count and bars. Judged by delta against a stated base rather than by an absolute: 51 passed at base e7325ed and 51 at the head, 0 failures either side. The design point I checked myself rather than taking from the report is that derive_schedule takes reference as a required positional parameter with no default, so the wall clock cannot be read by accident — stronger than the done-when asked for, and the direct answer to the sibling test that became a fuse by reading it. A named case asserts the reference is a parameter and never the wall clock, and another compares the Python result against the values the rendered surface produces for the same input, so the two are shown to agree rather than assumed to. The JSX derivation removal is deliberately absent: another coordinator holds docs/ui/crew.jsx, and that half is a separate node</p></div>
 </div>
 </section>
 </main>
