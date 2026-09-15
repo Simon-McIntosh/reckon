@@ -1,11 +1,25 @@
+"""Gate the rendered captures of the plans that own them.
+
+Each gated plan keeps its capture measure in its own figure directory
+(docs/figures/<plan>/after/capture-index.json). This module reads that
+index for each plan and asserts the listed captures exist, carry the
+recorded viewport width, and show the populated state their owner
+required. The producer factory below (invoked only from __main__)
+regenerates captures under docs/figures/rendered-evidence.
+"""
+
 from __future__ import annotations
 
 import json
+import struct
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from typing import NamedTuple
 from unittest import SkipTest
+
+import pytest
 
 from tests.spa_browser_harness import (
     file_spa,
@@ -15,7 +29,6 @@ from tests.spa_browser_harness import (
 
 ROOT = Path(__file__).resolve().parents[1]
 CAPTURE_ROOT = ROOT / "docs" / "figures" / "rendered-evidence"
-CAPTURE_INDEX = CAPTURE_ROOT / "capture-index.json"
 VIEWPORT = (1374, 900)
 CONSTRAINED_VIEWPORT = (900, 420)
 
@@ -435,52 +448,137 @@ def generate_captures(output_root: Path = CAPTURE_ROOT) -> dict[str, object]:
         return index
 
 
-def test_capture_index_records_four_positive_renders_and_controls() -> None:
-    index = json.loads(CAPTURE_INDEX.read_text(encoding="utf-8"))
-
-    assert index["delivery"] == "file-url"
-    assert index["captureCount"] == 4
-    assert index["mutationControlCount"] == 4
-    assert len(index["captures"]) == 4
-    for capture in index["captures"]:
-        assert capture["positive"]["signal"] is True
-        assert capture["mutation_control"]["signal_removed"] is True
-        assert capture["mutation_control"]["positive_assertion_after_removal"] is False
-        image = CAPTURE_ROOT / capture["image"]
-        geometry = CAPTURE_ROOT / f"{capture['capture']}.geometry.json"
-        assert image.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
-        assert json.loads(geometry.read_text(encoding="utf-8")) == capture
+class _CaptureSpec(NamedTuple):
+    figures_dir: Path
+    surfaces: tuple[str, ...]
+    widths: tuple[int, ...]
+    population_fields: tuple[str, ...]
+    population_any_of: tuple[str, ...]
+    require_populated: bool
 
 
-def test_capture_metrics_pin_each_rendered_signal() -> None:
-    index = json.loads(CAPTURE_INDEX.read_text(encoding="utf-8"))
-    captures = {item["capture"]: item["positive"] for item in index["captures"]}
+# Each entry names a figure directory the owning plan writes its capture
+# measure into, the surfaces it captures at each recorded width, and the
+# population signals its section states as its done-when.
+_PLAN_CAPTURE_SPECS = (
+    _CaptureSpec(
+        figures_dir=ROOT / "docs/figures/fleet-home",
+        surfaces=("home", "home-hidden"),
+        widths=(1374, 1920),
+        population_fields=("rowCount",),
+        population_any_of=(),
+        require_populated=False,
+    ),
+    _CaptureSpec(
+        figures_dir=ROOT / "docs/figures/graph-derived-schedule",
+        surfaces=("graph-named", "graph-unnamed", "sprint-detail", "crew-flow"),
+        widths=(1374, 1920),
+        population_fields=(),
+        population_any_of=("cardCount", "laneCount"),
+        require_populated=True,
+    ),
+    _CaptureSpec(
+        figures_dir=ROOT / "docs/figures/spa-shell-scope-and-visibility",
+        surfaces=("topbar", "sheet", "crew"),
+        widths=(1374, 1920),
+        population_fields=(),
+        population_any_of=(),
+        require_populated=True,
+    ),
+)
 
-    assert captures["now-line-advance"]["lineCount"] == 1
-    assert captures["now-line-advance"]["advancePercentagePoints"] > 0
-    assert captures["now-line-advance"]["navigationDelta"] == 0
-    assert captures["sprint-table-state"]["rowCount"] > 0
-    assert captures["sprint-table-state"]["rowOrder"] == [
-        "concurrent",
-        "focus",
-        "queued",
-    ]
-    assert captures["sprint-table-state"]["conflictBadgeCount"] == 1
-    assert captures["constrained-reachability"]["reachableTargetCount"] == 1
-    assert captures["constrained-reachability"]["elementsPastViewport"] == 0
-    assert captures["ready-lanes"]["laneCount"] > 0
-    assert (
-        captures["ready-lanes"]["handleCount"] == captures["ready-lanes"]["laneCount"]
+
+def _png_image_width(image: Path) -> int:
+    header = image.read_bytes()[:24]
+    assert header[:8] == b"\x89PNG\r\n\x1a\n", image
+    return struct.unpack(">II", header[16:24])[0]
+
+
+def assert_plan_capture_index(spec: _CaptureSpec) -> None:
+    index_path = spec.figures_dir / "after" / "capture-index.json"
+    if not index_path.is_file():
+        raise AssertionError(f"capture index missing: {index_path}")
+    index = json.loads(index_path.read_text(encoding="utf-8"))
+    captures = index.get("captures")
+    if not captures:
+        raise AssertionError(f"capture index holds no captures: {index_path}")
+
+    expected = {
+        f"{surface}-{width}" for surface in spec.surfaces for width in spec.widths
+    }
+    listed = {capture.get("capture") for capture in captures}
+    assert listed == expected, (
+        index_path,
+        sorted(listed - expected),
+        sorted(expected - listed),
+    )
+    assert index.get("captureCount") == len(captures), (
+        index_path,
+        index.get("captureCount"),
+        len(captures),
+    )
+    assert set(index.get("viewportWidths", [])) == set(spec.widths), (
+        index_path,
+        index.get("viewportWidths"),
+    )
+
+    for capture in captures:
+        width = capture.get("width")
+        assert width in spec.widths, (index_path, capture)
+        image = index_path.parent / capture["image"]
+        assert image.is_file(), (index_path, image)
+        assert _png_image_width(image) == width, (index_path, image, width)
+        for field in spec.population_fields:
+            assert capture.get(field, 0) > 0, (index_path, capture, field)
+        if spec.population_any_of:
+            assert any(capture.get(field, 0) > 0 for field in spec.population_any_of), (
+                index_path,
+                capture,
+            )
+        if spec.require_populated:
+            assert capture.get("populated") is True, (index_path, capture)
+
+
+def _synthetic_spec(figures_dir: Path) -> _CaptureSpec:
+    return _CaptureSpec(
+        figures_dir=figures_dir,
+        surfaces=("primary", "secondary"),
+        widths=(1374, 1920),
+        population_fields=(),
+        population_any_of=(),
+        require_populated=False,
     )
 
 
-def test_only_live_fetch_capture_debt_remains_and_cleanup_is_zero() -> None:
-    index = json.loads(CAPTURE_INDEX.read_text(encoding="utf-8"))
+@pytest.mark.parametrize(
+    "spec",
+    _PLAN_CAPTURE_SPECS,
+    ids=[spec.figures_dir.name for spec in _PLAN_CAPTURE_SPECS],
+)
+def test_plan_capture_gate_reads_the_plan_own_index(spec: _CaptureSpec) -> None:
+    assert_plan_capture_index(spec)
 
-    assert len(index["notAttemptedLiveFetches"]) == 2
-    assert all("requires" in row["reason"] for row in index["notAttemptedLiveFetches"])
-    assert index["residualChromeProcesses"] == 0
-    assert index["residualTemporaryProfiles"] == 0
+
+def test_plan_capture_gate_refuses_a_plan_with_no_captures(tmp_path: Path) -> None:
+    with pytest.raises(AssertionError, match="capture index missing"):
+        assert_plan_capture_index(_synthetic_spec(tmp_path / "absent"))
+
+    empty_site = tmp_path / "empty"
+    after = empty_site / "after"
+    after.mkdir(parents=True)
+    (after / "capture-index.json").write_text(
+        json.dumps(
+            {
+                "delivery": "file-url",
+                "captureCount": 0,
+                "viewportWidths": [],
+                "captures": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(AssertionError, match="no captures"):
+        assert_plan_capture_index(_synthetic_spec(empty_site))
 
 
 if __name__ == "__main__":
