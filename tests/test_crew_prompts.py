@@ -238,3 +238,41 @@ def test_landing_clause_is_a_pure_removable_insertion(monkeypatch):
     before = _prompt(role="implement")
 
     assert after.replace(PLAN_LANDING_CONTRACT, "", 1) == before
+
+
+# ── The landing write is not also forbidden by the shared-state rule ─────────
+
+# The blanket prohibition that once composed beside the landing clause, telling
+# every role "Do not edit reckon plan or index state" while the landing clause
+# told a repo-writing role to append its record to the plan itself. The measure
+# requires that pair never to co-occur.
+BLANKET_INDEX_BAN = "Do not edit reckon plan or index state"
+SHARED_INDEX_BAN = "shared project index"
+SPRINT_STATE_BAN = "sprint state"
+OTHER_PLAN_BAN = "a plan other than the one you are landing against"
+
+
+def test_implement_prompt_never_co_composes_landing_with_a_plan_state_ban():
+    prompt = _flat(_prompt(role="implement"))
+
+    assert LANDING_HEADER in prompt
+    assert BLANKET_INDEX_BAN not in prompt
+
+
+def test_implement_prompt_narrows_the_ban_to_shared_state_and_other_plans():
+    prompt = _flat(_prompt(role="implement"))
+
+    assert SHARED_INDEX_BAN in prompt
+    assert SPRINT_STATE_BAN in prompt
+    assert OTHER_PLAN_BAN in prompt
+
+
+def test_readonly_role_receives_the_narrowed_ban_and_no_landing_clause():
+    for role in ("review", "investigate"):
+        prompt = _flat(_prompt_readonly(role=role))
+
+        assert SHARED_INDEX_BAN in prompt
+        assert SPRINT_STATE_BAN in prompt
+        assert OTHER_PLAN_BAN in prompt
+        assert LANDING_HEADER not in prompt
+        assert PLAN_LANDING_CONTRACT not in prompt
