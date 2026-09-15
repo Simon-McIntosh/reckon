@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="crew-observability-truth-landed">
   <meta name="plan-title" content="Crew observability truth — cumulative execution-evidence record">
-  <meta name="plan-summary" content="Sixteen anchors: one per distinct run-outcome comment recorded against crew-observability-truth (12), plus three corrections and one refuted peer finding kept as their own anchors so the reason a reading changed is not lost. Covers §2 liveness, §3 gc repository scoping, §4 the working-bucket honesty defect surfaced by the plan's own execution, §5 budget visibility and the duplicate-backend-key refusal, §6 provider-refusal classification, and §16 the reader refusing an undetermined manifest status, against the backdrop of one Anthropic spend-limit outage that killed seven local workers in two waves.">
+  <meta name="plan-summary" content="Seventeen anchors: one per distinct run-outcome comment recorded against crew-observability-truth (13), plus three corrections and one refuted peer finding kept as their own anchors so the reason a reading changed is not lost. Covers §2 liveness, §3 gc repository scoping, §4 the working-bucket honesty defect surfaced by the plan's own execution, §5 budget visibility and the duplicate-backend-key refusal, §6 provider-refusal classification, and §16 the reader refusing an undetermined manifest status and a manifest that carries no status key at all, against the backdrop of one Anthropic spend-limit outage that killed seven local workers in two waves.">
   <meta name="plan-evidence-for" content="crew-observability-truth">
   <meta name="plan-verifies" content="crew-observability-truth#s2,crew-observability-truth#s3,crew-observability-truth#s4,crew-observability-truth#s5,crew-observability-truth#s6,crew-observability-truth#s16">
   <meta name="plan-recorded-at" content="2026-09-03">
@@ -49,7 +49,7 @@
   </section>
 
   <section id="anchors">
-    <h2>Sixteen anchors</h2>
+    <h2>Seventeen anchors</h2>
     <table>
       <thead><tr><th>Section</th><th>Anchor</th><th>Commit</th><th>Kind</th></tr></thead>
       <tbody>
@@ -69,6 +69,7 @@
         <tr><td>§5</td><td><a href="#stale-spec-level-claim-corrected">stale-spec-level-claim-corrected</a></td><td>—</td><td>correction</td></tr>
         <tr><td>§4</td><td><a href="#ledger-reachability-finding-refuted">ledger-reachability-finding-refuted</a></td><td>—</td><td>refuted peer finding</td></tr>
         <tr><td>§16</td><td><a href="#manifest-status-undetermined-refused">manifest-status-undetermined-refused</a></td><td>220848e</td><td>run outcome</td></tr>
+        <tr><td>§16</td><td><a href="#manifest-status-key-absent-refused">manifest-status-key-absent-refused</a></td><td>c133d0e</td><td>run outcome</td></tr>
       </tbody>
     </table>
   </section>
@@ -565,6 +566,23 @@ reading taken as an authority it was not.</p>
     the classifier refuse against; the unsubstituted template still reaches the classifier's
     unwritten handling, and recovery's own <code>derived</code> sentinel stays a recognised value
     so the pipeline's own fabricated manifest parses back.</p>
+  </section>
+
+  <section id="manifest-status-key-absent-refused">
+    <h3>&#167;16 &mdash; The reader refuses a manifest whose fields parse but carry no status key</h3>
+    <p>Run <code>r-20260915T013629318818-status-key-absent-is-undetermined</code>. Commit
+    <code>c133d0e</code>, 150 insertions over 3 files (2 test, 1 source).</p>
+    <p><strong>Measure:</strong> the real <code>scope-review-back-to-the-canvas</code>
+    run-directory manifest &mdash; a review report whose <code>Node:</code> line parses to a
+    vocabulary field and that carries no status key &mdash; raised naming the missing status key
+    after the change, where it parsed to the normalised mapping with thirteen keys and no status
+    before, which the classifier read as a vanished worker. The four-file gate carries the
+    identical single environmental failure at base (<code>dcee24b</code>) and after with 139 passed
+    against 145 passed, so the change adds no failures. The refusal keeps the bare list-attribute
+    excerpt (commits without a status) tolerant and never refuses a body declaring a recovery
+    artifact through a truthy <code>derived</code> field, so recovery's own fabricated manifest
+    still parses back; the refusal reads as an unreadable classification and every production reader
+    tolerates it, like the refusals that preceded it.</p>
   </section>
 
 </main>
