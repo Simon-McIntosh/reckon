@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-live-worker-can-be-reached-landed">
+  <meta name="plan-title" content="A live worker can be reached — cumulative execution-evidence record">
+  <meta name="plan-summary" content="Run-outcomes recorded against reckon:a-live-worker-can-be-reached, one stable anchor per material result, each naming its commit sha and the quantitative measure the run reported. Covers the close of the false clearance, the correction of the written recovery order to name a mechanism, and the inbox that answers a working worker.">
+  <meta name="plan-evidence-for" content="a-live-worker-can-be-reached">
+  <meta name="plan-verifies" content="a-live-worker-can-be-reached#s3,a-live-worker-can-be-reached#s4,a-live-worker-can-be-reached#s5">
+  <meta name="plan-recorded-at" content="2026-09-15">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; git worktrees; crew dispatch across local and metered lanes">
+  <title>A live worker can be reached — cumulative execution-evidence record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>A live worker can be reached — cumulative execution-evidence record</h1>
+    <p class="plan-summary">Run-outcomes recorded against
+    <code>a-live-worker-can-be-reached</code>, one stable anchor per material result. Each names
+    the commit that landed it, preserves the quantitative measure the run itself reported, and
+    states the mechanism the run replaced.</p>
+  </header>
+
+  <section id="anchors">
+    <h2>Anchors</h2>
+    <table>
+      <thead><tr><th>Section</th><th>Anchor</th><th>Commit</th><th>Outcome</th></tr></thead>
+      <tbody>
+        <tr><td>§5</td><td><a href="#recovery-order-names-a-mechanism">recovery-order-names-a-mechanism</a></td><td>702cffd</td><td>landed</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="recovery-order-names-a-mechanism">
+    <h2>§5 — The recovery order names a mechanism, not a message</h2>
+    <p>Run <code>r-20260915T060843894914-the-recovery-order-names-a-mechanism</code>. Commit
+    <code>702cffd</code>, 10 insertions and 3 deletions across exactly the one authorised reference
+    path.</p>
+    <p><strong>Measure:</strong> <code>grep -n 'message the worker'</code> over
+    <code>skills/reckon-ship/references/sprint-orchestration.md</code> returned one unqualified line
+    before (line 191, whose own sentence named no runnable command) and zero lines after. The
+    replacement keeps the step and names the mechanism for the run's state:
+    <code>reckon crew resume --run &lt;run-id&gt; --advice "write the deliverable to the named path
+    and reply with the path only"</code>, and records three facts: resume answers a run whose turn
+    has ended; a run still mid-turn has no channel today; and the peer-message channel is not it —
+    it has delivered nothing in 3,949 worker streams against a positive control of 11,939 in 244
+    interactive transcripts.</p>
+    <p>Gate: the three test files that assert on the reference file's structure
+    (<code>tests/test_skill_contracts.py</code>, <code>tests/test_the_prompt_carries_the_contract.py</code>,
+    <code>tests/test_the_prompt_carries_the_evidence_contract.py</code>) — 79 passed in 0.92s at the
+    worktree head; none asserts the replaced prose, so the delta is zero added. The workstation-wide
+    order in <code>~/.agents/AGENTS.md</code> already names <code>crew resume</code> and the
+    no-channel fact, so no change was needed there and none was made.</p>
+  </section>
+</main>
+</body>
+</html>
