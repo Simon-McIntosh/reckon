@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="binding-rules-need-bound-checks-landed">
   <meta name="plan-title" content="Declared tools must match configured tools — cumulative execution-evidence record">
-  <meta name="plan-summary" content="Execution evidence for binding-rules-need-bound-checks. One anchor: the declared-tooling check's before-and-after demonstration pinned as a test against a synthesised pre-declaration pyproject.">
+  <meta name="plan-summary" content="Execution evidence for binding-rules-need-bound-checks. Two anchors: the declared-tooling check's before-and-after demonstration pinned as a test against a synthesised pre-declaration pyproject, and the perturb-and-observe snapshot census running as a single command with both tallies stated as numbers.">
   <meta name="plan-evidence-for" content="binding-rules-need-bound-checks">
   <meta name="plan-recorded-at" content="2026-09-15">
   <meta name="plan-verdict" content="pass">
@@ -58,6 +58,38 @@
     side of this check pass. Nothing here asserts the upper bound itself; that is
     the repository's declared-selection guidance and sits outside this node's
     scope.</p>
+  </section>
+
+  <section id="snapshot-census-runs-as-a-command">
+    <h2>The perturb-and-observe census now runs as a single command</h2>
+
+    <p>The section's done-when demanded a runnable check bound to a moment rather
+    than the one-off measurement that settled the mechanism. The measurement read
+    assertion and observed source from pre-repair revisions; the check must not.
+    <code>scripts/check_snapshot_assertions.py</code> carries the four recorded
+    snapshot instances and the later object-substitution instance as embedded
+    specimens and perturbs each observed value by one benign member, so the census
+    re-runs with no repository or history dependency.</p>
+
+    <p>The census prints both tallies as numbers and fails closed: <strong>4 of 5
+    snapshot instances flagged</strong> (recorded 3 of 4; object substitution 1 of 1)
+    and <strong>0 of 4 carve-outs flagged</strong>, each case reporting a positive
+    control that passes before the perturbation is applied. The one recorded miss,
+    literal implementation strings across two components, survives an additive member
+    and is kept explicit as the mechanism's bound rather than sold as coverage.</p>
+
+    <p>The check binds to the moment an exact-value assertion is added, edited, or
+    pinned &mdash; the staging moment the naming checks bind to &mdash; and the suite
+    re-runs the same census. <code>tests/test_snapshot_assertion_shape.py</code>
+    asserts the tallies as numbers, that every specimen passes its positive control,
+    that exactly three of the four recorded instances flag with the literal-membership
+    specimen as the miss, that the object-substitution instance flags, that the four
+    carve-outs survive both before and after, and that the command runs standalone and
+    names its moment.</p>
+
+    <p><strong>Measure:</strong> <code>pytest tests/test_snapshot_assertion_shape.py</code>
+    at this worktree &mdash; 6 passed, 0 failed; the census command itself exits 0 with
+    the tallies above.</p>
   </section>
 </main>
 </body>
