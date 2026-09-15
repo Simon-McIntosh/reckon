@@ -403,18 +403,27 @@ def test_a_declared_wait_status_parses_unchanged() -> None:
 @pytest.mark.parametrize(
     "written",
     [
-        "status: complete\n",
-        "- status: complete\n",
-        "* status: complete\n",
-        "**status:** `complete`\n",
-        "  status: complete\n",
-        "- **status:** `complete`\n",
+        "- **status**: complete",
+        "**status**: complete",
+        "- **status:** complete",
+        "**status:** `complete`",
+        "- status: complete",
+        "* status: complete",
+        "  status: complete",
+        "status: complete",
     ],
 )
-def test_status_key_is_read_through_markdown_decorations(written) -> None:
+def test_status_key_is_read_through_markdown_decorations(written: str) -> None:
     fields = reports.parse_manifest(written)
 
     assert fields["status"] == "complete"
+
+
+def test_done_remains_an_unknown_status_and_the_refusal_names_it() -> None:
+    with pytest.raises(reports.ManifestParseError) as exc:
+        reports.parse_manifest("status: done")
+
+    assert "'done'" in str(exc.value)
 
 
 def test_the_unsubstituted_template_is_left_to_the_classifier() -> None:

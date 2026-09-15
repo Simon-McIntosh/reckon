@@ -121,7 +121,7 @@ _MANIFEST_KEY_ON_LINE_RE = re.compile(
 )
 _MARKDOWN_MANIFEST_FIELD_RE = re.compile(
     rf"^\s*(?:[-*]\s+)?(?:\*\*)?"
-    rf"(?P<key>{_MANIFEST_KEY_ALTERNATION})\s*:"
+    rf"(?P<key>{_MANIFEST_KEY_ALTERNATION})(?:\*\*)?\s*:"
     rf"(?:\*\*)?\s*(?P<value>.*)$",
     re.IGNORECASE,
 )
