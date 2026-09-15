@@ -203,6 +203,59 @@ def test_a_json_array_is_not_a_manifest() -> None:
         reports.parse_manifest("[1, 2, 3]")
 
 
+# A markdown-heading layout: status and commits sit under headings rather than
+# at column 0, so the tolerant ``key: value`` reader finds nothing. This is the
+# shape that once returned the normalised mapping with eleven keys and no
+# status, and the classifier read that partial mapping as a dead worker.
+_MARKDOWN_HEADING_MANIFEST = """\
+# Delivered manifest
+
+## status
+
+complete
+
+## commits
+
+- 9160ae5026055533316a35f467c8c692fe5a028e
+"""
+
+
+def test_a_heading_manifest_raises_rather_than_half_parsing() -> None:
+    with pytest.raises(reports.ManifestParseError) as exc:
+        reports.parse_manifest(_MARKDOWN_HEADING_MANIFEST)
+
+    # The refusal names the expected format and the field that could not be
+    # determined; it never falls back to the partial mapping with no status.
+    message = str(exc.value)
+    assert "key: value" in message
+    assert "JSON object" in message
+    assert "status" in message
+
+
+def test_the_heading_refusal_names_the_path_when_one_is_given() -> None:
+    with pytest.raises(reports.ManifestParseError) as exc:
+        reports.parse_manifest(_MARKDOWN_HEADING_MANIFEST, path="/runs/x/manifest.md")
+    assert "/runs/x/manifest.md" in str(exc.value)
+
+
+def test_a_blank_body_is_still_read_not_refused() -> None:
+    # The refusal is about content the reader cannot judge; a blank body was
+    # always read as no delivery, and that reading is unchanged.
+    fields = reports.parse_manifest("   \n\n  ")
+
+    assert fields.get("status") is None
+    assert fields["commits"] == []
+
+
+def test_a_body_with_fields_but_no_status_stays_tolerant() -> None:
+    # The reader still keeps a partial text mapping that did yield fields — a
+    # body with commits but no status line is read around, not refused. Only a
+    # body from which no field at all could be read raises.
+    fields = reports.parse_manifest("commits: abc123, def456\n")
+
+    assert fields["commits"] == ["abc123", "def456"]
+
+
 def test_the_refusal_is_a_crew_error_and_a_value_error() -> None:
     """Both catch surfaces keep working: classification and the promotion guards."""
     assert issubclass(reports.ManifestParseError, CrewError)

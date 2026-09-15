@@ -1618,10 +1618,12 @@ def classify_pointer(
             f"the manifest at {manifest} is present but could not be read: "
             f"{manifest_error}"
         )
+        # The named object is the manifest: the file is what needs repair, and
+        # the abandoned instruction (which points at the launch log and offers
+        # redispatch) must never read as the remedy for a file that exists.
         action = (
-            f"read launch log {record.get('stderr_path')}; the manifest at "
-            f"{manifest} cannot be read — repair or replace it before judging "
-            "the run"
+            f"the manifest at {manifest} cannot be read — repair or replace "
+            "it before judging the run"
         )
     elif manifest_status in NON_TERMINAL_MANIFEST_STATUSES:
         # A worker-reported working status is evidence of life, not death. What
