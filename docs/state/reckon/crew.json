@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T17:42:38",
+  "updated": "2026-09-15T17:49:42",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -140263,6 +140263,210 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T123452199486-the-merge-gate-check-has-a-caller",
+        "plan": "execution-orchestration-hardening",
+        "section": "\u00a74",
+        "node": "the-merge-gate-check-has-a-caller",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 806,
+                "cached_input_tokens": 261203,
+                "input_tokens": 262011,
+                "output_tokens": 1464,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 263475,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "f0d4bf08-978e-48fd-803d-0d5f1cdbb55a",
+            "session_id": "ship-s17-20260915"
+          },
+          "done_when": "SETTLE THE DESIGN FIRST AND SAY WHY IN THE MANIFEST: complete() runs BEFORE the coordinator merges, so the integrated revision does not exist yet and complete() is the wrong moment. Choose either a distinct crew verb the coordinator runs after merging, or an extension to complete taking the integrated revision and invoked a second time. Name the choice and the reason; do not let it be settled by whichever file was easiest to edit. THEN: (a) a coordinator re-runs one run's gate at a merged head through a CLI verb \u2014 a surface a caller reaches, not a Python import \u2014 and the resulting finding is RECORDED against the run, not only printed; (b) demonstrate it twice, once where the re-run produces a finding and once where it does not, stating both verdicts; (c) run the node's own check against itself: grep the shipped tree for the caller and require a hit OUTSIDE tests/ \u2014 this node exists because the previous one landed the mechanism with only test call sites, and a green gate with no production caller is the exact failure being repaired. Gate: PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_promotion.py tests/test_crew_help_names_its_state.py tests/test_removed_flag_migration.py \u2014 judged as NO NEW failures against the same command run at the base revision BEFORE any edit; record both counts and both failure-id lists. A new crew verb is enumerated by test_every_crew_verb_help_names_its_state_or_condition, so its help text must name the state or condition it acts on, and every refusal message must name a reachable state-specific verb. tests/test_removed_flag_migration.py is RUN but NOT in your write scope: if it fails, report it as a blocker with the failure text rather than editing it. REFUTING CONDITION: take the base measurement first; if a production caller already exists, stop and say so rather than adding a second.",
+          "estimated_hours": 1.5,
+          "goal": "Give rerun_gate_at_integrated_revision a caller a coordinator can reach, so a gate is actually re-run at a merged head instead of only in tests.",
+          "id": "the-merge-gate-check-has-a-caller",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T12:34:52Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 2,
+            "binding_observed": false,
+            "detail": "",
+            "headroom": 13,
+            "mean_context": 41395,
+            "observed_at": "2026-09-15T12:34:50Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 120
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T123452199486-the-merge-gate-check-has-a-caller/manifest.md",
+          "plan": "execution-orchestration-hardening",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a74",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/cli.py",
+            "reckon/crew.py",
+            "reckon/crew/promotion.py",
+            "tests/test_crew_promotion.py",
+            "tests/test_crew_help_names_its_state.py",
+            "docs/evidence/archive/execution-orchestration-hardening-landed.html",
+            "docs/plans/execution-orchestration-hardening.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-admission",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T12:35:20Z",
+        "completed_at": "2026-09-15T15:45:23.860Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 11293,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 11403,
+        "stalled": true,
+        "time_budget": "45m",
+        "base_sha": "837c8a0ce9bfa587fa68a2330f1b2007a45d49e6",
+        "commits": [
+          "ab19ab3797ff331fdafdfbaac268e215e1088c4f",
+          "fd0c4b0ba7fa311d48a05671b03b86a319f96d6e"
+        ],
+        "changed_lines": {
+          "added": 330,
+          "removed": 7,
+          "files": 7
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_promotion.py tests/test_crew_help_names_its_state.py tests/test_removed_flag_migration.py",
+          "exit_status": 1,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/f0d4bf08-978e-48fd-803d-0d5f1cdbb55a/scratchpad/caller_gate.log",
+          "log_digest": "b68b53dc78061e3cc2c08d3c91a9f8bb80c6858dbca8545f59ffa985f7f51340"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T123452199486-the-merge-gate-check-has-a-caller/manifest.md",
+        "scope_changed": false,
+        "session_id": "65ec16d1-87fc-4662-a20b-2fd6599e4c05",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 11791219,
+            "input_tokens_cumulative": 14759280,
+            "output_tokens": 118378,
+            "output_tokens_cumulative": 157503,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T15:45:23.860Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 15089023,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 7098.071,
+          "generated_tokens": 173059,
+          "generation_seconds": 7000.4,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 83.3,
+          "machine_seconds": 97.671,
+          "peak_input_tokens": 166661,
+          "tokens_per_second": 24.72,
+          "wall_tokens_per_second": 24.38
+        },
+        "dispute_count": "unknown",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s17-20260915/the-merge-gate-check-has-a-caller",
+          "session_id": "65ec16d1-87fc-4662-a20b-2fd6599e4c05",
+          "session_source": "pointer",
+          "retained_at": "2026-09-15T15:45:23.860Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 37.0,
+        "orientation_input_tokens": 11066246.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -140491,6 +140695,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1546
+    "_version": 1547
   }
 }
