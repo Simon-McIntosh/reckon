@@ -299,6 +299,41 @@
     pre-existing lanes-view pair this node reproduces and does not own. Zero added
     failures; the two added tests are this node's own.</p>
   </section>
+
+  <section id="every-dialect-records-its-position">
+    <h2>Every dialect records the position it read</h2>
+    <p>Landed 2026-09-15, commit <code>b3977b3a</code>. The codex dialect never
+    read <code>rate_limit_event</code>, so a stream that reported its quota
+    position persisted none of it &mdash; the mechanism was not missing but
+    wired for one dialect. The claude parser for reported utilisation and reset
+    time is extracted into a shared <code>budget_from_rate_limit_info</code>,
+    and the codex <code>observe</code> loop folds <code>rate_limit_event</code>
+    through it, keeping the reading across <code>turn.completed</code> by
+    attaching the turn's tokens rather than replacing the block with a
+    tokens-only one. Whatever a stream names itself, a reading it carries is
+    now recorded.</p>
+    <p><strong>Same shape, asserted against a claude block, not against
+    literals.</strong> The codex-dialect test feeds a stream carrying the same
+    <code>rate_limit_info</code> as a recorded claude stream and asserts the
+    budget block's reported position field for field against a claude-produced
+    block from that fixture &mdash; <code>utilisation_pct</code>,
+    <code>rate_limit_type</code> and <code>resets_at</code> among them &mdash; so
+    a future parser change cannot drift one dialect from the other without
+    tripping the gate. A stream carrying no reading still yields headroom
+    unknown with <code>utilisation_pct</code> None, so absence stays absence.</p>
+    <p><strong>Nothing was invented, and the clive lane was left to its shared
+    dialect.</strong> Measured over the stream domain: 0 of 3057 codex-vocab
+    streams carry <code>rate_limit_event</code> today, and the local lane's
+    streams carry none either &mdash; so those dialects&rsquo; empty columns are
+    the reading not arriving, not a dropped read. The port wires the input
+    domain, and the clive lane serves through the claude dialect, so its
+    absence is the shared no-reading case asserted at the dialect rather than
+    manufactured per backend.</p>
+    <p><strong>Measure:</strong> two tests added, one same-shape and one
+    absence, over the no-reading stream&#8217;s own assertions. 33 passed / 0
+    failed at head against 31 passed / 0 failed at base, the two added being
+    this node's own, zero added failures.</p>
+  </section>
 </main>
 </body>
 </html>

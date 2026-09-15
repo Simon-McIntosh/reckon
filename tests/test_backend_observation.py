@@ -302,6 +302,9 @@ def test_a_stream_with_no_rate_limit_signal_stays_unknown():
     budget = observe("codex-turn.jsonl", CODEX).budget
 
     assert budget["headroom"] == "unknown"
+    assert budget["utilisation_pct"] is None
+    assert budget["rate_limit_type"] is None
+    assert budget["resets_at"] is None
     assert _backends.budget_exhausted(budget) is None
 
 
@@ -405,6 +408,76 @@ def test_an_event_with_no_unified_windows_reports_unknown_headroom():
 
     assert block["headroom"] == "unknown"
     assert block["utilisation_pct"] is None
+
+
+def _codex_stream_with_reading(info: dict) -> object:
+    """A codex-vocab stream that carries a quota reading, in the same event shape."""
+    lines = [
+        {"type": "thread.started", "thread_id": "thr-codex"},
+        {"type": "rate_limit_event", "rate_limit_info": info},
+        {
+            "type": "turn.completed",
+            "usage": {"input_tokens": 120, "output_tokens": 40},
+        },
+    ]
+    return _backends.observe_stream(
+        backend_name="probe",
+        backend=CODEX,
+        lines=[json.dumps(line) for line in lines],
+    )
+
+
+def test_a_codex_stream_that_reports_a_position_records_it_in_the_claude_shape():
+    """A codex stream's quota reading lands in the same shape claude produces.
+
+    The property ranges over the stream's events, not over the configured
+    backend inventory: whatever a stream names itself, a reading it carries is
+    recorded. The reference block is produced by the claude dialect from a
+    recorded stream, so the comparison is one dialect's fold against another's
+    rather than against literals a future parser change would silently drift
+    from. The completed turn's tokens attach to the reading; they never replace
+    it, or the position would vanish the moment the turn ended.
+    """
+    info = _claude_rate_limit_info("claude-worked-turn.jsonl")
+    reference = _backends.dialect_for(CLAUDE)._budget(info)
+    position_keys = [
+        "headroom",
+        "utilisation_pct",
+        "rate_limit_type",
+        "rate_limit_period_minutes",
+        "resets_at",
+        "threshold_status",
+        "surpassed_threshold",
+        "detail",
+    ]
+
+    observation = _codex_stream_with_reading(info)
+
+    budget = observation.budget
+    for key in position_keys:
+        assert budget[key] == reference[key], key
+    assert budget["tokens"] is not None
+    assert budget["headroom"] == "known"
+    assert (
+        observation.as_dict()["budget"]["utilisation_pct"]
+        == reference["utilisation_pct"]
+    )
+
+
+def test_a_stream_with_no_quota_reading_records_no_position():
+    """The shared claude/clive dialect records nothing the stream does not carry.
+
+    This dialect folds a reading only when its stream carries one; absent that
+    event the run stays at headroom unknown. Feed any backend this dialect
+    serves — the claude lane or the local harness that shares its parser — and
+    absence stays absence.
+    """
+    budget = observe("claude-failed-turn.jsonl", CLAUDE).budget
+
+    assert budget["headroom"] == "unknown"
+    assert budget["utilisation_pct"] is None
+    assert budget["rate_limit_type"] is None
+    assert budget["resets_at"] is None
 
 
 # ── The on-disk cache fallback is rendered beside its fetch age ─────────────
