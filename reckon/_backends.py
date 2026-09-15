@@ -293,6 +293,26 @@ def _percent(part: Any, whole: Any) -> float | None:
     return round(100.0 * float(part) / float(whole), 1)
 
 
+def _resolved_window(
+    announced: int | None, configured: int | None
+) -> tuple[int | None, str]:
+    """Resolve the window a utilisation is divided by, and its provenance.
+
+    The configured lane window is the authority that enforces a ceiling, so it
+    wins outright when present — the stream's own declared window is never
+    preferred on a conflict and the two are never averaged. Absence of the
+    configured figure defers to the stream's declared window, which is the
+    only other figure a reader is told the run was measured against; absence of
+    both resolves to no window at all, so the utilisation is unknown rather
+    than divided by any constant.
+    """
+    if configured is not None:
+        return configured, "configured"
+    if announced is not None:
+        return announced, "announced"
+    return None, "absent"
+
+
 def throughput_block(
     *,
     generated_tokens: int | None,
@@ -733,6 +753,7 @@ class Dialect:
         *,
         elapsed_seconds: float | None = None,
         backend_name: str | None = None,
+        usable_input_window: int | None = None,
     ) -> Observation:
         """Fold a stream into one observation.
 
@@ -742,6 +763,9 @@ class Dialect:
         the configured name of the backend the stream came from; only the
         claude-shaped dialect needs it, because one wire shape has to mean
         different things on a metered lane and an unmetered one.
+        ``usable_input_window`` is the configured lane window that enforces a
+        ceiling; the claude-shaped dialect divides its utilisation by that
+        authority when one is declared.
         """
         raise NotImplementedError
 
@@ -875,7 +899,11 @@ class _CodexDialect(Dialect):
         *,
         elapsed_seconds: float | None = None,
         backend_name: str | None = None,
+        usable_input_window: int | None = None,
     ) -> Observation:
+        # This stream reports no context window to divide a utilisation by, so
+        # the supplied configured window is accepted and unused.
+        del usable_input_window
         obs = Observation(backend=self.name, budget=unknown_budget(""))
         message: str | None = None
         usage: dict[str, int | float] = {}
@@ -1041,6 +1069,12 @@ class _CodexDialect(Dialect):
         compatibility fields still describe whichever window is furthest
         through. The per-bucket map keys on identifiers this module must not
         record.
+
+        ``usedPercent`` is a percentage on its own scale, so a value below one
+        is a ratio wearing a percentage's name: recorded verbatim it reads as a
+        plausible low utilisation, which is the same quiet failure this module
+        refuses everywhere else. Such an answer is rejected outright rather than
+        half-recorded.
         """
         result = response.get("result")
         snapshot = result.get("rateLimits") if isinstance(result, Mapping) else None
@@ -1055,6 +1089,10 @@ class _CodexDialect(Dialect):
         ]
         if not windows:
             return unknown_budget("account limits reported no metered window")
+        if any(0.0 < float(window["usedPercent"]) < 1.0 for _, window in windows):
+            return unknown_budget(
+                "rate-limit answer carried a ratio where a percentage is expected"
+            )
         window_type, binding = max(
             windows, key=lambda item: float(item[1]["usedPercent"])
         )
@@ -1142,6 +1180,7 @@ class _ClaudeDialect(Dialect):
         *,
         elapsed_seconds: float | None = None,
         backend_name: str | None = None,
+        usable_input_window: int | None = None,
     ) -> Observation:
         obs = Observation(backend=self.name, budget=unknown_budget(""))
         message: str | None = None
@@ -1188,7 +1227,9 @@ class _ClaudeDialect(Dialect):
                     refused = refusal_budget(obs.detail)
                     if refused is not None:
                         budget = refused
-                throughput = self._throughput(event, peak_input, elapsed_seconds)
+                throughput = self._throughput(
+                    event, peak_input, elapsed_seconds, usable_input_window
+                )
             if obs.session_id is None:
                 # Every event of this stream carries the session id, including
                 # the hook events a host configuration may emit before init.
@@ -1229,6 +1270,7 @@ class _ClaudeDialect(Dialect):
         result: Mapping[str, Any],
         peak_input: int,
         elapsed_seconds: float | None,
+        usable_input_window: int | None = None,
     ) -> dict[str, Any]:
         """Rate a finished run from the spans and totals its result carries.
 
@@ -1239,6 +1281,12 @@ class _ClaudeDialect(Dialect):
         the largest single prompt the run sent, which is the figure a context
         window is actually spent against; the cumulative totals on the result are
         the sum over every request and would read far past any window.
+
+        The window the utilisation is divided by is resolved by
+        :func:`_resolved_window`: the configured lane window pins the
+        denominator when one is declared, so the reading names the authority
+        that enforces the ceiling rather than whatever window the client
+        happened to announce.
         """
         elapsed = _seconds(result.get("duration_ms"))
         if elapsed is None:
@@ -1276,7 +1324,10 @@ class _ClaudeDialect(Dialect):
             usable = [value for value in windows if value]
             # One usable window even when several models ran: the run is held by
             # the smallest, since that is the one a shared prompt overflows first.
-            window = int(min(usable)) if usable else None
+            announced = int(min(usable)) if usable else None
+        else:
+            announced = None
+        window, window_basis = _resolved_window(announced, usable_input_window)
         usage = result.get("usage")
         if isinstance(usage, Mapping):
             if generated is None:
@@ -1294,6 +1345,16 @@ class _ClaudeDialect(Dialect):
                 cumulative_cached_input = _sum_tokens(
                     usage, ("cache_read_input_tokens",)
                 )
+        span = (
+            "generation and wall clock reported separately by the backend"
+            if generation is not None
+            else "wall clock only; the backend reported no inference span"
+        )
+        if window is not None:
+            basis = "configured lane" if window_basis == "configured" else "stream"
+            window_clause = f"; utilisation divided by the {basis} window {window}"
+        else:
+            window_clause = "; no window resolved, so utilisation is unknown"
         return throughput_block(
             generated_tokens=generated,
             generation_seconds=generation,
@@ -1302,11 +1363,7 @@ class _ClaudeDialect(Dialect):
             cumulative_input_tokens=cumulative_input,
             cumulative_cached_input_tokens=cumulative_cached_input,
             input_budget_tokens=window,
-            detail=(
-                "generation and wall clock reported separately by the backend"
-                if generation is not None
-                else "wall clock only; the backend reported no inference span"
-            ),
+            detail=span + window_clause,
         )
 
     def _budget(self, info: Any) -> dict[str, Any]:
@@ -1890,7 +1947,10 @@ def observe_stream(
     dialect = dialect_for(backend)
     events, malformed = parse_events(lines)
     obs = dialect.observe(
-        events, elapsed_seconds=elapsed_seconds, backend_name=backend_name
+        events,
+        elapsed_seconds=elapsed_seconds,
+        backend_name=backend_name,
+        usable_input_window=backend.get("usable_input_window"),
     )
     obs.backend = backend_name
     obs.malformed_lines = malformed
