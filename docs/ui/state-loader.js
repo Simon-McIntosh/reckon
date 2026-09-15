@@ -9,6 +9,26 @@
 // window.STATE_READY is a Promise. Templates wait on it before rendering.
 // The same assembly remains callable so an open page can revalidate its state.
 
+// ── Arrival tracking ─────────────────────────────────────────────────────
+// Rows that arrive after a page has rendered are held as pending instead of
+// being inserted, so an open list is never re-sorted underneath the reader.
+// The rendered snapshot lives at module scope so it survives revalidation:
+// the first load adopts every row, a later change event holds new keys as
+// pending, and only an explicit reveal moves keys into the snapshot.
+let arrivalRendered = null; // { keys:Set<string>, versions:Map<key,version> }
+
+const arrivalVersionOf = (inv) =>
+  String((inv && (inv.edited || inv.last || inv.version)) || "");
+const arrivalKeyOf = (inv) => (inv && (inv.nav_key || inv.slug)) || "";
+const arrivalCountsOf = (rows) => {
+  const counts = {};
+  for (const inv of rows) {
+    const kind = (inv && inv.type) || "plan";
+    counts[kind] = (counts[kind] || 0) + 1;
+  }
+  return counts;
+};
+
 window.revalidateProjectState = async function () {
   const PROJECT = (document.querySelector('meta[name="docs-project"]')?.content) ||
                   window.location.pathname.replace(/^\/+/, "").split("/")[0] ||
@@ -210,6 +230,47 @@ window.revalidateProjectState = async function () {
     )
   );
 
+  // ── Arrival diff ───────────────────────────────────────────────────────
+  // Rows new to the rendered snapshot are held as pending rather than being
+  // inserted; rows whose version moved update in place. The snapshot only
+  // advances when the reader reveals a held row, so an arriving payload can
+  // never re-sort or re-scroll a list that is already open.
+  if (arrivalRendered === null) {
+    arrivalRendered = {
+      keys: new Set(mergedInventory.map(arrivalKeyOf)),
+      versions: new Map(mergedInventory.map(inv => [arrivalKeyOf(inv), arrivalVersionOf(inv)])),
+    };
+  }
+  const pendingRows = [];
+  const updateRows = [];
+  const seenKeys = new Set();
+  for (const inv of mergedInventory) {
+    const key = arrivalKeyOf(inv);
+    if (!key) continue;
+    seenKeys.add(key);
+    if (arrivalRendered.keys.has(key)) {
+      if (arrivalRendered.versions.get(key) !== arrivalVersionOf(inv)) {
+        arrivalRendered.versions.set(key, arrivalVersionOf(inv));
+        updateRows.push(inv);
+      }
+    } else {
+      pendingRows.push(inv);
+    }
+  }
+  for (const key of arrivalRendered.keys) {
+    if (!seenKeys.has(key)) {
+      arrivalRendered.keys.delete(key);
+      arrivalRendered.versions.delete(key);
+    }
+  }
+  const arrival = {
+    pending: pendingRows,
+    updates: updateRows,
+    byKind: arrivalCountsOf(pendingRows),
+    total: pendingRows.length,
+    receipt: pendingRows.length ? `${pendingRows.length} new` : "live",
+  };
+
   // ── 5b. Auto-augment sprint items from inventory.sprint membership ──────
   // Plans with sprint:"X" in their inventory entry appear in that sprint
   // automatically — no explicit sprint.items[] wiring needed.
@@ -322,6 +383,7 @@ window.revalidateProjectState = async function () {
       : null,
     attachment_relations: attachmentRelations,
     plans,
+    arrival,
   };
   window.STATE_ERROR = null;
   return window.STATE;
@@ -339,4 +401,32 @@ window.watchProjectStateChanges = function (onChange) {
   const changes = new EventSource(`/_changes/${project}`);
   changes.addEventListener("change", () => onChange());
   return changes;
+};
+
+// Reveal the held rows for one kind (or all when kind is null/undefined) and
+// adopt them into the rendered snapshot so a later change event does not
+// re-flag the same rows as new again.
+window.revealArrivals = function (kind) {
+  const current = window.STATE && window.STATE.arrival;
+  if (!current || !Array.isArray(current.pending)) return [];
+  const matches = inv => kind === null || kind === undefined
+    || (inv && (inv.type || "plan")) === kind;
+  const revealed = current.pending.filter(matches);
+  const kept = current.pending.filter(inv => !matches(inv));
+  if (arrivalRendered) {
+    for (const inv of revealed) {
+      const key = arrivalKeyOf(inv);
+      if (!key) continue;
+      arrivalRendered.keys.add(key);
+      arrivalRendered.versions.set(key, arrivalVersionOf(inv));
+    }
+  }
+  window.STATE.arrival = {
+    ...current,
+    pending: kept,
+    byKind: arrivalCountsOf(kept),
+    total: kept.length,
+    receipt: kept.length ? `${kept.length} new` : "live",
+  };
+  return revealed;
 };
