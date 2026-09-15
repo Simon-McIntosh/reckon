@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="The capture gate reads indexes and file stats, not PNG bytes.">
   <meta name="plan-evidence-for" content="a-capture-is-validated-by-its-index">
   <meta name="plan-verifies" content="a-capture-is-validated-by-its-index#s2">
-  <meta name="plan-commits" content="1720fe8">
+  <meta name="plan-commits" content="1720fe8,014e6bfc">
   <meta name="plan-artifacts" content="tests/test_spa_owed_captures.py,docs/figures/artifact-feeds-and-reader/after/capture-index.json">
   <meta name="plan-recorded-at" content="2026-09-15">
   <meta name="plan-verdict" content="passed">
@@ -45,9 +45,33 @@
       <p>The guard is demonstrated to refuse both relevant text failures: an index naming an absent file raises <code>capture file missing</code>, while an indexed capture with <code>rowCount</code> equal to zero is rejected on that population field.</p>
     </section>
 
+    <section id="s3">
+      <h2>&sect;3 &mdash; The eight captures already produced</h2>
+      <p>The artifact-feeds-and-reader roster entry is load bearing, demonstrated by refusal
+      rather than assumed. The committed index and its eight images are copied whole into a
+      temporary tree; the captures list is then emptied. The identical copy with the list intact
+      passes, and the emptied copy is refused with <code>capture index holds no captures</code>.
+      The gate reads the entry's <strong>8</strong> captures from a roster of <strong>4</strong>
+      plans and opens 0 image bytes.</p>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Rostered plans</td><td>4</td></tr>
+          <tr><td>Captures this entry reads</td><td>8</td></tr>
+          <tr><td>Image bytes opened</td><td>0</td></tr>
+          <tr><td>Intact index copy</td><td>accepted (8 captures)</td></tr>
+          <tr><td>Emptied index copy</td><td>refused: <code>capture index holds no captures</code></td></tr>
+        </tbody>
+      </table>
+      <p>The refusal lives in
+      <code>test_plan_capture_gate_refuses_an_emptied_own_index</code>, which copies the owned
+      directory tree and changes only the captures list, so the failure fires on the emptiness
+      and nothing else.</p>
+    </section>
+
     <section id="verification">
       <h2>Verification</h2>
-      <p><code>pytest tests/test_spa_owed_captures.py -q</code> passed: 6 passed, exit 0. The added image-byte sentinel makes an accidental future <code>Path.read_bytes</code> call fail visibly rather than treating gate success as proof of lane independence.</p>
+      <p><code>pytest tests/test_spa_owed_captures.py -q</code> passed: 7 passed, exit 0. The added image-byte sentinel makes an accidental future <code>Path.read_bytes</code> call fail visibly rather than treating gate success as proof of lane independence, and <code>test_plan_capture_gate_refuses_an_emptied_own_index</code> proves the owned roster entry refuses when its index is emptied.</p>
     </section>
   </main>
 </body>
