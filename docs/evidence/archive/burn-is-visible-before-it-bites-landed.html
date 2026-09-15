@@ -278,6 +278,27 @@
     a dispatch consults. 85 passed / 0 failed at base <code>a736189</code>, 86
     passed / 0 failed at head, zero added failures.</p>
   </section>
+
+  <section id="reader-reads-the-declared-slot">
+    <h2>The declared slot has a reader, one spelling end to end</h2>
+    <p>Landed 2026-09-15, commits <code>53a3932a</code> and <code>5b23d45a</code>.
+    The carried-forward reader gap above is closed: the lanes view reads the same
+    <code>budget_group</code> key the flight schema declares, and the per-lane key and
+    the top-level <code>budget_groups</code> map emit that same spelling, so a reader of
+    the view and a writer of the configuration meet under one name. The discarded
+    <code>quota_pool</code> spelling is gone from <code>reckon/</code> and
+    <code>tests/</code>; grouping is asserted end to end through resolved flight config
+    &mdash; one pool per declared group, an undeclared backend left ungrouped &mdash; and
+    a negative guard pins the dead spelling against ever grouping again: a backend
+    carrying <code>quota_pool</code> stays ungrouped even when its value names a live
+    pool verbatim, so a reader-side alias to the old key fails the guard rather than
+    passing silently.</p>
+    <p><strong>Measure:</strong> the gate ran the same three test files at the base
+    commit and at this worktree in one environment &mdash; 100 passed and two failed at
+    the base, 102 passed and the same two failed here, the two failures being the
+    pre-existing lanes-view pair this node reproduces and does not own. Zero added
+    failures; the two added tests are this node's own.</p>
+  </section>
 </main>
 </body>
 </html>

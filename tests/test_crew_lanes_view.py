@@ -14,6 +14,7 @@ import pytest
 from reckon import _backends, mcp, mcp_views
 from reckon._mcp_tools import CrewArgs
 from reckon.crew.rollout import Unmeasured
+from reckon.flight import resolve
 
 
 @dataclass(frozen=True)
@@ -422,9 +423,9 @@ def test_shared_probe_is_borrowed_where_declared_pools_diverge() -> None:
         ),
     }
     backends = {
-        "sol": {"launch": "cli", "command": "codex", "quota_pool": "codex-main"},
-        "luna": {"launch": "cli", "command": "codex", "quota_pool": "codex-main"},
-        "spark": {"launch": "cli", "command": "codex", "quota_pool": "spark"},
+        "sol": {"launch": "cli", "command": "codex", "budget_group": "codex-main"},
+        "luna": {"launch": "cli", "command": "codex", "budget_group": "codex-main"},
+        "spark": {"launch": "cli", "command": "codex", "budget_group": "spark"},
     }
     probes = 0
 
@@ -456,8 +457,8 @@ def test_backends_declaring_the_same_pool_carry_the_shared_probe_as_their_own() 
         "right-session": _budget_receipt(30, 40),
     }
     backends = {
-        "left": {"launch": "cli", "command": "codex", "quota_pool": "shared-budget"},
-        "right": {"launch": "cli", "command": "codex", "quota_pool": "shared-budget"},
+        "left": {"launch": "cli", "command": "codex", "budget_group": "shared-budget"},
+        "right": {"launch": "cli", "command": "codex", "budget_group": "shared-budget"},
     }
     probes = 0
 
@@ -473,7 +474,7 @@ def test_backends_declaring_the_same_pool_carry_the_shared_probe_as_their_own() 
     assert lanes["left"]["quota_source"] == "probe"
     assert lanes["right"]["quota_source"] == "probe"
     assert {window["source"] for window in lanes["left"]["quota_windows"]} == {"probe"}
-    assert view["quota_pools"] == {"shared-budget": ["left", "right"]}
+    assert view["budget_groups"] == {"shared-budget": ["left", "right"]}
 
 
 def test_identical_reset_schedules_never_group_without_a_declared_pool() -> None:
@@ -484,9 +485,9 @@ def test_identical_reset_schedules_never_group_without_a_declared_pool() -> None
         "terra-session": _budget_receipt(30, 40),
     }
     backends = {
-        "sol": {"launch": "cli", "command": "codex", "quota_pool": "codex-main"},
-        "luna": {"launch": "cli", "command": "codex", "quota_pool": "codex-main"},
-        "spark": {"launch": "cli", "command": "codex", "quota_pool": "spark"},
+        "sol": {"launch": "cli", "command": "codex", "budget_group": "codex-main"},
+        "luna": {"launch": "cli", "command": "codex", "budget_group": "codex-main"},
+        "spark": {"launch": "cli", "command": "codex", "budget_group": "spark"},
         "terra": {"launch": "cli", "command": "codex"},
     }
     view = _compose_budget_view(
@@ -495,7 +496,74 @@ def test_identical_reset_schedules_never_group_without_a_declared_pool() -> None
         probe_reader=lambda _backend, _settings: _budget_probe_block(),
     )
 
-    quota_pools = view["quota_pools"]
-    assert quota_pools == {"codex-main": ["luna", "sol"], "spark": ["spark"]}
-    assert "terra" not in quota_pools["codex-main"]
-    assert "spark" not in quota_pools["codex-main"]
+    budget_groups = view["budget_groups"]
+    assert budget_groups == {"codex-main": ["luna", "sol"], "spark": ["spark"]}
+    assert "terra" not in budget_groups["codex-main"]
+    assert "spark" not in budget_groups["codex-main"]
+
+
+def _write_flight_layer(path: Path, text: str) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
+    return path
+
+
+def test_a_declared_group_in_flight_config_reaches_the_lanes_view(tmp_path) -> None:
+    """The slot a shipped layer declares is the one the lanes view reads: the
+    grouping a reader consults (``crew_lanes_view``) surfaces ``budget_group``
+    straight from resolved flight config, one pool per declared group and an
+    undeclared backend left ungrouped."""
+    shipped = _write_flight_layer(
+        tmp_path / "shipped" / "flight.yaml",
+        "backends:\n"
+        "  alpha:\n"
+        "    launch: cli\n"
+        "    command: probe-cli\n"
+        "    budget_group: pool-a\n"
+        "  beta:\n"
+        "    launch: cli\n"
+        "    command: probe-cli\n"
+        "    budget_group: pool-a\n"
+        "  terra:\n"
+        "    launch: cli\n"
+        "    command: probe-cli\n",
+    )
+    config = resolve(
+        shipped_path=shipped, host_path=tmp_path / "absent" / "flight.yaml"
+    ).config
+
+    view = mcp_views.crew_lanes_view(
+        config,
+        [],
+        probe_reader=lambda _backend, _settings: _budget_probe_block(),
+        composed_at="2030-01-02T03:05:06Z",
+    )
+    lanes = _lanes_by_backend(view)
+
+    assert view["budget_groups"] == {"pool-a": ["alpha", "beta"]}
+    assert lanes["alpha"]["budget_group"] == "pool-a"
+    assert lanes["beta"]["budget_group"] == "pool-a"
+    assert lanes["terra"]["budget_group"] is None
+    assert "terra" not in view["budget_groups"]["pool-a"]
+
+
+def test_dead_spelling_groups_nothing_even_when_the_value_matches() -> None:
+    """``quota_pool`` declares no group: a backend carrying it stays ungrouped
+    even when the value names a live pool verbatim, so the view groups on the
+    schema's one spelling and a reader-side alias to the dead key would break
+    this test rather than pass silently."""
+    backends = {
+        "live": {"launch": "cli", "command": "probe-cli", "budget_group": "pool-a"},
+        "stale": {"launch": "cli", "command": "probe-cli", "quota_pool": "pool-a"},
+    }
+    view = mcp_views.crew_lanes_view(
+        {"backends": backends},
+        [],
+        probe_reader=lambda _backend, _settings: _budget_probe_block(),
+        composed_at="2030-01-02T03:05:06Z",
+    )
+    lanes = _lanes_by_backend(view)
+
+    assert view["budget_groups"] == {"pool-a": ["live"]}
+    assert lanes["live"]["budget_group"] == "pool-a"
+    assert lanes["stale"]["budget_group"] is None

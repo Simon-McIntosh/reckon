@@ -434,30 +434,30 @@ def _probe_describes_receipt(
     return probe_signature is not None and probe_signature == receipt_signature
 
 
-def _declared_quota_pool(settings: Mapping[str, Any]) -> str | None:
-    """Return the declared quota pool naming this backend, or ``None``.
+def _declared_budget_group(settings: Mapping[str, Any]) -> str | None:
+    """Return the declared budget group naming this backend, or ``None``.
 
-    A pool names by configuration the backends that draw on the same account
+    A group names by configuration the backends that draw on the same account
     quota.  Identical probe windows or reset times can never serve this role:
     two backends probed identically prove only that they were probed the same
     way, never that they share a budget.  An unset or empty value leaves the
     backend ungrouped, its singleton membership carrying nothing.
     """
-    value = settings.get("quota_pool")
+    value = settings.get("budget_group")
     if not isinstance(value, str):
         return None
     pool = value.strip()
     return pool or None
 
 
-def _command_pools(
+def _command_groups(
     command: str,
     command_by_backend: Mapping[str, str | None],
-    pool_by_backend: Mapping[str, str | None],
+    group_by_backend: Mapping[str, str | None],
 ) -> set[str | None]:
-    """Declared pools among the backends that all run the same command."""
+    """Declared budget groups among the backends that all run one command."""
     return {
-        pool_by_backend.get(backend_name)
+        group_by_backend.get(backend_name)
         for backend_name, declared in command_by_backend.items()
         if declared == command
     }
@@ -465,26 +465,27 @@ def _command_pools(
 
 def _probe_is_lane_owned(
     command: str,
-    lane_pool: str | None,
+    lane_group: str | None,
     command_by_backend: Mapping[str, str | None],
-    pool_by_backend: Mapping[str, str | None],
+    group_by_backend: Mapping[str, str | None],
 ) -> bool:
     """Whether the lane may carry a command's probe reading as its own.
 
     The account probe is one shared reading wherever the same command runs, so
     carrying it as owned requires every backend that declares that command to
-    declare the same pool as the lane.  If no pool is declared anywhere the
-    old single-account behaviour stands: an undeclared grouping proves nothing
-    about ownership, so no borrowing is asserted against it.  Any divergence in
-    declared pools — an ungrouped sibling beside a pooled lane, or two distinct
-    pools — means the reading belongs to an account this lane is not declared
-    to share, and the figure must not be shown as the lane's own.
+    declare the same budget group as the lane.  Where no group is declared
+    anywhere the single-account default stands: an undeclared grouping proves
+    nothing about ownership, so no borrowing is asserted against it.
+    Any divergence in declared groups — an ungrouped sibling beside a grouped
+    lane, or two distinct groups — means the reading belongs to an account
+    this lane is not declared to share, and the figure must not be shown as
+    the lane's own.
     """
-    pools = _command_pools(command, command_by_backend, pool_by_backend)
-    if len(pools) == 1:
-        single = next(iter(pools))
-        return single is None or single == lane_pool
-    return lane_pool is not None and pools == {lane_pool}
+    groups = _command_groups(command, command_by_backend, group_by_backend)
+    if len(groups) == 1:
+        single = next(iter(groups))
+        return single is None or single == lane_group
+    return lane_group is not None and groups == {lane_group}
 
 
 def crew_lanes_view(
@@ -498,12 +499,13 @@ def crew_lanes_view(
 ) -> dict[str, Any]:
     """Compose endpoint availability without selecting or ranking a backend.
 
-    Each lane carries its declared ``quota_pool``.  A probe reading is adopted
-    as the lane's own only when every backend declaring that probe's command
-    declares the same pool; otherwise the lane keeps its own receipt reading,
-    and a lane with no reading of its own renders ``borrowed`` rather than
-    carrying the shared figure.  The top-level ``quota_pools`` map groups
-    backends by the declared key alone, never by shared window or reset times.
+    Each lane carries its declared ``budget_group``.  A probe reading is
+    adopted as the lane's own only when every backend declaring that probe's
+    command declares the same budget group; otherwise the lane keeps its own
+    receipt reading, and a lane with no reading of its own renders ``borrowed``
+    rather than carrying the shared figure.  The top-level ``budget_groups``
+    map groups backends by the declared key alone, never by shared window or
+    reset times.
     """
 
     composition_time = composed_at or datetime.now(UTC).isoformat().replace(
@@ -519,13 +521,13 @@ def crew_lanes_view(
     command_by_backend: dict[str, str | None] = {}
     probe_detail_by_backend: dict[str, str] = {}
     probe_by_command: dict[str, dict[str, Any]] = {}
-    pool_by_backend: dict[str, str | None] = {}
+    group_by_backend: dict[str, str | None] = {}
     for backend, settings_value in sorted(
         configured.items(), key=lambda item: str(item[0])
     ):
         backend_name = str(backend)
         settings = settings_value if isinstance(settings_value, Mapping) else {}
-        pool_by_backend[backend_name] = _declared_quota_pool(settings)
+        group_by_backend[backend_name] = _declared_budget_group(settings)
         if ledger.is_unmetered_backend(backend_name):
             continue
         command, detail = _declared_probe_command(settings)
@@ -540,10 +542,10 @@ def crew_lanes_view(
                 observed_at=composition_time,
                 cache_seconds=cache_seconds,
             )
-    quota_pools: dict[str, list[str]] = {}
-    for backend_name, pool in sorted(pool_by_backend.items()):
-        if pool is not None:
-            quota_pools.setdefault(pool, []).append(backend_name)
+    budget_groups: dict[str, list[str]] = {}
+    for backend_name, group in sorted(group_by_backend.items()):
+        if group is not None:
+            budget_groups.setdefault(group, []).append(backend_name)
     lanes: list[dict[str, Any]] = []
 
     for backend, settings_value in sorted(
@@ -558,7 +560,7 @@ def crew_lanes_view(
                     "backend": backend_name,
                     "alias": settings.get("alias"),
                     "model": settings.get("model"),
-                    "quota_pool": pool_by_backend.get(backend_name),
+                    "budget_group": group_by_backend.get(backend_name),
                     "receipt_state": "unused",
                     "observed_at": "unmeasured",
                     "effective_context_window": "unmeasured",
@@ -585,7 +587,7 @@ def crew_lanes_view(
                     "backend": backend_name,
                     "alias": settings.get("alias"),
                     "model": settings.get("model"),
-                    "quota_pool": pool_by_backend.get(backend_name),
+                    "budget_group": group_by_backend.get(backend_name),
                     "receipt_state": "unmetered",
                     "observed_at": UNMEASURED,
                     "effective_context_window": UNMEASURED,
@@ -630,7 +632,7 @@ def crew_lanes_view(
         quota_source = "receipt"
         command = command_by_backend.get(backend_name)
         probe = probe_by_command.get(command) if command is not None else None
-        lane_pool = pool_by_backend.get(backend_name)
+        lane_group = group_by_backend.get(backend_name)
         borrowed = False
         if probe is None:
             probe_status = "not_declared"
@@ -644,7 +646,7 @@ def crew_lanes_view(
             probe_cached = bool(probe["cached"])
         elif _probe_describes_receipt(probe["quota_windows"], readings):
             if _probe_is_lane_owned(
-                command, lane_pool, command_by_backend, pool_by_backend
+                command, lane_group, command_by_backend, group_by_backend
             ):
                 probe_status = "answered"
                 probe_detail = str(probe["detail"])
@@ -668,7 +670,7 @@ def crew_lanes_view(
             probe_cached = bool(probe["cached"])
             if not (isinstance(readings, Mapping) and readings) and not (
                 _probe_is_lane_owned(
-                    command, lane_pool, command_by_backend, pool_by_backend
+                    command, lane_group, command_by_backend, group_by_backend
                 )
             ):
                 # The only figure this lane could show is the shared account
@@ -699,7 +701,7 @@ def crew_lanes_view(
             "backend": backend_name,
             "alias": settings.get("alias"),
             "model": settings.get("model"),
-            "quota_pool": lane_pool,
+            "budget_group": lane_group,
             "receipt_state": "unreadable" if unreadable else "readable",
             "observed_at": selected_observed_at or UNMEASURED,
             "effective_context_window": context_value,
@@ -739,7 +741,7 @@ def crew_lanes_view(
     return {
         "composed_at": composition_time,
         "lanes": lanes,
-        "quota_pools": quota_pools,
+        "budget_groups": budget_groups,
     }
 
 
