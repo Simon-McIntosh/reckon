@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from reckon.serve import discover_plans
-from tests.spa_browser_harness import installed_browser_or_skip
+from tests.spa_browser_harness import BrowserProbeError, installed_browser_or_skip
 from tests.spa_containment_harness import (
     OFFSCREEN_MARKER,
     VIEWPORT_WIDTHS,
@@ -22,6 +22,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def _composed_state() -> dict[str, object]:
+    """Compose the fixture state the containment probes bootstrap onto."""
+
     state = discover_plans(ROOT / "docs", "reckon", ROOT / "docs" / "state")
     inventory = state.get("inventory", [])
     active = [
@@ -124,3 +126,31 @@ def test_every_routable_surface_is_horizontally_contained(tmp_path: Path) -> Non
         assert_horizontally_contained(real_violations)
     except AssertionError as error:
         raise AssertionError(f"{error}; full verdict: {destination}") from error
+
+
+def test_stale_readiness_selector_is_reported_loudly(tmp_path: Path) -> None:
+    """A declared readiness selector matching nothing fails loud, not by timeout.
+
+    The plans-surface selector once named classes a component rename stopped
+    rendering, and the walk spent twelve seconds waiting on it before measuring
+    anything. Re-declare that stale selector and require the loud fast failure
+    instead.
+    """
+
+    browser = installed_browser_or_skip()
+    state = _composed_state()
+    surfaces = [
+        {**surface, "ready": ".r-list .r-row"}
+        if surface["name"] == "plans"
+        else surface
+        for surface in routable_surfaces(state)
+    ]
+    with (
+        file_spa_with_bootstrap(tmp_path, browser, state) as spa,
+        pytest.raises(BrowserProbeError, match=r"stale readiness selector") as raised,
+    ):
+        run_containment_probe(spa, state, VIEWPORT_WIDTHS[0], surfaces=surfaces)
+    message = str(raised.value)
+    assert ".r-list .r-row" in message
+    assert "matched nothing in the rendered surface" in message
+    assert "timed out waiting for" not in message
