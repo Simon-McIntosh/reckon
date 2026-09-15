@@ -104,6 +104,44 @@ def test_prompt_names_the_mid_wait_recovery_in_the_same_paragraph_as_the_rule():
     assert LEAVES_A_RECORD in time_fence
 
 
+# ── Wait fields carry literal examples, and a resumed worker is not ─────────
+# ── limited to the wait block                                              ──
+
+WAIT_PROBE_EXAMPLE = '["squeue","-h","-j","1271081"]'
+WAIT_TERMINAL_EXAMPLE = "exit:0"
+CHECKPOINT_KEY = "checkpoint:"
+CHECKPOINT_SCOPE = "not setting status to waiting"
+CHECKPOINT_VS_WAIT_BLOCK = "checkpoint rather than a wait block"
+
+
+def _manifest_line(prompt: str, key: str) -> str:
+    """The manifest instruction line declaring the named key."""
+    for line in prompt.splitlines():
+        if line.strip().startswith(key + ":"):
+            return line.strip()
+    raise AssertionError(f"the composed prompt lacks a `{key}:` line")
+
+
+def test_wait_probe_and_terminal_carry_literal_examples():
+    prompt = _prompt()
+
+    assert WAIT_PROBE_EXAMPLE in _manifest_line(prompt, "wait_probe")
+    assert WAIT_TERMINAL_EXAMPLE in _manifest_line(prompt, "wait_terminal")
+
+
+def test_resumed_worker_has_a_checkpoint_shape_other_than_waiting():
+    prompt = _prompt()
+
+    # A resumed worker whose wait is met is not offered only the wait block: a
+    # checkpoint line in the manifest is scoped to not-waiting, and the time
+    # fence names it so the prose and the block say the same thing.
+    checkpoint_line = _manifest_line(prompt, "checkpoint")
+    assert CHECKPOINT_KEY in checkpoint_line
+    assert CHECKPOINT_SCOPE in checkpoint_line
+    assert CHECKPOINT_VS_WAIT_BLOCK in checkpoint_line
+    assert "checkpoint" in _time_fence(prompt)
+
+
 # ── The rule applies to every role, not only ones that can run commands ────
 
 

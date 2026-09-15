@@ -576,6 +576,15 @@
       existing prompt-composition assertions passing unchanged. Landed under commit
       <code>8417c0f</code>. Full record:
       <a href="/reckon/evidence/archive/crew-observability-truth-landed#manifest-template-matches-the-reader">&#167;12 manifest template landed</a>.</p>
+    <p class="landed-summary">The wait fields now carry literal examples, and a resumed worker has a
+      checkpoint shape outside the wait block. <code>wait_probe</code> points at a concrete
+      shell-free argument vector (<code>[&quot;squeue&quot;,&quot;-h&quot;,&quot;-j&quot;,&quot;1271081&quot;]</code>)
+      and <code>wait_terminal</code> at a concrete exit code (<code>exit:0</code>); the block gained
+      a <code>checkpoint</code> line scoped to not-waiting, and the time fence names the same key,
+      so setting <code>status: waiting</code> is no longer a resumed worker&rsquo;s only checkpoint.
+      Asserted by two cases in <code>tests/test_crew_prompts.py</code> that fail at base and pass at
+      the commit. Landed under commit <code>9c51724b</code>. Full record:
+      <a href="/reckon/evidence/archive/crew-observability-truth-landed#manifest-wait-fields-carry-literal-examples">&#167;12 wait fields landed</a>.</p>
 
     <h2 id="s13">&#167;13 &mdash; A quiet fleet and a working one look identical, because nothing reports a wave</h2>
     <p><strong>Directed by the lead 2026-09-09, after a session spent counting completions by
