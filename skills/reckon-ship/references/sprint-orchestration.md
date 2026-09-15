@@ -416,7 +416,12 @@ WORKTREE AND PARALLEL-SAFETY RULES (binding):
    path restoration.
 3. Stage only explicit assigned paths. Never use git add -A, git add .,
    wildcards, git commit -a, or git commit -am.
-4. Do not edit Reckon plan/index state. Return outcome data to the orchestrator.
+4. Append your landing record to your own section of the plan and your evidence
+   anchor to the cumulative evidence record; both live in this worktree and both
+   go into your final commit. Never mutate the shared project index, sprint
+   state, or a plan other than the one you are landing against. Do not edit the
+   plan-version or plan-modified meta lines: every worker touching them makes
+   every merge conflict there. Return outcome data to the orchestrator.
 5. Do not touch concurrent workers' paths. Request scope changes.
 6. Commit locally with a conventional subject AND a body stating what
    changed and why — a bodiless commit fails the orchestrator's audit. Do
@@ -494,8 +499,14 @@ Each verified node has one landing beat: the orchestrator runs `reckon crew
 complete`, then immediately writes that node to the plan. Do not promote another
 run or merge another commit between those operations. The plan write is
 mandatory, but dispatching an unrelated ready node is outside this freeze and
-may refill a free slot. Workers return outcome data in their manifests and never
-write shared plan or index state.
+may refill a free slot. Workers author their own landing record in the same
+beat, per the contract the prompt embeds verbatim: "Append your landing record
+to your own section of the plan and your evidence anchor to the cumulative
+evidence record; both live in this worktree and both go into your final commit."
+The shared-state ban narrows with it: "Never mutate the shared project index,
+sprint state, or a plan other than the one you are landing against. Do not edit
+the plan-version or plan-modified meta lines: every worker touching them makes
+every merge conflict there." Return outcome data in their manifests.
 
 Immediately after each `reckon crew complete`, the orchestrator:
 

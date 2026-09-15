@@ -937,8 +937,15 @@ For each completed agent:
 7. **In the same landing beat, perform the plan write in §7.** Immediately after
    `reckon crew complete`, and before another promotion or merge, the orchestrator
    writes this node's commit, gate verdict and
-   quantitative measure, artifacts, and new `impl` together. Workers still only
-   return outcome data; they never write shared plan state. Dispatching an
+   quantitative measure, artifacts, and new `impl` together. Workers author
+   their own landing record in the same beat — the prompt embeds the contract
+   verbatim: "Append your landing record to your own section of the plan and
+   your evidence anchor to the cumulative evidence record; both live in this
+   worktree and both go into your final commit." The shared-state ban narrows
+   with it: "Never mutate the shared project index, sprint state, or a plan
+   other than the one you are landing against. Do not edit the plan-version or
+   plan-modified meta lines: every worker touching them makes every merge
+   conflict there." Dispatching an
    unrelated ready node is outside this freeze and may refill a free slot.
 
 **A `blocked` manifest from a provider refusal is not a worker failure and is
