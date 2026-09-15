@@ -2882,3 +2882,98 @@ def test_existing_readers_are_identical_with_the_store_present_and_deleted(
     assert not store_file.exists()
 
     assert snapshot() == with_store
+
+
+def test_the_store_is_created_from_empty_and_counts_its_rows_as_a_number(
+    home, repo
+) -> None:
+    """The expand stage starts from no store and creates it on the first write.
+
+    A fresh config home holds no SQLite database, so the first promotion
+    creates the store from empty rather than migrating anything; after three
+    promotions the store holds exactly three rows — the same count the
+    committed file holds — and the real crew config home is never touched.
+    The count is the number the dual-write stage is later believed on, so it
+    is asserted as a number rather than as presence.
+    """
+    from reckon import run_store
+
+    real_store = _real_store_path()
+    was_present = real_store.exists()
+    store_file = run_store.store_path()
+    assert not store_file.exists()
+
+    for index in range(3):
+        record = ledger.build_record(
+            run_id=f"r-from-empty-{index}",
+            plan="plan-a",
+            gate="passed",
+            member_id="worker-a",
+            completed_at=f"2026-09-09T00:00:0{index}Z",
+        )
+        result = ledger.append_run(PROJECT, record, root=repo)
+        assert result["store"] == {"status": "written"}
+
+    assert store_file.is_file()
+    with run_store.RunStore() as stored:
+        rows = stored.durable_rows(PROJECT)
+    assert len(rows) == 3
+    assert sorted(rows) == ["r-from-empty-0", "r-from-empty-1", "r-from-empty-2"]
+    assert [entry["run_id"] for entry in ledger.runs(PROJECT, repo)] == [
+        "r-from-empty-0",
+        "r-from-empty-1",
+        "r-from-empty-2",
+    ]
+    # The real crew config home was not written to.
+    assert real_store.exists() == was_present
+
+
+def test_tearing_the_store_down_leaves_the_committed_file_byte_identical(
+    home, repo
+) -> None:
+    """Reverting the expand stage is deleting a file the committed file never depended on.
+
+    The store is a shadow nothing reads: after four promotions it holds four
+    rows and the committed ledger holds the same four, and tearing the store
+    down leaves the committed file's bytes untouched. No reader was cut over
+    to the store, so the number of readers that notice its removal is zero —
+    the same file bytes and the same reader answers before and after.
+    """
+    from reckon import run_store
+
+    real_store = _real_store_path()
+    was_present = real_store.exists()
+    store_file = run_store.store_path()
+    committed = ledger.ledger_path(PROJECT, repo)
+
+    for index in range(4):
+        record = ledger.build_record(
+            run_id=f"r-teardown-{index}",
+            plan="plan-a",
+            gate="passed",
+            member_id="worker-a",
+            completed_at=f"2026-09-09T00:00:{index}0Z",
+        )
+        ledger.append_run(PROJECT, record, root=repo)
+
+    with run_store.RunStore() as stored:
+        stored_count = len(stored.durable_rows(PROJECT))
+    assert stored_count == 4
+    before = committed.read_bytes()
+    assert store_file.is_file()
+
+    store_file.unlink()
+    assert not store_file.exists()
+
+    # The committed file is byte-identical with the store torn down, which is
+    # what makes the expand stage reversible: deleting a file nothing reads.
+    assert committed.read_bytes() == before
+    # No reader was cut over: the number of readers the store's absence changes
+    # is zero, so the file still yields the same rows the store shadowed.
+    assert [entry["run_id"] for entry in ledger.runs(PROJECT, repo)] == [
+        "r-teardown-0",
+        "r-teardown-1",
+        "r-teardown-2",
+        "r-teardown-3",
+    ]
+    assert real_store.exists() == was_present
