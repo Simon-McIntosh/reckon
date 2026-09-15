@@ -24,11 +24,11 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="356">
+<meta name="plan-version" content="358">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.4">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s22&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -1094,6 +1094,60 @@
     reuse maps, one layer up and aimed at the reviews themselves: <em>an unguarded record
     that nothing reads.</em> The mechanism built to catch that defect currently exhibits it.</p>
 
+    <h2 id="s22">&#167;22 &mdash; The lane's load is measured, pushed at the moment of dispatch, and never a cap</h2>
+    <p>Every earlier section here is about a surface reporting something untrue. This one
+    is about a surface reporting nothing at all, for the one lane the whole fleet runs on.
+    Measured 2026-09-15: <strong>37 live workers on the locally served lane across nine
+    sessions and four projects</strong>, while <code>crew(view="budget")</code> reported
+    that lane <code>headroom: unknown</code>, <code>utilisation_pct: null</code>, and
+    dispatched normally, with the stated reason <em>no rate-limit event in the stream
+    yet</em>. The reason is correct and the conclusion it licenses is wrong: headroom is a
+    quota concept, an unmetered lane has no quota, so the only load surface we have is
+    structurally blind to the only lane that matters.</p>
+    <p><strong>The consequence is not a slow fleet; it is six coordinators reaching the
+    same wrong diagnosis.</strong> Each saw its own nodes running long and had exactly one
+    frame available to explain it &mdash; the per-row generation rate the ticker renders,
+    a single worker's number with no denominator beside it. This coordinator widened its
+    time budgets and recorded the lane as slow for the model. A peer read three nodes as
+    slow for half an hour before thinking to measure its neighbours. Both conclusions were
+    wrong the same way: <em>a per-node instrument attributes a fleet-wide cause to
+    whichever node the reader happens to own</em>, and every reader owns a different one.</p>
+    <p><strong>A concurrency cap is the wrong shape and is explicitly not the remedy.</strong>
+    Ruled out by the lead on the reasoning that settles it: a cap counts live pointers, and
+    pointers are not the contended resource. A run parked on a submitted batch job holds a
+    pointer and generates nothing, so a cap starves the lane in order to protect it from
+    work that is not happening. The mechanism to do this already exists and is deliberately
+    left unarmed &mdash; <code>_refuse_over_concurrency_ceiling</code> is wired and every
+    backend declares <code>max_concurrent_runs: null</code>. Arming it would trade a live
+    judgement for a static guess, and the guess cannot be made correctly: one point on the
+    aggregate-against-concurrency curve is all anyone has measured.</p>
+    <p><strong>The right shape is a live reading the orchestrator judges, pushed where the
+    decision is made.</strong> The denominators already exist and already answer different
+    questions: <code>_generation_rate</code> in <code>recovery.py:2715</code> divides
+    generated tokens by <em>model</em> seconds, so a run waiting on an external job
+    contributes no generation time and does not dilute the figure, while
+    <code>wall_tokens_per_second</code> in <code>_backends.py:351</code> divides by elapsed
+    and answers how much of a run's wall time was productive. What is missing is not a
+    measurement. It is the aggregation, and a reader.</p>
+    <p><strong>Pushed, not asked for.</strong> A view a coordinator must remember to
+    consult before dispatching is a coordinator-side convention, which is the compensation
+    this project keeps measuring does not survive a context boundary. Three surfaces already
+    arrive unasked and already carry the wrong quantity: the dispatch result returns a
+    <code>budget</code> block and a <code>lane_reading</code> block on every call, the
+    pre-flight returns per-backend hold state, and the follower ticker pushes a per-row
+    rate and the fleet counters. The reading belongs in the block that already arrives at
+    the moment of decision.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Required evidence</th></tr></thead>
+      <tbody>
+        <tr><td>The lane reports its offered load, and the report distinguishes generating from waiting</td><td><code>lane_reading</code> carries the count of runs actively generating on that backend and, separately, the count holding a pointer while in a declared external wait. Asserted by placing one run in a declared wait and one generating and requiring the two counts to differ, and in the negative by requiring a lane with no live runs to report zero rather than absent &mdash; a lane nobody is using and a lane that cannot be measured must not read alike. The waiting population is the reason a single cap was refused, so a reading that collapses them reinstates the defect in a new surface.</td></tr>
+        <tr><td>The lane reports achieved throughput, with its vintage and its denominator</td><td>The reading carries mean and aggregate tokens per second across the generating population, the moment it was observed, and the number of runs it was divided by. Asserted by requiring the mean to change when a run is added to the population, and by requiring the figure to name its denominator, since a derived number that has lost its inputs cannot be checked against the conditions of its use. Measured today at 37 generating runs on the local lane, mean visible output 1.44 tok/s and aggregate 53.2 &mdash; figures that describe emitted text only, because this endpoint returns a thinking block at every budget and thinking is 83&ndash;95% of emitted characters, so a throughput reading that does not say which population it counted is not interpretable.</td></tr>
+        <tr><td>The reading arrives at the moment of dispatch without being asked for</td><td>The reading is present in the payload <code>reckon crew dispatch</code> already returns, beside the budget block, on every dispatch including a refused one. Asserted by dispatching and requiring the field without a second call, and in the negative by requiring an unmeasured lane to say so rather than report a zero. A coordinator that must call a view first is the failure this measure exists to prevent, so a test that reads the figure through the view and not through the dispatch payload does not satisfy it.</td></tr>
+        <tr><td>The per-row rate is never shown without the lane figure beside it</td><td>The ticker renders the lane's mean alongside a run's own generation rate, so the row carries the denominator that makes it readable. Asserted against the measured case: a row at 1.4 tok/s beside a lane mean of 1.44 says contention, and the same row beside a lane mean of 20 says the node. Today only the first number is rendered, and it was read as the second by two coordinators independently, which is the evidence this row is not cosmetic.</td></tr>
+        <tr><td>The reading is sufficient to route, and routing is a judgement rather than a refusal</td><td>A coordinator holding the lane figure and the metered lanes' burn position can decide to send the next node elsewhere, and nothing in the dispatch path decides for it. Asserted by requiring a dispatch to succeed on a saturated lane when the caller asks for it &mdash; the reading informs, it never fences &mdash; and by requiring the payload to carry, in one place, the local lane's achieved rate and the metered lanes' utilisation and burn multiple, since a routing decision needs both halves and today they are in two views and neither is pushed.</td></tr>
+      </tbody>
+    </table>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="liveness-source" data-choice="reconcile-on-read" data-by="lead" data-when="2026-09-03T07:38:29+00:00">
@@ -2130,8 +2184,8 @@ sandbox tier 'read-only'; writable grants:
 </div>
 <div class="r-comment" data-section="s12" data-id="c-20260915-a-near-miss-key-is-reported-as-an-absent-fact" data-who="reckon-ship" data-when="2026-09-15T06:40:00Z">
     <div class="r-comment-body"><p><strong>A SECOND MANIFEST-KEY DEFECT, ROUTED FROM ANOTHER PROJECT'S COORDINATOR, AND IT IS THIS SECTION'S DEFECT ONE STEP LATER.</strong> A worker wrote <code>commit: 61e85056</code> with its changed paths beneath — singular, where the schema reads <code>commits</code>. Promotion refused with <em>manifest field 'commits' is missing</em> (<code>promotion.py:517</code>). <strong>The statement is true of the key and false of the fact</strong>: the commit was reported, and reported accurately. Reproduced here against the live parser:</p><pre>parse_manifest("node: n\nstatus: complete\ncommit: 61e85056\nchanged_paths: a.py b.py\n")
-  commits      -> []            &lt;- the refusal's subject
-  unknown keys -> ['commit', ...]  &lt;- the fact, parsed, retained, and read by nothing</pre><p>So the near-miss key survives parsing and sits in the returned mapping while the refusal declares the fact absent. This is the same shape as the one-line form this section already owns — a manifest that parses into a wrong value rather than refusing — with the wrongness moved from the value to the diagnosis. The reporter's phrasing is the one to keep: the refusal <em>names no near-miss</em>.</p><p><strong>The codebase already does the right thing one field over, which is what makes this a gap rather than a policy.</strong> <code>reports.py:36</code> accepts <code>in-progress</code> and <code>in_progress</code> as the same status, deliberately, and a peer confirmed today that two workers on one lane wrote both spellings with no cost. So near-miss tolerance exists for <code>status</code> and not for <code>commits</code>, and nothing records why the two fields differ. Either accepting <code>commit</code> as an alias, or naming the near-miss key in the refusal text, closes it; the second is strictly better, because it turns a silent mismatch into a sentence a reader can act on without widening what the schema accepts.</p><p><strong>How the reporter recovered it is worth preserving as the pattern.</strong> They verified the sha existed and carried exactly the three named files, preserved the original as <code>manifest.md.orig</code>, corrected only the key, and recorded that they had done so in the gate log — reasoning explicitly that <code>crew discard</code> would have destroyed more record than it protected. That is the right trade in both directions: the evidence survives, and the fact that a human hand touched it survives with it.</p></div>
+  commits      -&gt; []            &lt;- the refusal's subject
+  unknown keys -&gt; ['commit', ...]  &lt;- the fact, parsed, retained, and read by nothing</pre><p>So the near-miss key survives parsing and sits in the returned mapping while the refusal declares the fact absent. This is the same shape as the one-line form this section already owns — a manifest that parses into a wrong value rather than refusing — with the wrongness moved from the value to the diagnosis. The reporter's phrasing is the one to keep: the refusal <em>names no near-miss</em>.</p><p><strong>The codebase already does the right thing one field over, which is what makes this a gap rather than a policy.</strong> <code>reports.py:36</code> accepts <code>in-progress</code> and <code>in_progress</code> as the same status, deliberately, and a peer confirmed today that two workers on one lane wrote both spellings with no cost. So near-miss tolerance exists for <code>status</code> and not for <code>commits</code>, and nothing records why the two fields differ. Either accepting <code>commit</code> as an alias, or naming the near-miss key in the refusal text, closes it; the second is strictly better, because it turns a silent mismatch into a sentence a reader can act on without widening what the schema accepts.</p><p><strong>How the reporter recovered it is worth preserving as the pattern.</strong> They verified the sha existed and carried exactly the three named files, preserved the original as <code>manifest.md.orig</code>, corrected only the key, and recorded that they had done so in the gate log — reasoning explicitly that <code>crew discard</code> would have destroyed more record than it protected. That is the right trade in both directions: the evidence survives, and the fact that a human hand touched it survives with it.</p></div>
 </div>
 </section>
 </main>
