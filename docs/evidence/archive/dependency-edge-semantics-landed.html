@@ -7,9 +7,9 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="dependency-edge-semantics-landed">
   <meta name="plan-title" content="Edges That Mean What They Say — Execution Record">
-  <meta name="plan-summary" content="Execution evidence for §3: reckon audit now reports a followup whose recommended skill names a plan in another mounted project that is terminal, naming both the holding plan and the foreign target, while staying silent on live foreign targets and reporting unmounted targets distinctly.">
+  <meta name="plan-summary" content="Execution evidence for §2 and §3: a staged dependency ref blocks only the section it names, leaving the containing plan dispatchable with a wiring finding for an absent anchor; reckon audit reports a followup whose recommended skill names a terminal plan in another mounted project, naming both the holding plan and the foreign target.">
   <meta name="plan-evidence-for" content="dependency-edge-semantics">
-  <meta name="plan-verifies" content="dependency-edge-semantics#s3">
+  <meta name="plan-verifies" content="dependency-edge-semantics#s2,dependency-edge-semantics#s3">
   <meta name="plan-tags" content="reckon-tooling">
   <title>Edges That Mean What They Say — Execution Record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -17,6 +17,46 @@
 </head>
 <body>
   <main class="plan-doc">
+
+    <h2 id="s2">§2 — Honour the anchor, or refuse it</h2>
+
+    <p>A dependency ref carries an optional section anchor (<code>[project:]slug[#stage]</code>)
+    and the roadmap honours it: the anchor scopes the blocking to the section it names. A plan
+    declaring <code>depends_on="other#s3"</code> stays dispatchable — its unanchored sections
+    report ready and only the anchored section reports blocked — so a partial dependence no
+    longer hides ready work as a whole-plan <code>blocked</code>. The mechanism landed in
+    <code>9e666e3</code> (merged <code>1790e61</code>) and was re-verified clause by clause at
+    the merged head by a verification node.</p>
+
+    <h3 id="s2-measure">The measure — one staged ref, two kinds of section report</h3>
+
+    <p>The defect this section removes is that a staged ref was parsed and then discarded, so any
+    unmet prerequisite blocked the whole plan. The gate reproduces the portfolio shapes and asserts
+    each clause:</p>
+
+    <table>
+      <thead><tr><th>Staged dependency scenario</th><th>Behaviour asserted by test</th></tr></thead>
+      <tbody>
+        <tr><td><code>consumer</code> depends on <code>catalog#s3</code>, only s3 unmet</td>
+          <td><code>ready_sections=["s1","s2"]</code>, <code>blocked_sections=["s3"]</code>,
+          <code>effective_status="active"</code>, the plan present in the ready set</td></tr>
+        <tr><td><code>consumer</code> depends on <code>catalog#deployment</code>, absent from the target</td>
+          <td>a <code>missing-dependency-section</code> wiring finding at
+          <code>severity=error</code>, and the plan still ready rather than whole-plan blocked</td></tr>
+        <tr><td>eight-hour portfolio case: catalog depends on <code>demonstration#run</code></td>
+          <td>catalog stays in the ready set with its own rungs ready and 8.0 hours of work
+          surfaced; only the anchor <code>run</code> reports blocked</td></tr>
+        <tr><td>bare ref: <code>consumer</code> depends on <code>catalog</code></td>
+          <td>unchanged whole-plan blocking: <code>effective_status="blocked"</code>, excluded
+          from the ready set, no <code>section_readiness</code> row</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>The count is the part worth stating as a number:</strong> the roadmap dependency and
+    anchor tests ran 39 passed — the 38 pre-existing tests unchanged plus the eight-hour fixture —
+    and the fixture's assertions fail against the whole-plan (stage-dropped) semantics, shown by
+    the bare-ref twin reporting <code>blocked</code> where the staged ref reports
+    <code>active</code>. Scoped ruff 2 → 2 findings, format-clean.</p>
 
     <h2 id="s3">§3 — An obligation that neither project can see</h2>
 

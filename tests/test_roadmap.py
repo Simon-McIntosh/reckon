@@ -246,6 +246,34 @@ def test_unstaged_dependency_remains_plan_wide() -> None:
     assert "section_readiness" not in row
 
 
+def test_section_dependency_surfaces_the_eight_hour_portfolio_case() -> None:
+    # The portfolio shape that motivated section-scoped blocking: a catalog
+    # whose first two rungs are dispatchable while a later rung waits on a
+    # demonstration. The anchor names the target's section ("run"), which does
+    # not collide with any of the catalog's own section names, so the catalog's
+    # own rungs must all read ready while only the anchoring stub blocks.
+    demonstration = _plan("demonstration")
+    demonstration["gates"] = [_section_gate("run", passed=False)]
+    catalog = _plan("catalog", depends_on=["demonstration#run"], effort_hours=8.0)
+    catalog["gates"] = [
+        _section_gate("rung1"),
+        _section_gate("rung2"),
+        _section_gate("rung3"),
+    ]
+
+    result = build_roadmap("sample", [demonstration, catalog], [])
+    row = next(item for item in result["pending_work"] if item["slug"] == "catalog")
+
+    # Whole-plan blocking would hide this work (effective_status "blocked",
+    # excluded from the ready set); the anchor keeps it on the board.
+    assert row["ready"] is True
+    assert row["effective_status"] == "active"
+    assert row["ready_sections"] == ["rung1", "rung2", "rung3"]
+    assert row["blocked_sections"] == ["run"]
+    assert [item["slug"] for item in result["ready_now"]] == ["catalog"]
+    assert row["remaining_effort_hours"] == 8.0
+
+
 def test_open_decision_blocks_its_plan_with_a_distinct_blocker_kind() -> None:
     deciding = _plan("deciding")
     deciding["decisions"] = [

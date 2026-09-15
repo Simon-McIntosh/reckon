@@ -63,7 +63,19 @@
       that dependency resolution never asks.
     </p>
 
-    <h2 id="s2">§2 — Honour the anchor, or refuse it</h2>
+    <h2 id="s2">§2 — Honour the anchor, or refuse it <span class="badge badge-shipped">&#10003; landed 2026-09-15</span></h2>
+
+    <p class="landed-summary"><strong>Landed.</strong> A dependency ref carrying a section anchor
+    blocks only the sections that need it: a plan declaring <code>depends_on="other#s3"</code>
+    reports its unanchored sections dispatchable (<code>ready_sections</code>) while the anchored
+    one reports blocked (<code>blocked_sections</code>), and the containing plan stays in the
+    roadmap ready set rather than reporting <code>blocked</code>. A staged ref naming a section
+    absent from the target is a <code>missing-dependency-section</code> wiring finding, not a
+    silent satisfaction or a whole-plan block. A bare ref keeps byte-identical whole-plan
+    blocking. Mechanism landed in <code>9e666e3</code> (merged <code>1790e61</code>); a
+    verification node re-checked every clause of the done-when at the merged head, asserted the
+    eight-hour portfolio case as a fixture showing the work surfacing, and ran the roadmap tests
+    39 passed — 38 pre-existing unchanged, plus the fixture. Full record: <a href="/reckon/evidence/archive/dependency-edge-semantics-landed#s2-measure">§2 landed</a>.</p>
     <p>
       There are exactly two honest outcomes for a staged dependency ref, and the current
       behaviour is neither. Either blocking honours the anchor — a dependency on
