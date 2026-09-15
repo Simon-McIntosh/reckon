@@ -270,12 +270,21 @@
         should have named.
       </p>
       <p>
-        It does not cover the case that produced this incident. Resume
-        continues a session whose turn has ended; a run whose process is still
-        alive is classified <code>working</code>, and the code says so directly
-        — a lingering process means <em>its slot stays held and its own resume
-        is refused while it lingers</em>. The four runs here were mid-turn and
-        healthy. The coordinator did not want to recover them; it wanted to
+        It does not cover the case that produced this incident, and this was
+        measured rather than inferred. Invoked against a run whose process is
+        alive — reproduced against a synthetic pointer in a temporary
+        configuration home, so no real fleet was touched — resume exits 1 with
+        an empty stdout and this on stderr:
+      </p>
+      <pre><code>Error: run '&lt;run-id&gt;' still has a live process;
+       observe or stop it before resuming</code></pre>
+      <p>
+        So resume is refused for exactly the state the coordinator was in. Two
+        details matter for the repair. The refusal names the reason but no
+        alternative command — <em>observe or stop</em> is prose, not something
+        a caller can run — and unlike a budget hold it carries no structured
+        error key, so a programmatic caller cannot distinguish it from any
+        other failure. The four runs here were mid-turn and healthy. The coordinator did not want to recover them; it wanted to
         change what they did next, before they did it.
       </p>
       <p>
@@ -368,15 +377,22 @@
         2026-09-15.
       </p>
       <p>
+        The resume behaviour was reproduced directly: a synthetic live pointer
+        whose pid was a real sleeping process, under a temporary configuration
+        home, with the real pointer directory afterwards confirmed to hold no
+        trace of the probe.
+      </p>
+      <p>
         Limitations worth stating. The count covers this workstation only, and
         a stream is truncated when a run is promoted, so a delivered message in
         a long-since-archived run would not be counted — the positive control
-        bounds how wrong that could be, but does not eliminate it. The claim
-        that resume is refused against a live process is read from the code and
-        its comment rather than exercised against a live run, because probing
-        another session's fleet to confirm it was judged the wrong trade. The
+        bounds how wrong that could be, but does not eliminate it. The
         permission-mode explanation for the hold is the harness's own stated
-        reason, not an independently verified cause.
+        reason, not an independently verified cause. Resume was measured
+        through the command-line surface only; the equivalent action on the
+        tool surface may report differently, and resume against a pid that has
+        become a zombie takes a different path in the liveness check and was
+        not exercised.
       </p>
     </section>
   </main>
