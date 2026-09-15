@@ -244,6 +244,33 @@ def test_a_reason_that_fits_is_printed_whole(grid):
     assert "…" not in line
 
 
+def test_a_reason_clipped_at_the_margin_keeps_its_predicate_clause(grid):
+    """A clip falls after the clause naming the predicate, never inside it.
+
+    The measured defect: ``the process is gone without a complete manifest``
+    truncated to ``the process is gone without a…`` collapsed a testable claim
+    about a named file into a generic liveness remark. Free text cut at the
+    margin must therefore keep that clause whole — the cut lands in trailing
+    detail — and a reason that already fits renders verbatim, with no cut and
+    no ellipsis.
+    """
+    long_reason = (
+        "the process is gone without a complete manifest for the archive "
+        "dry run which reported the marker moved before its files were read"
+    )
+    clipped = plain(grid.render(_event(to_state="blocked", reason=long_reason)))
+    assert len(clipped) == 180
+    assert "the process is gone without a complete manifest" in clipped
+    assert "marker moved before its files" not in clipped
+    assert "…" in clipped
+    assert "\n" not in clipped
+
+    short = plain(grid.render(_event(to_state="blocked", reason="disk full")))
+    assert "disk full" in short
+    assert "…" not in short
+    assert len(short) == 180
+
+
 def test_colour_is_off_by_default_so_callers_get_a_plain_string():
     """The library default stays plain; only the CLI opts a reader into colour.
 

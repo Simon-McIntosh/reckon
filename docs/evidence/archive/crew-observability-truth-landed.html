@@ -72,6 +72,7 @@
         <tr><td>§16</td><td><a href="#manifest-status-key-absent-refused">manifest-status-key-absent-refused</a></td><td>c133d0e</td><td>run outcome</td></tr>
         <tr><td>§16</td><td><a href="#live-worker-never-unreadable">live-worker-never-unreadable</a></td><td>8183a63</td><td>run outcome</td></tr>
         <tr><td>§21</td><td><a href="#landing-not-also-denied">landing-not-also-denied</a></td><td>93806e6</td><td>run outcome</td></tr>
+        <tr><td>§20</td><td><a href="#reason-keeps-its-predicate-at-the-measured-width">reason-keeps-its-predicate-at-the-measured-width</a></td><td>ba487aa</td><td>run outcome</td></tr>
       </tbody>
     </table>
   </section>
@@ -624,6 +625,25 @@ reading taken as an authority it was not.</p>
     prompts-only gate passes 15 at base against 18 after; the wider two-file gate carries the
     identical pre-existing promotion-environmental failures (10 at base, 10 after), so the
     change adds three cases and no failures.</p>
+  </section>
+
+  <section id="reason-keeps-its-predicate-at-the-measured-width">
+    <h3>&#167;20 &mdash; A clipped reason keeps the clause naming its predicate</h3>
+    <p>Run <code>r-20260915T051109257888-the-reason-keeps-its-predicate-at-the-measured-width</code>.
+    Commit <code>ba487aa</code>, 27 insertions in one test file.</p>
+    <p><strong>Measure:</strong> the renderer already cut free text with the cut falling after the
+    clause naming its predicate, and the reason field already held the trailing margin the trimmed
+    grid spends (75+ columns at the 208-column pane this workstation measures), so this node added
+    the falsifier rather than reimplementing a working guard. The new
+    <code>test_a_reason_clipped_at_the_margin_keeps_its_predicate_clause</code> in
+    <code>tests/test_crew_ticker_layout.py</code> asserts on rendered rows at the fixed grid width:
+    a reason longer than the render width keeps &ldquo;the process is gone without a complete
+    manifest&rdquo; and loses only the trailing detail after it, ending at the margin with a single
+    ellipsis and no wrap; a reason shorter than the width renders verbatim with no ellipsis. The
+    pre-change suite already passed the truncation tests but proved only prefix retention, so the
+    §4 clause survived only by implementation accident; the assertion now fails if a regression cuts
+    into the clause a reader acts on. The two-file gate carries 88 passed at base against 88 after
+    (the layout file itself 63 to 64 with the added case), no failures added.</p>
   </section>
 
 </main>
