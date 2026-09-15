@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T05:32:52",
+  "updated": "2026-09-15T06:29:14",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -121883,6 +121883,212 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T041631586327-one-prompt-one-instruction",
+        "plan": "crew-observability-truth",
+        "section": "\u00a721",
+        "node": "one-prompt-one-instruction",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1129,
+                "cached_input_tokens": 915533,
+                "input_tokens": 916664,
+                "output_tokens": 1544,
+                "reasoning_output_tokens": 438,
+                "total_tokens": 918208,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3ceb92f8-d6d4-46b5-82a8-d120cb0ddd1f",
+            "session_id": "ship-s18-20260914"
+          },
+          "done_when": "no composed prompt contains both a clause instructing the worker to write its landing record and a clause forbidding it to edit plan state, asserted by composing a prompt for an implement role and requiring the pair not to co-occur; the prohibition is narrowed rather than deleted so its real intent survives - a worker still must not mutate the shared project index, sprint state, or a plan other than the one it is landing against - asserted by composing a prompt and requiring that narrowed text present; a read-only role receives the narrowed prohibition and no landing clause, asserted as the negative; and tests/test_crew_prompts.py tests/test_gate_evidence.py add no failures against the base revision with base and after counts both recorded",
+          "estimated_hours": null,
+          "goal": "the composed worker contract stops granting and forbidding the same write, so a worker is not asked to obey two instructions that cannot both hold",
+          "id": "one-prompt-one-instruction",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T04:16:32Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T041631586327-one-prompt-one-instruction/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a721",
+          "spec_level": "exact",
+          "time_budget": "35m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/prompts.py",
+            "tests/test_crew_prompts.py",
+            "docs/evidence/archive/crew-observability-truth-landed.html",
+            "docs/plans/crew-observability-truth.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-backpressure",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T04:16:39Z",
+        "completed_at": "2026-09-15T04:26:48.584Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 569,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 609,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "c657393d0550c3cc4cf7e665eafee4dc1d41f25c",
+        "commits": [
+          "93806e64b2f72c41896a680e660b59984af07459",
+          "008202ddc668b1d0a9a0765ee21c5a2b6ab90c7a"
+        ],
+        "changed_lines": {
+          "added": 65,
+          "removed": 3,
+          "files": 4
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_prompts.py tests/test_gate_evidence.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T041631586327-one-prompt-one-instruction/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T041631586327-one-prompt-one-instruction/manifest.md",
+        "scope_changed": false,
+        "session_id": "c58187cd-c8f6-40fc-8d34-29237d2c09d2",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 0,
+            "input_tokens_cumulative": 8641876,
+            "output_tokens": 6926,
+            "output_tokens_cumulative": 56947,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T04:26:48.584Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 8805958,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 606.384,
+          "generated_tokens": 65921,
+          "generation_seconds": 577.837,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 80.1,
+          "machine_seconds": 28.547,
+          "peak_input_tokens": 160235,
+          "tokens_per_second": 114.08,
+          "wall_tokens_per_second": 108.71
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s18-20260914/one-prompt-one-instruction",
+          "session_id": "c58187cd-c8f6-40fc-8d34-29237d2c09d2",
+          "session_source": "pointer",
+          "retained_at": "2026-09-15T04:26:48.584Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 70.0,
+        "orientation_input_tokens": 3344626.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -122111,6 +122317,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1469
+    "_version": 1470
   }
 }
