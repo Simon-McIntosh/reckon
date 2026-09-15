@@ -296,10 +296,10 @@ function readerItem(state, requestedSlug, kind) {
 }
 
 function readerListPosition(list, selectedKey, selectedSlug) {
-  const index = (list || []).findIndex(item =>
-    item.key === selectedKey || item.slug === selectedSlug
-  );
-  return { current: index < 0 ? 0 : index + 1, total: (list || []).length };
+  const items = list || [];
+  let index = items.findIndex(item => item.key === selectedKey);
+  if (index < 0) index = items.findIndex(item => item.slug === selectedSlug);
+  return { current: index < 0 ? 0 : index + 1, total: items.length };
 }
 
 function readerStepTarget(list, selectedKey, selectedSlug, direction) {
@@ -716,8 +716,13 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
   const stepReader = (direction) => {
     const target = readerStepTarget(publishedList, displayedKey, PG.slug, direction);
     if (target) {
-      setReaderSelectionKey(target.key);
-      onNav?.({ view: target.type || kind, slug: target.slug });
+      ReactDOM.flushSync(() => {
+        setReaderSelectionKey(target.key);
+        onNav?.({ view: target.type || kind, slug: target.slug });
+        // The shell route updates on the async hashchange event; fire it now so
+        // the readout and the arrived route commit in the same render.
+        window.dispatchEvent(new HashChangeEvent("hashchange"));
+      });
     }
   };
 
