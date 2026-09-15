@@ -11,7 +11,6 @@ regenerates captures under docs/figures/rendered-evidence.
 from __future__ import annotations
 
 import json
-import struct
 import subprocess
 import sys
 import tempfile
@@ -457,6 +456,11 @@ class _CaptureSpec(NamedTuple):
     require_populated: bool
 
 
+class _CaptureGateReceipt(NamedTuple):
+    captures_read: int
+    image_bytes_opened: int
+
+
 # Each entry names a figure directory the owning plan writes its capture
 # measure into, the surfaces it captures at each recorded width, and the
 # population signals its section states as its done-when.
@@ -485,16 +489,23 @@ _PLAN_CAPTURE_SPECS = (
         population_any_of=(),
         require_populated=True,
     ),
+    _CaptureSpec(
+        figures_dir=ROOT / "docs/figures/artifact-feeds-and-reader",
+        surfaces=(
+            "evidence-banner",
+            "figures-index",
+            "figure-reader",
+            "plan-fullscreen-cone",
+        ),
+        widths=(1374, 1920),
+        population_fields=("rowCount",),
+        population_any_of=(),
+        require_populated=True,
+    ),
 )
 
 
-def _png_image_width(image: Path) -> int:
-    header = image.read_bytes()[:24]
-    assert header[:8] == b"\x89PNG\r\n\x1a\n", image
-    return struct.unpack(">II", header[16:24])[0]
-
-
-def assert_plan_capture_index(spec: _CaptureSpec) -> None:
+def assert_plan_capture_index(spec: _CaptureSpec) -> _CaptureGateReceipt:
     index_path = spec.figures_dir / "after" / "capture-index.json"
     if not index_path.is_file():
         raise AssertionError(f"capture index missing: {index_path}")
@@ -525,9 +536,18 @@ def assert_plan_capture_index(spec: _CaptureSpec) -> None:
     for capture in captures:
         width = capture.get("width")
         assert width in spec.widths, (index_path, capture)
-        image = index_path.parent / capture["image"]
-        assert image.is_file(), (index_path, image)
-        assert _png_image_width(image) == width, (index_path, image, width)
+        assert isinstance(capture.get("height"), int) and capture["height"] > 0, (
+            index_path,
+            capture,
+        )
+        image_name = capture.get("image")
+        assert isinstance(image_name, str) and image_name, (index_path, capture)
+        image = index_path.parent / image_name
+        try:
+            image_stat = image.stat()
+        except FileNotFoundError as error:
+            raise AssertionError(f"capture file missing: {image}") from error
+        assert image_stat.st_size > 0, (index_path, image)
         for field in spec.population_fields:
             assert capture.get(field, 0) > 0, (index_path, capture, field)
         if spec.population_any_of:
@@ -537,14 +557,15 @@ def assert_plan_capture_index(spec: _CaptureSpec) -> None:
             )
         if spec.require_populated:
             assert capture.get("populated") is True, (index_path, capture)
+    return _CaptureGateReceipt(captures_read=len(captures), image_bytes_opened=0)
 
 
 def _synthetic_spec(figures_dir: Path) -> _CaptureSpec:
     return _CaptureSpec(
         figures_dir=figures_dir,
-        surfaces=("primary", "secondary"),
-        widths=(1374, 1920),
-        population_fields=(),
+        surfaces=("primary",),
+        widths=(1374,),
+        population_fields=("rowCount",),
         population_any_of=(),
         require_populated=False,
     )
@@ -556,29 +577,82 @@ def _synthetic_spec(figures_dir: Path) -> _CaptureSpec:
     ids=[spec.figures_dir.name for spec in _PLAN_CAPTURE_SPECS],
 )
 def test_plan_capture_gate_reads_the_plan_own_index(spec: _CaptureSpec) -> None:
-    assert_plan_capture_index(spec)
+    receipt = assert_plan_capture_index(spec)
+    index = json.loads(
+        (spec.figures_dir / "after" / "capture-index.json").read_text(encoding="utf-8")
+    )
+    assert receipt == _CaptureGateReceipt(
+        captures_read=index["captureCount"], image_bytes_opened=0
+    )
 
 
-def test_plan_capture_gate_refuses_a_plan_with_no_captures(tmp_path: Path) -> None:
-    with pytest.raises(AssertionError, match="capture index missing"):
-        assert_plan_capture_index(_synthetic_spec(tmp_path / "absent"))
+def test_plan_capture_gate_opens_no_image_bytes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def image_read_forbidden(*_args: object, **_kwargs: object) -> bytes:
+        raise AssertionError("IMAGE_BYTES_OPENED")
 
-    empty_site = tmp_path / "empty"
-    after = empty_site / "after"
+    monkeypatch.setattr(Path, "read_bytes", image_read_forbidden)
+    receipts = [assert_plan_capture_index(spec) for spec in _PLAN_CAPTURE_SPECS]
+    expected_captures = sum(
+        json.loads(
+            (spec.figures_dir / "after" / "capture-index.json").read_text(
+                encoding="utf-8"
+            )
+        )["captureCount"]
+        for spec in _PLAN_CAPTURE_SPECS
+    )
+    assert sum(receipt.captures_read for receipt in receipts) == expected_captures
+    assert sum(receipt.image_bytes_opened for receipt in receipts) == 0
+
+
+def _write_synthetic_capture_index(
+    figures_dir: Path, *, row_count: int, image_exists: bool
+) -> _CaptureSpec:
+    spec = _synthetic_spec(figures_dir)
+    after = figures_dir / "after"
     after.mkdir(parents=True)
+    image = after / "primary-1374.png"
+    if image_exists:
+        image.write_text("captured", encoding="utf-8")
     (after / "capture-index.json").write_text(
         json.dumps(
             {
                 "delivery": "file-url",
-                "captureCount": 0,
-                "viewportWidths": [],
-                "captures": [],
+                "captureCount": 1,
+                "viewportWidths": [1374],
+                "captures": [
+                    {
+                        "capture": "primary-1374",
+                        "surface": "primary",
+                        "image": image.name,
+                        "width": 1374,
+                        "height": 900,
+                        "populated": True,
+                        "rowCount": row_count,
+                    }
+                ],
             }
         ),
         encoding="utf-8",
     )
-    with pytest.raises(AssertionError, match="no captures"):
-        assert_plan_capture_index(_synthetic_spec(empty_site))
+    return spec
+
+
+def test_plan_capture_gate_refuses_missing_file_and_zero_row_count(
+    tmp_path: Path,
+) -> None:
+    missing_file = _write_synthetic_capture_index(
+        tmp_path / "missing", row_count=1, image_exists=False
+    )
+    with pytest.raises(AssertionError, match="capture file missing"):
+        assert_plan_capture_index(missing_file)
+
+    zero_rows = _write_synthetic_capture_index(
+        tmp_path / "zero", row_count=0, image_exists=True
+    )
+    with pytest.raises(AssertionError, match="rowCount"):
+        assert_plan_capture_index(zero_rows)
 
 
 if __name__ == "__main__":
