@@ -7,9 +7,9 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="worker-authors-its-own-record-landed">
   <meta name="plan-title" content="The Worker Authors Its Own Record — landed evidence">
-  <meta name="plan-summary" content="The ship skills now carry the narrowed shared-state prohibition plus the positive landing requirement, quoted from the composed runtime prompt, with a parity check binding the skill sentences to the prompt's own wording.">
+  <meta name="plan-summary" content="The ship skills now carry the narrowed shared-state prohibition plus the positive landing requirement, quoted from the composed runtime prompt, with a parity check binding the skill sentences to the prompt's own wording; the coordinator half turns the landing beat into a review of the worker's authored record rather than a transcription of a manifest, and states both worker limits with their see-based reason.">
   <meta name="plan-evidence-for" content="worker-authors-its-own-record">
-  <meta name="plan-verifies" content="worker-authors-its-own-record#s2">
+  <meta name="plan-verifies" content="worker-authors-its-own-record#s2,worker-authors-its-own-record#s3">
   <meta name="plan-commits" content="e33f0ca1,7a03a312">
   <meta name="plan-artifacts" content="skills/reckon-ship/SKILL.md,skills/reckon-ship/references/worker-protocol.md,skills/reckon-ship/references/sprint-orchestration.md,tests/test_skill_contract_parity.py,tests/test_skill_contracts.py">
   <meta name="plan-recorded-at" content="2026-09-15">
@@ -43,9 +43,25 @@
       <p>Two tests in the sibling contract suite that pinned the retired wording were updated with the change. <code>test_ship_keeps_the_orchestrator_as_the_only_plan_state_writer</code> now asserts the narrowed distinction &mdash; the orchestrator writes shared plan state, the worker authors only its own record &mdash; and the fixed read-set token budget in <code>test_engine_generated_dispatch_keeps_fixed_read_set_bounded</code> was raised from 16000 to 17000 with the reason recorded beside the constant: the verbatim contract is a rule the orchestrator needs in hand, mirrors the runtime prompt exactly, and so cannot be relocated or shortened. The contract suite passes 54 of 54.</p>
     </section>
 
+    <section id="s3">
+      <h2>&sect;3 &mdash; What the coordinator does instead</h2>
+      <p>The coordinator half lands the same review in the coordinator's own prose. The landing beat now reads the worker's committed record &mdash; its plan section comment and its evidence anchor &mdash; merges it, and may edit or append to it: a review of an authored record rather than a transcription of a manifest. Both worker limits travel beside the landing contract, each with the reason attached: a worker must not resolve its own driving followup and must not set a terminal status, because only the coordinator observes the other nodes &mdash; a worker knows its node landed, not whether the section closed.</p>
+      <table>
+        <thead><tr><th>Measure</th><th>Before</th><th>After</th></tr></thead>
+        <tbody>
+          <tr><td>Transcription-instructing phrasings in <code>skills/reckon-ship/</code></td><td>10</td><td>0</td></tr>
+          <tr><td>Sentences changed, quoted before and after</td><td>5</td><td>5</td></tr>
+          <tr><td>Skills stating both worker limits with their see-based reason</td><td>0</td><td>2</td></tr>
+        </tbody>
+      </table>
+      <p>The ten phrasings counted sit in five sentences across <code>SKILL.md</code> and <code>references/sprint-orchestration.md</code>: the §1 flow line &ldquo;write that node's commit, gate measure, artifacts, and impl to the plan&rdquo;, rule 9's &ldquo;updates the cumulative evidence and calls <code>edit_plan</code> once with the node's commit, gate measure, artifacts, and advanced <code>impl</code>&rdquo;, §5 step 7's &ldquo;the orchestrator writes this node's commit, gate verdict and quantitative measure, artifacts, and new <code>impl</code> together&rdquo;, §6's &ldquo;add the node's commit, gate verdict and quantitative measure, artifacts, tests, and any negative finding&rdquo;, the §7 example's <code>landing_detail</code> comment body (two copies), §7's trailing &ldquo;the cumulative evidence HTML receives the fuller record in the same landing beat&rdquo;, and three in <code>sprint-orchestration.md</code> §8 &mdash; &ldquo;then immediately writes that node to the plan&rdquo;, &ldquo;Append the node's commit, gate verdict and quantitative measure, tests, artifacts, and negative findings to that anchor&rdquo;, and &ldquo;a section comment carrying the same commit, gate verdict, quantitative measure, and artifact paths&rdquo;. Each becomes the coordinator reading and merging the authored record and editing or appending only what the worker cannot see.</p>
+      <p>The same two sentences are owed to the runtime prompt, which is the other half of the two-audience rule: <code>reckon/crew/prompts.py</code> is held by a peer session and lies outside this node's write scope, so carrying them there is recorded as a follow-on rather than landed here.</p>
+    </section>
+
     <section id="verification">
       <h2>Verification</h2>
       <p><code>pytest tests/test_skill_contract_parity.py -q</code> passed 13 of 13 and <code>pytest tests/test_skill_contracts.py -q</code> passed 54 of 54, both at the merged worktree head. The grep measure is stated in the plan's own section: 4 before, 0 after. Scope remained inside the node's exclusive write paths &mdash; the three skill files, the two test files, the plan HTML and this archive &mdash; with <code>reckon/crew/prompts.py</code> left untouched as the wording's authority.</p>
+      <p><strong>Coordinator half.</strong> The focused gate runs both suites at the merged head: 67 of 67 passed against a green 67-of-67 base, zero added failures, one log (<code>/tmp/coord-half-head.log</code>). The transcription-family grep reads 10 before and 0 after. Ruff on the one staged Python file adds no findings (baseline 5, head 4). The fixed read-set budget holds without a raise: <code>SKILL.md</code> estimates 16395 tokens against the 17000 budget, up from the 16098 recorded in §2 because the coordinator review and the two limits joined the landing contract in the read set. The schema byte-identity gate passes after the plan and evidence HTML edits. The runtime prompt's two coordinator-side limits are a follow-on into <code>reckon/crew/prompts.py</code>, named in the run manifest.</p>
     </section>
   </main>
 </body>
