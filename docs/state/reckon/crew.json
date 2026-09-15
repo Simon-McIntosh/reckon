@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T13:18:55",
+  "updated": "2026-09-15T13:23:10",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -2147,15 +2147,6 @@
         "session_model": null,
         "sessions": {},
         "created": "2026-09-15"
-      },
-      {
-        "id": "session-f9a85ca58ee210d277ad",
-        "harness": "clive",
-        "role": "review",
-        "session_id": null,
-        "session_model": null,
-        "sessions": {},
-        "created": "2026-09-14"
       },
       {
         "id": "ship0908-a",
@@ -129710,6 +129701,206 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T100841261383-a-staged-ref-blocks-only-the-sections-it-names",
+        "plan": "dependency-edge-semantics",
+        "section": "\u00a72",
+        "node": "a-staged-ref-blocks-only-the-sections-it-names",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1483,
+                "cached_input_tokens": 816262,
+                "input_tokens": 817747,
+                "output_tokens": 1931,
+                "reasoning_output_tokens": 1024,
+                "total_tokens": 819678,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "f0d4bf08-978e-48fd-803d-0d5f1cdbb55a",
+            "session_id": "ship-s17-20260915"
+          },
+          "done_when": "a plan carrying a staged depends_on reports its unanchored sections dispatchable while the anchored ones report blocked, asserted by a test that fails against current behaviour and passes after; the roadmap ready set contains that plan rather than excluding it; a staged ref naming a section absent from the target is reported as a wiring finding rather than silently satisfied or blocking everything; an unstaged ref behaves exactly as today, asserted by the existing dependency tests passing unchanged with their count stated as a number",
+          "estimated_hours": null,
+          "goal": "Make a dependency ref carrying a section anchor block only the sections that need it",
+          "id": "a-staged-ref-blocks-only-the-sections-it-names",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T10:08:42Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 7,
+            "binding_observed": false,
+            "detail": "",
+            "headroom": 2,
+            "mean_context": 104344,
+            "observed_at": "2026-09-15T10:08:35Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 120
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T100841261383-a-staged-ref-blocks-only-the-sections-it-names/manifest.md",
+          "plan": "dependency-edge-semantics",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/roadmap.py",
+            "tests/test_roadmap.py",
+            "docs/evidence/archive/dependency-edge-semantics-landed.html",
+            "docs/plans/dependency-edge-semantics.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-sweep-cadence",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T10:09:25Z",
+        "completed_at": "2026-09-15T11:19:04.345Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4166,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4179,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "be162a172557f9562c3627efa7875bcedb3eb73e",
+        "commits": [
+          "ec8fb56dc8e3dc2773f9464009e82712a97d2f3a"
+        ],
+        "changed_lines": {
+          "added": 83,
+          "removed": 3,
+          "files": 3
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_roadmap.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T100841261383-a-staged-ref-blocks-only-the-sections-it-names/manifest.md",
+          "log_digest": "679a77c8e77a29b2f684207accbae904f576c8beda0a9f5c7e1e901b7408e9fb"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T100841261383-a-staged-ref-blocks-only-the-sections-it-names/manifest.md",
+        "scope_changed": false,
+        "session_id": "5c73592b-ec41-4517-99c5-ccdc0ef8db7b",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 5951074,
+            "input_tokens_cumulative": 5951074,
+            "output_tokens": 44179,
+            "output_tokens_cumulative": 44179,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T11:19:04.345Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 5951074,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 4175.583,
+          "generated_tokens": 44179,
+          "generation_seconds": 4089.534,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 80.2,
+          "machine_seconds": 86.049,
+          "peak_input_tokens": 160408,
+          "tokens_per_second": 10.8,
+          "wall_tokens_per_second": 10.58
+        },
+        "dispute_count": "unknown",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s17-20260915/a-staged-ref-blocks-only-the-sections-it-names",
+          "session_id": "5c73592b-ec41-4517-99c5-ccdc0ef8db7b",
+          "session_source": "stream",
+          "retained_at": "2026-09-15T11:19:04.345Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 50.0,
+        "orientation_input_tokens": 1879938.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -129938,6 +130129,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1511
+    "_version": 1513
   }
 }
