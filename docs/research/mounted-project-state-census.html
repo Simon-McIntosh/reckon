@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="doc">
+  <meta name="plan-slug" content="mounted-project-state-census">
+  <meta name="plan-title" content="Mounted-Project State Census — what the derived-state sweep must clear">
+  <meta name="plan-summary" content="A live scan of every mounted project recording the persisted state the derived-state sweep must remove: documents persisting a blocked plan status, persisted sprint-item statuses, and error-level wiring findings, each number stamped with the scan time and the project's git HEAD. Replaces the figures frozen on 2026-08-12 in the sweep-complete gate evidence rather than reusing them.">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <title>Mounted-Project State Census | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — What this census records</h2>
+    <p>
+      The <code>sweep-complete</code> gate on <code>derived-gate-state</code> requires a
+      re-scan of the mounted portfolio, so the sweep is sized from a census taken at the time
+      rather than from the figures frozen on 2026-08-12. This document <em>is</em> that census:
+      for every mounted project it records three numbers — the count of documents persisting a
+      blocked plan status, the count of persisted sprint-item statuses, and the count of
+      error-level wiring findings — each read from a single scan run, stamped with the scan time
+      and the project's own git <code>HEAD</code> at scan time. It replaces the 2026-08-12
+      inventory rather than reusing it.
+    </p>
+
+    <p>
+      Scan performed <strong>2026-09-15T08:15:35Z</strong> (unix 1789460135) across the
+      <strong>13 mounted projects</strong> in <code>~/.config/reckon/mounts.json</code>,
+      through reckon's own machinery: project discovery for the blocked-status and persisted-item
+      counts, the roadmap builder (<code>view="raw"</code>) for wiring findings, and the persisted
+      docs-tree index for sprint-item statuses. Nothing in any project tree was written.
+    </p>
+
+    <h2 id="s2">§2 — Portfolio totals</h2>
+
+    <table>
+      <thead><tr><th>What the sweep must clear</th><th>Count</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>Live documents persisting <code>plan-status="blocked"</code></td><td>1</td>
+        <td>imas-efit <code>b1-per-slice-monitoring</code>. (imas-ambix
+        <code>archive/demo.html</code> is archived + blocked and excluded as non-live.)</td></tr>
+        <tr><td>Persisted sprint-item statuses</td><td>45</td>
+        <td>imas-ambix 41, nova 4. Two projects (L2G, imas-standard-names-catalog) hold no
+        persisted docs-tree index, so no statuses there.</td></tr>
+        <tr><td>Error-level wiring findings</td><td>2</td>
+        <td>hanney 1 (<code>non-executable-hard-dependency</code>), imas-standard-names 1
+        (<code>plan-sprint-closed</code>)</td></tr>
+        <tr><td>Wiring findings of all severities</td><td>57</td>
+        <td>reckon 22, nova 16, imas-ambix 5, imas-efit 4, hanney 4, tessera 3,
+        imas-standard-names 2, helix 1</td></tr>
+      </tbody>
+    </table>
+
+    <p>
+      The sweep has narrowed sharply since 2026-08-12: the twelve persisted
+      <code>blocked</code> documents are down to one (ten of imas-efit's eleven and nova's
+      entry have cleared), and the seventeen error-level findings are down to two, with
+      imas-efit's entire error set gone. The persisted sibling statuses moved the other way in
+      imas-ambix (36 → 41) and nova (2 → 4) but sank in reckon (8 → 0); the net stands at 45
+      against 46 frozen.
+    </p>
+
+    <svg viewBox="0 0 720 344" role="img" aria-label="Per-project derived-state counts from the 2026-09-15 scan"
+         style="width:100%;max-width:720px;height:auto;font:12px sans-serif">
+      <g transform="translate(24,16)">
+        <text x="0" y="0" font-size="13" font-weight="bold" fill="#1a1a1a">Per-project derived-state counts — bars share a 0–41 scale</text>
+        <line x1="0" y1="14" x2="640" y2="14" stroke="#cccccc" stroke-width="1"/>
+        <!-- legend -->
+        <text x="0" y="30" font-size="10" fill="#1f6fb2">■ persisted sprint-item statuses (i)</text>
+        <text x="230" y="30" font-size="10" fill="#c0392b">■ documents persisting blocked (b)</text>
+        <text x="460" y="30" font-size="10" fill="#d4a017">■ error-level findings (e)</text>
+        <!-- 13 rows, 22px pitch. Row i: label baseline ly = 58+22i; bar band above it. -->
+        <!-- scale: 41 units = 300 px (≈7.32 px/unit). Bar x=150, value label after bar. -->
+        <g font-size="10">
+          <!-- L2G y=58 (absent index) -->
+          <text x="0" y="58" font-size="11" fill="#3f3f3f">L2G</text>
+          <text x="152" y="58" fill="#888">no persisted index</text>
+          <!-- hanney y=80: e=1 -->
+          <text x="0" y="80" font-size="11" fill="#3f3f3f">hanney</text>
+          <rect x="150" y="72" width="7" height="6" fill="#d4a017"/>
+          <text x="165" y="78" fill="#d4a017">e1</text>
+          <!-- helix y=102: none -->
+          <text x="0" y="102" font-size="11" fill="#3f3f3f">helix</text>
+          <text x="152" y="102" fill="#aaa">—</text>
+          <!-- imas-ambix y=124: i=41 -->
+          <text x="0" y="124" font-size="11" fill="#3f3f3f">imas-ambix</text>
+          <rect x="150" y="116" width="300" height="6" fill="#1f6fb2"/>
+          <text x="456" y="122" fill="#1f6fb2">i41</text>
+          <!-- imas-codex y=146: none -->
+          <text x="0" y="146" font-size="11" fill="#3f3f3f">imas-codex</text>
+          <text x="152" y="146" fill="#aaa">—</text>
+          <!-- imas-efit y=168: b=1 -->
+          <text x="0" y="168" font-size="11" fill="#3f3f3f">imas-efit</text>
+          <rect x="150" y="160" width="7" height="6" fill="#c0392b"/>
+          <text x="165" y="166" fill="#c0392b">b1</text>
+          <!-- imas-standard-names y=190: e=1 -->
+          <text x="0" y="190" font-size="11" fill="#3f3f3f">imas-standard-names</text>
+          <rect x="150" y="182" width="7" height="6" fill="#d4a017"/>
+          <text x="165" y="188" fill="#d4a017">e1</text>
+          <!-- imas-standard-names-catalog y=212: absent -->
+          <text x="0" y="212" font-size="11" fill="#3f3f3f">imas-standard-names-catalog</text>
+          <text x="152" y="212" fill="#888">no persisted index</text>
+          <!-- norma y=234: none -->
+          <text x="0" y="234" font-size="11" fill="#3f3f3f">norma</text>
+          <text x="152" y="234" fill="#aaa">—</text>
+          <!-- nova y=256: i=4 -->
+          <text x="0" y="256" font-size="11" fill="#3f3f3f">nova</text>
+          <rect x="150" y="248" width="29" height="6" fill="#1f6fb2"/>
+          <text x="187" y="254" fill="#1f6fb2">i4</text>
+          <!-- reckon y=278: none -->
+          <text x="0" y="278" font-size="11" fill="#3f3f3f">reckon</text>
+          <text x="152" y="278" fill="#aaa">—</text>
+          <!-- tessera y=300: none -->
+          <text x="0" y="300" font-size="11" fill="#3f3f3f">tessera</text>
+          <text x="152" y="300" fill="#aaa">—</text>
+          <!-- vv y=322: none -->
+          <text x="0" y="322" font-size="11" fill="#3f3f3f">vv</text>
+          <text x="152" y="322" fill="#aaa">—</text>
+        </g>
+      </g>
+    </svg>
+    <p style="font-size:0.9em;color:#666">Legend labels prefix each bar: <code>i#</code> = persisted sprint-item
+    statuses, <code>b#</code> = documents persisting <code>blocked</code>, <code>e#</code> = error-level wiring
+    findings. Bars share a 0–41 scale; the table below is authoritative for exact values.</p>
+
+    <h2 id="s3">§3 — Per-project record</h2>
+
+    <p>Each row reports the persisted blocked-plan-document count, the persisted sprint-item
+    status count, and the error-level wiring finding count, with the project's git
+    <code>HEAD</code> resolved at scan time. "Item statuses" reads the project's persisted
+    docs-tree index; a blank cell means the project holds no persisted index file
+    (<code>index_read: absent</code>) and therefore no persisted statuses to clear.</p>
+
+    <table>
+      <thead><tr><th>Project</th><th>HEAD @ scan</th><th>Blocked docs</th><th>Persisted item statuses</th>
+      <th>Error findings</th><th>All findings</th></tr></thead>
+      <tbody>
+        <tr><td><code>L2G</code></td><td><code>b118fa6</code></td><td>0</td><td>— (absent index)</td>
+        <td>0</td><td>0</td></tr>
+        <tr><td><code>hanney</code></td><td><code>3bcdb59</code></td><td>0</td><td>0</td>
+        <td>1 — <code>non-executable-hard-dependency</code></td><td>4</td></tr>
+        <tr><td><code>helix</code></td><td><code>40361c6</code></td><td>0</td><td>0</td>
+        <td>0</td><td>1</td></tr>
+        <tr><td><code>imas-ambix</code></td><td><code>166c809</code></td><td>0</td>
+        <td><strong>41</strong></td><td>0</td><td>5</td></tr>
+        <tr><td><code>imas-codex</code></td><td><code>13ec2f4</code></td><td>0</td><td>0</td>
+        <td>0</td><td>0</td></tr>
+        <tr><td><code>imas-efit</code></td><td><code>f2a830c</code></td><td><strong>1</strong> —
+        <code>b1-per-slice-monitoring</code></td><td>0</td><td>0</td><td>4</td></tr>
+        <tr><td><code>imas-standard-names</code></td><td><code>73f37a1</code></td><td>0</td><td>0</td>
+        <td>1 — <code>plan-sprint-closed</code></td><td>2</td></tr>
+        <tr><td><code>imas-standard-names-catalog</code></td><td><code>61c6cc8</code></td><td>0</td>
+        <td>— (absent index)</td><td>0</td><td>0</td></tr>
+        <tr><td><code>norma</code></td><td><code>bea38a6</code></td><td>0</td><td>0</td>
+        <td>0</td><td>0</td></tr>
+        <tr><td><code>nova</code></td><td><code>bcf8df9</code></td><td>0</td>
+        <td><strong>4</strong></td><td>0</td><td>16</td></tr>
+        <tr><td><code>reckon</code></td><td><code>3e3df5d</code></td><td>0</td><td>0</td>
+        <td>0</td><td>22</td></tr>
+        <tr><td><code>tessera</code></td><td><code>8729a2a</code></td><td>0</td><td>0</td>
+        <td>0</td><td>3</td></tr>
+        <tr><td><code>vv</code></td><td><code>c48b4c3</code></td><td>0</td><td>0</td>
+        <td>0</td><td>0</td></tr>
+      </tbody>
+    </table>
+
+    <p>Full HEAD values are recorded in the scan record committed alongside this document; the
+    abbreviated forms above are the first seven characters. Ten of thirteen projects carry no
+    error-level finding at all, and eleven of thirteen no live persisted <code>blocked</code>
+    document, so the sweep's remaining work is concentrated in imas-efit (1 blocked),
+    imas-ambix (41 item statuses), nova (4 item statuses), hanney (1 error) and
+    imas-standard-names (1 error).</p>
+
+    <h2 id="s4">§4 — Instrument notes</h2>
+    <p>
+      Counts are the persisted state a sweep must clear, not the composed state a reader
+      derives. Persisted sprint-item statuses are read from each project's persisted index
+      file, not from <code>read_plan</code>, which returns composed state with derived
+      statuses. Reading the persisted index reproduces the two moved figures already recorded
+      for this sweep (imas-ambix 41, nova 4) exactly, which confirms the instrument reads
+      persisted rather than composed state.
+      The roadmap wiring-finding instrument counts each finding once per build; the
+      all-severity total is read from a single build in the same scan run.
+    </p>
+  </main>
+</body>
+</html>

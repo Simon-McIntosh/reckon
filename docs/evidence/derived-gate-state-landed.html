@@ -308,6 +308,39 @@ effective_status('blocked', [{...}])   -&gt; 'blocked'   # a live blocker still 
     report to the owning project, not work to guess at.</p>
   </section>
 
+  <section id="sweep-census">
+    <h2>Mounted-project census 2026-09-15 — the sweep, sized from a current scan</h2>
+
+    <p>The figures above were true on 2026-08-12 and have since moved. A sweep sized against a
+    written-down count inherits that decay, so the portfolio was re-scanned on
+    <strong>2026-09-15T08:15:35Z</strong> (unix 1789460135) across the <strong>13 mounted
+    projects</strong>, each number stamped with the project's git <code>HEAD</code> at scan
+    time. Per-project record:
+    <a href="/reckon/research/mounted-project-state-census">mounted-project-state-census.</a></p>
+
+    <table>
+      <thead><tr><th>Measured, 2026-09-15T08:15:35Z</th><th>Count</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>Live documents persisting <code>blocked</code></td><td>1</td>
+        <td>imas-efit <code>b1-per-slice-monitoring</code></td></tr>
+        <tr><td>Persisted sprint-item statuses</td><td>45</td>
+        <td>imas-ambix 41, nova 4</td></tr>
+        <tr><td>Error-level wiring findings</td><td>2</td>
+        <td>hanney <code>non-executable-hard-dependency</code>, imas-standard-names
+        <code>plan-sprint-closed</code></td></tr>
+        <tr><td>Wiring findings of all severities</td><td>57</td>
+        <td>reckon 22, nova 16, imas-ambix 5, imas-efit 4, hanney 4, tessera 3,
+        imas-standard-names 2, helix 1</td></tr>
+      </tbody>
+    </table>
+
+    <p>These figures replace the ones above rather than reusing them: the twelve persisted
+    <code>blocked</code> documents are down to one, the seventeen error-level findings to two, and
+    the persisted sibling statuses stand at 45 against 46 frozen — imas-ambix grew 36 → 41 and
+    nova 2 → 4 while reckon's eight dropped to zero. The census is the basis a
+    <code>sweep-complete</code> re-scan measurement can be met against.</p>
+  </section>
+
   <section id="draft-decay">
     <h2>The decay alarm's own evidence was stale</h2>
 
