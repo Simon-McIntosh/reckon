@@ -233,6 +233,26 @@
     keeps its own receipt renders &ldquo;answered&rdquo; &mdash; so one status
     conflates two meanings. Recorded rather than fixed here.</p>
   </section>
+
+  <section id="month-figure">
+    <h2>The month figure is not the gate a dispatch consults</h2>
+    <p>Landed 2026-09-15, commit <code>a8692b4</code>. The account's month-scale
+    figure cannot reach the decision a reader makes about a lane. The window a
+    request actually runs into is <code>unifiedWindows.five_hour</code>; the
+    top-level <code>overage</code> line records the account's calendar position,
+    reads above 1 for the rest of the month, and resets on the month boundary.
+    Neither the month figure nor its reset may appear in the emitted state or
+    its reason.</p>
+    <p><strong>Behaviour was verified, not reimplemented.</strong> The windowed
+    read already keeps 1.21 and the month-boundary reset out of the verdict at
+    the dispatch's own entry point &mdash; one preflight with the measured shape
+    (top-level 1.21 and overage aside a five-hour window at 5% with a near
+    reset, no severity, no exhausted status) reports the lane open, and neither
+    figure reaches the state or reason.</p>
+    <p><strong>Measure:</strong> decision-surface test added at the entry point
+    a dispatch consults. 85 passed / 0 failed at base <code>a736189</code>, 86
+    passed / 0 failed at head, zero added failures.</p>
+  </section>
 </main>
 </body>
 </html>
