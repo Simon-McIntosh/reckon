@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T02:31:46",
+  "updated": "2026-09-15T02:54:50",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -118856,6 +118856,270 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T221330292225-borrowed-figure-is-not-the-lanes-own",
+        "plan": "burn-is-visible-before-it-bites",
+        "section": "\u00a75",
+        "node": "borrowed-figure-is-not-the-lanes-own",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 849,
+                "cached_input_tokens": 879382,
+                "input_tokens": 880233,
+                "output_tokens": 1875,
+                "reasoning_output_tokens": 417,
+                "total_tokens": 882108,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "306c1aec-df4a-489e-88c3-441bbb1f5baf",
+            "session_id": "ship-lane-aware-20260914"
+          },
+          "done_when": "uv run pytest tests/test_crew_lanes_view.py -q passes with: a backend whose reading came from a probe shared with sibling backends rendered with a quota_source marking it borrowed or unobserved rather than carrying the shared figure as its own; a backend with its own measured reading rendered as measured; and backends sharing a budget grouped only by a DECLARED configuration key, asserted by two backends with identical resets_at that are NOT declared as a group remaining ungrouped, so a shared reset time alone never groups them. Failure delta 0 against base a76cb93, excluding the known pre-existing failure at mcp_views.py:526",
+          "estimated_hours": null,
+          "goal": "A lane whose quota reading came from a shared account probe is rendered as unobserved, never carrying the probed account's number",
+          "id": "borrowed-figure-is-not-the-lanes-own",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T22:13:30Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T221330292225-borrowed-figure-is-not-the-lanes-own/manifest.md",
+          "plan": "burn-is-visible-before-it-bites",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/mcp_views.py",
+            "tests/test_crew_lanes_view.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-codex-usage",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T22:13:41Z",
+        "completed_at": "2026-09-15T00:36:15.005Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 8518,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 8554,
+        "stalled": true,
+        "time_budget": "45m",
+        "base_sha": "e5762ec633f9d983572028d6d52b5216ac513ff6",
+        "commits": [
+          "6c18dd479c856c5ee24ec168ae3067c5eca63a51"
+        ],
+        "changed_lines": {
+          "added": 274,
+          "removed": 12,
+          "files": 2
+        },
+        "tests_added": 5,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_crew_lanes_view.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T221330292225-borrowed-figure-is-not-the-lanes-own.json",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T221330292225-borrowed-figure-is-not-the-lanes-own/manifest.md",
+        "scope_changed": false,
+        "session_id": "4010f2c6-d099-4113-b871-436ea32fe3c0",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 0,
+            "input_tokens_cumulative": 11401365,
+            "output_tokens": 49315,
+            "output_tokens_cumulative": 156725,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T00:36:15.005Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 3310,
+              "budget_seconds": 2400,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 5710,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1056,
+              "log_fresh": false,
+              "manifest_commits": [
+                "b316011 fix(budget): consult the severity floor before the no-figure clear"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "80332f16c5ad48c6bb709982b8bb1258c7c60b8cf52415cb4c14266c4aaec47f",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T202038117446-severity-floor-holds-without-a-utilisation/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan a-lane-can-say-where-it-stands --section coordinator-share --role review --spec-level exact --node review-of-severity-floor-holds-without-a-utilisation --goal 'attach an independent review to run r-20260914T202038117446-severity-floor-holds-without-a-utilisation' --done-when 'the review for r-20260914T202038117446-severity-floor-holds-without-a-utilisation parses all five score dimensions' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260914T202038117446-severity-floor-holds-without-a-utilisation.json --time-budget 40m --session ship-lane-aware-20260914 --local",
+              "node": "severity-floor-holds-without-a-utilisation",
+              "phase": "starting",
+              "plan": "a-lane-can-say-where-it-stands",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260914T202038117446-severity-floor-holds-without-a-utilisation",
+              "session": "ship-lane-aware-20260914",
+              "terminal_age_seconds": 1110,
+              "terminal_at": "2026-09-14T21:55:07Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-lane-aware-20260914/severity-floor-holds-without-a-utilisation"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 18,
+            "evidence": 19,
+            "fit": 17,
+            "goal_fidelity": 19,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 93
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 11732074,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 8550.081,
+          "generated_tokens": 173490,
+          "generation_seconds": 8515.833,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 82.7,
+          "machine_seconds": 34.248,
+          "peak_input_tokens": 165492,
+          "tokens_per_second": 20.37,
+          "wall_tokens_per_second": 20.29
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_crew_lanes_view.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-lane-aware-20260914/borrowed-figure-is-not-the-lanes-own",
+          "session_id": "4010f2c6-d099-4113-b871-436ea32fe3c0",
+          "session_source": "pointer",
+          "retained_at": "2026-09-15T00:36:15.005Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 89.0,
+        "orientation_input_tokens": 5249732.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -119084,6 +119348,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1455
+    "_version": 1456
   }
 }
