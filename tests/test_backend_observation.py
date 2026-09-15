@@ -16,8 +16,10 @@ a pre-flight report a clear backend for six days while it was exhausted.
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+
+import pytest
 
 from reckon import _backends
 from reckon.crew import rollout
@@ -403,6 +405,270 @@ def test_an_event_with_no_unified_windows_reports_unknown_headroom():
 
     assert block["headroom"] == "unknown"
     assert block["utilisation_pct"] is None
+
+
+# ── The on-disk cache fallback is rendered beside its fetch age ─────────────
+
+
+def _cache_file(tmp_path: Path, payload: dict) -> Path:
+    """An on-disk copy of the account block, carrying a fetch stamp."""
+    path = tmp_path / "account-cache.json"
+    path.write_text(json.dumps(payload))
+    return path
+
+
+def _cached_payload(*, stamp: object) -> dict:
+    return {
+        "windows": {
+            "weekly": {
+                "utilization": 0.53,
+                "resetsAt": 1789416000,
+                "windowMinutes": 10080,
+            },
+        },
+        "fetch_stamp": stamp,
+    }
+
+
+def _live_credential(now: datetime) -> dict:
+    return {
+        "accessToken": "live-token",
+        "refreshTokenExpiresAt": int((now + timedelta(days=30)).timestamp()),
+    }
+
+
+def _figure_without_age(block: object) -> list[dict]:
+    """Every cache-sourced structure holding a figure must also hold its age.
+
+    The stamp is the cache's own marker, so only a structure that carries it is
+    a cached reading; a live reading legitimately shows a figure with no cache
+    age, and is not flagged.
+    """
+    found: list[dict] = []
+    stack: list[object] = [block]
+    while stack:
+        node = stack.pop()
+        if isinstance(node, dict):
+            if (
+                "fetch_stamp" in node
+                and node.get("utilisation_pct") is not None
+                and "fetch_age_seconds" not in node
+            ):
+                found.append(node)
+            stack.extend(node.values())
+        elif isinstance(node, list):
+            stack.extend(node)
+    return found
+
+
+def test_a_cached_reading_carries_its_age_at_the_reader_entry_point(
+    tmp_path, monkeypatch
+):
+    """The fallback is asserted where a pre-flight reads it, not on the parser.
+
+    The live surface is unreachable and the cache's stamp is five hours old;
+    the reading returned from the reader's own entry point carries that age in
+    the same block as the figure, and the detail string names it.
+    """
+    now = datetime(2030, 1, 1, tzinfo=UTC)
+    cache = _cache_file(
+        tmp_path,
+        _cached_payload(stamp=int((now - timedelta(hours=5)).timestamp())),
+    )
+    monkeypatch.setattr(_backends, "_load_claude_credential", lambda: _live_credential(now))
+
+    def _unreachable(oauth):
+        raise OSError("surface unreachable")
+
+    budget = _backends.probe_budget(
+        backend_name="metered",
+        backend=CLAUDE,
+        fetch=_unreachable,
+        now=now,
+        cache_path=cache,
+    )
+
+    assert budget["headroom"] == "known"
+    assert budget["utilisation_pct"] == 53.0
+    assert budget["fetch_age_seconds"] == 5 * 3600
+    assert "5h00m" in budget["detail"]
+    assert not _figure_without_age(budget)
+
+
+def test_a_cached_figure_never_appears_without_its_age_beside_it(
+    tmp_path, monkeypatch
+):
+    """No emitted structure shows a cache-sourced figure alone.
+
+    The age is a sibling field of the figure in the returned block, the stamp
+    and the age both travel with it, and the detail string names the age too.
+    """
+    now = datetime(2030, 1, 1, tzinfo=UTC)
+    cache = _cache_file(
+        tmp_path,
+        _cached_payload(stamp=int((now - timedelta(hours=5)).timestamp())),
+    )
+    monkeypatch.setattr(_backends, "_load_claude_credential", lambda: _live_credential(now))
+    monkeypatch.setattr(
+        _backends, "_fetch_claude_account",
+        lambda oauth: (_ for _ in ()).throw(OSError("surface down")),
+    )
+
+    budget = _backends.probe_budget(
+        backend_name="metered", backend=CLAUDE, now=now, cache_path=cache,
+    )
+
+    assert budget["utilisation_pct"] == 53.0
+    assert budget["fetch_age_seconds"] == 5 * 3600
+    assert "fetch_stamp" in budget
+    assert "5h00m" in budget["detail"]
+    assert not _figure_without_age(budget)
+
+
+@pytest.mark.parametrize(
+    "stamp",
+    [None, "monday-ish", [0.53], True],
+)
+def test_a_cached_block_without_a_trustworthy_stamp_is_unknown_not_a_figure(
+    tmp_path, monkeypatch, stamp
+):
+    """A stamp that cannot be dated means no figure is shown at all.
+
+    The cached copy holds a valid reading, but without a trusted fetch moment
+    its age cannot be stated, so it resolves to unknown rather than appearing
+    as a bare figure.
+    """
+    now = datetime(2030, 1, 1, tzinfo=UTC)
+    cache = _cache_file(tmp_path, _cached_payload(stamp=stamp))
+    monkeypatch.setattr(_backends, "_load_claude_credential", lambda: _live_credential(now))
+    monkeypatch.setattr(
+        _backends, "_fetch_claude_account",
+        lambda oauth: (_ for _ in ()).throw(OSError("surface down")),
+    )
+
+    budget = _backends.probe_budget(
+        backend_name="metered", backend=CLAUDE, now=now, cache_path=cache,
+    )
+
+    assert budget["headroom"] == "unknown"
+    assert budget["utilisation_pct"] is None
+    assert budget["resets_at"] is None
+    assert "fetch_stamp" not in budget
+    assert not _figure_without_age(budget)
+
+
+def test_the_cache_reader_names_a_fetch_stamp_it_cannot_trust(tmp_path):
+    """The reader names the missing stamp rather than silently showing a figure."""
+    now = datetime(2030, 1, 1, tzinfo=UTC)
+    cache = _cache_file(tmp_path, _cached_payload(stamp="not-a-moment"))
+
+    budget = _backends.cached_account_budget(path=cache, now=now)
+
+    assert budget["headroom"] == "unknown"
+    assert budget["utilisation_pct"] is None
+    assert "fetch_stamp" in budget["detail"]
+
+
+def test_a_live_account_read_is_not_annotated_with_a_cache_age(
+    tmp_path, monkeypatch
+):
+    """The age marks provenance of a fallback, never decoration of every reading.
+
+    A fresh account-surface answer wins outright, even with a cache supplied,
+    and the returned live block carries no age markers at all.
+    """
+    now = datetime(2030, 1, 1, tzinfo=UTC)
+    cache = _cache_file(
+        tmp_path,
+        _cached_payload(stamp=int((now - timedelta(hours=5)).timestamp())),
+    )
+    monkeypatch.setattr(_backends, "_load_claude_credential", lambda: _live_credential(now))
+    live = {
+        "windows": {
+            "weekly": {
+                "utilization": 0.89,
+                "resetsAt": 1789416000,
+                "windowMinutes": 10080,
+            },
+        },
+    }
+
+    budget = _backends.probe_budget(
+        backend_name="metered",
+        backend=CLAUDE,
+        fetch=lambda oauth: live,
+        now=now,
+        cache_path=cache,
+    )
+
+    assert budget["headroom"] == "known"
+    assert budget["utilisation_pct"] == 89.0
+    assert "fetch_age_seconds" not in budget
+    assert "fetch_stamp" not in budget
+    assert not _figure_without_age(budget)
+
+
+def test_a_cached_position_surfaces_only_when_the_live_read_does_not(
+    tmp_path, monkeypatch
+):
+    """The fallback fires on a live unknown too, and never by default.
+
+    A live answer that cannot name headroom falls back to the last-known
+    position with its age; without an explicit cache path no stale figure leaks
+    into the reading at all.
+    """
+    now = datetime(2030, 1, 1, tzinfo=UTC)
+    cache = _cache_file(
+        tmp_path,
+        _cached_payload(stamp=int((now - timedelta(hours=3, minutes=30)).timestamp())),
+    )
+    monkeypatch.setattr(_backends, "_load_claude_credential", lambda: _live_credential(now))
+    changed = {"unrecognised": "shape"}
+
+    budget = _backends.probe_budget(
+        backend_name="metered",
+        backend=CLAUDE,
+        fetch=lambda oauth: changed,
+        now=now,
+        cache_path=cache,
+    )
+
+    assert budget["headroom"] == "known"
+    assert budget["utilisation_pct"] == 53.0
+    assert budget["fetch_age_seconds"] == 3.5 * 3600
+    assert "3h30m" in budget["detail"]
+
+    without_cache = _backends.probe_budget(
+        backend_name="metered",
+        backend=CLAUDE,
+        fetch=lambda oauth: changed,
+        now=now,
+    )
+
+    assert without_cache["headroom"] == "unknown"
+    assert without_cache["utilisation_pct"] is None
+    assert "fetch_age_seconds" not in without_cache
+
+
+def test_an_unreadable_cache_is_an_unknown_reason_not_a_crash(tmp_path, monkeypatch):
+    """A broken cache file cannot stop the instrument or mask the live reason."""
+    now = datetime(2030, 1, 1, tzinfo=UTC)
+    monkeypatch.setattr(_backends, "_load_claude_credential", lambda: _live_credential(now))
+    monkeypatch.setattr(
+        _backends, "_fetch_claude_account",
+        lambda oauth: (_ for _ in ()).throw(OSError("surface down")),
+    )
+
+    budget = _backends.probe_budget(
+        backend_name="metered",
+        backend=CLAUDE,
+        now=now,
+        cache_path=tmp_path / "missing-cache.json",
+    )
+
+    assert budget["headroom"] == "unknown"
+    assert budget["utilisation_pct"] is None
+    assert "account read failed" in budget["detail"]
 
 
 # ── The record ──────────────────────────────────────────────────────────────
