@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T02:20:34",
+  "updated": "2026-09-15T02:31:46",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -118652,6 +118652,210 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260914T225959884504-stale-contracts-assert-what-the-code-now-produces",
+        "plan": "spa-surface-contract-health",
+        "section": "\u00a72",
+        "node": "stale-contracts-assert-what-the-code-now-produces",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1971,
+                "cached_input_tokens": 457639,
+                "input_tokens": 459612,
+                "output_tokens": 1392,
+                "reasoning_output_tokens": 452,
+                "total_tokens": 461004,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3332e8d8-dcef-4091-9774-c9680478b165",
+            "session_id": "ship-s16-20260914"
+          },
+          "done_when": "One captured run over the migrated files reports nine fewer failures than the revision this plan was authored at and none added, both stated as digits against that named base. Each migrated assertion asserts the value the code now produces and states in one line what moved; no assertion is deleted, skipped, marked xfail, or widened to accept either the old or the new value, because any of those reports a contract that is no longer checked. The derived-flow case is migrated by INJECTING A CLOCK into the rendered probe, exactly as its three sibling schedule tests already do, keeping the expected lane count at 2; the expected number must NOT be changed to 1, since 1 is itself wall-clock-dependent and fails on fixture-era dates. The reader-pager case in tests/test_spa_reader_geometry.py is OUT OF SCOPE and must be left untouched and still failing: an investigation established that its assertion of 3 of 3 is catching a genuine readout defect owned by a sibling plan, so migrating it would convert a live defect into a passing test; state in the manifest that it was deliberately left red and why. The two stylesheet cases are repaired by asserting the property the test is about rather than a whole-object snapshot, so a later unrelated declaration cannot fail a test about something else",
+          "estimated_hours": null,
+          "goal": "Migrate the nine stale surface contracts so each asserts the value the code now produces",
+          "id": "stale-contracts-assert-what-the-code-now-produces",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-14T23:00:00Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T225959884504-stale-contracts-assert-what-the-code-now-produces/manifest.md",
+          "plan": "spa-surface-contract-health",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_build.py",
+            "tests/test_crew_surface.py",
+            "tests/test_spa_composition.py",
+            "tests/test_spa_shell_geometry.py",
+            "tests/test_spa_graph_geometry.py",
+            "tests/test_spa_derived_flow.py",
+            "tests/fixtures/crew-public-surface.txt"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "s15-skillproto",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-14T23:00:07Z",
+        "completed_at": "2026-09-15T00:28:09.957Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 5271,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 5282,
+        "stalled": false,
+        "time_budget": "60m",
+        "base_sha": "f17c64314f4343bbff1e6cdd47a551741e17f99a",
+        "commits": [
+          "2b43c6fe8d4db3a6f53adac11627afe32db6f08e"
+        ],
+        "changed_lines": {
+          "added": 113,
+          "removed": 71,
+          "files": 6
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q over the six migrated files, captured at the plan-authored base and again at the migrated head",
+          "exit_status": 0,
+          "log_path": "/tmp/stale-contracts-after-full.log",
+          "log_digest": "32ba868fbe9ec05ac61f35812950114289436d5901409f5a55f4af3f02534ba7"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260914T225959884504-stale-contracts-assert-what-the-code-now-produces/manifest.md",
+        "scope_changed": true,
+        "session_id": "c6d5291c-9a5a-4390-8d2d-471944c9a955",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 12396644,
+            "input_tokens_cumulative": 12396644,
+            "output_tokens": 105101,
+            "output_tokens_cumulative": 105101,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T00:28:09.957Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 12564325,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 5279.586,
+          "generated_tokens": 110915,
+          "generation_seconds": 4921.285,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 83.2,
+          "machine_seconds": 358.301,
+          "peak_input_tokens": 166381,
+          "tokens_per_second": 22.54,
+          "wall_tokens_per_second": 21.01
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16-20260914/stale-contracts-assert-what-the-code-now-produces",
+          "session_id": "c6d5291c-9a5a-4390-8d2d-471944c9a955",
+          "session_source": "stream",
+          "retained_at": "2026-09-15T00:28:09.957Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 111.0,
+        "orientation_input_tokens": 5685030.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -118880,6 +119084,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1454
+    "_version": 1455
   }
 }
