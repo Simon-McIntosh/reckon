@@ -301,9 +301,35 @@ def _quota_rows(
 
 
 def _run_budget_probe(
-    backend_name: str, settings: Mapping[str, Any]
+    backend_name: str,
+    settings: Mapping[str, Any],
+    *,
+    cache_path: str | Path | None = None,
+    now: datetime | None = None,
 ) -> Mapping[str, Any] | None:
-    return _backends.probe_budget(backend_name=backend_name, backend=settings)
+    return _backends.probe_budget(
+        backend_name=backend_name, backend=settings, cache_path=cache_path, now=now
+    )
+
+
+def _cached_path_probe_reader(
+    cache_path: str | Path | None,
+    *,
+    now: datetime | None = None,
+) -> Callable[[str, Mapping[str, Any]], Mapping[str, Any] | None]:
+    """Bind an account-cache path onto the probe reader's two-argument seam.
+
+    The bound moment fixes the cached stamp's age against the same instant the
+    view composes, so a stamped figure's age is deterministic under a pinned
+    fixture instead of drifting with wall-clock time.
+    """
+
+    def probe_reader(
+        backend_name: str, settings: Mapping[str, Any]
+    ) -> Mapping[str, Any] | None:
+        return _run_budget_probe(backend_name, settings, cache_path=cache_path, now=now)
+
+    return probe_reader
 
 
 def _owns_account_surface_reading(dialect: _backends.Dialect) -> bool:
@@ -365,19 +391,57 @@ def _cached_probe_reading(
             "cached": False,
         }
     else:
-        windows = answer.get("quota_windows") if isinstance(answer, Mapping) else None
+        answer_map = answer if isinstance(answer, Mapping) else None
+        windows = answer_map.get("quota_windows") if answer_map else None
+        observed = observed_at
+        provenance: dict[str, Any] = {}
+        if answer_map is not None and _backends.ACCOUNT_CACHE_STAMP in answer_map:
+            # A cache-sourced reading: the block carries no quota windows, so
+            # synthesize its single window from the scalar fields, and observe
+            # the reading at the copy's own fetch stamp so the copy's age
+            # travels beside the figure instead of being dropped.
+            provenance = {
+                _backends.ACCOUNT_CACHE_STAMP: answer_map[_backends.ACCOUNT_CACHE_STAMP]
+            }
+            if answer_map.get("fetch_age_seconds") is not None:
+                provenance["fetch_age_seconds"] = answer_map["fetch_age_seconds"]
+            stamp = _parsed_observation(str(answer_map[_backends.ACCOUNT_CACHE_STAMP]))
+            if stamp is not None:
+                observed = str(answer_map[_backends.ACCOUNT_CACHE_STAMP])
+            if windows is None and answer_map.get("headroom") == "known":
+                window_minutes = answer_map.get("rate_limit_period_minutes")
+                used = answer_map.get("utilisation_pct")
+                resets_at = answer_map.get("resets_at")
+                if (
+                    isinstance(window_minutes, int)
+                    and not isinstance(window_minutes, bool)
+                    and window_minutes > 0
+                    and isinstance(used, (int, float))
+                    and not isinstance(used, bool)
+                    and resets_at is not None
+                ):
+                    windows = {
+                        window_minutes: {
+                            "window_minutes": window_minutes,
+                            "used_percent": used,
+                            "resets_at": resets_at,
+                        }
+                    }
         if isinstance(windows, Mapping) and windows:
             observation = {
                 "status": "answered",
-                "observed_at": observed_at,
-                "detail": str(answer.get("detail") or "quota probe answered"),
+                "observed_at": observed,
+                "detail": str(answer_map.get("detail") or "quota probe answered")
+                if answer_map
+                else "quota probe answered",
                 "quota_windows": windows,
                 "cached": False,
+                **provenance,
             }
         else:
             detail = (
-                str(answer.get("detail") or "probe returned no quota windows")
-                if isinstance(answer, Mapping)
+                str(answer_map.get("detail") or "probe returned no quota windows")
+                if answer_map
                 else "probe returned no result"
             )
             observation = {
@@ -496,6 +560,7 @@ def crew_lanes_view(
     probe_reader: Callable[[str, Mapping[str, Any]], Mapping[str, Any] | None]
     | None = None,
     composed_at: str | None = None,
+    account_cache_path: str | Path | None = None,
 ) -> dict[str, Any]:
     """Compose endpoint availability without selecting or ranking a backend.
 
@@ -514,7 +579,19 @@ def crew_lanes_view(
     latest = _latest_backend_runs(runs)
     backend_config = config.get("backends")
     configured = backend_config if isinstance(backend_config, Mapping) else {}
-    read_probe = probe_reader or _run_budget_probe
+    if probe_reader is not None:
+        read_probe = probe_reader
+    else:
+        # The default probe reader consults the on-disk account cache only when
+        # the view is handed its path; an injected reader keeps its own seam.
+        # The cached stamp's age resolves against the composition instant so a
+        # pinned fixture and a determined fetch age stay in the same frame.
+        probe_now = _parsed_observation(composition_time) or datetime.now(UTC)
+        read_probe = (
+            _cached_path_probe_reader(account_cache_path, now=probe_now)
+            if account_cache_path is not None
+            else _run_budget_probe
+        )
     cache_seconds = float(
         budget_module.policy(config).get("availability_probe_cache_seconds", 0)
     )
@@ -715,6 +792,16 @@ def crew_lanes_view(
             "notional_cost_usd": notional_cost,
             "rate_basis": basis,
         }
+        if quota_source == "probe" and isinstance(probe, Mapping):
+            # A probe figure is shown as the lane's own, so the reading's
+            # provenance travels with it: the account-cache stamp and its fetch
+            # age sit beside the figure the lane now renders.
+            fetch_age = probe.get("fetch_age_seconds")
+            fetch_stamp = probe.get(_backends.ACCOUNT_CACHE_STAMP)
+            if fetch_age is not None:
+                lane["probe_fetch_age_seconds"] = fetch_age
+            if fetch_stamp is not None:
+                lane["probe_fetch_stamp"] = fetch_stamp
         unmeasured = {
             key: value
             for key, value in (

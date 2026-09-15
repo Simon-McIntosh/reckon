@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -567,3 +568,157 @@ def test_dead_spelling_groups_nothing_even_when_the_value_matches() -> None:
     assert view["budget_groups"] == {"pool-a": ["live"]}
     assert lanes["live"]["budget_group"] == "pool-a"
     assert lanes["stale"]["budget_group"] is None
+
+
+# ── A cached account reading carries its fetch age beside the figure ─────────
+
+CACHE_WEEKLY_MINUTES = 7 * 24 * 60
+CACHE_WEEKLY_RESET = 1_789_416_000
+
+
+def _cache_payload(*, with_stamp: bool, stamp: object = None) -> dict[str, Any]:
+    """An on-disk copy of the account block, carried on the probe cache path."""
+    payload = {
+        "windows": {
+            "weekly": {
+                "utilization": 0.53,
+                "resetsAt": CACHE_WEEKLY_RESET,
+                "windowMinutes": CACHE_WEEKLY_MINUTES,
+            },
+        },
+    }
+    if with_stamp:
+        payload["fetch_stamp"] = stamp
+    return payload
+
+
+def _cache_sourced_view(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    cache_payload: dict[str, Any],
+    composed_at: str = "2030-01-02T03:05:06Z",
+) -> dict[str, Any]:
+    """Compose the lanes view through its production probe reader, with an
+    on-disk account cache and a dead live surface, so the cache is the only
+    source the probe path can answer from."""
+    cache = tmp_path / "account-cache.json"
+    cache.write_text(json.dumps(cache_payload))
+    composed = datetime(2030, 1, 2, 3, 5, 6, tzinfo=UTC)
+    monkeypatch.setattr(
+        _backends,
+        "_load_claude_credential",
+        lambda: {
+            "accessToken": "live-token",
+            "refreshTokenExpiresAt": int((composed + timedelta(days=30)).timestamp()),
+        },
+    )
+    monkeypatch.setattr(
+        _backends,
+        "_fetch_claude_account",
+        lambda credential: (_ for _ in ()).throw(OSError("surface down")),
+    )
+    weekly = _Reading(CACHE_WEEKLY_MINUTES, 40, CACHE_WEEKLY_RESET)
+    receipts = {
+        "metered-session": _Receipt(
+            CACHE_WEEKLY_MINUTES * 12, {CACHE_WEEKLY_MINUTES: weekly}
+        )
+    }
+    runs = [
+        {
+            "run_id": "run-metered",
+            "backend": "metered",
+            "session_id": "metered-session",
+            "completed_at": "2030-01-02T03:04:05Z",
+        }
+    ]
+    return mcp_views.crew_lanes_view(
+        {"backends": {"metered": {"launch": "cli", "command": "claude"}}},
+        runs,
+        receipt_reader=receipts.__getitem__,
+        composed_at=composed_at,
+        account_cache_path=cache,
+    )
+
+
+def _figure_without_age(view: object) -> list[dict]:
+    """Structures that surface the cache's own stamp without its fetch age.
+
+    The stamp is the cache's provenance marker, so the moment it appears on a
+    lane the age must be there too: a bare stamp would mean a figure with its
+    age dropped. A live reading legitimately carries neither and is not
+    flagged.
+    """
+    found: list[dict] = []
+    stack: list[object] = [view]
+    while stack:
+        node = stack.pop()
+        if isinstance(node, dict):
+            if "probe_fetch_stamp" in node and "probe_fetch_age_seconds" not in node:
+                found.append(node)
+            stack.extend(node.values())
+        elif isinstance(node, list):
+            stack.extend(node)
+    return found
+
+
+def test_a_cached_reading_carries_its_fetch_age_beside_the_figure_in_the_view(
+    tmp_path, monkeypatch
+) -> None:
+    """The fixture copy is five hours old at composition, so the age beside the
+    figure is five hours (18000 seconds) — derived from the fixture, never a
+    hardcoded age literal."""
+    composed = datetime(2030, 1, 2, 3, 5, 6, tzinfo=UTC)
+    cache_age_hours = 5
+    view = _cache_sourced_view(
+        tmp_path,
+        monkeypatch,
+        cache_payload=_cache_payload(
+            with_stamp=True,
+            stamp=int((composed - timedelta(hours=cache_age_hours)).timestamp()),
+        ),
+    )
+    lane = _lanes_by_backend(view)["metered"]
+    window = _windows_by_length(lane)[CACHE_WEEKLY_MINUTES]
+
+    assert lane["probe_status"] == "answered"
+    assert lane["quota_source"] == "probe"
+    assert lane["probe_fetch_age_seconds"] == cache_age_hours * 3600
+    assert window["source"] == "probe"
+    assert window["used_percent"] == 53.0
+    assert window["age_seconds"] == cache_age_hours * 3600
+    assert window["observed_at"] == lane["probe_fetch_stamp"]
+    assert window["serving_state"] == mcp_views.STALE_SERVING_STATE
+    assert _figure_without_age(view) == []
+
+
+@pytest.mark.parametrize(
+    "cache_payload",
+    [
+        pytest.param(
+            _cache_payload(with_stamp=False),
+            id="stamp-key-absent",
+        ),
+        pytest.param(
+            _cache_payload(with_stamp=True, stamp="monday-ish"),
+            id="stamp-unparseable",
+        ),
+    ],
+)
+def test_an_unresolvable_fetch_stamp_is_unknown_not_a_figure(
+    tmp_path, monkeypatch, cache_payload
+) -> None:
+    """A copy whose fetch stamp cannot be resolved never renders the figure.
+
+    This is a refusal: if any figure leaked from the unresolvable copy the
+    assertion below would fail, because the only figure the copy carries (53)
+    must not appear anywhere in the view.
+    """
+    view = _cache_sourced_view(tmp_path, monkeypatch, cache_payload=cache_payload)
+    lane = _lanes_by_backend(view)["metered"]
+
+    assert lane["probe_status"] == "unavailable"
+    assert "probe_fetch_age_seconds" not in lane
+    assert "probe_fetch_stamp" not in lane
+    assert [row["used_percent"] for row in lane["quota_windows"]] == [40]
+    assert _figure_without_age(view) == []

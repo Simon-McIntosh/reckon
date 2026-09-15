@@ -221,6 +221,40 @@
     The reconstructed-backend half of the same prose requirement is not taken:
     blocked on a peer's live claim over <code>reckon/crew/recovery.py</code>.</p>
   </section>
+  <section id="lanes-view-cache-age">
+    <h2>The lanes view carries a cached reading's fetch age beside its figure</h2>
+    <p>Landed 2026-09-15. The block-level half above reached the reader; this
+    carries the requirement to the surface a coordinator consults before opening a
+    wave, <code>crew_lanes_view</code>, so cache-sourced provenance survives the
+    render. Three surfaces changed in <code>reckon/mcp_views.py</code>, each
+    asserted: the default probe reader accepts an account <code>cache_path</code>
+    and a pinned composition instant, so the on-disk fallback fires inside the view
+    and the copy's age resolves against the same moment the view composes;
+    <code>_cached_probe_reading</code> recognises a cache-sourced block by its own
+    stamp, preserves the numeric age and the stamp onto the observation, observes
+    the reading at the copy's fetch stamp, and marks the block answered by
+    synthesising its single weekly window; and a lane whose figure is the probe's
+    carries <code>probe_fetch_age_seconds</code> and
+    <code>probe_fetch_stamp</code>, while the quota row holds the figure, the
+    stamp-derived <code>observed_at</code> and <code>age_seconds</code> in one row.
+    The fixture copy's stamp is 5 hours old and the asserted age is derived from
+    that fixture moment, never frozen as a literal.</p>
+    <p><strong>Unknown is the only answer for an unresolvable stamp, asserted as a
+    refusal.</strong> A copy with the stamp key absent and a copy whose stamp does
+    not parse are both parametrised; each leaves the lane <code>unavailable</code>
+    with no figure rendered anywhere, and the assertion fails the moment the
+    cache's figure appears in any number. <code>fetch_age_seconds</code> carries
+    1 production reference before this node (the assignment in
+    <code>cached_account_budget</code>) and 5 after, the four new references being
+    the preservation through <code>_cached_probe_reading</code> and the lane-level
+    surfacing.</p>
+    <p><strong>Measure:</strong> 62 tests in the three-file gate, 58 passed, 2
+    failed; both failure ids reproduce identically at the base revision
+    <code>a9a4f455</code> (re-run at the base tree), so added failures is 0 against
+    a red base. The 58 passes include the three new cases. The reconstructed-backend
+    half of the same prose requirement stays untouched, blocked on a peer's write
+    scope over <code>dispatch.py</code> and <code>promotion.py</code>.</p>
+  </section>
 </main>
 </body>
 </html>
