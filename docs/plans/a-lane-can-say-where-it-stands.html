@@ -20,9 +20,9 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="27">
-<meta name="plan-section-declarations" content="{&quot;what-is-wrong&quot;:&quot;done&quot;,&quot;the-surface&quot;:&quot;done&quot;,&quot;where-the-probe-lives&quot;:&quot;implementable&quot;,&quot;parse-strictly&quot;:&quot;implementable&quot;,&quot;coordinator-share&quot;:&quot;implementable&quot;,&quot;pin-the-denominator&quot;:&quot;implementable&quot;,&quot;out-of-scope&quot;:&quot;done&quot;}">
-<meta name="plan-commits" content="5e3e041c895353a003e15954382a78b49151a2ac,fab092dafb269286fb2f6bc1dbfb1f060dd95247,50c436f3c1865e2e11a662829f87283660a13da5,fff2ca7,a9a9d027b0ce92363356e120209e11b4c4f0c3bd,b316011">
+<meta name="plan-version" content="29">
+<meta name="plan-section-declarations" content="{&quot;what-is-wrong&quot;:&quot;done&quot;,&quot;the-surface&quot;:&quot;done&quot;,&quot;where-the-probe-lives&quot;:&quot;done&quot;,&quot;parse-strictly&quot;:&quot;done&quot;,&quot;coordinator-share&quot;:&quot;done&quot;,&quot;pin-the-denominator&quot;:&quot;done&quot;,&quot;what-prose-was-hiding&quot;:&quot;implementable&quot;,&quot;read-before-you-dispatch&quot;:&quot;done&quot;,&quot;out-of-scope&quot;:&quot;done&quot;}">
+<meta name="plan-commits" content="5e3e041c895353a003e15954382a78b49151a2ac,fab092dafb269286fb2f6bc1dbfb1f060dd95247,50c436f3c1865e2e11a662829f87283660a13da5,fff2ca7,a9a9d027b0ce92363356e120209e11b4c4f0c3bd,b316011,47a3180">
 <meta name="plan-artifacts" content="reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/budget.py,reckon/_backends.py,tests/test_coordinator_reserve.py,tests/test_flight.py,tests/test_claude_account_surface.py,tests/fixtures/backends/claude-account-limits.json,docs/evidence/archive/a-lane-can-say-where-it-stands-landed.html">
 <meta name="plan-impl" content="0.86">
 </head>
@@ -338,6 +338,62 @@
       </p>
     </section>
 
+    <section id="what-prose-was-hiding">
+      <h2><span class="sec">&sect;5d</span> &mdash; Two requirements that were written as prose and therefore were not work</h2>
+      <p>
+        Both were stated in this plan's own sections and carried in its followup,
+        and neither sat in a section any measure reached. A peer reviewing this plan
+        read-only found them and named the mechanism: <strong>a deliverable written
+        as prose never becomes work anyone can see</strong>, because the dependency
+        scan reads plans rather than section text. They are restated here as
+        measures so the remainder is visible rather than implied.
+      </p>
+
+      <h3>The cache fallback must be rendered beside its fetch age</h3>
+      <p>
+        &sect;2 records that a copy of the account block is cached on disk by the
+        client, that it carries its own fetch stamp, and that at the time of writing
+        that stamp was 92&nbsp;hours old and reported 53 and 60&nbsp;percent against
+        a live 38 and 89. The requirement follows and was never measured: the cache
+        is a last-known position rather than a heartbeat, so it may be used
+        <em>only</em> as a fallback that is always rendered beside its age, never as
+        a bare figure.
+      </p>
+      <p>
+        <strong>Done when</strong> a reading sourced from the on-disk cache carries
+        its fetch age wherever it is rendered or returned, and a cached reading with
+        no resolvable fetch stamp is unknown rather than shown; asserted with a
+        fixture cache whose stamp is hours old, requiring the age to appear beside
+        the figure and the figure never to appear alone.
+      </p>
+
+      <h3>A reconstructed backend must keep the window its utilisation divides by</h3>
+      <p>
+        Found by the review of the denominator work, and it is the same shape as the
+        lanes-view seam: the fix reaches the caller that passes a full backend
+        mapping and is dropped by every reader that rebuilds one.
+        <code>dispatch._backend_settings</code> returns only a launch and a command
+        when a run records its argv, and the two recovery reconstruction sites build
+        the same shape, so a recorded row's utilisation is divided by a window
+        nobody pinned.
+      </p>
+      <p>
+        <strong>Done when</strong> a backend reconstructed from recorded argv
+        resolves its utilisation against the configured lane window rather than
+        dropping it, through the dispatch site and both recovery sites; and a
+        reconstruction whose configured window cannot be resolved yields an unknown
+        utilisation rather than falling back to an announced or constant figure.
+      </p>
+      <p>
+        <strong>Blocked on a peer's write scope</strong> rather than on evidence:
+        <code>reckon/crew/recovery.py</code> is claimed by another session's live
+        node. Half of this repair is available now and is deliberately not taken,
+        because a fix that pins the dispatch path and leaves the recorded rows
+        unpinned would report the defect as closed while the surface that most
+        readers actually consult still carries an unstated denominator.
+      </p>
+    </section>
+
     <section id="out-of-scope">
       <h2><span class="sec">&sect;6</span> &mdash; What this plan does not cover</h2>
       <p>
@@ -480,6 +536,9 @@
 </div>
 <div class="r-comment" data-section="pin-the-denominator" data-id="c-run-r-20260914T221141228873-reading-names-the-window-it-divided-by" data-who="crew-both-reasons" data-when="2026-09-14T23:42:05.408Z">
     <div class="r-comment-body"><p>Every utilisation this lane reports is divided by the window that enforces it and names that window; 69 passed, 5 tests added. The configured lane window wins outright over an announced conflict, never averaged and never silently preferred the other way; an unresolvable window leaves the utilisation unknown rather than dividing by any constant; and a ratio supplied where a percentage is expected is refused outright rather than half-recorded - the defect that once shipped a guard which could not fire at any utilisation</p></div>
+</div>
+<div class="r-comment" data-section="pin-the-denominator" data-id="c-20260915T0025" data-who="reckon-ship" data-when="2026-09-15T00:25:00Z">
+    <div class="r-comment-body">reading-names-the-window-it-divided-by landed — commit 47a3180, merged and verified at HEAD by reading the diff rather than the manifest. Gate passed exit 0; measure: 69 passed, 5 tests added. The configured lane window now wins outright over an announced conflict via _resolved_window, the two are never averaged, and absence of both resolves to no window so the utilisation is unknown rather than divided by a constant nobody chose. A value below one where a percentage is expected is refused outright — a ratio wearing a percentage's name reads as a plausible low utilisation, which is the shape that once shipped a guard unable to fire at any utilisation. This closes the four-figures finding a peer handed over this afternoon: the mechanism was inheritance rather than a constant, the dialect reading contextWindow from the stream's own usage entries. REVIEW FOUND A REMAINING GAP, now §5d: the configured window reaches the surface only where a caller passes a full backend mapping, and every reader that reconstructs one from recorded argv drops it — dispatch._backend_settings at :3678 and the two recovery sites build only a launch and a command, so a recorded row's utilisation is still divided by a window nobody pinned. Same shape as the lanes-view seam: a fix that reaches the constructing caller and not the reconstructing ones. The repair is BLOCKED ON A PEER'S WRITE SCOPE rather than on evidence — reckon/crew/recovery.py is claimed by another session's live node — and I am deliberately not taking the available half, because pinning the dispatch path while leaving recorded rows unpinned would report the defect closed while the surface most readers consult still carries an unstated denominator.</div>
 </div>
 </section>
 </main>
