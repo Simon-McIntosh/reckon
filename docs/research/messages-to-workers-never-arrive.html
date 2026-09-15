@@ -385,18 +385,40 @@
         recorded by the nodes themselves the whole time.
       </p>
       <p>
-        The remedy has the same shape as the defect, one level down, and this
-        is the part worth carrying. A dispatch-time cap computed as above needs
-        a published figure for the lane's headroom. That figure does not exist:
-        asked for this lane, the pre-flight check answers
-        <code>headroom: unknown</code> with a null utilisation and the detail
-        <em>no rate-limit event in the stream yet</em>, and it correctly
-        declines to hold the lane, because absence of a signal must never be
-        read as exhaustion. So the budget fence cannot fence this lane at all,
-        and the cap that would replace the missing roster signal is itself
-        waiting on a missing lane signal. A remedy that consumes an unpublished
-        input is not yet a remedy — it is the same false clearance with a
-        formula in front of it.
+        A dispatch-time cap computed as above needs a published figure for the
+        lane's headroom, and that figure exists. It is carried on the flight
+        surface as <code>availability.&lt;backend&gt;.lane_headroom</code>,
+        beside a <code>lane_state</code>, an age and a shelf life — measured
+        live from a lane document the deployment republishes every thirty
+        seconds. Read on an idle lane it answered 131; read again once three
+        requests had resumed, 5, at an age of nineteen seconds against a
+        hundred-and-twenty-second shelf life. It is a pre-dispatch read, which
+        is the property a cap requires: a figure recorded on a run after the
+        fact tells a later reader what the lane was like, and sizing a wave
+        needs the figure beforehand.
+      </p>
+      <p>
+        This record first said that figure did not exist, and the error is
+        worth keeping because it is the same defect the document is about. The
+        pre-flight check answers <code>headroom: unknown</code> for this lane
+        with a null utilisation and the detail <em>no rate-limit event in the
+        stream yet</em>. That reading is correct and it is not the quantity:
+        pre-flight reports <em>budget</em> headroom — quota and rate-limit
+        position — which is permanently unknown for an unmetered local lane
+        because nothing will ever emit a rate-limit event for it. Two surfaces,
+        one word, two quantities. The number was true and answered a question
+        nobody had asked.
+      </p>
+      <p>
+        <strong>A field name is not a specification.</strong> The same shape was
+        found four times in one day on this workstation: a budget headroom and
+        a pool headroom sharing the word; a cache-usage metric counting cached
+        blocks as free; a liveness predicate collapsing four process states into
+        two; and an engine reporting a post-layout minimum under a configuration
+        field's name. In each case the reader asked a reasonable question, got a
+        true answer to a different one, and had nothing in the result to tell
+        them apart. It is the same substitution as a successful send that is not
+        a delivery, and a free roster member that is not free capacity.
       </p>
       <p>
         What makes it the same defect is the substitution. A free roster member
