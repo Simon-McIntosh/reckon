@@ -103,6 +103,50 @@ def _is_block_indicator(value: str) -> bool:
     return bool(_BLOCK_SCALAR_RE.match(value)) or value in ('"', "'")
 
 
+# A manifest field key appearing later on the same line as another key's value.
+# The tolerant reader captures the whole remainder of the line as the first
+# key's value, so a second ``key:`` there turns the earlier value into a
+# corrupted string and the later field into an empty list — the shape the
+# promotion guard for changed paths without a commit was built to catch. Only
+# the manifest vocabulary is matched, so a URL scheme or prose containing a
+# colon cannot raise; and a value that is itself a JSON literal (a structured
+# evidence block) is read whole rather than scanned, because the keys inside it
+# are nested data, not a second top-level field.
+_MANIFEST_KEY_ALTERNATION = "|".join(
+    re.escape(key) for key in sorted(_MANIFEST_FIELD_KEYS, key=len, reverse=True)
+)
+_MANIFEST_KEY_ON_LINE_RE = re.compile(
+    rf"\b({_MANIFEST_KEY_ALTERNATION})\s*:", re.IGNORECASE
+)
+
+
+def _embedded_manifest_key(value: str) -> str | None:
+    """Return the manifest key a top-level value carries, or None."""
+    if not value:
+        return None
+    try:
+        json.loads(value)
+    except (TypeError, json.JSONDecodeError):
+        pass
+    else:
+        return None
+    match = _MANIFEST_KEY_ON_LINE_RE.search(value)
+    return match.group(1).lower() if match else None
+
+
+def _two_keys_on_one_line_message(
+    path: str | None, line_no: int, line: str, first: str, second: str
+) -> str:
+    where = f" at {path}" if path else ""
+    return (
+        f"cannot read manifest{where}: line {line_no} ({line!r}) carries two "
+        f"keys on one line — '{first}:' is followed by '{second}:' before the "
+        "line ends; the format is one key per line, and reading both would turn "
+        "the earlier value into a corrupted string and the later key into an "
+        "empty list, so the line is refused rather than silently misparsed"
+    )
+
+
 class ManifestParseError(CrewError, ValueError):
     """A manifest the reader can read as neither supported format.
 
@@ -155,7 +199,7 @@ def parse_manifest(text: str, *, path: str | None = None) -> dict[str, Any]:
     if text.lstrip().startswith(("{", "[")):
         fields = _read_json_manifest(text, path=path)
     else:
-        fields = _parse_text_manifest(text)
+        fields = _parse_text_manifest(text, path=path)
         if not fields and text.strip():
             # A non-blank text body from which no ``key: value`` field could be
             # read at all — a markdown-heading layout, say, where ``status`` and
@@ -170,8 +214,15 @@ def parse_manifest(text: str, *, path: str | None = None) -> dict[str, Any]:
     return fields
 
 
-def _parse_text_manifest(text: str) -> dict[str, Any]:
-    """Read the tolerant ``key: value`` text form, keeping unknown keys."""
+def _parse_text_manifest(text: str, *, path: str | None = None) -> dict[str, Any]:
+    """Read the tolerant ``key: value`` text form, keeping unknown keys.
+
+    A top-level line carrying a second manifest key after its value is refused
+    here rather than misparsed: the tolerant reader would otherwise fold the
+    whole remainder of the line into the first key's value and leave the later
+    field absent (an empty list), which reads as a protection the worker never
+    wrote. ``path`` names the file in the refusal.
+    """
     fields: dict[str, Any] = {}
     key = None
     block_key: str | None = None
@@ -184,7 +235,7 @@ def _parse_text_manifest(text: str) -> dict[str, Any]:
         block_key = None
         block_lines = []
 
-    for raw in text.splitlines():
+    for line_no, raw in enumerate(text.splitlines(), start=1):
         line = raw.strip()
         if block_key is not None:
             # A blank or indented line continues the block; only a line with
@@ -206,6 +257,11 @@ def _parse_text_manifest(text: str) -> dict[str, Any]:
         if match:
             key = match.group(1).lower().replace("-", "_")
             value = match.group(2).strip()
+            embedded = _embedded_manifest_key(value)
+            if embedded:
+                raise ManifestParseError(
+                    _two_keys_on_one_line_message(path, line_no, line, key, embedded)
+                )
             if _is_block_indicator(value):
                 fields.setdefault(key, "")
                 block_key = key

@@ -428,3 +428,62 @@ def test_the_text_form_still_reads_around_prose() -> None:
 
     assert fields["status"] == "blocked"
     assert fields["blockers"] == ["the actual blocker text lives here"]
+
+
+# A worker that writes two fields on one line is refused rather than misparsed.
+# The tolerant reader would otherwise capture the whole remainder of the line
+# as the first key's value — a corrupted string — and leave the later field
+# absent, which normalises to an empty list. That empty half is what disarmed
+# the promotion guard the section describes: it fires only when changed paths
+# are present, so a one-line manifest presented none.
+_ONE_LINE_TWO_KEYS = (
+    "node: node-a\n"
+    "status: complete\n"
+    'commits: ["dfe14da2ab"]; changed_paths: ["a.py", "b.py"]\n'
+)
+
+
+def test_an_embedded_second_key_is_reported_naming_the_line_and_both_keys() -> None:
+    with pytest.raises(reports.ManifestParseError) as exc:
+        reports.parse_manifest(_ONE_LINE_TWO_KEYS)
+
+    message = str(exc.value)
+    assert "line 3" in message
+    assert "commits" in message
+    assert "changed_paths" in message
+    assert 'commits: ["dfe14da2ab"]; changed_paths: ["a.py", "b.py"]' in message
+
+
+def test_a_structured_json_value_is_not_read_as_a_second_key() -> None:
+    # A dict literal on a top-level line is a structured value, not a second
+    # top-level field; the manifest keys inside it are nested data, so the
+    # line parses rather than refuses.
+    fields = reports.parse_manifest(
+        'status: complete\nbaseline_suite: {"revision": "r1", "commits": ["abc123"]}\n'
+    )
+
+    assert fields["status"] == "complete"
+    assert fields["baseline_suite"]["revision"] == "r1"
+
+
+def test_a_prose_value_mentioning_a_field_name_is_not_a_second_key() -> None:
+    # Only a manifest key followed by a colon is a second field; a prose value
+    # that merely names a field or a URL scheme keeps parsing.
+    fields = reports.parse_manifest(
+        "status: complete\ntests: see test_logs and the baseline/after_suite pair\n"
+    )
+
+    assert fields["status"] == "complete"
+    assert fields["tests"] == "see test_logs and the baseline/after_suite pair"
+
+
+def test_the_two_keys_on_separate_lines_still_parse_unharmed() -> None:
+    fields = reports.parse_manifest(
+        "node: node-a\n"
+        "status: complete\n"
+        "commits: dfe14da2ab\n"
+        "changed_paths: a.py, b.py\n"
+    )
+
+    assert fields["commits"] == ["dfe14da2ab"]
+    assert fields["changed_paths"] == ["a.py", "b.py"]
