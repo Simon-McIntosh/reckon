@@ -27,9 +27,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 <meta name="plan-commits" content="42104d3,f5fbac7,77d0edf">
-<meta name="plan-impl" content="0.4">
+<meta name="plan-impl" content="0.55">
 </head>
 <body>
 <main class="plan-doc">
@@ -269,6 +269,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260914T224043278140-schedule-derivation-exists-in-python" data-who="s15-plandrop" data-when="2026-09-15T00:00:36.606Z">
     <div class="r-comment-body"><p>The flow schedule now derives in Python: 9 passed, exit 0, with a roadmap reader reporting far end, lane count and bars. Judged by delta against a stated base rather than by an absolute: 51 passed at base e7325ed and 51 at the head, 0 failures either side. The design point I checked myself rather than taking from the report is that derive_schedule takes reference as a required positional parameter with no default, so the wall clock cannot be read by accident — stronger than the done-when asked for, and the direct answer to the sibling test that became a fuse by reading it. A named case asserts the reference is a parameter and never the wall clock, and another compares the Python result against the values the rendered surface produces for the same input, so the two are shown to agree rather than assumed to. The JSX derivation removal is deliberately absent: another coordinator holds docs/ui/crew.jsx, and that half is a separate node</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-schedule-derivation-python-half" data-who="reckon-ship" data-when="2026-09-15T02:06:00Z">
+    <div class="r-comment-body">Python half landed — commit 0c0b151; gate tests/test_schedule_derivation.py 9 passed, exit 0. Judged by delta against a stated base rather than by an absolute count: 51 passed at base e7325ed and 51 at the head, zero failures either side. derive_schedule places a pending plan at the later of its prerequisite end and the reference instant, packs bars into best-fit lanes, reports axis bounds, places an unknown prerequisite at the reference rather than dropping it, and excludes bars beyond the retention window; reckon/roadmap.py gains a reader returning far end, lane count and bars, so a caller without a browser gets the same schedule. The design point worth recording is stronger than the measure asked for: reference is a required positional parameter with no default, so the wall clock cannot be read by accident rather than merely being discouraged. That is the direct answer to this plan's sibling test, which became a fuse precisely by defaulting to the clock and has been red since around 2026-09-06. One case asserts the reference is a parameter and never the wall clock; another compares the Python result against the values the rendered surface produces for the same input, so the two are shown to agree rather than assumed to. The JSX removal half of this section is deliberately not here: another coordinator holds docs/ui/crew.jsx for a node closing a locked decision it had shipped unhonoured, so this node was split rather than queued, and the remaining half is the residual derivation in the surface plus the restatement of this section's vacuous grep. Its absence is recorded rather than forgotten.</div>
 </div>
 </section>
 </main>
