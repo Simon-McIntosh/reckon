@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-live-worker-can-be-reached">
   <meta name="plan-title" content="A Live Worker Can Be Reached">
   <meta name="plan-summary" content="A coordinator is told its message to a crew worker succeeded while nothing is delivered; close the false clearance and give a live worker a channel.">
-  <meta name="plan-status" content="draft">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="4.0">
   <meta name="plan-capability-version" content="1.0">
@@ -21,6 +21,8 @@
   <title>A Live Worker Can Be Reached | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-15">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -127,45 +129,38 @@
     audited, per-run surface both sides agree on.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">&sect;</span> Decisions</h2>
-      <div class="r-dec" data-key="channel-scope"
-           data-by="" data-when="">
-        <p class="r-dec-q">How far does this go?</p>
-        <p class="r-dec-ctx">Closing the false clearance is cheap and touches no
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="channel-scope" data-choice="guard-docs-inbox" data-by="Simon McIntosh" data-when="2026-09-15T06:06:47+00:00">
+    <p class="r-dec-q">How far does this go?</p>
+    <p class="r-dec-ctx">Closing the false clearance is cheap and touches no
         contended file. Building the inbox gives the capability that is actually
         missing but waits on a surface another coordinator is repairing.</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="guard-and-docs">Guard and documents only</button>
-          <button class="r-opt" data-value="guard-docs-inbox">Guard, documents, then the inbox</button>
-          <button class="r-opt" data-value="docs-only">Documents only</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-    </section>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="guard-and-docs">Guard and documents only</button>
+      <button class="r-opt chosen" data-value="guard-docs-inbox">Guard, documents, then the inbox</button>
+      <button class="r-opt" data-value="docs-only">Documents only</button>
+      </p>
+    <p class="r-dec-rat">The guard closes the false clearance immediately and touches no contended file; the inbox supplies the capability that is actually missing, and without it the guard would refuse a send while leaving the coordinator with nowhere to go. Landing them separately keeps the cheap half from waiting on the expensive one.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">&sect;</span> Followups</h2>
-      <article class="r-fu" data-id="lock-channel-scope" data-status="open"
-               data-written-by="Simon McIntosh" data-written-at="2026-09-15"
-               data-recommends-skill="/reckon-edit a-live-worker-can-be-reached">
-        <h4 class="r-fu-title">Lock how far the channel work goes</h4>
-        <div class="r-fu-body">
-          The measurement is complete and the options are costed. What remains is
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="lock-channel-scope" data-status="open" data-written-by="Simon McIntosh" data-written-at="2026-09-15" data-recommends-skill="/reckon-edit a-live-worker-can-be-reached" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Lock how far the channel work goes</h4>
+    <div class="r-fu-body">The measurement is complete and the options are costed. What remains is
           a scope choice: the guard alone closes the false clearance immediately;
           the inbox adds the missing capability but serialises behind the prompt
-          contract repair in flight under another coordinator.
-        </div>
-        <pre class="r-fu-prompt">/reckon-edit a-live-worker-can-be-reached</pre>
-      </article>
-    </section>
+          contract repair in flight under another coordinator.</div>
+    <pre class="r-fu-prompt">/reckon-edit a-live-worker-can-be-reached</pre>
+    </article>
+</section>
 
     <section data-reckon="research" id="research" class="r-research-list">
-      <h2><span class="sec">&sect;</span> Research</h2>
-      <div class="r-research" data-id="delivery-measurement" data-type="primary"
-           data-source="repository" data-added-by="Simon McIntosh" data-when="2026-09-15">
-        <span class="r-research-title">Messages to workers never arrive &mdash; 0 delivered in 3,949 worker streams against an 11,939 control</span>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Research</h2>
+<div class="r-research" data-id="delivery-measurement" data-type="primary" data-source="repository" data-added-by="Simon McIntosh" data-when="2026-09-15">
+    <span class="r-research-title">Messages to workers never arrive — 0 delivered in 3,949 worker streams against an 11,939 control</span></div>
+</section>
 
   </main>
 </body>
