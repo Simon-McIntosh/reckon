@@ -32,6 +32,16 @@ lifted, because nothing re-checked it.
    <base_sha>..HEAD`.
 2. **Resume the session** — `reckon crew resume --run <run-id> --advice
    "<answer>"` continues the same session with its prior context intact.
+   **Put "commit what you already have before continuing" in the advice, every
+   time, as a standing clause rather than a per-incident recollection.** A
+   resumed worker holding uncommitted work is one kill away from losing it, and
+   the coordinator cannot say this later — a running worker in print mode has no
+   channel to receive it. Measured 2026-09-15 across two coordinators in one
+   outage: advice carrying the clause produced a commit within five minutes on a
+   node holding 1h43m of work; advice that only said to re-read the manifest left
+   an identical node still uncommitted three hours on, through a second outage.
+   Banking the diff outside the repository protects the coordinator; this clause
+   is the only thing that protects the work.
 3. **Reconcile only once resume is impossible.** Promotion deletes the live
    pointer, and the pointer (or, failing that, the stream) is where a resume
    finds the session to continue. Promoting first forecloses the option to
