@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="dependency-edge-semantics-landed">
+  <meta name="plan-title" content="Edges That Mean What They Say — Execution Record">
+  <meta name="plan-summary" content="Execution evidence for §3: reckon audit now reports a followup whose recommended skill names a plan in another mounted project that is terminal, naming both the holding plan and the foreign target, while staying silent on live foreign targets and reporting unmounted targets distinctly.">
+  <meta name="plan-evidence-for" content="dependency-edge-semantics">
+  <meta name="plan-verifies" content="dependency-edge-semantics#s3">
+  <meta name="plan-tags" content="reckon-tooling">
+  <title>Edges That Mean What They Say — Execution Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s3">§3 — An obligation that neither project can see</h2>
+
+    <p>Commit <code>fd0b1d4</code>. <code>reckon audit</code> now scans every open followup in
+    every mounted project for a skill reference that names a plan in a <em>different</em>
+    mounted project — an obligation the owning project's audit could never surface and the
+    target's audit would never look for. Three outcomes, each a distinct flag:</p>
+
+    <ul>
+      <li>the foreign target exists and is in a terminal state — <code>FOLLOWUP_FOREIGN_TERMINAL</code>,
+        the finding naming <strong>both</strong> the holding plan and the foreign target plus the
+        target's status;</li>
+      <li>the foreign project is not mounted — <code>FOLLOWUP_FOREIGN_UNMOUNTED</code>,
+        reported distinctly rather than as terminal;</li>
+      <li>the foreign project is mounted but the named plan does not resolve —
+        <code>FOLLOWUP_FOREIGN_MISSING</code>.</li>
+    </ul>
+
+    <p>A followup pointing at a live (non-terminal) foreign plan carries no finding at all, and
+    a resolved followup or a local / same-project-qualified reference is never foreign.</p>
+
+    <h3 id="measure">The measure — the missing row is reported, counted, and named</h3>
+
+    <p>The core of this defect is that the row did not exist anywhere: the obligation was
+    excluded from the owning project's pending work because its target is terminal, and from
+    the consuming project's because the target is foreign. The gate therefore reproduces the
+    three-state classification directly and counts the findings over the registered mounts:</p>
+
+    <table>
+      <thead><tr><th>Case</th><th>State</th><th>Result asserted by test</th></tr></thead>
+      <tbody>
+        <tr><td>Followup → foreign terminal plan</td><td><code>target_status=shipped</code></td>
+          <td>1 finding, flag <code>FOLLOWUP_FOREIGN_TERMINAL</code>, naming holder <code>proj-a:holder</code> and target <code>proj-b:foreign-terminal</code></td></tr>
+        <tr><td>Followup → foreign live plan</td><td><code>target_status=active</code></td>
+          <td>0 findings</td></tr>
+        <tr><td>Followup → unmounted project</td><td>target project absent from mounts</td>
+          <td>1 finding, flag <code>FOLLOWUP_FOREIGN_UNMOUNTED</code>, distinct from terminal</td></tr>
+        <tr><td>Two mounts, reciprocal foreign-terminal followups</td><td>each terminator <code>done</code> in the other project</td>
+          <td><strong>finding count = 2</strong> over the registered mounts, rendered as two <code>FOLLOWUP_FOREIGN</code> rows</td></tr>
+        <tr><td>Local ref, resolved ref, same-project-qualified ref</td><td>never foreign</td>
+          <td>0 findings</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>The count is the part worth stating as a number:</strong> two registered mounts
+    each holding a followup to a terminal plan in the other project yield <strong>2
+    findings</strong>, asserted in <code>tests/test_audit.py</code>. The gate (a focused
+    run of the audit tests) passed 7/7 with zero added failures against the node's base revision,
+    and scoped ruff findings held at 14 → 14.</p>
+
+    <h3 id="bounded-scope">What the finding is and is not</h3>
+
+    <p>The finding is a lifecycle-shaped record carrying both holder identity
+    (<code>project</code>, <code>slug</code>) and target identity (<code>target_project</code>,
+    <code>target_slug</code>, <code>target_status</code>), so the audit CLI and the MCP audit
+    tool consume it unchanged. One boundary is out of scope for this landing and noted as a
+    gap: the CLI's fixed six-column audit table renders the finding row but has no column to
+    display the foreign target, so a terminal reading at the CLI shows the holder and flag only.
+    The finding object and the MCP surface carry the target; making the CLI present it belongs
+    to the surface that owns <code>cli.py</code>.</p>
+
+  </main>
+</body>
+</html>
