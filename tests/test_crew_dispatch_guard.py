@@ -333,3 +333,199 @@ def test_member_lookup_uses_project_mount_from_another_repository(
             "docs/evidence/archive/fixture-landed.html",
         ]
     )
+
+
+def _test_figures_root(repo: Path) -> Path:
+    return repo / "docs" / "figures"
+
+
+def test_a_second_node_on_a_claimed_figure_topic_is_refused_naming_the_owner(
+    isolated_project: tuple[Path, Path],
+) -> None:
+    """A figure topic directory is an exclusive claim, not a shared workspace."""
+    config_home, repo = isolated_project
+    figures = _test_figures_root(repo)
+    assert not figures.exists(), "the topic has no contents on disk"
+
+    owner = _dispatch(
+        config_home, repo, "capture-owner", write_paths=["docs/figures/capture"]
+    )
+
+    with pytest.raises(crew.ScopeConflict) as excinfo:
+        _dispatch(
+            config_home, repo, "capture-second", write_paths=["docs/figures/capture"]
+        )
+
+    refusal = excinfo.value
+    assert refusal.run_id == owner["run_id"]
+    assert refusal.node_id == owner["node"]["id"]
+    assert refusal.candidate_path == "docs/figures/capture"
+    assert refusal.claimed_path == "docs/figures/capture"
+    assert owner["run_id"] in str(refusal)
+    assert "node-capture-owner" in str(refusal)
+    # A refused node never reaches worktree creation.
+    worktrees = subprocess.run(
+        ["git", "worktree", "list"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    assert "node-capture-second" not in worktrees
+    # The claim is asserted over a path that does not exist on disk.
+    assert not (figures / "capture").exists()
+
+
+def test_a_path_inside_a_claimed_figure_topic_is_refused_naming_the_owner(
+    isolated_project: tuple[Path, Path],
+) -> None:
+    """The topic claim covers the tree, so a leaf inside it is a conflict."""
+    config_home, repo = isolated_project
+    owner = _dispatch(
+        config_home, repo, "topic-owner", write_paths=["docs/figures/capture"]
+    )
+
+    with pytest.raises(crew.ScopeConflict) as excinfo:
+        _dispatch(
+            config_home,
+            repo,
+            "leaf-second",
+            write_paths=["docs/figures/capture/after/plot.png"],
+        )
+
+    refusal = excinfo.value
+    assert refusal.run_id == owner["run_id"]
+    assert refusal.node_id == owner["node"]["id"]
+    assert refusal.candidate_path == "docs/figures/capture/after/plot.png"
+    assert refusal.claimed_path == "docs/figures/capture"
+    assert owner["run_id"] in str(refusal)
+
+
+def test_a_topic_claim_is_refused_by_a_leaf_already_claimed(
+    isolated_project: tuple[Path, Path],
+) -> None:
+    """Tree coverage holds both ways: a directory claim meets a claimed leaf."""
+    config_home, repo = isolated_project
+    owner = _dispatch(
+        config_home, repo, "leaf-owner", write_paths=["docs/figures/geo/plot.png"]
+    )
+
+    with pytest.raises(crew.ScopeConflict) as excinfo:
+        _dispatch(config_home, repo, "topic-second", write_paths=["docs/figures/geo"])
+
+    refusal = excinfo.value
+    assert refusal.run_id == owner["run_id"]
+    assert refusal.node_id == owner["node"]["id"]
+    assert refusal.candidate_path == "docs/figures/geo"
+    assert refusal.claimed_path == "docs/figures/geo/plot.png"
+
+
+def test_the_refusal_holds_for_a_topic_directory_with_no_contents_on_disk(
+    isolated_project: tuple[Path, Path],
+) -> None:
+    """A capture node claims a topic before any file exists in it.
+
+    The exclusive claim is path-based, so an empty path binds exactly like one
+    with contents; the fixture never creates ``docs/figures`` at all, which is
+    the ordinary capture-node case and the one an existence check would mishandle.
+    """
+    config_home, repo = isolated_project
+    figures = _test_figures_root(repo)
+    assert not figures.exists()
+
+    owner = _dispatch(
+        config_home, repo, "fresh-owner", write_paths=["docs/figures/fresh-topic"]
+    )
+    assert not (figures / "fresh-topic").exists()
+
+    with pytest.raises(crew.ScopeConflict) as excinfo:
+        _dispatch(
+            config_home, repo, "fresh-second", write_paths=["docs/figures/fresh-topic"]
+        )
+    assert excinfo.value.run_id == owner["run_id"]
+    assert not figures.exists(), "declaring the claim creates nothing on disk"
+
+
+def test_two_nodes_producing_one_figure_filename_is_a_scope_defect(
+    isolated_project: tuple[Path, Path],
+) -> None:
+    """A figure is replaced wholesale; the same filename cannot be written twice."""
+    config_home, repo = isolated_project
+    owner = _dispatch(
+        config_home, repo, "plot-owner", write_paths=["docs/figures/deploy/plot.png"]
+    )
+
+    with pytest.raises(crew.ScopeConflict) as excinfo:
+        _dispatch(
+            config_home,
+            repo,
+            "plot-second",
+            write_paths=["docs/figures/deploy/plot.png"],
+        )
+
+    assert excinfo.value.run_id == owner["run_id"]
+    assert excinfo.value.claimed_path == "docs/figures/deploy/plot.png"
+    assert excinfo.value.candidate_path == "docs/figures/deploy/plot.png"
+
+
+def test_disjoint_figure_topics_are_both_admitted(
+    isolated_project: tuple[Path, Path],
+) -> None:
+    """The rule refuses overlap, not figure writes: two topics run concurrently."""
+    config_home, repo = isolated_project
+
+    first = _dispatch(config_home, repo, "topic-a", write_paths=["docs/figures/alpha"])
+    second = _dispatch(config_home, repo, "topic-b", write_paths=["docs/figures/beta"])
+
+    assert first["run_id"] != second["run_id"]
+    for record in (first, second):
+        declared = set(record["node"]["write_paths"])
+        assert "docs/figures/alpha" in declared or "docs/figures/beta" in declared
+
+
+def test_the_exclusive_claim_walk_reads_three_live_claims_at_refusal(
+    isolated_project: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The refusal walk reads exactly the owner's three live claims.
+
+    One owner run declares three paths — the plan file, its cumulative evidence
+    record, and the claimed figure topic directory — and the walk iterates all
+    three before refusing. The digit is asserted by instrumenting the walk, so a
+    future regression that stops walking a claim changes the count and fails.
+    """
+    config_home, repo = isolated_project
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    owner = _dispatch(
+        config_home, repo, "digit-owner", write_paths=["docs/figures/digit"]
+    )
+    claims_walked: dict[str, int] = {}
+    real = dispatch_module._raise_repository_scope_conflict
+
+    def wrapped(
+        node,
+        *,
+        project,
+        repo,
+        authority,
+        claims,
+        disregarded=None,
+    ):
+        claims_walked["count"] = len(list(claims))
+        return real(
+            node,
+            project=project,
+            repo=repo,
+            authority=authority,
+            claims=claims,
+            disregarded=disregarded,
+        )
+
+    monkeypatch.setattr(dispatch_module, "_raise_repository_scope_conflict", wrapped)
+    with pytest.raises(crew.ScopeConflict):
+        _dispatch(config_home, repo, "digit-second", write_paths=["docs/figures/digit"])
+
+    assert claims_walked["count"] == 3
+    assert (
+        crew.read_pointer(owner["run_id"])["node"]["write_paths"]
+        == owner["node"]["write_paths"]
+    )

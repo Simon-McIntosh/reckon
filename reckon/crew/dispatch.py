@@ -2978,6 +2978,12 @@ def dispatch(
     if shadow_lineage:
         adjacent_peers = []
     else:
+        # A declared path is claimed whole, not piecemeal: a figure topic
+        # directory is claimed as a tree, so any live claim that contains or is
+        # contained by a candidate is refused with the owner named — never a
+        # shared workspace, because a figure is replaced wholesale and a merged
+        # half is never correct. The walk is path-based only, so a topic with
+        # no files on disk yet binds exactly like one that does.
         _raise_repository_scope_conflict(
             node,
             project=project,
