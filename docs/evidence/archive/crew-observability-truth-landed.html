@@ -76,6 +76,7 @@
         <tr><td>§20</td><td><a href="#reason-keeps-its-predicate-at-the-measured-width">reason-keeps-its-predicate-at-the-measured-width</a></td><td>ba487aa</td><td>run outcome</td></tr>
         <tr><td>§12</td><td><a href="#manifest-two-keys-on-one-line-refused">manifest-two-keys-on-one-line-refused</a></td><td>9a2f95e</td><td>run outcome</td></tr>
         <tr><td>§12</td><td><a href="#manifest-prose-word-not-top-level-key">manifest-prose-word-not-top-level-key</a></td><td>ac8621b</td><td>run outcome</td></tr>
+        <tr><td>§12</td><td><a href="#commit-identifiers-remain-text">commit-identifiers-remain-text</a></td><td>a30af4f8</td><td>run outcome</td></tr>
         <tr><td>§19</td><td><a href="#landing-comment-does-not-duplicate-the-worker-record">landing-comment-does-not-duplicate-the-worker-record</a></td><td>8bc1083</td><td>run outcome</td></tr>
       </tbody>
     </table>
@@ -653,6 +654,31 @@ reading taken as an authority it was not.</p>
     cases at base <code>c65b458</code> to 46 at <code>ac8621b</code>, with zero failures in
     either run. The two pre-existing Ruff findings in <code>reckon/crew/reports.py</code> remain
     unchanged, and both touched files pass the formatter check.</p>
+  </section>
+
+  <section id="commit-identifiers-remain-text">
+    <h3>§12 &mdash; Commit identifiers keep the literal text the worker wrote</h3>
+    <p>Run
+    <code>r-20260915T090617465885-a-commit-identifier-is-never-a-number</code>.
+    Commit <code>a30af4f8</code>, 47 insertions and 1 deletion across one source file and
+    one test file.</p>
+    <p><strong>Defect reproduction:</strong> the reader interpreted a bracketed, single,
+    unquoted commit value as JSON before typing the list. That converted
+    <code>[29937e892]</code> to <code>['inf']</code>, <code>[29937e8]</code> to
+    <code>['2993700000000.0']</code>, and <code>[1e5]</code> to
+    <code>['100000.0']</code>. The three spellings are valid scientific-notation numbers
+    as well as valid commit-identifier text, so generic scalar decoding destroyed the only
+    value the ledger could resolve.</p>
+    <p><strong>Measure:</strong> commit values now take a field-specific literal-token path:
+    those three inputs parse as <code>['29937e892']</code>, <code>['29937e8']</code>, and
+    <code>['1e5']</code>. The already-safe forms <code>["29937e892"]</code>,
+    <code>[29937e892, abc1234]</code>, and <code>29937e892, abc1234</code> are unchanged.
+    The control <code>artifacts: [1e5]</code> still parses as <code>['100000.0']</code>,
+    proving the generic list reader was not changed. The focused gate advances from 46
+    passing cases at base <code>3332b9d</code> to 53 at <code>a30af4f8</code>, with zero
+    failures in either run. Both touched files pass the formatter check; the two existing
+    Ruff findings in <code>reckon/crew/reports.py</code> remain the same and no finding was
+    added.</p>
   </section>
 
   <section id="landing-not-also-denied">
