@@ -71,6 +71,25 @@ PLAN_LANDING_CONTRACT = (
     "  touching them makes every merge conflict there."
 )
 
+
+# This portion is deliberately constant for every worker, regardless of the
+# project, node, role, or delivery configuration.  Its declared length is the
+# boundary where per-node material may begin.
+def _invariant_prompt_prefix() -> str:
+    """Build the shared opening from the current contract constants."""
+    return (
+        "You are a worker on one node. Read the live plan first; it is the\n"
+        "semantic authority for context, decisions, evidence inputs and constraints.\n\n"
+        + DURABLE_WRITE_CONTRACT
+        + "\n\n"
+        + FALSIFIABLE_EVIDENCE_CONTRACT
+        + "\n\nNODE     "
+    )
+
+
+INVARIANT_PROMPT_PREFIX = _invariant_prompt_prefix()
+INVARIANT_PROMPT_BOUNDARY = len(INVARIANT_PROMPT_PREFIX)
+
 # ── Prompt composition ──────────────────────────────────────────────────────
 
 
@@ -177,18 +196,11 @@ RUNTIME FILESYSTEM
             "a failure outside this node's declared scope is reported under "
             "follow_ons rather than triaged or fixed."
         )
-    return f"""You are a worker on one node. Read the live plan first; it is the
-semantic authority for context, decisions, evidence inputs and constraints.
-
-NODE     {node.id}
+    return f"""{_invariant_prompt_prefix()}{node.id}
 GOAL     {node.goal}
 PLAN     {project}:{node.plan}{section}
 ROLE     {node.role}
 {specification_guidance}{delivery_directory_note}
-
-{DURABLE_WRITE_CONTRACT}
-
-{FALSIFIABLE_EVIDENCE_CONTRACT}
 
 {landing_contract}
 
