@@ -399,6 +399,7 @@ def _snapshot_pointer(
     phase: str,
     alive: bool | None,
     manifest_status: str | None = None,
+    session: str | None = None,
 ) -> dict:
     manifest = home / "manifests" / f"{run_id}.md"
     record = {
@@ -411,10 +412,73 @@ def _snapshot_pointer(
         "log_path": str(home / "streams" / f"{run_id}.jsonl"),
         "process_alive": alive,
     }
+    if session is not None:
+        record["session"] = session
     if manifest_status:
         manifest.parent.mkdir(parents=True, exist_ok=True)
         manifest.write_text(f"node: {run_id}\nstatus: {manifest_status}\n")
     return recovery._watch_snapshot(record, moment=time.time(), stall_seconds=3600)
+
+
+def _write_session_pointer(
+    home: Path,
+    run_id: str,
+    *,
+    phase: str,
+    session: str,
+    alive: bool,
+    manifest_status: str | None = None,
+) -> None:
+    """Write one live pointer carrying its ownership, as a dispatch would."""
+    stream = home / "streams" / f"{run_id}.jsonl"
+    stream.parent.mkdir(parents=True, exist_ok=True)
+    stream.write_text('{"type":"turn.started"}\n')
+    manifest = home / "manifests" / f"{run_id}.md"
+    if manifest_status:
+        manifest.parent.mkdir(parents=True, exist_ok=True)
+        manifest.write_text(f"node: {run_id}\nstatus: {manifest_status}\n")
+    crew._write_json(
+        crew.pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": "proj",
+            "session": session,
+            "node": {"id": run_id, "plan": "plan-a", "time_budget": "20m"},
+            "phase": phase,
+            "created_at": datetime.now(tz=UTC).isoformat(),
+            "manifest_path": str(manifest),
+            "log_path": str(stream),
+            "process_alive": alive,
+        },
+    )
+
+
+def _two_session_fleet(home: Path) -> dict[str, dict]:
+    """Write the fixture the scoped-count tests share, returning its snapshots.
+
+    Two sessions whose populations differ, with a blocked run owned by the
+    foreign session — the shape the scoped-count defect was measured against. A
+    reader of ``mine`` has a single working run; the fleet also carries a
+    foreign working run and a foreign run the reader is blocked on.
+    """
+    _write_session_pointer(home, "r-mine", phase="working", session="mine", alive=True)
+    _write_session_pointer(
+        home, "r-peer-work", phase="working", session="old-a", alive=True
+    )
+    _write_session_pointer(
+        home,
+        "r-peer-blocked",
+        phase="working",
+        session="old-a",
+        alive=False,
+        manifest_status="blocked",
+    )
+    return {
+        str(pointer["run_id"]): recovery._watch_snapshot(
+            pointer, moment=time.time(), stall_seconds=3600
+        )
+        for pointer in runs._list_live_records(project="proj")
+    }
 
 
 def test_dead_process_never_counts_as_working_at_any_phase(home) -> None:
@@ -543,6 +607,68 @@ def test_fleet_counts_still_partition_the_runs_in_flight(home) -> None:
     counts = recovery._fleet_counts(snapshots)
     assert counts == {"working": 1, "blocked": 1, "unpromoted": 1}
     assert sum(counts.values()) == len(snapshots)
+
+
+def test_fleet_counts_scope_to_the_session_the_reader_follows(home) -> None:
+    # A session narrows the counted population to that session's own runs,
+    # using the ownership already persisted on each snapshot; the unscoped
+    # reading stays the whole fleet over the same fixture. The foreign blocked
+    # run joins the fleet total but never the reader's, so a regression that
+    # fell back to the fleet changes the digits and fails here.
+    snapshots = _two_session_fleet(home)
+    scoped = recovery._fleet_counts(snapshots, session="mine")
+    assert scoped == {"working": 1, "blocked": 0, "unpromoted": 0}
+    peers = recovery._fleet_counts(snapshots, session="old-a")
+    assert peers == {"working": 1, "blocked": 1, "unpromoted": 0}
+    fleet = recovery._fleet_counts(snapshots)
+    assert fleet == {"working": 2, "blocked": 1, "unpromoted": 0}
+    assert scoped != fleet
+    assert sum(fleet.values()) == len(snapshots)
+
+
+def test_an_unowned_snapshot_stays_counted_for_a_scoped_reader(home) -> None:
+    # A legacy snapshot with no recorded owner cannot be handed to any peer:
+    # absence is not proof of a peer's ownership, so an unowned run keeps
+    # counting toward a scoped reader exactly as it counts toward the fleet —
+    # the same fallback the closure drain uses. The foreign dead run still
+    # leaves the scoped set.
+    snapshots = {
+        "r-unowned": _snapshot_pointer(home, "r-unowned", phase="working", alive=True),
+        "r-mine": _snapshot_pointer(
+            home, "r-mine", phase="working", alive=True, session="mine"
+        ),
+        "r-peer-dead": _snapshot_pointer(
+            home, "r-peer-dead", phase="starting", alive=False, session="old-a"
+        ),
+    }
+    scoped = recovery._fleet_counts(snapshots, session="mine")
+    assert scoped == {"working": 2, "blocked": 0, "unpromoted": 0}
+    fleet = recovery._fleet_counts(snapshots)
+    assert fleet == {"working": 2, "blocked": 1, "unpromoted": 0}
+
+
+def test_a_followers_trailing_figures_count_only_the_session_it_was_given(
+    home,
+) -> None:
+    # The event a scoped follower relays carries the fleet's totals on the wire
+    # (the producer watches the whole project). Rendering it with the reader's
+    # session re-selects the population before the grid is drawn, so the digits
+    # describe the runs the reader asked for; the same event without a session
+    # still prints the fleet's totals, asserted over the same fixture.
+    snapshots = _two_session_fleet(home)
+    event = recovery._watch_transition(
+        "proj",
+        kind="transition",
+        snapshot=snapshots["r-peer-blocked"],
+        previous="working",
+        current="blocked",
+        counts=recovery._fleet_counts(snapshots),
+    )
+    scoped = recovery.format_watch_transition(event, session="mine")
+    unscoped = recovery.format_watch_transition(event)
+    assert " 1w· 0b· 0u" in scoped, scoped
+    assert " 2w· 1b· 0u" in unscoped, unscoped
+    assert scoped != unscoped
 
 
 def test_observe_and_watch_render_failure_only_after_the_process_stops(

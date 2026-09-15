@@ -2433,7 +2433,9 @@ FLEET_WAITING_STATES = tuple(sorted(WAITING_STATES))
 FLEET_BLOCKED_STATES = tuple(sorted(NEEDS_ACTION - WAITING_STATES))
 
 
-def _fleet_counts(snapshots: Mapping[str, Mapping[str, Any]]) -> dict[str, int]:
+def _fleet_counts(
+    snapshots: Mapping[str, Mapping[str, Any]], *, session: str | None = None
+) -> dict[str, int]:
     """Partition the fleet into working, blocked, delivered, and waiting work.
 
     ``working`` is what a reader means by a live worker. ``blocked`` is
@@ -2441,8 +2443,14 @@ def _fleet_counts(snapshots: Mapping[str, Mapping[str, Any]]) -> dict[str, int]:
     or a failure included. ``unpromoted`` is delivered work waiting on a gate.
     ``waiting`` is a run whose declared external condition remains outstanding.
     A run that leaves the fleet is in none of them.
+
+    ``session`` narrows the counted population to the runs that session owns,
+    using the ownership already persisted on each snapshot; omitted, the
+    partition covers the whole fleet, preserving the project-wide reading. A
+    legacy snapshot with no recorded owner stays in the counted set: absence
+    cannot prove that a live pointer belongs to a peer.
     """
-    rows = list(snapshots.values())
+    rows, _peers = _partition_session_rows(snapshots.values(), session)
     states = [str(snapshot.get("state") or "") for snapshot in rows]
     held = sum(
         str(snapshot.get("recovery_classification") or "") == "held"
@@ -2765,11 +2773,47 @@ def _notional_cost(
 _PLAIN = Ticker()
 
 
+def _scoped_watch_event(event: Mapping[str, Any], session: str) -> dict[str, Any]:
+    """Re-derive a transition's figures over one session's live pointers.
+
+    The watcher seat is project-global and the stream it writes carries the
+    whole fleet's totals, so a follower cannot ask for per-session figures on
+    the wire; the population is re-selected here at render time from the same
+    live pointers, using the ownership already persisted on each pointer. A
+    legacy pointer with no recorded owner stays counted, matching the dispatch
+    fence.
+    """
+    project = str(event.get("project") or "")
+    stall_seconds = parse_duration(DEFAULT_WATCH_STALL_WINDOW)
+    moment = _utc_seconds()
+    pointers = runs._list_live_records(project=project) if project else ()
+    current = {
+        str(pointer.get("run_id") or ""): _watch_snapshot(
+            pointer, moment=moment, stall_seconds=stall_seconds
+        )
+        for pointer in pointers
+        if pointer.get("run_id")
+    }
+    counts = _fleet_counts(current, session=session)
+    scoped = dict(event)
+    scoped["working"] = counts["working"]
+    scoped["blocked"] = counts["blocked"]
+    scoped["unpromoted"] = counts["unpromoted"]
+    previous = scoped.get("from_state")
+    state = scoped.get("to_state")
+    if "waiting" in counts or previous in WAITING_STATES or state in WAITING_STATES:
+        scoped["waiting"] = counts.get("waiting", 0)
+    elif "waiting" in scoped:
+        del scoped["waiting"]
+    return scoped
+
+
 def format_watch_transition(
     event: Mapping[str, Any],
     *,
     with_session: bool = False,
     ticker: Ticker | None = None,
+    session: str | None = None,
 ) -> str:
     """Render one transition as the compact human-facing watch line.
 
@@ -2777,9 +2821,17 @@ def format_watch_transition(
     reader's width, theme and colour choice. Omitted, the shared plain grid
     renders, because there is no terminal to detect: the pane is a pipe, so
     colour is a decision a caller makes rather than one this module can infer.
+
+    ``session`` re-scopes the line's figures to the runs that session owns. A
+    session-scoped follower relays a project-wide stream whose every event
+    carries the fleet's totals; re-selecting the population before rendering is
+    what makes its trailing figures describe the runs it is following. Omitted,
+    the line shows the figures the event arrived with, unchanged.
     """
     if event.get("legacy"):
         return str(event.get("rendered") or "")
+    if session is not None:
+        event = _scoped_watch_event(event, session)
     return (ticker or _PLAIN).render(event, with_session=with_session)
 
 
