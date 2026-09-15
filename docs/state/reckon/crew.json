@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T08:57:38",
+  "updated": "2026-09-15T09:16:34",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -122949,6 +122949,170 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T054746646944-a-configured-tool-namespace-is-declared",
+        "plan": "binding-rules-need-bound-checks",
+        "section": "\u00a73",
+        "node": "a-configured-tool-namespace-is-declared",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 662,
+                "cached_input_tokens": 251497,
+                "input_tokens": 252161,
+                "output_tokens": 1901,
+                "reasoning_output_tokens": 830,
+                "total_tokens": 254062,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "f0d4bf08-978e-48fd-803d-0d5f1cdbb55a",
+            "session_id": "ship-s17-20260915"
+          },
+          "done_when": "tests/test_pyproject_tool_declarations.py enumerates every [tool.X] namespace in pyproject.toml, resolves each through an explicit alias table against runtime dependencies, dependency-groups and build-system.requires, fails loudly on an unknown namespace rather than assuming it satisfied, and is shown failing against the pre-declaration revision taken by git archive copy while passing at HEAD with both failure counts stated as numbers",
+          "estimated_hours": null,
+          "goal": "Add a check that every configured tool namespace in pyproject.toml resolves to something the project declares",
+          "id": "a-configured-tool-namespace-is-declared",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T05:47:46Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T054746646944-a-configured-tool-namespace-is-declared/manifest.md",
+          "plan": "binding-rules-need-bound-checks",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_pyproject_tool_declarations.py",
+            "pyproject.toml",
+            "docs/evidence/archive/binding-rules-need-bound-checks-landed.html",
+            "docs/plans/binding-rules-need-bound-checks.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "skill-contract-count",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T05:47:59Z",
+        "completed_at": "2026-09-15T07:10:09.672Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4924,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4930,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "fc28865f16f2f9b344a4c5a688562392ae0f057a",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": "malformed-node",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T054746646944-a-configured-tool-namespace-is-declared/manifest.md",
+        "scope_changed": false,
+        "session_id": "0be9a124-2cd2-4a0d-8550-91cf6078af67",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no events yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T07:10:09.672Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "dispute_count": "unknown",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s17-20260915/a-configured-tool-namespace-is-declared",
+          "session_id": "0be9a124-2cd2-4a0d-8550-91cf6078af67",
+          "session_source": "stream",
+          "retained_at": "2026-09-15T07:10:09.672Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 14.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -123177,6 +123341,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1477
+    "_version": 1478
   }
 }
