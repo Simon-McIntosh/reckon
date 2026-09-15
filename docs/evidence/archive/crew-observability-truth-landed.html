@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="crew-observability-truth-landed">
   <meta name="plan-title" content="Crew observability truth — cumulative execution-evidence record">
-  <meta name="plan-summary" content="Eighteen anchors: one per distinct run-outcome comment recorded against crew-observability-truth (14), plus three corrections and one refuted peer finding kept as their own anchors so the reason a reading changed is not lost. Covers §2 liveness, §3 gc repository scoping, §4 the working-bucket honesty defect surfaced by the plan's own execution, §5 budget visibility and the duplicate-backend-key refusal, §6 provider-refusal classification, and §16 the reader refusing an undetermined manifest status, a manifest that carries no status key at all, and never reporting a live worker unreadable, against the backdrop of one Anthropic spend-limit outage that killed seven local workers in two waves.">
+  <meta name="plan-summary" content="Nineteen anchors: one per distinct run-outcome comment recorded against crew-observability-truth (15), plus three corrections and one refuted peer finding kept as their own anchors so the reason a reading changed is not lost. Covers §2 liveness, §3 gc repository scoping, §4 the working-bucket honesty defect surfaced by the plan's own execution, §5 budget visibility and the duplicate-backend-key refusal, §6 provider-refusal classification, §16 the reader refusing an undetermined manifest status, a manifest that carries no status key at all, and never reporting a live worker unreadable, and §21 a composed prompt no longer denying the landing write it grants, against the backdrop of one Anthropic spend-limit outage that killed seven local workers in two waves.">
   <meta name="plan-evidence-for" content="crew-observability-truth">
   <meta name="plan-verifies" content="crew-observability-truth#s2,crew-observability-truth#s3,crew-observability-truth#s4,crew-observability-truth#s5,crew-observability-truth#s6,crew-observability-truth#s16">
   <meta name="plan-recorded-at" content="2026-09-03">
@@ -49,7 +49,7 @@
   </section>
 
   <section id="anchors">
-    <h2>Eighteen anchors</h2>
+    <h2>Nineteen anchors</h2>
     <table>
       <thead><tr><th>Section</th><th>Anchor</th><th>Commit</th><th>Kind</th></tr></thead>
       <tbody>
@@ -71,6 +71,7 @@
         <tr><td>§16</td><td><a href="#manifest-status-undetermined-refused">manifest-status-undetermined-refused</a></td><td>220848e</td><td>run outcome</td></tr>
         <tr><td>§16</td><td><a href="#manifest-status-key-absent-refused">manifest-status-key-absent-refused</a></td><td>c133d0e</td><td>run outcome</td></tr>
         <tr><td>§16</td><td><a href="#live-worker-never-unreadable">live-worker-never-unreadable</a></td><td>8183a63</td><td>run outcome</td></tr>
+        <tr><td>§21</td><td><a href="#landing-not-also-denied">landing-not-also-denied</a></td><td>93806e6</td><td>run outcome</td></tr>
       </tbody>
     </table>
   </section>
@@ -604,6 +605,25 @@ reading taken as an authority it was not.</p>
     two-file gate carries the identical single environmental failure at base
     (<code>4776d83</code>) and after with 101 passed against 106 passed, so the change adds five
     cases and no failures.</p>
+  </section>
+
+  <section id="landing-not-also-denied">
+    <h3>&#167;21 &mdash; The landing write is not also forbidden</h3>
+    <p>Run <code>r-20260915T041631586327-one-prompt-one-instruction</code>. Commit
+    <code>93806e6</code>, 40 insertions over 2 files (1 test, 1 source).</p>
+    <p><strong>Measure:</strong> the composed implement prompt once carried both the
+    landing clause &mdash; append your landing record to your own section of the plan and
+    your evidence anchor to the cumulative evidence record &mdash; and worktree rule 4&rsquo;s
+    blanket <em>&ldquo;Do not edit reckon plan or index state&rdquo;</em>, composing two
+    instructions that cannot both hold once the fence grants those paths. Rule 4 is narrowed
+    rather than deleted so its intent survives: a worker still must not mutate the shared
+    project index, sprint state, or a plan other than the one it is landing against. Asserted
+    by composing an implement prompt and requiring the pair not to co-occur (the blanket
+    phrase is gone), requiring the narrowed text to be present, and, as the negative, requiring
+    a read-only role to receive the narrowed prohibition and no landing clause. The
+    prompts-only gate passes 15 at base against 18 after; the wider two-file gate carries the
+    identical pre-existing promotion-environmental failures (10 at base, 10 after), so the
+    change adds three cases and no failures.</p>
   </section>
 
 </main>
