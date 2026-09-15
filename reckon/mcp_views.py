@@ -61,6 +61,7 @@ AT_RISK_SERVING_STATE = "at_risk"
 STALE_SERVING_STATE = "stale"
 EXHAUSTED_SERVING_STATE = "exhausted"
 UNMEASURED = "unmeasured"
+BORROWED = "borrowed"
 
 _PROBE_CACHE_LOCK = threading.Lock()
 _PROBE_CACHE: dict[tuple[int, str], tuple[object, datetime, dict[str, Any]]] = {}
@@ -433,6 +434,59 @@ def _probe_describes_receipt(
     return probe_signature is not None and probe_signature == receipt_signature
 
 
+def _declared_quota_pool(settings: Mapping[str, Any]) -> str | None:
+    """Return the declared quota pool naming this backend, or ``None``.
+
+    A pool names by configuration the backends that draw on the same account
+    quota.  Identical probe windows or reset times can never serve this role:
+    two backends probed identically prove only that they were probed the same
+    way, never that they share a budget.  An unset or empty value leaves the
+    backend ungrouped, its singleton membership carrying nothing.
+    """
+    value = settings.get("quota_pool")
+    if not isinstance(value, str):
+        return None
+    pool = value.strip()
+    return pool or None
+
+
+def _command_pools(
+    command: str,
+    command_by_backend: Mapping[str, str | None],
+    pool_by_backend: Mapping[str, str | None],
+) -> set[str | None]:
+    """Declared pools among the backends that all run the same command."""
+    return {
+        pool_by_backend.get(backend_name)
+        for backend_name, declared in command_by_backend.items()
+        if declared == command
+    }
+
+
+def _probe_is_lane_owned(
+    command: str,
+    lane_pool: str | None,
+    command_by_backend: Mapping[str, str | None],
+    pool_by_backend: Mapping[str, str | None],
+) -> bool:
+    """Whether the lane may carry a command's probe reading as its own.
+
+    The account probe is one shared reading wherever the same command runs, so
+    carrying it as owned requires every backend that declares that command to
+    declare the same pool as the lane.  If no pool is declared anywhere the
+    old single-account behaviour stands: an undeclared grouping proves nothing
+    about ownership, so no borrowing is asserted against it.  Any divergence in
+    declared pools — an ungrouped sibling beside a pooled lane, or two distinct
+    pools — means the reading belongs to an account this lane is not declared
+    to share, and the figure must not be shown as the lane's own.
+    """
+    pools = _command_pools(command, command_by_backend, pool_by_backend)
+    if len(pools) == 1:
+        single = next(iter(pools))
+        return single is None or single == lane_pool
+    return lane_pool is not None and pools == {lane_pool}
+
+
 def crew_lanes_view(
     config: Mapping[str, Any],
     runs: Iterable[Mapping[str, Any]],
@@ -442,7 +496,15 @@ def crew_lanes_view(
     | None = None,
     composed_at: str | None = None,
 ) -> dict[str, Any]:
-    """Compose endpoint availability without selecting or ranking a backend."""
+    """Compose endpoint availability without selecting or ranking a backend.
+
+    Each lane carries its declared ``quota_pool``.  A probe reading is adopted
+    as the lane's own only when every backend declaring that probe's command
+    declares the same pool; otherwise the lane keeps its own receipt reading,
+    and a lane with no reading of its own renders ``borrowed`` rather than
+    carrying the shared figure.  The top-level ``quota_pools`` map groups
+    backends by the declared key alone, never by shared window or reset times.
+    """
 
     composition_time = composed_at or datetime.now(UTC).isoformat().replace(
         "+00:00", "Z"
@@ -457,11 +519,13 @@ def crew_lanes_view(
     command_by_backend: dict[str, str | None] = {}
     probe_detail_by_backend: dict[str, str] = {}
     probe_by_command: dict[str, dict[str, Any]] = {}
+    pool_by_backend: dict[str, str | None] = {}
     for backend, settings_value in sorted(
         configured.items(), key=lambda item: str(item[0])
     ):
         backend_name = str(backend)
         settings = settings_value if isinstance(settings_value, Mapping) else {}
+        pool_by_backend[backend_name] = _declared_quota_pool(settings)
         if ledger.is_unmetered_backend(backend_name):
             continue
         command, detail = _declared_probe_command(settings)
@@ -476,6 +540,10 @@ def crew_lanes_view(
                 observed_at=composition_time,
                 cache_seconds=cache_seconds,
             )
+    quota_pools: dict[str, list[str]] = {}
+    for backend_name, pool in sorted(pool_by_backend.items()):
+        if pool is not None:
+            quota_pools.setdefault(pool, []).append(backend_name)
     lanes: list[dict[str, Any]] = []
 
     for backend, settings_value in sorted(
@@ -490,6 +558,7 @@ def crew_lanes_view(
                     "backend": backend_name,
                     "alias": settings.get("alias"),
                     "model": settings.get("model"),
+                    "quota_pool": pool_by_backend.get(backend_name),
                     "receipt_state": "unused",
                     "observed_at": "unmeasured",
                     "effective_context_window": "unmeasured",
@@ -516,6 +585,7 @@ def crew_lanes_view(
                     "backend": backend_name,
                     "alias": settings.get("alias"),
                     "model": settings.get("model"),
+                    "quota_pool": pool_by_backend.get(backend_name),
                     "receipt_state": "unmetered",
                     "observed_at": UNMEASURED,
                     "effective_context_window": UNMEASURED,
@@ -560,6 +630,8 @@ def crew_lanes_view(
         quota_source = "receipt"
         command = command_by_backend.get(backend_name)
         probe = probe_by_command.get(command) if command is not None else None
+        lane_pool = pool_by_backend.get(backend_name)
+        borrowed = False
         if probe is None:
             probe_status = "not_declared"
             probe_detail = probe_detail_by_backend.get(
@@ -571,35 +643,70 @@ def crew_lanes_view(
             probe_detail = str(probe["detail"])
             probe_cached = bool(probe["cached"])
         elif _probe_describes_receipt(probe["quota_windows"], readings):
-            probe_status = "answered"
-            probe_detail = str(probe["detail"])
-            probe_cached = bool(probe["cached"])
-            selected_readings = probe["quota_windows"]
-            selected_observed_at = str(probe["observed_at"])
-            quota_source = "probe"
+            if _probe_is_lane_owned(
+                command, lane_pool, command_by_backend, pool_by_backend
+            ):
+                probe_status = "answered"
+                probe_detail = str(probe["detail"])
+                probe_cached = bool(probe["cached"])
+                selected_readings = probe["quota_windows"]
+                selected_observed_at = str(probe["observed_at"])
+                quota_source = "probe"
+            else:
+                # The probe matched and is shared with a sibling in a different
+                # declared pool, so its reading belongs to an account this lane
+                # is not declared to draw on.  Keep the lane's own measurement
+                # rather than adopting a figure it does not own.
+                probe_status = "answered"
+                probe_detail = (
+                    "probe answered, but its command is shared with a pool this lane "
+                    "does not declare, so the probe reading is not adopted"
+                )
+                probe_cached = bool(probe["cached"])
         else:
             probe_status = "unmatched"
-            probe_detail = (
-                "probe answered, but its quota windows do not match this lane's receipt"
-            )
             probe_cached = bool(probe["cached"])
+            if not (isinstance(readings, Mapping) and readings) and not (
+                _probe_is_lane_owned(
+                    command, lane_pool, command_by_backend, pool_by_backend
+                )
+            ):
+                # The only figure this lane could show is the shared account
+                # probe, and the declared pools put that account outside this
+                # lane's group: render borrowed rather than carrying a sibling's
+                # number as its own.
+                probe_detail = (
+                    "probe answered, but its command is shared with a pool this lane "
+                    "does not declare, and this lane has no reading of its own"
+                )
+                borrowed = True
+            else:
+                probe_detail = (
+                    "probe answered, but its quota windows do not match this lane's "
+                    "receipt"
+                )
         quota_rows, quota_reason = _quota_rows(
             selected_readings,
             selected_observed_at,
             composition_time,
             source=quota_source,
         )
+        if borrowed:
+            quota_reason = "shared_command_probe_not_owned"
         notional_cost, notional_reason = _notional_cost_reading(receipt)
         basis, basis_reason = _rate_basis_reading(receipt)
         lane: dict[str, Any] = {
             "backend": backend_name,
             "alias": settings.get("alias"),
             "model": settings.get("model"),
+            "quota_pool": lane_pool,
             "receipt_state": "unreadable" if unreadable else "readable",
             "observed_at": selected_observed_at or UNMEASURED,
             "effective_context_window": context_value,
             "quota_windows": quota_rows,
-            "quota_source": quota_source if quota_rows else UNMEASURED,
+            "quota_source": (
+                quota_source if quota_rows else BORROWED if borrowed else UNMEASURED
+            ),
             "probe_status": probe_status,
             "probe_detail": probe_detail,
             "probe_cached": probe_cached,
@@ -629,7 +736,11 @@ def crew_lanes_view(
             lane["unmeasured"] = unmeasured
         lanes.append(lane)
 
-    return {"composed_at": composition_time, "lanes": lanes}
+    return {
+        "composed_at": composition_time,
+        "lanes": lanes,
+        "quota_pools": quota_pools,
+    }
 
 
 def sprint_metrics(items: list[dict[str, Any]]) -> dict[str, Any]:
