@@ -52,29 +52,27 @@ def _skills_source() -> Path:
     raise click.ClickException(f"reckon skills are missing; searched: {searched}")
 
 
-def _native_agent_guard_path() -> Path:
-    """Resolve the executable guard shipped with the installed package."""
-    source_guard = (
-        Path(__file__).resolve().parent / "hooks" / "native_agent_guard.py"
-    ).resolve()
+def _crew_guard_path(filename: str) -> Path:
+    """Resolve an executable guard shipped with the installed package."""
+    source_guard = (Path(__file__).resolve().parent / "hooks" / filename).resolve()
     guard = source_guard
     for entry in sys.path:
         if not entry:
             continue
-        candidate = (
-            Path(entry).expanduser().resolve()
-            / "reckon"
-            / "hooks"
-            / "native_agent_guard.py"
-        )
+        candidate = Path(entry).expanduser().resolve() / "reckon" / "hooks" / filename
         if candidate != source_guard and candidate.is_file():
             guard = candidate
             break
     if not guard.is_file() or not os.access(guard, os.X_OK):
         raise click.ClickException(
-            f"native-agent guard is missing or not executable: {guard}"
+            f"harness guard is missing or not executable: {guard}"
         )
     return guard
+
+
+def _native_agent_guard_path() -> Path:
+    """Resolve the native-agent guard shipped with the installed package."""
+    return _crew_guard_path("native_agent_guard.py")
 
 
 def _is_native_agent_guard_group(group: Any) -> bool:
@@ -95,6 +93,31 @@ def _is_native_agent_guard_group(group: Any) -> bool:
         return False
     path = Path(command[0])
     return path.name == "native_agent_guard.py" and path.parent.name == "hooks"
+
+
+def _worker_message_guard_path() -> Path:
+    """Resolve the worker-message guard shipped with the installed package."""
+    return _crew_guard_path("worker_message_guard.py")
+
+
+def _is_worker_message_guard_group(group: Any) -> bool:
+    """Return whether one harness hook group manages the peer-send guard."""
+    if not isinstance(group, dict) or group.get("matcher") != "SendMessage":
+        return False
+    hooks = group.get("hooks")
+    if not isinstance(hooks, list) or len(hooks) != 1:
+        return False
+    hook = hooks[0]
+    if not isinstance(hook, dict) or hook.get("type") != "command":
+        return False
+    try:
+        command = shlex.split(str(hook.get("command") or ""))
+    except ValueError:
+        return False
+    if len(command) != 1:
+        return False
+    path = Path(command[0])
+    return path.name == "worker_message_guard.py" and path.parent.name == "hooks"
 
 
 def _write_json_atomically(path: Path, payload: dict, original: bytes | None) -> None:
@@ -135,8 +158,8 @@ def _write_json_atomically(path: Path, payload: dict, original: bytes | None) ->
         ) from exc
 
 
-def _configure_native_agent_guard(settings_path: Path, *, remove: bool) -> bool:
-    """Install or remove the reckon-owned harness hook group."""
+def _configure_crew_guards(settings_path: Path, *, remove: bool) -> bool:
+    """Install or remove the reckon-owned harness hook groups."""
     settings_path = settings_path.expanduser().resolve()
     original: bytes | None = None
     settings: dict[str, Any] = {}
@@ -171,7 +194,10 @@ def _configure_native_agent_guard(settings_path: Path, *, remove: bool) -> bool:
         )
 
     retained = [
-        group for group in pre_tool_use if not _is_native_agent_guard_group(group)
+        group
+        for group in pre_tool_use
+        if not _is_native_agent_guard_group(group)
+        and not _is_worker_message_guard_group(group)
     ]
     if not remove:
         retained.append(
@@ -181,6 +207,17 @@ def _configure_native_agent_guard(settings_path: Path, *, remove: bool) -> bool:
                     {
                         "type": "command",
                         "command": shlex.join([str(_native_agent_guard_path())]),
+                    }
+                ],
+            }
+        )
+        retained.append(
+            {
+                "matcher": "SendMessage",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": shlex.join([str(_worker_message_guard_path())]),
                     }
                 ],
             }
@@ -3333,12 +3370,12 @@ def sync(
 
     settings_path = claude_settings or Path.home() / ".claude" / "settings.json"
     if remove_native_agent_guard or _crew_state_exists(docs_dir, proj_name):
-        changed = _configure_native_agent_guard(
+        changed = _configure_crew_guards(
             settings_path, remove=remove_native_agent_guard
         )
         action = "removed" if remove_native_agent_guard else "installed"
         state = action if changed else f"already {action}"
-        click.echo(f"  native-agent guard {state}: {settings_path.expanduser()}")
+        click.echo(f"  crew harness guards {state}: {settings_path.expanduser()}")
     else:
         click.echo("  skipped native-agent guard — project has no crew state")
 
