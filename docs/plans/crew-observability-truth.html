@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="418">
+<meta name="plan-version" content="419">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.38">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -2410,6 +2410,9 @@ live processes carrying a not-running classification:  6 of 14  (43%)
 </div>
 <div class="r-comment" data-section="s16" data-id="c-run-r-20260915T101223859925-a-finished-run-is-not-stalled-retry" data-who="session-2ee3c7846cb0257834e7" data-when="2026-09-15T12:09:37.435Z">
     <div class="r-comment-body"><p>the classifier already treated a dead process with a terminal manifest as finished whatever decorates the status; pinned with a test rather than changed. Delta-judged pass on a red base: 1 failed / 91 passed at head against 1 failed / 90 passed at base, same failure id both sides, zero added. Review scored 100 with no findings. recovery.py declared but untouched, and released from the live claim</p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20260915T094018545785-the-reader-sees-the-key-through-markdown" data-who="codex-i" data-when="2026-09-15T09:53:33Z">
+    <div class="r-comment-body"><p>the decoration reader finds a manifest key through markdown emphasis and bullets; review scored 93. Two findings recorded as follow-ons, the first a measured behaviour change: an indented continuation whose leading word is manifest vocabulary is now a top-level field (at base 3833e84c^ &#x27;evidence_inputs: prose / - blockers: x&#x27; yields evidence_inputs with both lines and blockers empty; at head it yields a separate blockers field). blockers is read at promotion, so this is semantic. The falsifier that would have caught it is a corpus check: every manifest on disk parses identically before and after</p></div>
 </div>
 <div class="r-comment" data-section="s21" data-id="c-run-r-20260914T160430483667-review-dimensions-reach-the-ledger-row" data-who="crew-both-reasons" data-when="2026-09-14T18:29:37.372Z">
     <div class="r-comment-body"><p>review dimensions reach the committed ledger row: scores and total carried on the promoted row, an absent review distinguishable from a zero-scored one, dimensions queryable filtered on the parent run; 8 files all within the 10 declared paths, 427 insertions; gate base 169 passed / 4 failed to after 178 passed / 4 failed, 0 added failures, 9 tests added, the 4 pre-existing in a file the node declared unmodified; classified abandoned despite finishing cleanly because its manifest is written in markdown headings rather than colon lines, so every required field is present in the document and absent from the parse</p></div>
