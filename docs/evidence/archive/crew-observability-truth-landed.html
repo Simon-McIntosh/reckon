@@ -78,6 +78,7 @@
         <tr><td>§12</td><td><a href="#manifest-two-keys-on-one-line-refused">manifest-two-keys-on-one-line-refused</a></td><td>9a2f95e</td><td>run outcome</td></tr>
         <tr><td>§12</td><td><a href="#manifest-prose-word-not-top-level-key">manifest-prose-word-not-top-level-key</a></td><td>ac8621b</td><td>run outcome</td></tr>
         <tr><td>§12</td><td><a href="#commit-identifiers-remain-text">commit-identifiers-remain-text</a></td><td>a30af4f8</td><td>run outcome</td></tr>
+        <tr><td>§12</td><td><a href="#orientation-gate-evidence-attribution">orientation-gate-evidence-attribution</a></td><td>—</td><td>attribution run</td></tr>
         <tr><td>§19</td><td><a href="#landing-comment-does-not-duplicate-the-worker-record">landing-comment-does-not-duplicate-the-worker-record</a></td><td>8bc1083</td><td>run outcome</td></tr>
         <tr><td>§10</td><td><a href="#positive-gate-exit-outranks-quoted-diagnostic">positive-gate-exit-outranks-quoted-diagnostic</a></td><td>1601c27c, ebca263f</td><td>run outcome</td></tr>
       </tbody>
@@ -819,6 +820,29 @@ reading taken as an authority it was not.</p>
     unchanged); the wider prompt-composing modules carry the identical pre-existing failures at
     base (<code>b5480ee</code>) and after &#8212; 12 in <code>test_crew_orientation</code> and
     <code>test_gate_evidence</code> &#8212; so the change adds no failures.</p>
+  <section id="orientation-gate-evidence-attribution">
+    <h3>&#167;12 &mdash; The twelve orientation- and gate-evidence failures pre-exist the manifest-block repair</h3>
+    <p>Run <code>r-20260915T115738959461-attribute-the-orientation-and-gate-evidence-failures</code>.
+    A measurement-only node: no source or test file was edited.</p>
+    <p><strong>Measure:</strong> the landing record above claims the wider prompt-composing
+    modules carry the identical pre-existing failures at base and after the manifest-template
+    repair &#8212; twelve across <code>tests/test_crew_orientation.py</code> and
+    <code>tests/test_gate_evidence.py</code> &#8212; so the change adds no failures. That
+    sentence is a claim about two revisions, and this node measures both rather than asserting
+    either. The same environment ran both <code>test_crew_orientation.py</code> and
+    <code>test_gate_evidence.py</code> twice: once at the base
+    <code>b5480eef8d88cc9182391e31dd8e18e53e0ac1e9</code> and once at
+    <code>2e550a8b</code> (base plus the template repair <code>8417c0f</code> and its landing
+    record). The two test files are byte-identical across the pair, and neither candidate
+    commit touches either file, so the two runs differ only in the commits under test.</p>
+    <p><strong>Result:</strong> both revisions fail the identical twelve tests &#8212; two in
+    <code>test_crew_orientation.py</code>, ten in <code>test_gate_evidence.py</code> &#8212;
+    and pass the remaining eighteen. The failure-id sets are exactly equal, so the added set is
+    empty and the removed set is empty. The claim recorded above is confirmed by direct
+    measurement: none of the twelve failures is added by <code>8417c0f</code> or
+    <code>2e550a8b</code>, and both are pre-existing at the base. Full failure-id list and
+    method: <a href="/reckon/research/orientation-gate-evidence-attribution">the attribution
+    note</a>.</p>
   <section id="landing-comment-does-not-duplicate-the-worker-record">
     <h3>§19 — The landing comment does not duplicate the worker's record</h3>
     <p>Run <code>r-20260915T050810199778-promotion-stops-authoring-the-record-the-worker-writes</code>,
