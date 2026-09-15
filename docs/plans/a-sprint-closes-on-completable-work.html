@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="3">
-<meta name="plan-impl" content="0.5">
+<meta name="plan-version" content="4">
+<meta name="plan-impl" content="0.95">
 </head>
 <body>
   <main class="plan-doc">
@@ -193,6 +193,11 @@
     <pre class="r-fu-prompt">/reckon-create</pre>
     </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-20260915T162213070089" data-who="reckon-ship" data-when="">
+    <div class="r-comment-body"><p><strong>Both deliverable sections are landed. The plan is deliberately NOT at 1.0, and the missing 0.05 is not remaining implementation.</strong> §2 and §3 are complete and merged; §4 is a scope statement rather than work. The plan is held just short of closure because <code>f-ascocw-003</code> is open and routes to <code>/reckon-create</code>, and <code>roadmap</code> drops a plan from <code>pending_work</code> at impl 1.0 <em>or</em> a terminal status — so closing this plan with that row open would hide the work rather than carry it. That is the same failure the plan itself exists to prevent, one level up: closing a container over work nobody can then see.</p><p><strong>§3 landed as a gate in the close path itself</strong> (<code>e3b160c7</code>, <code>01eb2c74</code>, merged): closing a sprint that still holds un-held incomplete work is refused, naming the offending plan, and the refusal leaves the closing sprint byte-identical. A sprint whose incomplete items are all held closes and carries them to the next open sprint with their blocker references intact, under the same two-version check, journal and compensating recovery the existing item move already uses. Carry-forward is proven by <strong>set membership</strong> in <code>roadmap</code>'s <code>pending_work</code>, never a count — a count agrees by coincidence, and the distinction between carrying work forward and hiding it in a closed container is exactly what the membership assertion tests.</p><p><strong>Three choices beyond the brief, all conservative in the same direction.</strong> The gate lives in <code>apply_resource_ops</code>, the operation a caller performs, rather than in a helper that computes closability with no refusing caller. A missing plan status counts as incomplete <em>and</em> un-held. And a sprint whose held items have <strong>no open advancing sprint</strong> is also refused — a case neither the section nor the brief named, and one where closing would have silently dropped the carried work.</p><p>Gate 1,595 passed at the merged head across plan-editing, project-state, roadmap and schema, including the byte-identity round-trip over every live plan after the HTML edits. Ruff over the staged paths went from 15 findings at base to 13. The <a href="/reckon/figures/sprint-close-carry-forward/close-carry-forward.svg">close-and-carry figure</a> was written outside the declared write scope because the fence granted the evidence record without the figures directory that record needs — a coordinator fencing error, accepted at promotion with the reason recorded.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
