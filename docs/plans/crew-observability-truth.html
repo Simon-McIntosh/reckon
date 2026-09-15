@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="395">
+<meta name="plan-version" content="396">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.38">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -1998,6 +1998,14 @@ REMAINDER  6 runs, disposition context-exhausted -&gt; lane pressure, figures be
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20260915T094812939518-the-gate-reads-a-positive-run-marker" data-who="gate-log-marker" data-when="2026-09-15T09:54:40Z">
     <div class="r-comment-body"><p>A terminal <code>EXIT=0</code> capture now outranks <code>command not found</code> text quoted by runner output, while a bare shell diagnostic with no positive marker retains the existing refusal. The defect reproduced in both quoted-assertion and fixture-content forms before repair. Commits <code>1601c27c</code> and <code>ebca263f</code>; focused gate 11 of 11 passed at the final source revision, including two new positive-marker cases, the unchanged exit-mismatch refusal, the unchanged bare-diagnostic refusal, and the unaffected failing verdict. The nine pre-existing assertions are unchanged. Full record: <a href="/reckon/evidence/archive/crew-observability-truth-landed#positive-gate-exit-outranks-quoted-diagnostic">§10 positive-marker evidence</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-the-empty-manifest-passes-where-the-partial-one-is-refused" data-who="" data-when="">
+    <div class="r-comment-body"><p><strong>The evidence guard is inverted: a manifest declaring <code>complete</code> with no evidence at all is accepted, while one with partial evidence is refused.</strong> <code>promotion.py:504</code>:</p><pre><code>if (status != "complete"
+    or not manifest.get("changed_paths")     # returns when changed_paths is EMPTY
+    or _prose_changed_paths_name_no_paths(manifest)
+    or manifest.get("commits")):
+    return
+raise CrewError(...)</code></pre><p>The refusal fires only when <code>changed_paths</code> is non-empty <em>and</em> <code>commits</code> is missing. So a worker that names its changed paths but forgets the commit is caught, and a worker that names nothing — no commits, no paths, no tests — falls through the second clause and promotes. The guard's own message explains the reasoning that defeats it: <em>"promotion cannot verify changed repository paths without the commit that contains them."</em> With no declared paths there is nothing it thinks it needs to verify, and it stops asking.</p><p><strong>Live reproduction in this session.</strong> <code>a-finished-run-is-not-stalled-retry</code> delivered a manifest reading <code>status: complete</code> with <code>commits:</code>, <code>changed_paths:</code> and <code>tests:</code> all empty, while its worktree holds two commits and 156 insertions across three files, tree clean. Real work, no declared evidence, and the guard has no objection.</p><p>This is the same shape as the gate that records <code>passed</code> beside a log that failed, one level up: the check is aimed at a malformed record rather than at an absent one, and absence is the cheaper failure for a worker to produce. The condition to add is that a <code>complete</code> status asserts <em>some</em> evidence — the refusal belongs on the empty case first and the mismatched case second.</p><p>Queued: <code>reckon/crew/promotion.py</code> carries five live claims across three sessions.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20260909T075411587782-cotd-reuse-map-scout" data-who="session-9e2222f55dd848415c74" data-when="2026-09-09T08:04:12Z">
     <div class="r-comment-body"><p>reuse map for all eleven measures: 11 rows, every reuse cell a real path:line, four serialisation lanes derived, and lane 4 named as prerequisite to the closing-line consumer</p></div>
