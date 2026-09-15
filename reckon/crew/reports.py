@@ -396,7 +396,12 @@ def _declares_derived(fields: dict[str, Any]) -> bool:
 def _normalise_manifest_fields(fields: dict[str, Any]) -> dict[str, Any]:
     """Apply the typed post-processing shared by both manifest formats."""
     for name in _MANIFEST_LIST_KEYS:
-        fields[name] = _coerce_list_field(fields.get(name))
+        value = fields.get(name)
+        fields[name] = (
+            _coerce_commit_identifiers(value)
+            if name == "commits"
+            else _coerce_list_field(value)
+        )
     for name in ("baseline_suite", "after_suite"):
         fields[name] = _typed_suite_observation(fields.get(name))
     fields["failure_attribution"] = _typed_failure_attribution(
@@ -416,6 +421,15 @@ def _coerce_list_field(value: Any) -> Any:
     if value is None or isinstance(value, (list, str)):
         return _as_list(value)
     return value
+
+
+def _coerce_commit_identifiers(value: Any) -> Any:
+    """Type commit identifiers without interpreting their spelling as numbers."""
+    if isinstance(value, str):
+        text = value.strip()
+        if text.startswith("[") and text.endswith("]"):
+            return _split_bracketed_list(text)
+    return _coerce_list_field(value)
 
 
 def _typed_suite_observation(value: Any) -> SuiteObservation | str | None:
@@ -538,6 +552,11 @@ def _decode_bracketed_list(text: str) -> list[str]:
         raw = None
     if isinstance(raw, list):
         return [str(item).strip() for item in raw]
+    return _split_bracketed_list(text)
+
+
+def _split_bracketed_list(text: str) -> list[str]:
+    """Split bracketed text without interpreting an item's scalar type."""
     return [part.strip().strip("\"'") for part in text[1:-1].split(",") if part.strip()]
 
 

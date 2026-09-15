@@ -527,3 +527,30 @@ def test_guard_leaves_commits_and_changed_paths_on_separate_lines_unchanged() ->
 
     assert fields["commits"] == ["dfe14da2ab"]
     assert fields["changed_paths"] == ["a.py", "b.py"]
+
+
+@pytest.mark.parametrize("identifier", ["29937e892", "29937e8", "1e5"])
+def test_single_unquoted_commit_identifier_keeps_its_literal_text(identifier) -> None:
+    fields = reports.parse_manifest(f"commits: [{identifier}]\n")
+
+    assert fields["commits"] == [identifier]
+
+
+@pytest.mark.parametrize(
+    ("written", "expected"),
+    [
+        ('["29937e892"]', ["29937e892"]),
+        ("[29937e892, abc1234]", ["29937e892", "abc1234"]),
+        ("29937e892, abc1234", ["29937e892", "abc1234"]),
+    ],
+)
+def test_other_commit_list_spellings_stay_unchanged(written, expected) -> None:
+    fields = reports.parse_manifest(f"commits: {written}\n")
+
+    assert fields["commits"] == expected
+
+
+def test_non_commit_bracketed_numbers_keep_numeric_decoding() -> None:
+    fields = reports.parse_manifest("artifacts: [1e5]\n")
+
+    assert fields["artifacts"] == ["100000.0"]
