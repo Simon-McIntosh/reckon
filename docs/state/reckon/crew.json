@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T05:18:13",
+  "updated": "2026-09-15T05:32:52",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -121680,6 +121680,209 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T031747892162-flow-tests-assert-the-served-schedule",
+        "plan": "derived-state-parity",
+        "section": "\u00a75",
+        "node": "flow-tests-assert-the-served-schedule",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 576,
+                "cached_input_tokens": 690511,
+                "input_tokens": 691089,
+                "output_tokens": 875,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 691964,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3332e8d8-dcef-4091-9774-c9680478b165",
+            "session_id": "ship-s16-20260914"
+          },
+          "done_when": "The five failures that assert against the removed surface derivation are gone and none is added, both counts stated as digits against the named base: four in tests/test_spa_derived_flow.py and one in tests/test_schedule_derivation.py::test_python_schedule_matches_the_rendered_surface_for_the_same_input. The surface no longer derives anything \u2014 derivedFlowSchedule occurs 5 times at bec8557^ and 0 at the current head, counted at both \u2014 so each assertion must be re-aimed at what now produces the value: reckon.schedule.derive_schedule for the derivation itself and the served window.STATE.schedule payload for what the surface renders. Do not delete an assertion to make a file green, and do not re-pin one to a new source substring; where a test's subject genuinely no longer exists, say so in the manifest and state what now covers that property, since tests/test_surface_parity.py already compares rendered against returned across 78 pairs and may cover it. The rendered case that the contract sweep repaired by injecting a clock must keep its injected clock and its expected lane count of 2 rather than reverting to the wall clock",
+          "estimated_hours": null,
+          "goal": "Bring the five schedule tests into step with a surface that consumes the payload instead of deriving it",
+          "id": "flow-tests-assert-the-served-schedule",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T03:17:48Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T031747892162-flow-tests-assert-the-served-schedule/manifest.md",
+          "plan": "derived-state-parity",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_spa_derived_flow.py",
+            "tests/test_schedule_derivation.py",
+            "docs/evidence/archive/derived-state-parity-landed.html",
+            "docs/plans/derived-state-parity.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "disc-local-b",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T03:17:54Z",
+        "completed_at": "2026-09-15T03:28:47.587Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 647,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 653,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "d457fcb651c32cb810217ab9368572fbb39f6ca0",
+        "commits": [
+          "c43cd08dfc5f9dccd1b3ae7e20ea348308226d3b"
+        ],
+        "changed_lines": {
+          "added": 55,
+          "removed": 94,
+          "files": 2
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_derived_flow.py tests/test_schedule_derivation.py tests/test_served_schedule_payload.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T031747892162-flow-tests-assert-the-served-schedule/logs/gate-final.log",
+          "log_digest": "accb25e30ebc719b818a7293939392a590b1a8f728fbf1db9265d49fb6865c93"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T031747892162-flow-tests-assert-the-served-schedule/manifest.md",
+        "scope_changed": true,
+        "session_id": "310f6613-5042-4099-8fd0-d77ea9456176",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 6172857,
+            "input_tokens_cumulative": 6172857,
+            "output_tokens": 101011,
+            "output_tokens_cumulative": 101011,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T03:28:47.587Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6336540,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 650.333,
+          "generated_tokens": 109350,
+          "generation_seconds": 620.31,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 81.2,
+          "machine_seconds": 30.023,
+          "peak_input_tokens": 162383,
+          "tokens_per_second": 176.28,
+          "wall_tokens_per_second": 168.14
+        },
+        "follow_on_paths": [
+          "tests/test_surface_parity.py;"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16-20260914/flow-tests-assert-the-served-schedule",
+          "session_id": "310f6613-5042-4099-8fd0-d77ea9456176",
+          "session_source": "stream",
+          "retained_at": "2026-09-15T03:28:47.587Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 67.0,
+        "orientation_input_tokens": 2574569.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -121908,6 +122111,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1468
+    "_version": 1469
   }
 }
