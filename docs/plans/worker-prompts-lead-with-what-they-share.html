@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="worker-prompts-lead-with-what-they-share">
+  <meta name="plan-title" content="Worker Prompts Lead With What They Share">
+  <meta name="plan-summary" content="Worker prompts are 88% identical and share a 152-byte prefix, so the served lane recomputes what it already holds.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="2.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint" content="S17">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <title>Worker Prompts Lead With What They Share | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-15">
+<meta name="plan-version" content="1">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;}">
+</head>
+<body>
+  <main class="plan-doc">
+
+<h2 id="s1">§1 — The measurement</h2>
+
+<p>Eight worker prompts, captured from four projects dispatched within one hour
+on 2026-09-15, are between 7,847 and 13,363 bytes each. Any two of them are
+<strong>88% identical</strong>. They share a <strong>152-byte prefix</strong>.</p>
+
+<table>
+<thead><tr><th>Pair</th><th>Shared prefix</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td>reckon A vs reckon B</td><td>156 B</td><td>same project</td></tr>
+<tr><td>reckon A vs imas-codex C</td><td>152 B</td><td>cross-project</td></tr>
+<tr><td>reckon B vs imas-codex C</td><td>152 B</td><td>cross-project</td></tr>
+<tr><td>all eight</td><td>152 B</td><td>4.5 cache blocks at 34.1 tokens/block</td></tr>
+</tbody>
+</table>
+
+<p>The cause is placement, not content. The prompt opens with 152 bytes of fixed
+preamble, then emits <code>NODE &lt;id&gt;</code> and <code>GOAL &lt;text&gt;</code>
+— both variable length — and only then the contract, the fences, the manifest
+template and the write scope, all of which are near-identical across every
+worker. Each node-specific field shifts everything behind it, so the same text
+lands at a different offset in every prompt:</p>
+
+<table>
+<thead><tr><th>Shared block</th><th>Offset in A</th><th>Offset in B</th></tr></thead>
+<tbody>
+<tr><td>1,802 B — <code>CONTRACT — DURABLE WRITES…</code></td><td>494</td><td>538</td></tr>
+<tr><td>1,319 B — git and branch rules</td><td>6,528</td><td>12,044</td></tr>
+<tr><td>858 B — manifest field template</td><td>5,559</td><td>11,106</td></tr>
+</tbody>
+</table>
+
+<figure>
+<svg viewBox="0 0 640 132" width="100%" role="img"
+ aria-label="Two prompt layouts. Today: 152-byte preamble, then variable node fields, then the shared contract at a shifted offset. Proposed: the shared contract first, then the node fields.">
+<g font-family="system-ui, sans-serif" font-size="13" fill="#1a1a1a">
+  <text x="0" y="14">today</text>
+  <rect x="64" y="4" width="18" height="18" fill="none" stroke="#1a1a1a"/>
+  <rect x="82" y="4" width="96" height="18" fill="none" stroke="#9a9a9a" stroke-dasharray="3 2"/>
+  <rect x="178" y="4" width="300" height="18" fill="none" stroke="#c0392b"/>
+  <text x="328" y="17" text-anchor="middle" font-size="12" fill="#c0392b">shared contract — never aligned</text>
+  <text x="64" y="38" font-size="11">152 B</text>
+  <text x="120" y="38" font-size="11" fill="#6a6a6a">node fields (variable)</text>
+
+  <text x="0" y="82">proposed</text>
+  <rect x="64" y="72" width="18" height="18" fill="none" stroke="#1a1a1a"/>
+  <rect x="82" y="72" width="300" height="18" fill="none" stroke="#1a7a3c"/>
+  <text x="232" y="85" text-anchor="middle" font-size="12" fill="#1a7a3c">shared contract — byte-identical prefix</text>
+  <rect x="382" y="72" width="96" height="18" fill="none" stroke="#9a9a9a" stroke-dasharray="3 2"/>
+  <text x="430" y="106" text-anchor="middle" font-size="11" fill="#6a6a6a">node fields</text>
+  <text x="64" y="106" font-size="11">152 B</text>
+</g>
+</svg>
+<figcaption>A variable-length field placed before shared content prevents that
+content from ever being a shared prefix. Moving it behind is the whole change.</figcaption>
+</figure>
+
+<h2 id="s2">§2 — Why this costs the served lane</h2>
+
+<p>Prefix caching matches blocks from position 0 while bytes are identical. The
+serve owner demonstrated the engine's behaviour directly: sending one novel
+prompt and then the identical prompt again returned <strong>27.4% then 90.8%</strong>
+hit rate. The mechanism works perfectly the moment a prefix repeats.</p>
+
+<p>The fleet average sits at <strong>28.2%</strong> instead, measured at
+369,774,336 hits against 1,310,811,845 queries. That is not an engine defect and
+no pool size changes it — the engine cannot hit on a prefix nobody has sent
+before. Reckon supplies 88% repeated content arranged so that almost none of it
+repeats as a <em>prefix</em>, and the lane spends 18,863 of 22,557 tok/s of
+prefill recomputing prefixes it has already built.</p>
+
+<p><strong>What was excluded.</strong> A larger KV pool was proposed and dropped:
+occupancy runs 0.29–0.50 with <code>preemptions 0</code> and <code>waiting 0</code>,
+and the memory fraction that would enlarge it re-arms a lazily-allocated
+fused-MoE workspace that killed the serve at 256 concurrent. Shedding workers was
+also excluded — draining the fleet from 36 to 20 concurrent requests moved
+aggregate throughput 198 to 190 tok/s, and three long-running nodes measured
+13.9 tool calls per ten-minute bucket at ~35 live workers against 16.5 at ~19–23,
+a 19% rise where a concurrency explanation predicts roughly double.</p>
+
+<h2 id="s3">§3 — Reorder the prompt, and gate it on byte identity</h2>
+
+<p>Emit the invariant contract first, byte-identical across every worker, and the
+node-specific fields after it. Nothing is rewritten; the same text is composed in
+a different order.</p>
+
+<p><strong>The failure mode that would make this silently worthless</strong> is a
+single varying byte inside the block that is supposed to be invariant. A
+timestamp, an absolute path, a set iteration order or a dict ordering anywhere
+inside it destroys the prefix it exists to create — and the result still reviews
+as correct, because the prompt reads exactly as intended. The gate is therefore
+not "the tests pass" but a direct comparison of rendered output.</p>
+
+<p><strong>Done when</strong> two prompts rendered for different nodes in
+different projects are byte-identical up to the declared boundary offset,
+asserted by a test that fails when any variable value is moved ahead of it; and
+the measured shared prefix across a fresh set of captured prompts is materially
+larger than 152 bytes, with the new figure stated as a number.</p>
+
+<h2 id="s4">§4 — The measurement contract</h2>
+
+<p>The before-half is already secured and does not expire: the shared-prefix
+bytes above were computed from the captured prompt files themselves, which is
+deterministic, immune to cache state and ambient load, and repeats byte-identically
+after the change.</p>
+
+<p>An endpoint replay was considered and rejected on arithmetic rather than
+preference: a 12 KB prompt is roughly 88 block queries against 1,164,295 ambient
+queries in a 45-second window, so the signal is 0.0076% of the noise, and the
+engine returns <code>prompt_tokens_details: null</code> so no per-request
+attribution is available on this build. A de-biased measurement of a quantity
+below the noise floor is still noise.</p>
+
+<p><strong>Refutation.</strong> After the reordering, the same byte computation on
+freshly captured prompts must show a materially larger shared prefix. No movement
+refutes the placement hypothesis and the plan closes as a negative result.</p>
+
+<p><strong>What this measurement does not claim.</strong> The 152-byte figure
+bounds the cross-worker shared prefix on a <em>first turn</em>. Each turn's
+context grows as a conversation extends, so the initial prompt is a shrinking
+fraction of the prefix as a run progresses, and a fleet whose live runs are
+mostly hours old — measured at thirteen of fifteen over two hours, median 2.8 h —
+will show a smaller fleet-wide gain than the prefix ratio alone suggests. A real
+but much smaller improvement is consistent with the hypothesis, not against it.</p>
+
+<section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="boundary-placement" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Where does the invariant boundary sit — after the full contract, or after the contract plus the fences?</p>
+    <p class="r-dec-ctx">Everything ahead of the boundary must be byte-identical across every worker in every project. A longer invariant block caches more, and each additional section is another place a varying value can hide and silently destroy the prefix.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="contract-only">Contract only — the smallest block that is provably invariant</button>
+      <button class="r-opt" data-value="contract-and-fences">Contract plus fences — more cached, more surface to police</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+<section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-wpl-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-15" data-recommends-skill="/reckon-ship worker-prompts-lead-with-what-they-share" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Reorder the prompt so the invariant contract is the prefix</h4>
+    <div class="r-fu-body">The measurement is complete and the before-half is secured: 152 shared bytes across eight prompts that are 88% identical. What remains is the reordering in reckon/crew/prompts.py and the byte-identity gate that keeps it honest. The gate is the deliverable as much as the reorder is - a single varying value ahead of the boundary destroys the prefix and still reviews as correct. The serve owner reruns the byte computation in under a minute once it lands, and has written the refutation condition down: no movement in the shared prefix refutes the hypothesis.</div>
+    <pre class="r-fu-prompt">/reckon-ship worker-prompts-lead-with-what-they-share</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>
