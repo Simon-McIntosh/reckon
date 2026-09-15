@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="history-persists-as-detail-washes-out-landed">
+  <meta name="plan-title" content="History Persists As Detail Washes Out — landed record">
+  <meta name="plan-summary" content="Cumulative evidence for History Persists As Detail Washes Out: 1 anchored run comment to date.">
+  <meta name="plan-evidence-for" content="history-persists-as-detail-washes-out">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-commits" content="7764b522884d9db5c936d4608606d6abca470346">
+  <meta name="plan-recorded-at" content="2026-09-15T12:10:00Z">
+  <title>History Persists As Detail Washes Out — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>History Persists As Detail Washes Out — landed record</h1>
+  <p>Cumulative evidence for History Persists As Detail Washes Out. One record per landing: narrative to the plan comment, measurements to the ledger. Updated as the plan proceeds; split only a standalone artifact that remains useful alone.</p>
+
+  <section id="s3">
+    <h2>§3 — The swap is hot, because reads and writes flip independently</h2>
+    <article class="landed-comment" data-comment-id="c-run-r-20260915T105127272217-hpdw-the-store-exists-before-anything-writes-to-it">
+      <p><small>crew-reversibility · 2026-09-15</small></p>
+      <div class="r-comment-body"><p>The expand stage is demonstrated reversible, from empty and back. Two cases added to <code>tests/test_ledger.py</code>: creating the store from empty on a config home that held no database, and tearing it down. After three promotions the store holds exactly 3 rows — asserted as a number, not as presence — matching the 3 rows of the committed file, with the real crew config home untouched. Four promotions then the store is torn down: it held 4 rows, and deleting it leaves the committed file byte-identical to what the same promotions produced while the store shadowed, which is what makes the stage reversible — reverting is deleting a file nothing reads. The count of readers cut over is zero: the same ledger answers before and after the removal, because no existing reader reads the store. Only tests changed; <code>reckon/ledger.py</code> and <code>reckon/run_store.py</code> were already live from the earlier nodes and carry no diff from this one. Before: 91 passed / 2 failed on the two named files (93 collected, the two failures pre-existing environmental reads of live fleet state). After adding these two cases: 94 passed / 1 failed (95 collected), 0 newly added failures; the one remaining failure is the same id that failed at base (<code>test_completion_promotes_the_pointer_into_the_repositorys_ledger</code>), and the other base failure flaked to passing. Focused store run: 7 passed in 0.99 s.</div>
+    </article>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Gate</th><th>Tests added</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20260915T105127272217-the-store-exists-before-anything-writes-to-it</code></td>
+        <td>the-store-exists-before-anything-writes-to-it</td>
+        <td><strong>passed</strong></td>
+        <td>2</td>
+        <td>unchanged</td>
+      </tr>
+      </tbody>
+    </table>
+  </section>
+ </main>
+</body>
+</html>
