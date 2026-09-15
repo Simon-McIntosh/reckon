@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T04:00:31",
+  "updated": "2026-09-15T04:12:56",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -120458,6 +120458,203 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T014341621845-the-surface-consumes-the-python-schedule",
+        "plan": "derived-state-parity",
+        "section": "\u00a75",
+        "node": "the-surface-consumes-the-python-schedule",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 4801,
+                "cached_input_tokens": 604947,
+                "input_tokens": 609750,
+                "output_tokens": 1813,
+                "reasoning_output_tokens": 628,
+                "total_tokens": 611563,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3332e8d8-dcef-4091-9774-c9680478b165",
+            "session_id": "ship-s16-20260914"
+          },
+          "done_when": "The residual JSX derivation is gone from docs/ui/crew.jsx and the surface renders from the payload, asserted by a check that fails at the base revision and passes at the head; run it at the base and record that failure, because this section's existing grep half cannot discriminate. That grep reads docs/ui/crew.jsx for 'function schedule' or '_schedule(' and expects zero, while the derivation is named derivedFlowSchedule, so it prints zero both before and after and reports a protection that is not there. Restate it against the name the code actually uses and state in the manifest what the old form returned in each world, as digits. The Python half already landed as reckon/schedule.py with derive_schedule taking a required reference parameter; the surface must consume that rather than reimplement it, and the manifest states which callable it consumes. Do not change reckon/schedule.py",
+          "estimated_hours": null,
+          "goal": "Make the Crew surface render the schedule the Python derivation returns instead of computing its own",
+          "id": "the-surface-consumes-the-python-schedule",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T01:43:41Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T014341621845-the-surface-consumes-the-python-schedule/manifest.md",
+          "plan": "derived-state-parity",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "docs/ui/crew.jsx"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "disc-local",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T01:43:46Z",
+        "completed_at": "2026-09-15T02:08:03.531Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1444,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1457,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "b3315cf628e735b58155a29072d5c68c1147e278",
+        "commits": [
+          "bec8557627cd4b58809dce109392167d91b8f429"
+        ],
+        "changed_lines": {
+          "added": 40,
+          "removed": 115,
+          "files": 1
+        },
+        "tests_added": null,
+        "gate": "failed",
+        "gate_check": {
+          "command": "coordinator audit: grep docs/ui/state-loader.js, reckon/serve.py and reckon/mcp_views.py for anything emitting the schedule key the migrated surface now reads",
+          "exit_status": 1,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/3332e8d8-dcef-4091-9774-c9680478b165/scratchpad/schedule-served.log",
+          "log_digest": "894b35c9c0c106d30144ef68017b4267077d60aad4855c3d0fde43769d060f8e"
+        },
+        "suite_delta": null,
+        "failure_classification": "malformed-node",
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T014341621845-the-surface-consumes-the-python-schedule/manifest.md",
+        "scope_changed": false,
+        "session_id": "66777b9a-35da-43eb-9300-a0d5f89dcf76",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 10739214,
+            "input_tokens_cumulative": 10739214,
+            "output_tokens": 69888,
+            "output_tokens_cumulative": 69888,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T02:08:03.531Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 10903999,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 1453.373,
+          "generated_tokens": 75673,
+          "generation_seconds": 1419.857,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 81.7,
+          "machine_seconds": 33.516,
+          "peak_input_tokens": 163485,
+          "tokens_per_second": 53.3,
+          "wall_tokens_per_second": 52.07
+        },
+        "dispute_count": "unknown",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16-20260914/the-surface-consumes-the-python-schedule",
+          "session_id": "66777b9a-35da-43eb-9300-a0d5f89dcf76",
+          "session_source": "stream",
+          "retained_at": "2026-09-15T02:08:03.531Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 103.0,
+        "orientation_input_tokens": 4503478.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -120686,6 +120883,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1462
+    "_version": 1463
   }
 }
