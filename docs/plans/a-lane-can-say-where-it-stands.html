@@ -417,6 +417,23 @@
         unresolved window, and a worker asserting only its own half cannot see
         what the pair does.
       </p>
+      <p>
+        <strong>Landed 2026-09-15, commit <code>fe3e9231</code>.</strong> The
+        rebuild now merges rather than discards: the recorded argv supplies the
+        command, the configured lane supplies the window, the model and the
+        effort, and a value the row recorded itself wins the merge because the
+        row is the authority for what it was measured against. All five
+        <code>_backend_settings</code> callers lose a setting before this commit
+        and none after &mdash; the two observation sites and the lane-change
+        dialect read under configuration, the promotion and resumption readers
+        with none, and every one of them now carries the window and the row's
+        identity. A window that resolves nowhere stays unknown rather than
+        dividing by an announced or constant figure; a resumption relaunches
+        with its recorded model and effort; and a resumed run records explicitly
+        that it was not re-verified for context fit, which only a fresh dispatch
+        performs. Evidence at
+        <code>docs/evidence/archive/a-lane-can-say-where-it-stands-landed.html#reconstructed-backend-merges</code>.
+      </p>
     </section>
 
     <section id="out-of-scope">
