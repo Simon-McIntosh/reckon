@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="execution-orchestration-hardening-landed">
+  <meta name="plan-title" content="Execution and Orchestration Hardening — landed evidence">
+  <meta name="plan-summary" content="The node's gate is re-run against the integrated revision, not only the worker's base.">
+  <meta name="plan-evidence-for" content="execution-orchestration-hardening">
+  <meta name="plan-verifies" content="execution-orchestration-hardening#s4">
+  <meta name="plan-commits" content="d3a27bc">
+  <meta name="plan-artifacts" content="reckon/crew/promotion.py,tests/test_crew_promotion.py">
+  <meta name="plan-recorded-at" content="2026-09-15">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-environment" content="reckon project virtual environment">
+  <meta name="plan-tags" content="crew,promotion,verification,integration">
+  <title>Execution and Orchestration Hardening — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence</p>
+      <h1>Re-run the gate at the integrated revision</h1>
+      <p class="lead">A worker's gate is now re-runnable against the tree the coordinator is about to push, so a contract landing after the worker's base cannot quietly turn the merge red.</p>
+    </header>
+
+    <section id="s4">
+      <h2>&sect;4 &mdash; The gate runs again at the integrated revision</h2>
+      <p>Commit <code>d3a27bc</code> adds <code>rerun_gate_at_integrated_revision</code> to <code>reckon/crew/promotion.py</code>. It executes a node's gate command — the same gate_check command the run recorded — only when the repository actually sits on the integrated revision: the tree the coordinator is about to push. A run against any other tree verifies the wrong tree and is refused with the reason stated, never executed. The base verdict is taken as given (the gate the run already recorded), and a finding is produced exactly when a gate that passed at the worker's base is not passed by the integrated tree. An unmeasured re-run is reported <code>not-run</code> with its reason, never as passed.</p>
+      <table>
+        <thead><tr><th>Case</th><th>Base verdict</th><th>Integrated-tree verdict</th><th>Finding</th></tr></thead>
+        <tbody>
+          <tr><td>Contract lands after the base, turning the merged head red</td><td><code>passed</code></td><td><code>failed</code></td><td>produced</td></tr>
+          <tr><td>Base and merged head agree</td><td><code>passed</code></td><td><code>passed</code></td><td>none</td></tr>
+          <tr><td>Checkout is not on the integrated revision</td><td><code>passed</code></td><td><code>not-run</code></td><td>produced — the wrong tree is never verified and silence is not read as a pass</td></tr>
+        </tbody>
+      </table>
+      <p>The first case reproduces the failure class in the record: a gate green at the worker's base turns red at the merged head because a contract landed after that base. The very same gate command is red on the integrated revision, and the re-run reports the divergence. The second case proves the re-run stays silent when base and merged head agree. The third demonstrates the guard: the re-run refuses to execute against a tree that is not the integrated revision.</p>
+    </section>
+
+    <section id="verification">
+      <h2>Verification</h2>
+      <p><code>pytest tests/test_crew_promotion.py -p no:cacheprovider -q</code> passed: <strong>42 passed before</strong> the change, <strong>45 passed after</strong> — the file gains <strong>3</strong> cases and all pass, exit 0, recorded log <code>/tmp/gate_rerun_after2.log</code>. Ruff delta is clean: the two touched files report no new findings against their base revision (15 baseline lines, 13 after; format state unchanged).</p>
+    </section>
+  </main>
+</body>
+</html>

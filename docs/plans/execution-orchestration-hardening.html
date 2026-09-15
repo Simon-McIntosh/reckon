@@ -196,6 +196,9 @@ Done-when
 <div class="r-comment" data-section="_top" data-id="c-20260904T085038256761" data-who="agent" data-when="2026-09-04">
     <div class="r-comment-body">TRIAGE VERDICT — still wanted. Re-homed to S17. The umbrella execution instruction, the session-attachment instruction and the already-landed first promotion repair were overtaken; the merge-time gate, remaining promotion-truth repairs and worktree provisioning remain current.</div>
 </div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260915T101243166457-the-gate-runs-again-at-the-integrated-revision" data-who="the-gate-runs-again-at-the-integrated-revision" data-when="2026-09-15T10:30:00Z">
+    <div class="r-comment-body">LANDED — the merge-time gate is now re-runnable. <code>rerun_gate_at_integrated_revision</code> in <code>reckon/crew/promotion.py</code> (<code>d3a27bc</code>) executes a node's gate command only when the checkout sits on the integrated revision and surfaces a finding exactly when a base-green gate is failed - or left unverified - on the tree that ships. Three cases demonstrated in tests/test_crew_promotion.py: a contract landing after the worker's base turns the base verdict <code>passed</code> into a merged-head verdict <code>failed</code> (finding produced); base and merged head agreeing at <code>passed</code> produce no finding; a checkout not on the integrated revision is reported <code>not-run</code> with its reason and never read as a pass. The file passes <code>42</code> before and <code>45</code> after (3 added), all green, exit 0, log /tmp/gate_rerun_after2.log; ruff delta clean (15 baseline lines vs 13 after, format state unchanged). Evidence: <a href="/reckon/evidence/archive/execution-orchestration-hardening-landed">execution-orchestration-hardening-landed</a>.</div>
+</div>
 </section>
 </main>
 </body>
