@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T04:44:00",
+  "updated": "2026-09-15T04:50:24",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -121274,6 +121274,208 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T024313175820-endpoint-rows-assertion-follows-the-source",
+        "plan": "spa-surface-contract-health",
+        "section": "\u00a72",
+        "node": "endpoint-rows-assertion-follows-the-source",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1936,
+                "cached_input_tokens": 663134,
+                "input_tokens": 665072,
+                "output_tokens": 813,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 665885,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3332e8d8-dcef-4091-9774-c9680478b165",
+            "session_id": "ship-s16-20260914"
+          },
+          "done_when": "tests/test_roadmap_endpoints.py::test_graph_endpoint_rows_equal_the_project_roadmap_rows passes; it currently asserts the source literal _roadmapEndpointRows(M?.endpoints) which docs/ui/graph.jsx no longer contains, the literal appearing once at revision 1d9e90c^ and zero times at 1d9e90c, and the surface now calls _roadmapEndpointRows(M.endpoints) inside a guard that falls back to the inventory when the roadmap field is absent. State both counts as digits. Assert the behaviour the test is named for, that the graph's endpoint rows equal the project roadmap rows, rather than a source substring that any refactor of the call site breaks while the behaviour is intact \u2014 a substring assertion over source is why this broke at all, and re-pinning it to the new substring would only move the fuse. Do not change docs/ui/graph.jsx; the surface is correct and the assertion is what is stale",
+          "estimated_hours": null,
+          "goal": "Bring the roadmap-endpoint source assertion into step with the call the surface now makes",
+          "id": "endpoint-rows-assertion-follows-the-source",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T02:43:13Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T024313175820-endpoint-rows-assertion-follows-the-source/manifest.md",
+          "plan": "spa-surface-contract-health",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "exact",
+          "time_budget": "30m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_roadmap_endpoints.py",
+            "docs/evidence/archive/spa-surface-contract-health-landed.html",
+            "docs/plans/spa-surface-contract-health.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "disc-local-b",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T02:43:19Z",
+        "completed_at": "2026-09-15T02:46:33.656Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 187,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 194,
+        "stalled": false,
+        "time_budget": "30m",
+        "base_sha": "f9060404b4c6512c003f59a35b79d652f7b9018b",
+        "commits": [
+          "e9eff913da6c3b0de6993ef9d3cfe75b8ec03abd"
+        ],
+        "changed_lines": {
+          "added": 0,
+          "removed": 1,
+          "files": 1
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider tests/test_roadmap_endpoints.py -v, run before and after",
+          "exit_status": 0,
+          "log_path": "/tmp/node_roadmap_after.log",
+          "log_digest": "cd0032a741c63b4d6d3c639632b6e3cdb67c1104138986556f87ffaea8806bc0"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T024313175820-endpoint-rows-assertion-follows-the-source/manifest.md",
+        "scope_changed": true,
+        "session_id": "8db4bbc0-6743-4ef5-aba2-e8f3180fb187",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 2082405,
+            "input_tokens_cumulative": 2082405,
+            "output_tokens": 18238,
+            "output_tokens_cumulative": 18238,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T02:46:33.656Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 2082405,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 191.2,
+          "generated_tokens": 18238,
+          "generation_seconds": 131.062,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 48.9,
+          "machine_seconds": 60.138,
+          "peak_input_tokens": 97771,
+          "tokens_per_second": 139.16,
+          "wall_tokens_per_second": 95.39
+        },
+        "follow_on_paths": [
+          "2/3"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16-20260914/endpoint-rows-assertion-follows-the-source",
+          "session_id": "8db4bbc0-6743-4ef5-aba2-e8f3180fb187",
+          "session_source": "stream",
+          "retained_at": "2026-09-15T02:46:33.656Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 30.0,
+        "orientation_input_tokens": 517934.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -121502,6 +121704,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1466
+    "_version": 1467
   }
 }
