@@ -13,8 +13,8 @@
   <meta name="plan-recorded-at" content="2026-09-15">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; Python 3.12; the rendered topbar gate skips in the worker sandbox on both sides of the run">
-  <meta name="plan-commits" content="1d9e90c,2b43c6f">
-  <meta name="plan-artifacts" content="docs/ui/graph.jsx,tests/test_build.py,tests/test_spa_composition.py,tests/test_spa_shell_geometry.py,tests/test_spa_graph_geometry.py,tests/test_spa_derived_flow.py,tests/fixtures/crew-public-surface.txt">
+  <meta name="plan-commits" content="1d9e90c,2b43c6f,e9eff91">
+  <meta name="plan-artifacts" content="docs/ui/graph.jsx,tests/test_build.py,tests/test_spa_composition.py,tests/test_spa_shell_geometry.py,tests/test_spa_graph_geometry.py,tests/test_spa_derived_flow.py,tests/fixtures/crew-public-surface.txt,tests/test_roadmap_endpoints.py">
   <title>Eleven surface failures that are not the browser — landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -104,6 +104,23 @@
     wherever it is present and the empty branch stays reachable where there genuinely are no
     edges. Verified on the file scheme, since served navigation does not complete on this host:
     populated on each of six consecutive probe runs against a stated floor of three.</p>
+  </section>
+
+  <section id="endpoint-rows-follows-the-source">
+    <h2>Follow-up: the roadmap-endpoint assertion now follows the source</h2>
+    <p>One stale contract survived outside the six files the sweep measured.
+    <code>tests/test_roadmap_endpoints.py</code> asserted the source literal
+    <code>_roadmapEndpointRows(M?.endpoints)</code> in <code>docs/ui/graph.jsx</code>, which
+    appears <strong>once at the §3 fix's parent and zero times at the fix itself</strong> —
+    counts 1 and 0 at revisions <code>1d9e90c^</code> and <code>1d9e90c</code> — because the
+    fix moved the call into a guard that falls back to deriving rows from the inventory when the
+    roadmap field is absent. The object of the assertion, a call-site spelling, was never the
+    property the test protects.</p>
+    <p>The migration drops the source-substring assertion and keeps the behavioural node-run the
+    test is named for, which renders the real adapter over the real roadmap report and asserts
+    the graph's endpoint rows equal the project's roadmap rows. A substring assertion over
+    source is how this broke at all; re-pinning it to the new spelling would only relocate the
+    fuse. No surface change was made, and all five tests in the file pass.</p>
   </section>
 
   <section id="what-this-protects">
