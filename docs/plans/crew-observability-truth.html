@@ -560,6 +560,22 @@
       making it speak is a promotion-layer change carried as a follow-on. Landed under commit
       <code>9a2f95e</code>. Full record:
       <a href="/reckon/evidence/archive/crew-observability-truth-landed#manifest-two-keys-on-one-line-refused">&#167;12 landed</a>.</p>
+    <p class="landed-summary">The template-side half of this section is landed; the reader
+      half is the separate node <code>a-second-key-on-a-manifest-line-is-reported</code> and
+      must not merge alone, since a prompt that instructs workers to write one-line forms
+      after the parser refuses them is worse than today. The manifest block the worker prompt
+      hands out now matches the schema the reader enforces: <code>commits</code> and
+      <code>changed_paths</code> sit on separate lines and are never semicolon-joined on one,
+      the status vocabulary offers <code>waiting</code> alongside <code>complete</code>,
+      <code>blocked</code> and <code>failed</code>, and the block carries
+      <code>wait_condition</code>, <code>wait_probe</code>, <code>wait_terminal</code> and
+      <code>resume_brief</code>. The time fence names the same four keys, so the prose
+      instructing a worker to leave a record of what it waits on and the block that makes the
+      record machine-readable no longer disagree. Asserted in
+      <code>tests/test_worker_prompt_contract.py</code> against the composed prompt, with the
+      existing prompt-composition assertions passing unchanged. Landed under commit
+      <code>8417c0f</code>. Full record:
+      <a href="/reckon/evidence/archive/crew-observability-truth-landed#manifest-template-matches-the-reader">&#167;12 manifest template landed</a>.</p>
 
     <h2 id="s13">&#167;13 &mdash; A quiet fleet and a working one look identical, because nothing reports a wave</h2>
     <p><strong>Directed by the lead 2026-09-09, after a session spent counting completions by
