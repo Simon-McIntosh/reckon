@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="blank-project-surface">
   <meta name="plan-title" content="Blank Project Surface">
   <meta name="plan-summary" content="A project page renders nothing while every asset and payload it needs returns 200: find the render fault, repair it, and catch the next one.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="4.0">
   <meta name="plan-capability-version" content="1.0">
@@ -23,11 +23,11 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="15">
-<meta name="plan-commits" content="edd448891e6ab661fecc7cd9a3a7c42bd4c64837,35dfb5b,5d28be8,3d329e8">
+<meta name="plan-version" content="16">
+<meta name="plan-commits" content="edd448891e6ab661fecc7cd9a3a7c42bd4c64837,35dfb5b,5d28be8,3d329e8,7df7fc5">
 <meta name="plan-artifacts" content="docs/research/spa-project-render-fault.html,docs/evidence/archive/blank-project-surface-landed.html,docs/research/shell-fallback-and-authoring-prior-art.html">
-<meta name="plan-impl" content="0.5">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -204,61 +204,20 @@
     <a href="/reckon/evidence/archive/blank-project-surface-landed#shell-modules">§3 landed</a>
     (commits <code>5d28be8</code>, <code>3d329e8</code>).</p>
 
-    <h2 id="s4">§4 — A blank surface becomes a caught failure</h2>
+    <h2 id="s4">§4 — A blank surface becomes a caught failure <span class="badge badge-shipped">✓ landed 2026-09-15</span></h2>
 
-    <p>The defect reached a user because nothing in the suite asserts that a
-    project surface renders anything at all. Close that: a check that fails when a
-    mounted project's surface produces an empty render.</p>
-
-    <p><strong>Host constraint.</strong> Headless-Chrome HTTP navigation is not
-    dependable on this workstation — that is the subject of
-    <code>rendered-evidence-on-this-host</code>, and browser-gated checks here have
-    timed out for reasons unrelated to the code under test. The guard must produce
-    its verdict without depending on a capability this host has not demonstrated,
-    or it will read as red when it is merely unable to run.</p>
-
-    <p>The check runs against payload shapes that reproduce the reported failure,
-    so that reverting the §3 repair turns it red. A guard that passes both before
-    and after the fix is not a guard.</p>
-
-    <h3 id="s4-asymmetry">The half that gets left out</h3>
-
-    <p>A guard's own tests can all pass while the guard is wrong, and the failure
-    is systematic rather than careless. Measured next door on 2026-09-02: the
-    promotion boundary guard shipped with five tests, each synthesising a stray
-    write into an otherwise still tree and asserting a refusal. All five were
-    correct and all five still pass. The guard was nonetheless fleet-blocking
-    within an hour, because no test asserted the other half — that a run
-    <strong>promotes</strong> while the world around it moves. Every case proved
-    the guard fires when it should; none proved it stays quiet when it should.</p>
-
-    <p>This check has exactly the same shape and therefore the same exposure, so
-    it owes both halves:</p>
-
-    <ul>
-      <li><strong>Fires when it should.</strong> A payload reproducing the module
-      skew turns it red, and reverting the §3 repair turns it red.</li>
-      <li><strong>Stays quiet when it should.</strong> A healthy surface passes
-      while unrelated state around it changes — a different project's payload
-      moving, an unrelated module list being edited, concurrent activity in the
-      tree. This is the half whose absence is invisible until it costs an
-      afternoon.</li>
-    </ul>
-
-    <h3 id="s4-landed">Landed guard</h3>
-
-    <p><code>tests/test_spa_blank_surface_guard.py</code> evaluates the
-    composition root directly with a recorded missing-ready-module shape. The
-    repaired root produces <strong>4 children</strong>, an alert role and its
-    unavailable-module marker; a local replay of the earlier empty fallback
-    produces <strong>0 children</strong> and the guard raises. The quiet half
-    holds across <strong>3 cases</strong>: the original payload, a different
-    project's changed payload, and an added unrelated module. All three retain
-    four children. Full record:
-    <a href="/reckon/evidence/archive/blank-project-surface-landed#blank-surface-guard">§4 landed</a>.</p>
-
-    <p>Credit for the diagnosis and the correction of the guard it describes
-    belongs to the session shipping <code>clive-local-workers</code>.</p>
+    <p class="landed-summary">Built <code>tests/test_spa_blank_surface_guard.py</code>,
+    browser-free per the locked <code>guard-mechanism</code> decision, carrying
+    <strong>both halves</strong>. It fires: reading the real
+    <code>docs/ui/shell.jsx</code> and synthesising its pre-repair shape, the root
+    gives <strong>4 children with <code>role="alert"</code> repaired against 0
+    reverted</strong>, and the guard's own assertion trips on the revert. It stays
+    quiet: three unrelated changes — a neighbour project's title, an extra module —
+    all hold at <strong>4 children</strong>. That second half is the one §4 warned
+    is invisible until it costs an afternoon. 16 passed re-run at the merged head.
+    Full record:
+    <a href="/reckon/evidence/archive/blank-project-surface-landed#blank-surface-guard">§4 landed</a>
+    (commit <code>7df7fc5</code>).</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -286,10 +245,11 @@
     <pre class="r-fu-prompt">/reckon-ship blank-project-surface §2</pre>
     <p class="r-fu-outcome">The render-fault diagnosis in §2 landed in edd4488; starting from root-cause discovery is stale.</p>
     </article>
-<article class="r-fu" data-id="f-bps-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="agent" data-written-at="2026-09-04 10:00" data-recommends-skill="/reckon-ship blank-project-surface §3" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-bps-002" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="agent" data-written-at="2026-09-04 10:00" data-recommends-skill="/reckon-ship blank-project-surface §3" data-resolved-at="2026-09-15T08:07:17+00:00" data-resolved-by="reckon-ship">
     <h4 class="r-fu-title">Land the legible fallback and browser-free regression</h4>
     <div class="r-fu-body">The root cause is already established. Continue with the user-visible fallback in §3 and the browser-free regression in §4.</div>
     <pre class="r-fu-prompt">/reckon-ship blank-project-surface §3</pre>
+    <p class="r-fu-outcome">Both landed. The legible fallback in section 3 at commits 5d28be8 and 3d329e8 with the composition root rendering 0 children before and 4 after, role=alert and text naming the failure; and the browser-free regression in section 4 at 7df7fc5 carrying both halves, firing on a programmatic revert of the section-3 repair and staying quiet across three unrelated changes. Prior art was mapped first at 35dfb5b and cited by the repair rather than rebuilt. Plan complete at impl 1.0; done — no followup.</p>
     </article>
 </section>
 
@@ -319,7 +279,10 @@
     <div class="r-comment-body">TRIAGE VERDICT — still wanted. Re-homed to S17. Root-cause discovery already landed, so the old §2 instruction is resolved; the remaining home is the fallback and regression work beginning at §3.</div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260915T075410484832-the-blank-surface-guard-fires-and-stays-quiet" data-who="implement-terra-c" data-when="2026-09-15T08:01:48Z">
-    <div class="r-comment-body"><p>Browser-free guard with both halves demonstrated, not asserted. Fires: it reads the real docs/ui/shell.jsx, synthesises the pre-repair source by replacing the shellRoot branch with the original empty main, and asserts childCount 4 with role=alert on the repaired source against childCount 0 on the reverted one, plus a pytest.raises proving the guard&#x27;s own assertion trips on the revert. Stays quiet: 3 unrelated-change checks - a neighbour project&#x27;s title changing and an unrelated module appearing - all return childCount 4. Recorded fragility, not blocking: the revert is produced by string surgery keyed on literal source structure, so a refactor of shell.jsx errors the helper rather than failing meaningfully.</p></div>
+    <div class="r-comment-body"><p>Browser-free guard with both halves demonstrated, not asserted. Fires: it reads the real docs/ui/shell.jsx, synthesises the pre-repair source by replacing the shellRoot branch with the original empty main, and asserts childCount 4 with role=alert on the repaired source against childCount 0 on the reverted one, plus a pytest.raises proving the guard's own assertion trips on the revert. Stays quiet: 3 unrelated-change checks - a neighbour project's title changing and an unrelated module appearing - all return childCount 4. Recorded fragility, not blocking: the revert is produced by string surgery keyed on literal source structure, so a refactor of shell.jsx errors the helper rather than failing meaningfully.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260915T081000" data-who="reckon-ship" data-when="2026-09-15T08:10:00Z">
+    <div class="r-comment-body">Section landed with both halves demonstrated rather than asserted, which is what this section asked for. Commit 7df7fc5, gate passed, 2 tests added. FIRES WHEN IT SHOULD: the guard reads the real docs/ui/shell.jsx, synthesises the pre-repair source by replacing the shellRoot branch with the original empty main element, and asserts childCount 4 with role=alert on the repaired source against childCount 0 on the reverted one, plus a pytest.raises proving the guard's own assertion trips on the revert. So reverting the section-3 repair does turn it red, which is the property this section named and the one a guard most often lacks. STAYS QUIET WHEN IT SHOULD: three unrelated-change checks, a neighbour project's title changing and an unrelated module appearing in the module set, all return childCount 4, recorded as 4, 4, 4. That is the half the section warned is invisible until it costs an afternoon. Browser-free throughout, per the locked guard-mechanism decision and the host constraint this section states. Verified by the coordinator at the merged head rather than in the worker's tree: 16 passed across the guard and the composition suite. ONE CHARACTERISTIC RECORDED RATHER THAN REPAIRED: the revert is produced by string surgery keyed on literal source structure, so a refactor of shell.jsx makes the helper raise rather than fail meaningfully. That is a loud failure rather than a silent one, so it is acceptable by this repository's own preference for visible failures, and it is written here rather than left for someone to rediscover. It is deliberately not folded into a new section: the guard works, both halves hold, and the plan's declared scope is complete.</div>
 </div>
 </section>
 </main>
