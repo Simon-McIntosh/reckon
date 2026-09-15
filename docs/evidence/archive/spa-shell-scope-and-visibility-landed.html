@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="spa-shell-scope-and-visibility-landed">
+  <meta name="plan-title" content="The project selector scopes the page — landed evidence">
+  <meta name="plan-summary" content="Project visibility became real, the topbar reordered around search and scope, the Crew surface scoped and scrolling, and the canvas ground and type ramp adopted. Two gaps a later review found are closed here rather than carried: a selector narrower than the canvas specifies, and a capture gate that read somebody else's directory.">
+  <meta name="plan-evidence-for" content="spa-shell-scope-and-visibility">
+  <meta name="plan-verifies" content="reckon:spa-shell-scope-and-visibility#s2,reckon:spa-shell-scope-and-visibility#s3,reckon:spa-shell-scope-and-visibility#s4,reckon:spa-shell-scope-and-visibility#s5,reckon:spa-shell-scope-and-visibility#s6">
+  <meta name="plan-recorded-at" content="2026-09-15">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; captures at 1374 and 1920; the geometry checks are deterministic and need no browser">
+  <meta name="plan-commits" content="98ff44c,346c730,77a473b,9539a96,7c04841,225f60f,599d70d,22bc6b5,78e2a77">
+  <meta name="plan-artifacts" content="docs/ui/topbar.css,docs/ui/shell-topbar.jsx,docs/ui/_shared.jsx,docs/ui/crew.jsx,tests/test_spa_shell_geometry.py,tests/test_spa_owed_captures.py">
+  <title>The project selector scopes the page — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>The project selector scopes the page &mdash; landed evidence</h1>
+    <p class="plan-summary">Seven commits landed the shell work and all seven were proven
+    ancestors of the head. The two things worth reading here are the gaps that a review found
+    afterwards, because both were the kind that a passing suite reports as fine.</p>
+  </header>
+
+  <section id="overview">
+    <h2>Record scope</h2>
+    <p>Four of the seven measured shell defects were fixable against the data the server already
+    served: a visibility toggle that did nothing, a topbar ordered differently from the canvas, a
+    Crew list that neither scrolled nor scoped to the selected project, and a ground and type
+    ramp that were not the canvas's. All landed, with six captures at two widths.</p>
+  </section>
+
+  <section id="selector-width">
+    <h2>The selector was narrower than the canvas specifies</h2>
+    <p>The plan states a 168px minimum for the project selector. The stylesheet set 150px. Both
+    numbers were true statements about different things, and nothing compared them, so the
+    disagreement survived the plan reaching full implementation.</p>
+    <p>The repair is recorded not for its size &mdash; one declaration &mdash; but for how the
+    disagreement was settled. <strong>Neither the plan's prose nor the shipped CSS was treated as
+    the authority.</strong> The handoff canvas itself sets <code>min-width:168px</code> on the
+    selector, so the plan's figure is grounded in the design and the implementation was the
+    defect. The check fails at the base revision on <code>assert 168 == 150</code> and passes at
+    the head: 17 passed, one pre-existing unrelated skip.</p>
+    <p>The available shortcut was to edit the plan to read 150. That makes the two agree, passes
+    every check, and destroys the only record that the surface had drifted from the canvas. A
+    plan corrected to match its implementation cannot report drift, because it no longer
+    disagrees with anything.</p>
+  </section>
+
+  <section id="capture-gate">
+    <h2>The capture gate read a directory this plan does not write</h2>
+    <p>&sect;6's capture evidence rested on <code>tests/test_spa_owed_captures.py</code>, which
+    hardcoded a single <code>docs/figures/rendered-evidence</code> root. Three plans cite that
+    file as their capture measure and none of them writes that directory. All three had real
+    captures on disk carrying real metrics, and a gate that never looked at them.</p>
+    <p>It now reads each gated plan's own index &mdash; capture indexes read rise from
+    <strong>1 to 3</strong> &mdash; and asserts the captures exist, carry their recorded viewport
+    width, and show the population their section requires. What makes it a gate rather than a
+    formality is that it was shown to refuse: pointed at a synthesised plan with an empty index
+    it fails with <em>capture index holds no captures</em>. A gate never demonstrated to refuse
+    is indistinguishable from one that cannot.</p>
+  </section>
+
+  <section id="unmeasured">
+    <h2>Eighteen deliverables stated without a measure</h2>
+    <p>A prose-deliverable audit over this plan found eighteen deliverables written as prose with
+    no measure of their own. Exactly one was not done &mdash; the selector width above. The other
+    seventeen hold at the head and are asserted by nothing, so each would break silently.</p>
+    <p>That is recorded here as a known property of this plan rather than as outstanding work,
+    because writing seventeen assertions after the fact is a different job from the one this plan
+    describes. The number is the useful part: a plan can be entirely correct and almost entirely
+    unguarded, and its implementation percentage says nothing about which.</p>
+  </section>
+</main>
+</body>
+</html>
