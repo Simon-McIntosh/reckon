@@ -243,6 +243,30 @@ def test_open_project_picker_stays_inside_the_viewport(
     )
 
 
+def test_project_selector_minimum_width_matches_the_stated_value():
+    # Read the selector's stated minimum from the design authority and the
+    # CSS declaration from its source, then compare them: one value must be
+    # spelled in both places. The plan prose names the canvas geometry and
+    # the stylesheet implements it; a drift in either direction fails here.
+    plan = (
+        REPO_ROOT / "docs" / "plans" / "spa-shell-scope-and-visibility.html"
+    ).read_text()
+    stated = re.search(r"project selector \(mono, (\d+)px minimum", plan)
+    assert stated is not None, "the plan must state the selector minimum width"
+    stated_minimum = int(stated.group(1))
+
+    declarations = _declarations(
+        (UI_ROOT / "topbar.css").read_text(), ".r-project-manage > summary"
+    )
+    assert "min-width" in declarations
+    declared_minimum = int(declarations["min-width"].removesuffix("px"))
+
+    assert stated_minimum == declared_minimum, (
+        "project selector minimum width drifts from the stated value: "
+        f"stated {stated_minimum}px, topbar.css sets {declared_minimum}px"
+    )
+
+
 def test_shell_styles_do_not_carry_version_label_comments():
     source = "\n".join(
         (UI_ROOT / name).read_text() for name in ("styles.css", "styles-base.css")
