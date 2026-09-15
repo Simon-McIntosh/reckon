@@ -646,6 +646,26 @@ reading taken as an authority it was not.</p>
     (the layout file itself 63 to 64 with the added case), no failures added.</p>
   </section>
 
+  <section id="peer-scopes-omit-shared-landing-paths">
+    <h3>&#167;21 &mdash; Peer scopes omit the shared landing paths</h3>
+    <p>Run <code>r-20260915T070648973463-peer-scopes-omit-the-shared-landing-paths</code>.
+    Commit <code>4477e1975de6700e0caf15c91486f84418275370</code>, 81 insertions and
+    3 deletions across one source file and one test file.</p>
+    <p><strong>Defect reproduction:</strong> the new prompt assertion failed before the repair
+    because the same-plan peer line was
+    <code>docs/evidence/archive/fixture-landed.html, docs/plans/fixture.html,
+    reckon/crew/ticker.py</code>. The worker contract instructed a write to the first two paths
+    while the peer fence described them as exclusively owned elsewhere.</p>
+    <p><strong>Measure:</strong> dispatch now resolves each merged live or supplied peer path
+    against the same repository authority used for scope claims and removes only paths in the
+    shared landing set. The composed prompt contains neither the plan path nor the cumulative
+    evidence path, while retaining <code>reckon/crew/ticker.py</code>. The focused regression
+    check passes 1 of 1. The unchanged prompt-composition and dispatch-guard gate passes 25
+    cases after the repair against 24 passing cases at base, with zero failures in either run
+    and one new regression case. The existing eight Ruff findings are unchanged; no new lint
+    finding was introduced.</p>
+  </section>
+
 </main>
 </body>
 </html>
