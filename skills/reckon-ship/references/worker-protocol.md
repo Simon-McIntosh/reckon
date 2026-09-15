@@ -210,8 +210,12 @@ durable result recoverable if later generation fails.
    restoration.
 3. Stage only explicit assigned paths. Never `git add -A`, `git add .`,
    wildcards, `git commit -a`, or `git commit -am`.
-4. Do not edit reckon plan or index state. Return outcome data to the
-   orchestrator.
+4. Append your landing record to your own section of the plan and your evidence
+   anchor to the cumulative evidence record; both live in this worktree and both
+   go into your final commit. Never mutate the shared project index, sprint
+   state, or a plan other than the one you are landing against. Do not edit the
+   plan-version or plan-modified meta lines: every worker touching them makes
+   every merge conflict there. Return outcome data to the orchestrator.
 5. Do not touch a concurrent worker's paths. Request a scope change instead.
 6. Commit locally with a conventional subject **and** a body stating what
    changed and why. Do not merge or push the primary branch.
