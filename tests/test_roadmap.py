@@ -20,6 +20,7 @@ def _plan(
     effort_hours: float | None = None,
     effort_calibrated: bool | None = None,
     north_star: str | None = None,
+    graph_handle: str | None = None,
 ) -> dict:
     plan = {
         "slug": slug,
@@ -37,6 +38,8 @@ def _plan(
     }
     if north_star is not None:
         plan["north_star"] = north_star
+    if graph_handle is not None:
+        plan["graph_handle"] = graph_handle
     if effort_hours is not None:
         plan["effort_hours"] = effort_hours
     if effort_calibrated is not None:
@@ -567,6 +570,75 @@ def test_project_without_north_stars_has_no_orientation_findings() -> None:
         "unoriented-plan",
         "undeclared-north-star",
     }
+
+
+def test_structural_endpoint_without_handle_raises_a_wiring_finding() -> None:
+    inventory = [
+        _plan("foundation"),
+        _plan("integration", depends_on=["foundation"]),
+        _plan("release", depends_on=["integration"]),
+    ]
+
+    result = build_roadmap("sample", inventory, [])
+    finding = next(
+        item
+        for item in result["wiring_findings"]
+        if item["code"] == "endpoint-without-handle"
+    )
+
+    assert finding["severity"] == "warn"
+    assert finding["slug"] == "release"
+    assert "release" in finding["message"]
+    assert finding["extra"]["members"] == [
+        "foundation",
+        "integration",
+        "release",
+    ]
+
+
+def test_structural_endpoint_with_handle_raises_nothing() -> None:
+    inventory = [
+        _plan("foundation"),
+        _plan("release", depends_on=["foundation"], graph_handle="release"),
+    ]
+
+    result = build_roadmap("sample", inventory, [])
+
+    assert not {item["code"] for item in result["wiring_findings"]} & {
+        "endpoint-without-handle"
+    }
+    assert result["endpoints"][0]["handle"] == "release"
+
+
+def test_leaf_sink_without_live_members_yields_no_endpoint_finding() -> None:
+    result = build_roadmap("sample", [_plan("leaf")], [])
+
+    assert result["endpoints"] == []
+    assert not {item["code"] for item in result["wiring_findings"]} & {
+        "endpoint-without-handle"
+    }
+
+
+def test_endpoint_handle_finding_does_not_change_readiness_or_execution() -> None:
+    with_handle = build_roadmap(
+        "sample",
+        [
+            _plan("foundation"),
+            _plan("release", depends_on=["foundation"], graph_handle="release"),
+        ],
+        [],
+    )
+    without_handle = build_roadmap(
+        "sample",
+        [
+            _plan("foundation"),
+            _plan("release", depends_on=["foundation"]),
+        ],
+        [],
+    )
+
+    for key in ("ready_now", "blocked", "pending_work", "critical_path"):
+        assert without_handle[key] == with_handle[key], key
 
 
 def test_reference_input_in_depends_on_is_a_wiring_error() -> None:

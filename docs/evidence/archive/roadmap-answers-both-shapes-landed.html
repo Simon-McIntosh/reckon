@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="roadmap-answers-both-shapes-landed">
+  <meta name="plan-title" content="An endpoint without a handle reports itself &mdash; landed evidence">
+  <meta name="plan-summary" content="A structural endpoint &mdash; a sink with live members beneath it &mdash; that carries no graph handle now raises a warn-severity wiring finding naming the plan and the members its closure would reach. The four gate cases are asserted in tests/test_roadmap.py: the finding fires at warn without a handle, is absent with one, is absent for an ordinary leaf, and changes no readiness or execution verdict.">
+  <meta name="plan-evidence-for" content="reckon:roadmap-answers-both-shapes">
+  <meta name="plan-verifies" content="reckon:roadmap-answers-both-shapes#s2">
+  <meta name="plan-recorded-at" content="2026-09-15">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; unit tests over the roadmap analyzer with fixture inventory &mdash; no network, no runtime clock">
+  <meta name="plan-commits" content="981e323">
+  <meta name="plan-artifacts" content="reckon/roadmap.py,tests/test_roadmap.py,docs/evidence/archive/roadmap-answers-both-shapes-landed.html">
+  <title>An endpoint without a handle reports itself &mdash; landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>An endpoint without a handle reports itself</h1>
+    <p class="plan-summary">The measured failure this plan records was a coordinator reading
+    <code>handle: null</code> on both derived endpoints of a live capability it had already fetched,
+    and acting anyway &mdash; because nothing in the payload reported the gap as actionable. The
+    orientation precedent already announces its own gap (<code>unoriented-plan</code>); an
+    unshippable outcome had no equivalent. This record is the equivalent.</p>
+  </header>
+
+  <section id="endpoint-without-handle">
+    <h2>The finding: an endpoint closure that cannot be addressed</h2>
+    <p><code>build_roadmap</code> now emits a <code>dag</code> finding with code
+    <code>endpoint-without-handle</code> at severity <strong>warn</strong> for every structural
+    endpoint &mdash; a sink with live members beneath it, in the same closure sense the
+    <code>endpoints</code> payload already computes &mdash; whose plan carries no
+    <code>graph_handle</code> and is not itself terminal. The message names the plan and counts its
+    closure; the <code>extra.members</code> list names every member the closure would reach. A
+    terminal endpoint plan stays silent, matching how the orientation precedent skips terminal
+    status. The finding is advisory: it is appended to <code>wiring_findings</code>, a diagnostic
+    surface no readiness or execution verdict reads, so it can never shift what runs.</p>
+
+    <figure>
+      <svg viewBox="0 0 660 210" width="100%" style="max-width:660px" role="img"
+           aria-label="Three plans form a dependency chain: foundation feeds integration, integration feeds release, and release is the sink with live members beneath it and no graph handle, so the analyzer raises a warn finding naming release and its three-member closure.">
+        <g fill="none" stroke="currentColor" stroke-width="1">
+          <rect x="30" y="80" width="140" height="40" rx="3"/>
+          <rect x="250" y="80" width="140" height="40" rx="3"/>
+          <rect x="470" y="80" width="140" height="40" rx="3" stroke="#c47b3b" stroke-width="2"/>
+          <path d="M170 100 L250 100"/> <path d="M242 93 l8 7 -8 7"/>
+          <path d="M390 100 L470 100"/> <path d="M462 93 l8 7 -8 7"/>
+          <path d="M470 80 v-24 h140 v24"/>
+        </g>
+        <g fill="currentColor" font-family="system-ui,sans-serif" font-size="13">
+          <text x="42" y="104">foundation</text>
+          <text x="262" y="104">integration</text>
+          <text x="482" y="104">release</text>
+        </g>
+        <g fill="currentColor" font-family="system-ui,sans-serif" font-size="11">
+          <text x="470" y="48">depends_on edges reach three members</text>
+          <text x="482" y="140">sink &middot; no graph handle &middot; live</text>
+          <text x="30" y="170">warn: &quot;release: structural endpoint carries no graph handle;</text>
+          <text x="30" y="184">its 3-member closure is not addressable as a ship target&quot;</text>
+        </g>
+      </svg>
+      <figcaption>The case that fires the finding: a sink with a live member closure beneath it and
+      no way to address it. Authoring one handle turns the same closure into an addressable target
+      and the finding vanishes.</figcaption>
+    </figure>
+  </section>
+
+  <section id="gate">
+    <h2>The four gate cases, asserted as tests</h2>
+    <p>All four live in <code>tests/test_roadmap.py</code> and each supplies the fixture itself, so
+    the finding is shown to fire and to stay silent rather than inferred from an absence in a
+    fixture that happened not to trigger it:</p>
+    <table>
+      <thead><tr><th>Case</th><th>Assertion</th><th>Test</th></tr></thead>
+      <tbody>
+        <tr><td>Endpoint, no handle</td><td><code>endpoint-without-handle</code> at severity <code>warn</code>, message names the plan, <code>extra.members</code> lists every member of the closure</td><td><code>test_structural_endpoint_without_handle_raises_a_wiring_finding</code></td></tr>
+        <tr><td>Endpoint, with handle</td><td>no <code>endpoint-without-handle</code> finding; the endpoint still reports its handle</td><td><code>test_structural_endpoint_with_handle_raises_nothing</code></td></tr>
+        <tr><td>Leaf sink, no live members beneath</td><td>not an endpoint, so no finding</td><td><code>test_leaf_sink_without_live_members_yields_no_endpoint_finding</code></td></tr>
+        <tr><td>Verdict neutrality</td><td>readiness and execution fields (<code>ready_now</code>, <code>blocked</code>, <code>pending_work</code>, <code>critical_path</code>) identical whether or not the finding fires</td><td><code>test_endpoint_handle_finding_does_not_change_readiness_or_execution</code></td></tr>
+      </tbody>
+    </table>
+    <p>The neutral verdict case runs <code>build_roadmap</code> twice over fixtures that differ only
+    in the endpoint's <code>graph_handle</code> and asserts the four verdict-bearing surfaces are
+    equal &mdash; so the finding firing is shown to be the only difference, and it is not a verdict.</p>
+  </section>
+
+  <section id="measure">
+    <h2>Measured against a stated base</h2>
+    <p>Base revision <code>bd555ca</code>, judged by delta rather than absolute green. The gate is
+    the node's own file, <code>tests/test_roadmap.py</code>:</p>
+    <table>
+      <thead><tr><th>Run</th><th>Passed</th><th>Failed</th></tr></thead>
+      <tbody>
+        <tr><td>Base &mdash; <code>tests/test_roadmap.py</code></td><td>30</td><td>0</td></tr>
+        <tr><td>After &mdash; <code>tests/test_roadmap.py</code></td><td>34</td><td>0</td></tr>
+      </tbody>
+    </table>
+    <p>Four tests added, zero added failures, all thirty pre-existing assertions unchanged. A smoke
+    run over the sibling files that consume <code>build_roadmap</code>
+    (<code>test_mcp_roadmap</code>, <code>test_review_roadmap</code>,
+    <code>test_cross_project_refs</code>, <code>test_north_star_rollup</code>,
+    <code>test_sprint_membership_refs</code>, <code>test_graph_target</code>,
+    <code>test_skill_contracts</code>) reads 116 passed, exit 0. Ruff over the two changed files
+    adds no findings over its base and both files stay format-clean.</p>
+  </section>
+</main>
+</body>
+</html>

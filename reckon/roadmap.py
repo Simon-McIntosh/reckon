@@ -1494,6 +1494,27 @@ def build_roadmap(
             )
         )
 
+    endpoint_rows = _dependency_endpoints(project, plans)
+    for endpoint_row in endpoint_rows:
+        if endpoint_row["handle"] is not None:
+            continue
+        if _status(plans[endpoint_row["slug"]]) in TERMINAL_STATUSES:
+            continue
+        member_slugs = [member["slug"] for member in endpoint_row["members"]]
+        findings.append(
+            _finding(
+                "endpoint-without-handle",
+                "warn",
+                (
+                    f"{endpoint_row['slug']}: structural endpoint carries no graph "
+                    f"handle; its {len(member_slugs)}-member closure is not "
+                    "addressable as a ship target"
+                ),
+                slug=endpoint_row["slug"],
+                extra={"members": member_slugs},
+            )
+        )
+
     pending: list[dict[str, Any]] = []
     ready: list[dict[str, Any]] = []
     blocked: list[dict[str, Any]] = []
@@ -1903,7 +1924,7 @@ def build_roadmap(
         },
         "review": review_block,
         "north_stars": _north_star_rows(plans, north_stars),
-        "endpoints": _dependency_endpoints(project, plans),
+        "endpoints": endpoint_rows,
         "sprints": sprint_rows,
         "pending_work": pending,
         "ready_now": ready,
