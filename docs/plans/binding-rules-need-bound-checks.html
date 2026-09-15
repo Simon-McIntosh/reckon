@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="binding-rules-need-bound-checks">
   <meta name="plan-title" content="Binding Rules Need Bound Checks">
   <meta name="plan-summary" content="Binding rules with no bound check decay. Two measured instances: four snapshot assertions in one day, and a tool configured but never declared.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-impl" content="0.5">
-<meta name="plan-version" content="23">
+<meta name="plan-impl" content="1.0">
+<meta name="plan-version" content="24">
 <meta name="plan-commits" content="9ad9b7d">
 <meta name="plan-artifacts" content="tests/test_declared_tooling.py,pyproject.toml,uv.lock">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
@@ -92,69 +92,35 @@
     for it; a tool that is configured and absent implies a guarantee the environment does not
     provide, and the configuration is what stops anyone looking.</p>
 
-    <h2 id="s3">&#167;3 &mdash; Declared tools must match configured tools</h2>
+    <h2 id="s3">&#167;3 &mdash; Declared tools must match configured tools <span class="badge badge-shipped">&#10003; landed 2026-09-15</span></h2>
 
-    <p><strong>This half is a set comparison and needs no environment.</strong> Every
-    <code>[tool.X]</code> namespace in <code>pyproject.toml</code> must be satisfied by something
-    the project declares: a runtime dependency, a dependency group, or
-    <code>[build-system].requires</code>. Measured against the current tree, three namespaces exist
-    and exactly one fails.</p>
+    <p>Every <code>[tool.X]</code> namespace in <code>pyproject.toml</code> must resolve to
+    something the project declares, and one did not. <code>tests/test_declared_tooling.py</code>
+    enumerates each configured namespace against the declared sets and fails on any that resolves
+    to nothing, with a companion case pinning the red-before-green demonstration so the check
+    cannot pass by never firing. <code>ruff&gt;=0.16.4,&lt;0.17</code> is now declared and
+    resolves. The namespace-to-distribution mapping stays an explicit alias table, because
+    <code>hatch</code> resolves through two differently-named distributions and an unknown
+    namespace must fail loudly rather than be assumed satisfied.</p>
 
-    <table>
-      <thead><tr><th>Configured namespace</th><th>Resolves through</th><th>Verdict</th></tr></thead>
-      <tbody>
-        <tr><td><code>[tool.hatch.*]</code></td><td><code>[build-system].requires</code> &mdash; <code>hatchling</code>, <code>hatch-vcs</code></td><td>satisfied</td></tr>
-        <tr><td><code>[tool.pytest.*]</code></td><td><code>dependency-groups.dev</code></td><td>satisfied</td></tr>
-        <tr><td><code>[tool.ruff]</code></td><td>nothing</td><td><strong>unsatisfied</strong></td></tr>
-      </tbody>
-    </table>
+    <h2 id="s4">&#167;4 &mdash; An assertion must state a contract, not a snapshot <span class="badge badge-shipped">&#10003; landed 2026-09-15</span></h2>
 
-    <p>The namespace-to-distribution mapping is not always the identity &mdash;
-    <code>hatch</code> resolves through two differently-named distributions &mdash; so the check
-    needs a small explicit alias table rather than a string match, and an unknown namespace should
-    fail loudly rather than be assumed satisfied.</p>
+    <p>A closed-set assertion and a legitimate exact-value assertion look identical to a linter, so
+    the mechanism chosen is not static at all: perturb the thing the assertion observes with one
+    benign extra member and see which assertions break. A contract survives the addition; a
+    snapshot does not. <code>scripts/check_snapshot_assertions.py</code> carries the four recorded
+    instances and the later object-substitution instance as self-contained specimens and reports
+    the census as numbers: <strong>4 of 5 snapshot instances flagged, 0 of 4 carve-outs</strong>,
+    every case guarded by a positive control that passes before its perturbation is applied. It
+    names its bound moment &mdash; staging a change that adds, edits, or pins an exact-value
+    assertion, the same moment the naming bans bind to &mdash; and
+    <code>tests/test_snapshot_assertion_shape.py</code> re-runs the same census in the suite.</p>
 
-    <p><strong>Done when</strong> a test enumerates every configured namespace, resolves each
-    against the declared sets, and fails on any that resolves to nothing; the check is shown to fail
-    on the current tree before the declaration is added and to pass after; and
-    <code>uv run ruff check</code> resolves.</p>
-
-    <h2 id="s4">&#167;4 &mdash; An assertion must state a contract, not a snapshot</h2>
-
-    <p><strong>This half is genuinely harder, and pretending otherwise is how it would get a check
-    that fires on the wrong things.</strong> A closed-set assertion and a legitimate exact-value
-    assertion look identical to a linter. The existing guidance already carves out cases where the
-    exact figure is correct and must be kept &mdash; a measurement that stops someone undoing the
-    code, runtime state described in the past tense, tool codes and dependency pins &mdash; and a
-    naive pattern match would flag every one of them.</p>
-
-    <p><strong>The promising mechanism is not static at all: it is to perturb and observe.</strong>
-    A test that pins a closed set is detectable by adding a benign extra member to what it observes
-    &mdash; one additional field on a payload, one additional file in a listing &mdash; and seeing
-    which assertions break. A contract survives the addition; a snapshot does not. That is a
-    property of the assertion's shape rather than of its text, which is exactly the distinction no
-    grep can make.</p>
-
-    <p>The cost is that it needs somewhere to inject the benign member, and the injection has to be
-    honest &mdash; a field nothing consumes, added in one place, reverted after. Whether that is
-    worth its machinery is the open decision below.</p>
-
-    <p><strong>Done when</strong> the chosen mechanism is shown to flag at least three of the four
-    instances recorded in &#167;2 when run against their pre-repair revisions, and to flag none of
-    the carve-out cases the guidance already names.</p>
-
-    <p><strong>Landed:</strong> the check is now a single command that carries the four
-    recorded instances and the later object-substitution instance as self-contained
-    specimens and reports the census as numbers. It flags 4 of 5 snapshot instances
-    (recorded 3 of 4; object substitution 1 of 1) and 0 of 4 carve-outs, with every
-    case guarded by a positive control that passes before the perturbation is applied.
-    <code>scripts/check_snapshot_assertions.py</code> names its bound moment &mdash;
-    staging a change that adds, edits, or pins an exact-value assertion, the same
-    moment the naming bans bind to &mdash; and the suite re-runs the same census
-    through <code>tests/test_snapshot_assertion_shape.py</code>. The one recorded
-    miss is the literal-token membership specimen, which survives an additive member;
-    the census keeps it explicit rather than promising that perturb-and-observe
-    catches every implementation-text pin.</p>
+    <p>The one miss is kept explicit rather than promised away: literal-token membership survives
+    an additive member, so perturb-and-observe does not catch every implementation-text pin. The
+    four flagged instances remain unrepaired in the tree; &#167;5 scopes repair out of this plan,
+    so it needs a plan of its own. Full census, specimens and perturbations:
+    <a href="../evidence/archive/binding-rules-need-bound-checks-landed.html">Binding Rules Need Bound Checks &mdash; landed record</a>.</p>
 
     <h2 id="s5">&#167;5 &mdash; Out of scope</h2>
 
@@ -192,10 +158,11 @@
     <pre class="r-fu-prompt">/reckon-ship binding-rules-need-bound-checks §3</pre>
     <p class="r-fu-outcome">The declared-versus-configured check in §3 landed in 9ad9b7d; an instruction to land it again is stale.</p>
     </article>
-<article class="r-fu" data-id="f-brnbc-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="agent" data-written-at="2026-09-04 10:00" data-recommends-skill="/reckon-ship binding-rules-need-bound-checks §4" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-brnbc-002" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="agent" data-written-at="2026-09-04 10:00" data-recommends-skill="/reckon-ship binding-rules-need-bound-checks §4" data-resolved-at="2026-09-15T12:31:29+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Choose and bind the snapshot-detection mechanism</h4>
     <div class="r-fu-body">Settle snapshot-detection-mechanism before implementing §4. Include the later object-substitution instance in the chosen mechanism's census and preserve legitimate exact-value assertions.</div>
     <pre class="r-fu-prompt">/reckon-ship binding-rules-need-bound-checks §4</pre>
+    <p class="r-fu-outcome">Both halves done, and the chain closes here. The decision snapshot-detection-mechanism locked to perturb-and-observe on measurement rather than on argument: of the mechanisms considered, only perturbation flagged 3 of the 4 recorded instances and 0 of the 4 carve-outs. Section 4 then landed that mechanism as a runnable command — scripts/check_snapshot_assertions.py (80eeab5f, merged 4492ef733e3466c3446c5a80903e7eb636d3d855) — bound to the same staging moment the naming checks bind to. Verified at the merged head rather than from the manifest: the command runs standalone, exit 0, and reproduces its own figures, 4 of 5 snapshot instances flagged (the later object-substitution instance included, 1 of 1) against 0 of 4 carve-outs, every case carrying a positive control that passes before its perturbation is applied. The one miss is kept explicit as the mechanism's bound rather than promised away: literal-token membership survives an additive member. Gate 7 passed, exit 0, including the byte-identity check over every live plan. Section 3 was already satisfied and this session dispatched nothing for it — verified by existence, not prose: tests/test_declared_tooling.py carries the enumeration test and its red-before-green companion (9ad9b7d0, 41c2c831), both pass, and ruff>=0.16.4,<0.17 is declared in pyproject.toml with ruff 0.16.4 resolving. Done — no followup. The four flagged instances are real and sit in the tree unrepaired; section 5 scopes repair out of this plan deliberately, so that work needs its own plan rather than a followup on a shipped one.</p>
     </article>
 </section>
 
@@ -222,7 +189,7 @@
     <div class="r-comment-body">This section's deliverable already landed and the section was never collapsed, which caused a redundant dispatch. tests/test_declared_tooling.py landed 2026-08-25 at commit 9ad9b7d, carrying exactly what this section specifies: it enumerates every configured tool namespace, resolves each through an explicit NAMESPACE_DISTRIBUTIONS alias table against build-system.requires and dependency-groups, and fails on an unknown namespace rather than assuming it satisfied. ruff is declared at pyproject.toml:40 with the upper bound the repository's own guidance argues for. So two of the three done-when clauses are satisfied: the check exists in the shape asked for, and uv run ruff check resolves. THE REMAINING CLAUSE IS NARROW AND UNEVIDENCED: the section also asks that the check be shown to fail on the tree before the declaration was added and to pass after. That demonstration was never recorded. The pre-declaration revision is 9ad9b7d^, established by the stopped run below, so the remaining work is one git archive copy and two counts - not the construction of anything. The section stays implementable rather than done because that clause is genuinely unmet, and marking it done would assert a demonstration nobody has made. WHY THIS IS RECORDED RATHER THAN QUIETLY FIXED: the coordinator classified this section implementable by reading its prose, which is present tense with no landed badge and no collapsed summary, and dispatched a node to build what already existed. The prior-art scout that exists to prevent exactly this was waived for the node, on the reasoning that the plan named its own prior art - it named the machinery the work would use, not the work already done. An uncollapsed section is evidence about the document and not about the repository, and the authority is one directory listing. The run is recorded in the ledger with gate failed and classification malformed-node, against the coordinator rather than the worker, which diagnosed the situation correctly and had written nothing when it was stopped.</div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-declared-before-after-pinned-20260915T0901" data-who="crew-sweep-cadence" data-when="2026-09-15T09:01:00Z">
-    <div class="r-comment-body"><p><strong>THE REMAINING DONE-WHEN CLAUSE IS NOW A TEST, NOT A REPORT.</strong> The section asked that the check be shown to fail on the tree before the declaration was added and to pass after; that demonstration had been performed once and never made runnable. Commit <code>41c2c83</code> factors the namespace check in <code>tests/test_declared_tooling.py</code> into a callable and adds <code>test_configured_but_undeclared_tool_fails_until_declared</code>, which synthesises the pre-declaration tree from the live pyproject &mdash; <code>[tool.ruff]</code> stays configured while <code>ruff</code> is removed from the dev dependency group &mdash; and asserts the check reports exactly <strong>1 failing namespace</strong> (<code>ruff</code>) against that synthetic tree and <strong>0 failing namespaces</strong> against the current tree, the failing and passing counts each stated as a number. The before-and-after clause is now reproducible from the test rather than resting on a one-off run.</p></div>
+    <div class="r-comment-body"><p><strong>THE REMAINING DONE-WHEN CLAUSE IS NOW A TEST, NOT A REPORT.</strong> The section asked that the check be shown to fail on the tree before the declaration was added and to pass after; that demonstration had been performed once and never made runnable. Commit <code>41c2c83</code> factors the namespace check in <code>tests/test_declared_tooling.py</code> into a callable and adds <code>test_configured_but_undeclared_tool_fails_until_declared</code>, which synthesises the pre-declaration tree from the live pyproject — <code>[tool.ruff]</code> stays configured while <code>ruff</code> is removed from the dev dependency group — and asserts the check reports exactly <strong>1 failing namespace</strong> (<code>ruff</code>) against that synthetic tree and <strong>0 failing namespaces</strong> against the current tree, the failing and passing counts each stated as a number. The before-and-after clause is now reproducible from the test rather than resting on a one-off run.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-sixth-instance-20260825T1326" data-who="reckon-ship" data-when="2026-08-25T13:26:00Z">
     <div class="r-comment-body"><p><strong>A fifth and sixth instance arrived while this plan was being written, which is the strongest argument for it yet.</strong> Both surfaced the same way as the first four — a merge broke a test that had never been wrong about anything, only specific about something that was always going to change.</p><p><strong>The fifth</strong> asserted that idle projects stay hidden until a browser records an override. It encoded a derivation that had been introduced by a comment rather than by a lock, and it went red when the derivation was removed for hiding eight live runs from every first-time viewer. So the test was faithfully defending a behaviour no decision had ever sanctioned.</p><p><strong>The sixth is the cleanest specimen in the set.</strong> <code>test_build_without_directions_preserves_the_unlabelled_shape</code> asserts the literal string <code>{p.north_star &amp;&amp; &lt;&gt;</code> is present in <code>shell.jsx</code>. It went red when a conditional-emission change rewrote that expression while preserving exactly the behaviour the test exists to protect — a plan without a north star rendering no north-star element. The contract held perfectly; only the spelling moved. And this is a file whose literal-source assertions had already been identified as a fuse and defused once today, in two sibling components.</p><p><strong>Six instances, five files, two sessions, one day.</strong> The perturb-and-observe mechanism on the ballot in this section would have caught instances one, four and six directly, because all three break when a benign member is added to something they observe. It would not catch the fifth, which is a decision-provenance failure rather than a closed-set assertion — worth knowing before the mechanism is chosen, because it bounds what the check can promise.</p></div>
