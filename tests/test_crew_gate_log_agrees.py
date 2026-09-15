@@ -1,16 +1,6 @@
 """A promoted passing gate's cited log must agree with its asserted verdict.
 
-The promotion path asks for a gate command, an exit status and a log and,
-until now, checked none of them against the others: promotion recorded
-whatever three pieces of evidence a coordinator filed, so the committed ledger
-could carry a row whose verdict its own evidence refuted. Two such rows are on
-record — one with the wrong log attached to a run, and one asserting exit
-status zero beside a log whose entire content was a shell command-not-found
-error at exit two, naming a subcommand that does not exist while the real
-entry points both do. Both were caught by a person reading afterwards; nothing
-in the machinery read the log at all.
-
-These tests pin the refusal: a promotion asserting a passing gate is refused
+A promotion asserting a passing gate is refused
 when the cited log is empty, when the log's own recorded exit status
 contradicts the asserted one, or when the log contains no evidence the command
 ran; the refusal names which of the three it found and the resolving verb; a
@@ -257,10 +247,8 @@ def test_promotion_refuses_a_log_showing_the_command_never_ran(
 def test_recorded_pair_of_exit_zero_beside_a_command_not_found_log_is_refused(
     repository: Path, tmp_path: Path
 ) -> None:
-    # The measured contradiction that prompted the refusal: a promotion filed
-    # as exit status zero whose cited log's entire content is a shell
-    # command-not-found error, naming a subcommand that does not exist while
-    # the real entry points both do.
+    # A bare shell diagnostic cannot evidence success merely because the
+    # promotion call asserts an exit status of zero.
     run_id = "r-20260908T120500000000-recorded-pair"
     _write_pointer(run_id, repository)
     contradictory_log = tmp_path / "recorded-pair-gate.log"

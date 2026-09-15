@@ -401,15 +401,10 @@ def _require_gate_log_agrees(
 ) -> None:
     """Refuse a passing gate whose cited log contradicts the asserted check.
 
-    A promotion cites three pieces of evidence for a passing gate — the check
-    command, the exit status the check returned, and the captured log — and
-    verifies none of them against the others. A ledger row whose verdict its
-    own evidence refutes is what every downstream reader and every calibration
-    figure reasons from, so a contradiction is refused here rather than stored.
-    Two such rows are on record: one carried the wrong log for its run, and one
-    asserted exit status zero beside a log whose entire content was a shell
-    command-not-found error at exit two, naming a subcommand that does not
-    exist. Both were caught by a person reading afterwards.
+    A promotion cites three pieces of evidence for a passing gate: the check
+    command, its asserted exit status, and its captured log. A contradiction is
+    refused before the ledger stores a verdict that downstream calibration and
+    routing would otherwise treat as evidence.
 
     The check reads the log as text and parses no runner's result format: it
     never re-runs the command and it recognises no test-output schema, so a
