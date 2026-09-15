@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="414">
+<meta name="plan-version" content="415">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.38">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -2395,6 +2395,9 @@ live processes carrying a not-running classification:  6 of 14  (43%)
    liveness-outranks-every-manifest-classific…    waiting     log_age 1s
    a-refusal-outlives-the-run-it-killed           unreadable  log_age 1s
    review-of-a-commit-identifier-is-never-a-n…    waiting     log_age 1s</code></pre><p>Six live workers across four coordinator sessions, two classifications, one cause: the classification is derived from a manifest declaration and the running process does not outrank it. Two of the six had already escalated to <code>wait-aged</code> with <code>! investigate</code>, an alarm raised against a worker mid-generation.</p><p><strong>One correction to the earlier reading.</strong> The 12:42Z cross-tabulation found <code>unreadable</code> on no dead process and concluded it occurs only on live ones. At 13:18Z a dead process carries it. So the observation <em>"unreadable implies alive"</em> is falsified and should not be built on; the invariant the repair needs — <em>a live process is never unreadable</em> — is untouched, still fails on three live runs, and remains the right assertion. Worth separating because the two sentences look interchangeable and only one of them is a property of the code.</p><p>At this rate a coordinator reading the pane sees roughly two in five of its working fleet described as not working. That is the cost this plan exists to remove, and it is now measured rather than argued.</p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20260915T101223859925-a-finished-run-is-not-stalled-retry" data-who="session-2ee3c7846cb0257834e7" data-when="2026-09-15T12:09:37.435Z">
+    <div class="r-comment-body"><p>the classifier already treated a dead process with a terminal manifest as finished whatever decorates the status; pinned with a test rather than changed. Delta-judged pass on a red base: 1 failed / 91 passed at head against 1 failed / 90 passed at base, same failure id both sides, zero added. Review scored 100 with no findings. recovery.py declared but untouched, and released from the live claim</p></div>
 </div>
 <div class="r-comment" data-section="s21" data-id="c-run-r-20260914T160430483667-review-dimensions-reach-the-ledger-row" data-who="crew-both-reasons" data-when="2026-09-14T18:29:37.372Z">
     <div class="r-comment-body"><p>review dimensions reach the committed ledger row: scores and total carried on the promoted row, an absent review distinguishable from a zero-scored one, dimensions queryable filtered on the parent run; 8 files all within the 10 declared paths, 427 insertions; gate base 169 passed / 4 failed to after 178 passed / 4 failed, 0 added failures, 9 tests added, the 4 pre-existing in a file the node declared unmodified; classified abandoned despite finishing cleanly because its manifest is written in markdown headings rather than colon lines, so every required field is present in the document and absent from the parse</p></div>
