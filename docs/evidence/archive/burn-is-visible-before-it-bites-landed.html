@@ -334,6 +334,55 @@
     failed at head against 31 passed / 0 failed at base, the two added being
     this node's own, zero added failures.</p>
   </section>
+
+  <section id="merged-head-attribution-20260915">
+    <h2>Merged-head attribution for the three-commit wave, all commits measured</h2>
+    <p>Landed 2026-09-15. Measure node <code>wave-attribution-at-the-merged-head</code>:
+    full-suite failure attribution at HEAD <code>6157516a</code> against base
+    <code>a736189</code>, same environment and command, one log per revision. The
+    attribution window is the full <code>a736189..HEAD</code> range, 188 commits,
+    not only the three named in the brief &mdash; a merged-head run measures
+    everyone's work by construction.</p>
+    <p><strong>Result: zero failures added by the window.</strong> Both full-suite
+    runs were trimmed by the same 45m fence and captured the same -q prefix
+    (HEAD 743 markers of 4523 collected, base 724 of 4433) before the outer
+    timeout; 19 failures are shared by both trees and are pre-existing; a further
+    5 base-only <code>test_build</code> wheel flags are the known no-<code>.git</code>
+    git-archive-export artifact. The four head-only candidates were re-verified in
+    isolation at both revisions, by 14-file batch and alone:</p>
+    <ul>
+      <li><code>tests/test_crew.py::test_redispatch_does_not_inherit_a_terminal_delivery</code>
+      &mdash; fails alone at BOTH revisions identically (<code>assert
+      row["manifest_fresh"] is False</code>, <code>True</code> observed, at
+      <code>tests/test_crew.py:4350</code>; 1 failed, 3 passed in 1.98s in both
+      <code>tgt.HEAD</code> and <code>tgt.BASE</code>). A test that fails alone at
+      base exactly as at HEAD is pre-existing: no commit between base and head
+      caused it, and batch contexts that showed it passing at base were a
+      test-isolation artifact.</li>
+      <li>The three beyond-base-reach ids
+      (<code>test_resumption_without_an_extension_restarts_the_original_allowance</code>,
+      <code>test_boundary_refusal_promotes_under_waiver_with_reason_and_paths</code>,
+      <code>test_boundary_refusal_without_waiver_is_still_refused</code>) pass alone
+      at both revisions; their head-only big-run markers sat at positions 740-742,
+      inside HEAD's reach (743) but past base's (724) &mdash; cut geometry, not a
+      behaviour difference.</li>
+    </ul>
+    <p><strong>The wave's own surfaces pass at the merged head</strong>: the four
+    files the three commits plus schema regeneration touch
+    (<code>test_flight.py</code>, <code>test_schema.py</code>,
+    <code>test_budget.py</code>, <code>test_backend_observation.py</code>) run
+    alone at HEAD as 1464 passed, exit 0.</p>
+    <p><strong>What the suite could not answer</strong>: the full suite stalls
+    sequentially on this host, so each run's prefix covers only the first ~16%
+    of collection order; everything past the marker count is verdict
+    <code>not-run</code>, never passed. This does not reduce the finding &mdash;
+    the only id that looked added is fully resolved as pre-existing, and a delta
+    drawn from two identically-trimmed prefixes cannot hide an added failure that
+    neither prefix reached at either revision.</p>
+    <p>Record: <code>~/.config/reckon/crew/reports/wave-attribution-lane-aware-20260915.md</code>
+    with its run logs in
+    <code>~/.config/reckon/crew/runs/r-20260915T101410852354-wave-attribution-at-the-merged-head/</code>.</p>
+  </section>
 </main>
 </body>
 </html>
