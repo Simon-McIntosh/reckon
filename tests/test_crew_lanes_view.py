@@ -348,3 +348,154 @@ def test_two_backends_sharing_one_command_resolve_to_a_single_read() -> None:
     assert invocations == 1
     assert lanes["left"]["probe_status"] == "answered"
     assert lanes["right"]["probe_status"] == "answered"
+
+
+BUDGET_WEEKLY_MINUTES = 7 * 24 * 60
+BUDGET_FIVE_HOUR_MINUTES = 5 * 60
+BUDGET_WEEKLY_RESET = 1_906_732_800
+BUDGET_FIVE_HOUR_RESET = BUDGET_WEEKLY_RESET - BUDGET_FIVE_HOUR_MINUTES * 60
+
+
+def _budget_receipt(short_used: int, weekly_used: int) -> _Receipt:
+    return _Receipt(
+        BUDGET_WEEKLY_MINUTES * 12 + BUDGET_FIVE_HOUR_MINUTES * 2,
+        {
+            BUDGET_FIVE_HOUR_MINUTES: _Reading(
+                BUDGET_FIVE_HOUR_MINUTES, short_used, BUDGET_FIVE_HOUR_RESET
+            ),
+            BUDGET_WEEKLY_MINUTES: _Reading(
+                BUDGET_WEEKLY_MINUTES, weekly_used, BUDGET_WEEKLY_RESET
+            ),
+        },
+    )
+
+
+def _budget_probe_block() -> dict[str, Any]:
+    return {
+        "headroom": "known",
+        "quota_windows": {
+            BUDGET_FIVE_HOUR_MINUTES: {
+                "window_minutes": BUDGET_FIVE_HOUR_MINUTES,
+                "used_percent": 30,
+                "resets_at": _backends._epoch_to_iso(BUDGET_FIVE_HOUR_RESET),
+            },
+            BUDGET_WEEKLY_MINUTES: {
+                "window_minutes": BUDGET_WEEKLY_MINUTES,
+                "used_percent": 40,
+                "resets_at": _backends._epoch_to_iso(BUDGET_WEEKLY_RESET),
+            },
+        },
+        "detail": "account quota probe answered",
+    }
+
+
+def _compose_budget_view(
+    backends: dict[str, dict[str, Any]],
+    receipts: dict[str, _Receipt],
+    *,
+    probe_reader: Any,
+) -> dict[str, Any]:
+    runs = [
+        {
+            "run_id": f"run-{name}",
+            "backend": name,
+            "session_id": f"{name}-session",
+            "completed_at": "2030-01-02T03:04:05Z",
+        }
+        for name in backends
+    ]
+    return mcp_views.crew_lanes_view(
+        {"backends": backends},
+        runs,
+        receipt_reader=receipts.__getitem__,
+        probe_reader=probe_reader,
+        composed_at="2030-01-02T03:05:06Z",
+    )
+
+
+def test_shared_probe_is_borrowed_where_declared_pools_diverge() -> None:
+    receipts = {
+        "sol-session": _budget_receipt(30, 40),
+        "luna-session": _budget_receipt(30, 40),
+        "spark-session": _Receipt(
+            BUDGET_WEEKLY_MINUTES * 12 + BUDGET_FIVE_HOUR_MINUTES * 2, {}
+        ),
+    }
+    backends = {
+        "sol": {"launch": "cli", "command": "codex", "quota_pool": "codex-main"},
+        "luna": {"launch": "cli", "command": "codex", "quota_pool": "codex-main"},
+        "spark": {"launch": "cli", "command": "codex", "quota_pool": "spark"},
+    }
+    probes = 0
+
+    def probe_reader(_backend: str, _settings: Mapping[str, Any]) -> dict[str, Any]:
+        nonlocal probes
+        probes += 1
+        return _budget_probe_block()
+
+    view = _compose_budget_view(backends, receipts, probe_reader=probe_reader)
+    lanes = _lanes_by_backend(view)
+
+    assert probes == 1
+    sol = lanes["sol"]
+    spark = lanes["spark"]
+
+    assert sol["quota_source"] == "receipt"
+    assert sol["probe_status"] == "answered"
+    assert {window["source"] for window in sol["quota_windows"]} == {"receipt"}
+    assert _windows_by_length(sol)[BUDGET_WEEKLY_MINUTES]["used_percent"] == 40
+
+    assert spark["quota_source"] == "borrowed"
+    assert spark["quota_windows"] == []
+    assert spark["unmeasured"]["quota_windows"] == "shared_command_probe_not_owned"
+
+
+def test_backends_declaring_the_same_pool_carry_the_shared_probe_as_their_own() -> None:
+    receipts = {
+        "left-session": _budget_receipt(30, 40),
+        "right-session": _budget_receipt(30, 40),
+    }
+    backends = {
+        "left": {"launch": "cli", "command": "codex", "quota_pool": "shared-budget"},
+        "right": {"launch": "cli", "command": "codex", "quota_pool": "shared-budget"},
+    }
+    probes = 0
+
+    def probe_reader(_backend: str, _settings: Mapping[str, Any]) -> dict[str, Any]:
+        nonlocal probes
+        probes += 1
+        return _budget_probe_block()
+
+    view = _compose_budget_view(backends, receipts, probe_reader=probe_reader)
+    lanes = _lanes_by_backend(view)
+
+    assert probes == 1
+    assert lanes["left"]["quota_source"] == "probe"
+    assert lanes["right"]["quota_source"] == "probe"
+    assert {window["source"] for window in lanes["left"]["quota_windows"]} == {"probe"}
+    assert view["quota_pools"] == {"shared-budget": ["left", "right"]}
+
+
+def test_identical_reset_schedules_never_group_without_a_declared_pool() -> None:
+    receipts = {
+        "sol-session": _budget_receipt(30, 40),
+        "luna-session": _budget_receipt(30, 40),
+        "spark-session": _budget_receipt(30, 40),
+        "terra-session": _budget_receipt(30, 40),
+    }
+    backends = {
+        "sol": {"launch": "cli", "command": "codex", "quota_pool": "codex-main"},
+        "luna": {"launch": "cli", "command": "codex", "quota_pool": "codex-main"},
+        "spark": {"launch": "cli", "command": "codex", "quota_pool": "spark"},
+        "terra": {"launch": "cli", "command": "codex"},
+    }
+    view = _compose_budget_view(
+        backends,
+        receipts,
+        probe_reader=lambda _backend, _settings: _budget_probe_block(),
+    )
+
+    quota_pools = view["quota_pools"]
+    assert quota_pools == {"codex-main": ["luna", "sol"], "spark": ["spark"]}
+    assert "terra" not in quota_pools["codex-main"]
+    assert "spark" not in quota_pools["codex-main"]
