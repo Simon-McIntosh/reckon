@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T15:55:08",
+  "updated": "2026-09-15T16:06:46",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -136150,6 +136150,218 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T120542787897-a-held-blocker-reads-as-held",
+        "plan": "a-sprint-closes-on-completable-work",
+        "section": "\u00a72",
+        "node": "a-held-blocker-reads-as-held",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 526,
+                "cached_input_tokens": 133573,
+                "input_tokens": 134101,
+                "output_tokens": 1567,
+                "reasoning_output_tokens": 373,
+                "total_tokens": 135668,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "f0d4bf08-978e-48fd-803d-0d5f1cdbb55a",
+            "session_id": "ship-s17-20260915"
+          },
+          "done_when": "Measure at the surface a reader reaches: roadmap(project) for a fixture project carrying one plan with a held blocker and one with an explicit blocker. (a) The held plan's blocking row reads kind 'held' and the explicit plan's still reads 'explicit'; (b) the two are counted separately and each count is stated as a digit in the test; (c) the explicit plan is unchanged in every reported field, asserted by a case constructed so it FAILS if held rows are treated as explicit \u2014 write that case first and watch it fail before the change; (d) roadmap's existing endpoint-row 'held' key at reckon/roadmap.py:1064 means schedule-deferred MEMBERS and is a different quantity: do not reuse or overload it, and if your new key would share that spelling at the same level, pick another and say which in the manifest. Gate: PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider tests/test_roadmap.py tests/test_project_state.py tests/test_edit_plan.py -q \u2014 judged as NO NEW failures against the same command run at the base revision BEFORE any edit; record both counts and both failure-id lists in the manifest. REFUTING CONDITION: run the base measurement first; if a held kind already survives to the roadmap payload at base, stop, report that the section is already satisfied, and do not write code. A lower number of changed files is not success and neither is a green gate whose base run you did not take.",
+          "estimated_hours": 1.5,
+          "goal": "A blocker whose subject is outside the sprint's reach carries kind=held from its own resource through to every surface that reports blockers, so a caller distinguishes held from explicit by reading the payload.",
+          "id": "a-held-blocker-reads-as-held",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T12:05:43Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 27,
+            "binding_observed": false,
+            "detail": "",
+            "headroom": 0,
+            "mean_context": 41484,
+            "observed_at": "2026-09-15T12:05:16Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 120
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T120542787897-a-held-blocker-reads-as-held/manifest.md",
+          "plan": "a-sprint-closes-on-completable-work",
+          "requested_backend": null,
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/project_state.py",
+            "reckon/serve.py",
+            "reckon/roadmap.py",
+            "reckon/lifecycle.py",
+            "reckon/mcp.py",
+            "tests/test_roadmap.py",
+            "tests/test_project_state.py",
+            "tests/test_edit_plan.py",
+            "docs/evidence/archive/a-sprint-closes-on-completable-work-landed.html",
+            "docs/plans/a-sprint-closes-on-completable-work.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "session-2a33ce11646559add692",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T12:06:21Z",
+        "completed_at": "2026-09-15T14:00:19.645Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 6811,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 6838,
+        "stalled": true,
+        "time_budget": "40m",
+        "base_sha": "b9a0fa41b7dbd00aedf73a4f6cac4072a54379b3",
+        "commits": [
+          "d67150875d2a2705221573a46452027bacf67f97",
+          "b297348d734a2789f37bdd923452301f02da7670",
+          "8199d182aa6af093b4d9c0cdc307d20e4898896a"
+        ],
+        "changed_lines": {
+          "added": 244,
+          "removed": 5,
+          "files": 6
+        },
+        "tests_added": null,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_roadmap.py tests/test_project_state.py tests/test_edit_plan.py",
+          "exit_status": 0,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/f0d4bf08-978e-48fd-803d-0d5f1cdbb55a/scratchpad/heldgate.log",
+          "log_digest": "2f2b46e8e255e02242f1d9a2893a95325663b845b6b1fe65f149b7909a7cd124"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T120542787897-a-held-blocker-reads-as-held/manifest.md",
+        "scope_changed": false,
+        "session_id": "90150b01-9ed3-449d-9e4c-9ebd21b292c3",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 1871392,
+            "input_tokens_cumulative": 1871392,
+            "output_tokens": 12460,
+            "output_tokens_cumulative": 12460,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T14:00:19.645Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 1871392,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 795.981,
+          "generated_tokens": 12460,
+          "generation_seconds": 790.261,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 58.9,
+          "machine_seconds": 5.72,
+          "peak_input_tokens": 117736,
+          "tokens_per_second": 15.77,
+          "wall_tokens_per_second": 15.65
+        },
+        "follow_on_paths": [
+          "reckon/project_state.py",
+          "reckon/lifecycle.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "pytest -p",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s17-20260915/a-held-blocker-reads-as-held",
+          "session_id": "90150b01-9ed3-449d-9e4c-9ebd21b292c3",
+          "session_source": "stream",
+          "retained_at": "2026-09-15T14:00:19.645Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 131.0,
+        "orientation_input_tokens": 7048096.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -136378,6 +136590,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1533
+    "_version": 1534
   }
 }
