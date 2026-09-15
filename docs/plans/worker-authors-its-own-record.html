@@ -23,7 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
+<meta name="plan-impl" content="0.75">
 </head>
 <body>
   <main class="plan-doc">
@@ -123,13 +124,13 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="skill-wording-source" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="skill-wording-source" data-choice="quote-the-prompt" data-by="ship-s16-20260914" data-when="2026-09-15T15:38:36+00:00">
     <p class="r-dec-q">Does the skill quote the runtime prompt&#x27;s wording, or paraphrase it for a coordinator audience?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="quote-the-prompt">quote-the-prompt</button>
+      <button class="r-opt chosen" data-value="quote-the-prompt">quote-the-prompt</button>
       <button class="r-opt" data-value="paraphrase-for-coordinators">paraphrase-for-coordinators</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Locked because the landed implementation has already settled it, and the alternative is not merely unchosen but incompatible with the mechanism that shipped. The parity check in tests/test_skill_contract_parity.py extracts its expectations from PLAN_LANDING_CONTRACT and the composed prompt at assertion time, rather than from literals in the test. That is only possible if the skill carries the prompt&#x27;s own sentences: you cannot assert a paraphrase against a source string, so choosing paraphrase-for-coordinators would require replacing the parity mechanism with a check comparing two independent copies of one rule - which is the precise defect this plan exists to remove, because two copies drift silently while the test keeps passing. Both skill halves landed on that basis (commits e33f0ca1 and cd7428c1) and the check passes 13 cases. The cost of the choice is real and worth naming: prompt wording is written for a worker mid-task and reads oddly in a coordinator-facing document, so the skill carries some sentences that are not in its own register. That is the price of one authority for the words, and it is cheaper than the drift. Reversible, but reversing it means retiring the parity test and accepting that the two surfaces can disagree without anything failing.</p>
     </div>
 </section>
 
@@ -149,10 +150,10 @@
     <div class="r-comment-body">A limit on this plan's own rule, found by a peer session and measured here before recording it. The rule as written — the worker authors its landing record and its plan comment in its own worktree — holds only for execution-capable roles. A read-only reviewer or investigator cannot write docs/research/ at all: every writable grant on that tier is outside the repository, so the roles that produce investigative output are fenced out of the directory this repository's own rules say it belongs in. The consequence is measured rather than argued: 638 files in the crew reports directory against 15 tracked in docs/research/, counted independently here after a peer reported the same ratio. Essentially all investigative output this project has produced is machine-local and unversioned, and nobody chose that. Two things follow. First, anyone implementing this plan must not write the rule as though it holds for every role, because a worker on a read-only tier told to author its record will be unable to comply and the contract will be wrong for it in the same way the old prohibition was wrong for implement roles. Second, this is not this plan's defect to fix: the fence behaviour belongs to the session that reported it, which is tracking it as one class rather than four separate defects, and a role regression at 86aafc6 today has made review and investigate undispatchable entirely. Until that lands, read-only-shaped work is dispatched at implement role with the report as its only declared write path, which keeps the fence and changes only the tier.</div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260915T112004448735-the-skill-mirrors-the-runtime-contract" data-who="disc-local" data-when="2026-09-15T14:35:08.450Z">
-    <div class="r-comment-body"><p>Replaced the four clauses forbidding a worker to write plan state with the narrowed prohibition plus the positive landing requirement, quoted from the runtime prompt rather than restated; prohibiting-phrase grep 4 before, 0 after. Parity test derives its expectations from prompts.py&#x27;s own strings so the two cannot drift. Scope was extended mid-flight to tests/test_skill_contracts.py, which asserted the retired wording.</p></div>
+    <div class="r-comment-body"><p>Replaced the four clauses forbidding a worker to write plan state with the narrowed prohibition plus the positive landing requirement, quoted from the runtime prompt rather than restated; prohibiting-phrase grep 4 before, 0 after. Parity test derives its expectations from prompts.py's own strings so the two cannot drift. Scope was extended mid-flight to tests/test_skill_contracts.py, which asserted the retired wording.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260915T144420265941-the-coordinator-reviews-an-authored-record" data-who="disc-local" data-when="2026-09-15T15:20:03Z">
-    <div class="r-comment-body"><p>Replaced the transcription landing beat with the review of an authored record across <code>SKILL.md</code> and <code>references/sprint-orchestration.md</code>: the coordinator reads the worker&#x27;s committed plan comment and evidence anchor, merges them, and may edit or append to it — never transcribe from the manifest what the worker is required to author. Transcription-instructing phrasings 10 before, 0 after, the five sentences named in the evidence archive. Both worker limits now travel beside the landing contract with the reason attached: a worker must not resolve its own driving followup and must not set a terminal status, because only the coordinator observes the other nodes — a worker knows its node landed, not whether the section closed. The runtime prompt carries neither limit yet, so both are recorded as a follow-on into <code>reckon/crew/prompts.py</code> for the session holding it. Focused gate 67/67 against a green base; plan-version and plan-modified meta lines untouched; the driving followup and terminal status remain the coordinator&#x27;s.</p></div>
+    <div class="r-comment-body"><p>Replaced the transcription landing beat with the review of an authored record across <code>SKILL.md</code> and <code>references/sprint-orchestration.md</code>: the coordinator reads the worker's committed plan comment and evidence anchor, merges them, and may edit or append to it — never transcribe from the manifest what the worker is required to author. Transcription-instructing phrasings 10 before, 0 after, the five sentences named in the evidence archive. Both worker limits now travel beside the landing contract with the reason attached: a worker must not resolve its own driving followup and must not set a terminal status, because only the coordinator observes the other nodes — a worker knows its node landed, not whether the section closed. The runtime prompt carries neither limit yet, so both are recorded as a follow-on into <code>reckon/crew/prompts.py</code> for the session holding it. Focused gate 67/67 against a green base; plan-version and plan-modified meta lines untouched; the driving followup and terminal status remain the coordinator's.</p></div>
 </div>
 </section>
 </main>
