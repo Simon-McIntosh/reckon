@@ -22,8 +22,8 @@
   <title>A Browser That Can Reach the Server It Is Testing | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-09">
-<meta name="plan-version" content="18">
+<meta name="plan-modified" content="2026-09-15">
+<meta name="plan-version" content="19">
 <meta name="plan-artifacts" content="docs/evidence/archive/rendered-evidence-on-this-host-landed.html,/home/ITER/mcintos/.config/reckon/crew/reports/browser-navigation-probe.md,/home/ITER/mcintos/.config/reckon/crew/reports/headless-chrome-navigation-fault.md">
 <meta name="plan-impl" content="0.9">
 <meta name="plan-commits" content="dcfeea0ece80be5f66db1a6658698d0c8e55b7e5,ac0ea9aab888394b64b4b36f3e50d45c5963d23e,42297eb817d2c9c1854d5fbc0277c42609891fd1,b178f71009c579901890df1fb7c77522c67f9d40">
@@ -269,6 +269,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260904T085042523563" data-who="agent" data-when="2026-09-04">
     <div class="r-comment-body">TRIAGE VERDICT — still wanted and authority-required. Re-homed to S17. Four of six captures are complete; the remaining two keep their current host/browser-owner boundary and require both the data-navigation and HTTP-navigation controls before capture.</div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260915T060600" data-who="reckon-ship" data-when="2026-09-15T06:06:00Z">
+    <div class="r-comment-body">Host measurement relayed from a peer session, recorded here because this plan owns browser-gate reliability on this workstation and the plan is parked as authority-required where a reading like this would otherwise be lost. Measured 2026-09-15 around 05:55Z: inotify instances 57 of the host ceiling of 128; 14 Chrome processes, 8 of them sharing profile /run/user/39486/tmptssdp0xo/browser-profile-1ppz7jp0 at an age of 22201s, about 6.2 hours, so from roughly 01:30 and predating every run live at the time. Not reaped, deliberately: nothing was blocked at 57 of 128, killing processes is destructive to a shared resource, and at six hours they belong to whichever session ran browser work overnight rather than to anyone currently watching. The discriminator worth keeping, and the reason a single measurement gets this wrong: a rendered gate timing out with empty stdout has two causes indistinguishable from outside, the inotify instance ceiling exhausted by leaked pools, and an open loopback-HTTP navigation fault which is not a resource problem at all. Measured previously at 41 of 128 with four gates timing out at 75s each and zero AssertionError across all four, so on that occasion the count had headroom and was not the cause. Today's 57 of 128 likewise establishes the ceiling is not firing now; it does not establish that the next timeout is the pool. So measure the instance count first, then grep -c AssertionError before believing a browser-gated red. A document recording only the leak leads the next reader to measure inotify, see headroom, and conclude the gate is healthy, which is the wrong conclusion roughly half the time. Two operational rules with it: reap by test-profile path and age, never by ppid == 1, because an orphaned parent is not evidence of an orphaned browser and that predicate takes live pools with it; and never repair one of these by editing the test, because the gate is reporting an environmental fault correctly.</div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260909T050055984925-spa-test-health-census" data-who="crew-attention" data-when="2026-09-09T05:47:15.104Z">
     <div class="r-comment-body"><p>26 failing SPA/surface tests confirmed against an inherited unverified figure, split by measured cause: 15 rendered gates blocked by the diagnosed host navigation fault and already owned, 10 stale contracts, 1 genuine surface defect; the inotify and leaked-browser causes excluded by pre and post counts</p></div>
