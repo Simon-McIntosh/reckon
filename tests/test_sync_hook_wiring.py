@@ -84,6 +84,19 @@ def _agent_hook_commands(payload: dict) -> list[str]:
     return commands
 
 
+def _message_hook_commands(payload: dict) -> list[str]:
+    commands = []
+    for group in payload.get("hooks", {}).get("PreToolUse", []):
+        if group.get("matcher") != "SendMessage":
+            continue
+        commands.extend(
+            hook.get("command", "")
+            for hook in group.get("hooks", [])
+            if hook.get("type") == "command"
+        )
+    return commands
+
+
 def test_sync_cli_installs_guard_once_is_idempotent_and_removes_it(tmp_path: Path):
     settings_path = tmp_path / "claude" / "settings.json"
     original_payload = _settings_payload()
@@ -95,7 +108,9 @@ def test_sync_cli_installs_guard_once_is_idempotent_and_removes_it(tmp_path: Pat
     installed_bytes = settings_path.read_bytes()
     installed = json.loads(installed_bytes)
     expected_guard = cli_module._native_agent_guard_path()
+    expected_message_guard = cli_module._worker_message_guard_path()
     assert _agent_hook_commands(installed) == [str(expected_guard)]
+    assert _message_hook_commands(installed) == [str(expected_message_guard)]
     assert installed["permissions"] == original_payload["permissions"]
     assert installed["autoMode"] == original_payload["autoMode"]
     assert (
@@ -129,6 +144,17 @@ def test_sync_cli_refreshes_an_existing_guard_without_duplicating_it(tmp_path: P
             ],
         }
     )
+    payload["hooks"]["PreToolUse"].append(
+        {
+            "matcher": "SendMessage",
+            "hooks": [
+                {
+                    "type": "command",
+                    "command": "/old/reckon/hooks/worker_message_guard.py",
+                }
+            ],
+        }
+    )
     _write_settings(settings_path, payload)
 
     result = _invoke_sync(tmp_path, settings_path)
@@ -137,6 +163,9 @@ def test_sync_cli_refreshes_an_existing_guard_without_duplicating_it(tmp_path: P
     installed = json.loads(settings_path.read_bytes())
     assert _agent_hook_commands(installed) == [
         str(cli_module._native_agent_guard_path())
+    ]
+    assert _message_hook_commands(installed) == [
+        str(cli_module._worker_message_guard_path())
     ]
 
 

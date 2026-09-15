@@ -33,6 +33,9 @@
       <thead><tr><th>Section</th><th>Anchor</th><th>Commit</th><th>Outcome</th></tr></thead>
       <tbody>
         <tr><td>§5</td><td><a href="#recovery-order-names-a-mechanism">recovery-order-names-a-mechanism</a></td><td>702cffd</td><td>landed</td></tr>
+        <tr><td>&sect;1</td><td><a href="#attempt-census">attempt-census</a></td><td>8522987</td><td>established</td></tr>
+        <tr><td>&sect;3</td><td><a href="#the-refusal">the-refusal</a></td><td>2264b75</td><td>landed</td></tr>
+        <tr><td>&sect;3</td><td><a href="#coverage">coverage</a></td><td>2264b75</td><td>landed</td></tr>
       </tbody>
     </table>
   </section>
@@ -90,6 +93,74 @@
     saw.</p>
     <p>Next anchor expected: the refusal guard when it lands (the plan's &sect;3),
     and the inbox when the prompt-contract surface is free.</p>
+    <h1>A live worker can be reached — landed evidence</h1>
+    <p class="plan-summary">Commit <code>2264b75a</code>.<br>The false clearance is closed in the
+    way the plan scoped: at the pre-tool hook layer, matching the recipient against this host's
+    live run pointers by exact identity &mdash; not by a name pattern &mdash; and refusing with the
+    run id and the recovery-order command that reaches the run. The quiet half that keeps every
+    non-worker send untouched is the load-bearing one, exactly as the section's falsifier demands.</p>
+  </header>
+
+  <section id="the-refusal">
+    <h2>&sect;3 &mdash; A send addressed to a live crew worker is refused, naming the run and the command</h2>
+    <p>The delivered surface is one self-contained, stdlib-only hook,
+    <code>reckon/hooks/worker_message_guard.py</code>, modelled on the existing
+    native-agent guard and wired the same way: <code>reckon sync</code> installs it as a
+    <code>PreToolUse</code> group matching the harness send tool in a crew-managed
+    repository's harness settings, beside the native-agent group, and removes both as one
+    unit with exact byte restoration of the original settings file.</p>
+
+    <h3>Decision logic</h3>
+    <p>A send is refused only when every one of these holds:</p>
+    <ul>
+      <li>the tool is the harness send tool, with a non-empty <code>to</code> recipient;</li>
+      <li>the send originates in a repository carrying crew or flight state
+      (<code>docs/state/&lt;project&gt;/{crew.json,flight.yaml}</code>);</li>
+      <li>the recipient string equals one of the identity fields of a live run pointer
+      recorded under this host's crew live directory &mdash; run id, node id, member,
+      session, or session id; and</li>
+      <li>that pointer recorded <em>this host</em> as its launcher.</li>
+    </ul>
+    <p>There is no name-pattern fallback at any step. Two consequences follow from the
+    identity-based, host-local match: a coordinator session that happens to share a node's
+    name is not caught (the section's stated requirement), and a pointer launched on another
+    host is never matched, so foreign pointers cannot make a session refuse sends here. These
+    two are the falsifier's precise target &mdash; a guard that refused peer messaging generally
+    would pass a test that only checked the loud half, and this one cannot, because its quiet
+    half is asserted first.</p>
+
+    <h3>The refusal</h3>
+    <p>On a match the refusal names the resolved run id and the recovery-order command that
+    reaches that run, with the message the send would have carried slot into the advice:</p>
+    <pre>reckon crew resume --run &lt;run-id&gt; --advice "&lt;your message&gt;"</pre>
+    <p><code>resume</code> continues the same session with its prior context intact, which is
+    the recovery-order answer for a worker whose turn has ended; a run still mid-turn resumes
+    once its turn ends. The refusal states exactly that, so the caller is never told the send
+    succeeded and is given the channel that actually delivers instead. One deliberate,
+    visible escape remains for a case the guard did not anticipate: the session-scoped
+    <code>RECKON_ALLOW_PEER_MESSAGE</code> override, named inside the refusal.</p>
+
+    <h3>Gate</h3>
+    <p>Three test files cover the guard, the sync wiring, and the byte-exact removal:</p>
+    <pre>tests/test_worker_message_guard.py  tests/test_guard_install.py  tests/test_sync_hook_wiring.py</pre>
+    <p><strong>20 passed</strong> against a <strong>7-passed baseline</strong> at the base
+    revision <code>42220a94</code> (the new test file does not exist at base), <strong>zero
+    failures added</strong>. The first test in <code>tests/test_worker_message_guard.py</code>
+    &mdash; written before any refusing test &mdash; asserts that a send to a recipient that is
+    not a live worker is left untouched. Ruff on the staged paths adds zero findings against
+    the base (the two reported findings in <code>reckon/cli.py</code> are pre-existing).</p>
+  </section>
+
+  <section id="coverage">
+    <h2>Record scope</h2>
+    <p>This record covers the &sect;3 deliverable only. &sect;4 &mdash; the inbox a working
+    worker reads &mdash; serialises behind the prompt-contract repair in flight under another
+    coordinator and is deliberately not part of this landing; its contention note stands in the
+    plan. The refusal therefore names <code>resume</code> as the channel that works for a
+    stopped run, and for a live one the same command once its turn has ended, because the
+    plan's named live-run channel (&sect;4's inbox) does not exist yet.</p>
+    <p>Follow-ons recorded for whoever lands after: the plan &sect;4 inbox, and the &sect;5
+    document corrections that make the written recovery order name these mechanisms.</p>
   </section>
 </main>
 </body>

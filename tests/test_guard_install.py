@@ -83,6 +83,19 @@ def _guard_commands(payload: dict) -> list[str]:
     return commands
 
 
+def _reckon_guard_commands(payload: dict) -> dict[str, str]:
+    commands = {}
+    for group in payload.get("hooks", {}).get("PreToolUse", []):
+        if group.get("matcher") not in ("Agent", "SendMessage"):
+            continue
+        command = ""
+        for hook in group.get("hooks", []):
+            if hook.get("type") == "command":
+                command = hook.get("command", "")
+        commands[group["matcher"]] = command
+    return commands
+
+
 def test_sync_registers_guard_idempotently_and_removes_cleanly(tmp_path: Path):
     settings_path = tmp_path / "claude" / "settings.json"
     original_payload = _settings_payload()
@@ -105,9 +118,15 @@ def test_sync_registers_guard_idempotently_and_removes_cleanly(tmp_path: Path):
         installed["hooks"]["PreToolUse"][0]
         == original_payload["hooks"]["PreToolUse"][0]
     )
-    expected_guard = cli_module._native_agent_guard_path()
-    assert expected_guard.is_absolute()
-    assert _guard_commands(installed) == [str(expected_guard)]
+    agent_guard = cli_module._native_agent_guard_path()
+    message_guard = cli_module._worker_message_guard_path()
+    assert agent_guard.is_absolute()
+    assert message_guard.is_absolute()
+    assert _guard_commands(installed) == [str(agent_guard)]
+    assert _reckon_guard_commands(installed) == {
+        "Agent": str(agent_guard),
+        "SendMessage": str(message_guard),
+    }
     assert settings_path.stat().st_mode & 0o777 == 0o600
 
     second = _invoke_sync(tmp_path, settings_path)
@@ -119,6 +138,45 @@ def test_sync_registers_guard_idempotently_and_removes_cleanly(tmp_path: Path):
 
     assert removed.exit_code == 0, removed.output
     assert settings_path.read_bytes() == original_bytes
+
+
+def test_sync_refreshes_stale_reckon_guard_commands_without_duplicating(
+    tmp_path: Path,
+):
+    settings_path = tmp_path / "claude" / "settings.json"
+    payload = _settings_payload()
+    payload["hooks"]["PreToolUse"].append(
+        {
+            "matcher": "Agent",
+            "hooks": [
+                {
+                    "type": "command",
+                    "command": "/old/reckon/hooks/native_agent_guard.py",
+                }
+            ],
+        }
+    )
+    payload["hooks"]["PreToolUse"].append(
+        {
+            "matcher": "SendMessage",
+            "hooks": [
+                {
+                    "type": "command",
+                    "command": "/old/reckon/hooks/worker_message_guard.py",
+                }
+            ],
+        }
+    )
+    _write_settings(settings_path, payload)
+
+    result = _invoke_sync(tmp_path, settings_path)
+
+    assert result.exit_code == 0, result.output
+    installed = json.loads(settings_path.read_bytes())
+    assert _reckon_guard_commands(installed) == {
+        "Agent": str(cli_module._native_agent_guard_path()),
+        "SendMessage": str(cli_module._worker_message_guard_path()),
+    }
 
 
 def test_sync_refuses_malformed_settings_without_truncating(tmp_path: Path):

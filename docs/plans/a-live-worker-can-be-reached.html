@@ -71,7 +71,7 @@
     in for a capability the system genuinely lacks is what makes the substitution
     invisible.</p>
 
-    <h2 id="s3">&sect;3 &mdash; Refuse the send at the layer that knows</h2>
+    <h2 id="s3">&sect;3 &mdash; Refuse the send at the layer that knows <span class="badge badge-shipped">&#10003; landed 2026-09-15</span></h2>
     <p>Reckon does not own the session listing or the send, but it already owns a
     proven interception point: the pre-tool hook that refuses a harness-native
     background-agent spawn in a crew-managed repository and composes the
@@ -90,6 +90,22 @@
     first, so the quiet half is written before the loud one.</p>
     <p>Self-contained: a hook module and its settings wiring, plus tests. It
     touches nothing under <code>reckon/crew/</code>.</p>
+
+    <p class="landed-summary"><strong>Landed.</strong> A new pre-tool hook,
+    <code>reckon/hooks/worker_message_guard.py</code>, refuses a
+    <code>SendMessage</code> whose recipient resolves by exact identity to a live
+    run pointer recorded on this host, naming the run id and the recovery-order
+    command that reaches it, <code>reckon crew resume --run &lt;run-id&gt;
+    --advice "&hellip;"</code>. The match is host-local and identity-based (run id,
+    node id, member, session, session id), never a name pattern, so a coordinator
+    session that shares a node's name is untouched and a pointer launched on
+    another host is never matched. <code>reckon sync</code> installs it beside the
+    native-agent guard in a crew-managed repository's harness settings and removes
+    both as one unit. Gate: the three test files &mdash; <strong>20 passed</strong>
+    against a 7-passed baseline at the base revision, zero failures added, with
+    the quiet test (a send to a recipient that is not a live worker is untouched)
+    written before the refusing one. Full record:
+    <a href="/reckon/evidence/archive/a-live-worker-can-be-reached-landed#the-refusal">&#167;3 landed</a>.</p>
 
     <h2 id="s4">&sect;4 &mdash; An inbox a working worker reads</h2>
     <p>A headless worker cannot be interrupted &mdash; its stdin is a consumed
