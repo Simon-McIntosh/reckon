@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="339">
+<meta name="plan-version" content="340">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.4">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b">
@@ -2029,6 +2029,9 @@ Model time is extractable and its scarcity is plumbing, not measurement: one dia
 </div>
 <div class="r-comment" data-section="s16" data-id="c-run-r-20260915T010715610498-status-undetermined-is-the-condition" data-who="crew-backpressure" data-when="2026-09-15T01:28:31.699Z">
     <div class="r-comment-body"><p>two of three behaviours landed, merged and verified: a zero-field body refuses, and a status word outside the recognised sets refuses naming the word it found. The headline measure is unmet - a body from which fields parse but no status key is among them still returns status None, verified against the peer's actual manifest which parses to 13 keys with status None after the merge. That is the run whose misclassification nearly cost its owner two and a half hours. The merge is kept because the landed behaviours are correct and add no failures; a corrective node follows. This run is also the first to follow the new landing contract, and it exposed that dispatch does not grant the paths the contract instructs a worker to write</p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20260915T013629318818-status-key-absent-is-undetermined" data-who="crew-backpressure" data-when="2026-09-15T01:56:17.007Z">
+    <div class="r-comment-body"><p>the missed shape is closed: a body whose fields parse but carry no status key is refused, naming which fields it did read. Verified against the peer&#x27;s actual manifest, which now refuses where it previously returned 13 keys with status None, and against all five other shapes: zero-field still refuses, an unrecognised word still refuses naming the word, well-formed terminal and non-terminal still parse, and a recovery artifact declared through the derived field is exempt so the recovery pipeline can still read its own file</p></div>
 </div>
 <div class="r-comment" data-section="s21" data-id="c-run-r-20260914T160430483667-review-dimensions-reach-the-ledger-row" data-who="crew-both-reasons" data-when="2026-09-14T18:29:37.372Z">
     <div class="r-comment-body"><p>review dimensions reach the committed ledger row: scores and total carried on the promoted row, an absent review distinguishable from a zero-scored one, dimensions queryable filtered on the parent run; 8 files all within the 10 declared paths, 427 insertions; gate base 169 passed / 4 failed to after 178 passed / 4 failed, 0 added failures, 9 tests added, the 4 pre-existing in a file the node declared unmodified; classified abandoned despite finishing cleanly because its manifest is written in markdown headings rather than colon lines, so every required field is present in the document and absent from the parse</p></div>

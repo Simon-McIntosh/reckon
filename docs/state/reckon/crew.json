@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T03:59:07",
+  "updated": "2026-09-15T04:00:31",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -120244,6 +120244,220 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T013629318818-status-key-absent-is-undetermined",
+        "plan": "crew-observability-truth",
+        "section": "\u00a716",
+        "node": "status-key-absent-is-undetermined",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 397,
+                "cached_input_tokens": 843339,
+                "input_tokens": 843738,
+                "output_tokens": 1398,
+                "reasoning_output_tokens": 123,
+                "total_tokens": 845136,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3ceb92f8-d6d4-46b5-82a8-d120cb0ddd1f",
+            "session_id": "ship-s18-20260914"
+          },
+          "done_when": "parse_manifest raises the named error for a body whose fields parse but contain no status key, asserted against the real manifest at the run directory for scope-review-back-to-the-canvas which today parses to 13 keys with status None, and against a synthetic of the same shape whose only field-shaped lines are incidental prose; the three behaviours the previous node landed are unchanged, asserted one case each - a zero-field body still refuses, an unrecognised status word still refuses naming the word, and a well-formed terminal and non-terminal manifest still parse; a manifest legitimately carrying no status because it is a recovery artifact declared through the derived field is not refused, asserted explicitly so the repair does not break the recovery pipeline reading its own file; and tests/test_manifest_parse_format.py tests/test_crew_recovery.py tests/test_recovery_state_typing.py tests/test_manifest_nested_keys.py add no failures beyond the single environmental id already failing at base, with base and after ids both recorded",
+          "estimated_hours": null,
+          "goal": "a manifest whose fields parse but carry no status key is refused, closing the one shape the previous node left open",
+          "id": "status-key-absent-is-undetermined",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T01:36:29Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T013629318818-status-key-absent-is-undetermined/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a716",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/reports.py",
+            "tests/test_manifest_parse_format.py",
+            "tests/test_crew_recovery.py"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-backpressure",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T01:36:34Z",
+        "completed_at": "2026-09-15T01:56:17.007Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1162,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1183,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "dcee24bb55ccaa9b061dd684d3af869e0736e640",
+        "commits": [
+          "c133d0e718e15b9da8484a4362a1c1f1aa5d102b",
+          "351ad1c1796eebc429a34d088ea8a5978d4e8f3c"
+        ],
+        "changed_lines": {
+          "added": 179,
+          "removed": 15,
+          "files": 5
+        },
+        "tests_added": 6,
+        "gate": "passed",
+        "gate_check": {
+          "command": "parse_manifest over six shapes including the peer's real manifest, candidate module loaded standalone to avoid the editable-install shadow",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T013629318818-status-key-absent-is-undetermined/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T013629318818-status-key-absent-is-undetermined/manifest.md",
+        "scope_changed": false,
+        "session_id": "c58187cd-c8f6-40fc-8d34-29237d2c09d2",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 0,
+            "input_tokens_cumulative": 8950454,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 60688,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T01:56:17.007Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 9120795,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 1178.103,
+          "generated_tokens": 69557,
+          "generation_seconds": 1114.049,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 84.5,
+          "machine_seconds": 64.054,
+          "peak_input_tokens": 169041,
+          "tokens_per_second": 62.44,
+          "wall_tokens_per_second": 59.04
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": [
+          {
+            "path": "docs/evidence/archive/crew-observability-truth-landed.html",
+            "reason": "same contract, same gap"
+          },
+          {
+            "path": "docs/plans/crew-observability-truth.html",
+            "reason": "the landing contract instructs this write and dispatch does not yet grant the path; the fence node is in flight"
+          }
+        ],
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s18-20260914/status-key-absent-is-undetermined",
+          "session_id": "c58187cd-c8f6-40fc-8d34-29237d2c09d2",
+          "session_source": "pointer",
+          "retained_at": "2026-09-15T01:56:17.007Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 78.0,
+        "orientation_input_tokens": 1681523.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -120472,6 +120686,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1461
+    "_version": 1462
   }
 }
