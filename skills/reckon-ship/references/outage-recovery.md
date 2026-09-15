@@ -53,6 +53,36 @@ lifted, because nothing re-checked it.
   held run persists, and it is worth knowing the instinct no longer has a
   reason.
 
+## When resume is the wrong answer
+
+Everything above assumes the cause is **outside the transcript** — a provider
+refusal, a spend limit, a serve restarted under the worker. Resume works there
+because replaying the session replays a context that was never the problem.
+
+**When the cause is inside the transcript, resume reproduces it exactly.**
+Measured: a worker's turn ended on `API Error: 400 <model> is not a multimodal
+model` after it attached an image the lane cannot accept. The image was in the
+session. Resuming replayed the attachment and died at the same point, with the
+same error, deterministically — and would have done so on every subsequent
+attempt.
+
+**The tell is a run that comes back and dies immediately at the same place.**
+Not a slow failure, not a different error: the identical stop, reached at once.
+One resume is the diagnosis; a second is a loop.
+
+**The response is to bank the worktree, not to resume again.** The worker's
+work is on disk and usually complete — in the measured case, three files
+carrying a finished measurement, uncommitted because the process died before
+it could commit. Commit them from the worktree, attribute the work to the run
+in both the commit message and the plan comment, and promote as a partial. A
+reader comparing the commit author against the run record will otherwise find
+a discrepancy with no explanation.
+
+So the discriminator is one question asked before the second resume: **could
+what killed this turn still be in the session?** An attachment, a tool result
+that exceeds a limit, a malformed message the API rejects — all inside. A
+restart, a refusal, a quota — all outside.
+
 ## What is safe during a hold
 
 `reckon crew observe` reads the run's local stream and manifest; it never
