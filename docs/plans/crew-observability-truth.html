@@ -896,6 +896,15 @@
         recovery artifact through a truthy <code>derived</code> field is never refused, so the
         repair does not block recovery reading its own fabricated manifest. Landed under commit
         <code>c133d0e</code>. Full record: <a href="/reckon/evidence/archive/crew-observability-truth-landed#manifest-status-key-absent-refused">&#167;16 residual shape closed</a>.</p>
+      <p class="landed-summary">The refusals above are strictness for manifests at rest, and a
+        live worker must never be caught by them: the unreadable reading is now gated on the
+        process being gone, so a run whose process is alive with a fresh log classifies from that
+        liveness even when its manifest parses to no recognised reading &mdash; both measured run-on
+        shapes, one an unrecognised word, one a declared waiting status corrupted the same way,
+        read running after this change where each read unreadable before. The dead control on the
+        same bodies still reads unreadable, and a live run with a genuinely absent manifest reads
+        from liveness. Landed under commit <code>8183a63</code>. Full record:
+        <a href="/reckon/evidence/archive/crew-observability-truth-landed#live-worker-never-unreadable">&#167;16 liveness outranks an unreadable manifest</a>.</p>
     </section>
 
     <h2 id="s18">&#167;18 &mdash; Runs ending together on one backend are one lane event, not N worker failures</h2>
