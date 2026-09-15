@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="shell-fallback-and-authoring-prior-art">
+  <meta name="plan-title" content="Prior Art for the Shell-Fallback Repair and the Plan-Authoring Exemplar">
+  <meta name="plan-summary" content="Reuse map naming existing machinery across the composition root, the browser-free module-eval harness, and the plan-authoring template surface that the blank-surface repair and the authoring exemplar must reuse rather than rebuild, with per-candidate reuse/extend/unsuitable verdicts.">
+  <meta name="plan-informs" content="blank-project-surface">
+  <meta name="plan-tags" content="reckon-tooling">
+  <title>Prior Art for the Shell-Fallback Repair and the Plan-Authoring Exemplar | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="summary">Reuse map</h2>
+    <p>
+      This document maps the machinery the blank-surface repair (§3 of
+      <a href="/reckon/plans/blank-project-surface">blank-project-surface</a>)
+      and the plan-authoring exemplar must reuse instead of rebuild. It names
+      <strong>17 concrete existing candidates</strong> across three surfaces — the
+      SPA composition root, the browser-free module-eval harness, and the
+      plan-authoring template surface — each with a verdict of
+      <em>reuse</em>, <em>extend</em>, or <em>unsuitable-because</em>. It extends,
+      rather than duplicates, the harness inventory already recorded in
+      <a href="/reckon/research/spa-project-render-fault">spa-project-render-fault</a>:
+      that document catalogued browser-capability fitness; this one catalogues
+      what the two reform efforts would otherwise re-author from scratch.
+    </p>
+
+    <p>
+      The two consumers differ in what they must not rebuild. The
+      <strong>shell-fallback repair</strong> must not invent a second legible
+      failure panel when one exists, and must not hand-roll a module-list source
+      when the authored index is the canonical one. The
+      <strong>plan-authoring exemplar</strong> must not design a new section
+      spelling when the parser recognises exactly one, and must not skip the
+      schema parity guard that already decides whether an authored plan is
+      well-formed.
+    </p>
+
+    <h2 id="figure">The three surfaces</h2>
+
+    <figure>
+      <svg viewBox="0 0 920 330" width="100%" role="img"
+           aria-labelledby="map-title map-desc">
+        <title id="map-title">Which existing machinery each reform effort must reuse</title>
+        <desc id="map-desc">Three surfaces feed two consumers. The composition root and the module-eval harness feed the shell-fallback repair; the plan-authoring template surface feeds the plan-authoring exemplar. Every arrow points at existing code, not new code.</desc>
+        <g font-family="system-ui, sans-serif" font-size="13" fill="#1a1a1a">
+          <!-- Surface columns -->
+          <text x="150" y="20" text-anchor="middle" font-weight="700" font-size="14">Composition root</text>
+          <rect x="20" y="28" width="260" height="150" fill="none" stroke="#9a9a9a" rx="6"/>
+          <text x="36" y="50">shell.jsx:457-462 — the</text>
+          <text x="36" y="68">silent data-shell-modules</text>
+          <text x="36" y="86">fallback (the fault site)</text>
+          <text x="36" y="112">shell-ready.jsx — ReadyGate</text>
+          <text x="36" y="130">+ ProjectStateLoadPanel</text>
+          <text x="36" y="156">state-loader.js — projectStateLoadView,</text>
+          <text x="36" y="174">STATE_READY / STATE_ERROR</text>
+
+          <text x="470" y="20" text-anchor="middle" font-weight="700" font-size="14">Browser-free module-eval harness</text>
+          <rect x="330" y="28" width="280" height="150" fill="none" stroke="#9a9a9a" rx="6"/>
+          <text x="346" y="50">spa_module_eval.evaluate_jsx_module</text>
+          <text x="346" y="68">test_spa_module_scope (full bundle,</text>
+          <text x="346" y="86">in-memory export asserts)</text>
+          <text x="346" y="112">test_build canonical-module gate</text>
+          <text x="346" y="130">+ write_file_spa_document</text>
+          <text x="346" y="156">authored_ui_module_paths /</text>
+          <text x="346" y="174">authored_shell_source</text>
+
+          <text x="790" y="20" text-anchor="middle" font-weight="700" font-size="14">Plan-authoring template surface</text>
+          <rect x="640" y="28" width="260" height="150" fill="none" stroke="#9a9a9a" rx="6"/>
+          <text x="656" y="50">docs/_exemplar-plan.html — the</text>
+          <text x="656" y="68">canonical annotated exemplar</text>
+          <text x="656" y="112">_plan_html read_state / write_state,</text>
+          <text x="656" y="130">SECTION_IDS / _RENDERERS,</text>
+          <text x="656" y="156">UnparsedSectionWriteError guard</text>
+          <text x="656" y="174">test_schema byte-identity parity</text>
+
+          <!-- Consumers -->
+          <text x="220" y="252" text-anchor="middle" font-weight="700" font-size="14" fill="#7a4b00">Shell-fallback repair</text>
+          <rect x="90" y="262" width="260" height="36" fill="none" stroke="#7a4b00" stroke-width="1.5" rx="6"/>
+          <text x="220" y="284" text-anchor="middle" fill="#7a4b00">renders content or a legible failure</text>
+
+          <text x="700" y="252" text-anchor="middle" font-weight="700" font-size="14" fill="#3a6590">Plan-authoring exemplar</text>
+          <rect x="600" y="262" width="200" height="36" fill="none" stroke="#3a6590" stroke-width="1.5" rx="6"/>
+          <text x="700" y="284" text-anchor="middle" fill="#3a6590">copies, never invents</text>
+
+          <!-- arrows -->
+          <path d="M150 178 C150 210 150 226 150 252 M180 178 C190 215 200 236 205 252 M120 178 C110 210 108 235 108 252" stroke="#7a4b00" fill="none" marker-end="url(#arrow)"/>
+          <path d="M470 178 C470 210 470 226 470 252 M540 178 C560 215 580 235 600 252 M400 178 C390 210 385 232 382 252" stroke="#7a4b00" fill="none"/>
+          <path d="M660 178 C660 210 674 226 688 252 M770 178 C770 210 730 226 712 252" stroke="#3a6590" fill="none"/>
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="#7a4b00"/>
+            </marker>
+          </defs>
+        </g>
+      </svg>
+      <figcaption>Every arrow points at existing code. The repair reuses the
+      composition-root and module-eval machinery; the exemplar reuses the
+      authoring template surface. Nothing on this map is new.</figcaption>
+    </figure>
+
+    <h2 id="composition-root">Composition root — 6 candidates</h2>
+
+    <p>
+      The repair's fault site and its legible-failure target both already exist.
+      The fault is the silent fallback branch in
+      <code>docs/ui/shell.jsx:457-462</code>; the legible-failure panel is
+      <code>ProjectStateLoadPanel</code> in <code>docs/ui/shell-ready.jsx</code>.
+    </p>
+
+    <table>
+      <thead>
+        <tr><th>Candidate (file:symbol)</th><th>What it is</th><th>Verdict</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>docs/ui/shell.jsx:457-462</code> — the <code>ShellReadyGate ? … : …</code> render root and <code>data-shell-modules="unavailable"</code> fallback</td>
+          <td>The composition root. When <code>window.ReckonShell?.ready?.ReadyGate</code> is undefined, it renders an empty <code>&lt;main&gt;</code> with zero children and no exception — exactly the measured §2 fault.</td>
+          <td><strong>extend</strong> — this is the fault site; the repair changes the fallback branch to render a legible failure, reusing the loading/error language below.</td>
+        </tr>
+        <tr>
+          <td><code>docs/ui/shell-ready.jsx:4-68</code> — <code>ProjectStateLoadPanel</code></td>
+          <td>Existing failure panel for state-load failure: <code>&lt;main role="alert"&gt;</code>, "Discovery failed" label, endpoint and HTTP status in a definition list.</td>
+          <td><strong>reuse</strong> — the repair's legible shell-module failure should render through this same panel vocabulary, not a second bespoke one.</td>
+        </tr>
+        <tr>
+          <td><code>docs/ui/shell-ready.jsx:70-109</code> — <code>ReadyGate</code></td>
+          <td>Gate on <code>window.STATE_READY</code> that holds <code>children</code> until state resolves, showing <code>ProjectStateLoadPanel</code> meanwhile.</td>
+          <td><strong>reuse</strong> — the gate is the render container; the module-miss failure is a sibling condition the same gate can surface.</td>
+        </tr>
+        <tr>
+          <td><code>docs/ui/state-loader.js:42-60</code> — <code>window.projectStateLoadView</code></td>
+          <td>Produces the load-view object (<code>phase</code>, <code>endpoint</code>, <code>httpStatus</code>, <code>message</code>, <code>elapsedSeconds</code>) that drives the panel above.</td>
+          <td><strong>reuse</strong> — the repair can extend this one view-builder to carry the missing-module list rather than adding a parallel channel.</td>
+        </tr>
+        <tr>
+          <td><code>docs/ui/state-loader.js:388-397</code> — <code>window.STATE_READY</code> / <code>window.STATE_ERROR</code></td>
+          <td>The promise contract <code>ReadyGate</code> already consumes; rejection lands on <code>STATE_ERROR</code>.</td>
+          <td><strong>reuse</strong> — the module-miss is a render-time condition, not a state-load one, so it belongs beside (not inside) this contract; reuse the naming/shape.</td>
+        </tr>
+        <tr>
+          <td><code>docs/ui/shell.jsx:82</code> — <code>App()</code> composition</td>
+          <td>The component tree whose child count the §4 guard reads. It renders through <code>window.ReckonShell.*</code> cross-module symbols, which is why single-module eval cannot observe it.</td>
+          <td><strong>extend</strong> — the repair's regression must evaluate the composed tree; that needs the full-module harness on the next surface, not edits here.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="module-eval">Browser-free module-eval harness — 7 candidates</h2>
+
+    <p>
+      The §4 guard must produce a render verdict without a browser, because
+      headless-Chrome navigation is unproven on this host. Node already evaluates
+      the SPA modules directly, in two different assembly modes; reuse both rather
+      than writing a third.
+    </p>
+
+    <table>
+      <thead>
+        <tr><th>Candidate (file:symbol)</th><th>What it is</th><th>Verdict</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>tests/spa_module_eval.py:13</code> — <code>evaluate_jsx_module</code></td>
+          <td>Compiles one JSX module via <code>reckon.serve.compile_jsx</code> and evaluates an expression inside its module scope in Node. Already used by four suites (dag_layout, graph_geometry, sprint_surface, roadmap_sprint_derivation).</td>
+          <td><strong>reuse</strong> — the §2 node already produced render evidence "by exactly this route" (the decision record). It is the cheapest check for the fallback value itself.</td>
+        </tr>
+        <tr>
+          <td><code>tests/spa_module_eval.py:16-19</code> — the <code>instrumented</code> append + <code>globalThis.window = globalThis</code> shim</td>
+          <td>The instrumented-eval pattern: append a logging expression, compile, wire <code>window</code>, run, parse stdout.</td>
+          <td><strong>reuse</strong> — the composition-root child-count probe is the same "append expression and read stdout" shape at the composed-module scale.</td>
+        </tr>
+        <tr>
+          <td><code>tests/test_spa_module_scope.py:10-19</code> — <code>MODULE_ORDER</code>; the bundle assembly at 240-300</td>
+          <td>Assembles <em>every</em> UI module in authored order into one in-memory browser shim (React/ReactDOM stubs, fake <code>window</code>/<code>document</code>) and asserts each module's window exports resolve.</td>
+          <td><strong>reuse</strong> — this is the closest existing composition-capable browser-free render; the §4 guard extends it to count the rendered root's children.</td>
+        </tr>
+        <tr>
+          <td><code>tests/test_spa_module_scope.py</code> — <code>MODULE_DEPENDENCIES</code> / <code>assertDependencies</code> / <code>assertExports</code></td>
+          <td>Declared cross-module symbol dependencies and export contracts per module, checked as the bundle assembles — so a missing module fails loudly here, not as a blank page.</td>
+          <td><strong>extend</strong> — add the shell-module dependencies to the declared map; a skew then fails the guard before rendering, which is the §4 fire-when-should half.</td>
+        </tr>
+        <tr>
+          <td><code>tests/test_build.py:327</code> — <code>test_spa_entry_points_load_exactly_the_canonical_modules</code></td>
+          <td>Asserts the served/compiled entry point loads exactly the authored canonical module list — a parity assertion between index and served surface.</td>
+          <td><strong>reuse</strong> — this is the distribution half of the §2 finding (stale process serving 12 of 20); keep it as the installed-service guard.</td>
+        </tr>
+        <tr>
+          <td><code>tests/spa_browser_harness.py:65</code> — <code>authored_ui_module_paths</code>; <code>:92</code> — <code>authored_shell_source</code></td>
+          <td>Resolves the authored module list and the complete shell source from <code>docs/index.html</code> — "without inventing another module list" (their own docstring).</td>
+          <td><strong>reuse</strong> — the harness feeds module order to both the module-eval and file-SPA paths; the repair must consume this rather than hardcode the 22/20 list.</td>
+        </tr>
+        <tr>
+          <td><code>tests/spa_browser_harness.py:557</code> — <code>write_file_spa_document</code>; <code>:623</code> — <code>file_spa</code>; <code>:653</code> — <code>ServedSpa.run_probe</code></td>
+          <td>Writes a browser-ready composed SPA document from the authored modules and (optionally) drives a real browser; <code>_classify_probe_failure</code> turns launch state into an actionable class.</td>
+          <td><strong>unsuitable-because</strong> — as the <em>primary</em> §4 gate, headless-Chrome navigation is unproven on this host (the plan's host constraint). Keep as the owned cross-check once the browser boundary is repaired; do not gate the verdict on it.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="template-surface">Plan-authoring template surface — 4 candidates</h2>
+
+    <p>
+      The exemplar's whole point is that a worked example beats a schema. The
+      repository already carries the worked example, the parser that fixes the
+      canonical section spelling, and the guard that says whether an authored plan
+      is well-formed. Copying the full set is the exemplar; skipping any piece
+      re-derives a spelling the parser does not recognise.
+    </p>
+
+    <table>
+      <thead>
+        <tr><th>Candidate (file:symbol)</th><th>What it is</th><th>Verdict</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>docs/_exemplar-plan.html</code></td>
+          <td>The canonical annotated exemplar for plan, research, and evidence HTML — meta scalars, <code>data-reckon</code> sections, and the reasoning behind each. Sole source the <code>reckon-create</code> skill points agents at.</td>
+          <td><strong>reuse</strong> — the exemplar copies this file's structure verbatim; it is the entire deliverable's reference, not a starting point to improve.</td>
+        </tr>
+        <tr>
+          <td><code>reckon/_plan_html.py:166</code> — <code>SECTION_IDS</code>; <code>:733</code> — <code>_SECTION_RECOGNISED_SPELLING</code>; <code>:748</code> — <code>_authored_child_count</code>; <code>:802</code> — <code>write_state</code></td>
+          <td>The parser/writer pair that defines the one recognised spelling per section and refuses a rewrite that would empty a section holding unrecognised authored children (<code>UnparsedSectionWriteError</code>, <code>:743</code>).</td>
+          <td><strong>reuse</strong> — the exemplar must use exactly these spellings or the next structured write refuses (or worse, the 2026-05-21 silent-deletion failure recurs). Name them in the exemplar's annotations, don't redesign.</td>
+        </tr>
+        <tr>
+          <td><code>reckon/_plan_html.py:258</code> — <code>read_state</code>; <code>:802</code> — <code>write_state</code>; <code>:880</code> — <code>from_html</code>/<code>to_html</code> wrappers</td>
+          <td>The round-trip state engine: <code>read_state</code> parses real HTML leniently; <code>write_state</code> regenerates only the reckon-owned sections and meta.</td>
+          <td><strong>reuse</strong> — any exemplar authoring must round-trip through these; the byte-identity test below is the executable statement of that contract.</td>
+        </tr>
+        <tr>
+          <td><code>tests/test_schema.py:195</code> — <code>test_byte_identity_on_real_reckon_plans</code>; <code>:234</code> — <code>test_state_round_trip</code></td>
+          <td>Byte-parity and state-round-trip guards over every real reckon plan; authoring a plan file is precisely the change this test covers.</td>
+          <td><strong>reuse</strong> — the exemplar (and the research/evidence docs the sibling nodes author) is a change this test owns. When authoring the exemplar, this test belongs in the authoring gate.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="count">Candidate count</h2>
+    <p>
+      <strong>17 candidates total</strong> across the three surfaces:
+      6 in the composition root, 7 in the browser-free module-eval harness, 4 in
+      the plan-authoring template surface. One candidate
+      (<code>write_file_spa_document</code>/<code>file_spa</code>/<code>run_probe</code>)
+      is judged <em>unsuitable-because</em> for the primary gate (host browser
+      boundary), two are <em>extend</em> at the fault site and the guard's
+      dependency map, and the remaining fourteen are direct <em>reuse</em>.
+    </p>
+
+    <h2 id="boundary">Where new code is genuinely owed</h2>
+    <p>
+      The reuse map does not imply no new code. What is owed is narrow, and each
+      piece extends a listed candidate rather than replacing it:
+    </p>
+    <ul>
+      <li>The <strong>legible fallback branch</strong> when <code>ReadyGate</code>
+      is undefined — extend <code>docs/ui/shell.jsx:457-462</code> to render
+      through the <code>ProjectStateLoadPanel</code> vocabulary with the missing
+      module list.</li>
+      <li>The <strong>composition-root child-count probe</strong> at the
+      full-bundle scale — the guard the §4 half "fires when it should" needs, built
+      on <code>test_spa_module_scope</code>'s assembly so reverting the §3 repair
+      turns it red.</li>
+      <li>The <strong>installed-service parity assertion</strong> if the wheel
+      boundary is added — an extension of <code>test_build.py:327</code> to the
+      installed wheel's served entry point.</li>
+    </ul>
+
+    <h2 id="qualifications">Qualifications retained</h2>
+    <ul>
+      <li>This is a reuse map, not an implementation. Every candidate was verified
+      to exist with the cited symbol in the current tree; none was run here.</li>
+      <li>Line numbers are current as of <code>e81672a</code>; they are anchors,
+      not contracts — the source paths and symbols are the binding identities.</li>
+      <li>The <code>unsuitable-because</code> verdict on the browser path restates
+      the plan's own host constraint from <code>rendered-evidence-on-this-host</code>;
+      it is a host fact, not a defect in the harness file.</li>
+      <li>The prior render-fault research doc remains authoritative for the
+      browser-capability classification; this map fills the "what to reuse" gap it
+      deliberately left open.</li>
+    </ul>
+
+  </main>
+</body>
+</html>
