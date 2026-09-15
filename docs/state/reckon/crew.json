@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T10:35:24",
+  "updated": "2026-09-15T10:47:52",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -126783,6 +126783,217 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T053009998998-budget-group-is-declared-not-inferred",
+        "plan": "burn-is-visible-before-it-bites",
+        "section": "\u00a75",
+        "node": "budget-group-is-declared-not-inferred",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1734,
+                "cached_input_tokens": 963525,
+                "input_tokens": 965261,
+                "output_tokens": 1502,
+                "reasoning_output_tokens": 410,
+                "total_tokens": 966763,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "306c1aec-df4a-489e-88c3-441bbb1f5baf",
+            "session_id": "ship-lane-aware-20260914"
+          },
+          "done_when": "uv run pytest tests/test_flight.py tests/test_schema.py -q passes with: a budget_group slot declared in reckon/schema/flight.yaml resolving from shipped config and reporting its origin layer; two backends declaring the same group resolving as one pool; two backends sharing an identical resets_at but declaring no group remaining ungrouped, asserted directly so a shared reset time never groups; and re-running scripts/regen_flight_schema.py producing no diff, proving the generated pair was regenerated rather than hand-edited. Failure delta 0 against base a736189",
+          "estimated_hours": null,
+          "goal": "Backends sharing a quota pool are named by a declared configuration slot",
+          "id": "budget-group-is-declared-not-inferred",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T05:30:10Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T053009998998-budget-group-is-declared-not-inferred/manifest.md",
+          "plan": "burn-is-visible-before-it-bites",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/schema/flight.yaml",
+            "reckon/schema/flight-defaults.yaml",
+            "reckon/_flight_schema.py",
+            "docs/_shared/flight.schema.json",
+            "tests/test_flight.py",
+            "docs/evidence/archive/burn-is-visible-before-it-bites-landed.html",
+            "docs/plans/burn-is-visible-before-it-bites.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-admission",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T05:30:23Z",
+        "completed_at": "2026-09-15T08:41:06.401Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 11298,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 11443,
+        "stalled": true,
+        "time_budget": "45m",
+        "base_sha": "e4382ecddd62359151b260db2f678f0c38f5e5d5",
+        "commits": [
+          "f9aabc9062563a285cedecc5889177d089c3624d"
+        ],
+        "changed_lines": {
+          "added": 193,
+          "removed": 0,
+          "files": 6
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_flight.py tests/test_schema.py -p no:cacheprovider -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T053009998998-budget-group-is-declared-not-inferred/run/test_logs_after.tsv",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T053009998998-budget-group-is-declared-not-inferred/manifest.md",
+        "scope_changed": false,
+        "session_id": "65ec16d1-87fc-4662-a20b-2fd6599e4c05",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 2262335,
+            "input_tokens_cumulative": 7537319,
+            "output_tokens": 14981,
+            "output_tokens_cumulative": 75397,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T08:41:06.401Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 7874485,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 11438.497,
+          "generated_tokens": 93697,
+          "generation_seconds": 11092.028,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 84.2,
+          "machine_seconds": 346.469,
+          "peak_input_tokens": 168461,
+          "tokens_per_second": 8.45,
+          "wall_tokens_per_second": 8.19
+        },
+        "follow_on_paths": [
+          "reckon/mcp_views.py",
+          "docs/figures/:"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_flight.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-lane-aware-20260914/budget-group-is-declared-not-inferred",
+          "session_id": "65ec16d1-87fc-4662-a20b-2fd6599e4c05",
+          "session_source": "pointer",
+          "retained_at": "2026-09-15T08:41:06.401Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 65.0,
+        "orientation_input_tokens": 2701431.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -127011,6 +127222,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1494
+    "_version": 1495
   }
 }
