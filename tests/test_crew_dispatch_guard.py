@@ -188,6 +188,31 @@ def test_occupied_project_reuses_the_watcher_armed_by_the_first_dispatch(
     assert "node-accepted" in worktrees
 
 
+def test_two_concurrent_nodes_both_hold_the_shared_landing_paths(
+    isolated_project: tuple[Path, Path],
+) -> None:
+    """The plan and evidence paths are not exclusive to the first node.
+
+    Both nodes on one plan append their landing record to the same plan file
+    and evidence record, so those paths cannot belong to whichever dispatches
+    first. The exclusive-claim refusal exempts them, git merge resolves the
+    appends, and a second dispatch on the same plan is admitted.
+    """
+    config_home, repo = isolated_project
+
+    first = _dispatch(config_home, repo, "landing-owner")
+    second = _dispatch(config_home, repo, "landing-second")
+
+    for record in (first, second):
+        declared = set(record["node"]["write_paths"])
+        assert "docs/plans/fixture.html" in declared
+        assert "docs/evidence/archive/fixture-landed.html" in declared
+    assert (
+        crew.read_pointer(second["run_id"])["node"]["write_paths"]
+        == second["node"]["write_paths"]
+    )
+
+
 def test_no_watch_override_is_recorded_for_an_occupied_project(
     isolated_project: tuple[Path, Path],
 ) -> None:
@@ -273,4 +298,12 @@ def test_member_lookup_uses_project_mount_from_another_repository(
     assert record["member"] == "worker-a"
     assert record["repo"] == str(work_repo.resolve())
     assert record["authority"]["plan"]["repository"] == str(plan_repo.resolve())
-    assert record["node"]["write_paths"] == [str(report)]
+    # The node's own delivery path plus the shared landing paths dispatch grants
+    # the fixture plan, still declared relative to the plan's repository.
+    assert sorted(record["node"]["write_paths"]) == sorted(
+        [
+            str(report),
+            "docs/plans/fixture.html",
+            "docs/evidence/archive/fixture-landed.html",
+        ]
+    )
