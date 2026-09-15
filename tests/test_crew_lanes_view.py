@@ -545,3 +545,25 @@ def test_a_declared_group_in_flight_config_reaches_the_lanes_view(tmp_path) -> N
     assert lanes["beta"]["budget_group"] == "pool-a"
     assert lanes["terra"]["budget_group"] is None
     assert "terra" not in view["budget_groups"]["pool-a"]
+
+
+def test_dead_spelling_groups_nothing_even_when_the_value_matches() -> None:
+    """``quota_pool`` declares no group: a backend carrying it stays ungrouped
+    even when the value names a live pool verbatim, so the view groups on the
+    schema's one spelling and a reader-side alias to the dead key would break
+    this test rather than pass silently."""
+    backends = {
+        "live": {"launch": "cli", "command": "probe-cli", "budget_group": "pool-a"},
+        "stale": {"launch": "cli", "command": "probe-cli", "quota_pool": "pool-a"},
+    }
+    view = mcp_views.crew_lanes_view(
+        {"backends": backends},
+        [],
+        probe_reader=lambda _backend, _settings: _budget_probe_block(),
+        composed_at="2030-01-02T03:05:06Z",
+    )
+    lanes = _lanes_by_backend(view)
+
+    assert view["budget_groups"] == {"pool-a": ["live"]}
+    assert lanes["live"]["budget_group"] == "pool-a"
+    assert lanes["stale"]["budget_group"] is None
