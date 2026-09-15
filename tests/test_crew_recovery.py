@@ -591,6 +591,133 @@ def test_live_process_outgrows_a_blocked_placeholder(home) -> None:
     assert snapshot["state"] == "working"
 
 
+def _finished_pointer(
+    home: Path,
+    run_id: str,
+    manifest_text: str | None,
+    *,
+    alive: bool,
+    phase: str,
+    tag: str,
+) -> dict:
+    manifest = home / "manifests" / tag / f"{run_id}.md"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    if manifest_text is not None:
+        manifest.write_text(manifest_text)
+    stream = home / "streams" / tag / f"{run_id}.jsonl"
+    stream.parent.mkdir(parents=True, exist_ok=True)
+    stream.write_text('{"type":"turn.started"}\n')
+    return {
+        "run_id": run_id,
+        "project": "proj",
+        "node": {"id": run_id, "plan": "plan-a", "time_budget": "20m"},
+        "phase": phase,
+        "manifest_path": str(manifest),
+        "log_path": str(stream),
+        "process_alive": alive,
+    }
+
+
+def test_a_dead_process_with_a_terminal_manifest_is_finished_whatever_decorates_status(
+    home,
+) -> None:
+    # The entry-point assertion against a coordinator's view: a dead process
+    # holding a terminal manifest is finished, never running or stalled, and
+    # the status line's decoration changes nothing downstream. The motivating
+    # incident reported a merged, complete run as running because its
+    # "- **status**: complete" line was not read; the decorated and plain
+    # spellings are asserted to reach exactly the same reading.
+    moment = time.time()
+    decorated = _finished_pointer(
+        home,
+        "r-finished",
+        "node: r-finished\n- **status**: complete\ncommits: abc\n",
+        alive=False,
+        phase="working",
+        tag="decorated",
+    )
+    plain = _finished_pointer(
+        home,
+        "r-finished",
+        "node: r-finished\nstatus: complete\ncommits: abc\n",
+        alive=False,
+        phase="working",
+        tag="plain",
+    )
+    decorated_row = recovery.classify_pointer(decorated, now_seconds=moment)
+    plain_row = recovery.classify_pointer(plain, now_seconds=moment)
+    for field in (
+        "classification",
+        "recovery_classification",
+        "recovery",
+        "manifest_status",
+        "manifest_reported_status",
+        "detail",
+        "next_action",
+    ):
+        assert decorated_row[field] == plain_row[field], (
+            f"the decorated and plain status spellings diverge on {field!r}"
+        )
+    for record, row in ((decorated, decorated_row), (plain, plain_row)):
+        snapshot = recovery._watch_snapshot(record, moment=moment, stall_seconds=3600)
+        assert row["classification"] == "scoring"
+        assert snapshot["state"] == "completed_unpromoted"
+        assert snapshot["state"] not in recovery.FLEET_WORKING_STATES
+        assert snapshot["state"] != "stalled"
+        assert "completion" in row["detail"]
+
+    # A dead process with no readable terminal manifest is abandoned, not
+    # complete: a finished reading requires the manifest to have reached a
+    # verdict. The absent and present-but-unreadable shapes both stay outside
+    # the completed family, each under its own outcome.
+    absent = _finished_pointer(
+        home, "r-absent", None, alive=False, phase="complete", tag="absent"
+    )
+    absent_row = recovery.classify_pointer(absent, now_seconds=moment)
+    absent_snapshot = recovery._watch_snapshot(
+        absent, moment=moment, stall_seconds=3600
+    )
+    assert absent_row["classification"] == "abandoned"
+    assert absent_row["classification"] != "scoring"
+    assert absent_snapshot["state"] == "abandoned"
+    assert absent_snapshot["state"] not in recovery.FLEET_UNPROMOTED_STATES
+
+    unreadable = _finished_pointer(
+        home,
+        "r-unreadable",
+        "some prose without any key or value field\nmore prose here\n",
+        alive=False,
+        phase="working",
+        tag="unreadable",
+    )
+    unreadable_row = recovery.classify_pointer(unreadable, now_seconds=moment)
+    unreadable_snapshot = recovery._watch_snapshot(
+        unreadable, moment=moment, stall_seconds=3600
+    )
+    assert unreadable_row["classification"] == "unreadable"
+    assert unreadable_row["classification"] != "scoring"
+    assert unreadable_snapshot["state"] == "unreadable"
+    assert unreadable_snapshot["state"] not in recovery.FLEET_UNPROMOTED_STATES
+
+    # A live process with a terminal manifest is still not terminal while it
+    # runs: life defers the worker's own complete report until the process
+    # stops, so the row can never be acted on as finished mid-run.
+    live = _finished_pointer(
+        home,
+        "r-live",
+        "node: r-live\nstatus: complete\ncommits: abc\n",
+        alive=True,
+        phase="working",
+        tag="live",
+    )
+    live_row = recovery.classify_pointer(live, now_seconds=moment)
+    live_snapshot = recovery._watch_snapshot(live, moment=moment, stall_seconds=3600)
+    assert live_row["classification"] == "running"
+    assert live_row["manifest_status"] is None
+    assert live_snapshot["state"] == "working"
+    assert live_snapshot["state"] not in recovery.FLEET_UNPROMOTED_STATES
+
+
 def test_fleet_counts_still_partition_the_runs_in_flight(home) -> None:
     # A live worker, a run that died at starting, and a delivered-but-unpromoted
     # run each land in exactly one bucket, and the three buckets still add back
