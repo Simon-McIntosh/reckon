@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="30">
 <meta name="plan-section-declarations" content="{&quot;what-is-wrong&quot;:&quot;done&quot;,&quot;the-surface&quot;:&quot;done&quot;,&quot;where-the-probe-lives&quot;:&quot;done&quot;,&quot;parse-strictly&quot;:&quot;done&quot;,&quot;coordinator-share&quot;:&quot;done&quot;,&quot;pin-the-denominator&quot;:&quot;done&quot;,&quot;what-prose-was-hiding&quot;:&quot;implementable&quot;,&quot;read-before-you-dispatch&quot;:&quot;done&quot;,&quot;out-of-scope&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="5e3e041c895353a003e15954382a78b49151a2ac,fab092dafb269286fb2f6bc1dbfb1f060dd95247,50c436f3c1865e2e11a662829f87283660a13da5,fff2ca7,a9a9d027b0ce92363356e120209e11b4c4f0c3bd,b316011,47a3180">
 <meta name="plan-artifacts" content="reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/budget.py,reckon/_backends.py,tests/test_coordinator_reserve.py,tests/test_flight.py,tests/test_claude_account_surface.py,tests/fixtures/backends/claude-account-limits.json,docs/evidence/archive/a-lane-can-say-where-it-stands-landed.html">
@@ -539,6 +539,9 @@
 </div>
 <div class="r-comment" data-section="pin-the-denominator" data-id="c-20260915T0025" data-who="reckon-ship" data-when="2026-09-15T00:25:00Z">
     <div class="r-comment-body">reading-names-the-window-it-divided-by landed — commit 47a3180, merged and verified at HEAD by reading the diff rather than the manifest. Gate passed exit 0; measure: 69 passed, 5 tests added. The configured lane window now wins outright over an announced conflict via _resolved_window, the two are never averaged, and absence of both resolves to no window so the utilisation is unknown rather than divided by a constant nobody chose. A value below one where a percentage is expected is refused outright — a ratio wearing a percentage's name reads as a plausible low utilisation, which is the shape that once shipped a guard unable to fire at any utilisation. This closes the four-figures finding a peer handed over this afternoon: the mechanism was inheritance rather than a constant, the dialect reading contextWindow from the stream's own usage entries. REVIEW FOUND A REMAINING GAP, now §5d: the configured window reaches the surface only where a caller passes a full backend mapping, and every reader that reconstructs one from recorded argv drops it — dispatch._backend_settings at :3678 and the two recovery sites build only a launch and a command, so a recorded row's utilisation is still divided by a window nobody pinned. Same shape as the lanes-view seam: a fix that reaches the constructing caller and not the reconstructing ones. The repair is BLOCKED ON A PEER'S WRITE SCOPE rather than on evidence — reckon/crew/recovery.py is claimed by another session's live node — and I am deliberately not taking the available half, because pinning the dispatch path while leaving recorded rows unpinned would report the defect closed while the surface most readers consult still carries an unstated denominator.</div>
+</div>
+<div class="r-comment" data-section="pin-the-denominator" data-id="c-run-r-20260914T234303044696-rev-denominator-pin" data-who="crew-attention" data-when="2026-09-15T00:19:44.892Z">
+    <div class="r-comment-body"><p>Independent review attached to r-20260914T221141228873-reading-names-the-window-it-divided-by; all five dimensions parsed</p></div>
 </div>
 </section>
 </main>
