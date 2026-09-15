@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T16:27:26",
+  "updated": "2026-09-15T16:28:17",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -136775,6 +136775,211 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T104920262651-every-dialect-records-the-position-it-read",
+        "plan": "burn-is-visible-before-it-bites",
+        "section": "\u00a75",
+        "node": "every-dialect-records-the-position-it-read",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1422,
+                "cached_input_tokens": 361908,
+                "input_tokens": 363332,
+                "output_tokens": 1095,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 364427,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "306c1aec-df4a-489e-88c3-441bbb1f5baf",
+            "session_id": "ship-lane-aware-20260914"
+          },
+          "done_when": "Measured over 939 committed ledger rows: the claude dialect persists budget.utilisation_pct on 65 of 74 rows; codex and clive persist it on 0 of 855. The mechanism is not missing, it is wired for one dialect \u2014 so port it rather than design it. uv run pytest tests/test_backend_observation.py -q passes with: a codex-dialect stream carrying a quota reading producing a budget block whose utilisation_pct, rate_limit_type and resets_at are populated in the SAME SHAPE the claude dialect already produces, asserted by comparing against a claude-produced block from the existing fixtures rather than against literals; and a stream carrying no reading still yielding headroom unknown with utilisation_pct None, so absence stays absence. Range the falsifier over the input domain, not over the configured backends: a dialect that reports a position must record it whatever the backend is named. Do NOT invent a reading the stream does not carry, and do not touch the clive path if its streams genuinely carry no quota record \u2014 if so, assert that and say so in the manifest rather than manufacturing one. Failure delta 0 against base HEAD",
+          "estimated_hours": null,
+          "goal": "A lane that reports its quota position has that position recorded on the run",
+          "id": "every-dialect-records-the-position-it-read",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T10:49:20Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 11,
+            "binding_observed": false,
+            "detail": "",
+            "headroom": 1,
+            "mean_context": 63227,
+            "observed_at": "2026-09-15T10:49:09Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 120
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T104920262651-every-dialect-records-the-position-it-read/manifest.md",
+          "plan": "burn-is-visible-before-it-bites",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "60m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/_backends.py",
+            "tests/test_backend_observation.py",
+            "docs/evidence/archive/burn-is-visible-before-it-bites-landed.html",
+            "docs/plans/burn-is-visible-before-it-bites.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-codex-usage",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T10:49:57Z",
+        "completed_at": "2026-09-15T14:15:41.130Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 12184,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 12344,
+        "stalled": true,
+        "time_budget": "60m",
+        "base_sha": "38365a7f70523eae5e2c06022ce617d12843fffd",
+        "commits": [
+          "b3977b3a7803703fb721ce8e4fbdf9af2fb52a1b",
+          "444c379d23aeb5262f38c91ea27406cab39db2d8"
+        ],
+        "changed_lines": {
+          "added": 172,
+          "removed": 44,
+          "files": 4
+        },
+        "tests_added": 2,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest -p no:cacheprovider -q tests/test_backend_observation.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T104920262651-every-dialect-records-the-position-it-read/gate-after.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "The parser for a reported utilisation and reset time is extracted to a shared budget_from_rate_limit_info, and the codex observe loop folds its rate-limit records through it, attaching a completed turn's tokens rather than replacing the reading with a tokens-only block. The ported block is asserted field-for-field against a claude-produced block from a recorded fixture rather than against literals, plus the absence case. 31 passed at base, 33 at head, zero failed either side. MEASURED BEFORE BUILDING, and it corrects the finding that prompted the node: no codex-vocab stream on this host carries the record at all (97 streams carry a real rate_limit_event, all 97 claude-vocab, zero codex), so the empty codex column was the reading never arriving rather than a read being dropped. The port wires the input domain; nothing was invented, and clive was left untouched because it serves through the claude dialect whose streams carry no reading either.",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T104920262651-every-dialect-records-the-position-it-read/manifest.md",
+        "scope_changed": false,
+        "session_id": "4010f2c6-d099-4113-b871-436ea32fe3c0",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 0,
+            "input_tokens_cumulative": 1918462,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 16810,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T14:15:41.130Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 1918462,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 1151.251,
+          "generated_tokens": 16810,
+          "generation_seconds": 1142.444,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 64.9,
+          "machine_seconds": 8.807,
+          "peak_input_tokens": 129803,
+          "tokens_per_second": 14.71,
+          "wall_tokens_per_second": 14.6
+        },
+        "dispute_count": "unknown",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_backend_observation.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "resume",
+        "attempt": 3,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-lane-aware-20260914/every-dialect-records-the-position-it-read",
+          "session_id": "4010f2c6-d099-4113-b871-436ea32fe3c0",
+          "session_source": "pointer",
+          "retained_at": "2026-09-15T14:15:41.130Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 17.0,
+        "orientation_input_tokens": 2210373.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -137003,6 +137208,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1536
+    "_version": 1537
   }
 }
