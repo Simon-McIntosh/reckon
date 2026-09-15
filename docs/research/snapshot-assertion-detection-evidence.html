@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="snapshot-assertion-detection-evidence">
+  <meta name="plan-title" content="Snapshot Assertion Perturbation Evidence">
+  <meta name="plan-summary" content="A one-member perturbation flags three of four historical snapshots and none of four legitimate exact-value carve-outs.">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-informs" content="binding-rules-need-bound-checks">
+  <meta name="plan-evidence-for" content="binding-rules-need-bound-checks">
+  <meta name="plan-verifies" content="binding-rules-need-bound-checks#s4">
+  <meta name="plan-source" content="repository history and user-space naming guidance">
+  <meta name="plan-source-quality" content="primary">
+  <meta name="plan-reviewed-at" content="2026-09-15">
+  <meta name="plan-read" content="1">
+  <meta name="plan-tags" content="reckon-tooling">
+  <title>Snapshot Assertion Perturbation Evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Research evidence &middot; perturb and observe</p>
+      <h1>One benign member distinguishes three snapshots from exact-value contracts</h1>
+      <p class="lead"><strong>The proposed mechanism meets both bounds.</strong> It flags
+      <strong>3 of 4</strong> historical snapshot assertions at their own pre-repair revisions,
+      meeting the required minimum of three, and flags <strong>0 of 4</strong> legitimate
+      exact-value carve-outs.</p>
+    </header>
+
+    <section id="verdict">
+      <h2>Verdict</h2>
+      <table>
+        <thead>
+          <tr><th>Population</th><th>Flagged</th><th>Total</th><th>Required bound</th><th>Result</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Recorded snapshot instances</td><td><strong>3</strong></td><td>4</td><td>At least 3 of 4</td><td><strong>met</strong></td></tr>
+          <tr><td>Legitimate carve-outs</td><td><strong>0</strong></td><td>4</td><td>Exactly 0</td><td><strong>met</strong></td></tr>
+        </tbody>
+      </table>
+      <p>The sensitivity result is deliberately not described as universal. The literal-token
+      specimen survives an additive perturbation, so perturb-and-observe detects closedness and
+      source-order coupling but does not detect every assertion that pins implementation text.</p>
+    </section>
+
+    <section id="method">
+      <h2>Method</h2>
+      <p>For each historical specimen, the experiment read the assertion and its observed source
+      from the repository revision immediately before the recorded repair. The assertion was first
+      evaluated unchanged. A single benign member was then added to the observed value while the
+      asserted behaviour was preserved. A specimen is flagged only when the unchanged assertion
+      passes and the perturbed assertion fails:</p>
+      <pre><code>flagged = baseline_pass and not perturbed_pass</code></pre>
+      <p>The control is load-bearing: every baseline passed, and every historical source probe also
+      confirmed a known marker was present before interpreting an absence. The positional specimen
+      additionally uses the real historical transition from commit
+      <code>b04df538961a554b893b4120be53bec5cb9fca07</code> to pre-repair revision
+      <code>eb517152ec03c6b27958703f96fd9e70e045d0f6</code>; the added
+      <code>renderRun</code> helper retained member and section rendering while moving those tokens
+      ahead of the source anchor.</p>
+      <p>Node <code>perturbation-distinguishes-a-snapshot-from-a-contract</code> ran the measurement
+      at repository base <code>0b1c124914bb210ec5a73e7edddd7874e613a225</code>. The four
+      carve-out categories were read from
+      <code>~/.agents/references/naming-checks.md</code>, SHA-256
+      <code>66b25fe7c46a49e7fec5939f2f425a3e15c0750d180856181f5f0979ef2783d5</code>.</p>
+    </section>
+
+    <section id="historical-instances">
+      <h2>Historical snapshot instances</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Instance</th><th>Pre-repair revision</th><th>Node</th><th>One-member perturbation</th>
+            <th>Baseline</th><th>After</th><th>Breaks?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Exact bytes for seven stylesheet placeholders</td>
+            <td><code>2aacf58bf563aa671eef9856730d708888d7a18f</code></td>
+            <td><code>assert-contract-not-source-text</code></td>
+            <td>Append one harmless CSS custom-property declaration to <code>topbar.css</code>.</td>
+            <td>7 of 7 placeholder assertions pass</td><td>6 of 7 pass</td><td><strong>yes</strong></td>
+          </tr>
+          <tr>
+            <td>Nine literal JSX implementation strings across <code>plan.jsx</code> and <code>sprint.jsx</code></td>
+            <td><code>2aacf58bf563aa671eef9856730d708888d7a18f</code></td>
+            <td><code>assert-contract-not-source-text</code></td>
+            <td>Append one inert JSX component member without changing a required token.</td>
+            <td>9 of 9 token assertions pass</td><td>9 of 9 pass</td><td><strong>no</strong></td>
+          </tr>
+          <tr>
+            <td>Positional source scan standing in for the rendered in-flight contract</td>
+            <td><code>eb517152ec03c6b27958703f96fd9e70e045d0f6</code></td>
+            <td><code>band-contract-without-source-order</code></td>
+            <td>The <code>reader-band-and-provenance</code> node adds one <code>renderRun</code>
+            helper member; member and section still render, now before the band anchor.</td>
+            <td>Exact scan passes at <code>b04df538961a554b893b4120be53bec5cb9fca07</code></td>
+            <td>Exact scan fails at the pre-repair revision</td><td><strong>yes</strong></td>
+          </tr>
+          <tr>
+            <td>Closed exact key set on the served crew row</td>
+            <td><code>f4523a732469c097df3e9fd3e2ae7aad60490fdd</code></td>
+            <td><code>n-repair-red-main</code></td>
+            <td>Add one benign <code>backend</code> field. The historical perturbing node was
+            <code>n-crew-projection-carries-effort</code>, which added that field and
+            <code>effort_hours</code>.</td>
+            <td>14-key equality passes</td><td>15-key equality fails</td><td><strong>yes</strong></td>
+          </tr>
+        </tbody>
+      </table>
+      <p><strong>Tally: 3 yes, 1 no.</strong> The three positive results fail for three distinct
+      reasons: byte equality rejects extra content, a positional scan rejects behaviour-preserving
+      source reordering, and exact set equality rejects an extensible payload. The negative result
+      remains useful: substring membership is brittle under substitution or deletion, but an
+      additive member does not expose it.</p>
+    </section>
+
+    <section id="carve-outs">
+      <h2>Legitimate exact-value carve-outs</h2>
+      <p>Each specificity control asserts only the exact value that carries the legitimate
+      contract, then adds one unrelated member to the surrounding record. That is the corresponding
+      benign extension for structured observations: the protected value remains exact while the
+      container remains open.</p>
+      <table>
+        <thead>
+          <tr><th>Guidance carve-out</th><th>Protected exact value</th><th>Added member</th><th>Baseline</th><th>After</th><th>Breaks?</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Deprecation notice</td><td>Replacement command stays <code>reckon crew follow</code></td>
+            <td>Removal-window metadata</td><td>pass</td><td>pass</td><td><strong>no</strong></td>
+          </tr>
+          <tr>
+            <td>Measurement that prevents undoing code</td><td>Indexed path remains 9 seconds</td>
+            <td>Sample count</td><td>pass</td><td>pass</td><td><strong>no</strong></td>
+          </tr>
+          <tr>
+            <td>Runtime state described in the past tense</td><td>Recorded slot remains released</td>
+            <td>Observation timestamp</td><td>pass</td><td>pass</td><td><strong>no</strong></td>
+          </tr>
+          <tr>
+            <td>Tool codes, dependency pins, and artifact paths</td>
+            <td>Exit code <code>77</code>, pin <code>ruff&gt;=0.16.4</code>, and artifact path remain exact</td>
+            <td>Description metadata</td><td>pass</td><td>pass</td><td><strong>no</strong></td>
+          </tr>
+        </tbody>
+      </table>
+      <p><strong>Tally: 0 yes, 4 no.</strong> These are category controls rather than claims that
+      every future assertion in a category is safe. They demonstrate the discriminator the plan
+      requires: an exact scalar, pin, code, path, or historical fact can remain exact inside an
+      extensible record without being mistaken for a closed-set snapshot.</p>
+    </section>
+
+    <section id="conclusion">
+      <h2>Decision consequence and limit</h2>
+      <p><strong>Perturb-and-observe is viable for the declared bound.</strong> It reaches the
+      required 3-of-4 historical sensitivity with zero flags across the four named carve-outs. A
+      bound check can therefore use additive perturbations where the observed container has an
+      honest injection point.</p>
+      <p>It should not be sold as a source-literal linter. The one historical miss shows the exact
+      boundary: required-token membership survives an addition even when it is still a snapshot of
+      implementation spelling. Detecting that separate class needs substitution, deletion, or a
+      rendered behaviour control. Keeping that limitation explicit prevents a passing perturbation
+      gate from implying broader coverage than it measured.</p>
+    </section>
+  </main>
+</body>
+</html>
