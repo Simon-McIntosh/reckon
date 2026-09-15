@@ -844,7 +844,9 @@
       </tbody>
     </table>
 
-    <h2 id="s16">§16 — A finished run is reported dead, and the action offered is to redo it</h2>
+    <section id="s16" class="section-landed">
+      <header><span class="badge badge-shipped">&#10003; landed 2026-09-15</span>
+        <h2>&#167;16 &mdash; A finished run is reported dead, and the action offered is to redo it</h2></header>
 
     <p>Measured 2026-09-09 on a peer coordinator's run in this repository, read-only. Its
     manifest carried a clean <code>status: complete</code> naming three changed files and
@@ -875,6 +877,17 @@
         <tr><td>Two fields disagreeing is the cheapest detector</td><td>On the same manifest, <code>manifest_commits</code> parsed cleanly to a single sha while the status field did not. So a terminal phase carrying a parsed commit beside an unusable status is unambiguous and needs no new instrument: assert that combination is never classified <code>abandoned</code>. This is stronger than checking either field alone, which is why it is stated as its own measure rather than folded into the one above.</td></tr>
       </tbody>
     </table>
+      <p class="landed-summary">The reader now refuses whenever a manifest status cannot
+        be determined, not only when no field parsed at all. A body whose parsed fields are
+        all outside the manifest vocabulary is prose wearing a <code>key: value</code>
+        shape, and a status naming a word no part of the system recognises is refused naming
+        the word and the recognised sets &mdash; each was once normalised into a mapping with
+        no usable status that the classifier read as a vanished worker. The vocabulary lives
+        in <code>reckon/crew/reports.py</code> as the single statement the reader and the
+        classifier decide against; the dispatch template placeholder and recovery's own
+        derived sentinel still pass through. Landed under commit <code>220848e</code>. Full
+        record: <a href="/reckon/evidence/archive/crew-observability-truth-landed#manifest-status-undetermined-refused">&#167;16 landed</a>.</p>
+    </section>
 
     <h2 id="s18">&#167;18 &mdash; Runs ending together on one backend are one lane event, not N worker failures</h2>
     <p>Measured 2026-09-14. Eight <code>clive</code> runs reached a terminal state between
