@@ -111,6 +111,7 @@ read task requirements + apply explicit runtime routing + applicable skill
 → emit the dispatch summary, naming the gate that closes the wave
 → untrust-check, then READ each worker's diff by anomaly (§5b) → orchestrator merges
 → reckon crew complete each run — the record becomes committed evidence
+→ reckon crew verify-gate — re-run a promoted run's own gate at the merged head
 → read and merge the worker-authored record, may edit or append (§5 step 7), then write impl
 → emit the completion summary, WHY carrying the gate evidence
 → re-triage open followups + manifest follow_ons; fold them into the DAG until dry
@@ -554,6 +555,27 @@ completed-but-unpromoted, or abandoned, and names the next action for each.
 Adding a harness never adds a third case. Do not read backend flags into a
 prompt: per-backend translation is compiled code, which is what makes drift
 between execution paths impossible to express.
+
+**A worker's gate ran against the base its worktree branched from, so a contract
+that landed after that base never bound it.** The run is legitimately green, the
+merge turns the primary branch red, and nothing between the two looked at the
+tree that ships. After merging, re-run the run's own gate at the integrated
+revision:
+
+```bash
+reckon crew verify-gate --project <project> --run <run-id> \
+  --checkout-path <the merged tree> [--revision HEAD]
+```
+
+It reads the gate command and base verdict from the run's committed ledger row,
+re-runs that command against the merged checkout, and patches the full report
+back onto the row as `integrated_gate_check` — so the finding outlives the run
+directory. It refuses to execute against any tree that is not the integrated
+revision, because a run there verifies the wrong tree, and reports `not-run`
+rather than `passed` when the command is absent or exceeds its bound. A finding
+appears exactly when a gate green at the worker's base is not passed by the tree
+about to be pushed; it never manufactures one from an already-red base. A run
+that was never promoted is refused, naming `reckon crew complete` as the repair.
 
 `reckon crew observe --run <id>` folds the worker's stream, manifest presence and
 process liveness back into its record — phase, captured session id, and whatever

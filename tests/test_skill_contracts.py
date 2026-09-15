@@ -894,6 +894,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
         ("crew", "shadow"): set(),
         ("crew", "stop"): set(),
         ("crew", "unwatch"): {"--project"},
+        ("crew", "verify-gate"): {"--project", "--run", "--checkout-path"},
         ("crew", "watch"): {"--project", "--stall-window"},
         ("flight",): {"--project"},
         ("audit-doc",): set(),
