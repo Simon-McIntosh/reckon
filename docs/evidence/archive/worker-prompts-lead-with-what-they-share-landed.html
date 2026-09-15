@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="worker-prompts-lead-with-what-they-share-landed">
+  <meta name="plan-title" content="Worker prompt prefix — landed evidence">
+  <meta name="plan-summary" content="Measured evidence that unconditional worker contracts precede variable node fields.">
+  <meta name="plan-evidence-for" content="worker-prompts-lead-with-what-they-share">
+  <meta name="plan-verifies" content="worker-prompts-lead-with-what-they-share#s3">
+  <meta name="plan-recorded-at" content="2026-09-15">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-commits" content="59526eb">
+  <title>Worker prompt prefix — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header class="plan-header">
+      <h1>Worker prompt prefix — landed evidence</h1>
+      <p class="plan-summary">The reusable durable-write and falsifiable-evidence
+      contracts now lead every worker prompt; node-specific data starts only after
+      their declared byte boundary.</p>
+    </header>
+
+    <section id="contract-prefix">
+      <h2>Contract-first composition</h2>
+      <table>
+        <thead><tr><th>Measure</th><th>Before</th><th>After</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td>Shared prefix across distinct nodes and projects</td><td>152 bytes</td><td>1,311 bytes</td><td>pass</td></tr>
+          <tr><td>Declared boundary</td><td>not present</td><td>1,311 bytes</td><td>pass</td></tr>
+          <tr><td>Focused prompt contract suite</td><td>not applicable</td><td>36 passed, 0 failed</td><td>pass</td></tr>
+        </tbody>
+      </table>
+
+      <p>Commit <code>59526eb</code> introduces
+      <code>INVARIANT_PROMPT_PREFIX</code> and its declared boundary, then renders
+      the node identifier immediately afterwards. The direct three-prompt
+      measurement found the first differing byte at offset 1,311, exactly matching
+      the declared boundary; the previous renderer differed at offset 152 because
+      it emitted <code>NODE</code> before the contracts.</p>
+
+      <p><code>tests/test_prompt_prefix_identity.py</code> uses distinct node IDs,
+      goals, write paths, and projects. It asserts both byte identity through the
+      boundary and divergence afterwards, so moving any of those variable values
+      into the shared opening fails the gate.</p>
+
+      <p>Reproduction receipt:
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T085950058206-the-contract-is-the-prefix/baseline-prefix.log</code>.
+      Post-change receipt:
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T085950058206-the-contract-is-the-prefix/reordered-prefix.log</code>.
+      Test receipt:
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T085950058206-the-contract-is-the-prefix/prompt-contract-tests.log</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
