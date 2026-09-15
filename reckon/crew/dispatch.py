@@ -3846,23 +3846,39 @@ def _capture_member_session(record: Mapping[str, Any]) -> dict[str, Any] | None:
 def _backend_settings(
     record: Mapping[str, Any], config: Mapping[str, Any] | None
 ) -> dict[str, Any]:
-    """Recover the backend settings needed to read a run's stream.
+    """Rebuild the settings a recorded run's stream is read with.
 
-    Only the command matters for reading, and the recorded argv already holds
-    it, so a run stays observable after its config layer changes — which is the
-    difference between a durable record and one that decays.
+    Two authorities carry different parts of the rebuild, and dropping either
+    corrupts the reading. The recorded argv is the ground truth for the command,
+    so a run stays observable after its config layer changes. The configured
+    lane supplies the window, the model and the effort, without which a
+    stream-announced window substitutes as the utilisation's denominator and a
+    resumed turn launches without its recorded model. The two are merged rather
+    than one derived from the other, and a value the row recorded itself wins
+    the merge: the row is the authority for what it was measured against, which
+    a fresh config lookup cannot answer for a run already in flight.
     """
+    backends = (config or {}).get("backends") or {}
+    configured = backends.get(record.get("backend"))
     argv = record.get("argv")
     if isinstance(argv, list) and argv:
-        return {"launch": "cli", "command": argv[0]}
-    backends = (config or {}).get("backends") or {}
-    backend = backends.get(record.get("backend"))
-    if isinstance(backend, Mapping):
-        return dict(backend)
-    raise CrewError(
-        f"run {record.get('run_id')!r} records no argv and its backend is not "
-        "in the supplied config, so its stream cannot be read"
-    )
+        settings: dict[str, Any] = {"launch": "cli", "command": argv[0]}
+    elif isinstance(configured, Mapping):
+        settings = dict(configured)
+    else:
+        raise CrewError(
+            f"run {record.get('run_id')!r} records no argv and its backend is not "
+            "in the supplied config, so its stream cannot be read"
+        )
+    for key in ("usable_input_window", "model", "effort"):
+        if isinstance(configured, Mapping) and configured.get(key) is not None:
+            settings.setdefault(key, configured[key])
+    agent = record.get("agent")
+    if isinstance(agent, Mapping):
+        for key in ("usable_input_window", "model", "effort"):
+            if agent.get(key) is not None:
+                settings[key] = agent[key]
+    return settings
 
 
 def resume_plan(
@@ -3917,6 +3933,26 @@ def resume_plan(
     if verdict["held"]:
         raise _actionable_budget_hold(verdict, config=config)
     backend.setdefault("sandbox", record.get("sandbox"))
+    # A resumption reuses the recorded session and never re-verifies that the
+    # session's context window fits the repository it is resumed into; only a
+    # fresh dispatch runs that check. The pointer must say so explicitly, or a
+    # reader treats an unchecked resumption as one that was verified.
+    _mutate_pointer(
+        run_id,
+        lambda current: {
+            **current,
+            "context_fit": {
+                "checked": False,
+                "state": "unchecked",
+                "window_tokens": backend.get("usable_input_window"),
+                "detail": (
+                    "the resumed turn reuses the recorded session without "
+                    "re-verifying context fit; only a fresh dispatch performs "
+                    "that check against the current repository"
+                ),
+            },
+        },
+    )
     return _backends.launch_plan(
         backend_name=str(record.get("backend") or ""),
         backend=backend,
