@@ -61,6 +61,22 @@
     a foreign run that is blocked, because the observed defect was a blocked count a reader
     could not act on.</p>
 
+    <section class="section-landed">
+      <header><span class="badge badge-shipped">landed 2026-09-15</span></header>
+      <p class="landed-summary">The counted population now follows the session the reader was
+      given. <code>_fleet_counts</code> accepts a session and narrows its rows through the
+      existing ownership splitter; <code>format_watch_transition</code> accepts a session and
+      re-derives the event's figures at render time from the same live pointers, because the
+      watcher's stream is project-global and carries the fleet's totals on the wire. An
+      unscoped rendering is byte-identical. A pointer with no recorded owner stays in the
+      counted set, so absence cannot prove a foreign run. The one line this section cannot
+      reach — <code>crew_follow</code> passing <code>session</code> through to the renderer — is
+      outside this node's write fence and is recorded as a follow-on.</p>
+      <p class="landed-summary">Full record:
+      <a href="/reckon/evidence/a-scoped-follower-counts-its-own-session-landed#scoped-population">scoped
+      population figures</a>.</p>
+    </section>
+
     <h2 id="s3">&sect;3 &mdash; Out of scope</h2>
     <p>The grid, the column widths and the row text are not touched; this changes which runs
     are counted, not how a line is drawn. The renderer is held by another session's node at the

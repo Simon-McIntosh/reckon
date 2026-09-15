@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-scoped-follower-counts-its-own-session-landed">
+  <meta name="plan-title" content="Count the population the reader asked for &mdash; landed evidence">
+  <meta name="plan-summary" content="A session-scoped follower's trailing figures now count only the runs of the session it was given, re-derived at render time from the same live pointers because the watcher's stream carries the fleet's totals on the wire. An unscoped follower's figures are unchanged over the same fixture.">
+  <meta name="plan-evidence-for" content="reckon:a-scoped-follower-counts-its-own-session">
+  <meta name="plan-verifies" content="reckon:a-scoped-follower-counts-its-own-session#s2">
+  <meta name="plan-recorded-at" content="2026-09-15">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; detached git worktrees; pytest">
+  <meta name="plan-commits" content="f06076c3">
+  <meta name="plan-artifacts" content="reckon/crew/recovery.py,tests/test_crew_recovery.py">
+  <title>Count the population the reader asked for &mdash; landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Count the population the reader asked for &mdash; landed evidence</h1>
+    <p class="plan-summary">The &sect;2 done-when passes: a session-scoped follower&rsquo;s
+    trailing figures count only that session&rsquo;s live pointers, asserted over one fixture
+    holding runs from two sessions whose populations differ and including a foreign run that is
+    blocked. The part of this record worth reading is the pair of digits that fail separately:
+    the scoped render reads <code> 1w&middot; 0b&middot; 0u</code> while the fleet render of the
+    same event reads <code> 2w&middot; 1b&middot; 0u</code>, and a substitution of the fleet
+    population for the scoped one fails the assertion. An unscoped follower over the same
+    fixture is unchanged, because the unscoped path is what every peer coordinator reads.</p>
+  </header>
+
+  <section id="mechanism">
+    <h2>The change, and why it is render-time</h2>
+    <p>The watcher seat is project-global and the stream it writes carries the whole
+    fleet&rsquo;s totals on the wire, so a follower cannot ask the producer for per-session
+    figures. When a session is given, the figures are therefore re-derived at render time from
+    the same live pointers the few seconds the line takes to draw, narrowed to the ownership
+    already persisted on each pointer.</p>
+    <p><code>_fleet_counts</code> in <code>reckon/crew/recovery.py</code> gains a session
+    argument and narrows its rows through the ownership splitter that already exists for the
+    dispatch fence; <code>format_watch_transition</code> gains a session argument and re-scopes
+    the event&rsquo;s figures before the ticker paints them. A pointer with no recorded owner
+    stays in the counted set, because absence cannot prove that a live pointer belongs to a
+    peer.</p>
+  </section>
+
+  <section id="scoped-population">
+    <h2>The pair of digits, in the same fixture</h2>
+    <p>The fixture holds a working run owned by the reader&rsquo;s session
+    (<code>r-mine</code>, session <code>mine</code>), a foreign working run and a foreign run
+    written blocked (<code>r-peer-work</code> and <code>r-peer-blocked</code>, both session
+    <code>old-a</code>). Over that fixture the totals are:</p>
+    <p><code>session="mine"</code> &rarr; working 1, blocked 0, unpromoted 0.</p>
+    <p><code>session="old-a"</code> &rarr; working 1, blocked 1, unpromoted 0.</p>
+    <p>no session &rarr; working 2, blocked 1, unpromoted 0.</p>
+    <p>The scoped totals are both stated as digits and the scoped reading differs from the fleet
+    reading, which is the defect this record exists to pin: the foreign blocked run joins the
+    fleet total but never the reader&rsquo;s.</p>
+  </section>
+
+  <section id="guard">
+    <h2>The guard that fails if the population falls back to the fleet</h2>
+    <p>The assertion that carries the measure is on the rendered line, not on a summary dict. A
+    transition event is built exactly as the follower would deliver it &mdash; a blocking
+    foreign run&rsquo;s snapshot, previous state <code>working</code>, current state
+    <code>blocked</code> &mdash; and rendered both ways. With the session present the line reads
+    <code> 1w&middot; 0b&middot; 0u</code>; without it the same event reads
+    <code> 2w&middot; 1b&middot; 0u</code>. The two renders are asserted unequal, and the scoped
+    render is asserted to carry the scoped digits. A regression that handed the whole fleet to
+    the session-scoped reader changes those digits and fails the render assertion.</p>
+    <p>An unscoped follower&rsquo;s figures are asserted unchanged over the same fixture rather
+    than assumed: three tests cover <code>_fleet_counts</code> with no session over the shared
+    fixture and the sector&rsquo;s existing watch-render files, <code>test_follow_observes_other_sessions.py</code>
+    and <code>test_fleet_counter_coverage.py</code>, stay green (15 passed), because a
+    regression on the unscoped path is worse than the defect being fixed.</p>
+  </section>
+
+  <section id="measure">
+    <h2>Measure</h2>
+    <p><code>tests/test_crew_recovery.py</code> at the landed commit: 91 collected, 90 passed.
+    The single failure, <code>test_refusal_recovery_remedy_survives_promotion</code>, is the
+    same failure recorded at the base revision e81672a (88 collected, 87 passed, same failure),
+    so the delta against base is zero added failures and three added passing tests. The three
+    new tests are <code>test_fleet_counts_scope_to_the_session_the_reader_follows</code>,
+    <code>test_an_unowned_snapshot_stays_counted_for_a_scoped_reader</code> and
+    <code>test_a_followers_trailing_figures_count_only_the_session_it_was_given</code>.</p>
+    <p>The pre-existing promotion failure was reproduced against the base revision rather than
+    assumed to pre-exist, and it fails identically on both trees; it concerns the promotion
+    path, not the watch path, and is recorded under follow-ons.</p>
+  </section>
+
+  <section id="guard-fires">
+    <h2>Demonstrating that the guard fires</h2>
+    <p>The done-when requires the assertion to fail if the counts are taken over the fleet. That
+    half was demonstrated by rendering with the scoped re-derivation replaced by a pass-through
+    of the event&rsquo;s own (fleet) figures: the scoped assertion then fails, because the line
+    shows <code> 2w&middot; 1b&middot; 0u</code> where the session&rsquo;s population is
+    <code> 1w&middot; 0b&middot; 0u</code>. A guard that only asserts equality against a
+    constant could pass on a population that never changed; this one is tied to the digits of
+    the fixture, so a wrong population changes the numbers.</p>
+  </section>
+
+  <section id="scope">
+    <h2>Scope and follow-ons</h2>
+    <p>The renderer and the grid are untouched: <code>ticker.py</code> and its test files are
+    held by another node that needs no change for this, and the grid&rsquo;s count cells are
+    painted from the event&rsquo;s own fields, which is exactly the seam the re-derivation
+    feeds. One line outside this node&rsquo;s write fence completes the production effect:
+    <code>crew_follow</code> in <code>reckon/cli.py</code> passes <code>session=session</code>
+    to <code>format_watch_transition</code>. The kernel, the render seam and the tests are
+    landed here; the wiring is recorded as a follow-on rather than taken, because editing
+    <code>cli.py</code> would step on a concurrently running session&rsquo;s scope. The
+    pre-existing promotion suite failure is likewise recorded, not repaired, as it sits outside
+    this section&rsquo;s declared scope.</p>
+  </section>
+</main>
+</body>
+</html>
