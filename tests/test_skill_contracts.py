@@ -581,7 +581,14 @@ def test_ship_has_one_advisory_fleet_size_table() -> None:
 # a rule never. A measured failure outranks the number every time -- 82% of
 # dispatches were running in sessions attached to no wake channel at all, and the
 # rules that close that are worth more than the words they cost.
-FIXED_READ_SET_TOKEN_BUDGET = 16_000
+# Raised from 16_000: SKILL.md now carries the landing contract verbatim from
+# the runtime prompt -- the worker authors its own record in its own section and
+# never mutates the shared index, sprint state or a foreign plan. That copy is a
+# rule, not reference: it changes what a worker does at landing, so it stays in
+# the read-set the orchestrator needs in hand, and it mirrors the prompt's own
+# wording, so it cannot be shortened. Relocate-first does not apply; this is the
+# sanctioned second step, and the raise stays far above current size.
+FIXED_READ_SET_TOKEN_BUDGET = 17_000
 
 
 def test_engine_generated_dispatch_keeps_fixed_read_set_bounded() -> None:
@@ -660,10 +667,15 @@ def test_ship_keeps_the_orchestrator_as_the_only_plan_state_writer() -> None:
         ).read_text()
     )
 
+    # The orchestrator remains the sole writer of shared plan state.
     assert "the orchestrator writes this node's commit" in ship
-    assert "Workers still only return outcome data" in ship
-    assert "Workers return outcome data in their manifests" in reference
-    assert "never write shared plan or index state" in reference
+    # The worker authors only its own record -- its own section of the plan and
+    # its evidence anchor -- and never the shared index, sprint state or another
+    # plan.
+    assert "Workers author their own landing record in the same beat" in ship
+    assert "Append your landing record to your own section of the plan" in reference
+    assert "Never mutate the shared project index, sprint state" in ship
+    assert "Never mutate the shared project index, sprint state" in reference
 
 
 def test_ship_turns_same_plan_follow_on_work_into_sections() -> None:
