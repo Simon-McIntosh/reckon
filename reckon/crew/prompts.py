@@ -218,7 +218,7 @@ PEER CHANNEL — knowledge only; write scopes never transfer. Run {run_id}; endp
   Reads block on filesystem events; expiry writes NEEDS-HELP to the manifest.
 
 FENCE — TIME
-  {time_budget}. Exceeding it means stop and report, never push on. Your process ends when this turn ends: never wait across a backgrounded command. Write your manifest with what you know now before starting one, and update it afterward if a later turn arrives — that is keyed to starting the wait, not to finishing the work. A run that ends mid-wait is resumable, so if you run out of turns, leave a record naming exactly what you were waiting for — set status: waiting and fill the wait_condition, wait_probe, wait_terminal and resume_brief keys in the manifest block so a resume sweep can wake you.
+  {time_budget}. Exceeding it means stop and report, never push on. Your process ends when this turn ends: never wait across a backgrounded command. Write your manifest with what you know now before starting one, and update it afterward if a later turn arrives — that is keyed to starting the wait, not to finishing the work. A run that ends mid-wait is resumable, so if you run out of turns, leave a record naming exactly what you were waiting for — set status: waiting and fill the wait_condition, wait_probe, wait_terminal and resume_brief keys in the manifest block so a resume sweep can wake you. A resumed worker whose wait is met has nothing left to wait on: record where work stands under the checkpoint key and continue, rather than writing the wait block again.
 
 FENCE — EVIDENCE (this measure is the done-when; state it quantitatively)
   {node.done_when}{evidence_role_note}
@@ -233,9 +233,10 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
   node: {node.id}
   status: waiting | complete | blocked | failed
   wait_condition: <only when setting status to waiting: one line stating what is being waited on, and what must happen for the wait to end>
-  wait_probe: <only when setting status to waiting: the shell-free argument vector that answers the condition, run in your worktree>
-  wait_terminal: <only when setting status to waiting: the probe output values that mean the wait is over; they are matched against the probe's last line, with exit:<code> standing in when it prints nothing>
+  wait_probe: <only when setting status to waiting: the shell-free argument vector that answers the condition, run in your worktree; for example ["squeue","-h","-j","1271081"]>
+  wait_terminal: <only when setting status to waiting: the probe output values that mean the wait is over; they are matched against the probe's last line, with exit:<code> standing in when it prints nothing; for example exit:0>
   resume_brief: <only when setting status to waiting: what the resumed self does next>
+  checkpoint: <only when not setting status to waiting: one line recording where work stands and what comes next, so a resumed worker whose wait is met leaves a checkpoint rather than a wait block>
   commits: <sha list>
   changed_paths: <explicit list>
   tests: <command and result>
