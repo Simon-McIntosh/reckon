@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-capture-is-validated-by-its-index">
+  <meta name="plan-title" content="A Capture Is Validated By Its Index">
+  <meta name="plan-summary" content="A capture node wrote eight screenshots and a complete index, then opened a PNG to confirm what it had already recorded, and died on a text-only model.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="2.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="low">
+  <meta name="plan-sprint" content="S17">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <title>A Capture Is Validated By Its Index | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-15">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">&sect;1 &mdash; It died confirming what it had already written down</h2>
+    <p>A capture node produced its entire deliverable &mdash; eight screenshots at two widths and a
+    complete <code>capture-index.json</code> &mdash; and then failed with
+    <code>API Error: 400 deepseek-v4-flash is not a multimodal model</code>. It had opened one of
+    its own PNGs to check that it was populated.</p>
+    <p>It did not need to. The index it had just written carries every fact the check wants, as
+    text scraped from the rendered DOM at capture time:</p>
+    <pre class="r-fu-prompt">{ "capture": "evidence-banner-1374", "surface": "evidence-banner",
+  "image": "evidence-banner-1374.png", "width": 1374, "height": 900,
+  "populated": true, "rowCount": 3,
+  "bannerText": "2 new evidence since you opened this list",
+  "bannerShowCount": 1, "pendingEvidence": 2 }</pre>
+    <p>So eighty minutes of correct work was lost to a step that added nothing. The brief said each
+    file must exist carrying its recorded width and a row count above zero &mdash; which is
+    index-based and text-only. What it never said was that opening the image is not part of the
+    check, and <strong>the absence of a prohibition read as permission</strong>.</p>
+    <p>This is a lane-capability mismatch only because of that step. Without it a capture node is
+    lane-agnostic; with it, a capture node can never complete on a text-only lane, and
+    re-dispatching to the same lane fails identically at the identical point.</p>
+
+    <h2 id="s2">&sect;2 &mdash; The index is the contract</h2>
+    <p>State it positively and negatively, because only the negative half was missing: a capture is
+    validated by reading its index and stat-ing the files the index names. <strong>A gate never
+    opens an image.</strong> What an image would show that the index does not is nothing: the
+    scraped text, the row counts and the dimensions are recorded when the page is live, by the code
+    that rendered it, which is a better witness than a later reader squinting at a PNG.</p>
+    <p>This also makes the rule falsifiable in the useful direction. An index claiming a capture
+    that is absent from disk, or claiming a row count of zero, must fail &mdash; those are the
+    failures a capture gate exists to catch, and both are text.</p>
+    <p><strong>Done when</strong> the capture gate validates from the index alone, demonstrated by
+    running it on a lane with no multimodal capability and recording that it passes; and
+    demonstrated able to refuse in two distinct ways, once against an index naming a file that does
+    not exist and once against an index whose row count is zero, each recorded. State as a digit
+    how many captures the gate reads and how many image bytes it opens, the second being zero.</p>
+
+    <h2 id="s3">&sect;3 &mdash; The eight captures already produced</h2>
+    <p>The dead node's output is real and sits uncommitted in its worktree: eight PNGs and a
+    3,146-byte index recording row counts, widths and the banner text. One was inspected by the
+    coordinator during verification and shows the arrival banner rendering live, which independently
+    confirms the section that produced it.</p>
+    <p>That work is recovered rather than repeated. The remaining half of its node was never done:
+    the gate's plan roster still names three plans and not this one, so these captures would sit
+    ungated exactly as those three did before the roster was repaired.</p>
+    <p><strong>Done when</strong> the eight captures and their index are committed, the gate's
+    roster includes the plan that owns them, and the gate reads their index &mdash; stated as a
+    digit, the roster count rising from three to four. The gate is demonstrated refusing this
+    plan's captures once, by pointing it at an emptied index, so its inclusion is shown to be load
+    bearing rather than decorative.</p>
+
+    <h2 id="s4">&sect;4 &mdash; Out of scope</h2>
+    <p>This does not change how captures are produced, what is captured, or the browser harness.
+    It does not address figure allocation or merge policy, which is a separate contract with its own
+    plan.</p>
+    <p>It makes no claim that images are never worth looking at. A coordinator verifying a landing
+    may open one, and one was opened here. The rule constrains what a <em>gate</em> may depend on,
+    because a gate must run anywhere and a person may look at anything.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="who-writes-the-index" data-choice="capture-time-from-the-rendered-dom" data-by="reckon-ship" data-when="2026-09-15">
+    <p class="r-dec-q">Where do the index&#x27;s recorded values come from?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="capture-time-from-the-rendered-dom">capture-time-from-the-rendered-dom</button>
+      <button class="r-opt" data-value="derived-later-from-the-image">derived-later-from-the-image</button>
+      </p>
+    <p class="r-dec-rat">Locked because it is what the working implementation already does and the alternative reintroduces the defect. Values scraped from the live DOM at capture time are recorded by the code that rendered the page; values derived later from the image require reading the image, which is the step that makes a capture node lane-dependent. The index is a witness statement taken at the scene rather than a reconstruction.</p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-acivbi-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-15" data-recommends-skill="/reckon-ship a-capture-is-validated-by-its-index" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">State the contract, then recover the captures it unblocks</h4>
+    <div class="r-fu-body"><p>&sect;2 first and alone, because &sect;3 cannot be gated until the gate reads an index. Then &sect;3, which commits eight captures already on disk in a dead node's worktree and adds their plan to the gate's roster.</p><p>Both measures are refusals rather than successes. &sect;2 must be shown failing twice, once on an index naming an absent file and once on a zero row count, because a validator never demonstrated to refuse cannot be distinguished from one that accepts anything. &sect;3 must be shown refusing this plan's own captures against an emptied index, so its place in the roster is load bearing rather than decorative. The number that matters in &sect;2 is the count of image bytes opened, which is zero.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship a-capture-is-validated-by-its-index</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>

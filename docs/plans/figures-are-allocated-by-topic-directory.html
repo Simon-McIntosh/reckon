@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="figures-are-allocated-by-topic-directory">
+  <meta name="plan-title" content="Figures Are Allocated By Topic Directory">
+  <meta name="plan-summary" content="Figures are tracked binaries written by concurrent workers with no stated allocation unit and no merge policy. It has not collided yet; nothing prevents it.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="mid">
+  <meta name="plan-effort-hours" content="3.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="low">
+  <meta name="plan-sprint" content="S17">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <title>Figures Are Allocated By Topic Directory | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-15">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">&sect;1 &mdash; Untested rather than safe</h2>
+    <p>Figures are tracked binaries. Seventy-five of them are in the repository, written by workers
+    in detached worktrees and merged by coordinators, and the guidance that exists covers only
+    <em>where to put them</em> and <em>how to reference them</em>: under
+    <code>docs/figures/&lt;topic&gt;/</code>, embedded with a project-absolute
+    <code>src</code> because a relative one 404s in the SPA.</p>
+    <p>Nothing states the allocation unit. A node may declare
+    <code>docs/figures/&lt;topic&gt;</code> &mdash; a directory, not a file, and one that may not
+    exist yet &mdash; as an exclusive write path, and dispatch accepts it and registers the claim.
+    Whether that claim means the tree, whether two nodes may write sibling files inside one topic,
+    and what exclusivity means for a path with no contents are all unanswered.</p>
+    <p>Nothing states a merge policy either. There is no <code>.gitattributes</code>, so a PNG
+    written by two workers under one filename would conflict with no resolution a coordinator
+    could perform &mdash; the halves cannot be combined and neither is obviously right.</p>
+    <p><strong>Zero figure merge conflicts have occurred in seven days.</strong> That is the
+    evidence this is untested, not the evidence it is safe: no two nodes have yet been fenced to
+    the same topic, and nothing would have stopped them.</p>
+
+    <h2 id="s2">&sect;2 &mdash; The topic directory is the unit</h2>
+    <p>State the rule that dispatch already half-implements: a figure topic directory is claimed by
+    exactly one node, the claim covers the tree, and a second node declaring the same topic or a
+    path inside it is a scope conflict rather than a shared workspace.</p>
+    <p>The corollary is the merge policy, and it is not a merge: <strong>a figure is added or
+    replaced wholesale, never combined.</strong> Two nodes producing one filename is a scope defect
+    caught at dispatch, not a conflict resolved at integration, because there is no correct
+    resolution at integration.</p>
+    <p><strong>Done when</strong> a second node declaring a topic directory already claimed by a
+    live run is refused, naming the owning run, and a node declaring a path <em>inside</em> another
+    node's claimed topic is refused the same way &mdash; both demonstrated as refusals rather than
+    asserted, since a containment rule never shown to refuse cannot be told from one that admits
+    everything. The refusal for a directory that does not yet exist is exercised explicitly,
+    because that is the ordinary case for a capture node and the one most likely to be mishandled.
+    The count of claims the check walks is stated as a digit.</p>
+
+    <h2 id="s3">&sect;3 &mdash; Write it where a worker reads it</h2>
+    <p>The rule is worth nothing in a plan alone. It belongs where an author or a coordinator will
+    encounter it: the figure guidance in <code>reckon-create</code>, which is the only place
+    figures are currently described, and the worktree and scope section of the ship references.</p>
+    <p><strong>Done when</strong> both surfaces state the allocation unit and the never-merged
+    rule, and a reader of either can determine what to declare for a capture node without
+    inspecting dispatch's source. State as a digit how many figure-writing plans in this repository
+    would have been refused under the new rule when they ran &mdash; the expected answer is zero,
+    and a non-zero answer is a finding rather than an error.</p>
+
+    <h2 id="s4">&sect;4 &mdash; Out of scope</h2>
+    <p>This does not change where figures live, how they are referenced, or the style rules
+    governing them. It does not introduce a figure registry or a naming scheme; the topic directory
+    is already the grouping and this only makes it the allocation unit too.</p>
+    <p>It does not address what a capture's gate reads, which is a separate contract with its own
+    plan.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="sibling-writers-in-one-topic" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">May two nodes write different files inside one topic directory?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="no-the-topic-is-exclusive">no-the-topic-is-exclusive</button>
+      <button class="r-opt" data-value="yes-if-filenames-are-disjoint">yes-if-filenames-are-disjoint</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-fabtd-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-15" data-recommends-skill="/reckon-ship figures-are-allocated-by-topic-directory" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Make the claim refuse, then write it where it is read</h4>
+    <div class="r-fu-body"><p>&sect;2 first: the allocation unit and the never-merged rule, enforced. &sect;3 follows and is documentation of what &sect;2 then actually does, so it cannot be written first without describing an intention.</p><p>The measure in &sect;2 is three demonstrated refusals rather than an assertion: a second node on a claimed topic, a node on a path inside a claimed topic, and the same for a topic directory that does not yet exist. That third case is the ordinary one for a capture node and the most likely to be mishandled, since an empty path is easy to treat as no claim at all. &sect;3 states as a digit how many existing figure-writing plans would have been refused under the rule; zero is expected and a non-zero answer is a finding worth reporting rather than an error to suppress.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship figures-are-allocated-by-topic-directory</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>
