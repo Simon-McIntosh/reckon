@@ -225,6 +225,18 @@ durable result recoverable if later generation fails.
    path and a short summary.
 9. Stop and report unexpected dirty files, missing authority, or unsafe scope.
 
+**A figure topic directory is the allocation unit for figures.** Each per-topic
+directory beneath `docs/figures/` is claimed by exactly one node, the claim
+covers the whole tree under it, and a second node declaring that same directory
+or any path inside it is a scope conflict caught at dispatch — naming the owning
+run, never a conflict a coordinator resolves at integration. A node that will
+write figures declares the topic directory itself as its write path
+(`docs/figures/<topic>`), not a file inside it. A figure is added or replaced
+WHOLESALE, never combined: two nodes producing one filename is a scope defect
+caught at dispatch, not a conflict resolved at integration, because there is no
+correct resolution at integration — the halves cannot be combined and neither is
+obviously right.
+
 Workers default to full access bounded by their detached worktree. A filesystem
 sandbox is inherited by child processes and breaks test runners, builds and
 anything spawning subprocesses — so the worktree is the blast-radius boundary

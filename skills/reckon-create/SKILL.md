@@ -148,6 +148,18 @@ mechanism, create it there and use a qualified relationship from the consumer.
    `src="/<project>/figures/..."`. A geometry/topology claim without a figure
    is under-communicated; multi-pane grids for per-machine content.
 
+   **A figure topic directory is the allocation unit.** Each per-topic directory
+   beneath `docs/figures/` is claimed by exactly one node, the claim covers the
+   whole tree under it, and a second node declaring that same directory or any
+   path inside it is a scope conflict caught at dispatch — naming the owning run,
+   never a conflict a coordinator resolves at integration. A node that will write
+   figures declares the topic directory itself as its write path
+   (`docs/figures/<topic>`), not a file inside it. **A figure is added or
+   replaced WHOLESALE, never combined.** Two nodes producing one filename is a
+   scope defect caught at dispatch, not a conflict resolved at integration,
+   because there is no correct resolution at integration — the halves cannot be
+   combined and neither is obviously right.
+
    **A graphic is not a quota. There is no minimum image count.** Draw one only
    when it makes a relationship,
    comparison, geometry, or sequence materially clearer than a short table or
