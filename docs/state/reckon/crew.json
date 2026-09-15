@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T14:06:48",
+  "updated": "2026-09-15T14:21:48",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -130441,6 +130441,327 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T065527954756-the-manifest-template-matches-the-reader",
+        "plan": "crew-observability-truth",
+        "section": "\u00a712",
+        "node": "the-manifest-template-matches-the-reader",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 732,
+                "cached_input_tokens": 550247,
+                "input_tokens": 550981,
+                "output_tokens": 754,
+                "reasoning_output_tokens": 136,
+                "total_tokens": 551735,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "a7379194-9bc5-48d1-b6e1-fc5b39871bc3",
+            "session_id": "ship-s18-20260915"
+          },
+          "done_when": "a test asserts three properties of the composed worker prompt: commits and changed_paths appear on separate lines and are never semicolon-joined on one; the offered status vocabulary includes waiting alongside complete, blocked and failed; and each of wait_condition, wait_probe, wait_terminal and resume_brief appears in the manifest block. All three assertions pass, and the existing prompt-composition tests pass unchanged",
+          "estimated_hours": null,
+          "goal": "make the manifest block the worker prompt hands out match the schema the reader enforces",
+          "id": "the-manifest-template-matches-the-reader",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T06:55:28Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T065527954756-the-manifest-template-matches-the-reader/manifest.md",
+          "plan": "crew-observability-truth",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a712",
+          "spec_level": "exact",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/prompts.py",
+            "tests/test_worker_prompt_contract.py",
+            "docs/evidence/archive/crew-observability-truth-landed.html",
+            "docs/plans/crew-observability-truth.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "exact",
+        "member": "crew-role-scope",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T06:55:55Z",
+        "completed_at": "2026-09-15T08:12:58.301Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 4597,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 4623,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "b5480eef8d88cc9182391e31dd8e18e53e0ac1e9",
+        "commits": [
+          "8417c0ff98666af85330e65c687c3b1937cdf20a",
+          "2e550a8bc5435e21a05d0050f2197a764d2f695a"
+        ],
+        "changed_lines": {
+          "added": 165,
+          "removed": 3,
+          "files": 4
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD python -m pytest -p no:cacheprovider -q tests/test_worker_prompt_contract.py tests/test_crew_prompts.py tests/test_the_prompt_carries_the_contract.py tests/test_the_prompt_carries_the_evidence_contract.py tests/test_worker_wait_contract.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T065527954756-the-manifest-template-matches-the-reader/focused-prompt-gate-at-head.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T065527954756-the-manifest-template-matches-the-reader/manifest.md",
+        "scope_changed": false,
+        "session_id": "b2ca6ae0-51e9-4113-aa62-b385be082006",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 5743602,
+            "input_tokens_cumulative": 5743602,
+            "output_tokens": 37156,
+            "output_tokens_cumulative": 37156,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T08:12:58.301Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 218,
+              "budget_seconds": 1500,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 1718,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 4548,
+              "log_fresh": false,
+              "manifest_commits": [
+                "ba487aa (test)",
+                "8891cfa (docs)"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "d45daed4e6181e99ffaf639bc6fa10462606222ad861549621e9c9e3bc004703",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T051109257888-the-reason-keeps-its-predicate-at-the-measured-width/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan crew-observability-truth --section '\u00a720' --role review --spec-level exact --node review-of-the-reason-keeps-its-predicate-at-the-measured-width --goal 'attach an independent review to run r-20260915T051109257888-the-reason-keeps-its-predicate-at-the-measured-width' --done-when 'the review for r-20260915T051109257888-the-reason-keeps-its-predicate-at-the-measured-width parses all five score dimensions' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260915T051109257888-the-reason-keeps-its-predicate-at-the-measured-width.json --time-budget 25m --session ship-s18-20260915 --local",
+              "node": "the-reason-keeps-its-predicate-at-the-measured-width",
+              "phase": "complete",
+              "plan": "crew-observability-truth",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260915T051109257888-the-reason-keeps-its-predicate-at-the-measured-width",
+              "session": "ship-s18-20260915",
+              "terminal_age_seconds": 4741,
+              "terminal_at": "2026-09-15T05:36:48Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s18-20260915/the-reason-keeps-its-predicate-at-the-measured-width"
+            },
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 2663,
+              "budget_seconds": 1800,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+              "elapsed_seconds": 4463,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 1450,
+              "log_fresh": false,
+              "manifest_commits": [
+                "981e3233b049cb866a6d4cf5fa8c19e6495c08ae",
+                "35bd95d87628c69158fd143367f26ba0d64bea2e"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "4275a3d2bc1c9b06c24dc6133d150ca459c51116c5f0ae85a435de229005a838",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T051704072568-an-endpoint-without-a-handle-reports-itself/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan roadmap-answers-both-shapes --section '\u00a72' --role review --spec-level exact --node review-of-an-endpoint-without-a-handle-reports-itself --goal 'attach an independent review to run r-20260915T051704072568-an-endpoint-without-a-handle-reports-itself' --done-when 'the review for r-20260915T051704072568-an-endpoint-without-a-handle-reports-itself parses all five score dimensions' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260915T051704072568-an-endpoint-without-a-handle-reports-itself.json --time-budget 30m --session ship-s18-20260915 --local",
+              "node": "an-endpoint-without-a-handle-reports-itself",
+              "phase": "starting",
+              "plan": "roadmap-answers-both-shapes",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": false,
+              "review_status": null,
+              "run_id": "r-20260915T051704072568-an-endpoint-without-a-handle-reports-itself",
+              "session": "ship-s18-20260915",
+              "terminal_age_seconds": 1685,
+              "terminal_at": "2026-09-15T06:27:45Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s18-20260915/an-endpoint-without-a-handle-reports-itself"
+            }
+          ]
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "goal_fidelity": 20,
+            "evidence": 20,
+            "scope_discipline": 19,
+            "durability": 18,
+            "fit": 18
+          },
+          "absent": [],
+          "total": 95
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 5743602,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 4619.726,
+          "generated_tokens": 37156,
+          "generation_seconds": 4179.658,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 71.8,
+          "machine_seconds": 440.068,
+          "peak_input_tokens": 143561,
+          "tokens_per_second": 8.89,
+          "wall_tokens_per_second": 8.04
+        },
+        "follow_on_paths": [
+          "reckon/crew/reports.py",
+          "tests/test_manifest_parse_format.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s18-20260915/the-manifest-template-matches-the-reader",
+          "session_id": "b2ca6ae0-51e9-4113-aa62-b385be082006",
+          "session_source": "stream",
+          "retained_at": "2026-09-15T08:12:58.301Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 60.0,
+        "orientation_input_tokens": 1259021.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -130669,6 +130990,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1518
+    "_version": 1519
   }
 }
