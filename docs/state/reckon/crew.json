@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T11:32:39",
+  "updated": "2026-09-15T12:04:12",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -2123,6 +2123,15 @@
       },
       {
         "id": "session-4dbe861e20e6f9c77514",
+        "harness": "clive",
+        "role": "implement",
+        "session_id": null,
+        "session_model": null,
+        "sessions": {},
+        "created": "2026-09-15"
+      },
+      {
+        "id": "session-98412105dc7023d3bf56",
         "harness": "clive",
         "role": "implement",
         "session_id": null,
@@ -128785,6 +128794,216 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T053607306958-the-month-figure-cannot-be-mistaken-for-the-gate",
+        "plan": "burn-is-visible-before-it-bites",
+        "section": "\u00a75",
+        "node": "the-month-figure-cannot-be-mistaken-for-the-gate",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 889,
+                "cached_input_tokens": 109883,
+                "input_tokens": 110774,
+                "output_tokens": 1513,
+                "reasoning_output_tokens": 488,
+                "total_tokens": 112287,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "306c1aec-df4a-489e-88c3-441bbb1f5baf",
+            "session_id": "ship-lane-aware-20260914"
+          },
+          "done_when": "The parse half already holds at 47a3180 (tests/test_backend_observation.py::test_the_account_overage_figure_never_reaches_utilisation_pct). The gap is the decision surface. uv run pytest tests/test_budget.py -q passes with a case carrying the measured shape \u2014 top-level utilization 1.21 beside rateLimitType overage and its month-boundary resetsAt, unifiedWindows.five_hour utilization 0.05 with a near resetsAt, no severity, no exhausted_statuses policy \u2014 reaching the verdict a dispatch consults and reporting the lane OPEN, asserted at that entry point rather than on the parsed block. Assert the negative half too: no field carrying 1.21 or the month resetsAt appears anywhere in the emitted state or its reason string, so a later reader cannot pick the month figure up by name. If a hold fires, it must be attributable to a severity on the binding window; a hold traceable to the month figure is the defect this node exists to catch. Failure delta 0 against base a736189 for tests/test_budget.py tests/test_backend_observation.py",
+          "estimated_hours": null,
+          "goal": "The account's month-scale figure cannot reach the decision a reader makes about a lane",
+          "id": "the-month-figure-cannot-be-mistaken-for-the-gate",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T05:36:07Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T053607306958-the-month-figure-cannot-be-mistaken-for-the-gate/manifest.md",
+          "plan": "burn-is-visible-before-it-bites",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/budget.py",
+            "tests/test_budget.py",
+            "docs/evidence/archive/burn-is-visible-before-it-bites-landed.html",
+            "docs/plans/burn-is-visible-before-it-bites.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-attention",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T05:36:20Z",
+        "completed_at": "2026-09-15T07:36:33.062Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 7175,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 7213,
+        "stalled": true,
+        "time_budget": "40m",
+        "base_sha": "e81672a8001806818ebfe0b31fd6f54f9e6e1053",
+        "commits": [
+          "a8692b4120093297d0fe36a0f346a8a2b6aba096",
+          "5c2b6ffd82a7d99175ba2efcbabc99b943b2df09"
+        ],
+        "changed_lines": {
+          "added": 66,
+          "removed": 0,
+          "files": 3
+        },
+        "tests_added": 1,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_budget.py tests/test_backend_observation.py -p no:cacheprovider -q",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T053607306958-the-month-figure-cannot-be-mistaken-for-the-gate/base_gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T053607306958-the-month-figure-cannot-be-mistaken-for-the-gate/manifest.md",
+        "scope_changed": false,
+        "session_id": "a610799a-5781-46cd-9c72-4110a2528ddb",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 7654766,
+            "input_tokens_cumulative": 7654766,
+            "output_tokens": 39285,
+            "output_tokens_cumulative": 39285,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T07:36:33.062Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 7822041,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 7209.717,
+          "generated_tokens": 45934,
+          "generation_seconds": 6962.467,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 83.0,
+          "machine_seconds": 247.25,
+          "peak_input_tokens": 165975,
+          "tokens_per_second": 6.6,
+          "wall_tokens_per_second": 6.37
+        },
+        "follow_on_paths": [
+          "docs/evidence/archive/burn-is-visible-before-it-bites-landed.html",
+          "docs/plans/burn-is-visible-before-it-bites.html",
+          "reckon/budget.py"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "uv run pytest tests/test_budget.py",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-lane-aware-20260914/the-month-figure-cannot-be-mistaken-for-the-gate",
+          "session_id": "a610799a-5781-46cd-9c72-4110a2528ddb",
+          "session_source": "pointer",
+          "retained_at": "2026-09-15T07:36:33.062Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 74.0,
+        "orientation_input_tokens": 3082779.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -129013,6 +129232,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1505
+    "_version": 1507
   }
 }
