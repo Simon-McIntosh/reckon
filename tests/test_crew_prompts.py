@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from reckon.crew.node import NEEDS_HELP_MARKER, TaskNode
 from reckon.crew.prompts import (
+    CLOSURE_AUTHORITY_CONTRACT,
     FALSIFIABLE_EVIDENCE_CONTRACT,
     PLAN_LANDING_CONTRACT,
     compose_prompt,
@@ -314,3 +315,51 @@ def test_readonly_role_receives_the_narrowed_ban_and_no_landing_clause():
         assert OTHER_PLAN_BAN in prompt
         assert LANDING_HEADER not in prompt
         assert PLAN_LANDING_CONTRACT not in prompt
+
+
+# ── The closure limits travel beside the landing contract, per role ───────────
+
+CLOSURE_HEADER = "CONTRACT — WHO CLOSES THE NODE"
+CLOSURE_NO_SELF_CLOSE = "does not close its own node"
+CLOSURE_FOLLOWUP_LIMIT = "must not resolve its own driving followup"
+CLOSURE_TERMINAL_LIMIT = "must not set a terminal status"
+CLOSURE_REASON = "only the coordinator observes the other nodes"
+CLOSURE_KNOWS_OWN_NODE = (
+    "a worker knows its node landed, not whether the section closed"
+)
+
+
+def test_landing_capable_roles_carry_the_two_closure_limits():
+    for role in ("implement", "test"):
+        prompt = _flat(_prompt(role=role))
+
+        assert CLOSURE_HEADER in prompt
+        assert CLOSURE_NO_SELF_CLOSE in prompt
+        assert CLOSURE_FOLLOWUP_LIMIT in prompt
+        assert CLOSURE_TERMINAL_LIMIT in prompt
+        assert CLOSURE_REASON in prompt
+        assert CLOSURE_KNOWS_OWN_NODE in prompt
+
+
+def test_a_readonly_role_receives_no_closure_limits_with_no_landing_clause():
+    for role in ("review", "investigate"):
+        prompt = _flat(_prompt_readonly(role=role))
+
+        assert CLOSURE_HEADER not in prompt
+        assert CLOSURE_FOLLOWUP_LIMIT not in prompt
+        assert CLOSURE_TERMINAL_LIMIT not in prompt
+        assert PLAN_LANDING_CONTRACT not in prompt
+
+
+def test_closure_limits_are_a_pure_removable_insertion(monkeypatch):
+    """Mask the closure contract and recompose: the implement prompt must differ
+    from the live one by exactly that block, nothing else in the composition."""
+    import reckon.crew.prompts as prompts_mod
+
+    after = _prompt(role="implement")
+    assert after.count(CLOSURE_AUTHORITY_CONTRACT) == 1
+
+    monkeypatch.setattr(prompts_mod, "CLOSURE_AUTHORITY_CONTRACT", "")
+    before = _prompt(role="implement")
+
+    assert after.replace(CLOSURE_AUTHORITY_CONTRACT, "", 1) == before
