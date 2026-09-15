@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="32">
+<meta name="plan-version" content="34">
 <meta name="plan-section-declarations" content="{&quot;what-is-wrong&quot;:&quot;done&quot;,&quot;the-surface&quot;:&quot;done&quot;,&quot;where-the-probe-lives&quot;:&quot;done&quot;,&quot;parse-strictly&quot;:&quot;done&quot;,&quot;coordinator-share&quot;:&quot;done&quot;,&quot;pin-the-denominator&quot;:&quot;done&quot;,&quot;what-prose-was-hiding&quot;:&quot;implementable&quot;,&quot;read-before-you-dispatch&quot;:&quot;done&quot;,&quot;out-of-scope&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="5e3e041c895353a003e15954382a78b49151a2ac,fab092dafb269286fb2f6bc1dbfb1f060dd95247,50c436f3c1865e2e11a662829f87283660a13da5,fff2ca7,a9a9d027b0ce92363356e120209e11b4c4f0c3bd,b316011,47a3180">
 <meta name="plan-artifacts" content="reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/budget.py,reckon/_backends.py,tests/test_coordinator_reserve.py,tests/test_flight.py,tests/test_claude_account_surface.py,tests/fixtures/backends/claude-account-limits.json,docs/evidence/archive/a-lane-can-say-where-it-stands-landed.html">
@@ -385,12 +385,37 @@
         utilisation rather than falling back to an announced or constant figure.
       </p>
       <p>
-        <strong>Blocked on a peer's write scope</strong> rather than on evidence:
-        <code>reckon/crew/recovery.py</code> is claimed by another session's live
-        node. Half of this repair is available now and is deliberately not taken,
-        because a fix that pins the dispatch path and leaves the recorded rows
-        unpinned would report the defect as closed while the surface that most
-        readers actually consult still carries an unstated denominator.
+        <strong>Blocked on a peer's write scope</strong> rather than on evidence,
+        and the file named here was wrong until 2026-09-15. This paragraph read
+        <code>reckon/crew/recovery.py</code>; that file reconstructs no backend at
+        all, carrying no reference to <code>_backend_settings</code>,
+        <code>usable_input_window</code> or <code>backend_settings</code>. The
+        attribution was prose nobody had checked against the code, and it was
+        repeated to two peer sessions before anyone grepped the file it named.
+      </p>
+      <p>
+        <strong>The verified sites.</strong> The root defect is
+        <code>_backend_settings</code> at <code>dispatch.py:3840</code>: given a
+        recorded <code>argv</code> it returns <code>{launch, command}</code> and
+        drops <code>usable_input_window</code>. The short-circuit runs
+        <em>before</em> the config lookup, so the configured window is lost even
+        at the three dispatch call sites that do pass a config &mdash; which is
+        why the defect reaches a freshly dispatched run rather than only a
+        reconstructed one. The two reconstructing callers pass
+        <code>config=None</code>: <code>promotion.py:1483</code>, which feeds
+        <code>StreamMeasures</code> and so writes the promoted row's
+        <code>input_utilisation_pct</code>, and
+        <code>resumption.py:407</code>, which takes only the session id off its
+        observation. The real blocker set is therefore
+        <code>dispatch.py</code> and <code>promotion.py</code>.
+      </p>
+      <p>
+        Both sites land in one write scope and are asserted at the combined
+        state. Half of this repair is available whenever one of the two files is
+        free, and is deliberately not taken: pinning either path alone would
+        report the defect as closed while the other still divides by an
+        unresolved window, and a worker asserting only its own half cannot see
+        what the pair does.
       </p>
     </section>
 
@@ -554,6 +579,9 @@
 </div>
 <div class="r-comment" data-section="what-prose-was-hiding" data-id="c-run-r-20260915T053935220941-a-cached-reading-is-never-shown-without-its-age" data-who="crew-backpressure" data-when="2026-09-15T08:30:18.212Z">
     <div class="r-comment-body"><p>A cached account reading is returned only as an explicit fallback and always carries its fetch stamp, numeric age and an age-naming detail in the same block; no resolvable stamp reads unknown rather than showing a bare figure, an unreadable cache is an unknown reason not a raise, and a known live reading wins outright with no age markers. 31 passed, 7 cases added, failure delta 0 against base a736189 across the five-file asserting cohort. The reconstructed-backend half of the same section is deliberately untaken, blocked on a peer's live claim over reckon/crew/recovery.py.</p></div>
+</div>
+<div class="r-comment" data-section="s5d" data-id="c-20260915T123546874190" data-who="ship-s16-20260914" data-when="">
+    <div class="r-comment-body"><p><strong>One function, three consequences, found independently from three directions.</strong> The blocker recorded on this section named <code>reckon/crew/recovery.py</code>, which reconstructs no backend at all &mdash; zero references to <code>_backend_settings</code>, <code>usable_input_window</code> or <code>backend_settings</code>. The section prose is corrected above. The attribution was inference that nothing marked as inference, and it was repeated to two peer sessions before the file it named was grepped.</p><p>The root is <code>_backend_settings</code> at <code>dispatch.py:3840</code>. Given a recorded <code>argv</code> it returns <code>{launch, command}</code> from <code>argv[0]</code> alone and discards the rest, and the short-circuit runs before the config lookup, so callers passing full config lose the window too. Its docstring is honest about the scope it was written for &mdash; <em>"Only the command matters for reading"</em> &mdash; which was true with one caller and is false for three of the five it has now.</p><p>The three consequences, each found by a different session investigating something else. <strong>Utilisation</strong> divides by an unresolved window: <code>promotion.py:1483</code> feeds <code>StreamMeasures</code>, so a promoted row reads 84.2% where the configured window gives 16.6. <strong>Model and effort are dropped on resume</strong>: the recorded argv here carries 12 elements including <code>--model deepseek-v4-flash</code> and <code>--effort high</code>, and only <code>argv[0]</code> survives, so <code>resume_plan</code> relaunches without either. <strong>Context fit is never checked on a resume</strong>: <code>_context_fit_verdict</code> has exactly one call site, <code>routing.py:1601</code>, inside dispatch resolution, and the resume path does not reach it &mdash; not an honest unknown, nothing at all.</p><p><strong>Why it has stayed invisible, which is the part that predicts where it will bite.</strong> The local lane serves exactly one model, so dropping <code>--model</code> changes nothing observable there and every resume succeeds. On a multi-model lane the same line silently relaunches a resumed worker on the provider default rather than the recorded model. The consequence is latent on the lane where resumes are cheap and frequent, and real on the lanes where they are metered.</p><p>The repair belongs at the function rather than at any caller: a reader that wants only the command can ask for only the command. Consequences two and three were found by ship-s18 and are recorded on <code>crew-observability-truth</code> &sect;22 at <code>837c8a0c</code>.</p></div>
 </div>
 </section>
 </main>
