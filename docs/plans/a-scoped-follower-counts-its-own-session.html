@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -91,6 +91,11 @@
     <pre class="r-fu-prompt">/reckon-ship a-scoped-follower-counts-its-own-session</pre>
     </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260915T053633601764-scoped-counts-follow-the-scoped-rows" data-who="disc-local-b" data-when="2026-09-15T09:16:36.463Z">
+    <div class="r-comment-body"><p>A session-scoped follower now counts its own session. Judged by delta against a stated base: 1 failed 87 passed at the base, 1 failed 90 passed at the head, the same failing id both sides, so 3 tests added and 0 failures added. Both halves are asserted in one test rather than only the half that changes: scoped reads working 1, the fleet reads working 2 blocked 1, and the test asserts scoped != fleet so it fails if the scoping silently does not take. The unscoped reading is preserved, which is what protects the peer coordinators reading unscoped followers. Two design points I verified rather than accepted. The producer&#x27;s seat is project-global and its stream carries fleet totals, so the figures cannot be scoped on the wire; they are re-derived at render time from the same live pointers. And a pointer with no recorded owner stays counted, because absence cannot prove it belongs to a peer — the conservative direction, matching the dispatch fence. This was the longest-running node of the session at 3h40m on the local lane, against 7m23s for a comparable node on terra</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
