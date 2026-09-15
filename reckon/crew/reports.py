@@ -80,6 +80,18 @@ _MANIFEST_FIELD_KEYS = frozenset(_MANIFEST_LIST_KEYS) | frozenset(
     }
 )
 
+# A manifest field whose presence alongside a missing status key still leaves
+# the outcome undetermined. The list-attribute fields are exempt from this: a
+# bare ``commits:``-shaped excerpt is a fragment of a manifest being read for
+# its attributes, not a manifest that failed to declare a verdict, and the
+# nested-key handling pins that such a fragment keeps parsing.
+_OUTCOME_MANIFEST_FIELDS = (
+    _MANIFEST_FIELD_KEYS
+    - frozenset(_MANIFEST_LIST_KEYS)
+    - frozenset({"status", "derived"})
+)
+
+
 # A line whose value is one of these has no value on that line at all — the
 # indented body below it is the value, YAML block-scalar style. Returning the
 # indicator itself is how a parse failure became a display that lied: a
@@ -128,11 +140,13 @@ def parse_manifest(text: str, *, path: str | None = None) -> dict[str, Any]:
     determined raises the same error: a non-blank text body that yields no
     ``key: value`` field at all — its ``status`` and ``commits`` under
     markdown headings, say — a body whose parsed fields are all incidental
-    prose rather than manifest fields, and a status that names a word no part
-    of the system recognises. Each of these once fell back to the normalised
-    partial mapping with no usable status, which the classifier read as a dead
-    worker. Unknown keys are kept in both forms so nothing a worker took the
-    trouble to state is silently dropped.
+    prose rather than manifest fields, a body whose parsed fields read as
+    manifest fields but omit the status key altogether (a report wearing the
+    ``node:`` shape), and a status that names a word no part of the system
+    recognises. Each of these once fell back to the normalised partial mapping
+    with no usable status, which the classifier read as a dead worker. Unknown
+    keys are kept in both forms so nothing a worker took the trouble to state
+    is silently dropped.
 
     Tolerant on purpose for the text form: a worker writes prose around its
     manifest and a strict parser would reject a delivered report over
@@ -239,19 +253,31 @@ def _refuse_undetermined_status(
 ) -> dict[str, Any]:
     """Raise when the parsed fields still leave the status undetermined.
 
-    Two shapes are undetermined rather than merely absent. A body whose parsed
-    top-level fields are all outside the manifest vocabulary is prose wearing a
-    ``key: value`` shape, not a manifest, so its status cannot be judged; and a
-    status naming a word no part of the system recognises would be carried
-    forward as a state it never was. Both raise. A well-formed terminal,
-    non-terminal or waiting status — and an unsubstituted terminal template,
-    which the classifier reads as unwritten rather than refused — keeps
-    parsing.
+    Three shapes are undetermined rather than merely absent. A body whose
+    parsed top-level fields are all outside the manifest vocabulary is prose
+    wearing a ``key: value`` shape, not a manifest; a body whose parsed fields
+    read as manifest fields but omit the status key entirely is a report
+    wearing a manifest shape, not a worker verdict; and a status naming a word
+    no part of the system recognises would be carried forward as a state it
+    never was. All three raise. A bare list-attribute excerpt (``commits:``
+    without a status, say) keeps parsing — it is a fragment of a manifest being
+    read for its attributes, not a verdictless manifest — and a body declaring
+    itself a recovery artifact through a truthy ``derived`` field keeps parsing
+    too, because recovery fabricates that shape without a status when it
+    preserves a terminal run's evidence. A well-formed terminal, non-terminal
+    or waiting status — and an unsubstituted terminal template, which the
+    classifier reads as unwritten rather than refused — keeps parsing.
     """
     if fields and not (set(fields) & _MANIFEST_FIELD_KEYS):
         raise ManifestParseError(
             _incidental_prose_manifest_message(path, sorted(fields))
         )
+    if "status" not in fields and not _declares_derived(fields):
+        outcome_fields = set(fields) & _OUTCOME_MANIFEST_FIELDS
+        if outcome_fields:
+            raise ManifestParseError(
+                _missing_status_manifest_message(path, sorted(outcome_fields))
+            )
     status = fields.get("status")
     if status is not None and str(status).strip():
         if (
@@ -282,6 +308,27 @@ def _unknown_status_word_manifest_message(path: str | None, word: object) -> str
         f"manifest status (recognised: {recognised}); expected a JSON object "
         "or the 'key: value' text form carrying one of those statuses"
     )
+
+
+def _missing_status_manifest_message(path: str | None, keys: list[str]) -> str:
+    where = f" at {path}" if path else ""
+    return (
+        f"cannot read manifest{where}: the body reads as manifest fields "
+        f"({', '.join(keys)}) but carries no status key, so its status cannot "
+        "be determined; expected a JSON object or the 'key: value' text form "
+        "carrying a status line"
+    )
+
+
+def _declares_derived(fields: dict[str, Any]) -> bool:
+    """Whether the body declares itself a recovery artifact via ``derived``.
+
+    Mirrors recovery's truthy reading so the reader never refuses the artifact
+    recovery fabricates to preserve a terminal run whose worker omitted its
+    manifest: that body carries no status key, only ``derived`` and whatever
+    evidence existed alongside it.
+    """
+    return str(fields.get("derived") or "").strip().lower() in {"1", "true", "yes"}
 
 
 def _normalise_manifest_fields(fields: dict[str, Any]) -> dict[str, Any]:

@@ -286,6 +286,68 @@ def test_the_prose_refusal_names_the_path_when_one_is_given() -> None:
     assert "/runs/x/manifest.md" in str(exc.value)
 
 
+# The residual shape this reader must still refuse: the fields parse and at
+# least one of them is a manifest field (``node:``), but the body carries no
+# status key at all. A review report wears exactly this shape — a ``node:``
+# identity line with prose readings and no verdict. It once returned the
+# normalised mapping with thirteen keys and no status, which the classifier
+# read as a vanished worker.
+_SCOPE_REVIEW_SHAPED_MANIFEST = """\
+node: scope-review-back-to-the-canvas
+worktree: ship-s16-20260914/scope-review-back-to-the-canvas at HEAD 467016b
+"""
+
+
+def test_a_manifest_with_fields_but_no_status_key_is_refused() -> None:
+    with pytest.raises(reports.ManifestParseError) as exc:
+        reports.parse_manifest(_SCOPE_REVIEW_SHAPED_MANIFEST)
+
+    message = str(exc.value)
+    assert "no status key" in message
+    assert "node" in message
+    assert "key: value" in message
+
+
+def test_the_missing_status_refusal_names_the_path_when_one_is_given() -> None:
+    with pytest.raises(reports.ManifestParseError) as exc:
+        reports.parse_manifest(
+            _SCOPE_REVIEW_SHAPED_MANIFEST, path="/runs/x/manifest.md"
+        )
+    assert "/runs/x/manifest.md" in str(exc.value)
+
+
+def test_a_missing_status_key_in_json_is_also_refused() -> None:
+    with pytest.raises(reports.ManifestParseError) as exc:
+        reports.parse_manifest('{"node": "node-a", "commits": ["abc123"]}')
+    assert "node" in str(exc.value)
+
+
+def test_a_bare_attribute_excerpt_without_status_stays_tolerant() -> None:
+    # A fragment carrying only list attributes (no ``node``, no status) is not
+    # a verdictless manifest — it is an excerpt being read for its attributes,
+    # and the nested-key reading of such excerpts is unchanged.
+    fields = reports.parse_manifest(
+        'commits: ["94d31af9f", "57155c6e6"]\nchanged_paths: a.py, b.py\n'
+    )
+
+    assert fields.get("status") is None
+    assert fields["commits"] == ["94d31af9f", "57155c6e6"]
+    assert fields["changed_paths"] == ["a.py", "b.py"]
+
+
+def test_a_derived_artifact_without_a_status_key_is_not_refused() -> None:
+    # Recovery fabricates a manifest to preserve a terminal run's evidence and
+    # declares the artifact through ``derived``, not through a status. Reading
+    # that body back must not be blocked by the missing-status refusal.
+    fields = reports.parse_manifest(
+        "node: node-a\nderived: true\nchanged_paths: result.txt\nartifacts: none\n"
+    )
+
+    assert fields.get("status") is None
+    assert fields["derived"] == "true"
+    assert fields["changed_paths"] == ["result.txt"]
+
+
 def test_an_unknown_status_word_raises_naming_the_word_and_the_recognised() -> None:
     # An invented word is refused rather than carried forward as a state; the
     # refusal names the word it found and the set it recognises, so a reader
