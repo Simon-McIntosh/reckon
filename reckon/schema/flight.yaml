@@ -351,6 +351,16 @@ slots:
       the backend the caller named. A fallback that is itself held still
       refuses; this key does not chain into a search across backends.
 
+  budget_group:
+    description: >-
+      Name shared by backends that draw on the same account quota. A pool is
+      declared, never inferred: identical probe readings or reset times are
+      evidence only that two backends were observed the same way, never that
+      they share a budget, so a backend with no declared group stays ungrouped
+      however alike its siblings read. Optional operator data naming the
+      owner's own pool; the schema supplies none.
+    range: string
+
   utilisation_ceiling_pct:
     description: >-
       Reported utilisation, as a percentage, at or above which a wave will not
@@ -563,6 +573,7 @@ classes:
       - usable_input_window
       - max_concurrent_runs
       - fallback
+      - budget_group
       - time_budget
       - token_budget
 

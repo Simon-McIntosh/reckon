@@ -695,6 +695,135 @@ def test_a_hold_is_a_summary_occasion(layers):
     assert "hold" in resolve_files(layers).config["summary"]["at"]
 
 
+# ── Quota pools are declared, never inferred ────────────────────────────────
+
+
+def test_the_schema_declares_the_quota_group_slot_a_backend_carries():
+    """A pool is named by a declared ``budget_group``, so the slot must live in
+    the generated backend schema and in the LinkML source it derives from — not
+    be an ad-hoc key a config could only produce by being invalid."""
+    schema = json.loads((ROOT / "docs" / "_shared" / "flight.schema.json").read_text())
+    backend_def = _find_backend_def(schema.get("$defs", schema))
+    assert backend_def is not None
+    group = backend_def["properties"]["budget_group"]
+    assert "string" in group["type"]
+    source = (ROOT / "reckon" / "schema" / "flight.yaml").read_text()
+    assert "budget_group:" in source
+
+
+def test_a_declared_quota_group_resolves_and_names_the_layer_that_set_it(
+    tmp_path,
+):
+    """A backend's ``budget_group`` is a config value like any other: it resolves
+    through the merge and carries the origin of the layer that supplied it, so a
+    fresh install can name pools from the shipped layer and a host or project
+    layer can re-pool them without the origin being ambiguous."""
+    shipped = write(
+        tmp_path / "shipped" / "flight.yaml",
+        "backends:\n"
+        "  alpha:\n"
+        "    launch: cli\n"
+        "    command: probe-cli\n"
+        "    budget_group: pool-a\n",
+    )
+    host = write(
+        tmp_path / "host" / "flight.yaml",
+        "backends:\n  alpha:\n    budget_group: pool-b\n",
+    )
+
+    from_ship = resolve(shipped_path=shipped, host_path=tmp_path / "absent.yaml")
+    assert from_ship.config["backends"]["alpha"]["budget_group"] == "pool-a"
+    assert from_ship.origin("backends.alpha.budget_group") == "shipped"
+
+    overridden = resolve(shipped_path=shipped, host_path=host)
+    assert overridden.config["backends"]["alpha"]["budget_group"] == "pool-b"
+    assert overridden.origin("backends.alpha.budget_group") == "host"
+
+
+def test_two_backends_declaring_the_same_group_resolve_as_one_pool(tmp_path):
+    """Same declared group is the whole of pool membership; resolution needs
+    nothing else to know that two backends draw on one budget."""
+    shipped = write(
+        tmp_path / "shipped" / "flight.yaml",
+        "backends:\n"
+        "  alpha:\n"
+        "    launch: cli\n"
+        "    command: probe-cli\n"
+        "    budget_group: pool-a\n"
+        "  beta:\n"
+        "    launch: cli\n"
+        "    command: probe-cli\n"
+        "    budget_group: pool-a\n",
+    )
+
+    backends = resolve(shipped_path=shipped, host_path=tmp_path / "absent.yaml").config[
+        "backends"
+    ]
+
+    assert backends["alpha"]["budget_group"] == backends["beta"]["budget_group"]
+    members = sorted(
+        name
+        for name, settings in backends.items()
+        if settings.get("budget_group") == "pool-a"
+    )
+    assert members == ["alpha", "beta"]
+
+
+def test_an_identical_reset_time_never_groups_without_a_declared_group(
+    tmp_path,
+):
+    """A shared reset figure is an observed coincidence, not a config value, so
+    it can neither join two backends into a pool nor shift an existing one.
+    Membership is keyed on the declared slot alone, asserted directly: two
+    backends that read identically but declare no group stay separate, and the
+    reset time cannot even be written as a backend key to talk its way in."""
+    shared_reset = "2026-01-01T00:00:00Z"
+    shipped = write(
+        tmp_path / "shipped" / "flight.yaml",
+        "backends:\n"
+        "  alpha:\n"
+        "    launch: cli\n"
+        "    command: probe-cli\n"
+        "  gamma:\n"
+        "    launch: cli\n"
+        "    command: probe-cli\n",
+    )
+
+    config = resolve(shipped_path=shipped, host_path=tmp_path / "absent.yaml").config
+    backends = config["backends"]
+    assert "budget_group" not in backends["alpha"]
+    assert "budget_group" not in backends["gamma"]
+
+    # The premise: the pair would be observed sharing one reset figure — the
+    # value a budget report carries as resets_at — an identical coincidence for
+    # both. The only grouping signal the config carries is the declared slot,
+    # so neither backend joins a pool and the pair stays separate.
+    def _members():
+        return [
+            name
+            for name, settings in backends.items()
+            if settings.get("budget_group") is not None
+        ]
+
+    assert _members() == []
+    # `shared_reset` also drives the attempt below that the schema refuses.
+
+    # A reset time is not a key the schema accepts on a backend, so it can
+    # never reach the grouping through a validated config.
+    with_group_key = write(
+        tmp_path / "shipped-with-key" / "flight.yaml",
+        "backends:\n"
+        "  alpha:\n"
+        "    launch: cli\n"
+        "    command: probe-cli\n"
+        f"    resets_at: {shared_reset}\n",
+    )
+    with pytest.raises(FlightConfigError) as excinfo:
+        resolve(shipped_path=with_group_key, host_path=tmp_path / "absent.yaml")
+    assert excinfo.value.key_path == "backends.alpha.resets_at"
+    assert "not permitted" in excinfo.value.constraint
+
+
 def test_shipped_backend_survives_a_host_layer_adding_another(layers):
     """Adding a backend must not delete the one that shipped."""
     write(
