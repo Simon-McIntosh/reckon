@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 </head>
 <body>
   <main class="plan-doc">
@@ -192,6 +192,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260915-the-review-caught-an-unauthorised-exception" data-who="reckon-ship" data-when="2026-09-15T09:45:00Z">
     <div class="r-comment-body"><p><strong>§2 LANDED — commits <code>981e323</code> and <code>35bd95d</code>, merged. Gate passed: 34 tests in <code>tests/test_roadmap.py</code> covering four cases, plus 116 sibling smoke and the schema byte-identity check. Independent review scored 89</strong> (goal fidelity 16, evidence 18, scope discipline 20, durability 17, fit 18).</p><p><strong>The review found a defect this coordinator had read past, and that is the whole argument for the gate.</strong> The implementation suppresses the finding when the endpoint plan's own status is terminal (<code>reckon/roadmap.py:1501</code>). This section's contract authorises exactly one silence: <em>the finding is absent for a sink with no live members beneath it, which is an ordinary leaf rather than an outcome.</em> Those are different conditions. A shipped endpoint plan that still has unshipped members beneath it is precisely a closure someone would want addressable, and it is now silent.</p><p><strong>The coordinator's own verification missed it by conflating the two.</strong> Reading the diff before merging, the terminal-status skip was checked off against the leaf clause — the note recorded at the time was <em>skips terminal endpoints, matches 'a sink with no live members'</em>. It does not match it; it is a broader exception that the contract never granted. The reviewer read the same two lines against the same contract and reported the mismatch with a citation. Both readers had identical information and one of them was careful about a distinction the other smoothed over, which is what a second reader is for and why a worker-authored gate cannot substitute.</p><p><strong>Measured rather than argued:</strong> the reviewer's direct probe reports <code>terminal_endpoints=[closed-endpoint]</code> and <code>terminal_findings=[]</code> — so the suppressed case exists in this project today and reports nothing.</p><p><strong>Disposition: repair the code rather than authorise the exception.</strong> The contract is explicit and was locked with its rationale earlier today, so bringing the implementation into line is a repair and not a new decision. The condition becomes what the contract says — absent when no live members sit beneath the endpoint — rather than keying on the endpoint plan's own lifecycle. Authorising the broader silence would be the other legitimate route, and it is rejected because nobody has argued for it; a shipped umbrella over unshipped work is the case the finding exists to surface.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260915T051704072568-an-endpoint-without-a-handle-reports-itself" data-who="crew-matrix-currency" data-when="2026-09-15T06:31:40.799Z">
+    <div class="r-comment-body"><p>endpoint-without-handle finding landed at warn severity; 34 roadmap tests pass (30 pre-existing + 4 new); independent review scored 89 and found one unauthorised suppression, repaired under a follow-on node</p></div>
 </div>
 </section>
 </main>
