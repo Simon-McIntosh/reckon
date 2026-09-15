@@ -7,9 +7,9 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="crew-observability-truth-landed">
   <meta name="plan-title" content="Crew observability truth — cumulative execution-evidence record">
-  <meta name="plan-summary" content="Nineteen anchors: one per distinct run-outcome comment recorded against crew-observability-truth (15), plus three corrections and one refuted peer finding kept as their own anchors so the reason a reading changed is not lost. Covers §2 liveness, §3 gc repository scoping, §4 the working-bucket honesty defect surfaced by the plan's own execution, §5 budget visibility and the duplicate-backend-key refusal, §6 provider-refusal classification, §16 the reader refusing an undetermined manifest status, a manifest that carries no status key at all, and never reporting a live worker unreadable, and §21 a composed prompt no longer denying the landing write it grants, against the backdrop of one Anthropic spend-limit outage that killed seven local workers in two waves.">
+  <meta name="plan-summary" content="Twenty anchors: one per distinct run-outcome comment recorded against crew-observability-truth (16), plus three corrections and one refuted peer finding kept as their own anchors so the reason a reading changed is not lost. Covers §2 liveness, §3 gc repository scoping, §4 the working-bucket honesty defect surfaced by the plan's own execution, §5 budget visibility and the duplicate-backend-key refusal, §6 provider-refusal classification, §12 a second key on one manifest line refused, §16 the reader refusing an undetermined manifest status, a manifest that carries no status key at all, and never reporting a live worker unreadable, and §21 a composed prompt no longer denying the landing write it grants, against the backdrop of one Anthropic spend-limit outage that killed seven local workers in two waves.">
   <meta name="plan-evidence-for" content="crew-observability-truth">
-  <meta name="plan-verifies" content="crew-observability-truth#s2,crew-observability-truth#s3,crew-observability-truth#s4,crew-observability-truth#s5,crew-observability-truth#s6,crew-observability-truth#s16">
+  <meta name="plan-verifies" content="crew-observability-truth#s2,crew-observability-truth#s3,crew-observability-truth#s4,crew-observability-truth#s5,crew-observability-truth#s6,crew-observability-truth#s12,crew-observability-truth#s16">
   <meta name="plan-recorded-at" content="2026-09-03">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; git worktrees; local backend clive (deepseek-v4-flash, glm-5.3) alongside claude-sonnet-5 during an Anthropic per-account spend-limit outage">
@@ -21,7 +21,7 @@
 <main class="plan-doc">
   <header class="plan-header">
     <h1>Crew observability truth — cumulative execution-evidence record</h1>
-    <p class="plan-summary">Thirteen run-outcome comments recorded against
+    <p class="plan-summary">Sixteen run-outcome comments recorded against
     <code>crew-observability-truth</code>, each with its own anchor below naming its commit and
     the quantitative measure it reported. Four more anchors record the plan's own corrections and
     a refuted peer finding — kept separate from the run outcomes because a record that keeps only
@@ -49,7 +49,7 @@
   </section>
 
   <section id="anchors">
-    <h2>Nineteen anchors</h2>
+    <h2>Twenty anchors</h2>
     <table>
       <thead><tr><th>Section</th><th>Anchor</th><th>Commit</th><th>Kind</th></tr></thead>
       <tbody>
@@ -73,6 +73,7 @@
         <tr><td>§16</td><td><a href="#live-worker-never-unreadable">live-worker-never-unreadable</a></td><td>8183a63</td><td>run outcome</td></tr>
         <tr><td>§21</td><td><a href="#landing-not-also-denied">landing-not-also-denied</a></td><td>93806e6</td><td>run outcome</td></tr>
         <tr><td>§20</td><td><a href="#reason-keeps-its-predicate-at-the-measured-width">reason-keeps-its-predicate-at-the-measured-width</a></td><td>ba487aa</td><td>run outcome</td></tr>
+        <tr><td>§12</td><td><a href="#manifest-two-keys-on-one-line-refused">manifest-two-keys-on-one-line-refused</a></td><td>9a2f95e</td><td>run outcome</td></tr>
       </tbody>
     </table>
   </section>
@@ -606,6 +607,28 @@ reading taken as an authority it was not.</p>
     two-file gate carries the identical single environmental failure at base
     (<code>4776d83</code>) and after with 101 passed against 106 passed, so the change adds five
     cases and no failures.</p>
+  </section>
+
+  <section id="manifest-two-keys-on-one-line-refused">
+    <h3>&#167;12 &mdash; The reader refuses a line carrying a second key after its value</h3>
+    <p>Run <code>r-20260915T050616709566-a-second-key-on-a-manifest-line-is-reported</code>. Commit
+    <code>9a2f95e</code>, 119 insertions over 2 files (1 test, 1 source).</p>
+    <p><strong>Measure:</strong> <code>tests/test_manifest_parse_format.py</code> asserts a
+    manifest whose <code>commits</code> and <code>changed_paths</code> keys share one line is
+    reported naming that line (line 3) and both keys it found, and that the same two keys on
+    separate lines still parse to the sha and both paths unchanged &mdash; 41 passed in the gate
+    against 37 at base: four new cases, no failures. The corruption is reproduced before the fix
+    against real one-line manifests in historical run directories: commits reads as one corrupt
+    string carrying the rest of the line and changed_paths reads an empty list. The tolerant
+    reader now refuses the offending top-level line rather than misparsing it, naming the line
+    and both keys; a value that is itself a JSON literal (a structured evidence block) stays
+    whole because the manifest keys inside it are nested data, not a second top-level field, and
+    only the manifest vocabulary is matched, so a URL scheme or prose containing a colon cannot
+    raise. Every production reader tolerates the refusal &mdash; recovery reads it unreadable,
+    the CLI surfaces it, the promotion guards catch it as a ValueError and continue &mdash; and
+    the separate-line form is asserted unchanged. The promotion guard for changed paths without
+    a commit still swallows a parse refusal as a skip rather than refusing; making that guard
+    speak is a promotion-layer change recorded as a follow-on.</p>
   </section>
 
   <section id="landing-not-also-denied">
