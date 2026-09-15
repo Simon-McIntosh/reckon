@@ -722,39 +722,47 @@ def test_plan_and_sprint_views_surface_only_matching_live_work():
     assert "Copy run command" in band
     assert "reckon crew observe --run ${run.run_id}" in band
 
-    # Exercise the sprint's live-work projection rather than pinning its wording.
+    # The sprint surface now projects live work as the chain figure: it hands
+    # the project's plans and its live runs to the shared crew schedule, which
+    # scopes runs to the project. The two-day strip is gone.
     live_work_projection = _extract_component(
         sprint,
-        "function completedRunTime",
-        "function Sprint(",
+        "function derivedFlowChainHours",
+        "function sprintStateRows",
     )
     script = (
-        "const HORIZON_HOURS = 48;\n"
-        "const HOUR_MS = 60 * 60 * 1000;\n"
+        "globalThis.window = globalThis;\n"
+        "window.ReckonCrewSchedule = {\n"
+        "  farEnd(inventory, runs, project, now) {\n"
+        "    return {\n"
+        "      slugs: inventory.map(plan => plan.slug),\n"
+        "      runs: runs.map(run => run.run_id),\n"
+        "      project,\n"
+        "      now: now.toISOString(),\n"
+        "    };\n"
+        "  },\n"
+        "};\n"
         + live_work_projection
         + "\n"
         + """
-const sprint = {
-  items: [{ slug: "focus" }, { slug: "also-focus" }],
-};
+const projectPlans = [
+  { slug: "focus", type: "plan", project: "reckon" },
+  { slug: "other-plan", type: "plan", project: "other" },
+];
 const runs = [{
   run_id: "matching-run",
-  plan: "focus",
-  node: "matching-work",
-  dispatched_at: "2026-09-01T10:00:00Z",
+  project: "reckon",
 }, {
-  run_id: "unrelated-run",
-  plan: "elsewhere",
-  node: "unrelated-work",
-  dispatched_at: "2026-09-01T10:30:00Z",
+  run_id: "other-run",
+  project: "other",
 }];
-const strip = sprintActivityStrip(sprint, "2026-09-01T12:00:00Z", [], runs);
-console.log(JSON.stringify({
-  liveEvents: strip.events.map(event => ({
-    kind: event.kind,
-    runId: event.run.run_id,
-  })),
-}));
+const received = derivedFlowChainHours(
+  projectPlans,
+  runs,
+  "reckon",
+  new Date("2026-09-01T12:00:00Z")
+);
+console.log(JSON.stringify(received));
 """
     )
     rendered = subprocess.run(
@@ -764,7 +772,10 @@ console.log(JSON.stringify({
         check=True,
     )
     assert json.loads(rendered.stdout) == {
-        "liveEvents": [{"kind": "live", "runId": "matching-run"}],
+        "slugs": ["focus", "other-plan"],
+        "runs": ["matching-run", "other-run"],
+        "project": "reckon",
+        "now": "2026-09-01T12:00:00.000Z",
     }
 
 

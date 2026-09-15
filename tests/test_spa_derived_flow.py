@@ -214,6 +214,17 @@ def test_rendered_flow_precedes_cards_and_dims_other_sprints_to_point_two_eight(
         plans=plans,
         runs=runs,
         probe="""
+const injectedNow = new Date("2026-09-04T04:00:00Z");
+const RealDate = Date;
+class FixedNowDate extends RealDate {
+  constructor(...args) {
+    super(...(args.length ? args : [injectedNow.getTime()]));
+  }
+  static now() {
+    return injectedNow.getTime();
+  }
+}
+globalThis.Date = FixedNowDate;
 globalThis.__selectedSprint = "beta";
 const flow = window.__derivedFlowTest.DerivedFlow({ plans, runs, project: "reckon" });
 const bars = findAll(flow, node => hasClass(node, "r-derived-flow-bar"));

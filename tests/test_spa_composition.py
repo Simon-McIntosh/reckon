@@ -76,6 +76,9 @@ def _evaluate_sprint_helpers(expression: str):
             "naturalSprintKey",
             "compareNaturalSprintIds",
             "orderedSprints",
+            "sprintMemberSlugs",
+            "sprintMembers",
+            "sprintHoursSummary",
             "sprintStateRows",
             "readyLaneRows",
             "readyLaneState",
@@ -100,7 +103,9 @@ def test_sprint_surface_consumes_composed_review_without_a_review_fetch() -> Non
 
     assert "const review = M.review || null" in source
     assert "review.sprint_order" in source
-    assert "sprint.metrics || {}" in source
+    # Composed sprint metrics now reach the surface through the state-row
+    # projection over the served inventory, not a distinct review metrics dump.
+    assert "sprintStateRows(allSprints, M.inventory)" in source
     assert "review.priority || []" in source
     assert "review?.findings || []" in source
     assert "fetch(`/review" not in source
@@ -125,54 +130,55 @@ def test_sprint_state_rows_keep_composed_metrics_dates_and_independent_flags() -
             "status": "active",
             "starts": "",
             "ends": "",
-            "metrics": {
-                "item_count": 2,
-                "by_effective_status": {"active": 1, "blocked": 1},
-                "mean_impl": 0.375,
-                "current_work": [{"slug": "alpha", "title": "Alpha"}],
-            },
+            "derived_state": "active",
+            "state_drift": {"stored": "planned", "derived": "active"},
+            "implementation_pct": 37.5,
+            "items": ["alpha"],
+            "metrics": {"item_count": 2, "mean_impl": 0.375},
         },
         {
             "id": "S10",
             "status": "planned",
             "ends": "2026-08-31",
-            "metrics": {
-                "item_count": 1,
-                "by_effective_status": {"pending": 1},
-                "mean_impl": 0.0,
-                "current_work": [],
-            },
+            "derived_state": "planned",
+            "blocked": 2,
+            "metrics": {"item_count": 1, "mean_impl": 0.0},
         },
         {
             "id": "S1",
             "status": "done",
             "starts": "",
             "ends": "",
-            "metrics": {
-                "item_count": 1,
-                "by_effective_status": {"shipped": 1},
-                "mean_impl": 1.0,
-                "current_work": [],
-            },
+            "derived_state": "shipped",
+            "metrics": {"item_count": 1, "mean_impl": 1.0},
         },
     ]
+    inventory = [{"slug": "alpha", "title": "Alpha", "effort_hours": 3, "impl": 1}]
     rows = _evaluate_sprint_helpers(
         f"sprintStateRows(orderedSprints({json.dumps(sprints)}, "
-        f'{{sprint_order: ["S2", "S10", "S1"]}}), "2026-09-01")'
+        f'{{sprint_order: ["S2", "S10", "S1"]}}), {json.dumps(inventory)})'
     )
 
     assert [row["sprint"]["id"] for row in rows] == ["S2", "S10", "S1"]
-    assert [row["position"] for row in rows] == [1, 2, 3]
-    assert rows[0] | {} == {
-        **rows[0],
-        "active": True,
-        "blockedCount": 1,
-        "delayed": False,
-        "closed": False,
-    }
-    assert rows[0]["metrics"]["mean_impl"] == 0.375
-    assert rows[0]["metrics"]["current_work"] == [{"slug": "alpha", "title": "Alpha"}]
-    assert rows[1]["delayed"] is True
+    # The first row keeps its authored window and its composed metrics; the
+    # row adds derived state, drift flag, held count, impl fraction, member
+    # hours and the closure verdict.
+    assert rows[0]["sprint"]["starts"] == ""
+    assert rows[0]["sprint"]["ends"] == ""
+    assert rows[0]["sprint"]["metrics"]["mean_impl"] == 0.375
+    assert rows[0]["state"] == "active"
+    assert rows[0]["flag"] == "was planned"
+    assert rows[0]["heldCount"] == 0
+    assert rows[0]["meanImpl"] == 0.375
+    assert [member["slug"] for member in rows[0]["members"]] == ["alpha"]
+    assert rows[0]["hours"] == {"total": 3, "left": 0}
+    assert rows[0]["closed"] is False
+    # The second row keeps its end date and reads two-held, with closure still
+    # driven by a shipped derived state or an authored done status.
+    assert rows[1]["sprint"]["ends"] == "2026-08-31"
+    assert rows[1]["flag"] == "2 held"
+    assert rows[1]["heldCount"] == 2
+    assert rows[1]["closed"] is False
     assert rows[2]["closed"] is True
 
 
@@ -202,9 +208,12 @@ def test_sprint_state_table_is_primary_and_uses_composed_rows_without_refetch() 
     assert "stateRows.map(row =>" in source
     assert "hidden={foldClosed && row.closed}" in source
     assert 'className="r-sprint-conflict"' in source
-    assert "metrics.by_effective_status || {}" in row_derivation
-    assert "metrics.mean_impl" in source
-    assert "metrics.current_work || []" in source
+    # The composed status board is gone: the primary table maps state rows that
+    # project derived state, impl fraction and current-work members in place of
+    # the retired review metrics block, all without a review fetch.
+    assert 'const state = sprint.derived_state || "unknown";' in row_derivation
+    assert "Number(sprint.implementation_pct || 0) / 100" in source
+    assert "sprintMembers(sprint, inventory)" in source
     assert "sprintInventoryItems" not in row_derivation
     assert "fetch(`/review" not in source
 
