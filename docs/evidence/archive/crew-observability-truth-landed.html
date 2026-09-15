@@ -642,6 +642,31 @@ reading taken as an authority it was not.</p>
       vocabulary check; the accepted words themselves did not widen.</p>
   </section>
 
+  <section id="manifest-emphasis-location-parsed">
+    <h3>&#167;16 &mdash; The field key survives emphasis on either side of its colon</h3>
+    <p>Run
+      <code>r-20260915T095449749154-the-key-is-found-whatever-decorates-it</code>. Commit
+      <code>aab1f788</code>, 17 insertions and 8 deletions across one source file and one
+      test file.</p>
+    <p><strong>Defect reproduction:</strong> the existing six decorated spellings and all 53
+      earlier cases passed at base, but the dash-listed and unlisted forms whose closing bold
+      marker precedes the colon each raised
+      <code>ManifestParseError</code> saying no <code>key: value</code> field could be read.
+      The reproduction gate reported 2 failed and 60 passed after adding the exact cases,
+      establishing that emphasis placement rather than manifest status semantics was the
+      remaining distinction.</p>
+    <p><strong>Measure:</strong> <code>tests/test_manifest_parse_format.py</code> passed all
+      62 cases after the repair against 59 passing cases at base. The parameterised assertion
+      now covers all eight required lines exactly: plain, indented, dash- and star-listed,
+      bold with closing emphasis before or after the colon, and an inline-code value. The
+      missing-status refusal, the explicit <code>done</code> refusal naming that word, the
+      two-keys-on-one-line refusal, and literal preservation of a bracketed single commit
+      identifier all pass in the same gate.</p>
+    <p><strong>Mechanism:</strong> the decorated-field matcher accepts the closing bold
+      marker immediately before or after the colon while still requiring the parsed
+      key to belong to the manifest vocabulary. No accepted status word changed.</p>
+  </section>
+
   <section id="manifest-two-keys-on-one-line-refused">
     <h3>&#167;12 &mdash; The reader refuses a line carrying a second key after its value</h3>
     <p>Run <code>r-20260915T050616709566-a-second-key-on-a-manifest-line-is-reported</code>. Commit
