@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="30">
+<meta name="plan-version" content="31">
 <meta name="plan-section-declarations" content="{&quot;what-is-wrong&quot;:&quot;done&quot;,&quot;the-surface&quot;:&quot;done&quot;,&quot;where-the-probe-lives&quot;:&quot;done&quot;,&quot;parse-strictly&quot;:&quot;done&quot;,&quot;coordinator-share&quot;:&quot;done&quot;,&quot;pin-the-denominator&quot;:&quot;done&quot;,&quot;what-prose-was-hiding&quot;:&quot;implementable&quot;,&quot;read-before-you-dispatch&quot;:&quot;done&quot;,&quot;out-of-scope&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="5e3e041c895353a003e15954382a78b49151a2ac,fab092dafb269286fb2f6bc1dbfb1f060dd95247,50c436f3c1865e2e11a662829f87283660a13da5,fff2ca7,a9a9d027b0ce92363356e120209e11b4c4f0c3bd,b316011,47a3180">
 <meta name="plan-artifacts" content="reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/budget.py,reckon/_backends.py,tests/test_coordinator_reserve.py,tests/test_flight.py,tests/test_claude_account_surface.py,tests/fixtures/backends/claude-account-limits.json,docs/evidence/archive/a-lane-can-say-where-it-stands-landed.html">
@@ -545,6 +545,9 @@
 </div>
 <div class="r-comment" data-section="what-prose-was-hiding" data-id="c-run-r-20260915T053935220941-cache-fallback-rendered-with-age" data-who="crew-fetch-age" data-when="2026-09-15T05:39:00.000Z">
     <div class="r-comment-body"><p>The on-disk cache fallback is rendered beside its fetch age. probe_budget gains an explicit cache_path; the cached block is parsed under the same strict rule as a live answer and carries the figure, the fetch stamp, the numeric age and a detail naming the age in one block, and a block with no resolvable stamp is unknown rather than a figure. A known live reading wins outright with no age markers, and without an explicit cache_path no cached figure surfaces at all. 31 passed in test_backend_observation.py, 7 test cases added, failure delta 0 against the stated base; the reconstructed-backend half of this section is untouched and recorded as blocked on a peer's live claim over reckon/crew/recovery.py</p></div>
+</div>
+<div class="r-comment" data-section="what-prose-was-hiding" data-id="c-run-r-20260915T053935220941-a-cached-reading-is-never-shown-without-its-age" data-who="crew-backpressure" data-when="2026-09-15T08:30:18.212Z">
+    <div class="r-comment-body"><p>A cached account reading is returned only as an explicit fallback and always carries its fetch stamp, numeric age and an age-naming detail in the same block; no resolvable stamp reads unknown rather than showing a bare figure, an unreadable cache is an unknown reason not a raise, and a known live reading wins outright with no age markers. 31 passed, 7 cases added, failure delta 0 against base a736189 across the five-file asserting cohort. The reconstructed-backend half of the same section is deliberately untaken, blocked on a peer&#x27;s live claim over reckon/crew/recovery.py.</p></div>
 </div>
 </section>
 </main>
