@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-capture-is-validated-by-its-index-landed">
+  <meta name="plan-title" content="A Capture Is Validated By Its Index — landed evidence">
+  <meta name="plan-summary" content="The capture gate reads indexes and file stats, not PNG bytes.">
+  <meta name="plan-evidence-for" content="a-capture-is-validated-by-its-index">
+  <meta name="plan-verifies" content="a-capture-is-validated-by-its-index#s2">
+  <meta name="plan-commits" content="1720fe8">
+  <meta name="plan-artifacts" content="tests/test_spa_owed_captures.py,docs/figures/artifact-feeds-and-reader/after/capture-index.json">
+  <meta name="plan-recorded-at" content="2026-09-15">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-environment" content="reckon project virtual environment">
+  <meta name="plan-tags" content="spa,captures,verification">
+  <title>A Capture Is Validated By Its Index — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence</p>
+      <h1>A Capture Is Validated By Its Index</h1>
+      <p class="lead">The gate now accepts only capture-time index facts and filesystem stats; it opens 0 image bytes.</p>
+    </header>
+
+    <section id="s2">
+      <h2>&sect;2 &mdash; The index is the contract</h2>
+      <p>Commit <code>1720fe8</code> removed the PNG-header read from the capture gate. Each capture is validated from its index entry and the stat of its named file: recorded width and height, nonempty filename, file presence, nonzero file size, population fields, and the plan's declared surface and width set.</p>
+      <p>The prior defect was reproduced before the change by replacing <code>Path.read_bytes</code> with a refusal. The base gate emitted <code>IMAGE_BYTES_OPENED</code>, proving that its prior success still depended on image content.</p>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Capture indexes read</td><td>4</td></tr>
+          <tr><td>Captures read from those indexes</td><td>26</td></tr>
+          <tr><td>Image bytes opened</td><td>0</td></tr>
+          <tr><td>Artifact-feeds-and-reader captures admitted</td><td>8</td></tr>
+          <tr><td>Rostered plans</td><td>4, raised from 3</td></tr>
+        </tbody>
+      </table>
+      <p>The guard is demonstrated to refuse both relevant text failures: an index naming an absent file raises <code>capture file missing</code>, while an indexed capture with <code>rowCount</code> equal to zero is rejected on that population field.</p>
+    </section>
+
+    <section id="verification">
+      <h2>Verification</h2>
+      <p><code>pytest tests/test_spa_owed_captures.py -q</code> passed: 6 passed, exit 0. The added image-byte sentinel makes an accidental future <code>Path.read_bytes</code> call fail visibly rather than treating gate success as proof of lane independence.</p>
+    </section>
+  </main>
+</body>
+</html>

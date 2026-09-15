@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -60,6 +60,13 @@
     demonstrated able to refuse in two distinct ways, once against an index naming a file that does
     not exist and once against an index whose row count is zero, each recorded. State as a digit
     how many captures the gate reads and how many image bytes it opens, the second being zero.</p>
+    <h3>Landing record</h3>
+    <p>Commit <code>1720fe8</code> makes the gate read four indexes for <strong>26</strong> captures
+    and stat each indexed filename while opening <strong>0</strong> image bytes. The roster now has
+    <strong>4</strong> plans, raised from 3 by admitting the eight committed captures of
+    <code>artifact-feeds-and-reader</code>. The gate refuses both an absent indexed file and
+    <code>rowCount=0</code>; its focused test passes 6 cases. Full record:
+    <a href="/reckon/evidence/archive/a-capture-is-validated-by-its-index-landed#s2">§2 landed evidence</a>.</p>
 
     <h2 id="s3">&sect;3 &mdash; The eight captures already produced</h2>
     <p>The dead node's output is real and sits uncommitted in its worktree: eight PNGs and a
@@ -99,7 +106,7 @@
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-acivbi-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-15" data-recommends-skill="/reckon-ship a-capture-is-validated-by-its-index" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">State the contract, then recover the captures it unblocks</h4>
-    <div class="r-fu-body"><p>&sect;2 first and alone, because &sect;3 cannot be gated until the gate reads an index. Then &sect;3, which commits eight captures already on disk in a dead node's worktree and adds their plan to the gate's roster.</p><p>Both measures are refusals rather than successes. &sect;2 must be shown failing twice, once on an index naming an absent file and once on a zero row count, because a validator never demonstrated to refuse cannot be distinguished from one that accepts anything. &sect;3 must be shown refusing this plan's own captures against an emptied index, so its place in the roster is load bearing rather than decorative. The number that matters in &sect;2 is the count of image bytes opened, which is zero.</p></div>
+    <div class="r-fu-body"><p>§2 first and alone, because §3 cannot be gated until the gate reads an index. Then §3, which commits eight captures already on disk in a dead node's worktree and adds their plan to the gate's roster.</p><p>Both measures are refusals rather than successes. §2 must be shown failing twice, once on an index naming an absent file and once on a zero row count, because a validator never demonstrated to refuse cannot be distinguished from one that accepts anything. §3 must be shown refusing this plan's own captures against an emptied index, so its place in the roster is load bearing rather than decorative. The number that matters in §2 is the count of image bytes opened, which is zero.</p></div>
     <pre class="r-fu-prompt">/reckon-ship a-capture-is-validated-by-its-index</pre>
     </article>
 </section>
