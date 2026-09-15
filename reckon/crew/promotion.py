@@ -401,15 +401,10 @@ def _require_gate_log_agrees(
 ) -> None:
     """Refuse a passing gate whose cited log contradicts the asserted check.
 
-    A promotion cites three pieces of evidence for a passing gate — the check
-    command, the exit status the check returned, and the captured log — and
-    verifies none of them against the others. A ledger row whose verdict its
-    own evidence refutes is what every downstream reader and every calibration
-    figure reasons from, so a contradiction is refused here rather than stored.
-    Two such rows are on record: one carried the wrong log for its run, and one
-    asserted exit status zero beside a log whose entire content was a shell
-    command-not-found error at exit two, naming a subcommand that does not
-    exist. Both were caught by a person reading afterwards.
+    A promotion cites three pieces of evidence for a passing gate: the check
+    command, its asserted exit status, and its captured log. A contradiction is
+    refused before the ledger stores a verdict that downstream calibration and
+    routing would otherwise treat as evidence.
 
     The check reads the log as text and parses no runner's result format: it
     never re-runs the command and it recognises no test-output schema, so a
@@ -425,8 +420,10 @@ def _require_gate_log_agrees(
       terminal ``EXIT=<n>`` capture record differs from the asserted status
       has filed contradictory evidence.
     * no evidence the command ran — a line carrying the shell's own
-      command-not-found diagnostic states the command never executed, so the
-      log cannot evidence the pass being asserted.
+      command-not-found diagnostic, without a positive terminal ``EXIT=0``
+      record, states the command never executed. A runner log may quote that
+      phrase in fixture or assertion output, so the diagnostic cannot override
+      a positive record from the capture shell.
     """
     if verdict != "passed" or not isinstance(gate_check, Mapping):
         return
@@ -462,7 +459,7 @@ def _require_gate_log_agrees(
             "that contradicts the asserted one. Re-run the check and cite its "
             "log, or re-promote with the verdict the evidence actually shows"
         )
-    if re.search(r"\bcommand not found\b", log_text):
+    if recorded != 0 and re.search(r"\bcommand not found\b", log_text):
         raise CrewError(
             f"run {run_id!r} asserts gate 'passed' but its cited log "
             f"{log_path!r} carries the shell's 'command not found' "

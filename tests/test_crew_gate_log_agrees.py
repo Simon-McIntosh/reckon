@@ -1,16 +1,6 @@
 """A promoted passing gate's cited log must agree with its asserted verdict.
 
-The promotion path asks for a gate command, an exit status and a log and,
-until now, checked none of them against the others: promotion recorded
-whatever three pieces of evidence a coordinator filed, so the committed ledger
-could carry a row whose verdict its own evidence refuted. Two such rows are on
-record — one with the wrong log attached to a run, and one asserting exit
-status zero beside a log whose entire content was a shell command-not-found
-error at exit two, naming a subcommand that does not exist while the real
-entry points both do. Both were caught by a person reading afterwards; nothing
-in the machinery read the log at all.
-
-These tests pin the refusal: a promotion asserting a passing gate is refused
+A promotion asserting a passing gate is refused
 when the cited log is empty, when the log's own recorded exit status
 contradicts the asserted one, or when the log contains no evidence the command
 ran; the refusal names which of the three it found and the resolving verb; a
@@ -21,6 +11,7 @@ verdict is unaffected, since it already carries its failure.
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -51,6 +42,40 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         f'<meta name="plan-slug" content="{PLAN}">'
         '<meta name="plan-effort-hours" content="4">'
         f"<title>{PLAN}</title></head><body></body></html>"
+    )
+    for arguments in (
+        ("init", "-q", "-b", "main"),
+        ("config", "user.email", "worker@example.invalid"),
+        ("config", "user.name", "Worker"),
+    ):
+        subprocess.run(
+            ["git", *arguments],
+            cwd=root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    subprocess.run(
+        ["git", "add", "docs"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    subprocess.run(
+        [
+            "git",
+            "commit",
+            "-q",
+            "-m",
+            "test: seed repository",
+            "-m",
+            "Create the tracked plan store that promotion commits into.",
+        ],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
     )
     return root
 
@@ -222,10 +247,8 @@ def test_promotion_refuses_a_log_showing_the_command_never_ran(
 def test_recorded_pair_of_exit_zero_beside_a_command_not_found_log_is_refused(
     repository: Path, tmp_path: Path
 ) -> None:
-    # The measured contradiction that prompted the refusal: a promotion filed
-    # as exit status zero whose cited log's entire content is a shell
-    # command-not-found error, naming a subcommand that does not exist while
-    # the real entry points both do.
+    # A bare shell diagnostic cannot evidence success merely because the
+    # promotion call asserts an exit status of zero.
     run_id = "r-20260908T120500000000-recorded-pair"
     _write_pointer(run_id, repository)
     contradictory_log = tmp_path / "recorded-pair-gate.log"
@@ -242,6 +265,37 @@ def test_recorded_pair_of_exit_zero_beside_a_command_not_found_log_is_refused(
     assert result.exit_code != 0
     assert "command not found" in result.output
     assert "Found: no evidence the command ran" in result.output
+
+
+@pytest.mark.parametrize(
+    "later_content",
+    [
+        'assert "command not found" in result.output',
+        'diagnostic_fixture = "bash: missing-command: command not found"',
+    ],
+    ids=["quoted-assertion", "fixture-content"],
+)
+def test_positive_exit_record_outranks_command_not_found_text_in_runner_output(
+    repository: Path, tmp_path: Path, later_content: str
+) -> None:
+    run_id = "r-20260915T100000000000-positive-record"
+    _write_pointer(run_id, repository)
+    passing_log = tmp_path / "passing-with-quoted-diagnostic.log"
+    passing_log.write_text(
+        "tests/test_crew_gate_log_agrees.py 13 passed in 0.4s\n"
+        f"{later_content}\n"
+        "EXIT=0\n",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(
+        cli_main, _complete_arguments(run_id, repository, str(passing_log))
+    )
+
+    assert result.exit_code == 0, result.output
+    record = json.loads(result.output)["record"]
+    assert record["gate"] == "passed"
+    assert record["gate_check"]["exit_status"] == 0
 
 
 # ── An agreeing log and command land unchanged ─────────────────────────────

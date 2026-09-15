@@ -79,6 +79,7 @@
         <tr><td>§12</td><td><a href="#manifest-prose-word-not-top-level-key">manifest-prose-word-not-top-level-key</a></td><td>ac8621b</td><td>run outcome</td></tr>
         <tr><td>§12</td><td><a href="#commit-identifiers-remain-text">commit-identifiers-remain-text</a></td><td>a30af4f8</td><td>run outcome</td></tr>
         <tr><td>§19</td><td><a href="#landing-comment-does-not-duplicate-the-worker-record">landing-comment-does-not-duplicate-the-worker-record</a></td><td>8bc1083</td><td>run outcome</td></tr>
+        <tr><td>§10</td><td><a href="#positive-gate-exit-outranks-quoted-diagnostic">positive-gate-exit-outranks-quoted-diagnostic</a></td><td>1601c27c, ebca263f</td><td>run outcome</td></tr>
       </tbody>
     </table>
   </section>
@@ -807,6 +808,27 @@ reading taken as an authority it was not.</p>
     committed, and a worker with no record still lands exactly one comment plus the plan write.
     This anchor is that run's own worker-authored record carrying the same comment id the landing
     path was changed to skip.</p>
+  </section>
+
+  <section id="positive-gate-exit-outranks-quoted-diagnostic">
+    <h3>§10 — A positive gate exit record outranks quoted diagnostic text</h3>
+    <p>Run
+    <code>r-20260915T094812939518-the-gate-reads-a-positive-run-marker</code>. Commit
+    <code>1601c27c</code> changed <code>reckon/crew/promotion.py</code> and
+    <code>tests/test_crew_gate_log_agrees.py</code>; <code>ebca263f</code> kept the touched
+    docstrings mechanism-focused. The base reproduction rejected both a quoted
+    assertion and fixture content with <code>Found: no evidence the command ran</code>, despite
+    each log carrying a pytest pass summary followed by the capture shell's terminal
+    <code>EXIT=0</code>.</p>
+    <p><strong>Measure:</strong> the focused file passes 11 of 11 cases after the repair. Two new
+    parameterized cases prove that quoted or fixture uses of <code>command not found</code> do not
+    override a positive terminal exit record. The pre-existing bare shell diagnostic with no
+    summary and no exit sentinel still refuses with its existing message; the contradictory
+    <code>EXIT=2</code> case still refuses; and the failing-verdict case remains unaffected. The
+    nine pre-existing assertions are unchanged. A final repeat at <code>ebca263f</code> also
+    passed 11 of 11. The fixture now creates the git repository that
+    the current promotion path requires, closing four base failures caused by promotion reaching
+    its durable-store commit before those success-path assertions.</p>
   </section>
 
 </main>
