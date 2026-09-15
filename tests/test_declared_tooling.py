@@ -36,23 +36,55 @@ def _declared_distributions(config: dict[str, object]) -> set[str]:
     return {_distribution_name(requirement) for requirement in requirements}
 
 
-def test_every_configured_tool_namespace_has_declared_distribution() -> None:
-    config = tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text())
+def _tooling_failures(
+    config: dict[str, object],
+) -> tuple[set[str], dict[str, list[str]]]:
+    """Configured namespaces with no distribution mapping, split by failure kind."""
+
     configured_namespaces = set(config.get("tool", {}))
     declared_distributions = _declared_distributions(config)
 
-    unknown_namespaces = configured_namespaces - NAMESPACE_DISTRIBUTIONS.keys()
-    unresolved_namespaces = {
+    unknown = configured_namespaces - NAMESPACE_DISTRIBUTIONS.keys()
+    unresolved = {
         namespace: sorted(NAMESPACE_DISTRIBUTIONS[namespace])
-        for namespace in configured_namespaces - unknown_namespaces
+        for namespace in configured_namespaces - unknown
         if NAMESPACE_DISTRIBUTIONS[namespace].isdisjoint(declared_distributions)
     }
+    return unknown, unresolved
 
-    assert not unknown_namespaces, (
+
+def test_every_configured_tool_namespace_has_declared_distribution() -> None:
+    config = tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text())
+    unknown, unresolved = _tooling_failures(config)
+
+    assert not unknown, (
         "Configured tool namespaces need an explicit distribution mapping: "
-        f"{sorted(unknown_namespaces)}"
+        f"{sorted(unknown)}"
     )
-    assert not unresolved_namespaces, (
-        "Configured tool namespaces resolve to no declared distribution: "
-        f"{unresolved_namespaces}"
+    assert not unresolved, (
+        f"Configured tool namespaces resolve to no declared distribution: {unresolved}"
     )
+
+
+def test_configured_but_undeclared_tool_fails_until_declared() -> None:
+    """Synthesise the tree before a declaration: [tool.ruff] still configured, nothing declares it."""
+
+    config = tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text())
+    assert "ruff" in config["tool"]
+
+    pre_declaration = tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text())
+    pre_declaration["dependency-groups"]["dev"] = [
+        requirement
+        for requirement in pre_declaration["dependency-groups"]["dev"]
+        if _distribution_name(requirement) != "ruff"
+    ]
+
+    unknown, unresolved = _tooling_failures(pre_declaration)
+    assert unknown == set()
+    assert unresolved == {"ruff": ["ruff"]}
+    assert len(unresolved) == 1  # one failing namespace while the tool is undeclared
+
+    unknown, unresolved = _tooling_failures(config)
+    assert unknown == set()
+    assert unresolved == {}
+    assert len(unresolved) == 0  # zero failing namespaces once the tool is declared
