@@ -547,6 +547,19 @@
       and requiring the malformed one to be reported, and by promoting a run whose manifest
       carries the one-line form and requiring the guard to speak.
     </p>
+    <p class="landed-summary">A manifest line carrying a second key after its value is now
+      refused rather than misparsed. The tolerant reader captured the whole remainder of the
+      line as the first key&rsquo;s value, so two keys on one line &mdash; the form three of this
+      section&rsquo;s workers actually wrote &mdash; turned the earlier value into a corrupted
+      string and left the later field an empty list; that empty half is what disarmed the
+      changed-paths-without-commit guard. The refusal names the line and both keys it found, and
+      leaves two safe shapes untouched: a value that is itself a JSON literal (a structured
+      evidence block) is read whole because the keys inside it are nested data, not a second
+      top-level field, and only the manifest vocabulary is matched so a URL scheme or prose
+      colon cannot raise. The promotion guard itself still swallows a parse refusal as a skip;
+      making it speak is a promotion-layer change carried as a follow-on. Landed under commit
+      <code>9a2f95e</code>. Full record:
+      <a href="/reckon/evidence/archive/crew-observability-truth-landed#manifest-two-keys-on-one-line-refused">&#167;12 landed</a>.</p>
 
     <h2 id="s13">&#167;13 &mdash; A quiet fleet and a working one look identical, because nothing reports a wave</h2>
     <p><strong>Directed by the lead 2026-09-09, after a session spent counting completions by
