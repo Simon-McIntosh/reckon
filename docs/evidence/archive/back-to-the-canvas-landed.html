@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="back-to-the-canvas-landed">
+  <meta name="plan-title" content="Read it against the canvas — landed evidence">
+  <meta name="plan-summary" content="Six surfaces drifted from the handoff because every node read the plan's prose and nothing read the canvas. All seven work sections landed, and the last of them is the check that makes the canvas a measure so the drift cannot recur silently.">
+  <meta name="plan-evidence-for" content="back-to-the-canvas">
+  <meta name="plan-verifies" content="reckon:back-to-the-canvas#s2,reckon:back-to-the-canvas#s3,reckon:back-to-the-canvas#s4,reckon:back-to-the-canvas#s5,reckon:back-to-the-canvas#s6,reckon:back-to-the-canvas#s7,reckon:back-to-the-canvas#s8">
+  <meta name="plan-recorded-at" content="2026-09-15">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; headless Chrome on the file scheme; canvas values read from design/reckon-spa-handoff.dc.html rather than retyped">
+  <meta name="plan-commits" content="85844ec,8a87d07,f967b11,46e5976,2feea9f,77d0edf,2a2c0f9,3e62953,ec15c79">
+  <meta name="plan-artifacts" content="docs/ui/reader.css,docs/ui/shell-plans.jsx,docs/ui/shell-titlebar.jsx,docs/ui/sprint.jsx,tests/test_spa_reading_mode.py,tests/test_serve_figure_rows.py,tests/test_spa_canvas_fidelity.py,tests/spa_canvas_values.py">
+  <title>Read it against the canvas — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Read it against the canvas &mdash; landed evidence</h1>
+    <p class="plan-summary">Seven work sections, all landed. Three of them landed only after a
+    review looked for deliverables the plan's own structure could not surface &mdash; which is
+    the same failure, one level up, as the drift the plan was written to correct.</p>
+  </header>
+
+  <section id="overview">
+    <h2>Record scope</h2>
+    <p>Six surfaces had drifted from the handoff canvas because every implementing node read the
+    plan's prose and nothing read the canvas itself. The plan corrected them and, in &sect;8,
+    made the canvas into a measure so the drift cannot recur unnoticed.</p>
+  </section>
+
+  <section id="landed-early">
+    <h2>&sect;2 to &sect;4 and &sect;7 &mdash; corrected before this session</h2>
+    <p>Every routable view and reader kind scrolls inside the viewport; prev, next and the
+    readout read one published list for every artifact kind; the reader chrome returned to the
+    canvas's inline control and ground; and the sprint diagram prints the hours and completion
+    its layout already computed.</p>
+  </section>
+
+  <section id="s5">
+    <h2>&sect;5 &mdash; The measure stopped moving</h2>
+    <p>The section requires full screen to fill the screen <em>and the measure to stop moving</em>.
+    The measure moved: the base reader capped its column at 760px while full screen allowed
+    820px, so the text reflowed at the moment it was being read.</p>
+    <p>The repair sets the base to the larger value, honouring the locked
+    <code>constant-reader-measure</code> decision &mdash; <em>constant at the larger of the
+    two</em> &mdash; which was read directly rather than taken from the commit's citation of it.
+    A rendered probe now reads the content column in the base view, in full screen, and again
+    after Escape, at two widths, and requires all three to agree. At the base revision the same
+    probe read <strong>760, 820, 760</strong>, and that failure was recorded before the fix.</p>
+    <p>The section's named gate could never have caught this: 24 assertions, exactly one of which
+    touched a rendered measure.</p>
+  </section>
+
+  <section id="s6">
+    <h2>&sect;6 &mdash; The figure caption reached the index row</h2>
+    <p>The server emitted each figure's caption and the reader printed it; only the figures index
+    row discarded it. Caption assertions in the covering test rise from <strong>0 to 11</strong>,
+    counted at both revisions, and the row now emits no caption element at all where no
+    description exists rather than falling back to a prettified filename.</p>
+    <p>How this was found is the part worth keeping. The deliverable had been deferred by
+    instruction because its file was concurrently held &mdash; correct practice &mdash; and the
+    record of that deferral went into a <em>landed summary</em>. A reader stops at a summary, and
+    the dependency scan reads plans rather than section text, so the work was invisible to every
+    surface that decides what runs next. A section-level census could not see it either; it took
+    an audit aimed specifically at deliverables stated in prose with no measure of their own.</p>
+  </section>
+
+  <section id="s8">
+    <h2>&sect;8 &mdash; The canvas became a measure</h2>
+    <p>The section meant to stop the drift recurring had no implementation at all: both files its
+    own done-when named were absent from the tree. It now exists &mdash; 13 tests over two new
+    files &mdash; and the property that decides whether it will work is that <strong>every named
+    value is extracted from the canvas import by pattern, never retyped as a literal</strong>. A
+    retyped literal drifts from the canvas silently, which is exactly how six surfaces drifted.</p>
+    <p>It raises <code>CanvasValueError</code> rather than skipping when a named value cannot be
+    found, so a renamed canvas key is reported instead of quietly shrinking the comparison to
+    nothing, and it reports compared, matched and mismatched as counts rather than a bare
+    verdict. Its own tests run it against mutated copies, so it is demonstrated to catch drift
+    rather than only to pass on a clean tree.</p>
+  </section>
+
+  <section id="gate">
+    <h2>The plan's gate is prose, and that is a finding</h2>
+    <p>This plan carries <strong>no gate element</strong>. Its aggregate gate in &sect;7 exists
+    only as prose, so it can neither block the plan nor be reported unmet nor be satisfied. An
+    authored gate element with no passing verdict blocks a plan and drops it out of the ready
+    set, which is loud; a gate written only as prose is silent. While this plan read ready at
+    position one of the sprint's critical path, its own text described an acceptance condition
+    nothing could check.</p>
+    <p>Measured across the sprint at the same time: <strong>no plan in it carries a gate
+    element</strong>, so the project's strict gate enforcement is configured and firing on
+    nothing. The repository's convention is to write the measure as prose when a plan is authored
+    and add the element with its verdict when it lands &mdash; so a gate that never lands is a
+    gate that never existed. The prose carries the intent; only the element has teeth.</p>
+    <p>That is the same defect as the deferred deliverable in &sect;6, one level up. A deliverable
+    written as prose never becomes work anyone can see; a gate written as prose never becomes a
+    condition anything can check.</p>
+  </section>
+</main>
+</body>
+</html>

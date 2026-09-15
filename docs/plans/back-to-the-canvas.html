@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="back-to-the-canvas">
   <meta name="plan-title" content="Read It Against The Canvas">
   <meta name="plan-summary" content="Six surfaces drifted from the handoff because every node read the plan&#x27;s prose and nothing read the canvas. Correct them, and make the canvas a measure.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="18.0">
   <meta name="plan-wall-clock-hours" content="9.0">
@@ -22,14 +22,14 @@
   <meta name="plan-tags" content="reckon-tooling,spa">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-informs" content="artifact-feeds-and-reader,graph-derived-schedule,viewport-containment">
-  <meta name="plan-artifacts" content="design/reckon-spa-handoff.dc.html,docs/ui/state-loader.js,docs/ui/graph.css,docs/ui/reader.css,docs/ui/sprint.jsx,tests/test_spa_vertical_scroll.py,tests/test_spa_sprints_geometry.py">
+  <meta name="plan-artifacts" content="docs/ui/reader.css,docs/ui/shell-plans.jsx,docs/ui/shell-titlebar.jsx,docs/ui/sprint.jsx,tests/test_spa_reading_mode.py,tests/test_serve_figure_rows.py,tests/test_spa_canvas_fidelity.py,tests/spa_canvas_values.py,docs/evidence/archive/back-to-the-canvas-landed.html">
   <title>Read It Against The Canvas | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-commits" content="85844ec,8a87d07,f967b11">
-<meta name="plan-impl" content="0.75">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
 <main class="plan-doc">
@@ -207,10 +207,11 @@
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-btc-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship back-to-the-canvas" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-btc-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-ship" data-written-at="2026-09-04" data-recommends-skill="/reckon-ship back-to-the-canvas" data-resolved-at="2026-09-15T03:50:52+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Scroll first, then the queue, then fidelity last</h4>
     <div class="r-fu-body"><p>§2 opens the chain because an unreadable view cannot be assessed for anything else. §3 to §5 run in sequence on the reader shell; §6 and §7 are file-disjoint from that chain and run alongside it. §8 lands last, because it compares what the other six produce and is the node that stops the drift recurring.</p></div>
     <pre class="r-fu-prompt">/reckon-ship back-to-the-canvas</pre>
+    <p class="r-fu-outcome">done — no followup. All seven work sections landed and every one carries its landing comment; s1 and s9 are context and out-of-scope by construction. The ordering this followup set was followed: scroll first, the reader shell in sequence, fidelity last. Three sections landed in this session and each is recorded with its measure. s5 required the measure to stop moving and the measure moved, 760px at the base and 820px in full screen; the repair sets the base to the larger per the locked constant-reader-measure decision, read directly rather than taken from the commit's citation, and the new probe read 760, 820, 760 at the base before the fix. s6's caption gap had been deferred by instruction and recorded inside a landed summary, where the dependency scan does not read, so it took an audit aimed at prose deliverables to find at all; caption assertions rise from 0 to 11. s8 had no implementation whatever, both of its named files absent, and now exists as 13 tests whose values are extracted from the canvas import by pattern rather than retyped, raising rather than skipping on a missing key. One finding stays on the record rather than being resolved: this plan carries no gate element, so its aggregate gate in s7 is prose and can neither block nor be reported unmet, and no plan in this sprint carries one, which means the project's strict gate enforcement is firing on nothing. That is the same defect as s6's deferred deliverable one level up. Record at docs/evidence/archive/back-to-the-canvas-landed.html.</p>
     </article>
 </section>
 
