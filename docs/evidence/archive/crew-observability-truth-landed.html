@@ -856,6 +856,37 @@ reading taken as an authority it was not.</p>
     its durable-store commit before those success-path assertions.</p>
   </section>
 
+  <section id="live-process-outranks-every-manifest-classification">
+    <h3>&#167;16 &mdash; A live process outranks every manifest-derived classification</h3>
+    <p>Run
+      <code>r-20260915T124728762038-liveness-outranks-every-manifest-classification</code>.
+      Commit <code>882012ef</code>, 228 insertions and 3 deletions over 2 files (1 source, 1
+      test).</p>
+    <p>This extends the sibling record above (commit <code>8183a63</code>). That repair gated the
+    refusal of an unparseable manifest on the process being gone; the same invariant had one
+    remaining hole, the incomplete wait declaration. The wait arm assigned
+    <code>unreadable</code> to a run whose process was still alive &mdash; its siblings
+    (the terminal-report deferral and the refuse-to-parse manifest arm) already consulted
+    liveness, but the wait arm had no guard at all, so a worker mid-write with a half-written
+    wait declaration read as an unreadable delivery.</p>
+    <p><strong>Measure:</strong> the falsifier ranges over every manifest state a live run can
+    reach &mdash; absent, unwritten, complete, blocked, failed, a valid wait declaration, and an
+    incomplete wait declaration &mdash; and for a genuinely alive process asserts no
+    classification path returns <code>unreadable</code>. The live process is proven on this
+    host, so the unreadable reading is impossible for any state. A valid wait keeps its
+    <code>waiting</code> classification (the manifest is the authority for what a parked worker
+    waits on), so liveness is consulted for the unreadable outcome only, not read as a blanket
+    override; an incomplete wait on a live run reads <code>running</code> from liveness with the
+    refusal text still on the row; and the dead control on the same incomplete body stays
+    <code>unreadable</code>, so the reading is not disabled &mdash; it is reserved for manifests
+    at rest. The liveness verdict is hoisted once above the chain and both unreadable-producing
+    readings consult it, so the guarantee cannot decay into per-arm guards. The focused gate adds
+    nine cases: 261 passed against 252 at base
+    (<code>976dba6</code>), with the identical single pre-existing failure in
+    <code>tests/test_mcp_recovery.py</code> present at both revisions &mdash; zero failures
+    added.</p>
+  </section>
+
 </main>
 </body>
 </html>

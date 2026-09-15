@@ -1296,6 +1296,12 @@ def classify_pointer(
         now_seconds=moment,
         stale_after_seconds=stale_after_seconds,
     )
+    if wait is not None and not wait["valid"]:
+        # An incomplete wait declaration is a reading failure carried on the
+        # row whatever the process state: a gone run reads unreadable from it,
+        # a live run reads running from liveness with the same text beside it,
+        # so both readings share one refusal instead of each arm re-deriving it.
+        manifest_error = str(wait["error"])
     wait_observation: dict[str, str] | None = None
     if wait is not None and wait["valid"]:
         observe_condition = (
@@ -1337,6 +1343,13 @@ def classify_pointer(
     # never as unreadable, so a strictness added for manifests at rest cannot
     # misreport work in progress; the manifest and its status become
     # authoritative only once the process is gone.
+    #
+    # The liveness test itself is hoisted above the chain as one verdict, and
+    # every reading that could call a run unreadable — a present-but-unparseable
+    # manifest or an incomplete wait declaration — consults it here rather than
+    # testing liveness for itself, so the guarantee cannot decay into per-arm
+    # guards as manifest readings are added.
+    process_gone = alive is not True
     marker = None
     needs_help_complete_value = None
     if manifest_unwritten:
@@ -1456,9 +1469,8 @@ def classify_pointer(
                 f"the recovery sweep will resume run {run_id} when the condition "
                 "test reports a terminal state"
             )
-    elif wait is not None:
+    elif wait is not None and process_gone:
         classification = "unreadable"
-        manifest_error = str(wait["error"])
         detail = (
             f"the manifest at {manifest} declares an external wait but is "
             f"incomplete: {manifest_error}"
@@ -1604,7 +1616,7 @@ def classify_pointer(
             classification = "blocked"
             detail = f"blocked: {background_wait}; {delivery}"
             action = f"reckon crew resume --run {run_id}"
-    elif manifest_error and manifest_present and alive is not True:
+    elif manifest_error and manifest_present and process_gone:
         # The third manifest outcome next to absent and readable-and-terminal:
         # a file that is present but that no supported reader can parse is
         # neither a delivered record nor an absence. The name states what the
