@@ -76,6 +76,23 @@
     paraphrased &mdash; asserted by a check that compares the skill sentence against the
     prompt's, so the two cannot drift. The count of matching prohibitions is stated as a digit
     before and after.</p>
+    <p><strong>Landed 2026-09-15.</strong> A grep of <code>skills/reckon-ship/</code> matched
+    <strong>4</strong> of the prohibiting family before this change and <strong>0</strong>
+    after it. Each of the three files &mdash; <code>SKILL.md</code>,
+    <code>references/worker-protocol.md</code> and <code>references/sprint-orchestration.md</code>
+    &mdash; now carries the narrowed prohibition plus the positive requirement, quoted from the
+    composed runtime prompt rather than re-worded: the worker appends its landing record to its
+    own section of the plan and its evidence anchor to the cumulative evidence record, both in
+    its worktree and both in its final commit, and never mutates the shared project index,
+    sprint state, another plan, or the version and modified meta lines.
+    <code>tests/test_skill_contract_parity.py</code> derives those sentences at test time from
+    <code>reckon/crew/prompts.py</code>'s own strings and asserts each file still carries them,
+    so a prompt rewording that is not mirrored fails on the next run rather than coercing a
+    pass. The sibling test that pinned the retired phrasing was re-aimed at this contract, and
+    the fixed read-set token budget in <code>tests/test_skill_contracts.py</code> was raised to
+    carry the verbatim contract in the read-set the orchestrator needs in hand. Evidence
+    recorded at <code>docs/evidence/archive/worker-authors-its-own-record-landed.html</code>.
+    The coordinator half in &sect;3 is a separate section and remains open.</p>
 
     <h2 id="s3">&sect;3 &mdash; What the coordinator does instead</h2>
     <p>The coordinator half is not merely the absence of the old rule. Under the lead's model

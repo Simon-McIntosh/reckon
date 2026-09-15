@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="worker-authors-its-own-record-landed">
+  <meta name="plan-title" content="The Worker Authors Its Own Record — landed evidence">
+  <meta name="plan-summary" content="The ship skills now carry the narrowed shared-state prohibition plus the positive landing requirement, quoted from the composed runtime prompt, with a parity check binding the skill sentences to the prompt's own wording.">
+  <meta name="plan-evidence-for" content="worker-authors-its-own-record">
+  <meta name="plan-verifies" content="worker-authors-its-own-record#s2">
+  <meta name="plan-commits" content="e33f0ca1,7a03a312">
+  <meta name="plan-artifacts" content="skills/reckon-ship/SKILL.md,skills/reckon-ship/references/worker-protocol.md,skills/reckon-ship/references/sprint-orchestration.md,tests/test_skill_contract_parity.py,tests/test_skill_contracts.py">
+  <meta name="plan-recorded-at" content="2026-09-15">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-environment" content="reckon project virtual environment">
+  <meta name="plan-tags" content="crew,skills,ship-landing-contract">
+  <title>The Worker Authors Its Own Record — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence</p>
+      <h1>The Worker Authors Its Own Record</h1>
+      <p class="lead">The four clauses that told a worker never to write plan or index state are gone; in their place each ship skill carries the narrowed prohibition plus the positive requirement, in the prompt's own words.</p>
+    </header>
+
+    <section id="s2">
+      <h2>&sect;2 &mdash; The four clauses that still forbid it</h2>
+      <p>A grep of the prohibiting family across <code>skills/reckon-ship/</code> matched <strong>4</strong> before the change and <strong>0</strong> after it. The three files the plan names &mdash; <code>SKILL.md</code>, <code>references/worker-protocol.md</code> and <code>references/sprint-orchestration.md</code> &mdash; each carry the sentence from the composed worker prompt: the worker appends its landing record to its own section of the plan and its evidence anchor to the cumulative evidence record, both in its worktree and both in its final commit, and never mutates the shared project index, sprint state, another plan, or the plan-version and plan-modified meta lines. Two clauses in the prompt's own <code>PLAN_LANDING_CONTRACT</code> constant, plus the worktree-rule narrowing in <code>compose_prompt</code>, are quoted verbatim.</p>
+      <table>
+        <thead><tr><th>Measure</th><th>Before</th><th>After</th></tr></thead>
+        <tbody>
+          <tr><td>Prohibiting phrasings in <code>skills/reckon-ship/</code></td><td>4</td><td>0</td></tr>
+          <tr><td>Files carrying the positive landing requirement</td><td>0</td><td>3</td></tr>
+          <tr><td>Fixed read-set token budget (estimated)</td><td>15991</td><td>16098 within a raised budget of 17000</td></tr>
+        </tbody>
+      </table>
+      <p>The wording is not paraphrased for a second audience: <code>tests/test_skill_contract_parity.py</code> derives the expected sentences at test time from <code>reckon/crew/prompts.py</code>'s own strings &mdash; the landing requirement and the meta-line ban from the <code>PLAN_LANDING_CONTRACT</code> constant, the narrowed prohibition from a freshly composed prompt &mdash; and asserts each skill file still carries them verbatim, while also asserting the four retired phrasings are absent. A prompt rewording that is not mirrored into the skills fails on the next run, because the extracted expectation changes while the skill still holds the old sentence. 13 of 13 parity tests pass.</p>
+      <p>Two tests in the sibling contract suite that pinned the retired wording were updated with the change. <code>test_ship_keeps_the_orchestrator_as_the_only_plan_state_writer</code> now asserts the narrowed distinction &mdash; the orchestrator writes shared plan state, the worker authors only its own record &mdash; and the fixed read-set token budget in <code>test_engine_generated_dispatch_keeps_fixed_read_set_bounded</code> was raised from 16000 to 17000 with the reason recorded beside the constant: the verbatim contract is a rule the orchestrator needs in hand, mirrors the runtime prompt exactly, and so cannot be relocated or shortened. The contract suite passes 54 of 54.</p>
+    </section>
+
+    <section id="verification">
+      <h2>Verification</h2>
+      <p><code>pytest tests/test_skill_contract_parity.py -q</code> passed 13 of 13 and <code>pytest tests/test_skill_contracts.py -q</code> passed 54 of 54, both at the merged worktree head. The grep measure is stated in the plan's own section: 4 before, 0 after. Scope remained inside the node's exclusive write paths &mdash; the three skill files, the two test files, the plan HTML and this archive &mdash; with <code>reckon/crew/prompts.py</code> left untouched as the wording's authority.</p>
+    </section>
+  </main>
+</body>
+</html>
