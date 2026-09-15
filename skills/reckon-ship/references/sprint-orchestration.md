@@ -476,10 +476,17 @@ Integrate each verified completion as it becomes available:
    tests at their dependency gates; audit their manifests.
 8. Push the primary branch after each coherent integration.
 
-If a worker edited out-of-scope paths, do not merge it blindly. Ask the worker
-to split/rework the commit or dispatch a corrective worker in a new worktree.
-If conflict resolution requires a new material decision, pause that dependency
-branch and continue only independent ready nodes.
+If a worker edited out-of-scope paths, do not merge it blindly, and do not ask
+the worker to split or rework the commit: a run still mid-turn has no channel,
+so the request would go unread. The mechanism instead is to dispatch a
+corrective worker in a new worktree — `reckon crew dispatch …` under a new node
+id, with the out-of-scope diff as the brief — which returns a clean commit the
+coordinator integrates like any other. An ended run with no other open issue
+can rework its own commit through `reckon crew resume --run <run-id> --advice
+"…"` when the correction stays within the declared scope; rework that is new
+direction is a corrective dispatch regardless. If conflict resolution requires
+a new material decision, pause that dependency branch and continue only
+independent ready nodes.
 
 ## 8. Plan, evidence, and sprint writeback
 
