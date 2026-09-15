@@ -25,7 +25,13 @@ from reckon.crew.node import (
     _TERMINAL_RUN_PHASES,
     parse_duration,
 )
-from reckon.crew.reports import ManifestParseError, parse_manifest
+from reckon.crew.reports import (
+    NON_TERMINAL_MANIFEST_STATUSES,
+    TERMINAL_MANIFEST_STATUSES,
+    ManifestParseError,
+    manifest_status_is_template,
+    parse_manifest,
+)
 from reckon.crew.routing import _signal_process_group
 from reckon.crew.ticker import NEEDS_ACTION, Ticker, _agent_label
 from reckon.crew.runs import (
@@ -84,16 +90,11 @@ WAITING_STATUS = "waiting"
 # the news is carried by the action marker on its row, so the wait-aged state
 # also sits in the action set while remaining a member of this family.
 WAITING_STATES = frozenset({"waiting", "wait-aged", "paused"})
-TERMINAL_MANIFEST_STATUSES = frozenset({"complete", "blocked", "failed"})
-# The spellings a worker writes while the node is still working — dispatch
-# templates and the harnesses that fill them produce exactly these. The set is
-# the single statement of the vocabulary; every surface that decides "the
-# worker was working, not done" checks this set rather than reproducing the
-# list. A declared wait is its own outcome and never appears here, and an
-# unrecognised spelling is not proof of work, so neither is a member.
-NON_TERMINAL_MANIFEST_STATUSES = frozenset(
-    {"in-progress", "in_progress", "running", "pending"}
-)
+# The manifest status vocabulary — TERMINAL_MANIFEST_STATUSES,
+# NON_TERMINAL_MANIFEST_STATUSES and manifest_status_is_template — is imported
+# from reckon.crew.reports, which owns the single statement of it so the reader
+# refusing an unrecognised word names the same set the classifier decides
+# against.
 WAIT_CONDITION_STATES = frozenset({"pending", "met", "unknown"})
 WAIT_PROBE_TIMEOUT_SECONDS = 1.0
 
@@ -205,17 +206,10 @@ DEFAULT_LIFTING_CONDITIONS = {
 }
 
 
-def _manifest_status_is_template(value: Any) -> bool:
-    """Whether a manifest still carries the dispatch contract's placeholder."""
-    status = str(value or "").strip().lower()
-    choices = {part.strip(" <>\t") for part in status.split("|")}
-    return "|" in status and choices == set(TERMINAL_MANIFEST_STATUSES)
-
-
 def manifest_status_is_terminal(value: Any) -> bool:
     """Whether a worker supplied one exact terminal status value."""
     status = str(value or "").strip().lower()
-    return not _manifest_status_is_template(status) and (
+    return not manifest_status_is_template(status) and (
         status in TERMINAL_MANIFEST_STATUSES
     )
 
@@ -1178,7 +1172,7 @@ def classify_pointer(
             # refresh for every session.
             manifest_error = str(exc)
     manifest_reported_status = str(manifest_data.get("status") or "").strip().lower()
-    manifest_unwritten = _manifest_status_is_template(manifest_reported_status)
+    manifest_unwritten = manifest_status_is_template(manifest_reported_status)
     # The dispatch contract prints all terminal choices as a placeholder. It
     # is evidence that the worker never wrote a verdict, not a fourth spelling
     # of one, so no terminal predicate may see it as delivered state.

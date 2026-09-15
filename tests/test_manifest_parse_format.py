@@ -256,6 +256,97 @@ def test_a_body_with_fields_but_no_status_stays_tolerant() -> None:
     assert fields["commits"] == ["abc123", "def456"]
 
 
+# A body whose every field-shaped line is incidental prose: each line parses as
+# ``key: value`` but none of those keys is a manifest field, so the body
+# carries no status and no manifest content. It once returned the normalised
+# mapping with thirteen keys and no status, which the classifier read as a
+# vanished worker.
+_INCIDENTAL_PROSE_MANIFEST = """\
+note: the work is in the summary below
+detail: every field-shaped line here is incidental prose
+"""
+
+
+def test_a_prose_only_body_raises_rather_than_half_parsing() -> None:
+    with pytest.raises(reports.ManifestParseError) as exc:
+        reports.parse_manifest(_INCIDENTAL_PROSE_MANIFEST)
+
+    # The refusal names what was expected and the fields that were read; it
+    # never returns the thirteen-key mapping with no status.
+    message = str(exc.value)
+    assert "status cannot be determined" in message
+    assert "key: value" in message
+    assert "note" in message
+    assert "detail" in message
+
+
+def test_the_prose_refusal_names_the_path_when_one_is_given() -> None:
+    with pytest.raises(reports.ManifestParseError) as exc:
+        reports.parse_manifest(_INCIDENTAL_PROSE_MANIFEST, path="/runs/x/manifest.md")
+    assert "/runs/x/manifest.md" in str(exc.value)
+
+
+def test_an_unknown_status_word_raises_naming_the_word_and_the_recognised() -> None:
+    # An invented word is refused rather than carried forward as a state; the
+    # refusal names the word it found and the set it recognises, so a reader
+    # can tell the difference between an unrecognised spelling and a missing
+    # status.
+    with pytest.raises(reports.ManifestParseError) as exc:
+        reports.parse_manifest("status: finished\ncommits: abc123\n")
+
+    message = str(exc.value)
+    assert "'finished'" in message
+    assert "complete" in message
+    assert "blocked" in message
+    assert "in-progress" in message
+    assert "running" in message
+
+
+def test_the_unknown_status_refusal_names_the_path_when_one_is_given() -> None:
+    with pytest.raises(reports.ManifestParseError) as exc:
+        reports.parse_manifest("status: finished\n", path="/runs/x/manifest.md")
+    assert "/runs/x/manifest.md" in str(exc.value)
+
+
+def test_an_unknown_status_word_in_json_also_raises() -> None:
+    with pytest.raises(reports.ManifestParseError) as exc:
+        reports.parse_manifest('{"status": "finished", "commits": ["abc123"]}')
+    assert "'finished'" in str(exc.value)
+
+
+@pytest.mark.parametrize(
+    "word",
+    [
+        "complete",
+        "blocked",
+        "failed",
+        "in-progress",
+        "in_progress",
+        "running",
+        "pending",
+    ],
+)
+def test_a_recognised_status_word_parses_unchanged(word) -> None:
+    fields = reports.parse_manifest(f"status: {word}\ncommits: abc123\n")
+
+    assert fields["status"] == word
+
+
+def test_a_declared_wait_status_parses_unchanged() -> None:
+    fields = reports.parse_manifest("status: waiting\n")
+
+    assert fields["status"] == "waiting"
+
+
+def test_the_unsubstituted_template_is_left_to_the_classifier() -> None:
+    # The dispatch contract's placeholder is evidence the worker never wrote a
+    # verdict; the reader passes it through so the classifier's unwritten
+    # handling can name it, rather than refusing it as an unrecognised word.
+    fields = reports.parse_manifest("status: complete | blocked | failed\n")
+
+    assert fields["status"] == "complete | blocked | failed"
+
+
 def test_the_refusal_is_a_crew_error_and_a_value_error() -> None:
     """Both catch surfaces keep working: classification and the promotion guards."""
     assert issubclass(reports.ManifestParseError, CrewError)

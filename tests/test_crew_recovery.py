@@ -1186,9 +1186,7 @@ def test_a_heading_manifest_classifies_unreadable_not_abandoned(home) -> None:
     assert str(pointer["manifest_path"]) in row["next_action"]
     assert "read launch log" not in row["next_action"]
     assert "redispatch" not in row["next_action"]
-    snapshot = recovery._watch_snapshot(
-        pointer, moment=time.time(), stall_seconds=3600
-    )
+    snapshot = recovery._watch_snapshot(pointer, moment=time.time(), stall_seconds=3600)
     assert snapshot["state"] == "unreadable"
 
 
@@ -1238,9 +1236,10 @@ def test_every_reader_of_the_manifest_tolerates_an_unparseable_body(home) -> Non
         manifest=_MARKDOWN_HEADING_MANIFEST,
         process_alive=False,
     )
-    assert recovery.classify_pointer(pointer, now_seconds=time.time())[
-        "classification"
-    ] == "unreadable"
+    assert (
+        recovery.classify_pointer(pointer, now_seconds=time.time())["classification"]
+        == "unreadable"
+    )
     assert recovery.external_wait(pointer) is None
     audit = reports.audit_manifest(_MARKDOWN_HEADING_MANIFEST)
     assert audit["ok"] is False
@@ -1252,6 +1251,81 @@ def test_every_reader_of_the_manifest_tolerates_an_unparseable_body(home) -> Non
         == []
     )
     assert ledger.stated_correction_count(_MARKDOWN_HEADING_MANIFEST) == "unknown"
+
+
+# A body whose every field-shaped line is incidental prose: fields parse, but
+# none of them is a manifest field, so the status cannot be determined. It once
+# returned the normalised mapping with thirteen keys and no status, which the
+# classifier read as a vanished worker.
+_INCIDENTAL_PROSE_MANIFEST = """\
+note: the work is in the summary below
+detail: every field-shaped line here is incidental prose
+"""
+
+
+def test_a_prose_only_manifest_classifies_unreadable_not_abandoned(home) -> None:
+    pointer = _cli_pointer(
+        home,
+        "r-prose-only",
+        "codex-failed-turn.jsonl",
+        manifest=_INCIDENTAL_PROSE_MANIFEST,
+        process_alive=False,
+        phase="complete",
+    )
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+    assert row["classification"] == "unreadable"
+    assert row["classification"] not in {"abandoned", "completed_unpromoted"}
+    assert row["manifest_present"] is True
+    assert row["manifest_error"]
+    assert "could not be read" in row["detail"]
+    assert "manifest" in row["next_action"]
+    assert str(pointer["manifest_path"]) in row["next_action"]
+    assert "read launch log" not in row["next_action"]
+    snapshot = recovery._watch_snapshot(pointer, moment=time.time(), stall_seconds=3600)
+    assert snapshot["state"] == "unreadable"
+
+
+def test_an_unknown_status_word_manifest_classifies_unreadable(home) -> None:
+    pointer = _cli_pointer(
+        home,
+        "r-unknown-status",
+        "codex-failed-turn.jsonl",
+        manifest="status: finished\ncommits: abc123\n",
+        process_alive=False,
+    )
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+    assert row["classification"] == "unreadable"
+    assert row["manifest_present"] is True
+    assert "finished" in row["manifest_error"]
+    assert "manifest" in row["next_action"]
+
+
+def test_every_reader_tolerates_the_widened_raise(home) -> None:
+    # The refusal widened from "no field parsed" to "status cannot be
+    # determined" (prose-only fields, or a status word nobody recognises). Each
+    # production reader keeps working on such a body rather than crashing.
+    pointer = _cli_pointer(
+        home,
+        "r-prose-tolerated",
+        "codex-failed-turn.jsonl",
+        manifest=_INCIDENTAL_PROSE_MANIFEST,
+        process_alive=False,
+    )
+    assert (
+        recovery.classify_pointer(pointer, now_seconds=time.time())["classification"]
+        == "unreadable"
+    )
+    assert recovery.external_wait(pointer) is None
+    audit = reports.audit_manifest(_INCIDENTAL_PROSE_MANIFEST)
+    assert audit["ok"] is False
+    assert audit["findings"]
+    assert (
+        reports.followup_ops_from_manifest(
+            _INCIDENTAL_PROSE_MANIFEST, slug="proj", section=""
+        )
+        == []
+    )
+    assert ledger.stated_correction_count(_INCIDENTAL_PROSE_MANIFEST) == "unknown"
 
 
 def test_refusal_blocked_pointer_snapshots_as_blocked_in_the_ticker_path(home) -> None:
@@ -1958,7 +2032,9 @@ def _spend_snapshot(run_id: str, **overrides: Any) -> dict:
     return snapshot
 
 
-def _codex_stream(path: Path, input_tokens: int, output_tokens: int, *, cached: int = 0) -> Path:
+def _codex_stream(
+    path: Path, input_tokens: int, output_tokens: int, *, cached: int = 0
+) -> Path:
     path.write_text(
         json.dumps(
             {
@@ -2193,7 +2269,9 @@ def test_a_run_exceeding_its_token_budget_is_over_it() -> None:
     assert at_3600["ceiling_overrun"] is True
 
 
-def test_a_run_that_stopped_producing_is_caught_by_the_wall_clock_ceiling_under_its_own_name() -> None:
+def test_a_run_that_stopped_producing_is_caught_by_the_wall_clock_ceiling_under_its_own_name() -> (
+    None
+):
     """A hang is refused by the ceiling, never by tokens, and never the reverse.
 
     A run parked on a wait generates a whisper of tokens, so the token fence

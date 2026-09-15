@@ -24,6 +24,62 @@ _MANIFEST_LIST_KEYS = (
 )
 _NONE_VALUES = {"", "none", "n/a", "-", "nil"}
 
+# The status spellings a worker writes. This is the single statement of the
+# vocabulary: the classifier decides "was the worker working, not done" against
+# these same sets, and the reader refuses a status word that is in neither set
+# rather than carrying it forward as a state. A declared wait is its own
+# outcome (recovery's WAITING_STATUS is the ``waiting`` member), and an
+# unrecognised spelling is not proof of work, so neither is a member of the
+# terminal or non-terminal sets.
+TERMINAL_MANIFEST_STATUSES = frozenset({"complete", "blocked", "failed"})
+NON_TERMINAL_MANIFEST_STATUSES = frozenset(
+    {"in-progress", "in_progress", "running", "pending"}
+)
+# Every status value the reader accepts: terminal, still working, a declared
+# wait, or a recovery artifact. ``derived`` is written by recovery's own
+# manifest-fabrication (never by a worker) and the classifier reads it back
+# through the ``derived`` field, so the reader must recognise it as a status
+# rather than refuse the recovery pipeline's own file. A status outside this
+# set and outside the unsubstituted template below leaves the outcome
+# undetermined and the manifest is refused rather than the word being carried
+# forward as a state.
+MANIFEST_STATUSES = (
+    TERMINAL_MANIFEST_STATUSES | NON_TERMINAL_MANIFEST_STATUSES | {"waiting", "derived"}
+)
+
+
+def manifest_status_is_template(value: Any) -> bool:
+    """Whether a status still carries the dispatch contract's placeholder.
+
+    An unsubstituted template is evidence the worker never wrote a verdict, not
+    a fourth spelling of one, so it outlives the reader and reaches the
+    classifier's unwritten handling rather than being refused as an unrecognised
+    word.
+    """
+    status = str(value or "").strip().lower()
+    choices = {part.strip(" <>\t") for part in status.split("|")}
+    return "|" in status and choices == set(TERMINAL_MANIFEST_STATUSES)
+
+
+# The manifest field vocabulary. A text body whose parsed top-level fields are
+# all outside this set is incidental prose wearing a ``key: value`` shape — the
+# body carries no field a manifest carries, so its status cannot be determined.
+_MANIFEST_FIELD_KEYS = frozenset(_MANIFEST_LIST_KEYS) | frozenset(
+    {
+        "node",
+        "status",
+        "tests",
+        "needs_help",
+        "derived",
+        "baseline_suite",
+        "after_suite",
+        "failure_attribution",
+        "orientation_worktree",
+        "orientation_base_sha",
+        "orientation_write_paths",
+    }
+)
+
 # A line whose value is one of these has no value on that line at all — the
 # indented body below it is the value, YAML block-scalar style. Returning the
 # indicator itself is how a parse failure became a display that lied: a
@@ -68,10 +124,13 @@ def parse_manifest(text: str, *, path: str | None = None) -> dict[str, Any]:
     :class:`ManifestParseError` rather than falling back to the text reader —
     the text reader would return a well-formed-looking partial mapping, which
     is how a JSON manifest carrying ``"status": "complete"`` once came back
-    with eight recognised keys and no status. A non-blank text body that yields
-    no ``key: value`` field at all — its ``status`` and ``commits`` under
-    markdown headings, say — raises the same error, because the reader cannot
-    judge it and the normalised partial mapping with no status reads as a dead
+    with eight recognised keys and no status. A body whose status cannot be
+    determined raises the same error: a non-blank text body that yields no
+    ``key: value`` field at all — its ``status`` and ``commits`` under
+    markdown headings, say — a body whose parsed fields are all incidental
+    prose rather than manifest fields, and a status that names a word no part
+    of the system recognises. Each of these once fell back to the normalised
+    partial mapping with no usable status, which the classifier read as a dead
     worker. Unknown keys are kept in both forms so nothing a worker took the
     trouble to state is silently dropped.
 
@@ -91,6 +150,7 @@ def parse_manifest(text: str, *, path: str | None = None) -> dict[str, Any]:
             # status and no commits, which the classifier reads as a vanished
             # worker. Such a body raises rather than half-succeeding.
             raise ManifestParseError(_unreadable_text_manifest_message(path))
+    fields = _refuse_undetermined_status(fields, path)
     fields = _normalise_manifest_fields(fields)
     fields["needs_help"] = parse_needs_help(text) if NEEDS_HELP_MARKER in text else None
     return fields
@@ -171,6 +231,56 @@ def _unreadable_text_manifest_message(path: str | None) -> str:
         f"cannot read manifest{where}: the body is present but no 'key: value' "
         "field could be read, so its status cannot be determined; expected a "
         "JSON object or the 'key: value' text form"
+    )
+
+
+def _refuse_undetermined_status(
+    fields: dict[str, Any], path: str | None
+) -> dict[str, Any]:
+    """Raise when the parsed fields still leave the status undetermined.
+
+    Two shapes are undetermined rather than merely absent. A body whose parsed
+    top-level fields are all outside the manifest vocabulary is prose wearing a
+    ``key: value`` shape, not a manifest, so its status cannot be judged; and a
+    status naming a word no part of the system recognises would be carried
+    forward as a state it never was. Both raise. A well-formed terminal,
+    non-terminal or waiting status — and an unsubstituted terminal template,
+    which the classifier reads as unwritten rather than refused — keeps
+    parsing.
+    """
+    if fields and not (set(fields) & _MANIFEST_FIELD_KEYS):
+        raise ManifestParseError(
+            _incidental_prose_manifest_message(path, sorted(fields))
+        )
+    status = fields.get("status")
+    if status is not None and str(status).strip():
+        if (
+            not manifest_status_is_template(status)
+            and str(status).strip().lower() not in MANIFEST_STATUSES
+        ):
+            raise ManifestParseError(
+                _unknown_status_word_manifest_message(path, status)
+            )
+    return fields
+
+
+def _incidental_prose_manifest_message(path: str | None, keys: list[str]) -> str:
+    where = f" at {path}" if path else ""
+    return (
+        f"cannot read manifest{where}: the body reads as fields "
+        f"({', '.join(keys)}) but none of them is a manifest field, so its "
+        "status cannot be determined; expected a JSON object or the "
+        "'key: value' text form carrying a status line"
+    )
+
+
+def _unknown_status_word_manifest_message(path: str | None, word: object) -> str:
+    where = f" at {path}" if path else ""
+    recognised = ", ".join(sorted(MANIFEST_STATUSES))
+    return (
+        f"cannot read manifest{where}: status {word!r} is not a recognised "
+        f"manifest status (recognised: {recognised}); expected a JSON object "
+        "or the 'key: value' text form carrying one of those statuses"
     )
 
 
@@ -369,7 +479,11 @@ def audit_manifest(
         # An unreadable manifest is a finding, not an exception: the audit is
         # itself a reader of the file and must survive a body no reader can
         # judge, reporting the refusal instead of escaping it to the caller.
-        return {"manifest": {}, "findings": [f"manifest could not be read: {exc}"], "ok": False}
+        return {
+            "manifest": {},
+            "findings": [f"manifest could not be read: {exc}"],
+            "ok": False,
+        }
     findings: list[str] = []
     status = str(manifest.get("status", "")).lower()
     if status not in ("complete", "blocked", "failed"):
