@@ -59,6 +59,20 @@
     everything. The refusal for a directory that does not yet exist is exercised explicitly,
     because that is the ordinary case for a capture node and the one most likely to be mishandled.
     The count of claims the check walks is stated as a digit.</p>
+    <p class="landed-summary">Dispatch already contained the containment walk; the node
+      verified it rather than reimplementing a working guard, and added a mechanism comment at
+      the refusal site stating the allocation unit. Six figure-topic cases in
+      <code>tests/test_crew_dispatch_guard.py</code> demonstrate the three refusals the done-when
+      names &mdash; a second node on a claimed topic, a path inside a claimed topic (both
+      directions), both for a topic directory with no contents on disk &mdash; each as an actual
+      refusal carrying the owning run id and node id; the never-combined corollary is pinned by
+      refusing a second producer of one filename, while disjoint topics still dispatch. The walk
+      reads <strong>3</strong> live claims at refusal, asserted by instrumenting the walk. A
+      mutation control replacing the containment predicate flips exactly the six refusal tests to
+      <code>DID NOT RAISE</code> while the eight non-refusal cases pass, proving the guard fires.
+      Landed under commit <code>4437fbf3</code>, 14 consecutive dispatch-guard cases passing (eight
+      pre-existing unchanged). The sibling-writers decision is left open to the plan. Full record:
+      <a href="/reckon/evidence/archive/figures-are-allocated-by-topic-directory-landed#s2-topic-directory-claims-the-tree">&sect;2 landed</a>.</p>
 
     <h2 id="s3">&sect;3 &mdash; Write it where a worker reads it</h2>
     <p>The rule is worth nothing in a plan alone. It belongs where an author or a coordinator will
