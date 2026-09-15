@@ -1316,6 +1316,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             project,
             inventory,
             composed.get("sprints", []),
+            composed.get("blockers", []),
         )
         result = {
             "inventory": inventory,
@@ -1379,7 +1380,7 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
             }
         )
 
-    inventory, sprints = _derive_lifecycle(project, inventory, sprints)
+    inventory, sprints = _derive_lifecycle(project, inventory, sprints, blockers)
     result = {
         "inventory": inventory,
         "sprints": sprints,
@@ -1506,6 +1507,7 @@ def _derive_lifecycle(
     project: str,
     inventory: list[dict],
     sprints: list[dict],
+    blockers: list[dict] | None = None,
 ) -> tuple[list[dict], list[dict]]:
     """Attach derived blockers/effective status and hydrate sprint items."""
 
@@ -1518,6 +1520,11 @@ def _derive_lifecycle(
         str(plan.get("slug")): plan
         for plan in plans
         if plan.get("type", "plan") == "plan" and plan.get("slug")
+    }
+    blocker_kind = {
+        str(item.get("id")): (str(item.get("kind") or "").strip() or "explicit")
+        for item in blockers or []
+        if isinstance(item, dict) and item.get("id")
     }
     explicit_by_slug: dict[str, list[str]] = {}
     for sprint in sprints:
@@ -1570,7 +1577,7 @@ def _derive_lifecycle(
         dependencies = [resolve(ref) for ref in plan.get("depends_on", [])]
         blocking = unresolved_dependencies(dependencies)
         blocking.extend(
-            {"kind": "explicit", "id": blocker_id}
+            {"kind": blocker_kind.get(blocker_id, "explicit"), "id": blocker_id}
             for blocker_id in dict.fromkeys(
                 explicit_by_slug.get(str(plan.get("slug")), [])
             )

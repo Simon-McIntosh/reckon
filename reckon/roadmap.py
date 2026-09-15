@@ -877,14 +877,14 @@ def resolve_graph_target(
             _status(plans[dependency]) in COMPLETED_STATUSES
             for dependency in plan_blocking_graph[key]
         )
-        explicit_blockers = [
+        blockers = [
             row
             for row in plan.get("blocking") or []
-            if isinstance(row, dict) and row.get("kind") == "explicit"
+            if isinstance(row, dict) and row.get("kind") in ("explicit", "held")
         ]
         if (
             dependencies_complete
-            and not explicit_blockers
+            and not blockers
             and not unpassed_gate_blockers(plan.get("gates") or [])
             and not open_decisions
             and _status(plan) in _AUTHORISED_STATUSES
@@ -1558,6 +1558,11 @@ def build_roadmap(
             for row in plan.get("blocking") or []
             if isinstance(row, dict) and row.get("kind") == "explicit"
         ]
+        held_blockers = [
+            row
+            for row in plan.get("blocking") or []
+            if isinstance(row, dict) and row.get("kind") == "held"
+        ]
         gate_blockers = unpassed_gate_blockers(plan.get("gates") or [])
         decisions = _decision_rows(plan)
         decision_blockers = [
@@ -1569,6 +1574,7 @@ def build_roadmap(
         if (
             status == "blocked"
             and not explicit_blockers
+            and not held_blockers
             and not plan_dependency_blockers
             and not gate_blockers
             and not decision_blockers
@@ -1581,6 +1587,7 @@ def build_roadmap(
             and authorised
             and not plan_dependency_blockers
             and not explicit_blockers
+            and not held_blockers
             and not gate_blockers
             and not decision_blockers
             and slug not in cycle_members
@@ -1588,6 +1595,7 @@ def build_roadmap(
         is_blocked = bool(
             plan_dependency_blockers
             or explicit_blockers
+            or held_blockers
             or gate_blockers
             or decision_blockers
             or slug in cycle_members
@@ -1617,6 +1625,7 @@ def build_roadmap(
                 [
                     *plan_dependency_blockers,
                     *explicit_blockers,
+                    *held_blockers,
                     *gate_blockers,
                     *decision_blockers,
                 ],
@@ -1632,6 +1641,7 @@ def build_roadmap(
             "remaining_wall_hours": _remaining_wall_hours(plan),
             "depends_on": dependency_rows.get(slug, []),
             "explicit_blockers": explicit_blockers,
+            "held_blockers": held_blockers,
             "gate_blockers": gate_blockers,
             "decision_blockers": decision_blockers,
             "deferred_decisions": deferred_decisions,
