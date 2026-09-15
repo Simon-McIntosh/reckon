@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 <meta name="plan-commits" content="ba6ff35,ac57d8f,8ce0ca7,c6d25f9">
 <meta name="plan-impl" content="0.7">
 </head>
@@ -259,6 +259,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-readout-matches-arrived-position" data-who="reckon-ship" data-when="2026-09-15T03:23:00Z">
     <div class="r-comment-body">Landed — commit b3ab0b0; gate 26 passed, exit 0, and the assertion is untouched at 3 of 3. The defect was fixed in the code rather than migrated out of the test, which is what the surface-health plan's leaning-cases investigation directed and what its contract sweep deliberately preserved the red for. This section's own hypothesis was confirmed by instrumentation and turned out to be two stacked causes, which is exactly why the three prior attempts did not move it. The first is the one this section predicted: the selection key and the route both commit asynchronously, so the readout rendered before either had landed. The second is the one nobody had found, and it explains why fixing the first alone changed nothing — even a committed key was shadowed by the departed slug, because the position lookup matched key OR slug in one findIndex and the short-circuit hit the slug the reader was leaving. This section's warning that a node told to look for a duplicate derivation will keep not finding one was correct, and the real second cause was a short-circuit in the lookup rather than a second derivation anywhere. The repair splits the lookup into an ordered one, key first and slug only as a fallback, and commits the selection, the navigation and a hashchange together in one flushSync so the readout and the arrived route land in the same render. One observation for a later reader rather than a defect: the explicit HashChangeEvent dispatch means the route handler runs once synchronously and again when the browser fires its own, which is harmless only while that handler remains idempotent.</div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20260915T034817551159-arrival-is-non-destructive" data-who="disc-local" data-when="2026-09-15T05:15:12.408Z">
+    <div class="r-comment-body"><p>Arrivals are held until shown: 9 passed, exit 0. The assertion that carries the point is order equality, and it was demonstrated able to fail rather than merely to pass — run against the base shell-plans.jsx it fails on the rendered order comparison, which is the guard that distinguishes holding an arrival from never receiving one. Counting pending rows cannot see a list re-sorting under a reader. Recovered rather than redispatched: the node stalled mid-record with both code commits on its worktree, and a resume with its original session intact finished the job, adding the evidence record and plan comment as a third commit. The worker also ran the plan-schema byte-identity test because it had edited a plan, unprompted, which is the check that catches a structurally broken plan file. All three commits are inside the fence dispatch granted</p></div>
 </div>
 </section>
 </main>

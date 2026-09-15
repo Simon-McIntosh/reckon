@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T07:05:54",
+  "updated": "2026-09-15T07:17:28",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -122537,6 +122537,209 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T034817551159-arrival-is-non-destructive",
+        "plan": "artifact-feeds-and-reader",
+        "section": "\u00a76",
+        "node": "arrival-is-non-destructive",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1136,
+                "cached_input_tokens": 713595,
+                "input_tokens": 714733,
+                "output_tokens": 1171,
+                "reasoning_output_tokens": 368,
+                "total_tokens": 715904,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3332e8d8-dcef-4091-9774-c9680478b165",
+            "session_id": "ship-s16-20260914"
+          },
+          "done_when": "tests/test_spa_live_arrival.py and tests/test_spa_state_boundary.py pass: given a rendered inventory and a second discovery payload carrying two new evidence rows and one changed plan, the arrival diff yields two pending rows and one update, the receipt reads 2 new, the Evidence tab badge reads 2, and the index banner reads the two-new-since-you-opened phrasing with a show control. The assertion that carries the whole point is that the rendered row order before the click equals the order after the payload arrives and differs only once the control is used \u2014 assert that equality directly, because a list that re-sorts under a reader loses the reader's place and a test that only counts the pending rows cannot see it. Demonstrate the guard can fail: show the order-equality assertion failing against the pre-change behaviour, recorded once, since an arrival test that has never been shown to catch a re-sort cannot distinguish holding from not arriving at all",
+          "estimated_hours": null,
+          "goal": "Hold newly arrived documents until the reader asks for them instead of re-sorting the list underneath",
+          "id": "arrival-is-non-destructive",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T03:48:17Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T034817551159-arrival-is-non-destructive/manifest.md",
+          "plan": "artifact-feeds-and-reader",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "docs/ui/state-loader.js",
+            "docs/ui/shell-plans.jsx",
+            "tests/test_spa_live_arrival.py",
+            "docs/evidence/archive/artifact-feeds-and-reader-landed.html",
+            "docs/plans/artifact-feeds-and-reader.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "disc-local",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T03:48:26Z",
+        "completed_at": "2026-09-15T05:15:12.408Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 5199,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 5206,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "59102cb9adf4905e43fd543900978bd4267539ee",
+        "commits": [
+          "2d602d0c243f0065717e814f29b8040bcdde0cfb",
+          "ff6711adb78bec2ea4fead3af892e2fda8398200",
+          "5df07215d5b9046d226118e99e8c1e9d51cc3d91"
+        ],
+        "changed_lines": {
+          "added": 567,
+          "removed": 4,
+          "files": 4
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_live_arrival.py tests/test_spa_state_boundary.py, after running the order-equality assertion against the base to demonstrate it fails there",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T034817551159-arrival-is-non-destructive/gate.log",
+          "log_digest": "ac9891ed393e9e6babb3e1683501e4863e8f8d17156a06931be0db94dcfa97e2"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T034817551159-arrival-is-non-destructive/manifest.md",
+        "scope_changed": false,
+        "session_id": "edb583fd-bc47-4293-a302-2b34f295a996",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 1195057,
+            "input_tokens_cumulative": 1195057,
+            "output_tokens": 8873,
+            "output_tokens_cumulative": 8873,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T05:15:12.408Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 1195057,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 364.605,
+          "generated_tokens": 8873,
+          "generation_seconds": 347.42,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 62.1,
+          "machine_seconds": 17.185,
+          "peak_input_tokens": 124130,
+          "tokens_per_second": 25.54,
+          "wall_tokens_per_second": 24.34
+        },
+        "dispute_count": "unknown",
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16-20260914/arrival-is-non-destructive",
+          "session_id": "edb583fd-bc47-4293-a302-2b34f295a996",
+          "session_source": "stream",
+          "retained_at": "2026-09-15T05:15:12.408Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 98.0,
+        "orientation_input_tokens": 4007962.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -122765,6 +122968,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1472
+    "_version": 1473
   }
 }
