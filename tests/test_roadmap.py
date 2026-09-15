@@ -619,6 +619,37 @@ def test_leaf_sink_without_live_members_yields_no_endpoint_finding() -> None:
     }
 
 
+def test_terminal_endpoint_with_live_descendant_raises_a_wiring_finding() -> None:
+    inventory = [
+        _plan("foundation"),
+        _plan("release", status="shipped", impl=1.0, depends_on=["foundation"]),
+    ]
+
+    result = build_roadmap("sample", inventory, [])
+    finding = next(
+        item
+        for item in result["wiring_findings"]
+        if item["code"] == "endpoint-without-handle"
+    )
+
+    assert finding["slug"] == "release"
+    assert finding["extra"]["members"] == ["foundation", "release"]
+
+
+def test_endpoint_without_live_descendants_yields_no_endpoint_finding() -> None:
+    inventory = [
+        _plan("foundation", status="shipped", impl=1.0),
+        _plan("release", status="shipped", impl=1.0, depends_on=["foundation"]),
+    ]
+
+    result = build_roadmap("sample", inventory, [])
+
+    assert result["endpoints"][0]["slug"] == "release"
+    assert not {item["code"] for item in result["wiring_findings"]} & {
+        "endpoint-without-handle"
+    }
+
+
 def test_endpoint_handle_finding_does_not_change_readiness_or_execution() -> None:
     with_handle = build_roadmap(
         "sample",

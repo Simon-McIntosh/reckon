@@ -1498,7 +1498,13 @@ def build_roadmap(
     for endpoint_row in endpoint_rows:
         if endpoint_row["handle"] is not None:
             continue
-        if _status(plans[endpoint_row["slug"]]) in TERMINAL_STATUSES:
+        live_descendants = [
+            member
+            for member in endpoint_row["members"]
+            if member["slug"] != endpoint_row["slug"]
+            and member["status"] not in TERMINAL_STATUSES
+        ]
+        if not live_descendants:
             continue
         member_slugs = [member["slug"] for member in endpoint_row["members"]]
         findings.append(
