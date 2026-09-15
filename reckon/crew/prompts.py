@@ -48,9 +48,9 @@ FALSIFIABLE_EVIDENCE_CONTRACT = (
     "  tree, so an unfilled field reads as no work."
 )
 
-# The worktree-landing contract, embedded only when the worker's process runs in
-# the worktree, so a repository change is the deliverable it can actually commit.
-# It lives here for the same reason its siblings do: the prompt embeds no
+# The worktree-landing contract, embedded only when the worker can write its
+# assigned worktree, so a repository change is the deliverable it can actually
+# commit. It lives here for the same reason its siblings do: the prompt embeds no
 # protocol reference by design, so a discipline carried only by a reference file
 # reaches nobody. The read-only tiers (review, investigate) operate in a delivery
 # directory and receive no instruction to edit a repository they cannot write -
@@ -87,6 +87,7 @@ def compose_prompt(
     run_id: str = "",
     peer_channels: Mapping[str, Mapping[str, str]] | None = None,
     peer_channel_path: str = "",
+    can_write_worktree: bool | None = None,
 ) -> str:
     """Compose a worker prompt from the four fences and a pointer to the plan.
 
@@ -146,12 +147,17 @@ RUNTIME FILESYSTEM
   The repository at the assigned worktree path {worktree} is read-only.
 """
     # The landing contract is a named slot in the template like its siblings,
-    # gated to the shape where a repository change is the deliverable. Each
+    # gated to the shape where a repository change is the deliverable. The gate
+    # is whether the worker can write its assigned worktree — the fact that
+    # decides if a change is something it can commit — resolved by dispatch and
+    # never by which dialect happens to relocate the process directory. Each
     # slot is separated by blank lines so a test can mask any one constant and
     # recompose: the result must equal the live prompt with that block deleted.
-    landing_contract = (
-        PLAN_LANDING_CONTRACT if Path(working_directory) == Path(worktree) else ""
-    )
+    if can_write_worktree is None:
+        can_land = Path(working_directory) == Path(worktree)
+    else:
+        can_land = can_write_worktree
+    landing_contract = PLAN_LANDING_CONTRACT if can_land else ""
     orientation_scope = json.dumps(list(node.write_paths), separators=(",", ":"))
     if node.role == "test":
         evidence_role_note = (
