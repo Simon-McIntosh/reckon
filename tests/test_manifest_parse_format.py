@@ -400,6 +400,23 @@ def test_a_declared_wait_status_parses_unchanged() -> None:
     assert fields["status"] == "waiting"
 
 
+@pytest.mark.parametrize(
+    "written",
+    [
+        "status: complete\n",
+        "- status: complete\n",
+        "* status: complete\n",
+        "**status:** `complete`\n",
+        "  status: complete\n",
+        "- **status:** `complete`\n",
+    ],
+)
+def test_status_key_is_read_through_markdown_decorations(written) -> None:
+    fields = reports.parse_manifest(written)
+
+    assert fields["status"] == "complete"
+
+
 def test_the_unsubstituted_template_is_left_to_the_classifier() -> None:
     # The dispatch contract's placeholder is evidence the worker never wrote a
     # verdict; the reader passes it through so the classifier's unwritten

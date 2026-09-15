@@ -72,6 +72,7 @@
         <tr><td>§16</td><td><a href="#manifest-status-undetermined-refused">manifest-status-undetermined-refused</a></td><td>220848e</td><td>run outcome</td></tr>
         <tr><td>§16</td><td><a href="#manifest-status-key-absent-refused">manifest-status-key-absent-refused</a></td><td>c133d0e</td><td>run outcome</td></tr>
         <tr><td>§16</td><td><a href="#live-worker-never-unreadable">live-worker-never-unreadable</a></td><td>8183a63</td><td>run outcome</td></tr>
+        <tr><td>§16</td><td><a href="#manifest-markdown-decorations-parsed">manifest-markdown-decorations-parsed</a></td><td>3833e84c</td><td>run outcome</td></tr>
         <tr><td>§21</td><td><a href="#landing-not-also-denied">landing-not-also-denied</a></td><td>93806e6</td><td>run outcome</td></tr>
         <tr><td>§20</td><td><a href="#reason-keeps-its-predicate-at-the-measured-width">reason-keeps-its-predicate-at-the-measured-width</a></td><td>ba487aa</td><td>run outcome</td></tr>
         <tr><td>§12</td><td><a href="#manifest-two-keys-on-one-line-refused">manifest-two-keys-on-one-line-refused</a></td><td>9a2f95e</td><td>run outcome</td></tr>
@@ -611,6 +612,33 @@ reading taken as an authority it was not.</p>
     two-file gate carries the identical single environmental failure at base
     (<code>4776d83</code>) and after with 101 passed against 106 passed, so the change adds five
     cases and no failures.</p>
+  </section>
+
+  <section id="manifest-markdown-decorations-parsed">
+    <h3>&#167;16 &mdash; The reader finds a manifest key through Markdown decoration</h3>
+    <p>Run
+      <code>r-20260915T094018545785-the-reader-sees-the-key-through-markdown</code>. Commit
+      <code>3833e84c</code>, 43 insertions and 12 deletions across one source file and one
+      test file.</p>
+    <p><strong>Defect reproduction:</strong> the plain control
+      <code>status: complete</code> returned <code>complete</code>, while each of the five
+      worker-authored forms &mdash; dash list item, star list item, bold key with inline-code
+      value, leading indentation, and dash plus bold and inline code &mdash; raised
+      <code>ManifestParseError</code> saying no <code>key: value</code> field could be read.
+      This positive control proves the instrument reached the parser before reporting the five
+      absences.</p>
+    <p><strong>Measure:</strong> <code>tests/test_manifest_parse_format.py</code> passed 59
+      cases after the repair against 53 passing cases at base, adding six parameterised line
+      forms and zero failures. Every form now returns the literal status
+      <code>complete</code>. The pre-existing assertions still refuse a body carrying manifest
+      fields but no status key, refuse an unrecognised status while naming its word and the
+      recognised vocabulary, refuse <code>commits</code> followed by
+      <code>changed_paths</code> on one line, and preserve numeric-looking commit identifiers
+      as the text the worker wrote.</p>
+    <p><strong>Mechanism:</strong> decorated lines are recognised only when their key belongs
+      to the manifest vocabulary, so a prose bullet containing a colon is not promoted into a
+      field. The status value sheds one matching inline-code wrapper before the existing strict
+      vocabulary check; the accepted words themselves did not widen.</p>
   </section>
 
   <section id="manifest-two-keys-on-one-line-refused">

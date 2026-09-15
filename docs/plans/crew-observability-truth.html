@@ -934,6 +934,14 @@
         same bodies still reads unreadable, and a live run with a genuinely absent manifest reads
         from liveness. Landed under commit <code>8183a63</code>. Full record:
         <a href="/reckon/evidence/archive/crew-observability-truth-landed#live-worker-never-unreadable">&#167;16 liveness outranks an unreadable manifest</a>.</p>
+      <p class="landed-summary">The text reader now finds a status key through the Markdown
+        decoration workers actually emit: dash and star list items, bold keys, inline-code
+        values, leading indentation, and their composed form all parse to
+        <code>complete</code>. The focused gate advanced from 53 to 59 passing cases with no
+        failures, while the missing-status, unknown-word, two-keys-on-one-line, and literal
+        commit-identifier refusals remain intact. Landed under commit
+        <code>3833e84c</code>. Full record:
+        <a href="/reckon/evidence/archive/crew-observability-truth-landed#manifest-markdown-decorations-parsed">&#167;16 decorated manifest field evidence</a>.</p>
     </section>
 
     <h2 id="s18">&#167;18 &mdash; Runs ending together on one backend are one lane event, not N worker failures</h2>
