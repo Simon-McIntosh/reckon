@@ -496,29 +496,37 @@ independent ready nodes.
 ## 8. Plan, evidence, and sprint writeback
 
 Each verified node has one landing beat: the orchestrator runs `reckon crew
-complete`, then immediately writes that node to the plan. Do not promote another
-run or merge another commit between those operations. The plan write is
-mandatory, but dispatching an unrelated ready node is outside this freeze and
-may refill a free slot. Workers author their own landing record in the same
-beat, per the contract the prompt embeds verbatim: "Append your landing record
-to your own section of the plan and your evidence anchor to the cumulative
-evidence record; both live in this worktree and both go into your final commit."
-The shared-state ban narrows with it: "Never mutate the shared project index,
-sprint state, or a plan other than the one you are landing against. Do not edit
-the plan-version or plan-modified meta lines: every worker touching them makes
-every merge conflict there." Return outcome data in their manifests.
+complete`, then reads the worker's committed record — its plan section comment
+and its evidence anchor — merges it, and may edit or append to it. The landing
+beat is a review of an authored record, not a transcription of a manifest. Do
+not promote another run or merge another commit between those operations. The
+plan write is mandatory, but dispatching an unrelated ready node is outside this
+freeze and may refill a free slot. Workers author their own landing record in
+the same beat, per the contract the prompt embeds verbatim: "Append your landing
+record to your own section of the plan and your evidence anchor to the
+cumulative evidence record; both live in this worktree and both go into your
+final commit." The shared-state ban narrows with it: "Never mutate the shared
+project index, sprint state, or a plan other than the one you are landing
+against. Do not edit the plan-version or plan-modified meta lines: every worker
+touching them makes every merge conflict there." Two limits hold even though the
+worker authors its own record, and both are about what it can see rather than
+about merge mechanics: it must not resolve its own driving followup and must
+not set a terminal status, because only the coordinator observes the other
+nodes — a worker knows its node landed, not whether the section closed. Return
+outcome data in their manifests.
 
 Immediately after each `reckon crew complete`, the orchestrator:
 
-1. Updates the plan's cumulative evidence record at
-   `docs/evidence/archive/<slug>-landed.html` and links the landed section to a
-   stable anchor. Do not create per-node or per-section fragments; split a new
-   evidence resource only for a materially independent artifact that stands on
-   its own. Append the node's commit, gate verdict and quantitative measure,
-   tests, artifacts, and negative findings to that anchor.
+1. Reads the worker's committed evidence anchor at
+   `docs/evidence/archive/<slug>-landed.html` after the merge and links the
+   landed section to a stable anchor, editing or appending only what the worker
+   could not state — the gate verdict and negative findings. Do not create
+   per-node or per-section fragments; split a new evidence resource only for a
+   materially independent artifact that stands on its own.
 2. Calls `edit_plan` once with the advanced node-based `impl`, the commit added
-   to `commits`, artifacts added to `artifacts`, and a section comment carrying
-   the same commit, gate verdict, quantitative measure, and artifact paths. The
+   to `commits`, artifacts added to `artifacts`, and a section comment appended
+   only where the worker did not author one — even then, only the gate verdict
+   and quantitative measure rather than a transcription of its record. The
    number and its evidence travel in one version-safe state write.
 3. Resolves the driving followup only when the node closes its section. A
    partially landed section remains open even though its plan ledger advanced.

@@ -111,7 +111,7 @@ read task requirements + apply explicit runtime routing + applicable skill
 → emit the dispatch summary, naming the gate that closes the wave
 → untrust-check, then READ each worker's diff by anomaly (§5b) → orchestrator merges
 → reckon crew complete each run — the record becomes committed evidence
-→ immediately write that node's commit, gate measure, artifacts, and impl to the plan
+→ read and merge the worker-authored record, may edit or append (§5 step 7), then write impl
 → emit the completion summary, WHY carrying the gate evidence
 → re-triage open followups + manifest follow_ons; fold them into the DAG until dry
 → write the drain ledger; foldable-remaining and unreconciled-runs must read 0
@@ -223,9 +223,10 @@ measured instances: `~/.agents/AGENTS.md`, *Name The Target*.
    composes it. Read and embed the reference contract only when hand-composing a
    delegation Reckon did not prepare.
 9. **Update the plan at every node landing.** Immediately after EACH
-   `reckon crew complete`, the orchestrator updates the cumulative evidence and
-   calls `edit_plan` once with the node's commit, gate measure, artifacts, and
-   advanced `impl`. Nothing else may be promoted or merged before this write.
+   `reckon crew complete`, the orchestrator merges the worker's committed record —
+   reading it, editing or appending to it as needed — then calls `edit_plan` once
+   with the advanced `impl` and the shared index additions. Nothing else may be
+   promoted or merged before this write.
    Dispatch of an unrelated ready node may continue; it does not wait on this
    plan-write beat. Collapse the evergreen section only when its final node lands;
    never wait for section closure to record earlier nodes.
@@ -935,9 +936,12 @@ For each completed agent:
    scope-changed node measures neither the estimate nor the worker, so saying so
    keeps it out of calibration instead of averaging it in.
 7. **In the same landing beat, perform the plan write in §7.** Immediately after
-   `reckon crew complete`, and before another promotion or merge, the orchestrator
-   writes this node's commit, gate verdict and
-   quantitative measure, artifacts, and new `impl` together. Workers author
+   `reckon crew complete`, and before another promotion or merge, read the
+   worker's committed record — its plan section comment and its evidence anchor —
+   merge it, and may edit or append to it. The landing beat is a review of an
+   authored record, not a transcription of a manifest: the worker's record comes
+   in with its merge, and the plan write adds only shared index state and
+   closure facts the worker cannot see. Workers author
    their own landing record in the same beat — the prompt embeds the contract
    verbatim: "Append your landing record to your own section of the plan and
    your evidence anchor to the cumulative evidence record; both live in this
@@ -945,7 +949,11 @@ For each completed agent:
    with it: "Never mutate the shared project index, sprint state, or a plan
    other than the one you are landing against. Do not edit the plan-version or
    plan-modified meta lines: every worker touching them makes every merge
-   conflict there." Dispatching an
+   conflict there." Two limits hold even though the worker authors its own
+   record, and both are about what it can see rather than about merge mechanics:
+   it must not resolve its own driving followup and must not set a terminal
+   status, because only the coordinator observes the other nodes — a worker
+   knows its node landed, not whether the section closed. Dispatching an
    unrelated ready node is outside this freeze and may refill a free slot.
 
 **A `blocked` manifest from a provider refusal is not a worker failure and is
@@ -995,10 +1003,11 @@ The full practice — the four measured gate shapes, the seven cheap checks, the
 
 ### 6. Record outcomes — after EACH node
 
-**Do not wait until a section is done.** Update its cumulative evidence anchor
-immediately after every node landing. The anchor is a living record: add the
-node's commit, gate verdict and quantitative measure, artifacts, tests, and any
-negative finding while the evidence is fresh.
+**Do not wait until a section is done.** The cumulative evidence anchor is a
+living record: immediately after every node landing, verify the worker's own
+anchor came in with its merge and append only what the worker could not state —
+the gate verdict and the negative findings. Never transcribe the worker's record
+afresh while the evidence is fresh.
 
 **Cumulative evidence file** — `docs/evidence/archive/<slug>-landed.html`:
 - Links to `/_shared/foundation.css` and `/_shared/dashboard.css`
@@ -1048,6 +1057,11 @@ entry to `done`. A section comment records a landed node, not completion: only
 
 ### 7. Update plan state — in the SAME BEAT as EACH node promotion
 
+The landing beat reviews an authored record: the worker's own section comment
+and evidence anchor arrive in its committed plan, which this beat merges. Read
+that record and may edit or append to it — never write from the manifest a
+record the worker is required to author.
+
 ```python
 # Immediately after reckon crew complete, update this node atomically.
 state = read_plan(
@@ -1055,11 +1069,9 @@ state = read_plan(
     view="raw",
 )
 
-landing_detail = (
-    "<node> landed — commit <sha>; gate <gate-name> <verdict>; "
-    "measure <quantitative-result>; artifacts <paths-or-none>"
-)
-
+# The worker's record merges in with its commit. Append to its own comment only
+# the closure facts it cannot see — the gate verdict and section closure — never
+# a fresh copy of its landing record.
 edit_plan(
   project="<project>",
   slug="<slug>",
@@ -1072,7 +1084,8 @@ edit_plan(
      "value": <existing_artifacts_with_node_artifacts_appended_once>},
     {"op": "append", "target": "comments", "section": "<section-id>",
      "item": {"id": "c-<timestamp>", "who": "reckon-ship",
-              "when": "<iso-now>", "body": landing_detail}}
+              "when": "<iso-now>",
+              "body": "gate <gate-name> <verdict>; section <closure-state>"}}
   ],
   expected_version=state["version"]
 )
@@ -1081,7 +1094,8 @@ edit_plan(
 That single state write carries the commit and gate measure alongside `impl`;
 a moved percentage is never the only new information. Preserve the manifest's
 exact measure and artifact paths rather than replacing them with “passed”. The
-cumulative evidence HTML receives the fuller record in the same landing beat.
+cumulative evidence record receives the worker's anchor with its merge; edit or
+append to it in the same beat, never re-write what the worker authored.
 
 **`impl`** = (count of completed executable nodes) / (count of total executable
 nodes) over the whole selected plan (the orchestrator owns the denominator),

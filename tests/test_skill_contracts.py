@@ -667,8 +667,10 @@ def test_ship_keeps_the_orchestrator_as_the_only_plan_state_writer() -> None:
         ).read_text()
     )
 
-    # The orchestrator remains the sole writer of shared plan state.
-    assert "the orchestrator writes this node's commit" in ship
+    # The orchestrator reads, merges, and may edit or append to the worker's own
+    # record; shared index state remains the orchestrator's alone to write.
+    assert "review of an authored record, not a transcription of a manifest" in ship
+    assert "may edit or append to it" in ship
     # The worker authors only its own record -- its own section of the plan and
     # its evidence anchor -- and never the shared index, sprint state or another
     # plan.
