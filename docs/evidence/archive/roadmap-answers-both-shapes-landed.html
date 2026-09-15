@@ -6,23 +6,23 @@
   <meta name="docs-project" content="reckon">
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="roadmap-answers-both-shapes-landed">
-  <meta name="plan-title" content="An endpoint without a handle reports itself &mdash; landed evidence">
-  <meta name="plan-summary" content="A structural endpoint with live members beneath it that carries no graph handle raises a warn-severity wiring finding naming the plan and the members its closure would reach, even when the endpoint plan itself is terminal. Six focused gate cases distinguish addressable endpoints, live closures, and sinks whose descendants are all terminal.">
+  <meta name="plan-title" content="Roadmap endpoint addressability and ready-work membership &mdash; landed evidence">
+  <meta name="plan-summary" content="The roadmap reports an unaddressable structural endpoint as a warn finding and derives, for each ready dispatch row, the endpoint closures it serves with explicit ship-target addressability. Eight focused gate cases distinguish named and unnamed endpoints, live and terminal closures, explicit non-membership, and read-only derivation.">
   <meta name="plan-evidence-for" content="reckon:roadmap-answers-both-shapes">
-  <meta name="plan-verifies" content="reckon:roadmap-answers-both-shapes#s2">
+  <meta name="plan-verifies" content="reckon:roadmap-answers-both-shapes#s2,reckon:roadmap-answers-both-shapes#s3">
   <meta name="plan-recorded-at" content="2026-09-15">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-environment" content="Linux workstation; Python 3.12; unit tests over the roadmap analyzer with fixture inventory &mdash; no network, no runtime clock">
-  <meta name="plan-commits" content="981e323,894406f">
-  <meta name="plan-artifacts" content="reckon/roadmap.py,tests/test_roadmap.py,docs/evidence/archive/roadmap-answers-both-shapes-landed.html">
-  <title>An endpoint without a handle reports itself &mdash; landed evidence | reckon</title>
+  <meta name="plan-commits" content="981e323,894406f,51361af">
+  <meta name="plan-artifacts" content="reckon/roadmap.py,tests/test_roadmap.py,docs/evidence/archive/roadmap-answers-both-shapes-landed.html,docs/plans/roadmap-answers-both-shapes.html">
+  <title>Roadmap endpoint addressability and ready-work membership &mdash; landed evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 </head>
 <body>
 <main class="plan-doc">
   <header class="plan-header">
-    <h1>An endpoint without a handle reports itself</h1>
+    <h1>Roadmap endpoint addressability and ready-work membership</h1>
     <p class="plan-summary">The measured failure this plan records was a coordinator reading
     <code>handle: null</code> on both derived endpoints of a live capability it had already fetched,
     and acting anyway &mdash; because nothing in the payload reported the gap as actionable. The
@@ -134,6 +134,35 @@
     excluding the endpoint itself. This preserves the one granted silence: a structural sink whose
     descendants are all terminal raises nothing. Ruff reported the same three pre-existing findings
     on the two touched Python files before and after the change, and formatting changed neither file.</p>
+  </section>
+
+  <section id="ready-endpoint-closures">
+    <h2>One ready-work row now carries both dispatch shapes</h2>
+    <p>The baseline read already found endpoint <code>release</code> with handle
+    <code>release</code>, but the ready row for <code>foundation</code> had no
+    <code>endpoint_closures</code> key. The executable reproduction made that absence fail
+    visibly: both new cases raised <code>KeyError: 'endpoint_closures'</code> before the
+    implementation. The analyzer now indexes its already-derived endpoint rows by closure member
+    and adds the resulting summaries to each row in <code>immediate_roadmap</code>, which is the
+    dispatch-order collection used by the composed ready-set reader.</p>
+
+    <table>
+      <thead><tr><th>Ready item shape</th><th>Derived report</th><th>Measured assertion</th></tr></thead>
+      <tbody>
+        <tr><td>Member of a named endpoint</td><td>Endpoint project, slug, ref and handle with <code>addressable: true</code></td><td><code>foundation</code> belongs to named endpoint <code>addressed-release</code></td></tr>
+        <tr><td>Member of an unnamed endpoint</td><td>The same endpoint identity with a null handle and <code>addressable: false</code></td><td>The same <code>foundation</code> row also belongs to <code>unaddressed-report</code></td></tr>
+        <tr><td>Member of no endpoint closure</td><td><code>endpoint_closures: []</code>, never an omitted field</td><td><code>standalone</code> reports the empty list explicitly</td></tr>
+        <tr><td>Resource identity</td><td>Membership exists only in the returned report</td><td>Both plan files are byte-identical before and after discovery plus roadmap derivation</td></tr>
+      </tbody>
+    </table>
+
+    <p>Commit <code>51361af</code> adds two gate cases. The focused defect probe changed from
+    two failures to two passes; the complete <code>tests/test_roadmap.py</code> gate changed from
+    36 passed on base <code>3332b9d</code> to 38 passed, with all 36 pre-existing tests still
+    passing. The membership case also pins the values of all thirteen existing dispatch-order
+    fields, including both dependency and schedule readiness axes, while asserting one addressed
+    and one unaddressed closure. Ruff remained at the same three pre-existing findings on the two
+    Python paths, and both paths are format-clean.</p>
   </section>
 </main>
 </body>

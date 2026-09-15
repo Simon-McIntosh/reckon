@@ -1495,6 +1495,17 @@ def build_roadmap(
         )
 
     endpoint_rows = _dependency_endpoints(project, plans)
+    endpoint_memberships: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for endpoint_row in endpoint_rows:
+        closure = {
+            "project": endpoint_row["project"],
+            "slug": endpoint_row["slug"],
+            "ref": endpoint_row["ref"],
+            "handle": endpoint_row["handle"],
+            "addressable": endpoint_row["handle"] is not None,
+        }
+        for member in endpoint_row["members"]:
+            endpoint_memberships[member["slug"]].append(dict(closure))
     for endpoint_row in endpoint_rows:
         if endpoint_row["handle"] is not None:
             continue
@@ -1788,6 +1799,7 @@ def build_roadmap(
             "schedule_readiness": row["schedule_readiness"],
             "schedule_deferred_reason": row["schedule_deferred_reason"],
             "schedule_behind_sprint": row["schedule_behind_sprint"],
+            "endpoint_closures": endpoint_memberships.get(row["slug"], []),
             "reason": (
                 "critical path"
                 if row["slug"] in critical_members

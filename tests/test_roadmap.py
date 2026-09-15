@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+from pathlib import Path
 
 import pytest
 
 from reckon.mcp_views import _blocking
 from reckon.roadmap import build_roadmap
-from reckon.serve import _derive_lifecycle
+from reckon.serve import _derive_lifecycle, discover_plans
 
 
 def _plan(
@@ -58,6 +59,39 @@ def _project_with_north_stars(*ids: str) -> dict:
             for north_star_id in ids
         ]
     }
+
+
+def _plan_document(
+    slug: str,
+    *,
+    depends_on: str | None = None,
+    graph_handle: str | None = None,
+) -> str:
+    dependency_meta = (
+        f'<meta name="plan-depends-on" content="{depends_on}">' if depends_on else ""
+    )
+    handle_meta = (
+        f'<meta name="plan-graph-handle" content="{graph_handle}">'
+        if graph_handle
+        else ""
+    )
+    return (
+        "<!doctype html><html><head>"
+        '<meta name="docs-project" content="sample">'
+        '<meta name="reckon-type" content="plan">'
+        f'<meta name="plan-slug" content="{slug}">'
+        '<meta name="plan-status" content="active">'
+        '<meta name="plan-effort" content="M">'
+        f"{dependency_meta}{handle_meta}<title>{slug}</title></head><body>"
+        '<main class="plan-doc"><section data-reckon="gates">'
+        '<div class="r-gate" data-id="evidence" data-status="closed" '
+        'data-verdict="passed"></div></section>'
+        '<section data-reckon="followups">'
+        '<article class="r-fu" data-id="next" data-status="open">'
+        '<h4 class="r-fu-title">Continue</h4><div class="r-fu-body"></div>'
+        '<pre class="r-fu-prompt">/reckon-ship work</pre>'
+        "</article></section></main></body></html>"
+    )
 
 
 def _section_gate(section: str, *, passed: bool = True) -> dict:
@@ -670,6 +704,131 @@ def test_endpoint_handle_finding_does_not_change_readiness_or_execution() -> Non
 
     for key in ("ready_now", "blocked", "pending_work", "critical_path"):
         assert without_handle[key] == with_handle[key], key
+
+
+def test_ready_dispatch_rows_report_their_endpoint_closures() -> None:
+    inventory = [
+        _plan("foundation", sprint="current"),
+        _plan(
+            "addressed-release",
+            depends_on=["foundation"],
+            sprint="current",
+            graph_handle="release",
+        ),
+        _plan(
+            "unaddressed-report",
+            depends_on=["foundation"],
+            sprint="current",
+        ),
+        _plan("standalone", sprint="current"),
+    ]
+    sprints = [
+        {
+            "id": "current",
+            "status": "active",
+            "items": [
+                "foundation",
+                "addressed-release",
+                "unaddressed-report",
+                "standalone",
+            ],
+        }
+    ]
+
+    result = build_roadmap("sample", inventory, sprints, active_sprint_id="current")
+    ready = {row["slug"]: row for row in result["immediate_roadmap"]}
+
+    assert ready["foundation"]["endpoint_closures"] == [
+        {
+            "project": "sample",
+            "slug": "addressed-release",
+            "ref": "sample:addressed-release",
+            "handle": "release",
+            "addressable": True,
+        },
+        {
+            "project": "sample",
+            "slug": "unaddressed-report",
+            "ref": "sample:unaddressed-report",
+            "handle": None,
+            "addressable": False,
+        },
+    ]
+    assert ready["standalone"]["endpoint_closures"] == []
+    assert {
+        key: ready["foundation"][key]
+        for key in (
+            "order",
+            "slug",
+            "sprint",
+            "progress_pct",
+            "unlocks",
+            "dependency_ready",
+            "dependency_readiness",
+            "schedule_ready",
+            "schedule_readiness",
+            "schedule_deferred_reason",
+            "schedule_behind_sprint",
+            "reason",
+        )
+    } == {
+        "order": 1,
+        "slug": "foundation",
+        "sprint": "current",
+        "progress_pct": 0.0,
+        "unlocks": ["addressed-release", "unaddressed-report"],
+        "dependency_ready": True,
+        "dependency_readiness": "ready",
+        "schedule_ready": True,
+        "schedule_readiness": "ready",
+        "schedule_deferred_reason": None,
+        "schedule_behind_sprint": None,
+        "reason": "critical path",
+    }
+
+
+def test_endpoint_membership_read_does_not_write_plan_resources(
+    tmp_path: Path,
+) -> None:
+    docs = tmp_path / "docs"
+    plans = docs / "plans"
+    plans.mkdir(parents=True)
+    foundation_path = plans / "foundation.html"
+    release_path = plans / "release.html"
+    foundation_path.write_text(_plan_document("foundation"), encoding="utf-8")
+    release_path.write_text(
+        _plan_document(
+            "release",
+            depends_on="foundation",
+            graph_handle="release",
+        ),
+        encoding="utf-8",
+    )
+    before = {path: path.read_bytes() for path in (foundation_path, release_path)}
+
+    discovered = discover_plans(docs, "sample", tmp_path / "state")
+    result = build_roadmap(
+        "sample",
+        discovered["inventory"],
+        discovered["sprints"],
+        active_sprint_id=discovered["active_sprint_id"],
+        project_manifest=discovered,
+        review={},
+    )
+    foundation = next(
+        row for row in result["immediate_roadmap"] if row["slug"] == "foundation"
+    )
+
+    assert foundation["endpoint_closures"] == [
+        {
+            "project": "sample",
+            "slug": "release",
+            "ref": "sample:release",
+            "handle": "release",
+            "addressable": True,
+        }
+    ]
+    assert {path: path.read_bytes() for path in before} == before
 
 
 def test_reference_input_in_depends_on_is_a_wiring_error() -> None:
