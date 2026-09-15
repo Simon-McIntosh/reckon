@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T16:55:02",
+  "updated": "2026-09-15T17:23:34",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -139492,6 +139492,207 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T144835970476-the-rule-is-written-where-it-is-read",
+        "plan": "figures-are-allocated-by-topic-directory",
+        "section": "\u00a73",
+        "node": "the-rule-is-written-where-it-is-read",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 676,
+                "cached_input_tokens": 462119,
+                "input_tokens": 462797,
+                "output_tokens": 737,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 463534,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3332e8d8-dcef-4091-9774-c9680478b165",
+            "session_id": "ship-s16-20260914"
+          },
+          "done_when": "Section 2 landed in commit ea978c6e. It did NOT add enforcement - it found the enforcement already existed in dispatch and pinned it with six refusal cases plus a mutation control that neuters _scopes_overlap and confirms exactly those six flip to DID NOT RAISE. Read the landed record before writing: docs/evidence/archive/figures-are-allocated-by-topic-directory-landed.html, anchor s2-topic-directory-claims-the-tree. This node writes the rule where an author or a coordinator will actually meet it, and it documents what the code DOES, not what anyone wishes it did.\n\nDONE WHEN, and every clause emits evidence:\n\n(1) The figure guidance in skills/reckon-create/SKILL.md states the allocation unit: each per-topic directory beneath docs/figures is claimed by exactly one node, the claim covers the whole tree under it, and a second node declaring that same directory or any path inside it is a scope conflict caught at dispatch. Quote the sentences you added.\n\n(2) The worktree and scope section of the ship references states the same rule - skills/reckon-ship/references/worker-protocol.md section 5, \"Worktree and parallel-safety rules\". Quote what you added there.\n\n(3) Both surfaces state the never-merged corollary: a figure is added or replaced WHOLESALE, never combined. Two nodes producing one filename is a scope defect caught at dispatch, not a conflict resolved at integration, because there is no correct resolution at integration - the halves cannot be combined and neither is obviously right.\n\n(4) A reader of either surface can determine what to declare for a capture node WITHOUT inspecting dispatch's source. Test this by writing down, from your own edited text alone, the exact --write-path argument a capture node producing the directory docs/figures/burn-visibility should declare. If your text does not let you do that, it is not finished.\n\n(5) State as a digit how many figure-writing plans in this repository would have been refused under the rule when they ran. The expected answer is ZERO and a non-zero answer is a FINDING to report, not an error to suppress or a reason to soften the rule. Say how you counted - name the plans you examined and the paths they declared.\n\nDO NOT DECIDE THE OPEN DECISION. sibling-writers-in-one-topic is open on this plan and is the lead's to make: may two nodes write different files inside one topic directory? Section 2 measured the current behaviour and it ADMITS sibling writers with disjoint filenames, each claiming a leaf. So document the rule as it is enforced today - a topic claimed as a tree refuses a second node declaring that topic or a containing/contained path - and do NOT write text that presupposes either answer to the sibling question. If a sentence you want to write would become wrong under either choice, leave it out and note it as a follow-on.\n\nDOCUMENTATION-ONLY NODE. You change no runtime behaviour. There is no code to gate, so your evidence is the text itself plus clause 5's count. Do not add tests that assert on skill prose unless you are extending an existing parity mechanism - and if you do, read tests/test_skill_contract_parity.py first: it derives expectations from a runtime string rather than from literals, because two copies of one rule drift silently while the test keeps passing.\n\nWATCH THE READ-SET BUDGET. tests/test_skill_contracts.py carries FIXED_READ_SET_TOKEN_BUDGET and it governs skills/reckon-ship/. That file is NOT in your write scope. If your addition to worker-protocol.md is large, prefer the reference file over SKILL.md - references are read conditionally, SKILL.md is loaded in full every session. If you believe you need to touch the budget, block and say so rather than reaching outside the fence.\n\nJudge by delta against a stated base: record the base revision, run the focused gate covering any test you touched, and report added failures as a digit; zero added against a red base is a pass. Author your own landing record - a comment on section 3 of the plan and an anchor in the cumulative evidence record - and commit both in your worktree. Do NOT resolve the driving followup and do NOT set a terminal plan status; only the coordinator observes whether the section closed. Conventional commit subject AND a body.",
+          "estimated_hours": null,
+          "goal": "Write the figure topic-directory allocation rule and the never-merged corollary into the two surfaces an author and a coordinator actually read",
+          "id": "the-rule-is-written-where-it-is-read",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T14:48:36Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 1,
+            "binding_observed": false,
+            "detail": "",
+            "headroom": 3,
+            "mean_context": 126461,
+            "observed_at": "2026-09-15T14:48:35Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 120
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T144835970476-the-rule-is-written-where-it-is-read/manifest.md",
+          "plan": "figures-are-allocated-by-topic-directory",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "skills/reckon-create/SKILL.md",
+            "skills/reckon-ship/references/worker-protocol.md",
+            "docs/evidence/archive/figures-are-allocated-by-topic-directory-landed.html",
+            "docs/plans/figures-are-allocated-by-topic-directory.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-budget-instrument",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T14:48:51Z",
+        "completed_at": "2026-09-15T15:19:46.410Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 1826,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 1855,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "a9a4f4551c5743798a732517ccaa38a16ef75c91",
+        "commits": [
+          "08e9f5b19c5f79974076be379d7dd12f3b2b3c6c"
+        ],
+        "changed_lines": {
+          "added": 65,
+          "removed": 0,
+          "files": 4
+        },
+        "tests_added": 0,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_skill_contracts.py tests/test_skill_contract_parity.py tests/test_schema.py::test_byte_identity_on_real_reckon_plans",
+          "exit_status": 0,
+          "log_path": null,
+          "log_digest": "68-passed-5.64s"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T144835970476-the-rule-is-written-where-it-is-read/manifest.md",
+        "scope_changed": false,
+        "session_id": "9df379d1-f62d-44b5-bdee-440c3bff9171",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 2845551,
+            "input_tokens_cumulative": 5850659,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 42283,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T15:19:46.410Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 6014597,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 1851.472,
+          "generated_tokens": 48476,
+          "generation_seconds": 1830.376,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 81.3,
+          "machine_seconds": 21.096,
+          "peak_input_tokens": 162638,
+          "tokens_per_second": 26.48,
+          "wall_tokens_per_second": 26.18
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": "Documentation-only node; the single commit 08e9f5b1 carries all four paths and no runtime code changed.",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16-20260914/the-rule-is-written-where-it-is-read",
+          "session_id": "9df379d1-f62d-44b5-bdee-440c3bff9171",
+          "session_source": "pointer",
+          "retained_at": "2026-09-15T15:19:46.410Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 46.0,
+        "orientation_input_tokens": 1906778.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -139720,6 +139921,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1542
+    "_version": 1543
   }
 }
