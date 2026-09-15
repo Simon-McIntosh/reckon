@@ -765,6 +765,50 @@ def test_a_binding_window_below_the_ceiling_does_not_hold(home, repo) -> None:
     assert report["backends"][0]["state"]["utilisation_pct"] == 40.0
 
 
+def test_the_month_boundary_overage_figure_never_reaches_the_verdict(
+    home, repo
+) -> None:
+    """The account's calendar-month position does not decide a lane's headroom.
+
+    The measured shape: top-level utilization 1.21 beside rateLimitType
+    overage and a month-boundary reset, while the five-hour window a dispatch
+    actually runs into sits at 5%. The verdict a dispatch consults must report
+    the lane open, and neither the month figure nor its reset may reach the
+    emitted state or its reason, so a later reader cannot pick either up by
+    name.
+    """
+    now = datetime.now(tz=UTC)
+    near_reset = int((now + timedelta(hours=2)).timestamp())
+    month_reset = int(
+        (now.replace(day=1) + timedelta(days=32)).replace(day=1).timestamp()
+    )
+    info = {
+        "status": "allowed_warning",
+        "rateLimitType": "overage",
+        "resetsAt": month_reset,
+        "surpassedThreshold": 1,
+        "utilization": 1.21,
+        "unifiedWindows": {"five_hour": {"utilization": 0.05, "resetsAt": near_reset}},
+    }
+    block = _backends.dialect_for(CONFIG["backends"]["beta"])._budget(info)
+    _record("proj", repo, backend="beta", budget_block=block, run_id="r-month-overage")
+
+    report = budget.preflight("proj", CONFIG, root=repo)
+
+    assert report["held"] is False
+    assert report["held_backends"] == []
+    row = next(item for item in report["backends"] if item["backend"] == "beta")
+    state = row["state"]
+    assert state["utilisation_pct"] == 5.0
+    assert state["rate_limit_type"] == "five_hour"
+    assert state["resets_at"] == _backends._epoch_to_iso(near_reset)
+    assert state["severity"] is None
+    emitted = json.dumps(report)
+    assert "1.21" not in emitted
+    assert str(month_reset) not in emitted
+    assert _backends._epoch_to_iso(month_reset) not in emitted
+
+
 # ── A held lane hands over to its declared fallback ─────────────────────────
 
 
