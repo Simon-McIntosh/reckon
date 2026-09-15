@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T18:13:40",
+  "updated": "2026-09-15T18:18:11",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -140882,6 +140882,209 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T143954593693-a-cached-reading-shows-its-age",
+        "plan": "a-lane-can-say-where-it-stands",
+        "section": "\u00a75d",
+        "node": "a-cached-reading-shows-its-age",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1540,
+                "cached_input_tokens": 440084,
+                "input_tokens": 441626,
+                "output_tokens": 730,
+                "reasoning_output_tokens": 66,
+                "total_tokens": 442356,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3332e8d8-dcef-4091-9774-c9680478b165",
+            "session_id": "ship-s16-20260914"
+          },
+          "done_when": "A cached lane reading is a last-known position, not a heartbeat, so it may be used only as a fallback that is ALWAYS rendered beside its age, and never as a bare figure.\n\nTHE DEFECT, MEASURED. _backends.py:677 computes `block[\"fetch_age_seconds\"] = round(age, 1)` when a reading comes from the on-disk account cache. Grep the whole package for that key: it has exactly ONE reference, the assignment. Nothing reads it. The sibling `detail` string does carry \"cached account surface, fetched X ago\", so a human reading prose sees the age while every caller reading structured fields gets a bare figure with no indication it is cached or how old it is. That is the gap - the age is computed and dropped.\n\nWhy it matters, from this plan's own section 2: a cached account block was measured at 92 hours old reporting 53 and 60 percent against a live 38 and 89. A reader taking those as current would size a wave against headroom that had not existed for nearly four days.\n\nDONE WHEN, and every clause emits evidence:\n\n(1) A reading sourced from the on-disk cache carries its fetch age wherever it is rendered or returned - the structured payload, not only the detail prose. Name the surfaces you changed and assert each one. The lanes view in mcp_views.py is the reader a coordinator actually consults before opening a wave, so it is the entry point that must show it; a fix landing only in _backends.py leaves the surface unchanged and does not satisfy this clause.\n\n(2) A cached reading whose fetch stamp cannot be resolved is reported as unknown rather than shown as a figure. Demonstrate this as a REFUSAL - a test that fails if any figure is emitted for an unresolvable stamp - and report its node id. An unstamped cached figure is indistinguishable from a live one, which is the whole defect.\n\n(3) Asserted against a fixture cache whose stamp is hours old, requiring the age to appear beside the figure AND the figure never to appear alone. Both halves: it is not enough that the age is present somewhere, the figure must not be renderable without it. State the fixture age you used as a digit.\n\n(4) State as a digit how many references `fetch_age_seconds` has before your change and how many after. Before is 1, the assignment. If after is still 1 you have not wired it to a reader.\n\nRANGE THE FALSIFIER OVER THE INPUT DOMAIN. A fixture built from the currently cached account block will have a resolvable stamp, so it cannot exercise clause 2 at all. Construct the unresolvable case deliberately: a cache payload with the stamp key absent, and one with a stamp that does not parse. Both must yield unknown rather than a figure.\n\nDO NOT widen a guard to make a gate pass. If wiring the age to a reader exposes existing tests that assert a bare figure, those tests are asserting the defect - re-aim them and say so in the manifest with their node ids. Judge by delta against a stated base: record the base revision and its failure ids, report added failures as a digit, and zero added against a red base is a pass.\n\nOUT OF SCOPE: the reconstruction defect in _backend_settings, which drops the configured window, the model and the effort. That is a separate node already briefed and fenced to dispatch.py and promotion.py - neither file is in your scope and you must not touch either. If your work appears to need them, block and say so rather than reaching outside the fence.\n\nGate the focused set covering _backends.py and mcp_views.py plus the two named test files, captured to one log; no full suite. Author your own landing record - a comment on the plan section and an anchor in the cumulative evidence record - and commit both in your worktree. Conventional commit subject AND a body.",
+          "estimated_hours": null,
+          "goal": "Make a cached lane reading carry its fetch age wherever it is rendered or returned, and report unknown rather than a bare figure when the stamp cannot be resolved",
+          "id": "a-cached-reading-shows-its-age",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T14:39:55Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 21,
+            "binding_observed": false,
+            "detail": "",
+            "headroom": 2,
+            "mean_context": 166443,
+            "observed_at": "2026-09-15T14:39:34Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 120
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T143954593693-a-cached-reading-shows-its-age/manifest.md",
+          "plan": "a-lane-can-say-where-it-stands",
+          "requested_backend": null,
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75d",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/_backends.py",
+            "reckon/mcp_views.py",
+            "tests/test_backend_observation.py",
+            "tests/test_crew_lanes_view.py",
+            "docs/evidence/archive/a-lane-can-say-where-it-stands-landed.html",
+            "docs/plans/a-lane-can-say-where-it-stands.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "session-98412105dc7023d3bf56",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T14:40:16Z",
+        "completed_at": "2026-09-15T16:13:46.057Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 5603,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 5610,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "a9a4f4551c5743798a732517ccaa38a16ef75c91",
+        "commits": [
+          "3f9704560a5a3a508bc4f5f3649f4cb9830b38df"
+        ],
+        "changed_lines": {
+          "added": 287,
+          "removed": 8,
+          "files": 4
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_crew_lanes_view.py tests/test_backend_observation.py tests/test_lanes_view_is_live.py",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T143954593693-a-cached-reading-shows-its-age/test-lanes-cache-gate-head.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "A cached lane reading now carries its fetch stamp and age through to the lanes view, the surface a coordinator consults before opening a wave: fetch_age_seconds went from 1 reference (the assignment alone) to 5. An unresolvable stamp renders no figure at all, demonstrated as two parametrised refusals over stamp-absent and stamp-unparseable. The fixture age is derived from a fixed 2030 fixture date and a five-hour offset rather than a hardcoded literal or the current clock. Judged by delta: 55 passed 2 failed at base a9a4f455, 58 passed 2 failed at head, identical failure ids, zero added; one pre-existing failure re-confirmed at the merged head's main-side parent. Ruff zero new findings.",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T143954593693-a-cached-reading-shows-its-age/manifest.md",
+        "scope_changed": false,
+        "session_id": "b232640f-c0b4-4d9d-b52f-6070b7b906f7",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 13107919,
+            "input_tokens_cumulative": 13107919,
+            "output_tokens": 155062,
+            "output_tokens_cumulative": 155062,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T16:13:46.057Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 13603631,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 5606.784,
+          "generated_tokens": 179295,
+          "generation_seconds": 5547.13,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 83.2,
+          "machine_seconds": 59.654,
+          "peak_input_tokens": 166475,
+          "tokens_per_second": 32.32,
+          "wall_tokens_per_second": 31.98
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16-20260914/a-cached-reading-shows-its-age",
+          "session_id": "b232640f-c0b4-4d9d-b52f-6070b7b906f7",
+          "session_source": "stream",
+          "retained_at": "2026-09-15T16:13:46.057Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 125.0,
+        "orientation_input_tokens": 5290947.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -141110,6 +141313,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1549
+    "_version": 1550
   }
 }
