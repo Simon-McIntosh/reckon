@@ -23,6 +23,7 @@ prevents. Pointers below, one per rule; the references hold the full text.
   `skills/reckon-ship/references/sprint-orchestration.md`
   - a prove-by-test measure fences the test as a deliverable before dispatch
   - a two-population measure names which direction is the defect
+  - a comparison measure is tested against its worst input, not its expected one
   - a repair brief confirms the defect still reproduces before repair
   - size an operational cap from population and measured unit rate so the
     cohort completes — and name the scarce resource

@@ -838,6 +838,41 @@ middle the worker cannot pass honestly: an unsatisfiable measure forces a
 choice between a failing gate and a forbidden workaround, and a worker barred
 from the word that would make the measure pass will take the workaround.
 
+### A comparison measure is tested against its worst input, not its expected one
+
+**Ask what a check does on the worst input it could receive. If the answer is
+that it passes, and passes more emphatically, the check is measuring its own
+form rather than its subject.** This failure outranks the two familiar ones — a
+check that cannot fire, and a check that fires wrongly — because its pass
+probability *rises with the severity of the condition it exists to detect*. It
+grows more convincing as it grows more vacuous, so the evidence feels strongest
+exactly where it is worth least.
+
+Measured 2026-09-15 on a peer's kernel-patch verification. The measure compiled
+a source, bound a patch over the same persistent compiler cache, recompiled, and
+required the artifact to **differ** — reading a difference as proof the patch
+reached the compiled output. But a compiler that embeds a timestamp, an absolute
+path or a build id differs on *every* compile. So on precisely the toolchains
+whose output cannot be trusted, the assertion was guaranteed rather than merely
+likely.
+
+**The remedy is one extra run of the unchanged case, asserting agreement, before
+asserting the changed case differs:**
+
+```
+unchanged -> A ;  unchanged -> A'    REQUIRE A == A'    # the instrument is stable
+changed   -> B                       REQUIRE B != A     # the change reached the artifact
+```
+
+Without the middle line, `B != A` is consistent with both "the change landed"
+and "this toolchain never emits the same bytes twice".
+
+**And write the control's failure as a finding, not a retry condition.**
+`A != A'` means artifact identity cannot prove anything here, and the
+verification must move to something derived from the source — a symbol, a
+constant, an instruction sequence. Written as a retry, a worker chases a pass it
+cannot honestly reach; written as a result, it redirects the measure.
+
 ### A repair brief confirms the defect still reproduces
 
 **A repair brief for a previously recorded finding opens by confirming the
