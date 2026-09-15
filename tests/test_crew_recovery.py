@@ -1356,6 +1356,105 @@ def test_every_reader_tolerates_the_widened_raise(home) -> None:
     assert ledger.stated_correction_count(_INCIDENTAL_PROSE_MANIFEST) == "unknown"
 
 
+def _live_pointer(home: Path, run_id: str, manifest: str) -> dict:
+    """A pointer whose process is alive with a fresh log and a refused manifest."""
+    stream = home / "streams" / f"{run_id}.jsonl"
+    stream.parent.mkdir(parents=True, exist_ok=True)
+    stream.write_text('{"type": "turn.started"}\n')
+    pointer = _cli_pointer(
+        home,
+        run_id,
+        "absent-backend-fixture.jsonl",
+        manifest=manifest,
+        process_alive=True,
+    )
+    pointer["log_path"] = str(stream)
+    return pointer
+
+
+def test_a_live_worker_with_a_run_on_status_never_classifies_unreadable(home) -> None:
+    # A worker writing its manifest mid-flight can run the status line together
+    # with the next field into an unrecognised word. The parser now refuses
+    # that body — a strictness added for manifests at rest — and a live
+    # process must not be reported unreadable because of it.
+    pointer = _live_pointer(
+        home, "r-live-runon", "status: completed quickly\ncommits: abc123\n"
+    )
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+
+    assert row["classification"] == "running"
+    assert row["classification"] != "unreadable"
+    assert row["process_alive"] is True
+    assert row["log_fresh"] is True
+    assert row["manifest_present"] is True
+    assert row["manifest_error"]
+
+
+def test_a_live_worker_with_a_corrupted_declared_wait_never_classifies_unreadable(
+    home,
+) -> None:
+    # The same run-on corruption folded into a declared waiting status: the
+    # word no longer parses, yet the process is alive and parked, so the row
+    # reads from liveness (running) rather than naming the file unreadable.
+    pointer = _live_pointer(
+        home, "r-live-wait", "status: waiting on a peer reply\ncommits: abc123\n"
+    )
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+
+    assert row["classification"] == "running"
+    assert row["classification"] != "unreadable"
+    assert row["process_alive"] is True
+    assert row["log_fresh"] is True
+    assert row["manifest_error"]
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "status: completed quickly\ncommits: abc123\n",
+        "status: waiting on a peer reply\ncommits: abc123\n",
+    ],
+)
+def test_a_dead_run_on_the_same_unreadable_manifest_stays_unreadable(
+    home, body
+) -> None:
+    # The liveness guard exists so a live worker is never misreported; it must
+    # not switch the state off entirely. With the process gone the same bodies
+    # still read unreadable, because the manifest cannot be judged and cannot
+    # be allowed to read abandoned.
+    pointer = _cli_pointer(
+        home,
+        "r-dead-unreadable",
+        "codex-failed-turn.jsonl",
+        manifest=body,
+        process_alive=False,
+    )
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+
+    assert row["classification"] == "unreadable"
+    assert row["classification"] not in {"abandoned", "running"}
+    assert row["process_alive"] is False
+
+
+def test_a_live_run_with_no_manifest_classifies_from_liveness(home) -> None:
+    # A live worker that has not reached its manifest is read from the process,
+    # not from the absent file: the missing manifest never reads unreadable or
+    # abandoned while the run is still alive.
+    stream = home / "streams" / "r-live-absent.jsonl"
+    stream.parent.mkdir(parents=True, exist_ok=True)
+    stream.write_text('{"type": "turn.started"}\n')
+    pointer = _cli_pointer(
+        home, "r-live-absent", "absent-backend-fixture.jsonl", process_alive=True
+    )
+    pointer["log_path"] = str(stream)
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+
+    assert row["classification"] == "running"
+    assert row["classification"] not in {"unreadable", "abandoned"}
+    assert row["process_alive"] is True
+    assert row["manifest_present"] is False
+
+
 def test_refusal_blocked_pointer_snapshots_as_blocked_in_the_ticker_path(home) -> None:
     pointer = _cli_pointer(home, "r-refused", "codex-usage-limit.jsonl")
     snapshot = recovery._watch_snapshot(pointer, moment=time.time(), stall_seconds=3600)
