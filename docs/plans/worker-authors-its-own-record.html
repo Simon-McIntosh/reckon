@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="worker-authors-its-own-record">
+  <meta name="plan-title" content="The Worker Authors Its Own Record">
+  <meta name="plan-summary" content="The worker authors its evidence and plan comment in its own worktree; the coordinator merges and may append. The ship skill forbids it in four places.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="3.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="low">
+  <meta name="plan-sprint" content="S17">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-depends-on" content="crew-observability-truth">
+  <title>The Worker Authors Its Own Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-15">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">&sect;1 &mdash; A rule stated in two places that disagree</h2>
+    <p>The composed worker prompt requires a worker to author its own landing record:
+    <em>&ldquo;Append your landing record to your own section of the plan and your evidence
+    anchor to the cumulative evidence record; both live in this worktree and both go into your
+    final commit.&rdquo;</em> It then forbids the same act four lines later &mdash;
+    <em>&ldquo;Do not edit reckon plan or index state. Return outcome data to the
+    orchestrator.&rdquo;</em> &mdash; and in between explains how to edit the plan without
+    touching the version and modified meta lines.</p>
+    <p>The fence agrees with the requirement rather than the prohibition: dispatch adds the
+    plan HTML and the cumulative evidence path to an implement node's exclusive write paths
+    automatically. Measured on one dispatch, three declared write paths became five in the
+    composed prompt, the extra two being exactly those.</p>
+    <p>Five workers in a single session resolved the contradiction identically, taking the two
+    specific clauses over the one general one, and each committed its landing record. That is a
+    defensible reading rather than a lucky one, and five identical resolutions is what
+    identifies the defect as the brief's rather than the workers'. The coordinator that
+    supervised them recorded all five as scope violations and held four commits unmerged; that
+    correction is now written beside those ledger rows. The lead has ruled that the fence is
+    the correct half and the worker is always best placed to author both records, because it
+    holds the context that produced them.</p>
+    <p>The prohibition is not simply wrong. It protects something real &mdash; a worker must
+    still not mutate the shared project index, sprint state, or a plan other than the one it is
+    landing against. It is being narrowed rather than deleted in the runtime prompt, and this
+    plan carries the same narrowing into the prose a coordinator reads.</p>
+
+    <h2 id="s2">&sect;2 &mdash; The four clauses that still forbid it</h2>
+    <p>The contradiction surface in the skills is bounded and was enumerated rather than
+    estimated. A grep of the crew tool descriptions and the MCP surface for the same family of
+    phrasing returns empty, and there is no <code>reckon-crew</code> skill, so these four are
+    the whole of it:</p>
+    <table class="r-table">
+      <thead><tr><th>File</th><th>Line</th><th>What it says today</th></tr></thead>
+      <tbody>
+        <tr><td><code>skills/reckon-ship/SKILL.md</code></td><td>941</td><td>&ldquo;they never write shared plan state&rdquo;</td></tr>
+        <tr><td><code>references/worker-protocol.md</code></td><td>213</td><td>&ldquo;Do not edit reckon plan or index state&rdquo;</td></tr>
+        <tr><td><code>references/sprint-orchestration.md</code></td><td>412</td><td>the same rule, second copy</td></tr>
+        <tr><td><code>references/sprint-orchestration.md</code></td><td>483</td><td>&ldquo;never write shared plan or index state&rdquo;</td></tr>
+      </tbody>
+    </table>
+    <p>Each becomes the narrowed prohibition plus the positive requirement: the worker authors
+    its landing record and its plan section comment in its own worktree and commits both; it
+    does not touch the shared project index, sprint state, or another plan, and it does not
+    edit the version or modified meta lines.</p>
+    <p><strong>Done when</strong> a grep of <code>skills/reckon-ship/</code> for the
+    prohibiting phrasings returns zero, each of the three files carries the positive
+    requirement, and the wording is quoted from the composed runtime prompt rather than
+    paraphrased &mdash; asserted by a check that compares the skill sentence against the
+    prompt's, so the two cannot drift. The count of matching prohibitions is stated as a digit
+    before and after.</p>
+
+    <h2 id="s3">&sect;3 &mdash; What the coordinator does instead</h2>
+    <p>The coordinator half is not merely the absence of the old rule. Under the lead's model
+    it reads the worker's committed edits, merges them, and may edit or append to the worker's
+    comments &mdash; so the landing beat becomes a review of an authored record rather than a
+    transcription of a manifest. The skill currently describes the transcription.</p>
+    <p>Two limits belong with it, and both are about what a worker can see rather than about
+    merge mechanics. A worker must not resolve its own driving followup and must not set a
+    terminal status, because only the coordinator observes the other nodes: a worker knows its
+    node landed, not whether the section closed. Those two sentences are owed to the runtime
+    prompt as well, and are recorded here so the two audiences receive the same rule.</p>
+    <p><strong>Done when</strong> the skill's landing-beat description says the coordinator
+    reads, merges, and may append, and states both limits; and no sentence in the skill
+    instructs the coordinator to write a record the worker is required to author.</p>
+
+    <h2 id="s4">&sect;4 &mdash; Out of scope</h2>
+    <p>The composed runtime prompt is owned by <code>crew-observability-truth</code> and
+    changed by the session holding <code>reckon/crew/prompts.py</code>. This plan mirrors that
+    wording and does not author it; where the skill needs a sentence the prompt lacks, the
+    sentence is added to the prompt rather than carried only by the skill, so no rule lives
+    somewhere its subject does not read.</p>
+    <p>One distinction is deferred rather than settled here. A worker told to update plan state
+    can reach for the plan MCP, which writes the coordinator's checkout and not the worker's
+    tree &mdash; two different stores that the contract text does not currently distinguish. A
+    worker raised this before either coordinator noticed it. The sentence resolving it belongs
+    to the runtime prompt and will be mirrored here in one follow-up edit once its final text
+    lands.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="skill-wording-source" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Does the skill quote the runtime prompt&#x27;s wording, or paraphrase it for a coordinator audience?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="quote-the-prompt">quote-the-prompt</button>
+      <button class="r-opt" data-value="paraphrase-for-coordinators">paraphrase-for-coordinators</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-waor-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-15" data-recommends-skill="/reckon-ship worker-authors-its-own-record" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Mirror the runtime contract into the four skill clauses, then the coordinator half</h4>
+    <div class="r-fu-body"><p>&sect;2 and &sect;3 write the same file set and run as one node in section order. Both wait on the runtime prompt's final wording, which the session holding <code>reckon/crew/prompts.py</code> is landing as a narrowing plus two clauses it did not previously carry: the store distinction and the closure-authority limits. Mirror that text rather than composing a second version, so there is one authority for the words and two hands doing the work.</p><p>The measure that matters is not that the prohibitions are gone but that the skill and the prompt say the same thing: assert the skill sentence against the prompt's rather than against a literal, because two copies of one rule drift silently and the test keeps passing. That is the same failure this repository has been finding all week in its gates.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship worker-authors-its-own-record</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>
