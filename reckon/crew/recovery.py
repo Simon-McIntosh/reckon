@@ -1332,6 +1332,11 @@ def classify_pointer(
         )
         terminal_age_seconds = max(0, int(moment - terminal_seconds))
 
+    # Classification order: the process is consulted before the manifest
+    # reading. A worker whose process is alive is classified from that life and
+    # never as unreadable, so a strictness added for manifests at rest cannot
+    # misreport work in progress; the manifest and its status become
+    # authoritative only once the process is gone.
     marker = None
     needs_help_complete_value = None
     if manifest_unwritten:
@@ -1599,7 +1604,7 @@ def classify_pointer(
             classification = "blocked"
             detail = f"blocked: {background_wait}; {delivery}"
             action = f"reckon crew resume --run {run_id}"
-    elif manifest_error and manifest_present:
+    elif manifest_error and manifest_present and alive is not True:
         # The third manifest outcome next to absent and readable-and-terminal:
         # a file that is present but that no supported reader can parse is
         # neither a delivered record nor an absence. The name states what the
@@ -1607,6 +1612,10 @@ def classify_pointer(
         # format the file declared and why it was rejected) travels in the same
         # manifest_error channel the abandoned arm used so the operator's next
         # question is answerable one turn before the run can be judged.
+        # A positively live process outranks this reading: the worker is still
+        # in flight and its half-written or mid-write manifest is a condition of
+        # that work, not an unreadable delivery, so the run reads running and a
+        # reader answers where it is rather than reporting it unreadable.
         classification = "unreadable"
         detail = (
             f"the manifest at {manifest} is present but could not be read: "
