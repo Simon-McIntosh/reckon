@@ -1622,3 +1622,182 @@ def _promote_failing(
     with pytest.raises(crew.CrewError, match="could not commit the landing writes"):
         _promote(repository, run_id, outcome="the landing commit fails and is restored")
     assert pointer_path(run_id).is_file()
+
+
+# ── a worker's own landing record stops promotion authoring a second ─────────
+#
+# A worker that followed the landing contract wrote its record under the same
+# run-derived comment id promotion derives, into its own tree, before the
+# coordinator merges it. Promotion reads that record from the run's submitted
+# commit and appends nothing, so the plan file stays untouched and the merge
+# cannot collide on a duplicate comment id. A run without such a record still
+# lands exactly one comment.
+
+
+def _worker_plan_pointer(
+    repository: Path,
+    tmp_path: Path,
+    run_id: str,
+    plan_html: str,
+    *,
+    write_paths: list[str] | None = None,
+    code_file: bool = False,
+) -> tuple[str, str]:
+    """Write a real worker worktree holding ``plan_html`` and a pointer citing it.
+
+    Returns (worker_sha, worker_tree); the worktree shares the repository's
+    object store, so promotion resolves the worker's commit even though the
+    ledger root has not merged it. ``code_file`` stages a separate deliverable
+    (candidate.txt) so a worker with no plan record still has a commit to cite.
+    """
+    worker_tree = tmp_path / "worker"
+    # The worker's own tree starts detached at main (main is checked out in the
+    # ledger root), then commits its record onto that detached head — the same
+    # state a real worker leaves before the coordinator merges it.
+    _git(repository, "worktree", "add", "-q", "--detach", str(worker_tree), "main")
+    if code_file:
+        (worker_tree / "candidate.txt").write_text("delivered\n", encoding="utf-8")
+        _git(worker_tree, "add", "candidate.txt")
+    plan_file = worker_tree / "docs" / "plans" / f"{PLAN}.html"
+    plan_file.write_text(plan_html, encoding="utf-8")
+    _git(worker_tree, "add", f"docs/plans/{PLAN}.html")
+    _git(worker_tree, "commit", "-q", "-m", "docs: author the landing record")
+    worker_sha = _git(worker_tree, "rev-parse", "HEAD")
+    manifest = tmp_path / "manifests" / f"{run_id}.md"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text(
+        "node: node-a\n"
+        "status: complete\n"
+        f"commits: {worker_sha}\n"
+        f"changed_paths: {f'docs/plans/{PLAN}.html candidate.txt' if code_file else f'docs/plans/{PLAN}.html'}\n",
+        encoding="utf-8",
+    )
+    _write_json(
+        pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": PROJECT,
+            "repo": str(repository),
+            "worktree": str(worker_tree),
+            "base_sha": _git(repository, "rev-parse", "HEAD"),
+            "launch": "in-harness",
+            "role": "implement",
+            "member": "worker-a",
+            "backend": "native",
+            "created_at": "2026-09-15T05:00:00Z",
+            "manifest_path": str(manifest),
+            "node": {
+                "id": "node-a",
+                "plan": PLAN,
+                "section": "§2",
+                "time_budget": "25m",
+                "write_paths": write_paths
+                or (
+                    ["candidate.txt"]
+                    if code_file
+                    else [f"docs/plans/{PLAN}.html"]
+                ),
+            },
+        },
+    )
+    return worker_sha, worker_tree
+
+
+def test_promotion_appends_no_second_comment_when_the_worker_authored_the_record(
+    repository: Path, tmp_path: Path
+) -> None:
+    run_id = "r-20260915T050001000001-worker-authored"
+    comment_id = f"c-run-{run_id}"
+    worker_html = _write_resource_html(
+        repository,
+        {
+            "type": "plan",
+            "slug": PLAN,
+            "title": "Plan A",
+            "status": "active",
+            "version": 0,
+            "comments": {
+                "s2": [
+                    {
+                        "id": comment_id,
+                        "who": "worker-a",
+                        "when": "2026-09-15T05:01:00Z",
+                        "body": "<p>the worker wrote its own landing record</p>",
+                    }
+                ]
+            },
+        },
+    )
+    worker_sha, _worker_tree = _worker_plan_pointer(
+        repository, tmp_path, run_id, worker_html
+    )
+
+    promoted = crew.complete(
+        run_id,
+        gate="passed",
+        outcome="the worker already recorded it",
+        commits=[worker_sha],
+        root=repository,
+    )
+
+    assert promoted["plan_comment"] == {
+        "recorded": False,
+        "comment_id": comment_id,
+        "section": "s2",
+        "reason": "worker_authored_landing_record",
+    }
+    # No second comment: the ledger root plan holds no comment for this run and
+    # the landing commit carried only the ledger row.
+    plan, _version = _store.read_plan(PROJECT, PLAN, repository, artifact_type="plan")
+    assert (plan["comments"].get("s2") or []) == []
+    assert set(_landing_commit_paths(repository)) == {
+        f"docs/state/{PROJECT}/crew.json"
+    }
+    assert not pointer_path(run_id).exists()
+
+
+def test_a_run_without_a_worker_authored_record_still_lands_exactly_one_comment(
+    repository: Path, tmp_path: Path
+) -> None:
+    run_id = "r-20260915T050002000000-worker-silent"
+    comment_id = f"c-run-{run_id}"
+    bare = _store._resolve_html_file(PROJECT, PLAN, repository, artifact_type="plan")
+    worker_sha, _worker_tree = _worker_plan_pointer(
+        repository,
+        tmp_path,
+        run_id,
+        bare.read_text(encoding="utf-8"),
+        code_file=True,
+    )
+
+    promoted = crew.complete(
+        run_id,
+        gate="passed",
+        outcome="no worker record, so promotion lands the comment",
+        commits=[worker_sha],
+        root=repository,
+    )
+
+    assert promoted["plan_comment"]["recorded"] is True
+    assert promoted["plan_comment"]["already_recorded"] is False
+    plan, _version = _store.read_plan(PROJECT, PLAN, repository, artifact_type="plan")
+    matching = [
+        c for c in (plan["comments"].get("s2") or []) if c.get("id") == comment_id
+    ]
+    assert len(matching) == 1
+    assert set(_landing_commit_paths(repository)) == {
+        f"docs/state/{PROJECT}/crew.json",
+        f"docs/plans/{PLAN}.html",
+    }
+
+
+def _write_resource_html(repository: Path, state: dict) -> str:
+    """Return the serialized plan HTML a worker worktree would commit."""
+    path = _store._resolve_html_file(PROJECT, PLAN, repository, artifact_type="plan")
+    bare = (
+        "<!doctype html><html><head>"
+        f'<meta name="docs-project" content="{PROJECT}">'
+        f"<title>{state['slug']}</title>"
+        '</head><body><main class="plan-doc"></main></body></html>\n'
+    )
+    return _plan_html.write_state(bare, state)

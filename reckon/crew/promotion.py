@@ -1080,6 +1080,49 @@ def _section_anchor(section: Any) -> str:
     return normalized.removeprefix("#") or "_top"
 
 
+def _declared_manifest_commits(record: Mapping[str, Any]) -> list[str]:
+    """Commits a run's durable manifest declares, for landing-record detection."""
+    manifest_path = str(record.get("manifest_path") or "")
+    if not manifest_path:
+        return []
+    try:
+        declared = parse_manifest(Path(manifest_path).read_text(encoding="utf-8"))
+    except (OSError, KeyError, ValueError):
+        return []
+    return [str(sha).strip() for sha in (declared.get("commits") or []) if str(sha).strip()]
+
+
+def _worker_authored_landing_record(
+    *,
+    tree: Path,
+    commits: Iterable[str],
+    project: str,
+    plan: str,
+    comment_id: str,
+) -> bool:
+    """True when the run's own committed plan already carries the comment id.
+
+    A worker that followed the landing contract wrote its record under this
+    same run-derived comment id into its own tree, and the merge that later
+    brings that record in resolves in the worker's favour. Reading the plan at
+    the run's submitted commit detects the record before the merge, so
+    promotion leaves the plan file untouched here and the merge cannot collide
+    on a duplicate comment id.
+    """
+    revisions = [str(sha).strip() for sha in commits if str(sha).strip()]
+    if not revisions:
+        return False
+    plan_file = _store._resolve_html_file(project, plan, root=tree, artifact_type="plan")
+    if plan_file is None:
+        return False
+    try:
+        relative = plan_file.resolve().relative_to(tree.resolve())
+    except ValueError:
+        return False
+    shown = _git(tree, "show", f"{revisions[-1]}:{'/'.join(relative.parts)}", check=False)
+    return shown.returncode == 0 and f'data-id="{comment_id}"' in shown.stdout
+
+
 def _record_landing_comment(
     *,
     project: str,
@@ -1090,13 +1133,31 @@ def _record_landing_comment(
     author: str,
     when: str,
     root: str | Path | None,
+    worker_tree: Path | None = None,
+    worker_commits: Iterable[str] = (),
 ) -> dict[str, Any]:
-    """Append one idempotent section comment for a promoted run."""
+    """Append one idempotent section comment for a promoted run.
+
+    When the run's own worker already wrote the landing record — under this
+    same run-derived comment id, in its own committed plan — nothing is
+    appended, so promotion leaves the plan file untouched and the merge that
+    brings the worker's record in does not collide on the duplicate id.
+    """
     narrative = str(narrative).strip()
     if not narrative or not plan:
         return {"recorded": False, "reason": "empty_narrative"}
     comment_id = f"c-run-{re.sub(r'[^A-Za-z0-9._-]+', '-', run_id)}"
     anchor = _section_anchor(section)
+    worker_recorded = bool(
+        worker_tree
+        and _worker_authored_landing_record(
+            tree=worker_tree,
+            commits=worker_commits,
+            project=project,
+            plan=plan,
+            comment_id=comment_id,
+        )
+    )
     for _attempt in range(4):
         state, version = _store.read_plan(project, plan, root, artifact_type="plan")
         if not state or state.get("type") != "plan":
@@ -1111,6 +1172,13 @@ def _record_landing_comment(
                 "comment_id": comment_id,
                 "section": anchor,
                 "already_recorded": True,
+            }
+        if worker_recorded:
+            return {
+                "recorded": False,
+                "comment_id": comment_id,
+                "section": anchor,
+                "reason": "worker_authored_landing_record",
             }
         items.append(
             {
@@ -2287,6 +2355,8 @@ def _complete_locked(
     # that commit refuses before either store is written rather than leaving a
     # half-landed, uncommitted state behind.
     _require_committable_checkout(checkout, run_id)
+    worktree = Path(str(record.get("worktree") or ""))
+    tree = worktree if worktree.is_dir() else Path(str(record.get("repo") or "."))
     ledger_data, ledger_version = ledger.load(project, root=ledger_root)
     existing = next(
         (
@@ -2309,6 +2379,8 @@ def _complete_locked(
                 author=str(record.get("member") or record.get("role") or "reckon"),
                 when=str(existing.get("completed_at") or _utc_now()),
                 root=ledger_root,
+                worker_tree=tree,
+                worker_commits=_declared_manifest_commits(record),
             )
         )
         _commit_landing_writes(
@@ -2380,8 +2452,6 @@ def _complete_locked(
         raise CrewError(
             f"shadow run {run_id!r} is commitless evidence; --commit is refused"
         )
-    worktree = Path(str(record.get("worktree") or ""))
-    tree = worktree if worktree.is_dir() else Path(str(record.get("repo") or "."))
     if commit_list:
         commit_list = _resolve_commits(cwd=tree, revisions=commit_list, run_id=run_id)
     shadow_patch = ""
@@ -2487,6 +2557,8 @@ def _complete_locked(
             author=str(record.get("member") or record.get("role") or "reckon"),
             when=finished,
             root=ledger_root,
+            worker_tree=tree,
+            worker_commits=commit_list or _declared_manifest_commits(record),
         )
     )
     # Routing evidence is read from the delivered manifest at promotion, so a
