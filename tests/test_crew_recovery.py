@@ -1300,6 +1300,34 @@ def test_an_unknown_status_word_manifest_classifies_unreadable(home) -> None:
     assert "manifest" in row["next_action"]
 
 
+def test_a_manifest_with_fields_but_no_status_key_classifies_unreadable(home) -> None:
+    # A body whose fields parse as manifest fields but omit the status key (a
+    # review report wearing a ``node:`` identity line) is undetermined too; the
+    # classification must read it unreadable rather than as a vanished worker,
+    # and every production reader must tolerate the raise.
+    manifest = "node: scope-review-back-to-the-canvas\nworktree: ship-s16\n"
+    pointer = _cli_pointer(
+        home,
+        "r-no-status-key",
+        "codex-failed-turn.jsonl",
+        manifest=manifest,
+        process_alive=False,
+        phase="complete",
+    )
+    row = recovery.classify_pointer(pointer, now_seconds=time.time())
+    assert row["classification"] == "unreadable"
+    assert row["classification"] not in {"abandoned", "completed_unpromoted"}
+    assert row["manifest_present"] is True
+    assert row["manifest_error"]
+    assert "no status key" in row["manifest_error"]
+    assert "manifest" in row["next_action"]
+    assert str(pointer["manifest_path"]) in row["next_action"]
+    assert recovery.external_wait(pointer) is None
+    audit = reports.audit_manifest(manifest)
+    assert audit["ok"] is False
+    assert audit["findings"]
+
+
 def test_every_reader_tolerates_the_widened_raise(home) -> None:
     # The refusal widened from "no field parsed" to "status cannot be
     # determined" (prose-only fields, or a status word nobody recognises). Each
