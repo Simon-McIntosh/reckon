@@ -77,6 +77,19 @@
     rather than a malformed graph; and the finding is absent for a sink with no live members
     beneath it, which is an ordinary leaf rather than an outcome.</p>
 
+    <section id="s2-landed" class="section-landed">
+      <span class="badge badge-shipped">&#x2713; landed 2026-09-15</span>
+      <p class="landed-summary">A structural endpoint that carries no graph handle now raises
+      <code>endpoint-without-handle</code> at warn severity, naming the plan and every member
+      its closure would reach, and the finding is advisory so it never shifts readiness or
+      execution verdicts. An endpoint that carries a handle raises nothing, and a leaf sink
+      with no live members beneath it is not an endpoint and stays silent. The four gate
+      cases land as tests in <code>tests/test_roadmap.py</code>; all thirty pre-existing
+      assertions in the file pass unchanged.
+      Full record: <a href="/reckon/evidence/archive/roadmap-answers-both-shapes-landed#endpoint-without-handle">&sect;2 landed</a>
+      (commit <code>981e323</code>).</p>
+    </section>
+
     <h2 id="s3">&sect;3 &mdash; One call, both answers</h2>
 
     <p>A coordinator deciding what to start needs the sprint answer and the outcome answer
