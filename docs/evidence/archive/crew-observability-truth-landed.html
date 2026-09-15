@@ -80,6 +80,7 @@
         <tr><td>§12</td><td><a href="#commit-identifiers-remain-text">commit-identifiers-remain-text</a></td><td>a30af4f8</td><td>run outcome</td></tr>
         <tr><td>§19</td><td><a href="#landing-comment-does-not-duplicate-the-worker-record">landing-comment-does-not-duplicate-the-worker-record</a></td><td>8bc1083</td><td>run outcome</td></tr>
         <tr><td>§10</td><td><a href="#positive-gate-exit-outranks-quoted-diagnostic">positive-gate-exit-outranks-quoted-diagnostic</a></td><td>1601c27c, ebca263f</td><td>run outcome</td></tr>
+        <tr><td>§12</td><td><a href="#manifest-wait-fields-carry-literal-examples">manifest-wait-fields-carry-literal-examples</a></td><td>9c51724b</td><td>run outcome</td></tr>
       </tbody>
     </table>
   </section>
@@ -819,6 +820,30 @@ reading taken as an authority it was not.</p>
     unchanged); the wider prompt-composing modules carry the identical pre-existing failures at
     base (<code>b5480ee</code>) and after &#8212; 12 in <code>test_crew_orientation</code> and
     <code>test_gate_evidence</code> &#8212; so the change adds no failures.</p>
+  <section id="manifest-wait-fields-carry-literal-examples">
+    <h3>&#167;12 &mdash; The wait fields carry literal examples, and a resumed worker has a checkpoint shape</h3>
+    <p>Run <code>r-20260915T123143963535-the-wait-fields-show-their-form</code>. Commit
+    <code>9c51724b</code>, 42 insertions and 3 deletions over 2 files (1 source template, 1 test).</p>
+    <p><strong>Defect reproduction:</strong> the composed prompt&rsquo;s <code>wait_probe</code>
+    line read <em>the shell-free argument vector that answers the condition, run in your
+    worktree</em> with no literal beside it, <code>wait_terminal</code> offered
+    <code>exit:&lt;code&gt;</code> but nothing that showed the shape an actual exit code takes, and
+    the time fence offered the wait block (set <code>status: waiting</code> and fill the four wait
+    keys) as the only checkpoint idiom &mdash; so a worker resumed after its wait is met had no
+    way to record progress except to set <code>status: waiting</code> again. Two cases in
+    <code>tests/test_crew_prompts.py</code> asserting the missing content fail at base (2 failed,
+    18 passed in a clean base tree) and pass after.</p>
+    <p><strong>Measure:</strong> the block now carries a concrete shell-free argument vector
+    (<code>[&quot;squeue&quot;,&quot;-h&quot;,&quot;-j&quot;,&quot;1271081&quot;]</code>) as the
+    <code>wait_probe</code> example and a concrete printed-nothing exit code (<code>exit:0</code>)
+    as the <code>wait_terminal</code> example, replacing prose without a shape. A new
+    <code>checkpoint</code> manifest line scoped to not-waiting gives a resumed worker a durable
+    record of where work stands that is not the wait block, and the time fence names the same key,
+    so the prose and the block no longer disagree about what a resumed worker writes. The
+    prompt-asserting gate passes 77 after against 75 at base &mdash; the two new cases and no added
+    failures; the two pre-existing Ruff findings in <code>reckon/crew/prompts.py</code> are
+    unchanged and both touched files pass the formatter check.</p>
+  </section>
   <section id="landing-comment-does-not-duplicate-the-worker-record">
     <h3>§19 — The landing comment does not duplicate the worker's record</h3>
     <p>Run <code>r-20260915T050810199778-promotion-stops-authoring-the-record-the-worker-writes</code>,
