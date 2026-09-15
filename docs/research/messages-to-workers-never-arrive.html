@@ -371,6 +371,34 @@
         more than one node mix.
       </p>
       <p>
+        Three instruments agree, which is worth stating because each was
+        pointed at the question independently and one refutes the framing its
+        own author had been circulating. The deployment reported aggregate
+        throughput moving from 198 to 190 tokens per second as concurrent
+        requests fell from 36 to 20. A second fleet counted its own tool calls
+        per ten-minute bucket across the drain and found 13.9 rising to 16.5 —
+        a nineteen percent gain in per-worker rate where halving a binding
+        constraint should have roughly doubled it. A third watched its nodes
+        hold a constant rate while the lane fell from 34 live workers to 19.
+        Correlation between a large fleet and slow workers was real; the cause
+        read into it was not, and the counterfactual that settles it was being
+        recorded by the nodes themselves the whole time.
+      </p>
+      <p>
+        The remedy has the same shape as the defect, one level down, and this
+        is the part worth carrying. A dispatch-time cap computed as above needs
+        a published figure for the lane's headroom. That figure does not exist:
+        asked for this lane, the pre-flight check answers
+        <code>headroom: unknown</code> with a null utilisation and the detail
+        <em>no rate-limit event in the stream yet</em>, and it correctly
+        declines to hold the lane, because absence of a signal must never be
+        read as exhaustion. So the budget fence cannot fence this lane at all,
+        and the cap that would replace the missing roster signal is itself
+        waiting on a missing lane signal. A remedy that consumes an unpublished
+        input is not yet a remedy — it is the same false clearance with a
+        formula in front of it.
+      </p>
+      <p>
         What makes it the same defect is the substitution. A free roster member
         is a real, measurable quantity, and it is not the quantity that governs
         whether a worker makes progress — exactly as a successful send is real
