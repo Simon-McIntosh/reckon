@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -99,10 +99,15 @@
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-acivbi-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-15" data-recommends-skill="/reckon-ship a-capture-is-validated-by-its-index" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">State the contract, then recover the captures it unblocks</h4>
-    <div class="r-fu-body"><p>&sect;2 first and alone, because &sect;3 cannot be gated until the gate reads an index. Then &sect;3, which commits eight captures already on disk in a dead node's worktree and adds their plan to the gate's roster.</p><p>Both measures are refusals rather than successes. &sect;2 must be shown failing twice, once on an index naming an absent file and once on a zero row count, because a validator never demonstrated to refuse cannot be distinguished from one that accepts anything. &sect;3 must be shown refusing this plan's own captures against an emptied index, so its place in the roster is load bearing rather than decorative. The number that matters in &sect;2 is the count of image bytes opened, which is zero.</p></div>
+    <div class="r-fu-body"><p>§2 first and alone, because §3 cannot be gated until the gate reads an index. Then §3, which commits eight captures already on disk in a dead node's worktree and adds their plan to the gate's roster.</p><p>Both measures are refusals rather than successes. §2 must be shown failing twice, once on an index naming an absent file and once on a zero row count, because a validator never demonstrated to refuse cannot be distinguished from one that accepts anything. §3 must be shown refusing this plan's own captures against an emptied index, so its place in the roster is load bearing rather than decorative. The number that matters in §2 is the count of image bytes opened, which is zero.</p></div>
     <pre class="r-fu-prompt">/reckon-ship a-capture-is-validated-by-its-index</pre>
     </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260915T090041458570-the-gate-reads-the-index-not-the-image" data-who="crew-lane-evidence" data-when="2026-09-15T09:08:36Z">
+    <div class="r-comment-body"><p>The capture gate validates from the index alone: 4 indexes, 26 captures, 0 image bytes opened, 6 passed. The zero is enforced rather than asserted, which is the part that makes it hold — a sentinel monkeypatches Path.read_bytes to raise IMAGE_BYTES_OPENED and runs the whole gate under it. The node first demonstrated the OLD gate tripping that sentinel, so the defect is reproduced before being fixed rather than assumed. Both refusals are demonstrated: an index naming an absent file, and an index whose rowCount is zero. The roster rises from three plans to five, admitting artifact-feeds-and-reader whose eight captures I recovered and committed from the dead node&#x27;s worktree, so they are gated rather than merely present. The node authored its plan comment and evidence record in its own worktree and committed them, which is what the contract now requires rather than the scope violation I would wrongly have called it earlier tonight</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>

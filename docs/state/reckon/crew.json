@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T11:10:17",
+  "updated": "2026-09-15T11:11:35",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -127781,6 +127781,203 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T090041458570-the-gate-reads-the-index-not-the-image",
+        "plan": "a-capture-is-validated-by-its-index",
+        "section": "\u00a72",
+        "node": "the-gate-reads-the-index-not-the-image",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 603,
+                "cached_input_tokens": 835521,
+                "input_tokens": 836126,
+                "output_tokens": 889,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 837015,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3332e8d8-dcef-4091-9774-c9680478b165",
+            "session_id": "ship-s16-20260914"
+          },
+          "done_when": "tests/test_spa_owed_captures.py validates each gated plan from its capture-index.json and the stat of the files that index names, opening zero image bytes \u2014 state that count as a digit alongside the number of captures read. It is demonstrated able to refuse in two distinct ways, each recorded once: an index naming a file absent from disk, and an index whose rowCount is zero. Both are failures a capture gate exists to catch and both are text, so a validator never shown to refuse them is indistinguishable from one that accepts anything. The index already carries capture, surface, image, width, height, populated, rowCount and scraped DOM text such as bannerText, recorded at capture time by the code that rendered the page, so no fact the gate wants requires the image. The roster also gains the artifact-feeds-and-reader plan, whose eight captures are committed at docs/figures/artifact-feeds-and-reader/after/ and currently ungated, taking the roster from three plans to four \u2014 state both counts as digits. Do not change how captures are produced or the browser harness",
+          "estimated_hours": null,
+          "goal": "Make the capture gate validate from the index alone, opening no image bytes",
+          "id": "the-gate-reads-the-index-not-the-image",
+          "lane_declaration": {
+            "backend": "codex-terra",
+            "headroom": "known",
+            "metered": true,
+            "observed_at": "2026-09-15T09:00:42Z",
+            "read_at": "2026-09-15T09:00:43Z",
+            "resolved_backend": "codex-terra",
+            "utilisation_pct": 27.0
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "backend declares no lane document",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T090041458570-the-gate-reads-the-index-not-the-image/manifest.md",
+          "plan": "a-capture-is-validated-by-its-index",
+          "requested_backend": "codex-terra",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "35m",
+          "token_budget": null,
+          "write_paths": [
+            "tests/test_spa_owed_captures.py",
+            "docs/evidence/archive/a-capture-is-validated-by-its-index-landed.html",
+            "docs/plans/a-capture-is-validated-by-its-index.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-lane-evidence",
+        "backend": "codex-terra",
+        "local": false,
+        "agent": {
+          "alias": "terra5.6",
+          "backend": "codex-terra",
+          "effort": "high",
+          "launch": "cli",
+          "model": "gpt-5.6-terra",
+          "sandbox": "worktree-full"
+        },
+        "dispatched_at": "2026-09-15T09:01:17Z",
+        "completed_at": "2026-09-15T09:08:36Z",
+        "completed_at_source": "stream_mtime",
+        "worker_seconds": 439,
+        "worker_seconds_source": "wall_fallback",
+        "wall_seconds": 439,
+        "stalled": false,
+        "time_budget": "35m",
+        "base_sha": "ebe9b5b1ca2d263b34f9559a21a36c2c414a3fe3",
+        "commits": [
+          "1720fe8269f026965f0af763ddc2d11acac68fea",
+          "5b6479115769aba1fbb1c81b108cc6baa85260f7"
+        ],
+        "changed_lines": {
+          "added": 162,
+          "removed": 27,
+          "files": 3
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_spa_owed_captures.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T090041458570-the-gate-reads-the-index-not-the-image/after-test.log",
+          "log_digest": "e47c2b4a07710a12b6743639e2c35f4a5824af3a30c584242088525bc541c563"
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T090041458570-the-gate-reads-the-index-not-the-image/manifest.md",
+        "scope_changed": false,
+        "session_id": "01a07fae-cd85-7721-9198-7c0182bc9e54",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_write_input_tokens": 0,
+            "cache_write_input_tokens_cumulative": 0,
+            "cached_input_tokens": 6012160,
+            "cached_input_tokens_cumulative": 11058688,
+            "input_tokens": 6031557,
+            "input_tokens_cumulative": 11370018,
+            "output_tokens": 0,
+            "output_tokens_cumulative": 17097,
+            "reasoning_output_tokens": 0,
+            "reasoning_output_tokens_cumulative": 4429
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "backend reports token usage but no headroom"
+        },
+        "lane_receipt": {
+          "quota_state": "measured",
+          "observed_at": "2026-09-15T09:08:36Z",
+          "effective_context_window": 380000,
+          "quota_windows": [
+            {
+              "window_minutes": 10080,
+              "used_percent": 28.0,
+              "resets_at": 1789970251,
+              "observed_at": "2026-09-15T09:08:36Z"
+            }
+          ],
+          "notional_cost_usd": 51.0518,
+          "rate_basis": {
+            "model_identifier": "gpt-5.6-terra",
+            "input_per_million": 2.0,
+            "output_per_million": 12.0,
+            "as_of": "2026-09-09"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 17250816,
+          "cumulative_input_tokens": 17729887,
+          "detail": "model span bounded from the client rollout's tool spans; input cumulative summed across resets",
+          "generated_tokens": 21526,
+          "generation_seconds": 614671.837,
+          "machine_seconds": 86.538,
+          "tokens_per_second": 0.04
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16-20260914/the-gate-reads-the-index-not-the-image",
+          "session_id": "01a07fae-cd85-7721-9198-7c0182bc9e54",
+          "session_source": "pointer",
+          "retained_at": "2026-09-15T09:08:36Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 38.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -128009,6 +128206,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1499
+    "_version": 1500
   }
 }
