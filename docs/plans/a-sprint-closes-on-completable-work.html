@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-sprint-closes-on-completable-work">
+  <meta name="plan-title" content="A Sprint Closes On Completable Work">
+  <meta name="plan-summary" content="Work held by something outside the sprint should not pin it open. Mark it held, close on what is completable, carry the held work forward.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="5.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S17">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling">
+  <title>A Sprint Closes On Completable Work | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-15">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">&sect;1 &mdash; A sprint can be unable to finish and unable to close</h2>
+    <p>Two kinds of unfinished work look identical to the sprint machinery today. The first is
+    waiting on another plan, or on a person, and someone can act on it now. The second is
+    waiting on something no work in the sprint can reach &mdash; a reservation that has not come
+    through, an upstream release, thirty days of data that have not elapsed. Both read as
+    <em>blocked</em>, and either keeps a sprint open.</p>
+    <p>That produces the two failures this plan exists to prevent, and they pull in opposite
+    directions. A sprint pinned open by a condition nobody can satisfy stops the horizon
+    advancing, so the next sprint's work sits behind a wall that has nothing to do with it. And
+    the obvious remedy &mdash; close the sprint and let the item go with it &mdash; is worse,
+    because a completed container is where work goes to become invisible. A plan at
+    <code>impl</code> 1.0 or a closed sprint is excluded from <code>pending_work</code>,
+    <code>ready_now</code> and every open path, so an item carried into one is not tracked, it
+    is hidden, and the paper trail makes it look tracked.</p>
+    <p>The distinction is not about how long the wait is. It is about <strong>whether any work
+    in this sprint could end it</strong>. A prerequisite plan in the same sprint could; an
+    external condition could not.</p>
+
+    <h2 id="s2">&sect;2 &mdash; Held is a kind of blocker, not a new dependency type</h2>
+    <p>Reckon already parses <code>blocking</code> rows carrying a <code>kind</code>, of which
+    <code>explicit</code> exists today. This adds one more: a blocker declaring that what the
+    item waits on is outside the sprint's reach. It is deliberately the smallest change that
+    expresses the distinction &mdash; no new relationship field, no change to
+    <code>depends_on</code>, which stays plan-to-plan, and no new document type.</p>
+    <p>A held blocker states what is being waited on in prose and carries no verdict machinery
+    of its own in this plan. It is set and cleared by a person or a coordinator. That is
+    deliberate: the executable half is a separate plan, and building the closure rule first
+    means the vocabulary of conditions is learned from use rather than guessed at.</p>
+    <p><strong>Done when</strong> a plan carrying a held blocker is reported by
+    <code>roadmap</code> as held rather than merely blocked, distinguishable by a caller
+    reading the payload without inspecting prose; the existing explicit-blocker behaviour is
+    unchanged, asserted by a case that would fail if held rows were treated as explicit ones;
+    and the count of plans in each state is stated as a digit for a fixture carrying both.</p>
+
+    <h2 id="s3">&sect;3 &mdash; Closable means nothing completable remains</h2>
+    <p>The rule is one sentence: <strong>a sprint is closable when every incomplete item is
+    held.</strong> One item that is merely blocked, or ready and undone, keeps it open, because
+    someone could still act on it.</p>
+    <p>On close, held items move to the advancing sprint carrying their blocker. They are not
+    archived, not resolved, and not left behind in the closed one. When what they wait on
+    arrives, the blocker clears and they become ready wherever they now sit.</p>
+    <p><strong>Done when</strong> closing a sprint whose incomplete items are all held succeeds
+    and moves them to the advancing sprint; closing one carrying a single un-held incomplete
+    item is refused, naming that item; and the refusal is demonstrated once rather than only
+    the success, because a closure rule never shown to refuse cannot be told from one that
+    always closes.</p>
+    <p><strong>The falsifiable test is the one this repository already trusts.</strong> After
+    the close, call <code>roadmap(project)</code> and require every moved item to appear in
+    <code>pending_work</code>. If it does not, the mechanism hid the work rather than carrying
+    it, which is the precise failure the whole design exists to avoid. Assert it as a
+    membership check over the returned set rather than as a count, because a count agrees by
+    coincidence.</p>
+
+    <h2 id="s4">&sect;4 &mdash; What this does not do</h2>
+    <p>It does not evaluate anything. A held blocker is set and cleared by hand here, and the
+    executable probe that would clear it automatically is a separate plan, constrained by the
+    decision recorded below so that it cannot be built as arbitrary code in a document.</p>
+    <p>It does not change <code>depends_on</code>, add a document type, or alter how plan-level
+    dependencies are resolved. It does not decide how long a sprint may stay open, which is a
+    scheduling question and not a correctness one.</p>
+    <p>It does not license closing a sprint whose work is merely unstarted. Held is a claim
+    about reachability, and a held blocker whose subject someone in the sprint could actually
+    deliver is a mislabelled one &mdash; the same defect as a test asserting a value it cannot
+    observe.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="probe-execution-boundary" data-choice="named-probe-in-the-repository" data-by="reckon-ship" data-when="2026-09-15">
+    <p class="r-dec-q">When a held blocker becomes machine-evaluated, where does the evaluating code live?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="named-probe-in-the-repository">named-probe-in-the-repository</button>
+      <button class="r-opt" data-value="inline-in-the-plan-document">inline-in-the-plan-document</button>
+      <button class="r-opt" data-value="evaluated-in-the-surface">evaluated-in-the-surface</button>
+      </p>
+    <p class="r-dec-rat">Locked ahead of the work it constrains, because it is the one genuinely risky choice and it is not actually open. The plan names a probe by id; the probe is Python in this repository, reviewed and tested like any other code. Inline code in a plan document is a code-execution surface fed by a file anyone may edit. Evaluation in the surface is refused by this repository&#x27;s own binding rule that the SPA renders and does not derive: a probe evaluated in the browser is invisible to the CLI, to MCP and to every agent, so a human and an agent reading the same project would disagree with no way to notice.</p>
+    </div>
+<div class="r-dec" data-key="who-clears-a-held-blocker" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Before probes exist, who may clear a held blocker, and does clearing it require evidence?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="coordinator-with-a-recorded-reason">coordinator-with-a-recorded-reason</button>
+      <button class="r-opt" data-value="anyone-no-reason-required">anyone-no-reason-required</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-ascocw-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-15" data-recommends-skill="/reckon-ship a-sprint-closes-on-completable-work" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Mark held before teaching closure to read it</h4>
+    <div class="r-fu-body"><p>&sect;2 runs first and alone, because &sect;3's rule is meaningless until the state it reads exists. &sect;3 then follows on the same files.</p><p>Two measures carry the weight and both are refusals rather than successes. The closure rule must be demonstrated <em>refusing</em> a sprint that still has one un-held incomplete item, not only accepting one where every item is held — a rule never shown to refuse cannot be told from one that always closes, which is the defect this repository has found six times in its own gates this week. And the carry-forward must be proven by membership: after the close, every moved item appears in <code>roadmap</code>'s <code>pending_work</code>. Assert the set, not the count; a count agrees by coincidence and this is precisely the check that separates carrying work forward from hiding it in a closed container.</p><p>The probe decision is locked ahead of the follow-on plan that needs it, so the executable half cannot be built as code inside a document.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship a-sprint-closes-on-completable-work</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>
