@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="13">
 <meta name="plan-commits" content="edd448891e6ab661fecc7cd9a3a7c42bd4c64837,35dfb5b">
 <meta name="plan-artifacts" content="docs/research/spa-project-render-fault.html,docs/evidence/archive/blank-project-surface-landed.html,docs/research/shell-fallback-and-authoring-prior-art.html">
 <meta name="plan-impl" content="0.33">
@@ -291,6 +291,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260915T074000" data-who="reckon-ship" data-when="2026-09-15T07:40:00Z">
     <div class="r-comment-body">Prior art for this section's repair is mapped and merged; the repair itself is not started and impl is unchanged at 0.33 because no executable section has closed. Commit 35dfb5b delivers docs/research/shell-fallback-and-authoring-prior-art.html, naming 17 concrete file:symbol candidates against a required 8, each with a reuse, extend or unsuitable-because verdict, across three surfaces: the composition root (6), the browser-free module-eval harness (7), and the plan-authoring template surface (4). Gate: byte-identity plus two SPA artifact suites green, audit-doc zero errors. THE CANDIDATES A NODE ON THIS SECTION MUST CITE OR REFUTE. For the legible fallback, the fault site is docs/ui/shell.jsx:457-462 where the silent data-shell-modules=unavailable path renders zero children, and the repair extends it rather than authoring a new surface, because shell-ready.jsx:4-68 already carries ProjectStateLoadPanel and :70 ReadyGate, and state-loader.js:42 projectStateLoadView with STATE_READY and STATE_ERROR at :388-397 already models the states a legible failure needs. For the browser-free guard, spa_module_eval.py:13 evaluate_jsx_module and its instrumented-eval pattern are the mechanism the locked guard-mechanism decision already chose, with test_spa_module_scope.py MODULE_ORDER and bundle assembly to extend; spa_browser_harness.py:557, :623 and :653 are marked unsuitable precisely because they cross the host browser boundary this workstation cannot serve. A node that authors new machinery in place of any of these states why the named candidate fails.</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260915T073818195083-the-shell-says-so-when-its-modules-are-missing" data-who="implement-terra-b" data-when="2026-09-15T07:47:31Z">
+    <div class="r-comment-body"><p>The composition root now renders a legible failure instead of an empty document when its shell modules are unavailable: measured child count 0 at baseline and 4 after the repair, with role=alert and the text &#x27;Shell modules unavailable&#x27;. The regression is browser-free per the plan&#x27;s locked guard-mechanism decision: baseline 1 failed on childCount 0, head 2 passed. Reuse cited as required - shell.jsx:457-462 extended, shell-ready.jsx ProjectStateLoadPanel vocabulary reused while the component itself could not be imported because shell-ready is intentionally absent in the skew, and spa_module_eval&#x27;s compile-and-Node pattern extended rather than called because the check must supply its own ReactDOM capture.</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260904T085040922989" data-who="agent" data-when="2026-09-04">
     <div class="r-comment-body">TRIAGE VERDICT — still wanted. Re-homed to S17. Root-cause discovery already landed, so the old §2 instruction is resolved; the remaining home is the fallback and regression work beginning at §3.</div>
