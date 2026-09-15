@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 </head>
 <body>
   <main class="plan-doc">
@@ -147,6 +147,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-read-only-tier-cannot-author" data-who="reckon-ship" data-when="2026-09-15T07:55:00Z">
     <div class="r-comment-body">A limit on this plan's own rule, found by a peer session and measured here before recording it. The rule as written — the worker authors its landing record and its plan comment in its own worktree — holds only for execution-capable roles. A read-only reviewer or investigator cannot write docs/research/ at all: every writable grant on that tier is outside the repository, so the roles that produce investigative output are fenced out of the directory this repository's own rules say it belongs in. The consequence is measured rather than argued: 638 files in the crew reports directory against 15 tracked in docs/research/, counted independently here after a peer reported the same ratio. Essentially all investigative output this project has produced is machine-local and unversioned, and nobody chose that. Two things follow. First, anyone implementing this plan must not write the rule as though it holds for every role, because a worker on a read-only tier told to author its record will be unable to comply and the contract will be wrong for it in the same way the old prohibition was wrong for implement roles. Second, this is not this plan's defect to fix: the fence behaviour belongs to the session that reported it, which is tracking it as one class rather than four separate defects, and a role regression at 86aafc6 today has made review and investigate undispatchable entirely. Until that lands, read-only-shaped work is dispatched at implement role with the report as its only declared write path, which keeps the fence and changes only the tier.</div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260915T112004448735-the-skill-mirrors-the-runtime-contract" data-who="disc-local" data-when="2026-09-15T14:35:08.450Z">
+    <div class="r-comment-body"><p>Replaced the four clauses forbidding a worker to write plan state with the narrowed prohibition plus the positive landing requirement, quoted from the runtime prompt rather than restated; prohibiting-phrase grep 4 before, 0 after. Parity test derives its expectations from prompts.py&#x27;s own strings so the two cannot drift. Scope was extended mid-flight to tests/test_skill_contracts.py, which asserted the retired wording.</p></div>
 </div>
 </section>
 </main>

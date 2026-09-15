@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T16:37:51",
+  "updated": "2026-09-15T16:39:25",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -138719,6 +138719,212 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T112004448735-the-skill-mirrors-the-runtime-contract",
+        "plan": "worker-authors-its-own-record",
+        "section": "\u00a72",
+        "node": "the-skill-mirrors-the-runtime-contract",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 729,
+                "cached_input_tokens": 917610,
+                "input_tokens": 918341,
+                "output_tokens": 331,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 918672,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3332e8d8-dcef-4091-9774-c9680478b165",
+            "session_id": "ship-s16-20260914"
+          },
+          "done_when": "A grep of skills/reckon-ship/ for the prohibiting phrasings returns zero, stated as a digit before and after; the four are SKILL.md:941 'they never write shared plan state', references/worker-protocol.md:213 and references/sprint-orchestration.md:412 both 'Do not edit reckon plan or index state', and sprint-orchestration.md:483 'never write shared plan or index state'. Each becomes the narrowed prohibition plus the positive requirement the runtime prompt already carries: the worker appends its landing record to its own section of the plan and its evidence anchor to the cumulative evidence record, both in its worktree and both in its final commit, while not touching the shared project index, sprint state, another plan, or the plan-version and plan-modified meta lines. Quote that wording from reckon/crew/prompts.py rather than composing a second version, and assert the skill sentence against the prompt's own string so the two cannot drift \u2014 a check comparing the skill against a literal reproduces the defect being fixed, because two copies of one rule drift silently and the test keeps passing. Read prompts.py for the exact current text; it is the authority and it changed today. Do not edit reckon/crew/prompts.py, which another session owns",
+          "estimated_hours": null,
+          "goal": "Replace the four ship-skill clauses that forbid what the runtime contract now requires",
+          "id": "the-skill-mirrors-the-runtime-contract",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T11:20:05Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 23,
+            "binding_observed": false,
+            "detail": "",
+            "headroom": 76,
+            "mean_context": 12825,
+            "observed_at": "2026-09-15T11:19:42Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 120
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T112004448735-the-skill-mirrors-the-runtime-contract/manifest.md",
+          "plan": "worker-authors-its-own-record",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a72",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "skills/reckon-ship/SKILL.md",
+            "skills/reckon-ship/references/worker-protocol.md",
+            "skills/reckon-ship/references/sprint-orchestration.md",
+            "tests/test_skill_contracts.py",
+            "tests/test_skill_contract_parity.py",
+            "docs/evidence/archive/worker-authors-its-own-record-landed.html",
+            "docs/plans/worker-authors-its-own-record.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "disc-local",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T11:21:07Z",
+        "completed_at": "2026-09-15T14:35:08.450Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 11613,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 11641,
+        "stalled": true,
+        "time_budget": "40m",
+        "base_sha": "1d79e901606870ad360e6558e4f4f344c3526956",
+        "commits": [
+          "e33f0ca1c1028fe0ba7b11fbddc1eee195b3fd53",
+          "7a03a312897004841e5b01a5732cb06dc1d1cf0f",
+          "569ce7cd3a84e295b4c88b8d17289be5c64dedb4"
+        ],
+        "changed_lines": {
+          "added": 247,
+          "removed": 11,
+          "files": 7
+        },
+        "tests_added": 13,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_skill_contract_parity.py tests/test_skill_contracts.py",
+          "exit_status": 0,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T112004448735-the-skill-mirrors-the-runtime-contract/test_skill_contracts.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T112004448735-the-skill-mirrors-the-runtime-contract/manifest.md",
+        "scope_changed": true,
+        "session_id": "5b8ae257-5f9d-4682-ae32-0fda73761a40",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 4643313,
+            "input_tokens_cumulative": 4643313,
+            "output_tokens": 33137,
+            "output_tokens_cumulative": 33137,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T14:35:08.450Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 4811090,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the stream window 200000",
+          "elapsed_seconds": 2871.073,
+          "generated_tokens": 43464,
+          "generation_seconds": 2850.495,
+          "input_budget_tokens": 200000,
+          "input_utilisation_pct": 83.2,
+          "machine_seconds": 20.578,
+          "peak_input_tokens": 166477,
+          "tokens_per_second": 15.25,
+          "wall_tokens_per_second": 15.14
+        },
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 3,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16-20260914/the-skill-mirrors-the-runtime-contract",
+          "session_id": "5b8ae257-5f9d-4682-ae32-0fda73761a40",
+          "session_source": "stream",
+          "retained_at": "2026-09-15T14:35:08.450Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 14.0,
+        "orientation_input_tokens": 2427444.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -138947,6 +139153,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1540
+    "_version": 1541
   }
 }
