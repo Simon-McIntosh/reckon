@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="26">
+<meta name="plan-version" content="27">
 <meta name="plan-section-declarations" content="{&quot;what-is-wrong&quot;:&quot;done&quot;,&quot;the-surface&quot;:&quot;done&quot;,&quot;where-the-probe-lives&quot;:&quot;implementable&quot;,&quot;parse-strictly&quot;:&quot;implementable&quot;,&quot;coordinator-share&quot;:&quot;implementable&quot;,&quot;pin-the-denominator&quot;:&quot;implementable&quot;,&quot;out-of-scope&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="5e3e041c895353a003e15954382a78b49151a2ac,fab092dafb269286fb2f6bc1dbfb1f060dd95247,50c436f3c1865e2e11a662829f87283660a13da5,fff2ca7,a9a9d027b0ce92363356e120209e11b4c4f0c3bd,b316011">
 <meta name="plan-artifacts" content="reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/budget.py,reckon/_backends.py,tests/test_coordinator_reserve.py,tests/test_flight.py,tests/test_claude_account_surface.py,tests/fixtures/backends/claude-account-limits.json,docs/evidence/archive/a-lane-can-say-where-it-stands-landed.html">
@@ -477,6 +477,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260914T205926195851-scope-review-a-lane-can-say-where-it-stands" data-who="crew-role-scope" data-when="2026-09-14T23:26:11.632Z">
     <div class="r-comment-body"><p>Scope review of a foreign-owned plan: 0 unlanded, 3 no-measure-stated, implementable core landed at the reviewed base. Remaining scope is the on-disk cache fallback rendered beside its fetch age, the denominator falsifier raising the announced-versus-configured window mismatch, the input-domain and quiet-half falsifier work, and a severity-floor gap that is open at the review base and already fixed on origin/main at b316011. That last item is the worker correctly distinguishing its own base from the current tip rather than reporting a stale finding as live. Handed to the owning coordinator, not acted on</p></div>
+</div>
+<div class="r-comment" data-section="pin-the-denominator" data-id="c-run-r-20260914T221141228873-reading-names-the-window-it-divided-by" data-who="crew-both-reasons" data-when="2026-09-14T23:42:05.408Z">
+    <div class="r-comment-body"><p>Every utilisation this lane reports is divided by the window that enforces it and names that window; 69 passed, 5 tests added. The configured lane window wins outright over an announced conflict, never averaged and never silently preferred the other way; an unresolvable window leaves the utilisation unknown rather than dividing by any constant; and a ratio supplied where a percentage is expected is refused outright rather than half-recorded - the defect that once shipped a guard which could not fire at any utilisation</p></div>
 </div>
 </section>
 </main>
