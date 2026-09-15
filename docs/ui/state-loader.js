@@ -317,6 +317,9 @@ window.revalidateProjectState = async function () {
                       : (Array.isArray(idx.timeline) ? idx.timeline : []),
     ready_set:        readySet,
     endpoints,
+    schedule: (surfaceState && typeof surfaceState.schedule === "object" && surfaceState.schedule !== null)
+      ? surfaceState.schedule
+      : null,
     attachment_relations: attachmentRelations,
     plans,
   };

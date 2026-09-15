@@ -51,7 +51,7 @@ import subprocess
 import tempfile
 import threading
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -1455,6 +1455,32 @@ def _attach_ready_set(result: dict, project: str) -> None:
             sprint.pop("state_drift", None)
 
 
+def _attach_schedule(
+    result: dict, project: str, mounts: dict[str, Path], reference: datetime
+) -> dict:
+    """Return the discovery payload with a schedule anchored at ``reference``.
+
+    The schedule derives from the same inventory and live-run rows the crew
+    route serves, so the flow a browser draws and the reader an agent calls
+    answer from one computation. It is attached per request rather than cached
+    with the discovery result, because its bar positions are relative to
+    ``reference`` and would otherwise freeze at the cache fill. ``reference``
+    is caller-supplied and required; the derivation itself never reads the
+    wall clock.
+    """
+
+    from reckon.roadmap import schedule_report
+
+    payload = dict(result)
+    payload["schedule"] = schedule_report(
+        project,
+        result.get("inventory") or [],
+        _crew_rows(mounts, project),
+        reference=reference,
+    )
+    return payload
+
+
 def _read_readiness_state(
     path: Path,
 ) -> tuple[list[dict], list[dict], list[dict]]:
@@ -2137,6 +2163,12 @@ class Handler(BaseHTTPRequestHandler):
                     },
                 )
                 return
+            result = _attach_schedule(
+                result,
+                project,
+                disc_mounts,
+                reference=datetime.now(UTC),
+            )
             self._send_json(HTTPStatus.OK, result)
             return
 
