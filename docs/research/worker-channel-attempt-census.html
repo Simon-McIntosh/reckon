@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="worker-channel-attempt-census">
+  <meta name="plan-title" content="A census of coordinator attempts to message a crew worker">
+  <meta name="plan-summary" content="2,232 send attempts found in interactive session transcripts, 0 delivered into crew worker run streams, a 1,204-record positive control, and what each attempting coordinator did next">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-informs" content="a-live-worker-can-be-reached">
+  <meta name="plan-source" content="interactive session transcripts and crew worker run streams on this workstation">
+  <meta name="plan-source-quality" content="primary">
+  <meta name="plan-reviewed-at" content="2026-09-15">
+  <meta name="plan-tags" content="crew,delivery,analysis">
+  <title>A census of coordinator attempts to message a crew worker | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Research input</p>
+      <h1>A census of coordinator attempts to message a crew worker</h1>
+      <p class="lead">
+        This is the attempt side of the delivery measurement. Where
+        <a href="/research/messages-to-workers-never-arrive">Messages to workers
+        never arrive</a> counted the deliveries, this census counts the attempts and
+        what each attempting coordinator did in its next turn. The two read together:
+        the channel is attempted over two thousand times, delivers into worker
+        streams exactly zero times, and the attempting coordinator believes it worked
+        in the large majority of cases.
+      </p>
+    </header>
+
+    <section id="counts">
+      <h2>The three counts, each beside the command that produced it</h2>
+      <p>
+        All counts are over the same two populations on this workstation at
+        <code>2026-09-15T08:52Z</code>: every session transcript under
+        <code>~/.claude/projects/*/*.jsonl</code> (1,026 files) and every crew
+        worker run stream under
+        <code>~/.config/reckon/crew/runs/*/stream.jsonl</code> (3,971 files).
+      </p>
+      <table>
+        <thead>
+          <tr><th>Count</th><th>Value</th><th>Population</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Send attempts in interactive session transcripts</td>
+            <td><strong>2,232</strong> (98 transcripts)</td>
+            <td>1,026 interactive transcripts</td>
+          </tr>
+          <tr>
+            <td>Delivered into crew worker run streams</td>
+            <td><strong>0</strong></td>
+            <td>3,971 worker run streams</td>
+          </tr>
+          <tr>
+            <td>Positive control &mdash; delivered into interactive transcripts</td>
+            <td><strong>1,204</strong> records (91 transcripts)</td>
+            <td>same 1,026 interactive transcripts</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Attempts &mdash; the sender-side marker</h3>
+      <p>
+        A send attempt is an executed <code>SendMessage</code> tool use: an
+        assistant record whose content carries a block with
+        <code>type: "tool_use"</code> and <code>name: "SendMessage"</code>.
+        Counting tool descriptions is the known false-positive trap (the system
+        prompt lists the tool), so the parse requires the block, not the string.
+      </p>
+      <pre><code>python3 - &lt;&lt;'EOF'
+import json, glob
+n = 0
+for f in glob.glob('/home/ITER/mcintos/.claude/projects/*/*.jsonl'):
+    for l in open(f, errors='replace'):
+        try: r = json.loads(l)
+        except Exception: continue
+        if r.get('type') != 'assistant': continue
+        c = r.get('message', {}).get('content')
+        if isinstance(c, list):
+            n += sum(1 for b in c if isinstance(b, dict)
+                     and b.get('type') == 'tool_use'
+                     and b.get('name') == 'SendMessage')
+print(n)   # 2,232 on 2026-09-15T08:52Z
+EOF</code></pre>
+      <p>
+        The extraction also captured each attempt's recipient, tool result, and
+        the full next assistant turn into
+        <code>census_attempts.jsonl</code>; the classification below reads that
+        artifact.
+      </p>
+
+      <h3>Delivery &mdash; the receiver-side marker</h3>
+      <p>
+        A delivered message is a harness-injected user record whose content opens
+        with the delivery preamble and carries a
+        <code>&lt;cross-session-message from=&quot;&hellip;&quot;&gt;</code>
+        element. The preamble distinguishes a real delivery from model output
+        that merely quotes the phrase, which is exactly the artefact that
+        otherwise pollutes a substring count.
+      </p>
+      <pre><code>python3 - &lt;&lt;'EOF'
+import json, glob
+n = 0
+DONE = 'Another Claude session sent a message:'
+for f in glob.glob('/home/ITER/mcintos/.config/reckon/crew/runs/*/stream.jsonl'):
+    for l in open(f, errors='replace'):
+        try: r = json.loads(l)
+        except Exception: continue
+        if r.get('type') != 'user': continue
+        c = r.get('message', {}).get('content')
+        if isinstance(c, str) and c.startswith(DONE) and '&lt;cross-session-message ' in c:
+            n += 1
+        elif isinstance(c, list):
+            n += sum(1 for b in c if isinstance(b, dict)
+                     and b.get('type') == 'text'
+                     and (b.get('text', '') or '').startswith(DONE)
+                     and '&lt;cross-session-message ' in (b.get('text', '') or ''))
+print(n)   # 0 on 2026-09-15T08:52Z
+EOF</code></pre>
+      <p>
+        The positive control applies the identical receiver-side marker to the
+        interactive transcripts: 1,204 times in 91 files. The same instrument
+        that finds nothing in worker streams finds deliveries where they exist,
+        so the zero in worker streams is a real absence, not a mis-aimed grep.
+        At occurrence level (the looser marker the product has been cited with)
+        it finds 12,561 occurrences in 259 interactive files against the
+        referenced study's 11,939 in 244 &mdash; the fleet grew, the marker
+        still fires.
+      </p>
+    </section>
+
+    <section id="counter-example">
+      <h2>The near-counter-example, named and excluded</h2>
+      <p>
+        The marker string appears inside exactly one crew worker stream:
+        <code>r-20260915T055338893744-worker-channel-attempt-census</code> &mdash;
+        the run producing this census itself. Its nine occurrences are the run's
+        own dispatch prompt and the research source this document is quoting back
+        into context. None is a user-role delivery; all are assistant or prompt
+        text that mentions the marker as a subject. Under the receiver-side
+        discriminator (the preamble plus a <code>cross-session-message</code>
+        element on a user record) that run contributes zero, the same as the
+        other 3,970. A substring count that did not parse records would have
+        reported one counter-example that is really the instrument quoting its
+        own subject.
+      </p>
+    </section>
+
+    <section id="next">
+      <h2>What each attempting coordinator did next</h2>
+      <p>
+        Of the 2,232 attempts, 1,563 have a subsequent assistant turn captured in
+        the same transcript; 669 are the last tool use of the transcript and are
+        excluded from the classification. Each next turn is placed in one of
+        three classes by mechanism, not by prose: a further
+        <code>SendMessage</code> is a retry; text naming an alternate delivery
+        mechanism (<code>crew resume</code>, a run-directory write, the file peer
+        channel) is a channel switch; everything else is a stand-down &mdash; the
+        coordinator believed the send succeeded and moved on.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Class</th><th>Count</th><th>Share of classified</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Stood down &mdash; believed delivered, moved on</td><td><strong>1,314</strong></td><td>84%</td></tr>
+          <tr><td>Retried &mdash; sent again in the next turn</td><td><strong>237</strong></td><td>15%</td></tr>
+          <tr><td>Switched channel &mdash; named an alternate mechanism</td><td><strong>12</strong></td><td>&lt;1%</td></tr>
+        </tbody>
+      </table>
+      <p>
+        The stand-down is the failure the parent plan names. The large majority
+        of coordinators who attempted the channel treated the send's success
+        result as the end of the matter and made their next decision on that
+        basis.
+      </p>
+
+      <h3>Stood down</h3>
+      <blockquote>
+        &ldquo;Sent. Now the decisions, one by one.&rdquo;
+      </blockquote>
+      <blockquote>
+        &ldquo;Sent to <code>reckon-fd</code> &mdash; they own the monitor and
+        had just fixed the ruler regression, so it&rsquo;s the right desk.&rdquo;
+      </blockquote>
+      <blockquote>
+        &ldquo;Messaged all three owners with their specifics rather than generic
+        procedure &mdash; I inventoried each dead run first, and the facts changed
+        the advice per run.&rdquo;
+      </blockquote>
+      <p>
+        The third line is the exact failure: an instruction to a run owner that
+        the owner never saw, recorded as done. The coordinator&rsquo;s own next
+        message <em>to another interactive peer</em> (controls, delivered) is
+        where the content that could have reached the worker went instead.
+      </p>
+
+      <h3>Retried</h3>
+      <blockquote>
+        &ldquo;Request from <code>imas-ambix-8c</code>: if you are the nova S19
+        sprint coordinator, please s&hellip;&rdquo; &mdash; sent to
+        <code>nova-50</code> and again to <code>nova-88</code> within the same
+        turn.
+      </blockquote>
+      <blockquote>
+        &ldquo;H200 scheduling on <code>98dci4-gpu-0003</code> &mdash;
+        <code>nova-ec</code> redirected me to you as the owner o&hellip;&rdquo;
+        &mdash; to <code>reckon-d8</code>, immediately re-sent.
+      </blockquote>
+      <p>
+        Retreats to a second <code>SendMessage</code> in the same turn are how a
+        coordinator re-aims when it doubts the first recipient, never a different
+        transport. Both recipients above are session names, so the second send
+        carries the same delivery odds as the first.
+      </p>
+
+      <h3>Switched channel</h3>
+      <blockquote>
+        &ldquo;Resumed, and the catch exposed something worse than the stranded run
+        itself. <code>crew resume</code> reattached with no preparation &mdash;
+        session <code>17d1dc38</code>, recovered from the stream, worktree intact,
+        nothing to redo.&rdquo;
+      </blockquote>
+      <blockquote>
+        &ldquo;Note delivered on both channels.&rdquo;
+      </blockquote>
+      <p>
+        The first is the only channel the system genuinely provides to a stopped
+        worker, and it produced the desired contact. The second line&rsquo;s
+        transcript confirms the coordinator reached the worker through a second,
+        non-message surface in the same turn. These are the exceptions: only a
+        handful of the 12 text-flagged switches are actions rather than prose that
+        happens to mention the mechanism, and they are the counter-example for the
+        stand-down class &mdash; coordinators do not, on available evidence,
+        routinely fall back to a working channel.
+      </p>
+    </section>
+
+    <section id="method">
+      <h2>Method and limitations</h2>
+      <p>
+        Populations scanned in full, once, at a single stamp; the extraction
+        script and its raw 2,232-row output are preserved alongside this census.
+        Re-running the three compact commands against the now-grown fleet yields
+        2,257 attempts, 0 deliveries in 3,984 streams, and 1,216 control records
+        &mdash; the load-bearing zero reproduces; the attempt and control counts
+        drift with live-fleet growth in the minutes between.
+      </p>
+      <p>
+        Limitations worth stating. The census counts attempts whose transcripts
+        are still on this host; an archived or moved transcript is invisible, and
+        a run whose stream was truncated at promotion could have received a
+        delivery no longer present to count &mdash; the control bounds how wrong
+        that could be but does not eliminate it. The classification reads only
+        the immediately following turn, so a coordinator that switched channels a
+        turn later is counted as stood down; the true switch count is therefore a
+        lower bound. Recipients are session addresses, and whether a given
+        recipient was headless at send time is not reconstructable from the
+        transcript; the delivered-zero across every worker stream is the ground
+        truth that makes the per-recipient question moot for headless runs.
+      </p>
+    </section>
+  </main>
+</body>
+</html>
