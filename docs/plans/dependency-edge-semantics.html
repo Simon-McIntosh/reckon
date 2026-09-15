@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
 <meta name="plan-impl" content="0.33">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;}">
 </head>
 <body>
@@ -176,16 +176,16 @@
           is honest but throws away the case that matters; leaving it is the only option that actively
           misleads, since the author believes they expressed something the system silently drops.</p>
     </div>
-<div class="r-dec" data-key="transition-gate-shape" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="transition-gate-shape" data-choice="one-edge-with-transition" data-by="reckon-ship" data-when="2026-09-15T06:33:19+00:00">
     <p class="r-dec-q">Is a closure gate the same edge type as a decision gated by a foreign outcome?</p>
     <p class="r-dec-ctx">Both gate a transition rather than an activity — one gates a plan reaching a
           terminal status, one gates a decision being lockable. Modelling them as one edge with a stated
           transition is smaller; modelling them separately is clearer to read in a roadmap payload.</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="one-edge-with-transition">one edge naming the transition it gates</button>
+      <button class="r-opt chosen" data-value="one-edge-with-transition">one edge naming the transition it gates</button>
       <button class="r-opt" data-value="two-edge-types">two distinct edge types</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">One edge carrying the transition it gates, because two edge types would be two representations of one concept with nothing keeping them in step. The plan states the trade honestly - one edge is smaller, two are clearer to read in a roadmap payload - and the tie is broken by a rule this repository already holds twice over. The readability advantage of two types is a presentation concern, and presentation is derived here: a payload that carries the gated transition as a field can render a closure gate and a foreign-outcome decision gate as distinct rows without either being a distinct stored edge. Choosing two stored types to buy that would put the distinction in the schema where every reader must keep the two definitions aligned by hand, which is the same defect as writing one fact into two records with no mechanism keeping them equal - the argument that settled where per-step execution evidence lives on a sibling plan this sprint. The concrete consequence for the work behind this lock: section 4 implements a single edge whose transition field names what it gates, plan-terminal or decision-lockable, and the roadmap derives the two presentations from that field rather than from two parsers. If a third transition is ever gated, it is a new value rather than a third schema.</p>
     </div>
 </section>
 
