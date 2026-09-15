@@ -18,9 +18,13 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import subprocess
+from functools import lru_cache
 from pathlib import Path
 
 import pytest
+from bs4 import BeautifulSoup
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import ValidationError
 
@@ -608,6 +612,10 @@ def test_index_inventory_excluded_from_write_shape():
 
 # ── 9. Cross-project conformance scan (skip-if-mount-absent) ─────────────────
 
+# The exemption names only the top-level directories it means, never a path
+# component at any depth: the component-level match previously silenced any
+# subtree containing a directory named "archive", which swept the archived
+# evidence records under docs/evidence/archive out of the scan entirely.
 _INFRA_DIRS = {"_shared", "ui", "state", "assets", "images", "archive"}
 _INFRA_STEMS = {
     "index",
@@ -622,6 +630,12 @@ _INFRA_STEMS = {
     "project",
     "implementation",
 }
+
+# Evidence records the scan admits as (project, html_file), identified by the
+# relative path's first component "evidence"; the archived subset sits under
+# evidence/archive and previously fell outside the scan.
+_EVIDENCE_FILES: list[tuple[str, Path]] = []
+_ARCHIVE_EVIDENCE_FILES: list[tuple[str, Path]] = []
 
 
 def _mounts_path() -> Path | None:
@@ -642,11 +656,11 @@ def _mounts_path() -> Path | None:
 def _iter_plan_files(docs_dir: Path):
     for f in sorted(docs_dir.rglob("*.html")):
         rel = f.relative_to(docs_dir)
-        if any(part in _INFRA_DIRS for part in rel.parts[:-1]):
+        if rel.parts[0] in _INFRA_DIRS:
             continue
         if f.stem in _INFRA_STEMS:
             continue
-        yield f
+        yield f, rel
 
 
 def _all_plan_files():
@@ -662,12 +676,97 @@ def _all_plan_files():
         dd = Path(docs).expanduser()
         if not dd.is_dir():
             continue
-        for f in _iter_plan_files(dd):
+        for f, rel in _iter_plan_files(dd):
             files.append((project, f))
+            if rel.parts[0] == "evidence":
+                _EVIDENCE_FILES.append((project, f))
+                if len(rel.parts) > 1 and rel.parts[1] == "archive":
+                    _ARCHIVE_EVIDENCE_FILES.append((project, f))
     return files
 
 
 _PLAN_FILES = _all_plan_files()
+_EVIDENCE_PATHS = {f for _, f in _EVIDENCE_FILES}
+
+_SHA40 = re.compile(r"[0-9a-f]{40}")
+
+
+def _cited_commit_shas(text: str) -> set[str]:
+    """Structured landing citations in an evidence record: the values of the
+    plan-commits meta and 40-hex <code> cells inside <td> rows.  A <code>
+    mention in prose is narrative — a record may quote a sha it exists to
+    document — and never counts as a landing claim."""
+    soup = BeautifulSoup(text, "html.parser")
+    cited = set()
+    for meta in soup.find_all("meta", attrs={"name": "plan-commits"}):
+        for raw in meta.get("content", "").split(","):
+            value = raw.strip()
+            if _SHA40.fullmatch(value):
+                cited.add(value)
+    for td in soup.find_all("td"):
+        for code in td.find_all("code"):
+            value = code.get_text(strip=True)
+            if _SHA40.fullmatch(value):
+                cited.add(value)
+    return cited
+
+
+def _mounted_project_gits() -> list[Path]:
+    """De-duplicated git roots of the mounted projects: the docs dir's parent
+    must carry a .git entry."""
+    gits: list[Path] = []
+    seen: set[Path] = set()
+    mp = _mounts_path()
+    if mp is None:
+        return gits
+    try:
+        mounts = json.loads(mp.read_text())
+    except (OSError, json.JSONDecodeError):
+        return gits
+    for docs in mounts.values():
+        gr = Path(docs).expanduser().parent
+        if (gr / ".git").exists() and gr not in seen:
+            seen.add(gr)
+            gits.append(gr)
+    return gits
+
+
+def _resolve_object_shas(candidates: set[str], repos: list[Path]) -> set[str]:
+    """Which candidate shas exist as git objects in any of the given repos.
+
+    Resolution is object existence, not reachability and not commit-only: a
+    landing record may cite the identity of a tree or blob, so the check runs
+    cat-file --batch-check rather than rev-list.  A batch-check failing to name
+    a candidate means the citation genuinely does not resolve.
+    """
+    resolved: set[str] = set()
+    for repo in repos:
+        proc = subprocess.run(
+            ["git", "-C", str(repo), "cat-file", "--batch-check"],
+            input="".join(f"{sha}\n" for sha in sorted(candidates)),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        for line in proc.stdout.splitlines():
+            fields = line.split()
+            if len(fields) >= 2 and fields[1] != "missing":
+                resolved.add(fields[0])
+    return resolved
+
+
+@lru_cache(maxsize=1)
+def _citation_resolution() -> frozenset[str]:
+    """Every structured evidence citation across the mounted projects that
+    resolves as a git object somewhere on the fleet.  Computed once per
+    process; with every mounted repo unusable the set is empty and each
+    evidence record surfaces its citations as a visible finding instead of
+    sliding through a broken store."""
+    candidates: set[str] = set()
+    for _, f in _EVIDENCE_FILES:
+        text = f.read_text(encoding="utf-8", errors="replace")
+        candidates |= _cited_commit_shas(text)
+    return frozenset(_resolve_object_shas(candidates, _mounted_project_gits()))
 
 
 @pytest.mark.skipif(
@@ -680,6 +779,71 @@ _PLAN_FILES = _all_plan_files()
 )
 def test_cross_project_conformance(project, html_file):
     """Every existing plan across all mounts must parse via from_html without
-    raising. Keep a failing case visible with an explicit migration reason."""
+    raising.  Keep a failing case visible with an explicit migration reason.
+    An evidence record additionally cites landing shas in structured positions
+    (plan-commits meta, table-row code cells); every citation must resolve as
+    a git object in some mounted repository or the record fails the scan."""
     text = html_file.read_text(encoding="utf-8", errors="replace")
     from_html(text)  # must not raise
+    if html_file in _EVIDENCE_PATHS:
+        unresolved = sorted(_cited_commit_shas(text) - _citation_resolution())
+        assert not unresolved, f"unresolved landing shas: {unresolved}"
+
+
+@pytest.mark.skipif(
+    not _PLAN_FILES, reason="no mounts.json / mount dirs on this workstation"
+)
+def test_archived_evidence_records_enter_the_scan():
+    """The archived evidence records were previously swept out by an exemption
+    matching a path component named "archive" at any depth.  The surviving
+    exemption names only the top-level directories it means, so the records
+    under docs/evidence/archive are inside the scan; assert the count is
+    positive where there was none before."""
+    assert len(_ARCHIVE_EVIDENCE_FILES) > 0
+
+
+@pytest.mark.skipif(
+    not _PLAN_FILES, reason="no mounts.json / mount dirs on this workstation"
+)
+def test_well_formed_evidence_record_with_resolving_shas_is_quiet():
+    """The quiet half of the sha audit: a well-formed record whose cited shas
+    resolve must produce no finding.  Cites the repository's own tip commit and
+    its tip tree — a tree resolves by object existence, which is exactly why
+    the auditor checks existence rather than commit reachability — and asserts
+    the record's structured citations all resolve with nothing left over."""
+    repo = Path(__file__).resolve().parents[1]
+    head = subprocess.run(
+        ["git", "-C", str(repo), "rev-parse", "HEAD"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    tree = subprocess.run(
+        ["git", "-C", str(repo), "rev-parse", "HEAD^{tree}"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    record = f"""<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<meta name="plan-commits" content="{head}, {tree}">
+<title>quiet record</title>
+</head>
+<body>
+<main class="plan-doc">
+<table>
+<tr><td><code>{head}</code></td><td><code>{tree}</code></td></tr>
+</table>
+</main>
+</body>
+</html>"""
+    cited = _cited_commit_shas(record)
+    assert {head, tree} <= cited
+    resolved = _resolve_object_shas(cited, [repo])
+    assert not (cited - resolved), (
+        f"well-formed record left unresolved: {cited - resolved}"
+    )

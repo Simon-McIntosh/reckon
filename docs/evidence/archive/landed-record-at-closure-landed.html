@@ -11,7 +11,7 @@
   <meta name="plan-evidence-for" content="landed-record-at-closure">
   <meta name="plan-verdict" content="pass">
   <meta name="plan-recorded-at" content="2026-08-24T20:48:47Z">
-  <meta name="plan-commits" content="a9f32b94afb6f2a397aa148d37e46e45536dda09,99984da8534c378ca30aed085d643d7ce8bdc283,09ffc1fde79a4af7dd7d3bef83ccad7652053497">
+  <meta name="plan-commits" content="a9f32b94afb6f2a397aa148d37e46e45536dda09,99984da8534c378ca30aed085d643d7ce8bdc283,09ffc1fde79a4af7dd7d3bef83ccad7652053497,3897203c65f1868f011d6a21529924b1ae23343b">
   <title>A Landed Record Should Mean Landed — landed record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -100,6 +100,26 @@
         <td>—</td>
         <td>18m 39s</td>
         <td><code>{&quot;added&quot;:60,&quot;files&quot;:15,&quot;removed&quot;:0}</code></td>
+        <td>changed</td>
+      </tr>
+      </tbody>
+    </table>
+    <article class="landed-comment" data-comment-id="c-20260915T1005">
+      <p><small>reckon-ship · 2026-09-15T10:05:00Z</small></p>
+      <div class="r-comment-body"><p>Archived evidence records now enter the same conformance scan as plans. tests/test_schema.py narrows the exemption from any-depth path components to the exact top-level directories it means, so records under docs/evidence/archive are scanned: 116 archived evidence records on the scan's own mount set, previously zero, with the count asserted to stay positive rather than pinned to a number that moves. Every scanned evidence record is audited for structured landing citations (plan-commits meta values, 40-hex code cells inside table rows), each resolved as a git object of any type in one of the mounted repositories, so a record citing a sha that never existed fails the test; prose code mentions stay narrative and never count, so a record quoting a sha it documents stays quiet. The quiet half is an explicit test citing the repository's tip commit and tip tree, resolving by object existence rather than commit reachability. On the live corpus all 26 structured citations among the scanned evidence records resolve, and a planted unresolvable sha was confirmed to fail the audit.</p></div>
+    </article>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Changed lines</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20260915T100528833708-archived-evidence-enters-the-conformance-scan</code></td>
+        <td>archived-evidence-enters-the-conformance-scan</td>
+        <td><code>3897203c65f1868f011d6a21529924b1ae23343b</code></td>
+        <td><strong>passed</strong></td>
+        <td>2 + citations audit inside the conformance case</td>
+        <td><code>{&quot;added&quot;:171,&quot;files&quot;:2,&quot;removed&quot;:4}</code></td>
         <td>changed</td>
       </tr>
       </tbody>
