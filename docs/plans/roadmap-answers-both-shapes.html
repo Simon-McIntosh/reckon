@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 </head>
 <body>
   <main class="plan-doc">
@@ -222,6 +222,10 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260915T072157380062-rev-endpoint-handle" data-who="codex-d" data-when="2026-09-15T07:33:13Z">
     <div class="r-comment-body"><p>independent review of the endpoint-handle node; scored 89 and found one unauthorised suppression at roadmap.py:1501, repaired under a follow-on node</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260915-the-field-landed-on-the-adjacent-surface" data-who="reckon-ship" data-when="2026-09-15T11:35:00Z">
+    <div class="r-comment-body"><p><strong>§3 LANDED — commits <code>51361af0</code> and <code>1a9fa39c</code>, merged, 38 tests passing with a proper failing-first reproduction (2 failed on <code>KeyError endpoint_closures</code>, then 2 passed). The feature is live and substantially correct, and it landed on the adjacent surface.</strong></p><p>Measured against a live read of this project immediately after the merge:</p><pre>immediate_roadmap   rows=16   carrying endpoint_closures = 16
+ready_now           rows=16   carrying endpoint_closures =  0</pre><p>This section's done-when says <em>a single roadmap read reports, for every item in <strong>the ready set</strong>, the endpoint closures that item is a member of</em>. <code>ready_now</code> is the field carrying that name; <code>immediate_roadmap</code> is the ordered dispatch queue. Both hold sixteen rows here, so they may be the same population presented twice — but a reader who queries the ready set by name gets nothing, which is the failure the section exists to prevent, one surface over.</p><p><strong>What is correct and should not be re-litigated.</strong> Each closure entry carries <code>project</code>, <code>slug</code>, <code>ref</code>, <code>handle</code> and <code>addressable</code>, so the addressability half of the done-when is satisfied in full. Nine items belong to no closure and report <code>[]</code> explicitly rather than omitting the field — the clause that says <em>an item belonging to no closure says so explicitly rather than by omission</em>, satisfied exactly. Nothing is written to any resource; the membership is derived at read time.</p><p><strong>How it was found, which is the part worth keeping.</strong> The tests passed, the marker was present at the merged head, and the merge was clean — and the field still was not where the contract said. It surfaced only by querying the production surface after pushing. That is this plan's own subject applied to this plan's own work: a green test asserts the behaviour it was written against, not the behaviour the contract names, and only the live read distinguishes them.</p><p><strong>Disposition: a one-line question rather than a defect.</strong> Either the ready set should carry the field too, or the contract meant the dispatch queue and should say so. Recorded rather than repaired unilaterally, because choosing between two surfaces is a contract reading and the section's author is better placed to settle which was meant.</p></div>
 </div>
 </section>
 </main>
