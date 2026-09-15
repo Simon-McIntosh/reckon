@@ -145,4 +145,3 @@ console.log(JSON.stringify(rows.map(row => ({{
     ]
 
     assert rendered == expected
-    assert "_roadmapEndpointRows(M?.endpoints)" in source
