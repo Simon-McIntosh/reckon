@@ -2,13 +2,17 @@ from __future__ import annotations
 
 import json
 import subprocess
+from datetime import UTC, datetime
 from pathlib import Path
 
 from reckon import serve
+from reckon.roadmap import schedule_report
 
 ROOT = Path(__file__).resolve().parents[1]
 CREW = ROOT / "docs" / "ui" / "crew.jsx"
 SPRINT = ROOT / "docs" / "ui" / "sprint.jsx"
+
+REFERENCE = datetime(2026, 9, 4, 4, 0, tzinfo=UTC)
 
 NODE_PRELUDE = r"""
 globalThis.window = globalThis;
@@ -49,21 +53,24 @@ TEST_EXPORTS = """
 window.__derivedFlowTest = {
   CrewView,
   DerivedFlow,
-  derivedFlowSchedule,
   flowPercent,
 };
 """
 
 
-def _run_probe(*, plans: list[dict], runs: list[dict], probe: str) -> object:
+def _run_probe(
+    *, plans: list[dict], runs: list[dict], probe: str, schedule: dict | None = None
+) -> object:
     source = CREW.read_text(encoding="utf-8") + TEST_EXPORTS
     compiled = serve.compile_jsx(source, filename="derived-flow-probe.jsx").decode()
+    served = f"const servedSchedule = {json.dumps(schedule)};" if schedule else "const servedSchedule = null;"
     script = "\n".join(
         (
             NODE_PRELUDE,
             compiled,
             f"const plans = {json.dumps(plans)};",
             f"const runs = {json.dumps(runs)};",
+            served,
             "const result = (() => {" + probe + "})();",
             "process.stdout.write(JSON.stringify(result));",
         )
@@ -135,84 +142,15 @@ def _fixture() -> tuple[list[dict], list[dict]]:
     return plans, runs
 
 
-def test_schedule_chains_pending_plans_and_best_fit_packs_two_lanes() -> None:
-    plans, runs = _fixture()
-    result = _run_probe(
-        plans=plans,
-        runs=runs,
-        probe="""
-const schedule = window.__derivedFlowTest.derivedFlowSchedule(plans, runs, "reckon", new Date("2026-09-04T04:00:00Z"));
-const bySlug = Object.fromEntries(schedule.items.map(item => [item.plan.slug, { start: item.start, end: item.end }]));
-return {
-  bySlug,
-  laneCount: schedule.lanes.length,
-  low: schedule.low,
-  high: schedule.high,
-  earliestStart: schedule.earliestStart,
-  latestEnd: schedule.latestEnd,
-  ticks: schedule.ticks.map(tick => tick.label),
-};
-""",
-    )
-
-    assert result["bySlug"]["active-work"] == {"start": -4, "end": 4}
-    assert (
-        result["bySlug"]["pending-first"]["start"]
-        == result["bySlug"]["active-work"]["end"]
-    )
-    assert (
-        result["bySlug"]["pending-second"]["start"]
-        == result["bySlug"]["pending-first"]["end"]
-    )
-    assert result["laneCount"] == 2
-    assert result["low"] == max(-48, min(-24, result["earliestStart"]))
-    assert result["high"] == max(24, result["latestEnd"])
-    assert result["latestEnd"] == 30
-    assert "now" in result["ticks"]
-
-
-def test_active_plan_uses_elapsed_time_when_live_row_omits_dispatch_stamp() -> None:
-    plans = [{"slug": "active-work", "status": "active", "wall_clock_hours": 8}]
-    runs = [{"project": "reckon", "plan": "active-work", "elapsed_seconds": 14_400}]
-    result = _run_probe(
-        plans=plans,
-        runs=runs,
-        probe="""
-const schedule = window.__derivedFlowTest.derivedFlowSchedule(plans, runs, "reckon", new Date("2026-09-04T04:00:00Z"));
-return { start: schedule.items[0].start, end: schedule.items[0].end };
-""",
-    )
-    assert result == {"start": -4, "end": 4}
-
-
-def test_schedule_drops_bars_starting_more_than_sixty_hours_ago() -> None:
-    plans = [
-        {
-            "slug": "too-old",
-            "status": "shipped",
-            "edited": "2026-09-01T00:00:00Z",
-            "wall_clock_hours": 2,
-        },
-        {"slug": "current", "status": "pending", "wall_clock_hours": 3},
-    ]
-    result = _run_probe(
-        plans=plans,
-        runs=[],
-        probe="""
-const schedule = window.__derivedFlowTest.derivedFlowSchedule(plans, runs, "reckon", new Date("2026-09-04T04:00:00Z"));
-return schedule.items.map(item => item.plan.slug);
-""",
-    )
-    assert result == ["current"]
-
-
 def test_rendered_flow_precedes_cards_and_dims_other_sprints_to_point_two_eight() -> (
     None
 ):
     plans, runs = _fixture()
+    served = schedule_report("reckon", plans, runs, reference=REFERENCE)
     result = _run_probe(
         plans=plans,
         runs=runs,
+        schedule=served,
         probe="""
 const injectedNow = new Date("2026-09-04T04:00:00Z");
 const RealDate = Date;
@@ -226,12 +164,12 @@ class FixedNowDate extends RealDate {
 }
 globalThis.Date = FixedNowDate;
 globalThis.__selectedSprint = "beta";
-const flow = window.__derivedFlowTest.DerivedFlow({ plans, runs, project: "reckon" });
+window.STATE = { project: "reckon", inventory: plans, schedule: servedSchedule };
+const flow = window.__derivedFlowTest.DerivedFlow({ runs, project: "reckon" });
 const bars = findAll(flow, node => hasClass(node, "r-derived-flow-bar"));
 const lanes = findAll(flow, node => hasClass(node, "r-derived-flow-lane"));
 const nowLines = findAll(flow, node => hasClass(node, "r-derived-flow-now"));
 delete globalThis.__selectedSprint;
-window.STATE = { project: "reckon", inventory: plans };
 const surface = window.__derivedFlowTest.CrewView({ visibleProjects: ["reckon"], mountedProjectCount: 1, selectedProject: "reckon" });
 const directChildren = surface.children.flat().filter(Boolean);
 return {

@@ -121,6 +121,19 @@ def test_pending_plan_starts_at_the_later_of_its_prerequisite_and_reference() ->
     assert bars["pending-second"]["end"] == 30
 
 
+def test_active_plan_uses_elapsed_time_when_live_row_omits_dispatch_stamp() -> None:
+    plans = [
+        {"slug": "active-work", "status": "active", "wall_clock_hours": 8},
+    ]
+    runs = [
+        {"project": "reckon", "plan": "active-work", "elapsed_seconds": 14_400},
+    ]
+    schedule = derive_schedule(plans, runs, "reckon", REFERENCE)
+    bar = _bars_by_slug(schedule)["active-work"]
+    assert bar["start"] == -4
+    assert bar["end"] == 4
+
+
 def test_reference_is_a_parameter_never_the_wall_clock() -> None:
     plans, runs = _fixture()
     # A fixed instant far from the wall clock: if the clock were read, the
@@ -268,11 +281,17 @@ def test_bars_older_than_the_retention_window_are_excluded() -> None:
     assert [item["slug"] for item in schedule["items"]] == ["recent-stash"]
 
 
-def test_python_schedule_matches_the_rendered_surface_for_the_same_input() -> None:
+def test_python_schedule_matches_the_surface_render_of_the_served_payload() -> None:
     plans, runs = _fixture()
+    served = schedule_report("reckon", plans, runs, reference=REFERENCE)
+
+    # The surface derives nothing: it packs the served bars into lanes and
+    # draws ticks from the served low/high. Feed the payload a server would
+    # serve to the surface's own layout functions and require the same lanes
+    # and ticks the derivation produces.
     source = CREW.read_text(encoding="utf-8")
     test_exports = """
-window.__scheduleParity = { derivedFlowSchedule };
+window.__scheduleParity = { flowPackLanes, flowTicks };
 """
     compiled = serve.compile_jsx(
         source + test_exports, filename="schedule-parity.jsx"
@@ -281,16 +300,11 @@ window.__scheduleParity = { derivedFlowSchedule };
         (
             NODE_PRELUDE,
             compiled,
-            f"const plans = {json.dumps(plans)};",
-            f"const runs = {json.dumps(runs)};",
-            'const result = window.__scheduleParity.derivedFlowSchedule(plans, runs, "reckon", new Date("2026-09-04T04:00:00Z"));',
-            "process.stdout.write(JSON.stringify({",
-            "  bySlug: Object.fromEntries(result.items.map(item => [item.plan.slug, { start: item.start, end: item.end }])),",
-            "  laneCount: result.lanes.length,",
-            "  low: result.low, high: result.high,",
-            "  earliestStart: result.earliestStart, latestEnd: result.latestEnd,",
-            "  ticks: result.ticks.map(tick => tick.label),",
-            "}));",
+            f"const bars = {json.dumps(served['bars'])};",
+            ("const lanes = window.__scheduleParity.flowPackLanes(bars)"
+             ".map(lane => lane.items.map(item => item.slug));"),
+            f"const ticks = window.__scheduleParity.flowTicks({served['low']}, {served['high']});",
+            "process.stdout.write(JSON.stringify({ lanes, ticks: ticks.map(tick => tick.label) }));",
         )
     )
     ran = subprocess.run(
@@ -306,15 +320,24 @@ window.__scheduleParity = { derivedFlowSchedule };
     jsx = json.loads(ran.stdout)
 
     schedule = derive_schedule(plans, runs, "reckon", REFERENCE)
+    # The served payload carries exactly the derivation: same bars, bounds,
+    # lane count and far end.
     assert {
         slug: {"start": bar["start"], "end": bar["end"]}
         for slug, bar in _bars_by_slug(schedule).items()
-    } == jsx["bySlug"]
-    assert len(schedule["lanes"]) == jsx["laneCount"]
-    assert schedule["low"] == jsx["low"]
-    assert schedule["high"] == jsx["high"]
-    assert schedule["earliest_start"] == jsx["earliestStart"]
-    assert schedule["latest_end"] == jsx["latestEnd"]
+    } == {
+        slug: {"start": bar["start"], "end": bar["end"]}
+        for slug, bar in {item["slug"]: item for item in served["bars"]}.items()
+    }
+    assert served["low"] == schedule["low"]
+    assert served["high"] == schedule["high"]
+    assert served["lane_count"] == len(schedule["lanes"])
+    assert served["latest_end_hours"] == schedule["latest_end"]
+    # And the surface's own layout over that payload reproduces the lanes and
+    # ticks the derivation reports.
+    assert [
+        [item["slug"] for item in lane["items"]] for lane in schedule["lanes"]
+    ] == jsx["lanes"]
     assert [tick["label"] for tick in schedule["ticks"]] == jsx["ticks"]
 
 
@@ -329,7 +352,7 @@ def test_roadmap_schedule_read_reports_far_end_and_lane_count() -> None:
     assert report["high"] == schedule["high"]
     assert report["latest_end_hours"] == schedule["latest_end"]
     # The far end is the high axis bound the surface's chain figure reads:
-    # window.ReckonCrewSchedule.farEnd returns derivedFlowSchedule(...).high.
+    # window.ReckonCrewSchedule.farEnd returns window.STATE?.schedule?.high.
     assert report["far_end_hours"] == 30
 
     assert report["reference"] == "2026-09-04T04:00:00+00:00"
