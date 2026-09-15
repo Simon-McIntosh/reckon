@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-capture-is-validated-by-its-index">
   <meta name="plan-title" content="A Capture Is Validated By Its Index">
   <meta name="plan-summary" content="A capture node wrote eight screenshots and a complete index, then opened a PNG to confirm what it had already recorded, and died on a text-only model.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="2.0">
   <meta name="plan-capability-version" content="1.0">
@@ -22,7 +22,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
+<meta name="plan-artifacts" content="tests/test_spa_owed_captures.py,docs/figures/artifact-feeds-and-reader/after/capture-index.json,docs/evidence/archive/a-capture-is-validated-by-its-index-landed.html">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -112,10 +114,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-acivbi-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-15" data-recommends-skill="/reckon-ship a-capture-is-validated-by-its-index" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-acivbi-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-09-15" data-recommends-skill="/reckon-ship a-capture-is-validated-by-its-index" data-resolved-at="2026-09-15T10:56:28+00:00" data-resolved-by="">
     <h4 class="r-fu-title">State the contract, then recover the captures it unblocks</h4>
     <div class="r-fu-body"><p>§2 first and alone, because §3 cannot be gated until the gate reads an index. Then §3, which commits eight captures already on disk in a dead node's worktree and adds their plan to the gate's roster.</p><p>Both measures are refusals rather than successes. §2 must be shown failing twice, once on an index naming an absent file and once on a zero row count, because a validator never demonstrated to refuse cannot be distinguished from one that accepts anything. §3 must be shown refusing this plan's own captures against an emptied index, so its place in the roster is load bearing rather than decorative. The number that matters in §2 is the count of image bytes opened, which is zero.</p></div>
     <pre class="r-fu-prompt">/reckon-ship a-capture-is-validated-by-its-index</pre>
+    <p class="r-fu-outcome">done — no followup. Both sections landed in the order this followup set, and both measures are refusals that were demonstrated rather than asserted. §2: the gate validates from the index and the stat of the files it names, reading 4 indexes and 26 captures while opening 0 image bytes — and the zero is enforced rather than claimed, by a sentinel that monkeypatches Path.read_bytes to raise IMAGE_BYTES_OPENED and runs the whole gate under it. The node first demonstrated the OLD gate tripping that sentinel, so the defect was reproduced before being repaired. Its two refusals are an index naming a file absent from disk and an index whose row count is zero. §3: this plan's own roster entry is shown load bearing, refusing the artifact-feeds-and-reader captures when their index is emptied while accepting the live index at 8 captures — both directions in one case, so an entry that silently stopped reading anything would fail rather than pass. 6 passed at the base, 8 at the head. The eight captures themselves were recovered from the dead node's worktree rather than recaptured, and validated on the way in the way this plan prescribes: 8 captures, both widths, every entry populated, minimum row count 3, and zero files named by the index absent from disk. A capture node is now lane-agnostic, which is the point: the node that prompted this plan produced its whole artifact set and died opening one of its own PNGs on a text-only model. Record at docs/evidence/archive/a-capture-is-validated-by-its-index-landed.html.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -123,7 +126,7 @@
     <div class="r-comment-body"><p>The capture gate validates from the index alone: 4 indexes, 26 captures, 0 image bytes opened, 6 passed. The zero is enforced rather than asserted, which is the part that makes it hold — a sentinel monkeypatches Path.read_bytes to raise IMAGE_BYTES_OPENED and runs the whole gate under it. The node first demonstrated the OLD gate tripping that sentinel, so the defect is reproduced before being fixed rather than assumed. Both refusals are demonstrated: an index naming an absent file, and an index whose rowCount is zero. The roster rises from three plans to five, admitting artifact-feeds-and-reader whose eight captures I recovered and committed from the dead node's worktree, so they are gated rather than merely present. The node authored its plan comment and evidence record in its own worktree and committed them, which is what the contract now requires rather than the scope violation I would wrongly have called it earlier tonight</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260915T101010504806-this-plans-captures-are-gated-and-shown-to-refuse" data-who="disc-local" data-when="2026-09-15T10:35:30.467Z">
-    <div class="r-comment-body"><p>This plan&#x27;s roster entry is demonstrated load bearing rather than decorative: the gate refuses the artifact-feeds-and-reader captures when their index is emptied. 6 passed at the base, 8 at the head, 0 failures either side. The test is built the right way round — it copies the real committed index, empties its captures list and requires refusal, while separately asserting the live index is accepted at 8 captures, so a roster entry that silently stopped reading anything would fail rather than pass. The node ran the plan-schema byte-identity test unprompted because it had edited a plan, and authored its own plan comment and evidence record in its worktree as the contract requires</p></div>
+    <div class="r-comment-body"><p>This plan's roster entry is demonstrated load bearing rather than decorative: the gate refuses the artifact-feeds-and-reader captures when their index is emptied. 6 passed at the base, 8 at the head, 0 failures either side. The test is built the right way round — it copies the real committed index, empties its captures list and requires refusal, while separately asserting the live index is accepted at 8 captures, so a roster entry that silently stopped reading anything would fail rather than pass. The node ran the plan-schema byte-identity test unprompted because it had edited a plan, and authored its own plan comment and evidence record in its worktree as the contract requires</p></div>
 </div>
 </section>
 </main>
