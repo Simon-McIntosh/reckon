@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-15T17:35:06",
+  "updated": "2026-09-15T17:42:38",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -140097,6 +140097,172 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260915T153521326723-the-prompt-carries-the-two-limits",
+        "plan": "worker-authors-its-own-record",
+        "section": "\u00a73",
+        "node": "the-prompt-carries-the-two-limits",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 2401,
+                "cached_input_tokens": 502936,
+                "input_tokens": 505339,
+                "output_tokens": 674,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 506013,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "3332e8d8-dcef-4091-9774-c9680478b165",
+            "session_id": "ship-s16-20260914"
+          },
+          "done_when": "Both skill halves of this contract have landed. The worker half (commits e33f0ca1, 7a03a312, merged 08173e65) removed the four clauses forbidding a worker to write plan state and added the positive landing requirement. The coordinator half (commit cd7428c1, merged 60b2e495) made the landing beat a review of a worker-authored record rather than a transcription, and stated two limits on what a worker may do. This node closes the last gap: the runtime prompt does not carry those two limits, so the skill tells a coordinator one thing and the worker is told nothing.\n\nTHE TWO LIMITS, and the reason is load-bearing rather than decoration. A worker must not resolve its own driving followup, and must not set a terminal plan status - because only the coordinator observes the other nodes. A worker knows its node landed; it does not know whether the section closed. A limit stated without that reason is one someone will reasonably break, so carry the reason with the rule.\n\nVerify before you write: grep reckon/crew/prompts.py for \"driving followup\" and \"terminal status\" - both currently return zero.\n\nDONE WHEN, and every clause emits evidence:\n\n(1) The composed worker prompt carries both limits with their reason. Assert against the composed prompt, not against a module constant read in isolation, because the prompt a worker actually receives is what matters. Report the assertion node ids and their pass count, and quote the sentences you added.\n\n(2) Both limits reach the roles that can land work, and the read-only roles are checked too. tests/test_crew_prompts.py already composes prompts per role - read how it does it before adding, and follow that shape. A limit present for one role and absent for another is the defect this node exists to close, one layer down.\n\n(3) The parity mechanism is extended to cover the new sentences, so the prompt and the two skill files cannot drift apart on them. tests/test_skill_contract_parity.py derives its expectations from the prompt's own strings rather than from literals - READ IT FIRST and follow that form exactly. A check comparing the skill against a literal copy reproduces the defect this whole plan is fixing: two copies of one rule drift silently while the test keeps passing. If your wording in prompts.py differs from the wording already in skills/reckon-ship/SKILL.md and references/sprint-orchestration.md, the parity test will fail and that is CORRECT - reconcile by making the prompt the authority and adjusting the skill text, never by loosening the check.\n\n(4) State as digits: occurrences of each limit in reckon/crew/prompts.py before and after. Before is 0 for both.\n\nRANGE OVER THE ROLES, NOT OVER ONE COMPOSED SAMPLE. A single composed prompt for one role cannot show that every landing-capable role carries the limits. Compose across the roles the existing test already covers and assert each one; a test that inspects a single sample passes while a role you did not sample is silently missing the rule.\n\nDO NOT WIDEN A GUARD TO PASS. If adding text trips a size or content assertion, follow the ordering that tests/test_skill_contracts.py documents beside FIXED_READ_SET_TOKEN_BUDGET: relocate reference material first, raise the budget second, shave a rule never. That budget governs skills/reckon-ship/SKILL.md, which is NOT in your write scope - if your change requires touching it, block and say so rather than reaching outside the fence.\n\nJudge by delta against a stated base: record the base revision and its failure ids, and report added failures as a digit; zero added against a red base is a pass. Gate the focused set - tests/test_crew_prompts.py and tests/test_skill_contract_parity.py - captured to one log, plus tests/test_schema.py::test_byte_identity_on_real_reckon_plans because you edit plan HTML. No full suite. Author your own landing record: a comment on the plan section and an anchor in the cumulative evidence record, both committed in your worktree. Do NOT resolve the driving followup and do NOT set a terminal plan status - the rule you are writing applies to you. Conventional commit subject AND a body.",
+          "estimated_hours": null,
+          "goal": "Make the composed worker prompt carry the two limits the skill now states, with the reason, so both audiences receive the same rule and a parity check holds them together",
+          "id": "the-prompt-carries-the-two-limits",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-15T15:35:21Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": 12,
+            "binding_observed": false,
+            "detail": "",
+            "headroom": 8,
+            "mean_context": 103386,
+            "observed_at": "2026-09-15T15:35:09Z",
+            "state": "fresh",
+            "suggested_shelf_life_seconds": 120
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T153521326723-the-prompt-carries-the-two-limits/manifest.md",
+          "plan": "worker-authors-its-own-record",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "45m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/prompts.py",
+            "tests/test_crew_prompts.py",
+            "tests/test_skill_contract_parity.py",
+            "docs/evidence/archive/worker-authors-its-own-record-landed.html",
+            "docs/plans/worker-authors-its-own-record.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-codex-usage",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 1016576
+        },
+        "dispatched_at": "2026-09-15T15:35:40Z",
+        "completed_at": "2026-09-15T15:39:48.310Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 221,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 248,
+        "stalled": false,
+        "time_budget": "45m",
+        "base_sha": "30162440bfda5b63965d7ddfdd01e818bc4d694a",
+        "commits": [],
+        "changed_lines": null,
+        "tests_added": null,
+        "gate": "not-run",
+        "gate_check": null,
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260915T153521326723-the-prompt-carries-the-two-limits/manifest.md",
+        "scope_changed": false,
+        "session_id": "4010f2c6-d099-4113-b871-436ea32fe3c0",
+        "budget": {
+          "cost_usd": null,
+          "detail": "no events yet",
+          "headroom": "unknown",
+          "rate_limit_period_minutes": null,
+          "rate_limit_type": null,
+          "refusal": false,
+          "resets_at": null,
+          "surpassed_threshold": null,
+          "threshold_status": null,
+          "tokens": null,
+          "utilisation_pct": null
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-15T15:39:48.310Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": null,
+        "review": null,
+        "follow_on_paths": [],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": {
+          "status": "underivable",
+          "reason": "model_span_unavailable_at_promotion"
+        },
+        "scope_acceptances": null,
+        "no_commit": "Stopped at four minutes with no commits and a clean worktree. It branched at 30162440, before the prompts.py template repair merged as 9b99b5ef, so its copy of prompts.py carried the defective wait_probe description and not the repair. This node's brief makes prompts.py the authority that skill text is reconciled to, so it would have pinned the defective wording in a parity check, and merging its prompts.py could have reverted the repair.",
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s16-20260914/the-prompt-carries-the-two-limits",
+          "session_id": "4010f2c6-d099-4113-b871-436ea32fe3c0",
+          "session_source": "pointer",
+          "retained_at": "2026-09-15T15:39:48.310Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 10.0,
+        "orientation_input_tokens": null,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -140325,6 +140491,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1545
+    "_version": 1546
   }
 }
