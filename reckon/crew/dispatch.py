@@ -868,22 +868,31 @@ def _repository_scope_claims() -> list[_RepositoryScopeClaim]:
     )
 
 
-def _receives_landing_contract(backend: Mapping[str, Any]) -> bool:
-    """Whether the worker keeps the worktree as its process directory.
+def _can_write_worktree(
+    backend: Mapping[str, Any],
+    *,
+    repository: Path,
+    run_directory: Path,
+) -> bool:
+    """Whether the worker can write its assigned worktree in this sandbox.
 
-    The landing contract is composed only when the working directory is the
-    worktree rather than a delivery directory. Only the codex dialect relocates,
-    and only on the read-only tier; an in-harness backend stays in the worktree
-    whatever its sandbox. This mirrors the launch-plan switch that decides where
-    the prompt's contract gate lands, so a grant here never disagrees with the
-    contract a worker is actually handed.
+    The landing contract and its write-scope grant are keyed on this writability
+    rather than on which dialect happens to relocate the process directory, so a
+    role whose sandbox forbids repository writes is never granted a landing
+    deliverable it cannot commit. Resolved through the same sandbox grants that
+    scope the declared write paths, which keeps the grant and the reachability
+    judgement reading the same authority.
     """
-    if backend.get("launch") != "cli":
-        return True
-    if backend.get("sandbox") != _backends.READ_ONLY:
-        return True
-    command = str(backend.get("command") or "")
-    return Path(command).name != "codex"
+    roots = _backends.sandbox_write_roots(
+        backend,
+        repository=repository,
+        run_directory=run_directory,
+        reports_directory=reports_dir(),
+        review_store_directory=review_store_root(),
+    )
+    return _backends.sandbox_can_write(
+        repository, repository=repository, write_roots=roots
+    )
 
 
 def _shared_landing_paths(
@@ -2165,7 +2174,11 @@ def plan_dispatch(
         resolved_authority = dict(
             authority or resolve_dispatch_authority(project, repo)
         )
-        if _receives_landing_contract(backend):
+        if _can_write_worktree(
+            backend,
+            repository=Path(repo).resolve(),
+            run_directory=run_dir(resolved_run_id),
+        ):
             _grant_landing_write_paths(
                 node, project=project, authority=resolved_authority
             )
@@ -3036,6 +3049,11 @@ def dispatch(
             project=project,
             worktree=worktree["path"],
             working_directory=working_directory,
+            can_write_worktree=_can_write_worktree(
+                backend,
+                repository=repo_root,
+                run_directory=directory,
+            ),
             manifest_path=node.manifest_path,
             time_budget=node.time_budget,
             needs_help_after_failures=int(fences.get("needs_help_after_failures", 2)),

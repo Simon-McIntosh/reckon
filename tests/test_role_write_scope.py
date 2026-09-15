@@ -489,8 +489,8 @@ def test_a_test_run_that_slipped_through_is_still_refused_at_promotion(
 # ── The landing contract and the write fence agree ─────────────────────────
 # A worker told to append its landing record and evidence anchor is granted
 # those paths — the plan file and the cumulative evidence record — without the
-# coordinator naming them, and only a role whose backend keeps the worker in
-# the worktree (and so composes the contract) receives them. They are shared by
+# coordinator naming them, and only a role whose sandbox lets it write the
+# worktree (and so composes the contract) receives them. They are shared by
 # every node on the plan, so on a promotion the run that wrote both is no
 # longer refused for undeclared companions.
 
@@ -576,23 +576,135 @@ def test_a_read_only_role_does_not_receive_the_landing_paths(
     assert EVIDENCE_RECORD not in declared
 
 
-def test_the_contract_gate_tracks_the_launch_shape():
-    """Guard the guard: only a relocated read-only worker loses the contract."""
+# The local lane runs a different dialect than the metered codex lane. The
+# landing grant and the contract gates must not notice: a read-only role stays
+# read-only, an implement role stays repo-writing, whatever command names the
+# backend, because both gates are keyed on the sandbox's writability of the
+# worktree rather than on which dialect relocates the process directory.
+LOCAL_LANE_CONFIG = {
+    "default_backend": "worker",
+    "backends": {
+        "worker": {
+            "launch": "cli",
+            "command": "clive",
+            "sandbox": "worktree-full",
+            "time_budget": "20m",
+        }
+    },
+    "roles": {
+        "review": {"execution_capable": True, "sandbox": "read-only"},
+        "investigate": {"execution_capable": True, "sandbox": "read-only"},
+        "implement": {"execution_capable": True, "sandbox": "worktree-full"},
+    },
+    "fences": {"time_budget": "20m", "needs_help_after_failures": 2},
+}
+
+
+@pytest.mark.parametrize("role", ["review", "investigate"])
+def test_a_read_only_role_on_the_local_lane_validates_clean(
+    home: Path, review_repository: Path, role: str
+):
+    """The read-only dry run passes and gains no landing paths on any dialect."""
+    store_path = review_path(PROJECT, REVIEWED_RUN_ID)
+    run_tag = f"r-local-{role}"
+    resolution = crew.plan_dispatch(
+        node=_node(
+            home,
+            role=role,
+            write_paths=[str(store_path)],
+            manifest_path=str(run_dir(run_tag) / "manifest.md"),
+        ),
+        config=LOCAL_LANE_CONFIG,
+        project=PROJECT,
+        repo=review_repository,
+    )
+    assert resolution.validation.ok, resolution.validation.findings
+    assert "scoped" not in resolution.validation.failed_properties
+    declared = list(resolution.node.write_paths)
+    assert PLAN_FILE not in declared
+    assert EVIDENCE_RECORD not in declared
+
+
+def test_an_implement_role_on_the_local_lane_still_receives_the_landing_paths(
+    home: Path, review_repository: Path
+):
+    """The repo-writing role keeps the landing grant on the local lane too."""
+    deliverable = f"package/{PLAN_SECTION}.py"
+    resolution = crew.plan_dispatch(
+        node=_node(
+            home,
+            role="implement",
+            write_paths=[deliverable],
+            manifest_path=str(run_dir("r-local-implement") / "manifest.md"),
+        ),
+        config=LOCAL_LANE_CONFIG,
+        project=PROJECT,
+        repo=review_repository,
+    )
+    assert resolution.validation.ok, resolution.validation.findings
+    declared = list(resolution.as_dict()["write_paths"])
+    assert PLAN_FILE in declared
+    assert EVIDENCE_RECORD in declared
+    assert deliverable in declared
+    assert set(resolution.node.write_paths) == set(declared)
+
+
+def test_the_prompt_contract_gate_tracks_writability_not_the_process_directory(
+    home,
+):
+    """Both gates key on the same fact: the worker can write the worktree.
+
+    The landing text is decided by the writability dispatch resolves, so a
+    worker parked in a delivery directory but able to write the worktree still
+    receives the contract, and one standing in the worktree whose sandbox
+    forbids writes does not.
+    """
+    from reckon.crew.prompts import PLAN_LANDING_CONTRACT
+
+    base = {
+        "node": _node(home, role="implement", write_paths=["package/out.py"]),
+        "project": "proj",
+        "worktree": "/repo/worktrees/run",
+        "manifest_path": "/state/runs/run/manifest.md",
+        "time_budget": "20m",
+        "needs_help_after_failures": 2,
+    }
+    in_delivery_writable = crew.compose_prompt(
+        working_directory="/state/runs/run", can_write_worktree=True, **base
+    )
+    assert PLAN_LANDING_CONTRACT in in_delivery_writable
+
+    in_tree_read_only = crew.compose_prompt(
+        working_directory="/repo/worktrees/run", can_write_worktree=False, **base
+    )
+    assert PLAN_LANDING_CONTRACT not in in_tree_read_only
+
+
+def test_the_contract_gate_tracks_worktree_writability(tmp_path):
+    """Guard the guard: the grant keys on the sandbox, never the dialect name."""
     import importlib
 
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    repository = tmp_path / "worktree"
+    run_directory = tmp_path / "run"
+    for directory in (repository, run_directory):
+        directory.mkdir()
 
-    in_harness = {"launch": "in-harness", "sandbox": "read-only"}
-    worktree = {"launch": "cli", "command": "codex", "sandbox": "worktree-full"}
-    relocated = {
-        "launch": "cli",
-        "command": "codex",
-        "sandbox": "read-only",
-        "execution_capable": True,
-    }
-    assert dispatch_module._receives_landing_contract(in_harness)
-    assert dispatch_module._receives_landing_contract(worktree)
-    assert not dispatch_module._receives_landing_contract(relocated)
+    in_harness_full = {"launch": "in-harness", "sandbox": "worktree-full"}
+    codex_worktree = {"launch": "cli", "command": "codex", "sandbox": "worktree-full"}
+    clive_worktree = {"launch": "cli", "command": "clive", "sandbox": "worktree-full"}
+    in_harness_ro = {"launch": "in-harness", "sandbox": "read-only"}
+    codex_read_only = {"launch": "cli", "command": "codex", "sandbox": "read-only"}
+    clive_read_only = {"launch": "cli", "command": "clive", "sandbox": "read-only"}
+
+    for backend in (in_harness_full, codex_worktree, clive_worktree):
+        assert dispatch_module._can_write_worktree(
+            backend, repository=repository, run_directory=run_directory
+        )
+    for backend in (in_harness_ro, codex_read_only, clive_read_only):
+        assert not dispatch_module._can_write_worktree(
+            backend, repository=repository, run_directory=run_directory
+        )
 
 
 def _promotion_repository(tmp_path: Path, home: Path) -> Path:
