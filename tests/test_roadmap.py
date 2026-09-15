@@ -1147,3 +1147,82 @@ def test_gate_verdict_blocks_and_releases_downstream_sections_without_status_edi
     assert roadmap["ready_now"][0]["slug"] == "measured-work"
     assert roadmap["ready_now"][0]["gate_blockers"] == []
     assert roadmap["ready_now"][0]["effective_status"] == "active"
+
+
+def test_held_blocker_reads_held_while_explicit_plan_is_unchanged() -> None:
+    """A blocker declared beyond the sprint's reach reads as held, and a plan
+    with an explicit blocker reports exactly its own explicit blocker.
+
+    The two are counted separately; treating a held row as explicit would put
+    the held blocker into ``explicit_blockers`` and this test fails.
+    """
+    held = _plan("held-plan")
+    held["blocking"] = [
+        {
+            "id": "b-hold",
+            "kind": "held",
+            "subject": "a reservation that has not come through",
+        }
+    ]
+    explicit = _plan("explicit-plan")
+    explicit["blocking"] = [
+        {
+            "id": "b-wait",
+            "kind": "explicit",
+            "subject": "waiting on a person",
+        }
+    ]
+    sprint = [
+        {
+            "id": "current",
+            "status": "active",
+            "items": [
+                {"slug": "held-plan", "blocked_by": ["b-hold"]},
+                {"slug": "explicit-plan", "blocked_by": ["b-wait"]},
+            ],
+        }
+    ]
+
+    result = build_roadmap("sample", [held, explicit], sprint)
+    blocked = {row["slug"]: row for row in result["blocked"]}
+
+    # Both blockers hold their plan open, and the two plans are counted
+    # separately: a held row is never an explicit row.
+    assert len(result["blocked"]) == 2
+    held_row = blocked["held-plan"]
+    explicit_row = blocked["explicit-plan"]
+
+    assert [row["kind"] for row in held_row["held_blockers"]] == ["held"]
+    assert len(held_row["held_blockers"]) == 1
+    assert held_row["explicit_blockers"] == []
+    assert held_row["status"] == "active"
+    assert held_row["readiness"] == "blocked"
+    assert held_row["effective_status"] == "blocked"
+
+    # The explicit plan is unchanged in every reported field a caller reads.
+    assert [row["kind"] for row in explicit_row["explicit_blockers"]] == ["explicit"]
+    assert len(explicit_row["explicit_blockers"]) == 1
+    assert explicit_row["held_blockers"] == []
+    assert [row["id"] for row in explicit_row["explicit_blockers"]] == ["b-wait"]
+    assert explicit_row["status"] == "active"
+    assert explicit_row["readiness"] == "blocked"
+    assert explicit_row["effective_status"] == "blocked"
+
+
+def test_derive_lifecycle_carries_the_blocker_kind_from_the_resource() -> None:
+    """The blocker's own resource kind reaches plan ``blocking`` unchanged."""
+    plan = _plan("held-plan")
+    sprint = [
+        {
+            "id": "current",
+            "status": "active",
+            "items": [{"slug": "held-plan", "blocked_by": ["b-hold"]}],
+        }
+    ]
+    blockers = [{"id": "b-hold", "kind": "held", "summary": "reservation"}]
+
+    discovered, _hydrated = _derive_lifecycle("sample", [plan], sprint, blockers)
+
+    blocking = discovered[0]["blocking"]
+    held_rows = [row for row in blocking if row.get("id") == "b-hold"]
+    assert [row["kind"] for row in held_rows] == ["held"]

@@ -828,8 +828,17 @@ def _read_plan_view(
                     and item.get("kind") == "explicit"
                     and item.get("id")
                 ]
+                held_blockers = [
+                    item.get("id")
+                    for item in inventory_plan.get("blocking", [])
+                    if isinstance(item, dict)
+                    and item.get("kind") == "held"
+                    and item.get("id")
+                ]
                 if explicit_blockers:
                     data = {**data, "blocked_by": explicit_blockers}
+                if held_blockers:
+                    data = {**data, "held_by": held_blockers}
 
         return resource_view(
             selector,

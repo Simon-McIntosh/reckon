@@ -61,6 +61,27 @@
     unchanged, asserted by a case that would fail if held rows were treated as explicit ones;
     and the count of plans in each state is stated as a digit for a fixture carrying both.</p>
 
+    <section class="section-landed">
+      <header><span class="badge badge-shipped">landed 2026-09-15</span></header>
+      <p class="landed-summary">A blocker authored <code>kind=held</code> in its own resource
+      now reaches <code>roadmap</code>'s payload: the lifecycle derivation carries the resource
+      kind into each plan's <code>blocking</code> rows instead of making every one read as
+      <code>explicit</code>, and <code>roadmap</code> reports held rows under a distinct
+      <code>held_blockers</code> key while the explicit rows remain unchanged. A held blocker
+      still holds the receiving plan open across status, readiness and effective-status
+      derivation, and does not feed the synthetic persisted fallback. A fixture carrying one
+      held blocker and one <code>explicit</code> blocker reports the held plan as held and the
+      explicit plan unchanged, and the two are counted separately, each stated as a digit; the
+      case that fails if a held row were treated as explicit was written first and observed
+      failing at the base revision. The graph resolver's per-plan blocker rows and the
+      plan-resource view carry <code>held_by</code> through too. The endpoint-row
+      <code>held</code> key, which counts blocked members per execution path, is a different
+      quantity and is untouched.</p>
+      <p class="landed-summary">Full record:
+      <a href="/reckon/evidence/a-sprint-closes-on-completable-work-landed#held-blocker">held
+      blocker reads held beside an unchanged explicit plan</a>.</p>
+    </section>
+
     <h2 id="s3">&sect;3 &mdash; Closable means nothing completable remains</h2>
     <p>The rule is one sentence: <strong>a sprint is closable when every incomplete item is
     held.</strong> One item that is merely blocked, or ready and undone, keeps it open, because

@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-sprint-closes-on-completable-work-landed">
+  <meta name="plan-title" content="A sprint closes on completable work &mdash; landed evidence">
+  <meta name="plan-summary" content="A blocker whose subject is outside the sprint's reach is authored kind=held in its own resource and now reads as held rather than explicit everywhere a caller reads the payload: the lifecycle derivation carries the resource kind into the blocking rows, and roadmap reports held rows under a distinct held_blockers key beside an unchanged explicit_blockers.">
+  <meta name="plan-evidence-for" content="reckon:a-sprint-closes-on-completable-work">
+  <meta name="plan-verifies" content="reckon:a-sprint-closes-on-completable-work#s2">
+  <meta name="plan-recorded-at" content="2026-09-15">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; detached git worktree; pytest">
+  <meta name="plan-commits" content="d6715087,b297348d">
+  <meta name="plan-artifacts" content="reckon/serve.py,reckon/roadmap.py,reckon/mcp.py,tests/test_roadmap.py">
+  <title>A sprint closes on completable work &mdash; landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>A sprint closes on completable work &mdash; landed evidence</h1>
+    <p class="plan-summary">The &sect;2 done-when passes: a plan carrying a held blocker is
+    reported by <code>roadmap</code> as held rather than merely blocked, distinguishable by a
+    caller reading the payload &mdash; the row carries <code>kind=held</code> &mdash; and the
+    explicit-blocker behaviour is unchanged, asserted by a case written first that fails if a
+    held row is treated as explicit. The record below is the part worth reading: the two plans
+    counted separately as digits, the explicit plan unchanged in every reported field, and the
+    existing endpoint-row <code>held</code> key left alone because it counts a different
+    quantity.</p>
+  </header>
+
+  <section id="record-scope">
+    <h2>Record scope</h2>
+    <p>This record covers &sect;2 only. It is the first section of the plan to land; &sect;3,
+    the closure rule that reads this section's vocabulary, is a follow-on on the same files.
+    The holder therefore cannot be in the same record: the closure rule must be demonstrated
+    refusing a sprint that still has one un-held incomplete item, and that measure is owned by
+    the section that implements it.</p>
+    <p>One decision already recorded on the plan constrains this section without being part of
+    it: who may clear a held blocker and what the clearing must record. That decision is locked
+    and unchanged.</p>
+  </section>
+
+  <section id="held-blocker">
+    <h2>Held reads held beside an unchanged explicit plan</h2>
+    <p>Commit <code>d6715087</code>. The blocker's own resource <code>kind</code> now survives
+    end to end. <code>_derive_lifecycle</code> in <code>reckon/serve.py</code> accepts the
+    composed blocker rows and maps each sprint item's <code>blocked_by</code> id to its
+    resource kind, defaulting to <code>explicit</code> only when the resource says nothing;
+    the <code>blocking</code> rows it builds therefore carry the authored kind instead of
+    hardcoding <code>explicit</code> for every id. <code>build_roadmap</code> in
+    <code>reckon/roadmap.py</code> reports held rows on a pending plan under a new
+    <code>held_blockers</code> key placed beside the unchanged <code>explicit_blockers</code>,
+    and a held blocker still holds the plan open: it keeps the plan out of the synthetic
+    persisted-ready fallback, out of <code>is_ready</code>, into <code>is_blocked</code>, and
+    into the effective-status derivation. The graph resolver treats explicit and held rows as
+    blockers and ignores every other kind. The plan-resource view in
+    <code>reckon/mcp.py</code> exposes the held ids as <code>held_by</code> alongside the
+    unchanged <code>blocked_by</code>.</p>
+    <p><strong>The fixture and the two digits.</strong> A fixture carries one held blocker and
+    one <code>explicit</code> blocker on two plans. The held plan reports
+    <code>len(blocked) == 2</code> and <code>held_blockers</code> carrying one row of kind
+    <code>held</code> with <code>explicit_blockers</code> empty; the explicit plan reports
+    <code>explicit_blockers</code> carrying one row of kind <code>explicit</code> with
+    <code>held_blockers</code> empty. Each count is stated as a digit in the test. <strong>The
+    case that fails if held rows are treated as explicit was written first and observed failing
+    against the base revision</strong>, before any implementation: at base the fixture yields a
+    single blocked plan and the two-row assertion fails, because every <code>blocked_by</code>
+    read as <code>explicit</code>. A second test drives the lifecycle derivation directly with
+    a blocker resource of kind <code>held</code> and asserts the derived <code>blocking</code>
+    rows carry <code>kind=held</code>.</p>
+    <p><strong>The quantity that was not overloaded.</strong> <code>roadmap</code>'s existing
+    endpoint-row <code>held</code> key is a count of blocked members per execution-path
+    endpoint &mdash; schedule-deferred members whose path still holds them open. It is a
+    different quantity from a blocker kind and is left untouched; the new reporting rides only
+    on the per-plan <code>blocking</code> rows.</p>
+    <p><strong>Proven at the entry point, not at a helper.</strong> The failing-then-passing
+    case exercises <code>build_roadmap</code> itself over a composed project state, which is
+    the surface an agent, a CLI caller and the MCP read. The end-to-end chain through
+    <code>discover_plans</code> over a git-backed fixture was verified separately and reports
+    the held plan as held and the explicit plan unchanged, both blocked.</p>
+  </section>
+
+  <section id="measure">
+    <h2>Measure</h2>
+    <p>Gate <code>PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p
+    no:cacheprovider tests/test_roadmap.py tests/test_project_state.py tests/test_edit_plan.py
+    -q</code>: at the landed commit <strong>181 passed &mdash; 0 failed</strong> against a base
+    of 179 passed &mdash; 0 failed at <code>b9a0fa41</code>, so the delta is +2 tests, both the
+    new ones in <code>tests/test_roadmap.py</code>:
+    <code>test_held_blocker_reads_held_while_explicit_plan_is_unchanged</code> and
+    <code>test_derive_lifecycle_carries_the_blocker_kind_from_the_resource</code>. No new
+    failures. Ruff findings over the staged paths are unchanged against the base tree.</p>
+  </section>
+
+  <section id="scope">
+    <h2>Scope and follow-ons</h2>
+    <p><code>reckon/project_state.py</code> and <code>reckon/lifecycle.py</code> are in the
+    write scope and needed no change: the composed blocker rows already carry the resource
+    dict through intact, and no lifecycle rule reads a blocker kind. The endpoint-row
+    <code>held</code> count and the schedule it derives from are untouched by design.</p>
+    <p>What remains is &sect;3, the closure rule: a sprint is closable when every incomplete
+    item is held, and closing one carrying a single un-held incomplete item is refused. It was
+    sequenced after this section precisely so its rule reads real vocabulary, and it is
+    recorded as a follow-on on the plan rather than folded into this record.</p>
+  </section>
+</main>
+</body>
+</html>
