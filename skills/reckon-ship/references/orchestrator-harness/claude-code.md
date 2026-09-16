@@ -48,6 +48,15 @@ Monitor({
 `persistent: true` because a wave outlives the default timeout, and the
 follower is meant to cover the whole session rather than one wave.
 
+**Launch the follower with colour: never pass `--no-color`.** The pane this
+host renders the ticker into reads ANSI colour, and the follower's colour set
+carries the state of each row (the working, blocked, unpromoted and waiting
+states are distinguished by hue). A monochrome stream flattens those states
+into one grey line, which the reader then has to parse word by word. The lead
+asked for colour explicitly on 2026-09-16 after a coordinator armed a
+`--no-color` follower; `--theme dark|light` is the only appearance flag a
+coordinator should pass, and only when the pane's background calls for it.
+
 **Make the description name the work, and stop.** This host prints it verbatim
 as the visible row of every notification — `Monitor event: "<description>"` — so
 it repeats identically for each event and never carries the transition. What it

@@ -748,6 +748,9 @@ reckon crew watch --project <project> [--stall-window 15m]     # producer
 reckon crew follow --project <project> --session <session>        # you
 ```
 
+**Arm the follower with colour.** Never pass `--no-color`: the ticker's colour
+set carries each row's state, and a monochrome stream hides it (lead, 2026-09-16).
+
 A second concurrent producer exits immediately with `event: watcher-live` and
 the current watcher metadata. `--once` returns after a single event and
 **releases the seat**, so a coordinator using it must re-arm before its next
