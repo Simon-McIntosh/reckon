@@ -22,9 +22,9 @@
   <title>Edges That Mean What They Say | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-15">
+<meta name="plan-modified" content="2026-09-16">
 <meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="fd0b1d4,bea76f1,ec8fb56d">
 </head>
@@ -232,6 +232,21 @@
 <article class="r-fu" data-id="f-des-003" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="agent" data-written-at="2026-09-15" data-recommends-skill="/reckon-ship dependency-edge-semantics §4" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Implement §4 — closure gates, behind the locked transition-gate-shape decision</h4>
     <div class="r-fu-body">§4 is the next implementable section and stays behind the open transition-gate-shape decision; implement it once that decision is made.</div>
+    <pre class="r-fu-prompt">/reckon-ship dependency-edge-semantics §4</pre>
+    </article>
+<article class="r-fu" data-id="f-des-soft-after-edge" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="nova s19-handoff coordinator" data-written-at="2026-09-16" data-recommends-skill="/reckon-ship dependency-edge-semantics §4" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A soft after edge that orders the ready set without blocking it</h4>
+    <div class="r-fu-body"><p>Measured on nova S19, 2026-09-16: a coordinator opening two plans that consume a third plan's landed evidence wired depends_on because nothing between depends_on (blocks) and informs (orders nothing) expresses start after X lands if you can, do not wait. The roadmap correctly reported both new plans blocked, and the wire was undone an hour later (nova f2189462). Add an after edge with the depends_on grammar (bare slug or project:slug, optional #section) that the roadmap uses to order ready work and to annotate the ready set with came-after hints, never to block; a plan whose after target is unshipped stays in ready_now. The reckon-create relation checklist gains the fourth row and the litmus: would this plan's first section be wrong to start before X ships? if not, X informs it, sequencing is an after edge, and a real prerequisite on one section is a gate.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship dependency-edge-semantics §4</pre>
+    </article>
+<article class="r-fu" data-id="f-des-source-section-depends" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="nova s19-handoff coordinator" data-written-at="2026-09-16" data-recommends-skill="/reckon-ship dependency-edge-semantics §4" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A section-scoped dependency on the source side, so one section can wait without hiding the others</h4>
+    <div class="r-fu-body"><p>The staged ref names the target section (slug#s3) but the source is always the whole plan, so cut-cell-current-attribution section 5 waiting on centroid-constrained-oracle-solve section 3 cannot be authored without blocking cut-cell's ready section 2 work; the nova coordinator recorded it as a plain comment instead (c-s19h-s5-prerequisites), which the roadmap cannot read. Add a section_depends_on mapping (source section id to a list of refs with the depends_on grammar) beside section_declarations; the roadmap blocks only the named sections, the ready set lists dispatchable sections, and read_plan's deps resolves each ref. The existing gate op with gated_sections and required_evidence covers the evidence-shaped case and the skills must say so; this edge covers the plan-shaped case.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship dependency-edge-semantics §4</pre>
+    </article>
+<article class="r-fu" data-id="f-des-section-scoped-decisions" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="nova s19-handoff coordinator" data-written-at="2026-09-16" data-recommends-skill="/reckon-ship dependency-edge-semantics §4" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Decisions scoped to sections, carrying a recommendation the lead accepts and that never resolves itself</h4>
+    <div class="r-fu-body"><p>An open decision blocks its whole plan: on nova, exact-clip-moment-quadrature and centroid-constrained-oracle-solve are blocked by one decision each although their first sections do not depend on the choice. Add an optional sections list on a decision so only the named sections are decision-blocked, and an optional recommended value with a recommended_by field that the lead accepts in one action. The recommendation must never become the choice by default: an unanswered recommendation stays open and blocking, because decisions are the lead's and a coordinator default would collapse authority into mechanism (raised by the reckon crew-observability session on 2026-09-16).</p></div>
     <pre class="r-fu-prompt">/reckon-ship dependency-edge-semantics §4</pre>
     </article>
 </section>

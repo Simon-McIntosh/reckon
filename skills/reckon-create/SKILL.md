@@ -277,10 +277,23 @@ DOCS_DIR="$REPO_ROOT/docs"
 2. Read repository instructions and any explicit architecture boundary docs.
 3. Search existing plan and research titles/summaries before creating a new
    resource; edit the existing owner when the work is already represented.
-4. Classify each relation:
-   - hard prerequisite → `depends_on`;
-   - reference/research input → `informs`;
+4. Classify each relation with one question: **would this plan's first section
+   be wrong to start before X ships?**
+   - yes → `depends_on` (X blocks the whole plan, and the roadmap will report
+     this plan blocked until X ships — author it only when that is true);
+   - no, X only feeds this plan evidence or reference → `informs`;
+   - no, but one *section* of this plan cannot land until X's evidence exists →
+     a **gate** on that section, never a comment and never a plan-level wire:
+     `{"op":"gate","id":"g-<slug>-<n>","section":"s5","gated_sections":["s5"],
+     "measure":"<what the section needs from X>","required_evidence":"<X's
+     evidence anchor or receipt>"}`. Gates feed `roadmap.gate_blockers`; a
+     prose comment feeds nothing and the next session cannot see the rule.
    - downstream plan unlocked here → `blocks`.
+   Measured 2026-09-16 on nova: two new plans wired `depends_on` onto the plan
+   whose evidence they consumed were correctly reported blocked by the roadmap
+   for an hour while their work was dispatchable; the cut-cell plan's own
+   promotion rule, written as a comment, was invisible to every reader but its
+   author. The litmus above would have prevented both.
 5. Choose the destination sprint now. If the work is intentionally backlog,
    record that explicitly instead of silently leaving it unscheduled.
 

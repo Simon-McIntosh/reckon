@@ -282,7 +282,13 @@ belongs to the OTHER project's checkout — never implement it in this one;
 surface it as `/reckon-ship <project>:<slug>`.
 
 Before applying this stop, inspect `roadmap.wiring_findings`. A research or
-evidence artifact in `depends_on` belongs in `informs`; a superseded umbrella,
+evidence artifact in `depends_on` belongs in `informs`; a plan that only
+consumes another plan's landed evidence is `informs` too, and a single section
+that must wait for that evidence is a **gate** (`{"op":"gate", "section",
+"gated_sections", "measure", "required_evidence"}`) on that section, so the
+roadmap's `gate_blockers` carry the rule instead of a comment nobody reads
+(nova, 2026-09-16: two plans blocked for an hour by a `depends_on` that meant
+`informs`, and one promotion rule recorded as prose). A superseded umbrella,
 dangling slug, cycle, or sprint-order inversion is a plan-state defect. Repair
 through `reckon-edit` when authorized, re-run `roadmap`, and only then classify
 the remaining rows as true prerequisites. Never ask the user to override a
