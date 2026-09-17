@@ -896,6 +896,47 @@ reading taken as an authority it was not.</p>
     that declares no determinable status is accepted silently &mdash; the fail-open direction, and
     unasserted either way.</p>
 
+  <section id="undeterminable-status-is-refused">
+    <h3>&#167;12 &mdash; A status with no determinable word is refused</h3>
+    <p>Run
+    <code>r-20260917T091820996392-an-undeterminable-status-is-still-refused</code>.
+    Commit <code>5ef2c9a0</code>, one source-line change and 50 test lines across
+    <code>reckon/crew/reports.py</code> and
+    <code>tests/test_manifest_parse_format.py</code>.</p>
+    <p><strong>Defect reproduction:</strong> the base reader was loaded by inserting an
+    extracted <code>7efeeb7739b01368936246291627fb6141849549</code> tree at the front of
+    <code>sys.path</code>; its module path printed under that extracted tree, so the editable
+    install could not silently supply the working revision twice. The empty quoted status raised
+    at that base, then returned an empty word at the node&rsquo;s starting revision:</p>
+    <table>
+      <thead><tr><th>Input</th><th>Base reader</th><th>Starting revision</th><th>Repair</th></tr></thead>
+      <tbody>
+        <tr><td><code>node: n<br>status: &quot;&quot;</code></td>
+          <td><code>ManifestParseError</code></td><td><code>status ''</code></td>
+          <td><code>ManifestParseError</code></td></tr>
+        <tr><td><code>node: n<br>status: complete</code></td>
+          <td><code>complete</code></td><td><code>complete</code></td><td><code>complete</code></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Mechanism:</strong> matching quote stripping correctly removes presentation from a
+    top-level scalar, but an empty or whitespace-only payload then reaches
+    <code>_refuse_undetermined_status</code> as a present, falsy word. Its unknown-word guard
+    previously ran only for truthy values. The repair lets every present status reach the existing
+    vocabulary check; it does not change quote stripping or apply an empty-scalar rule to any
+    other field.</p>
+    <p><strong>Measure:</strong> the falsifier covers six undeterminable quoted shapes: an empty
+    pair and a whitespace-only pair for each quote character, plus each quote character held by
+    a pair of the other kind. All six were accepted before the source change and all six are now
+    refused. The positive population covers all nine recognised status words under both quote
+    characters (18 combinations), while six empty or whitespace-only <code>tests</code> values
+    retain their existing parsed values. The focused 30-case slice passes after the repair. The
+    prescribed two-file gate reads <strong>3 failed, 73 passed</strong> at the starting revision
+    and <strong>3 failed, 103 passed</strong> at the commit; the same three
+    <code>test_manifest_nested_keys.py</code> ids fail on both sides, so added failures are zero.
+    Both touched files pass the formatter check, and the two Ruff findings in
+    <code>reckon/crew/reports.py</code> are unchanged from the starting revision.</p>
+  </section>
+
   <section id="landing-comment-does-not-duplicate-the-worker-record">
     <h3>§19 — The landing comment does not duplicate the worker's record</h3>
     <p>Run <code>r-20260915T050810199778-promotion-stops-authoring-the-record-the-worker-writes</code>,

@@ -373,7 +373,7 @@ def _refuse_undetermined_status(
                 _missing_status_manifest_message(path, sorted(outcome_fields))
             )
     status = fields.get("status")
-    if status is not None and str(status).strip():
+    if status is not None:
         if (
             not manifest_status_is_template(status)
             and str(status).strip().lower() not in MANIFEST_STATUSES

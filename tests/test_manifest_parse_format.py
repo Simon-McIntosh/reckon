@@ -595,6 +595,56 @@ def test_a_surrounding_quote_pair_costs_only_the_quotes(written: str) -> None:
     assert fields["status"] == "complete"
 
 
+@pytest.mark.parametrize("quote", ['"', "'"])
+@pytest.mark.parametrize("payload", ["", "   "])
+def test_a_quoted_status_without_a_word_is_refused(quote: str, payload: str) -> None:
+    with pytest.raises(reports.ManifestParseError) as exc:
+        reports.parse_manifest(f"status: {quote}{payload}{quote}\n")
+
+    assert "status" in str(exc.value)
+    assert "recognised" in str(exc.value)
+
+
+@pytest.mark.parametrize(("outer", "inner"), [('"', "'"), ("'", '"')])
+def test_a_quoted_status_holding_only_a_quote_is_refused(
+    outer: str, inner: str
+) -> None:
+    with pytest.raises(reports.ManifestParseError) as exc:
+        reports.parse_manifest(f"status: {outer}{inner}{outer}\n")
+
+    assert "status" in str(exc.value)
+    assert "recognised" in str(exc.value)
+
+
+@pytest.mark.parametrize("quote", ['"', "'"])
+@pytest.mark.parametrize("word", sorted(reports.MANIFEST_STATUSES))
+def test_every_quoted_recognised_status_parses_to_its_word(
+    quote: str, word: str
+) -> None:
+    fields = reports.parse_manifest(f"status: {quote}{word}{quote}\n")
+
+    assert fields["status"] == word
+
+
+@pytest.mark.parametrize(
+    ("written", "expected"),
+    [
+        ("tests:", ""),
+        ("tests:   ", ""),
+        ('tests: ""', ""),
+        ("tests: ''", ""),
+        ('tests: "   "', "   "),
+        ("tests: '   '", "   "),
+    ],
+)
+def test_an_empty_non_status_text_field_keeps_its_value(
+    written: str, expected: str
+) -> None:
+    fields = reports.parse_manifest(f"status: complete\n{written}\n")
+
+    assert fields["tests"] == expected
+
+
 @pytest.mark.parametrize("written", ['"a', "'a"])
 def test_an_unmatched_leading_quote_is_not_a_pair(written: str) -> None:
     # A lone quote is not a matching pair, so the value is left as written
