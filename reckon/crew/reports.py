@@ -247,6 +247,11 @@ def parse_manifest(text: str, *, path: str | None = None) -> dict[str, Any]:
 def _parse_text_manifest(text: str, *, path: str | None = None) -> dict[str, Any]:
     """Read the tolerant ``key: value`` text form, keeping unknown keys.
 
+    The least-indented recognised manifest field establishes the top-level
+    column. This preserves a whole manifest presented inside an indented
+    Markdown block while preventing a key indented beneath a parent from being
+    promoted into the top-level mapping.
+
     A top-level line carrying a second manifest key after its value is refused
     here rather than misparsed: the tolerant reader would otherwise fold the
     whole remainder of the line into the first key's value and leave the later
@@ -257,6 +262,14 @@ def _parse_text_manifest(text: str, *, path: str | None = None) -> dict[str, Any
     key = None
     block_key: str | None = None
     block_lines: list[str] = []
+    manifest_indent = min(
+        (
+            len(raw) - len(raw.lstrip(" \t"))
+            for raw in text.splitlines()
+            if _MARKDOWN_MANIFEST_FIELD_RE.match(raw)
+        ),
+        default=0,
+    )
 
     def flush_block() -> None:
         nonlocal block_key, block_lines
@@ -269,11 +282,12 @@ def _parse_text_manifest(text: str, *, path: str | None = None) -> dict[str, Any
         # Workers commonly present manifest fields as Markdown list items or
         # emphasize their keys. Restrict the decorated form to the manifest
         # vocabulary so a prose bullet containing a colon stays prose.
+        indent = len(raw) - len(raw.lstrip(" \t"))
+        if indent != manifest_indent:
+            return None
         decorated = _MARKDOWN_MANIFEST_FIELD_RE.match(raw)
         if decorated:
             return decorated
-        if raw[:1] in (" ", "\t"):
-            return None
         return re.match(
             r"^(?P<key>[a-z][a-z0-9_-]*)\s*:\s*(?P<value>.*)$",
             line,
