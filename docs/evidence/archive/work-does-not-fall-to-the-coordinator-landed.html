@@ -414,6 +414,115 @@
     controls that keep the repaired guard from over-correcting: each is refused at base and still
     refused after, so the change narrows the guard in one direction only.</p>
   </section>
+
+  <section id="unreconciled-grace-clears-the-promotion-beat">
+    <h2>§7 — The unreconciled-run grace clears the measured promotion beat</h2>
+
+    <p><strong>The shipped grace was shorter than the task it exists to accommodate.</strong>
+    <code>fences.unreconciled_run_grace</code> shipped as <code>5m</code> in
+    <code>reckon/schema/flight-defaults.yaml</code>, the bottom resolution layer. Three fleets
+    report a two-to-six minute promotion beat, and a refill refusal fired mid-beat: a
+    coordinator merges a landed branch, verifies the marker at the merged head and promotes,
+    which is the work the fence exists to force rather than a backlog it exists to surface. The
+    declared default is now <code>15m</code> — nine minutes of margin over the slowest observed
+    beat, and an abandoned pile still surfaces within a quarter hour.</p>
+
+    <svg viewBox="0 0 900 260" role="img"
+         aria-label="Timeline: measured promotion beats occupy two to six minutes; the old five-minute grace falls inside that band so the refusal fired mid-beat, while the new fifteen-minute grace clears it with nine minutes of margin."
+         style="max-width:100%;height:auto">
+      <g font-family="system-ui, sans-serif" font-size="13" fill="#222">
+        <text x="20" y="30">measured promotion beat</text>
+        <rect x="220" y="16" width="120" height="18" rx="4" fill="#eef3fa" stroke="#7a91b0"/>
+        <text x="350" y="30" fill="#555">2–6 min (three fleets)</text>
+
+        <line x1="60" y1="70" x2="860" y2="70" stroke="#bbb"/>
+        <g stroke="#999">
+          <line x1="220" y1="64" x2="220" y2="76"/>
+          <line x1="340" y1="64" x2="340" y2="76"/>
+          <line x1="460" y1="64" x2="460" y2="76"/>
+          <line x1="580" y1="64" x2="600" y2="76"/>
+        </g>
+        <text x="220" y="92" text-anchor="middle" fill="#555">0</text>
+        <text x="340" y="92" text-anchor="middle" fill="#555">2 min</text>
+        <text x="460" y="92" text-anchor="middle" fill="#555">5 min</text>
+        <text x="580" y="92" text-anchor="middle" fill="#555">10 min</text>
+        <text x="700" y="92" text-anchor="middle" fill="#555">15 min</text>
+
+        <line x1="460" y1="110" x2="460" y2="170" stroke="#a11" stroke-dasharray="4 3"/>
+        <text x="470" y="128" fill="#a11">old grace 5m — inside the beat</text>
+
+        <line x1="700" y1="110" x2="700" y2="170" stroke="#0a6b2d" stroke-dasharray="4 3"/>
+        <text x="710" y="128" fill="#0a6b2d">new grace 15m — 9 min of margin</text>
+
+        <rect x="340" y="170" width="360" height="34" rx="6" fill="#fbeaea" stroke="#a14a4a"/>
+        <text x="520" y="192" text-anchor="middle" fill="#a11">refusal fired while the coordinator promoted</text>
+        <rect x="340" y="212" width="620" height="34" rx="6" fill="#e8f6ec" stroke="#4a9a63"/>
+        <text x="650" y="234" text-anchor="middle" fill="#0a6b2d">refusal reserved for a run abandoned past the grace</text>
+      </g>
+    </svg>
+
+    <p><strong>Reproduced at base, cleared by the change.</strong> The focused test resolves the
+    shipped layer with the host and project layers absent — the state a fresh install runs with
+    — and converts the value with the same parser dispatch compares a pointer's age against.
+    At base <code>7dfae503</code> the resolved grace was <strong>300</strong> seconds against
+    the required 900, so the default case failed as expected.</p>
+
+    <table>
+      <thead><tr><th>Case</th><th>Base <code>7dfae503</code></th><th>Landed? </th></tr></thead>
+      <tbody>
+        <tr><td>shipped default, no layer overriding it</td><td>2 failed, 80 passed, 2 skipped</td><td>82 passed, 2 skipped</td></tr>
+      </tbody>
+    </table>
+
+    <p>The two failures at base were the falsifiers: <code>parse_duration('5m')</code> is 300,
+    not 900. Controls in the same file pass at both revisions — a project layer tightening the
+    grace to <code>3m</code> wins over the shipped value, a caller override of <code>90s</code>
+    wins over the project layer, and the shipped value matches the pattern its slot declares.</p>
+
+    <p><strong>The generated artifacts are unchanged, and that is provable rather than assumed.
+    </strong> The generators read <code>reckon/schema/flight.yaml</code> alone;
+    <code>reckon/schema/flight-defaults.yaml</code> is the shipped resolution layer and is not
+    an input to them, so a default change regenerates nothing. <code>git status</code> after
+    the edit lists only the defaults file, the new test and the shipped-value assertion in
+    <code>tests/test_flight.py</code>: neither <code>reckon/_flight_schema.py</code> nor
+    <code>docs/_shared/flight.schema.json</code> moved. The round-trip tests that would prove
+    that by regeneration are skipped on this host because <code>gen-pydantic</code> and
+    <code>gen-json-schema</code> are absent.</p>
+
+    <p>Because those two are skipped here, the new test carries its own agreement check that
+    reads the LinkML source with no generator toolchain: it compares the slot's
+    <code>pattern</code> against the compiled pattern in the committed pydantic model and the
+    <code>pattern</code> and <code>type</code> in the committed JSON Schema. <strong>It was
+    shown to fire rather than assumed to.</strong> Mutating the source's pattern to
+    <code>^[0-9]+[smhx]$</code> and leaving the artifacts alone turned the check red with
+    <code>AssertionError</code> at the JSON Schema comparison; reverting the source restored
+    <code>git diff</code> to clean.</p>
+
+    <p><strong>Gate.</strong> <code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p
+    no:cacheprovider -q tests/test_unreconciled_grace_default.py tests/test_flight.py</code> —
+    base <code>2 failed, 80 passed, 2 skipped</code>, landed <code>82 passed, 2 skipped</code>,
+    zero added failures. A wider cohort of the files that resolve or assert this fence —
+    <code>tests/test_flight.py</code>, <code>tests/test_unreconciled_grace_default.py</code>,
+    <code>tests/test_crew_drain_by_coordinator.py</code> and
+    <code>tests/test_closure_fence_agreement.py</code> — is <code>92 passed, 2 skipped</code>.
+    The latter two declare the fence in their own fixtures rather than reading the shipped
+    layer, so they are a control on the change rather than a range over it.</p>
+
+    <p><strong>The declared fence did not cover two of the files the change required, and that
+    is a fence defect rather than a judgement call to bury.</strong>
+    <code>reckon/schema/flight-defaults.yaml</code> is where the default is declared — the
+    brief and the fence both name <code>reckon/schema/flight.yaml</code>, which carries no
+    defaults by design — and <code>tests/test_flight.py</code> asserts the shipped grace by
+    literal, so the node's own gate cannot be green without it. Two further fence paths,
+    <code>reckon/crew/_flight_schema.py</code> and <code>reckon/flight.schema.json</code>,
+    resolve to nothing; the real artifacts are <code>reckon/_flight_schema.py</code> and
+    <code>docs/_shared/flight.schema.json</code>. The change was made in the files the intent
+    required and both deviations are reported here and in the manifest.</p>
+  </section>
+  </main>
+</body>
+</html>
+  </section>
   </main>
 </body>
 </html>
