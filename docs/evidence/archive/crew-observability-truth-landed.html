@@ -844,6 +844,45 @@ reading taken as an authority it was not.</p>
     failures; the two pre-existing Ruff findings in <code>reckon/crew/prompts.py</code> are
     unchanged and both touched files pass the formatter check.</p>
   </section>
+  <section id="quoted-scalar-costs-only-the-quotes">
+    <h3>&#167;12 &mdash; A quoted manifest scalar costs the quotes, not the manifest</h3>
+    <p>Run <code>r-20260917T045830452259-a-quoted-scalar-costs-one-field-not-the-manifest</code>.
+    Commit <code>9bb8b7c7</code>, 20 insertions and 1 deletion in
+    <code>reckon/crew/reports.py</code> and 40 insertions in
+    <code>tests/test_manifest_parse_format.py</code>.</p>
+    <p><strong>Defect reproduction at base:</strong> the text reader kept a scalar&rsquo;s
+    surrounding quotes as part of its value, so a worker that quoted a field the way YAML allows
+    got an unrecognised status word and the reader raised <code>ManifestParseError</code> &mdash;
+    the whole manifest refused, and the classifier reading it as a worker that never wrote a
+    status, over one field&rsquo;s formatting. Measured against the base reader:</p>
+    <table>
+      <thead><tr><th>Written</th><th>Base reader</th><th>After</th></tr></thead>
+      <tbody>
+        <tr><td><code>status: complete</code></td><td><code>complete</code></td><td><code>complete</code></td></tr>
+        <tr><td><code>status: &quot;complete&quot;</code></td><td><strong>ManifestParseError</strong></td><td><code>complete</code></td></tr>
+        <tr><td><code>status: 'complete'</code></td><td><strong>ManifestParseError</strong></td><td><code>complete</code></td></tr>
+        <tr><td><code>tests: it's fine</code></td><td><code>it's fine</code></td><td><code>it's fine</code></td></tr>
+        <tr><td><code>tests: &quot;a</code></td><td><code>&quot;a</code></td><td><code>&quot;a</code></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Measure:</strong> one matching surrounding quote pair is now stripped wherever a
+    top-level text scalar is read, so the status vocabulary, the block indicator and the
+    embedded-key check all see the value the worker meant; the quotes are presentation, not part
+    of the value. Only a matching pair is removed &mdash; an apostrophe inside a word and a lone
+    quote at either end are left exactly as written, so a value that merely contains a quote keeps
+    both it and its position. Both quoted forms, the unquoted form and a quoted comma-separated
+    list are asserted in <code>tests/test_manifest_parse_format.py</code>. The gate plus the
+    sibling nested-keys file passes 76 after against 73 at base: three new cases, and the three
+    pre-existing <code>test_manifest_nested_keys.py</code> failures present identically at base
+    and after, so zero added failures. The wider reader-touching set &mdash; the gate plus the seven
+    other files that import <code>reckon.crew.reports</code> &mdash; was run at the base revision
+    <code>7efeeb77</code> and at the change: both carry the identical 20 failure ids (all
+    pre-existing and unrelated to the reader, dominated by the promotion and mounted-path
+    environment cases), and the head run holds 7 more passes, exactly the 7 new gate cases.
+    Ruff is unchanged at two pre-existing findings in <code>reckon/crew/reports.py</code> and none
+    in the test file.</p>
+  </section>
+
   <section id="landing-comment-does-not-duplicate-the-worker-record">
     <h3>§19 — The landing comment does not duplicate the worker's record</h3>
     <p>Run <code>r-20260915T050810199778-promotion-stops-authoring-the-record-the-worker-writes</code>,

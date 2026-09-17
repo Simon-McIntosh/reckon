@@ -585,6 +585,18 @@
       Asserted by two cases in <code>tests/test_crew_prompts.py</code> that fail at base and pass at
       the commit. Landed under commit <code>9c51724b</code>. Full record:
       <a href="/reckon/evidence/archive/crew-observability-truth-landed#manifest-wait-fields-carry-literal-examples">&#167;12 wait fields landed</a>.</p>
+    <p class="landed-summary">A worker that quoted a scalar the way YAML allows no longer pays for
+      the habit with its whole manifest. The text reader kept the quotes as part of the value, so
+      <code>status: &quot;complete&quot;</code> and <code>status: 'complete'</code> were
+      unrecognised status words, and the reader refused the entire manifest over one field&rsquo;s
+      formatting &mdash; the classifier reading a worker that never wrote a status. One matching
+      surrounding quote pair is now stripped from a top-level text scalar before the status
+      vocabulary, the block indicator and the embedded-key check see it; only a matching pair, so
+      an apostrophe inside a word and a lone quote at either end keep both their characters and
+      their position. Asserted in <code>tests/test_manifest_parse_format.py</code> by both quoted
+      forms, the unquoted form, a quoted list value and the two quote-containing shapes that must
+      be left alone. Landed under commit <code>9bb8b7c7</code>. Full record:
+      <a href="/reckon/evidence/archive/crew-observability-truth-landed#quoted-scalar-costs-only-the-quotes">&#167;12 quoted scalar landed</a>.</p>
 
     <h2 id="s13">&#167;13 &mdash; A quiet fleet and a working one look identical, because nothing reports a wave</h2>
     <p><strong>Directed by the lead 2026-09-09, after a session spent counting completions by
