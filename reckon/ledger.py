@@ -37,6 +37,7 @@ from __future__ import annotations
 import json
 import random
 import re
+import subprocess
 import sys
 import time
 from datetime import datetime, timezone
@@ -701,6 +702,89 @@ def member(
     return None
 
 
+def _commit_roster_write(project: str, member_id: str, path: Path) -> None:
+    """Commit one requested roster write without sweeping other staged paths."""
+    resolved_path = path.expanduser().resolve()
+    discovered = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(resolved_path.parent),
+            "rev-parse",
+            "--show-toplevel",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if discovered.returncode != 0:
+        raise LedgerError(
+            f"cannot commit roster for {project!r}: {resolved_path} is not in a git checkout"
+        )
+    checkout = Path(discovered.stdout.strip()).resolve()
+    try:
+        relative_path = resolved_path.relative_to(checkout)
+    except ValueError as exc:
+        raise LedgerError(
+            f"roster for {project!r} resolved outside its git checkout: "
+            f"{resolved_path} is not beneath {checkout}"
+        ) from exc
+
+    staged = subprocess.run(
+        ["git", "-C", str(checkout), "add", "--", str(relative_path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if staged.returncode != 0:
+        raise LedgerError(
+            f"could not stage roster write {relative_path}: "
+            f"{staged.stderr.strip() or staged.stdout.strip()}"
+        )
+
+    committed = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(checkout),
+            "commit",
+            "--only",
+            "-m",
+            f"chore(roster): register {member_id}",
+            "-m",
+            (
+                "Commit the project roster immediately so member registration "
+                "cannot ride an unrelated later change."
+            ),
+            "--",
+            str(relative_path),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if committed.returncode != 0:
+        subprocess.run(
+            [
+                "git",
+                "-C",
+                str(checkout),
+                "reset",
+                "-q",
+                "HEAD",
+                "--",
+                str(relative_path),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        raise LedgerError(
+            f"could not commit roster write {relative_path}: "
+            f"{committed.stderr.strip() or committed.stdout.strip()}"
+        )
+
+
 def register_member(
     project: str,
     member_id: str,
@@ -710,6 +794,7 @@ def register_member(
     session_id: str | None = None,
     root: str | Path | None = None,
     now: str | None = None,
+    commit: bool = False,
 ) -> dict[str, Any]:
     """Add or update a roster member, returning the stored entry.
 
@@ -756,6 +841,8 @@ def register_member(
         if str(existing.get("id")) != str(member_id)
     ] + [entry]
     write(project, data, version, root)
+    if commit:
+        _commit_roster_write(project, member_id, ledger_path(project, root))
     return entry
 
 
