@@ -1097,6 +1097,31 @@ reading taken as an authority it was not.</p>
       and head: its fixture supplies a non-git temporary directory to a promotion path that now
       requires a git worktree. Ruff remains at the same two pre-existing findings in the touched
       source file, and the formatter check passes.</p>
+
+  <section id="finished-run-classified-terminal-whatever-decorates">
+    <h3>§16 &mdash; A finished run stays finished whatever decorates its manifest status</h3>
+    <p>Run
+    <code>r-20260915T101223859925-a-finished-run-is-not-stalled-retry</code>.
+    Commit <code>bbd40242</code>, 127 insertions across one test file; no source
+    change, the recovery classifier already behaved correctly.</p>
+    <p><strong>Defect reproduction:</strong> the reported defect &mdash; a dead process holding a
+    decorated terminal manifest classified as running or stalled &mdash; no longer reproduces at
+    the worktree head: the reader-level repair that parses decorated status keys retired it, and
+    the classifier reduces a dead process reading as complete to <code>scoring</code> /
+    <code>completed_unpromoted</code> whatever the decoration.</p>
+    <p><strong>Measure:</strong> the new guard test
+    <code>test_a_dead_process_with_a_terminal_manifest_is_finished_whatever_decorates_status</code>
+    asserts the decorated <code>- **status**: complete</code> and plain <code>status: complete</code>
+    spellings classify field-for-field identically (classification, recovery, manifest status, next
+    action) into the terminal family, and that the neighbours stay out of it: an unreadable manifest
+    stays <code>unreadable</code>, an absent one is <code>abandoned</code>, and a live process with
+    a terminal manifest stays <code>running</code>/<code>working</code> with its status deferred.
+    <code>tests/test_crew_recovery.py</code> advances from 90 passing cases at base
+    <code>be162a17</code> to 91, with the same single pre-existing failure in both runs &mdash; zero
+    added failures; the adjacent crew suites (monitor output, ticker, dispatch guard) pass 38 of 38.</p>
+    <p><strong>Mechanism:</strong> the classifier&rsquo;s terminal reading requires both a dead
+    process and a manifest it can parse as complete; an unparsable manifest never yields the
+    terminal outcome, and liveness outranks a terminal reading while the process runs.</p>
   </section>
 
 </main>
