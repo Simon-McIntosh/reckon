@@ -687,18 +687,24 @@ def write(
 
     A write that leaves out a member id the stored roster holds is refused
     unless ``allow_member_removal`` states that the removal is intended. This
-    is what stops a roster emptying itself through a write meant for another
+    is what stops a write emptying a roster through a call meant for another
     purpose: the caller that genuinely retires a member passes the flag, so
     the removal is stated where it is performed rather than inferred later
     from an absence. An absent ledger has no members, so creating one from
     empty is unaffected.
+
+    The roster check answers to the version check rather than pre-empting it:
+    a write prepared against a version the ledger has moved past is refused
+    for that reason, and the caller's re-read then faces the guard on a
+    current roster. Reporting a membership difference drawn from a stale view
+    would aim the caller at the wrong remedy.
     """
     path = ledger_path(project, root)
     incoming_members = list(data.get("members", []))
-    if not allow_member_removal:
-        dropped = dropped_member_ids(
-            load(project, root)[0]["members"], incoming_members
-        )
+    stored, stored_version = load(project, root)
+    dropping = expected_version == stored_version and not allow_member_removal
+    if dropping:
+        dropped = dropped_member_ids(stored["members"], incoming_members)
         if dropped:
             raise LedgerError(
                 f"refusing to write the ledger for {project!r}: this write drops "
