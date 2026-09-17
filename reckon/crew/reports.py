@@ -103,6 +103,24 @@ def _is_block_indicator(value: str) -> bool:
     return bool(_BLOCK_SCALAR_RE.match(value)) or value in ('"', "'")
 
 
+# A scalar a worker surrounded with one matching quote pair carries the quotes
+# as presentation, YAML-style, not as part of the value. A worker that writes
+# ``status: "complete"`` is stating a recognised verdict; leaving the quotes on
+# the value turns it into an unrecognised status word, and the reader refuses
+# the whole manifest — one field's formatting costs every field. The pair is
+# stripped wherever a top-level scalar is read, before the status vocabulary,
+# the block indicator and the embedded-key check all see it. Only a matching
+# pair is removed, so an apostrophe inside a word keeps its place and a lone
+# quote is left as written rather than half-stripped.
+_QUOTE_CHARS = ('"', "'")
+
+
+def _strip_matching_quotes(value: str) -> str:
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in _QUOTE_CHARS:
+        return value[1:-1]
+    return value
+
+
 # A manifest field key appearing later on the same line as another key's value.
 # The tolerant reader captures the whole remainder of the line as the first
 # key's value, so ``commits: ...; changed_paths: ...`` turns the commit into a
@@ -274,7 +292,7 @@ def _parse_text_manifest(text: str, *, path: str | None = None) -> dict[str, Any
         match = read_field(raw, line)
         if match:
             key = match.group("key").lower().replace("-", "_")
-            value = match.group("value").strip()
+            value = _strip_matching_quotes(match.group("value").strip())
             if key == "status" and re.fullmatch(r"`[^`]+`", value):
                 value = value[1:-1].strip()
             embedded = _embedded_manifest_key(key, value)
