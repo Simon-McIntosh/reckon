@@ -140,6 +140,33 @@ try:
     is made here too, because a prediction that cannot see the launcher's evidence cannot
     predict the launcher.</p>
   </section>
+
+  <section id="s6-spawned-wait-fixture">
+    <h2>§6 — The shared wait fixture declares a spawned run</h2>
+
+    <p><strong>Outcome.</strong> The shared <code>_waiting_pointer</code> fixture now
+    carries <code>launch: "cli"</code> and a non-empty <code>argv</code>, the two launcher
+    facts observed on an actual spawned-run pointer. The fixture therefore reaches the
+    launcher guards as the run it models, while the assertion that a met, dead wait is
+    predicted for resumption remains unchanged.</p>
+
+    <p><strong>The recorded defect still reproduced before repair.</strong> At
+    <code>dd49eb82</code>, the focused test failed at its resumed-run assertion with
+    <code>AssertionError: assert [] == ['r-waiting-condition']</code>. The fixture lacked
+    both launcher facts, so the read-only launcher check correctly classified it as not a
+    spawned run. Removing the two keys after the repair reproduced the same assertion;
+    restoring them made the test pass.</p>
+
+    <h3>What was measured</h3>
+    <table class="measures">
+      <tr><th>measure</th><th>value</th></tr>
+      <tr><td>fixture change</td><td class="num"><code>launch: "cli"</code> and <code>argv: ["fixture-agent", "exec"]</code></td></tr>
+      <tr><td>assigned cohort</td><td class="num">45 passed, 0 failed in 4.32s</td></tr>
+      <tr><td>falsifier without both keys</td><td class="num">1 failed at the same resumed-run assertion</td></tr>
+      <tr><td>positive control</td><td class="num">the five other tests using the shared fixture remained passing</td></tr>
+      <tr><td>implementation commit</td><td class="num"><code>b528813d</code></td></tr>
+    </table>
+  </section>
 </main>
 </body>
 </html>

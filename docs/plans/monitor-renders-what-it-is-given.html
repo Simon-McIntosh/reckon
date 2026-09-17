@@ -292,6 +292,9 @@ try:
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260917T045956748860-the-dry-run-consults-what-it-predicts" data-who="disc-local-b" data-when="2026-09-17T06:07:04.345Z">
     <div class="r-comment-body"><p>The resume dry run consults the launcher&#x27;s own guards before predicting a resume, so a prediction and the real sweep name a refusal identically and a budget-held run no longer reports would_resume. Verified at the merged head. Review 79/100; its two findings (the dry-run branch calling _launcher_refusal outside the real branch&#x27;s exception handler, and the parity test enumerating guards by hand rather than enforcing the automatic-catch promise) carried as follow-ons.</p></div>
 </div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20260917T091121375999-the-sweep-fixture-declares-a-spawned-run" data-who="the-sweep-fixture-declares-a-spawned-run" data-when="2026-09-17T11:16:50+02:00">
+    <div class="r-comment-body"><p>The shared <code>_waiting_pointer</code> fixture now declares the two launcher facts observed on a real spawned-run pointer: <code>launch: "cli"</code> and a non-empty <code>argv</code>. The recorded failure reproduced first as <code>assert [] == ['r-waiting-condition']</code> at the unchanged resumed-run assertion; removing the keys after repair reproduced the same failure. With them present, the assigned cohort reports 45 passed and 0 failed, including the five other tests using the fixture. Implementation commit <code>b528813d</code>; full measurements at <a href="/reckon/evidence/archive/monitor-renders-what-it-is-given-landed.html#s6-spawned-wait-fixture">the spawned-wait fixture evidence anchor</a>.</p></div>
+</div>
 </section>
 </main>
 </body>
