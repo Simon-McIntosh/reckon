@@ -580,3 +580,43 @@ def test_non_commit_bracketed_numbers_keep_numeric_decoding() -> None:
     fields = reports.parse_manifest("artifacts: [1e5]\n")
 
     assert fields["artifacts"] == ["100000.0"]
+
+
+# A worker quoting a scalar the way YAML allows should pay nothing for the
+# habit: the quotes are presentation around the value, not part of it. Left on
+# the value they turn a recognised status into an unrecognised word, and the
+# reader refuses the whole manifest — one field's formatting costs every field.
+# Only a matching surrounding pair is stripped, so a value that merely contains
+# a quote is left exactly as written.
+@pytest.mark.parametrize("written", ['status: "complete"', "status: 'complete'"])
+def test_a_surrounding_quote_pair_costs_only_the_quotes(written: str) -> None:
+    fields = reports.parse_manifest(written)
+
+    assert fields["status"] == "complete"
+
+
+@pytest.mark.parametrize("written", ['"a', "'a"])
+def test_an_unmatched_leading_quote_is_not_a_pair(written: str) -> None:
+    # A lone quote is not a matching pair, so the value is left as written
+    # rather than half-stripped into something no worker wrote.
+    fields = reports.parse_manifest(f"status: complete\ntests: {written}\n")
+
+    assert fields["tests"] == written
+
+
+def test_an_interior_apostrophe_keeps_its_place() -> None:
+    fields = reports.parse_manifest("status: complete\ntests: it's fine\n")
+
+    assert fields["tests"] == "it's fine"
+
+
+def test_a_value_beginning_with_a_lone_quote_keeps_it() -> None:
+    fields = reports.parse_manifest('status: complete\ntests: "a\n')
+
+    assert fields["tests"] == '"a'
+
+
+def test_a_quoted_list_scalar_decodes_without_its_quotes() -> None:
+    fields = reports.parse_manifest('status: complete\nchanged_paths: "a.py, b.py"\n')
+
+    assert fields["changed_paths"] == ["a.py", "b.py"]
