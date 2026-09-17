@@ -185,6 +185,41 @@ try:
     own run. The finding does not rest on it: a dry run that returns before the thing it
     predicts cannot predict anything that thing does, whatever its guards turn out to be.</p>
 
+    <h3 id="s6-landed">&sect;6 &mdash; Landed</h3>
+
+    <p><strong>The first repair, guard consultation, was implemented.</strong> The rename
+    was the smaller change and the plan names it as the more honest one, but it fixes the
+    wording and not the harm: the damage was an operator acting on a list of runs a real
+    sweep refuses, and only consulting the guards empties that list. A dry run that cannot
+    answer the question the operator is asking, under a more honest name, is still unable
+    to answer it.</p>
+
+    <p><code>_launcher_refusal()</code> in <code>resumption.py</code> mirrors the guards
+    <code>resume_plan()</code> applies — the run must be a CLI-spawned run, its process
+    must have stopped, and its lane's budget verdict must not hold it — and is consulted
+    before the dry-run return. A refusal is reported through the same formatter the real
+    sweep uses, so a prediction and the action it predicts name a refusal identically.
+    The consult writes nothing: the launcher's ledger hold-check and its
+    <code>context_fit</code> pointer stamp are the traces of an attempt, and a prediction
+    must not leave them.</p>
+
+    <p>Parity is held by a test that asks the launcher and the prediction about the same
+    record and requires the same exception and message, rather than by asserting each side
+    separately — two surfaces compared, not two copies asserted about.</p>
+
+    <p><strong>One failure is newly visible in an adjacent test, and it is not
+    re-swallowed.</strong> <code>test_a_met_dead_wait_is_walked_by_the_resume_sweep</code>
+    builds a pointer with no <code>launch</code> field, which
+    <code>resume_plan()</code> refuses as <em>not a spawned run</em> — so a real sweep
+    never resumes it either, and the test's <code>would_resume is True</code> was true only
+    of the sweep's intention. That fixture rests on the same fail-open this section closes;
+    it needs <code>launch: "cli"</code> added, and that file lies outside this node's write
+    scope, so it is reported rather than edited. Weakening the guard to keep it green would
+    restore the defect.</p>
+
+    <p>Evidence: <a href="/reckon/evidence/archive/monitor-renders-what-it-is-given-landed.html">the
+    execution record for this plan</a>.</p>
+
     <h2 id="s7">&sect;7 &mdash; What this plan deliberately does not own</h2>
 
     <p><strong>The incident's stall diagnosis.</strong> The reporting session also concluded
