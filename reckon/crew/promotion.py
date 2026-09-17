@@ -2802,22 +2802,6 @@ def _complete_locked(
     else:
         worker_seconds_source = "unavailable"
 
-    comment = (
-        {"recorded": False, "reason": "shadow evidence does not land code"}
-        if shadow
-        else _record_landing_comment(
-            project=project,
-            plan=str(node.get("plan") or ""),
-            section=str(node.get("section") or ""),
-            run_id=run_id,
-            narrative=outcome,
-            author=_COORDINATOR_LANDING_AUTHOR,
-            when=finished,
-            root=ledger_root,
-            worker_tree=tree,
-            worker_commits=commit_list or _declared_manifest_commits(record),
-        )
-    )
     # Routing evidence is read from the delivered manifest at promotion, so a
     # later measure can separate a followup touch from a defect on the row
     # alone; the run directory is deleted after this. An unreadable manifest
@@ -2882,7 +2866,7 @@ def _complete_locked(
         tests_added=tests_added,
         gate=gate,
         failure_classification=failure_classification,
-        outcome="" if comment.get("recorded") else outcome,
+        outcome=outcome,
         manifest_path=str(record.get("manifest_path") or ""),
         scope_changed=scope_changed,
         session_id=session_id,
@@ -2947,6 +2931,33 @@ def _complete_locked(
     # already gone records each figure as absent rather than as zero, so a
     # missing measurement never reads as a free run.
     run.update(capabilities.derive_run_figures(run))
+    # The landing comment is written last of the plan-facing steps: the record
+    # is assembled, and every refusal it raises is raised, before anything is
+    # written to the plan. A promotion that refuses after writing the comment
+    # leaves the plan mutated for the caller that retries it, and the first
+    # attempt's narrative pins the outcome every later attempt must repeat
+    # byte-identical to avoid the narrative-conflict refusal. None of the
+    # checks above needs the comment to exist, so none of them follows it.
+    comment = (
+        {"recorded": False, "reason": "shadow evidence does not land code"}
+        if shadow
+        else _record_landing_comment(
+            project=project,
+            plan=str(node.get("plan") or ""),
+            section=str(node.get("section") or ""),
+            run_id=run_id,
+            narrative=outcome,
+            author=_COORDINATOR_LANDING_AUTHOR,
+            when=finished,
+            root=ledger_root,
+            worker_tree=tree,
+            worker_commits=commit_list or _declared_manifest_commits(record),
+        )
+    )
+    # The narrative the comment recorded lives in the plan, so the row carries
+    # its outcome empty rather than twice.
+    if comment.get("recorded"):
+        run["outcome"] = ""
     already_promoted = False
     try:
         written = ledger.append_run(project, run, root=ledger_root)
