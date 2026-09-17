@@ -2946,6 +2946,7 @@ def crew_member_add(project, member_id, harness, role, session, checkout_path, p
             role=role,
             session_id=session or None,
             root=checkout_path,
+            commit=True,
         )
     except ledger_module.LedgerError as exc:
         raise click.ClickException(str(exc)) from exc
