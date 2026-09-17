@@ -39,6 +39,7 @@ import time
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date, datetime
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -533,10 +534,103 @@ def audit_lifecycle(
     return findings
 
 
+class _StructureScanner(HTMLParser):
+    """Section balance and header count read from the RAW tag stream.
+
+    BeautifulSoup repairs unbalanced markup. A document whose ``<section>``
+    never closes parses into a well-formed tree, so every later check reads it
+    as valid and the audit says OK — while the authored section tree has every
+    following sibling nested inside the unclosed one. The balance question is
+    about what was authored, and only the raw tag stream carries that.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.open_sections: list[str] = []
+        self.stray_closes = 0
+        self.headers = 0
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        tag = tag.lower()
+        if tag == "section":
+            self.open_sections.append(dict(attrs).get("id") or "")
+        elif tag == "header":
+            self.headers += 1
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() != "section":
+            return
+        if self.open_sections:
+            self.open_sections.pop()
+        else:
+            self.stray_closes += 1
+
+
+def _structure_findings(html_text: str) -> list[Finding]:
+    """Report structural imbalance the parser would otherwise repair away.
+
+    Severity: an unbalanced section set reports at ``error``. A section that is
+    never closed makes every following sibling a child of it, so the section
+    tree a reader or a writer derives from the document no longer matches the
+    section tree that was authored — a later write aimed at one section can
+    land under another, and both reported as if it had succeeded. Because the
+    browser and the parser repair the nesting, nothing downstream notices:
+    that is a confident wrong answer, and an error is what the exit code is
+    for. A repeated document header reports at ``warn``: HTML permits several
+    headers, it renders and it does not change section nesting, but the shell
+    owns one and a second is the trace of content from another document
+    spliced into this one — real, worth surfacing, not worth failing a build
+    over on its own.
+    """
+    scanner = _StructureScanner()
+    try:
+        scanner.feed(html_text or "")
+        scanner.close()
+    except Exception:  # noqa: BLE001 - never let a balance scan crash the audit
+        return []
+
+    out: list[Finding] = []
+    for sid in scanner.open_sections:
+        label = f' id="{sid}"' if sid else ""
+        out.append(
+            Finding(
+                "error",
+                "section-unclosed",
+                f"<section{label}> is never closed — every element after it"
+                " nests inside it instead of standing beside it",
+            )
+        )
+    if scanner.stray_closes:
+        noun = "closing tag" if scanner.stray_closes == 1 else "closing tags"
+        out.append(
+            Finding(
+                "error",
+                "section-stray-close",
+                f"{scanner.stray_closes} stray </section> {noun} with no"
+                " matching <section> open — an authored boundary is misplaced",
+            )
+        )
+    if scanner.headers > 1:
+        out.append(
+            Finding(
+                "warn",
+                "header-duplicate",
+                f"document carries {scanner.headers} <header> elements; the"
+                " document shell owns one, and a second signals content from"
+                " another document spliced into this one",
+            )
+        )
+    return out
+
+
 def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
     """Audit one document's HTML, returning findings (worst-first ordering)."""
     soup = BeautifulSoup(html_text or "", "html.parser")
     out: list[Finding] = []
+
+    # (g) Structural balance — read from the raw tags, since the parser
+    # repairs an unclosed section into a well-formed tree (see _StructureScanner).
+    out.extend(_structure_findings(html_text))
 
     # Document type — research/doc are non-actionable; plan requires status.
     rt = soup.find("meta", attrs={"name": "reckon-type"})
