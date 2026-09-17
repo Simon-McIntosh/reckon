@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-17">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="25">
 <meta name="plan-impl" content="0.25">
 </head>
 <body>
@@ -199,7 +199,7 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="unpromoted-grace-seconds" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="unpromoted-grace-seconds" data-choice="900" data-by="Simon McIntosh" data-when="2026-09-17T20:41:32+00:00">
     <p class="r-dec-q">Dispatch refuses while any run is unpromoted beyond a 5-minute
         grace. Measured across 31 promotions: three refusal episodes, about 10.5 minutes of
         stalled lane refill, every refusal correct by its rule — and each one fired on
@@ -211,9 +211,9 @@
       <button class="r-opt" data-value="keep-5m">keep 5 minutes</button>
       <button class="r-opt" data-value="scale-to-verification">derive it from measured verification time</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Three fleets report a two-to-six minute promotion beat, and the grace was five minutes — inside normal operation rather than outside it. A coordinator that merges, verifies the marker at the merged head, and promotes one node routinely exceeds five minutes while doing its job correctly, so the refusal fired on work in progress. Fifteen minutes leaves nine minutes of margin over the slowest observed beat and still surfaces an abandoned pile within a quarter hour. Measured tonight: the refusal named twenty-four unreconciled runs, eighteen of which were held by a guard defect rather than by any coordinator&#x27;s inattention, so the grace was reporting a backlog it did not cause.</p>
     </div>
-<div class="r-dec" data-key="member-registration-owner" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="member-registration-owner" data-choice="the-writing-function" data-by="Simon McIntosh" data-when="2026-09-17T20:41:32+00:00">
     <p class="r-dec-q">Does member add commit its own write, or does
         dispatch register a missing member itself? The first is the smaller change; the
         second removes the reason a coordinator registers members one at a time.</p>
@@ -221,7 +221,7 @@
       <button class="r-opt" data-value="add-commits">member add commits its own write</button>
       <button class="r-opt" data-value="dispatch-registers">dispatch registers and commits</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Whichever code performs the roster write commits it. This is the principle the roster-loss guard established the same evening: reap_idle_session_members passes allow_member_removal=True at its own call site because the removal is its purpose, rather than leaving a downstream write to infer intent from a member count. A registration is the same shape — routing registers the member, so routing commits it. Folding the commit into dispatch instead would work today and reopen the hole for the first caller that registers a member without going through dispatch; leaving it to the coordinator is the class of work this plan exists to remove.</p>
     </div>
 </section>
 
