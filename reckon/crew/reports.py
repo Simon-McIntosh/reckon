@@ -19,12 +19,12 @@ identifier that happens to look numeric is never re-typed. ``compose`` is what
 keeps the reader's two fixed defects fixed: ``1e5`` is an object id, not a
 float, and a value's type comes from the schema rather than from splitting.
 
-Tolerance is preserved deliberately. A body that is not well-formed YAML, or a
-field whose declared shapes the composed value does not match, falls back to the
-text the worker wrote whenever the field accepts text; a field that accepts
-neither the composed shape nor text is refused, naming the field and the shape
-the schema accepts, rather than carried forward as a plausible value is worse
-than an honest refusal.
+Tolerance is preserved deliberately. A body whose composed shape the field
+accepts is that shape; a body that is not well-formed YAML, or whose shape the
+field does not declare, falls back to the text the worker wrote whenever the
+field accepts text. A field that accepts neither the composed shape nor text is
+refused, naming the field and the shapes the schema declares, because a wrong
+value carried forward as a plausible one is worse than an honest refusal.
 """
 
 from __future__ import annotations
@@ -362,7 +362,6 @@ def _parse_text_manifest(text: str, *, path: str | None = None) -> dict[str, Any
             re.IGNORECASE,
         )
 
-
     for line_no, raw in enumerate(text.splitlines(), start=1):
         line = raw.strip()
         match = read_field(raw, line)
@@ -396,7 +395,9 @@ def _parse_text_manifest(text: str, *, path: str | None = None) -> dict[str, Any
             embedded = _embedded_manifest_key(key, _strip_matching_quotes(raw_value))
             if embedded:
                 raise ManifestParseError(
-                    _two_keys_on_one_line_message(path, line_no=line_no, line=line, first=key, second=embedded)
+                    _two_keys_on_one_line_message(
+                        path, line_no=line_no, line=line, first=key, second=embedded
+                    )
                 )
             if key == "status" and re.fullmatch(r"`[^`]+`", raw_value):
                 raw_value = raw_value[1:-1].strip()
@@ -439,22 +440,51 @@ def _decode_yaml_node(node: Any) -> Any:
     return node.value
 
 
+def _compose_node(text: str) -> Any:
+    """The composed node for a manifest body, or None if it will not compose.
+
+    A body that will not compose returns None rather than raising: a worker
+    writes prose around its manifest, and the caller falls back to the text as
+    written wherever the field's schema accepts text.
+    """
+    try:
+        return yaml.compose(text)
+    except yaml.YAMLError:
+        return None
+
+
 def _compose_document(text: str) -> Any:
     """Parse a manifest body, returning None when it is not well-formed YAML.
 
     ``yaml.compose`` is used rather than ``safe_load`` so the parse yields the
-    structure while leaving implicit scalar typing alone. A body that will not
-    compose returns None rather than raising: a worker writes prose around its
-    manifest, and the caller falls back to the text the worker wrote wherever
-    the field's schema accepts text.
+    structure while leaving implicit scalar typing alone.
     """
-    try:
-        node = yaml.compose(text)
-    except yaml.YAMLError:
-        return None
+    node = _compose_node(text)
     if node is None:
         return None
     return _decode_yaml_node(node)
+
+
+def _literal_list_items(text: str) -> list[str] | None:
+    """A sequence's items as the worker wrote them, each one literal text.
+
+    An item that YAML types as a mapping is not the writer's intent for a field
+    whose items are identifiers: a commit subject carrying a colon composes as a
+    one-key mapping, and reading that as a dict hands a later command a mapping
+    where an object id belongs. The item's own span of the source stands in for
+    it instead, which is what keeps a subject whole however it is punctuated.
+    """
+    node = _compose_node(text)
+    if not isinstance(node, yaml.SequenceNode):
+        return None
+    items = []
+    for child in node.value:
+        if isinstance(child, yaml.ScalarNode):
+            items.append(child.value)
+        else:
+            span = text[child.start_mark.index : child.end_mark.index]
+            items.append(" ".join(span.split()))
+    return items
 
 
 def _body_document(lines: list[str]) -> str:
@@ -479,7 +509,10 @@ def _joined_body_text(lines: list[str]) -> str:
 
 
 def _schema_shape_message(
-    path: str | None = None, field: str = "", shape: str = "", allowed: frozenset[str] = frozenset()
+    path: str | None = None,
+    field: str = "",
+    shape: str = "",
+    allowed: frozenset[str] = frozenset(),
 ) -> str:
     where = f" at {path}" if path else ""
     accepts = " or ".join(sorted(allowed))
@@ -501,10 +534,23 @@ def _read_field_body(
         return "\n".join(lines).strip()
     if not any(line.strip() for line in lines):
         return ""
-    value = _compose_document(_body_document(lines))
+    body = _body_document(lines)
+    if name in _IDENTIFIER_FIELDS or allowed == _LIST_SHAPE:
+        # A list field's items are the text the worker wrote, not whatever YAML
+        # types that text to be: an item carrying a colon composes as a mapping,
+        # and an object id or a path is not a dict. A mapping written under a
+        # list-only field is refused below instead.
+        items = _literal_list_items(body)
+        if items is not None:
+            return items
+    value = _compose_document(body)
     if value is None:
         # Not well-formed YAML: prose, kept as written.
-        return _joined_body_text(lines) if allowed == _LIST_SHAPE else "\n".join(lines).strip()
+        return (
+            _joined_body_text(lines)
+            if allowed == _LIST_SHAPE
+            else "\n".join(lines).strip()
+        )
     shape = _shape_of(value)
     if allowed is None or shape in allowed:
         return value
@@ -531,9 +577,9 @@ def _read_inline_value(name: str, raw_value: str) -> Any:
     names.
     """
     if name in _IDENTIFIER_FIELDS and raw_value.startswith("["):
-        value = _compose_document(raw_value)
-        if isinstance(value, list) and all(isinstance(item, str) for item in value):
-            return value
+        items = _literal_list_items(raw_value)
+        if items is not None:
+            return items
     return _strip_matching_quotes(raw_value)
 
 

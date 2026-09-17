@@ -129,3 +129,49 @@ def test_the_same_mapping_body_is_accepted_under_a_field_that_declares_it() -> N
 def test_the_refusal_is_a_crew_error_so_it_lands_on_the_cli_surface() -> None:
     with pytest.raises(CrewError):
         reports.parse_manifest("status: complete\nchanged_paths:\n  files: 2\n")
+
+
+# A commit entry is an identifier followed by its subject, so it routinely
+# carries a colon. YAML types such a line as a one-key mapping, which would hand
+# a promotion a dict where an object id belongs.
+_COMMIT_SUBJECT_WITH_A_COLON = """\
+status: complete
+commits:
+  - 1111111 read the manifest: the declared schema decides a field's type
+  - 2222222 add the second guard
+"""
+
+
+def test_a_commit_entry_keeps_a_colon_in_its_subject_as_text() -> None:
+    manifest = reports.parse_manifest(_COMMIT_SUBJECT_WITH_A_COLON)
+
+    assert manifest["commits"] == [
+        "1111111 read the manifest: the declared schema decides a field's type",
+        "2222222 add the second guard",
+    ]
+    assert all(isinstance(commit, str) for commit in manifest["commits"])
+
+
+def test_a_quoted_commit_entry_with_a_colon_is_read_the_same_way() -> None:
+    manifest = reports.parse_manifest(
+        'commits: ["1111111 read the manifest: the schema decides", "2222222 guard"]\n'
+    )
+
+    assert manifest["commits"] == [
+        "1111111 read the manifest: the schema decides",
+        "2222222 guard",
+    ]
+
+
+def test_a_colon_in_another_identifier_field_stays_text() -> None:
+    manifest = reports.parse_manifest(
+        "status: complete\n"
+        "changed_paths:\n"
+        "  - docs/a-note: the record of the run\n"
+        "  - reckon/crew/reports.py\n"
+    )
+
+    assert manifest["changed_paths"] == [
+        "docs/a-note: the record of the run",
+        "reckon/crew/reports.py",
+    ]
