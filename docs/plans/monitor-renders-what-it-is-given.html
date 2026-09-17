@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="monitor-renders-what-it-is-given">
+  <meta name="plan-title" content="The Monitor Renders What It Is Given">
+  <meta name="plan-summary" content="Carry the wait facts into the transition event, then render them: a row cannot distinguish an unrun probe from a pending one.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="4.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-informs" content="crew-observability-truth">
+  <title>The Monitor Renders What It Is Given | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-17">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 &mdash; A row that cannot tell an unrun probe from a pending one</h2>
+
+    <p>An <strong>imas-ambix</strong> incident idled four workers for 24&ndash;47 minutes
+    each. The reporting session spent the incident investigating a serving lane whose
+    request queue had been 0.0 all night, because the monitor row read as a node waiting
+    on a slow dependency. The information that would have collapsed the diagnosis in
+    seconds is computed, and never reaches the reader.</p>
+
+    <p><code>recovery.py:1890-1897</code> computes <code>wait_condition_state</code> and
+    <code>wait_observed</code>, which separate <strong>a probe that was never executed</strong>
+    from <strong>one that ran and has not gone terminal</strong>. Those are different
+    situations with different remedies, and the pane renders them identically.</p>
+
+    <p>This plan is scoped to that defect and the two sites it lives at. It does not
+    inherit the incident's own diagnosis of <em>why</em> those runs stalled &mdash; see
+    &sect;6.</p>
+
+    <h2 id="s2">&sect;2 &mdash; Two sites, and only one of them is the renderer</h2>
+
+    <p>The finding arrived as a single renderer defect: <em>the ticker reads almost none of
+    the record it renders</em>. Measured against the code, that is true for two fields and
+    false for five. The ticker cannot read what it is never handed, and the distinction
+    decides what a repair is worth.</p>
+
+    <figure>
+      <svg viewBox="0 0 720 210" width="100%" role="img"
+           aria-label="Three stages: fields computed in the run record, the transition event composed from a snapshot, and the ticker row. Five fields are dropped at the first boundary and two more at the second.">
+        <text x="8" y="20" font-family="system-ui" font-size="14" font-weight="600" fill="#1a1a1a">computed in the record</text>
+        <text x="270" y="20" font-family="system-ui" font-size="14" font-weight="600" fill="#1a1a1a">transition event</text>
+        <text x="530" y="20" font-family="system-ui" font-size="14" font-weight="600" fill="#1a1a1a">ticker row</text>
+        <text x="8" y="36" font-family="system-ui" font-size="12" fill="#666">recovery.py:1890</text>
+        <text x="270" y="36" font-family="system-ui" font-size="12" fill="#666">recovery.py:2630</text>
+        <text x="530" y="36" font-family="system-ui" font-size="12" fill="#666">ticker.py</text>
+
+        <line x1="248" y1="48" x2="248" y2="196" stroke="#bbb" stroke-width="1"/>
+        <line x1="508" y1="48" x2="508" y2="196" stroke="#bbb" stroke-width="1"/>
+
+        <text x="8" y="62" font-family="system-ui" font-size="13" fill="#1a1a1a">wait_condition_state</text>
+        <text x="8" y="82" font-family="system-ui" font-size="13" fill="#1a1a1a">wait_observed</text>
+        <text x="8" y="102" font-family="system-ui" font-size="13" fill="#1a1a1a">wait_overdue</text>
+        <text x="8" y="122" font-family="system-ui" font-size="13" fill="#1a1a1a">expected_horizon_seconds</text>
+        <text x="8" y="142" font-family="system-ui" font-size="13" fill="#1a1a1a">resume_brief</text>
+        <text x="8" y="168" font-family="system-ui" font-size="13" fill="#1a1a1a">next_action</text>
+        <text x="8" y="188" font-family="system-ui" font-size="13" fill="#1a1a1a">lifting_condition</text>
+
+        <text x="196" y="112" font-family="system-ui" font-size="13" fill="#b3261e" text-anchor="end">dropped &times;5</text>
+        <line x1="200" y1="107" x2="244" y2="107" stroke="#b3261e" stroke-width="1"/>
+
+        <line x1="150" y1="164" x2="300" y2="164" stroke="#1a1a1a" stroke-width="1"/>
+        <line x1="150" y1="184" x2="300" y2="184" stroke="#1a1a1a" stroke-width="1"/>
+        <text x="308" y="168" font-family="system-ui" font-size="13" fill="#1a1a1a">carried</text>
+        <text x="308" y="188" font-family="system-ui" font-size="13" fill="#1a1a1a">carried</text>
+
+        <text x="456" y="178" font-family="system-ui" font-size="13" fill="#b3261e" text-anchor="end">unread &times;2</text>
+        <line x1="460" y1="173" x2="504" y2="173" stroke="#b3261e" stroke-width="1"/>
+
+        <text x="530" y="112" font-family="system-ui" font-size="13" fill="#666">renders</text>
+        <text x="530" y="132" font-family="system-ui" font-size="13" fill="#666">a prose detail string</text>
+      </svg>
+      <figcaption>Seven facts are computed per run. Five never enter the transition event;
+      two enter it and the renderer does not read them. The row is composed from a
+      pre-formatted <code>detail</code> string instead.</figcaption>
+    </figure>
+
+    <table>
+      <thead>
+        <tr><th>Field</th><th>Computed</th><th>In the event</th><th>Read by the ticker</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>wait_condition_state</code></td><td>yes</td><td><strong>no</strong></td><td>no</td></tr>
+        <tr><td><code>wait_observed</code></td><td>yes</td><td><strong>no</strong></td><td>no</td></tr>
+        <tr><td><code>wait_overdue</code></td><td>yes</td><td><strong>no</strong></td><td>no</td></tr>
+        <tr><td><code>expected_horizon_seconds</code></td><td>yes</td><td><strong>no</strong></td><td>no</td></tr>
+        <tr><td><code>resume_brief</code></td><td>yes</td><td><strong>no</strong></td><td>no</td></tr>
+        <tr><td><code>next_action</code></td><td>yes</td><td>yes (<code>:2655</code>)</td><td><strong>no</strong></td></tr>
+        <tr><td><code>lifting_condition</code></td><td>yes</td><td>yes (<code>:2653</code>)</td><td><strong>no</strong></td></tr>
+      </tbody>
+    </table>
+
+    <p>The event is composed at <code>recovery.py:2630-2656</code> and its only
+    <code>event.update()</code> adds <code>_spend_facts</code>, which is spend figures alone.
+    The ticker reads twenty-two keys off <code>event</code>; neither
+    <code>next_action</code> nor <code>lifting_condition</code> is among them, and it
+    composes the row from the pre-formatted <code>detail</code> string instead.</p>
+
+    <h2 id="s3">&sect;3 &mdash; Carry the five facts into the transition event</h2>
+
+    <p>Thread <code>wait_condition_state</code>, <code>wait_observed</code>,
+    <code>wait_overdue</code>, <code>expected_horizon_seconds</code> and
+    <code>resume_brief</code> from the snapshot into the event built at
+    <code>recovery.py:2630</code>, beside the <code>next_action</code> and
+    <code>lifting_condition</code> already carried there.</p>
+
+    <p>Every figure travels numerically and <code>None</code> stays the explicit unmeasured
+    state, matching the contract <code>_spend_facts</code> already states in its own
+    docstring: a zero would assert a measurement nobody took. This section adds no
+    rendering and changes no row; it makes the facts available to one.</p>
+
+    <h2 id="s4">&sect;4 &mdash; Render the facts the row is now given</h2>
+
+    <p>With the fields carried, the renderer can answer the question the incident asked.
+    Three changes, all in <code>ticker.py</code>:</p>
+
+    <ul>
+      <li><strong>An unrun probe reads differently from a pending one.</strong>
+      <code>wait_condition_state</code> distinguishes them; today both render as
+      <code>wait-aged</code>.</li>
+      <li><strong>The age carries its horizon.</strong> The row renders
+      <code>waiting 1870s</code> raw while <code>expected_horizon_seconds</code> and a
+      computed <code>wait_overdue</code> sit unused; <code>2.1&times; over horizon</code>
+      costs nothing once the fields arrive.</li>
+      <li><strong>The imperative strings survive the tail.</strong> <code>next_action</code>
+      and <code>resume_brief</code> are the two fields telling a reader what to do, and the
+      row truncates them.</li>
+    </ul>
+
+    <h2 id="s5">&sect;5 &mdash; One letter, two quantities</h2>
+
+    <p><code>ticker.py:230</code> maps <code>"waiting": "q"</code>, so the compact counter
+    <code>5q</code> means five runs waiting. It is read as engine queue depth, on a screen
+    that sits beside a model serve with a genuine request queue. Two quantities, one letter,
+    adjacent on the display. This is the cheapest of the three repairs and independent of
+    the other two.</p>
+
+    <h2 id="s6">&sect;6 &mdash; A dry run that returns before the thing it predicts</h2>
+
+    <p>The same shape at a third site, in <code>resumption.py</code>'s <code>sweep()</code>:</p>
+
+    <pre><code>if dry_run:
+    resumed.append({**entry, "would_resume": True, ...})
+    continue
+try:
+    launched = _resume(...)</code></pre>
+
+    <p>The dry-run branch returns before the launcher is ever called, so
+    <strong>every guard the launcher applies is unreachable in a dry run</strong>.
+    <code>would_resume: True</code> means <em>the sweep would call the launcher</em>, not
+    <em>the launcher would resume</em>. Two different claims sharing one name, and the
+    weaker one is reported.</p>
+
+    <p>Measured consequence from the same incident: a hand
+    <code>crew resume-ready --dry-run</code> reported <code>checked 4, would_resume 4,
+    skipped 0</code> for four runs a real sweep refuses. Acting on that output would have
+    attempted to resume four actively-working sessions. <strong>A dry run whose purpose is
+    to predict the real action over-reports systematically, in the direction that causes
+    harm.</strong></p>
+
+    <p>Two repairs are available and either suffices: consult the launcher's guards before
+    the dry-run return, or have the dry run report what the launcher would say rather than
+    what it would be asked. The second is the smaller change and the more honest name.</p>
+
+    <p><strong>Verification limit, carried deliberately.</strong> The branch structure is
+    confirmed in source. The launcher's live-session guard is <em>reported, not verified</em>
+    &mdash; it comes from another coordinator's CLI output reading
+    <code>resume-refused because the process is live</code>, which is their reading of their
+    own run. The finding does not rest on it: a dry run that returns before the thing it
+    predicts cannot predict anything that thing does, whatever its guards turn out to be.</p>
+
+    <h2 id="s7">&sect;7 &mdash; What this plan deliberately does not own</h2>
+
+    <p><strong>The incident's stall diagnosis.</strong> The reporting session also concluded
+    that no sweeper was running. That is false: the follower <em>is</em> the sweeper, at
+    <code>cli.py:1791</code>, inside <code>_sweep_on_cadence()</code> in the
+    <code>while not _stopped():</code> loop, cadence-gated and exception-wrapped. Two live
+    registered followers were confirmed on that project. Why those four runs idled is
+    <strong>unestablished</strong>, and this plan does not inherit a mechanism for it.</p>
+
+    <p>That separation is the reason this finding survived verification when six earlier
+    hypotheses about the same surface did not. It arrived as an observation with its
+    mechanism explicitly withheld; every one of the six that died arrived bundled with an
+    explanation.</p>
+
+    <h2 id="s8">&sect;8 &mdash; Order, and the falsifier that enforces it</h2>
+
+    <p><strong>&sect;3 lands before &sect;4.</strong> A renderer-only repair delivers
+    <code>next_action</code> and <code>lifting_condition</code>, leaves an unrun probe and a
+    pending one rendering identically, and would be reported as addressing the incident's
+    cause. That is worse than not shipping: it closes the visible half and reports the
+    diagnostic half closed with it.</p>
+
+    <p>The measure that enforces the order is a paired assertion:</p>
+
+    <ul>
+      <li><strong>Falsifier:</strong> a run whose <code>wait_condition_state</code> is
+      <em>never-executed</em> renders a different row from one that is <em>pending</em>.
+      This fails if only &sect;4 lands, because the field never arrives.</li>
+      <li><strong>Positive control:</strong> the same test asserts <code>next_action</code>
+      reaches the row. Without it the falsifier can pass vacuously on a build where nothing
+      renders at all.</li>
+    </ul>
+
+    <p>Neither half is sufficient alone, which is the property this plan's measures are
+    built around.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="waiting-counter-letter" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">What replaces q for the waiting counter, given that
+        the compact letters are a display contract readers have memorised?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="w-for-waiting">rename to a free letter</button>
+      <button class="r-opt" data-value="drop-the-counter">drop the waiting counter entirely</button>
+      <button class="r-opt" data-value="keep-and-caption">keep q and caption the row</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-mrwig-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-17" data-recommends-skill="/reckon-ship monitor-renders-what-it-is-given §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Carry the five wait facts into the transition event, before any renderer change</h4>
+    <div class="r-fu-body"><p>§3 first and alone. The five fields computed at <code>recovery.py:1890-1897</code> do not reach the event composed at <code>:2630-2656</code>, so the renderer cannot read them however it is written. §4 lands after, and its falsifier — a never-executed <code>wait_condition_state</code> rendering differently from a pending one — fails if §4 ships alone, which is the property that enforces the order.</p><p><strong>Sprint deliberately unset.</strong> The sibling plans carry <code>plan-sprint: S18</code>, and S18 has no record in the project index: five plans declare it, the index carries S3, S4, S5, S6, S8, S12, S13 and S17 only, and a sprint-scoped roadmap read answers from the meta tags rather than from any sprint. Scheduling this plan onto a sprint that does not exist would add a sixth declaration to the same gap. Left unscheduled pending the lead's decision on whether S18 is created or the work moves to S17.</p><p>§6 is independent of both and can run in parallel: a different file, a different failure, and no shared write scope.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship monitor-renders-what-it-is-given §3</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>
