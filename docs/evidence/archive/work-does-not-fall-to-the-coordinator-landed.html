@@ -265,6 +265,63 @@
     hold before and after the run.</p>
   </section>
 
+
+    <section id="s2-roster-loss-guard">
+      <h2>§2 — A ledger write never drops a member it was not asked to drop.
+
+      <p><strong>Defect guarded.</strong> A ledger write that replaces the roster
+      with fewer members than the stored version holds is how a roster empties
+      itself through a write meant for something else: the write succeeds, the
+      commit reports success, and the loss surfaces later as a dispatch refusing
+      a member the coordinator registered moments before. The best available
+      reproduction is the versioned write path: the guard compares the member
+      id set of the incoming write against the ledger version it replaces and
+      refuses when an id the stored roster holds is left out, naming the dropped
+      ids and the intent flag that permits a real removal.</p>
+
+      <p><strong>Identity, not count.</strong> The comparison is by member id set
+      rather than by member count, because a same-count swap loses an id while
+      the count reports nothing missing. A swap is refused by the same rule that
+      refuses a drop.</p>
+
+      <table>
+        <thead><tr><th>Measure</th><th>Base <code>44a46be8</code></th><th>Landed</th><th>Delta</th></tr></thead>
+        <tbody>
+          <tr><td>Falsifiers: drop-to-zero, drop-of-one, drop-two-add-one, same-count swap, missing <code>members</code> key</td><td>no refusal exists; the write empties the roster</td><td>5 refused, roster byte-unchanged after each</td><td>guard fires on the whole domain, not just 87&rarr;0</td></tr>
+          <tr><td>Positive controls: new registration, re-registration, member-preserving promotion write, absent ledger created from empty</td><td>pass</td><td>pass</td><td>the guard stays quiet where it should</td></tr>
+          <tr><td>Explicit removal with <code>allow_member_removal=True</code> (one member and all members)</td><td>n/a</td><td>succeeds</td><td>a genuine removal stays possible and is stated at the call site</td></tr>
+          <tr><td>Focused suite <code>tests/test_roster_loss_guard.py</code></td><td>n/a (new file)</td><td>14 passed</td><td>13 guard cases plus the reaper's granted intent</td></tr>
+          <tr><td>Cohort: <code>test_ledger.py</code>, <code>test_roster_write_commits.py</code>, <code>test_crew_members.py</code></td><td>1 failed / 94 passed; 3 passed; 3 failed</td><td>1 failed / 94 passed; 3 passed; 3 failed</td><td>0 added failure ids, same ids both trees</td></tr>
+        </tbody>
+      </table>
+
+      <p><strong>The one production caller entitled to the removal.</strong>
+      <code>reap idle-members</code> filters the roster down to the surviving rows
+      and writes it back &mdash; a deliberate removal and the whole purpose of the
+      reaper, which retires idle session-owned rows while retaining their run
+      history. It is the single caller that declares
+      <code>allow_member_removal=True</code>; every other caller passes nothing
+      and has its unrequested decrease refused. Reproduction in both directions
+      with one idle <code>session-abc</code> member in a temp checkout and a temp
+      configuration home:</p>
+      <table>
+        <thead><tr><th>Tree</th><th>Reap result</th><th>Roster after</th></tr></thead>
+        <tbody>
+          <tr><td>Base <code>44a46be8</code></td><td>reaped <code>session-abc</code></td><td><code>[]</code></td></tr>
+          <tr><td>Guard without the intent flag</td><td>raised after 12 attempts; dispatch fails loud</td><td><code>['session-abc']</code></td></tr>
+          <tr><td>Landed <code>56953220</code></td><td>reaped <code>session-abc</code>, active member kept</td><td><code>['clive-1']</code></td></tr>
+        </tbody>
+      </table>
+
+      <p>Every fixture is a throwaway checkout under a temporary directory with
+      <code>RECKON_HOME</code> pointed at a temporary tree; the closing test
+      asserts the refusal left the ledger byte-identical, the temp tree
+      unchanged, and the configuration home outside the real one. Product paths:
+      <code>reckon/ledger.py</code> (the guard and its <code>dropped_member_ids</code>
+      helper) and <code>reckon/crew/routing.py</code> (the reaper's declared
+      intent). Regression coverage: <code>tests/test_roster_loss_guard.py</code>.
+      Logs are recorded in the node manifest.</p>
+    </section>
   </main>
 </body>
 </html>

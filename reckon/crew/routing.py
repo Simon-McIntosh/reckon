@@ -1349,7 +1349,12 @@ def reap_idle_session_members(
             entry for entry in data["members"] if str(entry.get("id")) not in reaped
         ]
         try:
-            ledger.write(project, data, version, root=root)
+            # The reap is the one caller entitled to drop roster members: this
+            # function computes `reaped` above and the removal is its whole
+            # purpose, so the intent is declared here rather than inferred from
+            # a member count. Every other caller must pass no flag and have its
+            # unrequested decrease refused.
+            ledger.write(project, data, version, root=root, allow_member_removal=True)
         except ledger.LedgerError:
             if attempt + 1 >= max(1, attempts):
                 raise CrewError(
