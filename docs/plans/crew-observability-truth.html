@@ -661,6 +661,24 @@
       at each indent. Landed under commit <code>dbd96dbd</code>. Full record:
       <a href="/reckon/evidence/archive/crew-observability-truth-landed#block-scalar-ends-at-the-field-column">&#167;12 block-scalar evidence</a>.</p>
 
+    <p class="landed-summary">A document whose section tree is unbalanced now reports it instead of
+      passing. The balance check reads the raw tag stream rather than the parsed tree, because
+      BeautifulSoup repairs an unclosed <code>&lt;section&gt;</code> into a well-formed one: every
+      later check then reads a valid document while every element after the unclosed section is in
+      fact its child, which is a confident wrong answer rather than an honest absence. An unclosed
+      section and a stray closing tag report at <code>error</code>, since the parser re-parents
+      following siblings for the first and drops the second, so the rendered structure and the
+      authored one disagree silently in both cases; a second <code>&lt;header&gt;</code> reports at
+      <code>warn</code>, since it renders and moves no section boundary, but the shell owns one
+      header and a second is the trace of content from another document spliced in. Verified on the
+      document that raised it: it reported <code>OK</code> at the unrepaired source and reports one
+      error plus one warning at the check. Thirteen cases pass, seven of which fail at the
+      unrepaired source; the doccheck-asserting cohort reads 7 failed / 41 passed at base and 48
+      passed at the check, zero added failures. Across <code>docs/</code> the check flags 21
+      documents (7 with an unclosed section, 19 with a repeated header), reported as debt rather
+      than repaired. Landed under commit <code>92be14fd</code>. Full record:
+      <a href="/reckon/evidence/archive/crew-observability-truth-landed#structure-balance-reported">&#167;12 structure balance landed</a>.</p>
+
     <h2 id="s13">&#167;13 &mdash; A quiet fleet and a working one look identical, because nothing reports a wave</h2>
     <p><strong>Directed by the lead 2026-09-09, after a session spent counting completions by
     hand.</strong> Every signal this surface emits is per-run. The follower reports one line per
