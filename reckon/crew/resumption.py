@@ -53,6 +53,7 @@ from reckon import _backends, ledger
 from reckon import budget as budget_module
 from reckon.crew.dispatch import (
     BudgetHold,
+    _actionable_budget_hold,
     _backend_settings,
     _spawn,
     record_resumption,
@@ -519,6 +520,85 @@ def _claimed_write_paths(record: Mapping[str, Any]) -> list[str]:
     return sorted(claimed)
 
 
+def _readonly_budget_verdict(
+    record: Mapping[str, Any],
+    *,
+    config: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    """The lane's budget verdict for a resume, with none of the durable writes.
+
+    The launcher judges a resume through the recorded readings and the lane's own
+    account surface, then files the check it made into the ledger. A prediction
+    must see the same evidence — the guards must not be able to disagree about
+    the lane — but it must not record a check for an attempt that never happens,
+    because a hold check is the durable thing a later wave reads to decide
+    whether a lane is open.
+    """
+    project = str(record.get("project") or "")
+    root = record.get("repo")
+    backend_name = str(record.get("backend") or "")
+    backend = _backend_settings(record, config)
+    recorded = budget_module.latest_recorded(project, root=root, config=config)
+    state = budget_module.state_for(
+        backend_name,
+        backend,
+        recorded=recorded.get(backend_name),
+        unattributed=recorded.unattributed,
+    )
+    return budget_module.decide(state, budget_module.policy(config), purpose="resume")
+
+
+def _launcher_refusal(
+    record: Mapping[str, Any],
+    *,
+    config: Mapping[str, Any] | None,
+) -> BaseException | None:
+    """The refusal the launcher would return for this run, or None.
+
+    A dry run exists to predict the real action, so it reports what the launcher
+    would do rather than that the launcher would be asked: this consults the
+    guards the launcher applies before it builds a resume plan, without an
+    attempt and without the writes an attempt leaves behind. The guards return
+    the same exception the launcher raises, so one formatter names a refusal
+    identically whichever path met it.
+
+    A change here that the launcher does not make, or the launcher guarding
+    something this does not, is caught by the parity tests beside this: for
+    every guard, `resume_plan` and this function must refuse the same record
+    with the same message.
+    """
+    run_id = str(record.get("run_id") or "")
+    if record.get("launch") != "cli":
+        return CrewError(f"run {run_id!r} is not a spawned run; resume it in-harness")
+    if process_alive(record.get("pid")) is True:
+        return CrewError(
+            f"run {run_id!r} still has a live process; observe or stop it before resuming"
+        )
+    verdict = _readonly_budget_verdict(record, config=config)
+    if verdict["held"]:
+        return _actionable_budget_hold(verdict, config=config)
+    return None
+
+
+def _refusal_entry(entry: Mapping[str, Any], exc: BaseException) -> dict[str, Any]:
+    """The skip record a launcher refusal produces, whichever path met it.
+
+    Shared so a dry run's report and a real sweep's report name the same
+    refusal with the same reason and the same detail — a prediction that reads
+    differently from the thing it predicts is not a prediction.
+    """
+    if isinstance(exc, BudgetHold):
+        return {
+            **entry,
+            "reason": "hold-in-force",
+            "detail": (
+                "the lane's own budget verdict still holds it: "
+                + str(exc.verdict.get("reason") or exc)
+            ),
+        }
+    return {**entry, "reason": "resume-refused", "detail": str(exc)}
+
+
 def _resume(
     run_id: str,
     record: Mapping[str, Any],
@@ -949,6 +1029,14 @@ def sweep(
             )
             continue
         if dry_run:
+            # The launcher's own guards are consulted here rather than assumed:
+            # `would_resume` claims the launcher would resume, so a record the
+            # launcher would refuse is reported as the refusal it would meet,
+            # with the reason and detail a real sweep would report for it.
+            refusal = _launcher_refusal(pointer, config=config)
+            if refusal is not None:
+                skipped.append(_refusal_entry(entry, refusal))
+                continue
             resumed.append(
                 {
                     **entry,
@@ -969,20 +1057,8 @@ def sweep(
                 launcher=launch,
                 advice=advice,
             )
-        except BudgetHold as exc:
-            skipped.append(
-                {
-                    **entry,
-                    "reason": "hold-in-force",
-                    "detail": (
-                        "the lane's own budget verdict still holds it: "
-                        + str(exc.verdict.get("reason") or exc)
-                    ),
-                }
-            )
-            continue
-        except (CrewError, OSError) as exc:
-            skipped.append({**entry, "reason": "resume-refused", "detail": str(exc)})
+        except (BudgetHold, CrewError, OSError) as exc:
+            skipped.append(_refusal_entry(entry, exc))
             continue
         _stamp_resumption_trigger(run_id, signature)
         resumed.append(

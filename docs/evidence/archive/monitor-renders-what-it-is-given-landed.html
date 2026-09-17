@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="monitor-renders-what-it-is-given-landed">
+  <meta name="plan-title" content="The Fleet Pane — Execution Record">
+  <meta name="plan-summary" content="Cumulative execution evidence for the fleet pane: the wait facts the event never carried, and the dry run that returned before the launcher it predicts. One anchor per landed outcome.">
+  <meta name="plan-evidence-for" content="monitor-renders-what-it-is-given">
+  <meta name="plan-tags" content="crew,reckon-tooling,evidence">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <title>The Fleet Pane — Execution Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+  <style>
+    .flow { width: 100%; max-width: 760px; height: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+    table.measures { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+    table.measures th, table.measures td {
+      text-align: left; padding: 0.35rem 0.6rem;
+      border-bottom: 1px solid rgba(0,0,0,0.12); vertical-align: top;
+    }
+    table.measures th { font-family: ui-monospace, monospace; font-weight: 600; }
+    table.measures td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    pre.quote { background: #1c1c1c; color: #e8e6e1; padding: 0.7rem 0.9rem; border-radius: 4px; font-size: 0.78rem; overflow-x: auto; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>The Fleet Pane — Execution Record</h1>
+  <p class="lede">One anchor per landed outcome, for the plan
+  <code>monitor-renders-what-it-is-given</code>. Each entry states what changed, the
+  evidence that it changed, and what the change costs.</p>
+
+  <section id="s6">
+    <h2>§6 — The dry run consults the launcher it predicts</h2>
+
+    <p><strong>Outcome.</strong> <code>sweep()</code> judges an eligible run, then — in
+    dry-run mode — returns before a launcher is ever consulted. Its report said
+    <code>would_resume: True</code>, which reads as <em>the launcher would resume this
+    run</em> and means only <em>the sweep would call the launcher</em>. A prediction is now
+    made by consulting the launcher's own guards, so the two claims are one claim.</p>
+
+    <p>Both repairs the plan offers were available. <strong>The guard consultation was
+    chosen over the rename</strong>, because a rename fixes the wording and not the harm:
+    the incident's damage was an operator acting on a list of runs that a real sweep would
+    refuse, and only consulting the guards can empty that list. The rename would have left
+    the dry run unable to answer the question it is asked, under a more honest name.</p>
+
+    <figure>
+      <svg class="flow" viewBox="0 0 760 260" role="img"
+           aria-label="Control flow: the dry-run branch and the launcher branch each consult the same three guards">
+        <g fill="none" stroke="#4a6b8a" stroke-width="1.5">
+          <rect x="20" y="90" width="150" height="46" rx="6"/>
+          <rect x="250" y="20" width="180" height="46" rx="6" stroke-dasharray="5 4"/>
+          <rect x="250" y="160" width="180" height="46" rx="6"/>
+          <rect x="500" y="90" width="230" height="46" rx="6"/>
+        </g>
+        <g fill="#e8e6e1" font-size="12">
+          <text x="34" y="110">candidate passes the</text>
+          <text x="34" y="126">sweep's own eligibility</text>
+        </g>
+        <g fill="#e8e6e1" font-size="12">
+          <text x="262" y="40">dry run — was</text>
+          <text x="262" y="56">would_resume: true</text>
+        </g>
+        <g fill="#e8e6e1" font-size="12">
+          <text x="262" y="180">real run — _resume()</text>
+          <text x="262" y="196">→ resume_plan()</text>
+        </g>
+        <g fill="#e8e6e1" font-size="12">
+          <text x="512" y="104">launch ≠ cli · live process ·</text>
+          <text x="512" y="120">budget verdict held</text>
+        </g>
+        <g stroke="#b8562f" stroke-width="2" fill="none" marker-end="url(#a)">
+          <path d="M170 105 L250 45"/>
+          <path d="M170 120 L250 178"/>
+        </g>
+        <g stroke="#3f8f5f" stroke-width="2" fill="none" marker-end="url(#a)">
+          <path d="M430 45 L500 100"/>
+          <path d="M430 178 L500 126"/>
+        </g>
+        <defs>
+          <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="#3f8f5f"/>
+          </marker>
+        </defs>
+        <text x="250" y="248" fill="#8a7a6a" font-size="11">both branches now arrive at the same three guards; the dashed path is the one that did not consult them.</text>
+      </svg>
+      <figcaption><code>_launcher_refusal()</code> mirrors the guards
+      <code>resume_plan()</code> applies, read-only, and is consulted before the dry run
+      returns.</figcaption>
+    </figure>
+
+    <h3>The defect, reproduced before it was repaired</h3>
+    <p>The pre-change branch, at <code>reckon/crew/resumption.py</code>:</p>
+    <pre class="quote">if dry_run:
+    resumed.append({**entry, "would_resume": True, ...})
+    continue
+try:
+    launched = _resume(...)</pre>
+    <p>Disabling the new consultation restores that behaviour exactly. Under it, a run
+    whose lane's budget verdict holds it — which <code>resume_plan()</code> refuses — is
+    reported by the dry run as a resume: with the guards unconsulted,
+    <code>report["skipped"]</code> for that run is empty and the run appears under
+    <code>resumed</code>. The parity test fails on it (<code>the prediction missed the
+    'budget' guard</code>), and the end-to-end assertion fails with
+    <code>IndexError: list index out of range</code> on <code>skipped[0]</code> — the
+    over-report the plan describes, shown rather than asserted.</p>
+
+    <h3>What was measured</h3>
+    <table class="measures">
+      <tr><th>measure</th><th>value</th></tr>
+      <tr><td>files changed</td><td class="num">reckon/crew/resumption.py (+90/−14); tests/test_dry_run_predicts_the_launcher.py (new, 7 tests)</td></tr>
+      <tr><td>cohort run</td><td class="num">116 tests over every file asserting on resumption.py</td></tr>
+      <tr><td>failures at base 7efeeb77</td><td class="num">1 (test_mcp_recovery.py::test_resume_reattaches_a_session_only_the_stream_carries, KeyError at the same line before and after)</td></tr>
+      <tr><td>failures after</td><td class="num">2 — one added, disclosed below</td></tr>
+      <tr><td>added-failure attribution</td><td class="num">tests/test_a_met_wait_is_ready_not_abandoned.py::test_a_met_dead_wait_is_walked_by_the_resume_sweep</td></tr>
+    </table>
+
+    <h3>The one added failure, and why it is not re-swallowed</h3>
+    <p>Its fixture (<code>_waiting_pointer</code>) builds a pointer with no
+    <code>launch</code> field, no <code>argv</code> and no <code>repo</code> — a record
+    <code>resume_plan()</code> refuses with <em>not a spawned run</em>, so a real sweep
+    never resumes it either. The test asserted <code>would_resume is True</code> for it,
+    which is true only of the sweep's intention and never of the launcher's action: the
+    fixture was resting on precisely the fail-open this node closes. The repair is one
+    <code>launch: "cli"</code> (plus <code>argv</code>) in that fixture — a file outside
+    this node's write scope, reported rather than edited. Weakening the guard to keep the
+    test green would restore the defect and report safety it does not provide.</p>
+
+    <h3>What the guard consultation does not do</h3>
+    <p>It does not write. <code>resume_plan()</code> records a budget check into the ledger
+    and stamps the pointer with an unchecked context-fit marker; a prediction that did
+    either would leave the durable traces of an attempt that never happened, so the
+    budget guard is evaluated from the same recorded evidence without the ledger write.
+    It also carries no live provider probe of its own beyond what the recorded evidence
+    holds — the guard reads what the launcher reads, and a probe the launcher would make
+    is made here too, because a prediction that cannot see the launcher's evidence cannot
+    predict the launcher.</p>
+  </section>
+</main>
+</body>
+</html>
