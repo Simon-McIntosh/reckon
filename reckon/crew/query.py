@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+import json
+import re
+from collections.abc import Iterable, Mapping, Sequence
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -11,7 +14,7 @@ from reckon.crew.node import normalize_section
 from reckon.crew.recovery import classify_pointer
 from reckon.crew.resumption import resolve_session
 from reckon.crew.routing import mounted_repository_projects
-from reckon.crew.runs import list_live
+from reckon.crew.runs import crew_home, list_live
 
 DEFAULT_RUN_FIELDS = (
     "run_id",
@@ -356,4 +359,312 @@ def runs_view(
         "scope": selected_scope,
         "count": len(rows),
         "rows": rows,
+    }
+
+
+# --- Watch-event extraction -------------------------------------------------
+#
+# A watch stream records one row per observed fleet state, in two shapes: a
+# transition (a node moved from one state to another) and a baseline (a node's
+# state as first seen, carrying no source state because nothing moved). Both a
+# dispatch that a follower first observes and a whole-fleet re-inventory after a
+# follower restart are written as baseline rows, so neither event class answers
+# the question a reader has — *which rows are arrivals*. Two filters that look
+# natural are both wrong, measured against the live streams on this workstation:
+#
+#   * keeping only ``event == "transition"`` drops genuine arrivals. Of 2316
+#     nodes across the 6 live streams, 2313 first appear as a baseline row and
+#     13 never had a transition row at all, so the filter reports a fleet that
+#     never dispatched most of what ran.
+#   * keeping every baseline row invents arrivals. A follower that re-attaches
+#     re-inventories every live run in one instant, emitting one baseline row
+#     per run: the largest such burst on disk covers 9 nodes in the same second,
+#     every one of them already carrying earlier rows.
+#
+# The discriminator is first appearance per node, not event class: the earliest
+# row for a node is its arrival whatever its class, later transitions are real
+# state changes, and later baselines are re-inventory. One refinement is needed
+# for the case a follower restart produces and that rule alone gets wrong — a
+# node that was dispatched before the recording began has no earlier row, so its
+# re-inventory baseline reads as its arrival. A re-inventory burst is therefore
+# recognised directly: a same-instant group of two or more baseline rows in one
+# stream, at least one of whose members already has an earlier row, is one
+# inventory snapshot of a fleet that was already running. Every member of such a
+# group is re-inventory even when it is that node's only row. Genuine arrivals
+# that share a second are left alone by that test, which matters because they
+# exist: a measured 8-node wave and a 3-node wave were both first observed in a
+# single poll, sharing a stamp but carrying no already-known member.
+#
+# Stamps are the other half. A stream is mixed-format: JSON rows carry
+# ``observed_at`` in UTC, and rendered ticker rows carry a wall clock in the
+# reader's LOCAL zone with no offset and no date. A reader that merges the two
+# as if both were UTC manufactures an ordering that is not in the data — a
+# coordinator reading the live streams did exactly that and turned one
+# concurrent ascent into a descending limb. So every stamp this module returns
+# is either explicit UTC or marked unknown; a rendered row's zone is never
+# assumed. Ordering never depends on a stamp at all: rows are positioned by
+# their position in the append-only stream, which is chronological by
+# construction, so an unknown-zone row is ordered correctly and only its stamp
+# is withheld.
+
+WATCH_EVENT_SUFFIX = ".events"
+_RENDERED_ROW = re.compile(r"^(?P<clock>\d{2}:\d{2}:\d{2})\s+(?P<body>.*)$")
+_TRANSITION_ARROW = "\N{RIGHTWARDS ARROW}"
+_BASELINE_ARROW = "\N{BULLET}"
+
+
+def watch_event_paths(*, home: Path | None = None) -> list[Path]:
+    """Return every project's watch stream, newest file written last."""
+    root = (home or crew_home()) / "watch"
+    if not root.is_dir():
+        return []
+    return sorted(root.glob(f"*{WATCH_EVENT_SUFFIX}"))
+
+
+def _normalize_stamp(value: Any) -> tuple[str | None, str]:
+    """Return ``(stamp_utc, zone)`` for a stored stamp.
+
+    A row that carries an explicit offset is converted to UTC and reported as
+    such. Anything else — a value with no zone, a wall clock, an unparseable
+    string — is reported as unknown rather than assumed to be UTC, because a
+    stamp invented at the row that does not carry one is indistinguishable
+    downstream from one the producer recorded.
+    """
+    text = str(value or "").strip()
+    if not text:
+        return None, "unknown"
+    candidate = text[:-1] + "+00:00" if text.endswith(("Z", "z")) else text
+    try:
+        parsed = datetime.fromisoformat(candidate)
+    except ValueError:
+        return None, "unknown"
+    if parsed.tzinfo is None:
+        return None, "unknown"
+    return parsed.astimezone(UTC).isoformat(), "utc"
+
+
+def _project_of(path: Path) -> str:
+    """Return the project a watch stream belongs to, from its file name."""
+    stem = path.name[: -len(WATCH_EVENT_SUFFIX)]
+    return stem.rsplit("-", 1)[0] if "-" in stem else stem
+
+
+def _rendered_row(text: str) -> dict[str, Any] | None:
+    """Parse one rendered ticker line into the fields it actually carries.
+
+    The pane's columns are fixed-width, but this reads tokens rather than
+    offsets: the role and session columns are conditionally populated, and a
+    parser keyed to a column position would report the neighbouring field the
+    first time one of them is empty. The node is therefore the last token
+    before the arrow (the source state, if any, having been peeled off first).
+    """
+    match = _RENDERED_ROW.match(text)
+    if match is None:
+        return None
+    body = match.group("body").strip()
+    from_state: str | None = None
+    if _BASELINE_ARROW in body:
+        left, _, right = body.partition(_BASELINE_ARROW)
+        event = "baseline"
+    elif _TRANSITION_ARROW in body:
+        left, _, right = body.partition(_TRANSITION_ARROW)
+        event = "transition"
+        tokens = left.split()
+        if len(left) < 2 or len(tokens) < 2:
+            return None
+        from_state = tokens[-1]
+        left = left[: left.rfind(from_state)]
+    else:
+        return None
+    right_tokens = right.split()
+    if not right_tokens:
+        return None
+    left_tokens = left.split()
+    if not left_tokens:
+        return None
+    return {
+        "event": event,
+        "node": left_tokens[-1],
+        "from_state": from_state,
+        "to_state": right_tokens[0],
+    }
+
+
+def parse_watch_row(
+    line: str, *, path: Path, line_number: int
+) -> dict[str, Any] | None:
+    """Return one watch row in the stable shape, or None for an unusable line.
+
+    Both renderings of the same stream land here: the JSON record the producer
+    writes, and the rendered ticker line an older one left behind. They are
+    returned in one shape so a caller cannot accidentally count both, and the
+    rendered form is marked as carrying no establishable stamp rather than
+    being dropped silently — dropping it would lose the only record of rows
+    written before the format changed.
+    """
+    text = line.strip()
+    if not text:
+        return None
+    project = _project_of(path)
+    if text.startswith("{"):
+        try:
+            record = json.loads(text)
+        except ValueError:
+            return None
+        if not isinstance(record, dict):
+            return None
+        stamp, zone = _normalize_stamp(record.get("observed_at"))
+        return {
+            "project": str(record.get("project") or project),
+            "node": str(record.get("node") or ""),
+            "run_id": record.get("run_id"),
+            "session": record.get("session") or None,
+            "event": str(record.get("event") or ""),
+            "from_state": record.get("from_state"),
+            "to_state": record.get("to_state"),
+            "observed_at_utc": stamp,
+            "observed_at_zone": zone,
+            "rendered": False,
+            "stream": str(path),
+            "line": line_number,
+        }
+    rendered = _rendered_row(text)
+    if rendered is None:
+        return None
+    return {
+        "project": project,
+        "node": str(rendered["node"]),
+        "run_id": None,
+        "session": None,
+        "event": rendered["event"],
+        "from_state": rendered["from_state"],
+        "to_state": rendered["to_state"],
+        "observed_at_utc": None,
+        "observed_at_zone": "unknown",
+        "rendered": True,
+        "stream": str(path),
+        "line": line_number,
+    }
+
+
+def read_watch_rows(paths: Iterable[Path]) -> list[dict[str, Any]]:
+    """Return every usable row of the given streams, in stream order.
+
+    Rows keep file-then-line order rather than being sorted by stamp, because
+    the stamp is exactly what is missing from a rendered row and an
+    append-only stream is already chronological.
+    """
+    rows: list[dict[str, Any]] = []
+    for entry in paths:
+        path = Path(entry)
+        if not path.is_file():
+            continue
+        with path.open(encoding="utf-8", errors="replace") as handle:
+            for number, line in enumerate(handle, 1):
+                row = parse_watch_row(line, path=path, line_number=number)
+                if row is None or not row["node"]:
+                    continue
+                rows.append(row)
+    return rows
+
+
+def _re_inventory_bursts(rows: Sequence[Mapping[str, Any]]) -> set[tuple[str, int]]:
+    """Return the stream positions belonging to a fleet re-inventory burst.
+
+    A follower that attaches emits one baseline row per live run at a single
+    instant, so the group shares a stamp; a group of two or more such rows one
+    of whose members has an earlier row is inventory of a fleet that was
+    already running, and not one of its members arrived by being in it. The
+    already-known-member test is what keeps this from swallowing a genuine
+    wave: a same-second group that is a wave's first observation has no member
+    with an earlier row, and is left as arrivals.
+    """
+    first_line: dict[tuple[str, str], int] = {}
+    for row in rows:
+        key = (str(row["stream"]), str(row["node"]))
+        first_line[key] = min(first_line.get(key, row["line"]), int(row["line"]))
+    groups: dict[tuple[str, str], list[Mapping[str, Any]]] = {}
+    for row in rows:
+        if row["event"] != "baseline" or not row["observed_at_utc"]:
+            continue
+        groups.setdefault((str(row["stream"]), str(row["observed_at_utc"])), []).append(
+            row
+        )
+    marked: set[tuple[str, int]] = set()
+    for group in groups.values():
+        if len(group) < 2:
+            continue
+        known = any(
+            int(row["line"]) != first_line[(str(row["stream"]), str(row["node"]))]
+            for row in group
+        )
+        if not known:
+            continue
+        for row in group:
+            marked.add((str(row["stream"]), int(row["line"])))
+    return marked
+
+
+def extract_watch_arrivals(
+    paths: Iterable[Path] | None = None, *, home: Path | None = None
+) -> dict[str, Any]:
+    """Return which watch rows are arrivals, which are state changes, and which
+    are re-inventory, each stamped in UTC or explicitly unknown.
+
+    This is the one answer every reader should ask for instead of writing its
+    own filter over the event classes: a node's earliest row is its arrival
+    whatever class the producer gave it, later transitions are the state
+    changes it made, and later baselines plus every member of a re-inventory
+    burst are inventory rather than news. Rows whose zone could not be
+    established are still classified (position in the stream orders them) and
+    are additionally listed, so a caller can see what it may not stamp.
+
+    The entry point a command should expose is
+    ``extract_watch_arrivals(project=...)`` returning this same mapping; no
+    command wiring is added here because the CLI is owned by another surface.
+    """
+    selected = (
+        [Path(entry) for entry in paths if str(entry)]
+        if paths is not None
+        else watch_event_paths(home=home)
+    )
+    rows = read_watch_rows(selected)
+    burst = _re_inventory_bursts(rows)
+    grouped: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for row in rows:
+        grouped.setdefault((str(row["project"]), str(row["node"])), []).append(row)
+
+    arrivals: list[dict[str, Any]] = []
+    changes: list[dict[str, Any]] = []
+    inventory: list[dict[str, Any]] = []
+    for node_rows in grouped.values():
+        node_rows.sort(key=lambda row: (str(row["stream"]), int(row["line"])))
+        for index, row in enumerate(node_rows):
+            position = (str(row["stream"]), int(row["line"]))
+            if index == 0 and position not in burst:
+                arrivals.append({**row, "kind": "arrival"})
+            elif row["event"] == "transition":
+                changes.append({**row, "kind": "state-change"})
+            else:
+                inventory.append({**row, "kind": "re-inventory"})
+
+    for bucket in (arrivals, changes, inventory):
+        bucket.sort(key=lambda row: (str(row["stream"]), int(row["line"])))
+    unstamped = [row for row in rows if row["observed_at_zone"] != "utc"]
+    return {
+        "ok": True,
+        "view": "watch-arrivals",
+        "files": [str(path) for path in selected],
+        "row_count": len(rows),
+        "arrivals": arrivals,
+        "state_changes": changes,
+        "re_inventory": inventory,
+        "stamps_unknown": unstamped,
+        "counts": {
+            "arrivals": len(arrivals),
+            "state_changes": len(changes),
+            "re_inventory": len(inventory),
+            "stamps_unknown": len(unstamped),
+            "rendered_rows": sum(1 for row in rows if row["rendered"]),
+        },
     }
