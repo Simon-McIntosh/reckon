@@ -28,6 +28,9 @@ import pytest
 from reckon.crew import reports
 from reckon.crew.node import CrewError
 
+# The reader is fed manifests exactly as a worker writes them, so the fixtures
+# stay byte-shaped like the text form rather than being built from a dict.
+
 # Three commits, the third subject carrying a comma. The tolerant reader joined
 # the block items with ", " and split the join on commas, so the subject's own
 # comma became a fourth revision consisting of a prose fragment.
