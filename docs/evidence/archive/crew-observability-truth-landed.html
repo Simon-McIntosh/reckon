@@ -83,6 +83,7 @@
         <tr><td>§12</td><td><a href="#manifest-wait-fields-carry-literal-examples">manifest-wait-fields-carry-literal-examples</a></td><td>9c51724b</td><td>run outcome</td></tr>
         <tr><td>§12</td><td><a href="#checkpoint-key-offered-to-any-worker">checkpoint-key-offered-to-any-worker</a></td><td>d0956c85</td><td>run outcome</td></tr>
         <tr><td>§12</td><td><a href="#unrecognised-status-field-refusal">unrecognised-status-field-refusal</a></td><td>839f8ad9</td><td>run outcome</td></tr>
+        <tr><td>§12</td><td><a href="#nested-manifest-key-stays-nested">nested-manifest-key-stays-nested</a></td><td>0d3c6cf5</td><td>run outcome</td></tr>
       </tbody>
     </table>
   </section>
@@ -1063,6 +1064,39 @@ reading taken as an authority it was not.</p>
       thirteen failure identities are unchanged, so added failures are zero. The focused parser
       file passes 104 of 104 cases. Both Ruff findings in the touched source file are identical
       to the base revision, with none in the touched test file.</p>
+  </section>
+
+  <section id="nested-manifest-key-stays-nested">
+    <h3>§12 — A nested manifest key stays below its parent</h3>
+    <p>Run <code>r-20260917T104804849653-a-nested-key-stays-nested</code>. Commit
+      <code>0d3c6cf5</code> changed <code>reckon/crew/reports.py</code> by 16 insertions and
+      2 deletions; the seven-case regression file was already present and failing at the node
+      base.</p>
+    <p><strong>Reproduction:</strong> at base <code>78897196</code>, parsing a manifest with
+      <code>node</code>, <code>status</code>, an empty <code>evidence:</code> parent, and an
+      indented <code>commits: ["deadbeef"]</code> child returned
+      <code>commits=['deadbeef']</code> at top level and <code>evidence=''</code>. The focused
+      file reported <strong>3 failed, 4 passed</strong>: a nested commit overwrote a real
+      top-level commit, escaped an empty parent, and appeared even when no top-level commit had
+      been written. This is promotion-visible corruption, not formatting: <code>commits</code>
+      is the field used to record and verify a run, so the child silently became the run's
+      declared commit list.</p>
+    <p><strong>Mechanism:</strong> the text reader now derives its top-level column from the
+      least-indented recognised manifest field and accepts fields only at that column. A whole
+      manifest presented inside an indented Markdown block therefore keeps working, while a key
+      indented beneath a parent cannot overwrite the top-level mapping. The direct falsifier now
+      returns <code>commits=[]</code> and preserves <code>evidence=''</code>. Positive controls
+      preserve a genuine top-level <code>commits: ["cafebabe"]</code>, flat
+      <code>changed_paths</code>, the waiting fields, the checkpoint field, and a manifest with
+      no nested block.</p>
+    <p><strong>Measure:</strong> all seven nested-key cases pass after the repair. The prescribed
+      four-file gate moves from <strong>4 failed, 222 passed</strong> at base to
+      <strong>1 failed, 225 passed</strong> at the commit, so the three intended failures are
+      removed and zero failures are added. The remaining
+      <code>test_refusal_recovery_remedy_survives_promotion</code> failure is identical at base
+      and head: its fixture supplies a non-git temporary directory to a promotion path that now
+      requires a git worktree. Ruff remains at the same two pre-existing findings in the touched
+      source file, and the formatter check passes.</p>
   </section>
 
 </main>
