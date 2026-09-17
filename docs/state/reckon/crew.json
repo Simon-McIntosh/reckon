@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-17T11:02:05",
+  "updated": "2026-09-17T11:07:17",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -142108,6 +142108,227 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260917T045956748860-the-dry-run-consults-what-it-predicts",
+        "plan": "monitor-renders-what-it-is-given",
+        "section": "\u00a76",
+        "node": "the-dry-run-consults-what-it-predicts",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1058,
+                "cached_input_tokens": 817244,
+                "input_tokens": 818304,
+                "output_tokens": 925,
+                "reasoning_output_tokens": 513,
+                "total_tokens": 819229,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "a7379194-9bc5-48d1-b6e1-fc5b39871bc3",
+            "session_id": "ship-s18-20260915"
+          },
+          "done_when": "A test asserts that a run the real sweep refuses is NOT reported with would_resume true by the dry run. Confirm the defect first: quote in your manifest the branch in reckon/crew/resumption.py sweep() where 'if dry_run:' appends would_resume and continues before _resume() is called, so every launcher guard is unreachable in a dry run. Either consult those guards before the dry-run return or rename what the dry run claims so the weaker claim is not reported as the stronger one; state which you chose and why. Run tests/test_crew_resume_ready.py and every tests/ file asserting on resumption.py; report failures as a delta against base.",
+          "estimated_hours": 1.0,
+          "goal": "Make a resume sweep's dry run report what the launcher would do, rather than that the launcher would be asked.",
+          "id": "the-dry-run-consults-what-it-predicts",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-17T04:59:58Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/manifests/the-dry-run-consults-what-it-predicts.md",
+          "plan": "monitor-renders-what-it-is-given",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a76",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/resumption.py",
+            "tests/test_dry_run_predicts_the_launcher.py",
+            "docs/evidence/archive/monitor-renders-what-it-is-given-landed.html",
+            "docs/plans/monitor-renders-what-it-is-given.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "disc-local-b",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-17T05:01:21Z",
+        "completed_at": "2026-09-17T06:07:04.345Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3926,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3943,
+        "stalled": false,
+        "time_budget": "40m",
+        "base_sha": "7efeeb7739b01368936246291627fb6141849549",
+        "commits": [
+          "b0547eeeae9aed6fe1ddde8a2132d6b10dd302da"
+        ],
+        "changed_lines": {
+          "added": 457,
+          "removed": 14,
+          "files": 4
+        },
+        "tests_added": 7,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_dry_run_predicts_the_launcher.py tests/test_a_met_wait_is_ready_not_abandoned.py tests/test_crew_recover.py tests/test_sweep_status_is_per_writer.py",
+          "exit_status": 1,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/a7379194-9bc5-48d1-b6e1-fc5b39871bc3/scratchpad/dryrun_gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/manifests/the-dry-run-consults-what-it-predicts.md",
+        "scope_changed": false,
+        "session_id": "c5d023cc-9a47-456f-955e-9fd0af19b84c",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 9750161,
+            "input_tokens_cumulative": 9750161,
+            "output_tokens": 58467,
+            "output_tokens_cumulative": 58467,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-17T06:07:04.345Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 16,
+            "evidence": 13,
+            "fit": 14,
+            "goal_fidelity": 16,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 79
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 9750161,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 3937.407,
+          "generated_tokens": 58467,
+          "generation_seconds": 3717.512,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 34.1,
+          "machine_seconds": 219.895,
+          "peak_input_tokens": 163783,
+          "tokens_per_second": 15.73,
+          "wall_tokens_per_second": 14.85
+        },
+        "follow_on_paths": [
+          "tests/test_a_met_wait_is_ready_not_abandoned.py::_waiting_pointer",
+          "tests/test_mcp_recovery.py::test_resume_reattaches_a_session_only_the_stream_carries",
+          "tests/test_schema.py::test_cross_project_conformance[imas-ambix:dsv41-flash-four-card-throughput-landed",
+          "project/root"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "Run tests",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s18-20260915/the-dry-run-consults-what-it-predicts",
+          "session_id": "c5d023cc-9a47-456f-955e-9fd0af19b84c",
+          "session_source": "pointer",
+          "retained_at": "2026-09-17T06:07:04.345Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 102.0,
+        "orientation_input_tokens": 2302566.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -142336,6 +142557,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1559
+    "_version": 1560
   }
 }
