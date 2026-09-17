@@ -249,6 +249,14 @@ five present in event: {'wait_condition_state': True, 'wait_observed': True,
           is <code>None</code> rather than zero or absent when unmeasured.
           No rendering changed.</td>
         </tr>
+        <tr id="s5-counter-spells-its-own-word">
+          <td><code>feat(ticker): spell the waiting counter's bucket word</code></td>
+          <td>The waiting counter renders <code>3queued</code> where it rendered
+          <code>3q</code>, so the letter that has no spelling on the surface is
+          gone; the other three counters are unchanged. The row is still exactly
+          the requested width at 180 and 208 columns and the block still holds one
+          width across counts.</td>
+        </tr>
       </tbody>
     </table>
 
@@ -503,6 +511,67 @@ five present in event: {'wait_condition_state': True, 'wait_observed': True,
       <tr><td>implementation commit</td><td class="num"><code>b528813d</code></td></tr>
     </table>
   </section>
+  <section id="s5-counter-spells-its-own-word">
+    <h2>&sect;5 &mdash; The waiting counter spells its own word</h2>
+
+    <p><strong>Question.</strong> <code>STAT_LETTER</code> mapped the waiting bucket to
+    <code>q</code>, so the counter cell read <code>3q</code>. <code>q</code> is the initial
+    of <code>queued</code>, a word no column of the row printed, so that one mapping could
+    not be learned from the surface while the other three could: <code>w</code>,
+    <code>b</code> and <code>u</code> are the initials of working, blocked and unpromoted,
+    each of which the state column spells on every row. The comment above the table claimed
+    the state column taught the counter legend, which was true of three entries and false of
+    the fourth.</p>
+
+    <p><strong>What the base revision renders.</strong> At <code>7dfae503</code>,
+    <code>reckon/crew/ticker.py:240</code> carries <code>"waiting": "q"</code>, and the
+    substring <code>queued</code> does not occur anywhere in a rendered row:</p>
+
+    <pre><code>11:16:13  implement      n-west                                   working &#8594; waiting     dsv4-flash medium  2w&middot; 0b&middot; 0u&middot; 3q       &ndash;    &ndash;  waiting 1870s on scheduler job 7788</code></pre>
+
+    <p>The same event rendered by the revision carrying the change:</p>
+
+    <pre><code>11:16:13  implement      n-west                                   working &#8594; waiting     dsv4-flash medium  2w&middot; 0b&middot; 0u&middot; 3queued       &ndash;    &ndash;  waiting 1870s on scheduler job 7788</code></pre>
+
+    <figure>
+      <img src="/reckon/figures/queued-counter/waiting-counter-spells-queued.svg"
+           alt="Two monitor rows drawn against a column ruler of 180 columns. At base the
+                waiting counter reads 3q and the reason begins at column 136; with the change
+                it reads 3queued and the reason begins at column 141. Both rows end at
+                column 180.">
+      <figcaption>Both rows rendered at 180 columns from the same event. Every column
+      boundary in the drawing is read off those two rendered rows rather than placed by
+      hand.</figcaption>
+    </figure>
+
+    <h3>What was measured</h3>
+    <table class="measures">
+      <tr><th>measure</th><th>value</th></tr>
+      <tr><td>counter block width</td><td class="num">15 columns &#8594; 20</td></tr>
+      <tr><td>narrowest supported width</td><td class="num">139 &#8594; 144</td></tr>
+      <tr><td>where the reason begins at 180 columns</td><td class="num">column 136 &#8594; 141 &mdash; the wider cell is paid for out of the free text</td></tr>
+      <tr><td>rendered width, counts 0, 9, 10 and 99</td><td class="num">exactly the requested width at 180 and at 208</td></tr>
+      <tr><td>counter block right edge across those counts</td><td class="num">one position across all four counts</td></tr>
+      <tr><td>a zero counter</td><td class="num">rendered and dimmed, not dropped</td></tr>
+      <tr><td>the three named test files at base <code>7dfae503</code></td><td class="num">98 passed</td></tr>
+      <tr><td>the same three at head</td><td class="num">101 passed &mdash; the delta is the three added assertions, zero added failures</td></tr>
+      <tr><td>the three added assertions against the base renderer</td><td class="num">3 failed &mdash; the falsifier, failing on the fact</td></tr>
+      <tr><td>lint and format delta on the staged paths</td><td class="num">zero added findings</td></tr>
+      <tr><td>implementation commit</td><td class="num"><code>a214d140</code></td></tr>
+    </table>
+
+    <p><strong>The falsifier, run rather than argued.</strong> The three added assertions
+    were copied into a tree at the base revision and run against that revision's renderer:
+    all three fail, the width assertion showing a row that renders <code> 0q</code> where it
+    now renders <code> 0queued</code>. They pass at head. Both revisions are run with one
+    command, <code>env -u NO_COLOR</code> because an inherited <code>NO_COLOR=1</code> has
+    previously failed layout tests for reasons that are not the code.</p>
+
+    <p><strong>Scope.</strong> The counter block's placement, its workstation-wide scope
+    against session-scoped rows, and the model-name width recorded against this section are
+    untouched by this node; none is required by the locked decision.</p>
+  </section>
+
 </main>
 </body>
 </html>
