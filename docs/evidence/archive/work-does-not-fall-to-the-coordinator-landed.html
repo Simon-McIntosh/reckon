@@ -183,6 +183,88 @@
       same 22 pre-existing failure ids.
       Implementation: <code>7bf1f8d662e70522dac9d38ea8c8fd1d2cafec05</code>.</p>
     </section>
+  <section id="refusal-orders-before-the-write">
+    <h2>§2 — A promotion that is going to refuse leaves the plan as it found it</h2>
+
+    <p><strong>Source ordering confirmed before repair.</strong> In
+    <code>reckon/crew/promotion.py</code>, <code>_record_landing_comment</code> was called at line
+    2808 — it writes the landing comment into the plan HTML and bumps
+    <code>plan-version</code> — and <code>ledger.build_record</code> at line 2858, whose
+    gate-evidence guard raises from <code>reckon/ledger.py:1133</code> with
+    <em>“a passing gate requires the check that produced it; missing command, exit_status, log
+    path or digest”</em>. Fifty lines separate the mutation from the check that rejects the call,
+    and none of that check needs the write to have happened.</p>
+
+    <img src="/reckon/figures/refused-promotion/ordering.png"
+         alt="Two orderings: before, the plan comment is written before the ledger build that refuses; after, every check precedes the write."
+         style="max-width:100%">
+
+    <table>
+      <thead><tr><th>Measure</th><th>Base <code>09615744</code></th><th>Landed</th><th>Delta</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Focused falsifiers and controls</td>
+          <td>3 failed, 3 passed</td>
+          <td>6 passed</td>
+          <td>3 falsifiers reproduce and repair; 0 added</td>
+        </tr>
+        <tr>
+          <td><code>test_gate_evidence.py</code></td>
+          <td>10 failed, 16 passed</td>
+          <td>10 failed, 16 passed</td>
+          <td>0 added, same 10 pre-existing ids</td>
+        </tr>
+        <tr>
+          <td><code>test_landing_comment_authorship.py</code></td>
+          <td>5 passed</td>
+          <td>5 passed</td>
+          <td>0 added</td>
+        </tr>
+        <tr>
+          <td><code>test_ledger.py</code></td>
+          <td>collected 95; stalls around 80</td>
+          <td>collected 95; stalls at the same point</td>
+          <td>pre-existing stall, not attributable</td>
+        </tr>
+        <tr>
+          <td>Cohort of the four files, combined</td>
+          <td>13 failed, 24 passed</td>
+          <td>10 failed, 27 passed</td>
+          <td>3 failures repaired; the 10 remaining are the same pre-existing ids</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>The three falsifiers in <code>tests/test_refused_promotion_leaves_no_trace.py</code> each
+    reproduce the recorded defect at base and pass after the repair:</p>
+
+    <ul>
+      <li>A missing gate-evidence refusal left the plan file rewritten and <code>plan-version</code>
+      moved <code>0 → 1</code>; after, the file is byte-identical, the version is unmoved, and the
+      pointer survives for a retry.</li>
+      <li>The range case: an off-vocabulary gate verdict, refused inside the same record build,
+      likewise left a written plan at base and leaves none after — so the repair is the ordering,
+      not one message being moved.</li>
+      <li>The retry case: at base the refused attempt had already written the comment, so the
+      retry met a stale narrative; after, the refused attempt moves neither the plan bytes, the
+      version, nor <code>HEAD</code>, and the immediately following retry lands with no
+      intervening commit or cleanup.</li>
+    </ul>
+
+    <p>Positive controls hold: a well-formed promotion still writes exactly one landing comment
+    and bumps <code>plan-version</code> once; a second promotion of an already-landed run reports
+    both that it was already promoted and that the comment was already recorded, writing nothing;
+    and a worker-authored landing record still declines to duplicate, with the narrative promotion
+    then kept on the ledger row rather than dropped.</p>
+
+    <p><strong>Repair by order, not by guard.</strong> The record build and every refusal it raises
+    move above the comment write, with the one coupling preserved: the row carries its outcome
+    empty when the comment recorded the narrative, and the ledger holds the row in memory until
+    the comment's own decision is known. No fixture reaches the real crew home, and the
+    assertions on the checkout's own <code>docs/plans/</code> and <code>docs/state/</code> paths
+    hold before and after the run.</p>
+  </section>
+
   </main>
 </body>
 </html>
