@@ -11,6 +11,7 @@ mapping with eight recognised keys and no status.
 from __future__ import annotations
 
 import json
+from itertools import product
 
 import pytest
 
@@ -357,11 +358,55 @@ def test_an_unknown_status_word_raises_naming_the_word_and_the_recognised() -> N
         reports.parse_manifest("status: finished\ncommits: abc123\n")
 
     message = str(exc.value)
+    assert "field 'status'" in message
+    assert "rejected value 'finished'" in message
+    assert "all remaining fields parsed successfully" in message
     assert "'finished'" in message
     assert "complete" in message
     assert "blocked" in message
     assert "in-progress" in message
     assert "running" in message
+    assert all(label not in message.lower() for label in ("plan", "sprint", "run id"))
+
+
+def test_unknown_status_refusal_contract_ranges_across_status_tokens() -> None:
+    alphabet = "az0-_"
+    words = {
+        "".join(characters)
+        for width in range(1, 4)
+        for characters in product(alphabet, repeat=width)
+    }
+    words.update({"done", "finished", "ready-for-review", "complete-ish"})
+    words.difference_update(reports.MANIFEST_STATUSES)
+
+    for word in sorted(words):
+        with pytest.raises(reports.ManifestParseError) as exc:
+            reports.parse_manifest(
+                f"status: {word}\ncommits: abc123\nchanged_paths: result.txt\n"
+            )
+
+        message = str(exc.value)
+        assert "field 'status'" in message, word
+        assert f"rejected value {word!r}" in message, word
+        assert "all remaining fields parsed successfully" in message, word
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        '{"status": "complete"',
+        "status done\ncommits abc123\n",
+    ],
+)
+def test_a_structurally_broken_manifest_never_claims_the_remainder_parsed(
+    body: str,
+) -> None:
+    with pytest.raises(reports.ManifestParseError) as exc:
+        reports.parse_manifest(body)
+
+    message = str(exc.value)
+    assert "field 'status' rejected value" not in message
+    assert "remaining fields parsed successfully" not in message
 
 
 def test_the_unknown_status_refusal_names_the_path_when_one_is_given() -> None:
@@ -378,15 +423,7 @@ def test_an_unknown_status_word_in_json_also_raises() -> None:
 
 @pytest.mark.parametrize(
     "word",
-    [
-        "complete",
-        "blocked",
-        "failed",
-        "in-progress",
-        "in_progress",
-        "running",
-        "pending",
-    ],
+    sorted(reports.MANIFEST_STATUSES),
 )
 def test_a_recognised_status_word_parses_unchanged(word) -> None:
     fields = reports.parse_manifest(f"status: {word}\ncommits: abc123\n")
@@ -423,7 +460,10 @@ def test_done_remains_an_unknown_status_and_the_refusal_names_it() -> None:
     with pytest.raises(reports.ManifestParseError) as exc:
         reports.parse_manifest("status: done")
 
-    assert "'done'" in str(exc.value)
+    message = str(exc.value)
+    assert "field 'status'" in message
+    assert "rejected value 'done'" in message
+    assert "all remaining fields parsed successfully" in message
 
 
 def test_the_unsubstituted_template_is_left_to_the_classifier() -> None:
