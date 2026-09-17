@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-17">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -216,6 +216,17 @@
     </article>
 </section>
 
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s6" data-id="c-verify-gate-has-half-of-what-the-fleet-gate-needs" data-who="" data-when="">
+    <div class="r-comment-body"><p><strong>The gap is now specified rather than suspected, and it is half a capability rather than a missing one.</strong></p><p>The reporting coordinator corrected their own claim before I asked: they never ran <code>verify-gate</code> and had it fail. They read <code>crew --help</code>, saw <em>"re-run one run's gate at the integrated revision"</em>, and judged from the description. An unexecuted search, stated as such.</p><p>Checked here. <code>verify-gate</code> <strong>reads the run's stored gate command from its committed ledger row</strong> and re-runs that command at <code>--revision</code> against <code>--checkout-path</code>, patching the report back onto the row. Its options are project, run, checkout-path, revision, timeout. There is <strong>no suite label and no baseline revision</strong>.</p><p>So it already owns the harder half — re-running at the merged head and recording the verdict against the run rather than only printing it. What it cannot do is run something <em>wider</em> than the node's own gate, or compare against a baseline. Those are exactly the two things the hand-check needed.</p><p><strong>What the hand-check was</strong>, five times, each as one srun job on a debug partition against the main checkout at the merged head: an SDCC build; a fast preset configured, built and run under the UNIT label; a VALIDATION ctest run; and the sorted failing-rail names compared by <code>comm -13</code> against a baseline built the same way in a fresh detached worktree at the pre-merge head. It caught a compile error no per-node gate could see — a symbol declared only under a test macro — because a node's gate measures its own diff and an integration break is a property of the merged head. Logs under <code>reports/ship-s13/gates/</code>.</p><p>The coordinator's own summary is the section's requirement: <em>if verify-gate can take a suite label and a baseline revision rather than the run's own gate command, that is the whole hand-check.</em></p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-the-registration-evidence-settles-the-option" data-who="" data-when="">
+    <div class="r-comment-body"><p><strong>The transcript settles which of the two repairs removes the work, and it is not the smaller one.</strong></p><p>Dispatch refused each unknown member with identical text: <code>project 'imas-efit' has no crew member 'clive-47'; register it with reckon crew member add before dispatching to it</code>. The coordinator registered in batches by shell loop — five to nine members at a time, then several singly — always ahead of the dispatch that needed them once the refusal had taught them to. So the shape of the work was: one refusal per new node the first time, then a pre-registration loop per wave, then one <code>chore(crew)</code> commit per batch.</p><p>Their conclusion, which the transcript supports: <strong>the repair that removes all of it is dispatch registering an unknown member itself</strong>, with the harness and role it was already given. A range form on <code>member add</code> would only shorten the loop — it would make the busy work faster rather than absent, which is the distinction §1 is built on.</p><p>Recorded as evidence for the <code>member-registration-owner</code> decision rather than as its resolution; the choice remains the lead's.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-eighty-percent-composition-one-paragraph-of-judgement" data-who="" data-when="">
+    <div class="r-comment-body"><p><strong>Measured on the record actually authored: about 80% composition, one paragraph of judgement the run did not hold.</strong></p><p>Transcribed from the run's own report — the measured ratios, the plan targets, the ctest command and its result, a cache caveat and an axis-offset observation. Supplied by the coordinator and <em>not</em> present in the run — one paragraph attributing why the failures closed, naming three intervening landings rather than the plan's own two options, and the decision that the plan ships on its measure rather than being marked superseded.</p><p>That makes the repair precise, and it is not full automation. The coordinator's own phrasing is the design: <strong>a composed record with an empty mechanism slot the coordinator fills.</strong> Compose the 80% from the run, and leave a named slot for the attribution and the shipping decision, which are judgement and belong to a coordinator.</p><p>It also disposes of the hazard §4 raised. A record composed from the run is not a coordinator writing evidence for work it is judging; a coordinator adding an attribution paragraph into a named slot, beside composed measurements it did not author, is a different and defensible act.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
