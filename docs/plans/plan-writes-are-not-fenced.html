@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="plan-writes-are-not-fenced">
+  <meta name="plan-title" content="Plan Writes Are Not Fenced">
+  <meta name="plan-summary" content="edit_plan refuses on a stale version; the landing write does not. A lost update advances the counter, so every check confirms it.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="5.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S18">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-informs" content="crew-observability-truth">
+  <title>Plan Writes Are Not Fenced | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-17">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">&sect;1 &mdash; A lost update that advances the version counter</h2>
+
+    <p>The plan HTML is the store. Two writers reach it: <code>edit_plan</code>, which
+    refuses on a stale <code>expected_version</code>, and the landing write a promotion
+    performs to append its own record. <strong>Only one of them is fenced.</strong></p>
+
+    <p>Measured in this project on 2026-09-15. An <code>edit_plan</code> appended a comment
+    and returned <em>"Updated &hellip; to version 399"</em>. A <code>crew complete</code> was
+    in flight on the same plan. Afterwards:</p>
+
+    <table>
+      <thead><tr><th>Check</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td><code>plan-version</code> meta</td><td><strong>399</strong> &mdash; the number the discarded write returned</td></tr>
+        <tr><td>the appended comment, working tree</td><td><strong>absent</strong></td></tr>
+        <tr><td>the appended comment, <code>HEAD</code></td><td><strong>absent</strong></td></tr>
+        <tr><td>the promotion's own landing comment</td><td>present</td></tr>
+        <tr><td>the seven earlier comments from that session</td><td>all present</td></tr>
+        <tr><td><code>git status</code> on the plan</td><td>clean</td></tr>
+      </tbody>
+    </table>
+
+    <p>Exactly one comment was lost &mdash; the one written inside the promotion's window
+    &mdash; and the follow-up <code>git commit</code> reported <em>nothing added to
+    commit</em>, because the working tree already matched a <code>HEAD</code> that did not
+    contain the edit.</p>
+
+    <p><strong>A lost update that moves the version is undetectable by construction.</strong>
+    Every surface a reader consults agreed the write had landed: the tool returned a new
+    version, the file carried that version, git was clean, and the next reader sees a higher
+    number and concludes it holds the later state. Recovery happened only because the author
+    was still in the session and still held the text.</p>
+
+    <h2 id="s2">&sect;2 &mdash; The same boundary, seen from the other side</h2>
+
+    <p>Half an hour later the identical pairing surfaced in the direction that
+    <em>is</em> protected: an <code>edit_plan</code> at <code>expected_version</code> 407 was
+    refused because a promotion had moved the plan to 408, with both numbers named in the
+    refusal. One conflict announced, one lost update silent, same two components, same
+    afternoon.</p>
+
+    <p>That is the asymmetry stated as a measurement rather than an argument, and it is why
+    the repair is not "add a check to the landing path" in the abstract: the fence already
+    exists and one caller does not pass through it.</p>
+
+    <h2 id="s3">&sect;3 &mdash; Two workers appending to one plan, six times</h2>
+
+    <p>The <strong>imas-efit S13</strong> coordinator reports the same boundary from a third
+    direction. Two workers appending landing blocks to the same plan and its evidence archive
+    conflict on <em>every</em> merge &mdash; on the <code>plan-version</code> meta, on
+    duplicate section headings, and on duplicate element ids. They wrote
+    <code>reports/ship-s13/resolve_both.py</code>, which keeps both sides, bumps
+    <code>plan-version</code> to max+1 and prefixes duplicate ids, and used it
+    <strong>six times</strong> across 27 landings.</p>
+
+    <p>Their proposal is that the merge helper become a convention, since the landing append
+    already is one. <strong>This plan declines that framing</strong>, and the reason is the
+    plan's whole thesis: a helper that reconciles both sides makes the unfenced write
+    permanent and correct-looking. It removes the conflict, which is the only signal that two
+    writers reached the same file &mdash; and &sect;1 is what that looks like when the signal
+    is already absent.</p>
+
+    <p>The conflicts are not the defect. They are the one place the defect currently
+    announces itself.</p>
+
+    <h2 id="s4">&sect;4 &mdash; Why the obvious fences are each wrong</h2>
+
+    <p>Three repairs suggest themselves and none survives its own consequence, which is why
+    this plan carries a design decision rather than a node.</p>
+
+    <ul>
+      <li><strong>Fence the landing write on <code>expected_version</code> too.</strong>
+      Correct, and it converts a silent loss into a refused promotion &mdash; at the moment a
+      worker's work is being recorded, with the coordinator's attention elsewhere. A refused
+      promotion is recoverable and a lost comment is not, so this is an improvement; it is
+      not obviously the right one.</li>
+      <li><strong>Serialize: no plan edit while a promotion is in flight.</strong> This is
+      what this session adopted by hand after losing the comment, and it works. It is also a
+      rule with no check, which this project has repeatedly found to be a rule that decays
+      &mdash; and it does not help two <em>workers</em>, who cannot see each other.</li>
+      <li><strong>Make the append commutative</strong> so both writes survive by
+      construction, as the S13 helper does at merge time. This removes the conflict rather
+      than the race, and &sect;1 shows the race producing silent loss with no conflict to
+      remove.</li>
+    </ul>
+
+    <p>The choice between them is a design decision about who is inconvenienced when two
+    writers meet, and it is the lead's rather than a coordinator's.</p>
+
+    <h2 id="s5">&sect;5 &mdash; What a repair must demonstrate</h2>
+
+    <p>Whatever shape is chosen, the measure is the same and it is not "no conflicts". The
+    falsifier reproduces &sect;1 directly: <strong>a comment appended while a promotion is in
+    flight on the same plan is either present afterwards, or its loss is reported.</strong>
+    Silence with an advanced version counter is the failure, and a repair that produces
+    fewer conflicts while still permitting it has not addressed this plan.</p>
+
+    <p>The positive control matters as much: the same test asserts that an ordinary sequential
+    <code>edit_plan</code> still succeeds and still advances the version. Without it a fence
+    that refuses everything passes the falsifier.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="who-loses-a-race" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">When a plan edit and a promotion&#x27;s landing write meet, who is
+        inconvenienced? Fencing the landing write refuses a promotion at the moment a
+        worker&#x27;s result is recorded; serializing is a rule with no check and cannot help two
+        workers; a commutative append removes the conflict but not the race that produced a
+        silent loss with no conflict at all.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="fence-the-landing-write">fence the landing write</button>
+      <button class="r-opt" data-value="commutative-append">make the append commutative</button>
+      <button class="r-opt" data-value="serialize-with-a-check">serialize, with a check that enforces it</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-pwanf-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-17" data-recommends-skill="/reckon-ship plan-writes-are-not-fenced" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Lock who-loses-a-race before any node is cut</h4>
+    <div class="r-fu-body"><p>This plan deliberately carries no implementable node yet. All three candidate repairs are defensible and they differ in <em>who is inconvenienced when two writers meet</em> — a promotion refused at the moment a worker's result is recorded, a rule with no check that cannot help two workers who cannot see each other, or a commutative append that removes the conflict while leaving the race that produced a silent loss with no conflict at all.</p><p>Dispatching before the choice is locked would build one of three and discover the objection afterwards. The evidence the decision needs is in §1 through §4: a measured lost update whose version counter advanced, the same boundary refusing correctly in the other direction half an hour later, and a second coordinator hitting it six times in 27 landings.</p><p>One thing that should <strong>not</strong> wait: the S13 coordinator's <code>resolve_both.py</code> is in use and works. It should stay available and should not be promoted to a convention, because a helper that reconciles both sides removes the conflict, and the conflict is currently the only place this defect announces itself.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship plan-writes-are-not-fenced</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>

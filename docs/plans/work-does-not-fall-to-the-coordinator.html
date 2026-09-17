@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="work-does-not-fall-to-the-coordinator">
+  <meta name="plan-title" content="Work Does Not Fall To The Coordinator">
+  <meta name="plan-summary" content="Seven hand-compensations across 27 landings. The remedy is a toolset that closes its own gaps, not a coordinator told to do less.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="7.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint" content="S18">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-informs" content="crew-observability-truth">
+  <title>Work Does Not Fall To The Coordinator | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-17">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">&sect;1 &mdash; What a coordinator had to do by hand, and why none of it needed a coordinator</h2>
+
+    <p>The <strong>imas-efit S13</strong> coordinator ran 27 landings on the local lane
+    between 2026-09-16 20:30Z and 2026-09-17 morning, and kept a record of everything it
+    did by hand that the crew surface could have done. Evidence and timestamps are under
+    <code>~/.config/reckon/crew/reports/ship-s13/</code>.</p>
+
+    <p>The list is not a wish for features. Every item is work the surface
+    <strong>already holds the facts for</strong> and declines to perform, so a human-facing
+    coordinator performs it instead &mdash; and each hand-performance is an opportunity to
+    do it slightly differently from the last coordinator.</p>
+
+    <p>Two of the ten reported items are repaired or in flight elsewhere and are not
+    restated here. Two more belong to <code>plan-writes-are-not-fenced</code>, which owns
+    the concurrent-writer problem. This plan owns the remaining five.</p>
+
+    <p><strong>The remedy is a better-designed toolset, not a better-instructed
+    coordinator.</strong> That distinction is the plan's whole shape and it is easy to get
+    backwards. Nothing here restricts what a coordinator may do: reading the code, editing
+    it, and refactoring it with the overview only a coordinator has are legitimate and
+    valuable, and a rule telling coordinators to do less of any of that would make the
+    system worse. What this plan targets is the <em>busy work</em> &mdash; carrying a value
+    from one surface to another, copying a file so it survives, registering twenty-seven
+    members one at a time &mdash; which a coordinator performs only because the work fell
+    through a gap and someone had to catch it.</p>
+
+    <p>The test for every item is therefore the same: would a well-designed surface have
+    left this for a human at all? Where the answer is no, the repair belongs in the tool.
+    Adding a rule instructing coordinators not to compensate would remove the compensation
+    and leave the gap, which is strictly worse than the state this plan starts from &mdash;
+    the work would still fall through, and nobody would be catching it.</p>
+
+    <h2 id="s2">&sect;2 &mdash; A roster write that rides someone else's commit</h2>
+
+    <p><code>crew member add</code> rewrites <code>docs/state/&lt;project&gt;/crew.json</code>
+    and does not commit it. Verified: there is no commit anywhere in the add path. The
+    roster diff therefore rides whatever commit comes next &mdash; for the reporting
+    coordinator that was a plan write (<code>39bc64bc</code>); for this session it would
+    have been a promotion.</p>
+
+    <p>The consequence is a commit whose message describes one change and whose content
+    carries two, which is the condition that makes a later reader unable to tell what a
+    commit did. The coordinator registered <strong>27 members by hand</strong>
+    (<code>clive-46</code> through <code>clive-72</code>) because dispatch refuses an
+    unknown member, so the dirty write happened 27 times.</p>
+
+    <p>Two repairs, and they are not equivalent: <code>member add</code> commits its own
+    write, or dispatch registers a missing member itself and commits that. The first is
+    smaller. The second removes the reason a coordinator was registering members one at a
+    time, and is the one that matches this plan's thesis.</p>
+
+    <p>Until either lands, the reporting coordinator's interim discipline is correct and
+    should be kept: roster changes go in their own <code>chore(crew)</code> commit.</p>
+
+    <h2 id="s3">&sect;3 &mdash; A cited gate log that will not be there later</h2>
+
+    <p><code>crew complete --gate-log-path</code> records where a log <em>lies</em>. It does
+    not copy it. Verified: <code>promotion.py</code> contains <strong>zero</strong> copy
+    operations.</p>
+
+    <p>Workers write gate logs to <code>/tmp</code> or to a worktree's gitignored
+    <code>output/</code>, and both vanish &mdash; <code>/tmp</code> to reaping, the worktree
+    to cleanup. The ledger row then cites a path that resolves to nothing, which is the
+    same defect as a fabricated identifier one layer along: every check a reader runs on
+    the row passes, and the evidence is gone.</p>
+
+    <p>The reporting coordinator copied <strong>27 gate logs</strong> into
+    <code>reports/ship-s13/gates/</code> by hand. This session did the same twice today,
+    for the same reason, before citing them. Two coordinators independently inventing the
+    same compensation is the signal that it belongs in the surface.</p>
+
+    <p><code>complete</code> should copy the cited log into the run directory and record the
+    copy's path, so the row cites something durable rather than something that was true when
+    written.</p>
+
+    <h2 id="s4">&sect;4 &mdash; An evidence record that has to be authored before a plan can ship</h2>
+
+    <p>Shipping a plan requires a cumulative evidence record. When a plan's landings are
+    <strong>investigate nodes</strong> the deliverable is a report rather than a diff, no
+    evidence record exists, and the coordinator authors one by hand &mdash; as the reporting
+    session did for
+    <code>docs/evidence/archive/boundary-method-critical-path-closure-landed.html</code>.</p>
+
+    <p>The run already carries what such a record needs: its report path, its commits, its
+    gate, its measured outcome. A <code>complete</code> or <code>edit_plan</code> path that
+    composes the record from the run's own report would remove the hand-authoring step
+    entirely, and would remove the more serious hazard behind it &mdash; that a coordinator
+    writing an evidence record by hand is writing the evidence for work it is also judging.</p>
+
+    <h2 id="s5">&sect;5 &mdash; Per-node wall time and width-at-start, already in the ledger</h2>
+
+    <p>The ledger row carries <code>dispatched_at</code> and <code>completed_at</code>. Per-node
+    wall time is their difference, and width-at-start is derivable from the live pointers at
+    the dispatch stamp. Neither is emitted, so the reporting coordinator recorded both by
+    hand in <code>post_repair_record.md</code>, and another session asking for the same
+    figures had to ask a human for them.</p>
+
+    <p>This is the smallest item and the clearest instance of the plan's shape: the values
+    are present, the derivation is arithmetic, and the surface emits neither. It is a read,
+    not a mechanism.</p>
+
+    <h2 id="s6">&sect;6 &mdash; A gate that measures the node rather than the fleet</h2>
+
+    <p>The reporting coordinator ran an SDCC build plus a fast unit and validation delta
+    against a fresh baseline worktree by hand, and <strong>found a build break that a
+    worker's test-only gate had missed</strong>. That is the single highest-value hand-check
+    in the list, because it caught something no per-node gate could: a node's gate measures
+    its own diff, and an integration break is a property of the merged head.</p>
+
+    <p><code>crew verify-gate</code> exists and the coordinator could not find a way to make
+    it run the fleet suite rather than the node's own gate. This section owns establishing
+    whether that is a missing option, a missing surface, or a misunderstanding of an existing
+    one &mdash; and it is scoped as an investigation first, because the reporting coordinator
+    stated plainly that they did not find it rather than that it is absent, and this plan
+    should not convert an unsuccessful search into an asserted gap.</p>
+
+    <h2 id="s7">&sect;7 &mdash; What this plan does not own</h2>
+
+    <p><strong>Concurrent writes to shared plan and evidence HTML</strong> &mdash; the
+    reporting session's merge conflicts and the landing write that discarded a concurrent
+    edit. Those belong to <code>plan-writes-are-not-fenced</code>, because they are one
+    defect and this plan would otherwise carry half of it.</p>
+
+    <p><strong>Manifests reading <code>unreadable</code> while the worker works</strong>, and
+    <strong>the dry run that returns before the launcher it predicts</strong>. Both are
+    repaired or in flight: liveness is now evaluated once above the classification chain, and
+    a node is rewriting the dry-run claim.</p>
+
+    <p><strong>Worker <code>uv sync</code> repointing the shared editable install.</strong>
+    The remedy is already written in the shared guidance and the gap is enforcement rather
+    than knowledge. It wants a dispatch-contract check, which is a different subject from
+    this plan's, and the reporting coordinator hit it twice.</p>
+
+    <p><strong>The unpromoted-run grace and the follower lifetime.</strong> Both refusals are
+    correct by their own rule every time they fire; whether the values are right is a tuning
+    decision recorded below for the lead rather than a defect this plan repairs.</p>
+
+    <h2 id="s8">&sect;8 &mdash; The measure that separates a fix from a workaround</h2>
+
+    <p>Each section above is satisfied only when <strong>the hand step disappears</strong>,
+    not when it becomes easier. A helper script that copies gate logs, a documented
+    convention for roster commits, or a template for hand-authored evidence records would all
+    reduce the effort and leave the coordinator performing the step &mdash; which is the
+    condition this plan exists to remove.</p>
+
+    <p>So every node's measure names the hand step and asserts a run completing without it:
+    a promotion whose cited gate log resolves inside the run directory after the source is
+    deleted; a <code>member add</code> leaving a clean tree; a plan shipping on
+    investigate-node landings with no hand-authored evidence file; a ledger read returning
+    wall time and width without arithmetic by the reader.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="unpromoted-grace-seconds" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Dispatch refuses while any run is unpromoted beyond a 5-minute
+        grace. Measured across 31 promotions: three refusal episodes, about 10.5 minutes of
+        stalled lane refill, every refusal correct by its rule — and each one fired on
+        a run whose landing the coordinator was already verifying, where careful verification
+        ran 8 to 20 minutes. The grace is shorter than the task it exists to accommodate.
+        Raise it, or keep it and accept the stall?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="raise-to-15m">raise the grace to 15 minutes</button>
+      <button class="r-opt" data-value="keep-5m">keep 5 minutes</button>
+      <button class="r-opt" data-value="scale-to-verification">derive it from measured verification time</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="member-registration-owner" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Does member add commit its own write, or does
+        dispatch register a missing member itself? The first is the smaller change; the
+        second removes the reason a coordinator registers members one at a time.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="add-commits">member add commits its own write</button>
+      <button class="r-opt" data-value="dispatch-registers">dispatch registers and commits</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-cdocw-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-17" data-recommends-skill="/reckon-ship work-does-not-fall-to-the-coordinator §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Take the two verified sections first: the gate log that vanishes and the roster write that rides</h4>
+    <div class="r-fu-body"><p>§3 and §2 are verified in source and are the smallest: <code>promotion.py</code> holds zero copy operations, so a cited gate log is recorded where it lies; and there is no commit anywhere in the <code>member add</code> path, so the roster diff rides the next commit. Two coordinators independently invented the same compensation for the first, which is the signal it belongs in the surface.</p><p>§6 is an <strong>investigation</strong> before it is a repair. The reporting coordinator said they could not find a way to make <code>verify-gate</code> run the fleet suite, not that it is absent, and this plan must not convert an unsuccessful search into an asserted gap. It is also the highest-value item: their hand-run found a build break a worker's test-only gate missed, which no per-node gate can catch.</p><p>§4 and §5 follow. <code>member-registration-owner</code> should be locked before §2 is dispatched, because the two options differ in what gets built rather than in how it is written.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship work-does-not-fall-to-the-coordinator §3</pre>
+    </article>
+</section>
+
+  </main>
+</body>
+</html>
