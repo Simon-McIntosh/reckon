@@ -758,17 +758,12 @@ def plan_scope_lanes(
 
 def _project_derivations(project: str, repo: Path) -> dict[str, list[str]]:
     """Read the repository derivation map from its project resource."""
-    from reckon._store import read_plan
+    from reckon.project_state import read_project_derivations
 
-    index, _version = read_plan(project, "index", repo)
-    projects = index.get("projects") or []
-    if not projects or not isinstance(projects[0], Mapping):
+    docs_dir = repo / "docs"
+    if not docs_dir.is_dir():
         return {}
-    derivations = projects[0].get("derivations") or {}
-    return {
-        str(source): [str(output) for output in outputs]
-        for source, outputs in derivations.items()
-    }
+    return read_project_derivations(docs_dir, project)
 
 
 def _raise_live_scope_conflict(

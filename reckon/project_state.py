@@ -1432,6 +1432,27 @@ def compose_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
     return composed
 
 
+def read_project_derivations(docs_dir: Path, project: str) -> dict[str, list[str]]:
+    """Read only the authored repository derivation map for one project."""
+    mode = project_state_mode(docs_dir)
+    if mode.format == "distributed":
+        project_manifest, _version = read_resource(
+            docs_dir, project, "project", "project"
+        )
+    else:
+        legacy, _raw = _load_legacy_index(docs_dir, project)
+        projects = legacy.get("projects") or []
+        project_manifest = (
+            projects[0] if projects and isinstance(projects[0], dict) else {}
+        )
+
+    derivations = project_manifest.get("derivations") or {}
+    return {
+        str(source): [str(output) for output in outputs]
+        for source, outputs in derivations.items()
+    }
+
+
 def audit_project_state(docs_dir: Path, project: str) -> list[dict[str, str]]:
     """Report invalid distributed project resources."""
     if project_state_mode(docs_dir).format != "distributed":
