@@ -152,6 +152,49 @@
       row truncates them.</li>
     </ul>
 
+    <h3 id="s4-landed">&sect;4 &mdash; Landed: the first of the three repairs</h3>
+
+    <p><strong>A wait nothing is probing now reads differently from one already being
+    read.</strong> The classifier emits the probe's verdict beside a declared wait and
+    leaves it absent when no probe has run, so the record separates the two situations;
+    the reason clause now carries the glyph the measure cells already use for a figure
+    never taken. The mark is additive: the age and needs-action glyphs keep their
+    positions, because those say a reader must act while this says what is not being
+    tested.</p>
+
+    <p><strong>Measured, and it corrects this section's own model.</strong> The plan
+    records the unprobed case as rendering <code>wait-aged</code>. Reading the event the
+    composer builds for each manifest shape shows otherwise: a <em>complete</em>
+    declaration is probed on every snapshot, so the reachable unprobed shape is a
+    manifest that asks to wait (<code>status: waiting</code>) whose declaration the
+    classifier cannot read as one. It renders <code>working</code> with an empty detail
+    &mdash; ordinary work, while nothing tests the condition it named. A run declaring no
+    wait emits <code>None</code> for all five facts and is untouched, which is the
+    population most rows belong to and the one the marker must never reach.</p>
+
+    <figure>
+      <img src="/reckon/figures/rendered-evidence/unprobed-wait-row.svg"
+           alt="Three rows rendered from the live classifier: a wait whose probe has run
+                and is unmet, a wait nothing can probe carrying the unprobed marker before
+                its clause, and a run declaring no wait with an empty clause.">
+      <figcaption>Three real rows, 180 columns wide. The first and third are byte-identical
+      to what the renderer produced before the change; the second carries the marker at the
+      head of its reason clause and adds no width.</figcaption>
+    </figure>
+
+    <p>Measured against base <code>6c577fa2</code>: the new file's falsifier fails at base
+    on the fact itself (the two rows render byte-identically) and passes with the change;
+    the cohort of every test file naming <code>ticker</code> carries the same eight
+    non-passing ids before and after, none of them this change's. Full measurements at
+    <a href="/reckon/evidence/archive/monitor-renders-what-it-is-given-landed.html#s4-row-renders-the-wait">the
+    §4 row evidence anchor</a>.</p>
+
+    <p><strong>Two repairs of this section are untouched by this node:</strong> the age
+    still renders raw seconds with <code>expected_horizon_seconds</code> and
+    <code>wait_overdue</code> unread, and <code>next_action</code> and
+    <code>resume_brief</code> are still truncated by the tail. Both are read-side work on
+    the same file, recorded as follow-ons.</p>
+
     <h2 id="s5">&sect;5 &mdash; One letter, two quantities</h2>
 
     <p><code>ticker.py:230</code> maps <code>"waiting": "q"</code>, so the compact counter

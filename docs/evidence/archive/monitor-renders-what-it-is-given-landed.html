@@ -235,6 +235,14 @@ five present in event: {'wait_condition_state': True, 'wait_observed': True,
     <h2 id="anchors">Landed outcomes</h2>
     <table class="measures">
       <tbody>
+        <tr id="s4-row-renders-the-wait">
+          <td><code>feat(crew): render a declared wait whose probe has never run</code></td>
+          <td>A row whose declared wait no probe has executed carries the unmeasured
+          figure's glyph at the head of its reason clause; a probed wait, a met
+          condition and a run declaring no wait render byte-identically to before.
+          Repair commit <code>4499ca35</code>, corrected by
+          <code>c3930b6a</code>.</td>
+        </tr>
         <tr id="the-wait-facts-reach-the-event">
           <td><code>feat(crew): carry a declared wait's facts into the transition event</code></td>
           <td>Five wait facts reach the transition event from the snapshot; each
@@ -243,6 +251,74 @@ five present in event: {'wait_condition_state': True, 'wait_observed': True,
         </tr>
       </tbody>
     </table>
+
+
+  <section id="s4-row-renders-the-wait">
+    <h2>&sect;4 &mdash; The row renders the wait it was given</h2>
+
+    <p><strong>Question.</strong> The classifier writes the probe's verdict beside a
+    declared wait and leaves it absent when no probe has run, so the record separates a
+    condition nothing is testing from one being read and merely not terminal. The
+    renderer read none of the wait facts, so the two produced the same row &mdash; how a
+    wait nobody was checking read as a slow dependency.</p>
+
+    <p><strong>What the base revision reads.</strong> <code>reckon/crew/ticker.py</code>
+    at <code>6c577fa2</code> contains zero occurrences of any <code>wait_</code> event
+    key; the <em>wait</em> strings in the file are state names and column labels. The
+    classifier's five facts reach the event (the sibling anchor above) and the renderer
+    reads none of them.</p>
+
+    <figure>
+      <img src="/reckon/figures/rendered-evidence/unprobed-wait-row.svg"
+           alt="Three rows rendered from the live classifier at 180 columns: a wait whose
+                probe ran and is unmet, a wait nothing can probe carrying the unprobed
+                marker at the head of its clause, and a run declaring no wait with an
+                empty clause.">
+      <figcaption>Measured rows, not sketches: each was rendered by
+                <code>Ticker.render()</code> from the event the composer builds for the
+                manifest named beside it.</figcaption>
+    </figure>
+
+    <p><strong>The reachable shape is not the one the plan predicted.</strong> The plan
+    records an unprobed wait as rendering <code>wait-aged</code>. A complete declaration
+    is probed on every snapshot, so the unprobed case is a manifest that asks to wait and
+    whose declaration the classifier cannot read as one: it renders
+    <code>working</code> with an empty detail, beside the counter still calling it a
+    waiting run. A first attempt keyed the marker on any of the three facts being present
+    &mdash; which a synthetic event satisfies and a real one does not obey: a run
+    declaring no wait emits <code>None</code> for all five, while a manifest asking to
+    wait emits the horizon and the overdue flag whether or not its declaration is
+    readable. The correction reads the boundary from the composer's own output, and the
+    controls now read both sides of it end to end.</p>
+
+    <table class="measures">
+      <thead>
+        <tr><th>Run</th><th>Result</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>tests/test_ticker_renders_wait_facts.py</code> at base
+            <code>6c577fa2</code></td><td>6 failed, 1 passed &mdash; the falsifier failing
+            on the fact (both rows byte-identical)</td></tr>
+        <tr><td>the same file with the change</td><td>10 passed</td></tr>
+        <tr><td>cohort of every test file naming <code>ticker</code>, at base</td>
+            <td>8 failed, 310 passed</td></tr>
+        <tr><td>the same cohort with the change</td><td>8 failed, 320 passed &mdash;
+            identical failure ids, delta zero</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>The eight are all present at base</strong> and none is this change's:
+    <code>test_crew_watch_lifetime.py</code> (3), <code>test_crew_finished_display.py</code>
+    (2), <code>test_crew_recovery.py</code> (1), <code>test_crew_surface.py</code> (1,
+    four names missing from the surface snapshot that this change does not add), and
+    <code>test_a_rewritten_terminal_manifest_transitions.py</code> (1). They reproduce
+    without the change, so they are surfaced as follow-ons rather than triaged here.</p>
+
+    <p><strong>Scope.</strong> Only the first of the section's three repairs. The age
+    still renders raw seconds with <code>expected_horizon_seconds</code> and
+    <code>wait_overdue</code> unread, and <code>next_action</code> and
+    <code>resume_brief</code> are still cut by the tail.</p>
+  </section>
 
     <h2 id="not-covered">What this record does not cover</h2>
     <p>
