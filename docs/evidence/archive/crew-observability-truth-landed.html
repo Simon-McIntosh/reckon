@@ -1156,7 +1156,8 @@ reading taken as an authority it was not.</p>
     <code>extract_watch_arrivals</code> in <code>reckon/crew/query.py</code>, returning arrivals,
     state changes and re-inventory rows on one shape, each stamped in UTC or explicitly unknown.</p>
     <p><strong>Both failure modes reproduced against the tree, not asserted.</strong> Reading the
-    six live streams under <code>~/.config/reckon/crew/watch/</code> (11,301 rows, 2,931 nodes)
+    six live streams under <code>~/.config/reckon/crew/watch/</code> (2,931 nodes; the row total
+    is a live count and grows while the streams are appended to)
     through the shipped function:</p>
     <table>
       <thead><tr><th>Reader</th><th>Result</th><th>Defect</th></tr></thead>
@@ -1167,8 +1168,8 @@ reading taken as an authority it was not.</p>
         <tr><td>keep every baseline row</td><td>2,462 baseline rows against 2,931 nodes</td>
           <td>invents arrivals: 170 of those rows are re-inventory, emitted a follower-full at a
           time by a re-attaching follower</td></tr>
-        <tr><td>first appearance per node, plus the burst test</td><td>2,931 arrivals, 8,200 state
-          changes, 170 re-inventory</td><td>&mdash;</td></tr>
+        <tr><td>first appearance per node, plus the burst test</td><td>2,931 arrivals and 170
+          re-inventory rows, the remainder classified as state changes</td><td>&mdash;</td></tr>
       </tbody>
     </table>
     <p>The re-inventory half is measurable directly: the largest same-instant baseline burst on
