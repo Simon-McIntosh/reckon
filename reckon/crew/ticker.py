@@ -75,6 +75,16 @@ SPEND = WALL + SPEND_GAP + RATE
 # while an unobserved run's tokens are simply unknown.
 DIM_MARKER = "\N{EN DASH}"
 
+# A wait whose condition has never been probed is not the same situation as one
+# whose probe has run and not yet met its terminal: nothing is testing the
+# first, so its condition cannot lift on its own and a reader waiting for it
+# waits for nothing. The record separates them — the probe's verdict is absent
+# when no probe has run — but the row rendered both identically, which is how a
+# wait nobody was checking read as a slow dependency. It takes the same glyph
+# the measure cells use for a figure that was never taken, because that is what
+# the probe's verdict is: a measurement nobody has made.
+UNPROBED_MARKER = DIM_MARKER
+
 # Identity hues, one set per background. Picked by measurement rather than eye:
 # each clears a 3.8:1 contrast ratio against its pane, sits in the cool arc
 # (hue 190-330 degrees), and is at least 30 CIE76 units from every verdict hue
@@ -524,6 +534,42 @@ def settled_at_attach(event: Mapping[str, Any]) -> bool:
     return str(event.get("to_state") or "") in SETTLED_STATES
 
 
+def declares_a_wait(event: Mapping[str, Any]) -> bool:
+    """Whether the row's run declared an external condition to wait on.
+
+    Read from the declaration's own facts, never from the state word: a run
+    whose declaration is incomplete is classified by what failed to parse,
+    which is a different word from the one a well-formed wait renders on a
+    skewed clock. A row that declares nothing carries none of these keys, so
+    absence is the unmeasured state for the run as a whole and no marker can
+    be derived from it.
+    """
+    if event.get("wait_condition_state") is not None:
+        return True
+    if event.get("wait_overdue") is not None:
+        return True
+    return isinstance(event.get("expected_horizon_seconds"), Real)
+
+
+def probe_has_run(event: Mapping[str, Any]) -> bool:
+    """Whether the declared wait's condition has been probed at all.
+
+    The probe's verdict — met, pending or an observation matching no declared
+    terminal — is written only when a probe answered, so its presence is the
+    record of execution and its absence is the record of none. A run whose
+    probe could not be launched at all still carries a verdict, because that
+    failure is what the probe reported; only a wait that was never read has
+    nothing to say, which is exactly the case a reader must not mistake for a
+    condition still being tested.
+    """
+    return bool(str(event.get("wait_condition_state") or "").strip())
+
+
+def _unprobed_wait(event: Mapping[str, Any]) -> bool:
+    """Whether the row declares a wait no probe has ever been executed for."""
+    return declares_a_wait(event) and not probe_has_run(event)
+
+
 def _agent_label(agent: Any) -> str:
     """The agent column label: alias plus the full effort word, or the record as it stands.
 
@@ -671,8 +717,15 @@ class Ticker:
             "needs-help",
             "unwritten",
         }
-        if to_state not in explained or room < MIN_REASON:
+        unprobed = _unprobed_wait(event)
+        # A wait no probe has run for is a fact about the wait alone, and the
+        # state word beside it can be any the classifier emitted — a live run
+        # with a broken declaration reads as ordinary working. So the marker is
+        # reachable from every state, and survives a clause with no room for it.
+        if to_state not in explained and not unprobed:
             return ""
+        if room < MIN_REASON:
+            return UNPROBED_MARKER if unprobed else ""
         detail = event.get("detail")
         if detail is None:
             detail = event.get("reason")
@@ -680,6 +733,12 @@ class Ticker:
             marker = _display_marker(event)
         else:
             marker = "!" if to_state == "wait-aged" else ""
+        if unprobed:
+            # Additive, never a replacement: the age and needs-help glyphs are
+            # signals about the run that a reader acts on, and a wait whose
+            # probe never ran is one fact more rather than one of them
+            # overruled. The marker's width is carried in the reserve below.
+            marker = UNPROBED_MARKER + marker
         recovery = str(event.get("recovery") or "").strip()
         recovery_prefix = f"{recovery}: " if recovery else ""
         reserve = len(marker) + (1 if marker else 0) + len(recovery_prefix)
