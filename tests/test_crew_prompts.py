@@ -143,6 +143,22 @@ def test_resumed_worker_has_a_checkpoint_shape_other_than_waiting():
     assert "checkpoint" in _time_fence(prompt)
 
 
+# ── The checkpoint key is offered to any worker recording progress ─────────
+
+CHECKPOINT_FOR_ANY_WORKER = "any worker recording progress at any point"
+
+
+def test_checkpoint_key_is_offered_to_a_worker_recording_progress():
+    prompt = _prompt()
+
+    # The checkpoint key is not scoped to a resumed worker whose wait is met:
+    # a fresh worker recording progress — an orientation note before the work
+    # starts — is pointed at the same key rather than at the wait block, so a
+    # note about where work stands is not written as a declared wait.
+    assert CHECKPOINT_FOR_ANY_WORKER in _manifest_line(prompt, "checkpoint")
+    assert CHECKPOINT_FOR_ANY_WORKER in _time_fence(prompt)
+
+
 # ── The rule applies to every role, not only ones that can run commands ────
 
 
