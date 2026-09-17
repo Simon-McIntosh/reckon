@@ -652,22 +652,64 @@ def load(project: str, root: str | Path | None = None) -> tuple[dict[str, Any], 
     )
 
 
+def _roster_ids(entries: Any) -> set[str]:
+    """The member ids a roster carries, ignoring rows that name none."""
+    return {
+        str(entry.get("id"))
+        for entry in entries
+        if isinstance(entry, Mapping) and entry.get("id")
+    }
+
+
+def dropped_member_ids(stored: Any, incoming: Any) -> list[str]:
+    """Member ids the stored roster holds that an incoming write leaves out.
+
+    The comparison is by id rather than by count, because losing a member is
+    the guarded fact: a write that drops one member while adding another keeps
+    the count identical and still empties the roster of the id it dropped.
+    """
+    return sorted(_roster_ids(stored) - _roster_ids(incoming))
+
+
 def write(
     project: str,
     data: Mapping[str, Any],
     expected_version: int,
     root: str | Path | None = None,
+    *,
+    allow_member_removal: bool = False,
 ) -> int:
     """Write the ledger, refusing a stale expected version.
 
     Pairing every write with the version it read is what makes two concurrent
     orchestrators safe: the loser is told to re-read rather than silently
     overwriting a record it never saw.
+
+    A write that leaves out a member id the stored roster holds is refused
+    unless ``allow_member_removal`` states that the removal is intended. This
+    is what stops a roster emptying itself through a write meant for another
+    purpose: the caller that genuinely retires a member passes the flag, so
+    the removal is stated where it is performed rather than inferred later
+    from an absence. An absent ledger has no members, so creating one from
+    empty is unaffected.
     """
     path = ledger_path(project, root)
+    incoming_members = list(data.get("members", []))
+    if not allow_member_removal:
+        dropped = dropped_member_ids(
+            load(project, root)[0]["members"], incoming_members
+        )
+        if dropped:
+            raise LedgerError(
+                f"refusing to write the ledger for {project!r}: this write drops "
+                f"roster member(s) {', '.join(dropped)} that the stored roster "
+                "holds, which is how a roster empties itself without anyone "
+                "asking; pass allow_member_removal=True when the removal is "
+                "intended"
+            )
     payload = {
         "members": sorted(
-            (dict(member) for member in data.get("members", [])),
+            (dict(member) for member in incoming_members),
             key=lambda member: str(member.get("id", "")),
         ),
         "runs": list(data.get("runs", [])),
