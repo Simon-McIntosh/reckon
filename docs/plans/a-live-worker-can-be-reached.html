@@ -21,8 +21,8 @@
   <title>A Live Worker Can Be Reached | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="14">
+<meta name="plan-modified" content="2026-09-17">
+<meta name="plan-version" content="15">
 <meta name="plan-impl" content="0.7">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 </head>
@@ -247,6 +247,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260915T101035048058-review-of-the-guard-holds-at-the-merged-head" data-who="crew-attention" data-when="2026-09-15T10:33:54.146Z">
     <div class="r-comment-body"><p>Independent review attached to the merged-head verification: 20 goal_fidelity, 20 scope_discipline, 19 evidence, 19 durability, 19 fit. One finding worth acting on — the report identifies the first-parent tree by revision but leaves how it was materialised as a placeholder, so the baseline half is stated rather than reproducible.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260915T061057147322-a-send-to-a-worker-is-refused" data-who="crew-drain-fence" data-when="2026-09-15T09:32:14.789Z">
+    <div class="r-comment-body"><p>Reconciled by a later session, not by its own. This run belongs to rca-worker-channel-20260915 and has been terminal since 2026-09-15 with a dead process. It classified as unreadable for one reason, which is worth recording: its manifest declares status &#x27;done&#x27;, which is not in the reader&#x27;s vocabulary (blocked, complete, derived, failed, in-progress, pending, running), so an off-vocabulary status is indistinguishable from a corrupt manifest and the run can never leave that state. Verified before reconciling: the worktree is clean, carries zero commits beyond base, and its HEAD is an ancestor of main, so no work is discarded. Its declared deliverable reckon/hooks/worker_message_guard.py is present in main, having arrived by some route other than this run, and no ledger row existed for it. Reconciled because its stale claim on reckon/cli.py blocked an unrelated promotion.</p></div>
 </div>
 </section>
 </main>
