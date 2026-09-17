@@ -48,6 +48,8 @@ from reckon.crew.runs import (
 
 # ── Promotion: the transient record becomes committed evidence ──────────────
 
+_COORDINATOR_LANDING_AUTHOR = "reckon-ship"
+
 
 def scoped_diff_stat(
     *,
@@ -1376,6 +1378,7 @@ def _record_landing_comment(
         return {"recorded": False, "reason": "empty_narrative"}
     comment_id = f"c-run-{re.sub(r'[^A-Za-z0-9._-]+', '-', run_id)}"
     anchor = _section_anchor(section)
+    desired_body = f"<p>{html.escape(narrative)}</p>"
     worker_recorded = bool(
         worker_tree
         and _worker_authored_landing_record(
@@ -1394,7 +1397,24 @@ def _record_landing_comment(
             key: list(items) for key, items in (state.get("comments") or {}).items()
         }
         items = comments.setdefault(anchor, [])
-        if any(str(item.get("id") or "") == comment_id for item in items):
+        existing = next(
+            (item for item in items if str(item.get("id") or "") == comment_id),
+            None,
+        )
+        if existing is not None:
+            if worker_recorded:
+                return {
+                    "recorded": False,
+                    "comment_id": comment_id,
+                    "section": anchor,
+                    "reason": "worker_authored_landing_record",
+                }
+            if str(existing.get("body") or "") != desired_body:
+                raise CrewError(
+                    f"landing comment {comment_id!r} for plan {plan!r} already "
+                    "contains a different narrative; refusing to report the "
+                    "corrected outcome as recorded"
+                )
             return {
                 "recorded": True,
                 "comment_id": comment_id,
@@ -1413,7 +1433,7 @@ def _record_landing_comment(
                 "id": comment_id,
                 "who": author,
                 "when": when,
-                "body": f"<p>{html.escape(narrative)}</p>",
+                "body": desired_body,
             }
         )
         try:
@@ -2613,7 +2633,7 @@ def _complete_locked(
                 section=str(node.get("section") or ""),
                 run_id=run_id,
                 narrative=outcome,
-                author=str(record.get("member") or record.get("role") or "reckon"),
+                author=_COORDINATOR_LANDING_AUTHOR,
                 when=str(existing.get("completed_at") or _utc_now()),
                 root=ledger_root,
                 worker_tree=tree,
@@ -2791,7 +2811,7 @@ def _complete_locked(
             section=str(node.get("section") or ""),
             run_id=run_id,
             narrative=outcome,
-            author=str(record.get("member") or record.get("role") or "reckon"),
+            author=_COORDINATOR_LANDING_AUTHOR,
             when=finished,
             root=ledger_root,
             worker_tree=tree,
