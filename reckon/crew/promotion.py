@@ -722,10 +722,67 @@ def _prose_changed_paths_name_no_paths(manifest: Mapping[str, Any]) -> bool:
     )
 
 
+def _changed_paths_inside_repository(
+    manifest: Mapping[str, Any], record: Mapping[str, Any]
+) -> tuple[str, ...]:
+    """The manifest's changed paths that resolve under the run's own repository.
+
+    A report-only run delivers its artefact outside every repository — a parsed
+    review JSON under the crew reviews directory, a scratch file beside it — and
+    its manifest names those paths while citing no commit, because there is
+    nothing inside a repository to commit. So the commit-for-changed-manifest
+    guard's real question is not whether ``changed_paths`` names anything, but
+    whether any named path lies in *this run's* repository and so needs the
+    commit that contains it. Asking the narrower question is what lets a
+    finished run that has no commit to give be reconciled.
+
+    A relative path is repository-relative by the manifest's own convention, so
+    a relative path resolves against the repository root; an absolute path
+    resolves as written. A path anywhere else — a store directory, a scratch
+    path under the crew home — is outside and requires no commit here. When the
+    run records no repository to resolve against, every named path is returned,
+    which is the guard's prior behaviour.
+    """
+    items = [str(item).strip() for item in (manifest.get("changed_paths") or ())]
+    root = str(record.get("repo") or record.get("worktree") or "").strip()
+    if not root:
+        return tuple(items)
+    try:
+        base = Path(root).expanduser().resolve()
+    except (OSError, RuntimeError):
+        return tuple(items)
+    inside: list[str] = []
+    for item in items:
+        raw = Path(item).expanduser()
+        if raw.is_absolute():
+            try:
+                resolved = raw.resolve()
+            except (OSError, RuntimeError):
+                resolved = raw
+            try:
+                resolved.relative_to(base)
+            except ValueError:
+                continue
+            inside.append(item)
+        elif ".." in raw.parts:
+            continue
+        else:
+            inside.append(item)
+    return tuple(inside)
+
+
 def _require_commit_for_changed_manifest(
     run_id: str, record: Mapping[str, Any]
 ) -> None:
-    """Refuse completed repository work whose manifest omits its commit."""
+    """Refuse completed repository work whose manifest omits its commit.
+
+    The guard refuses only when the manifest names a changed path that resolves
+    under the run's own repository, leaving a run whose changed_paths lie
+    entirely outside it — a report-only or review run — to promote without a
+    commit, which is its correct disposition. The chain answers the narrower
+    question first: only once a path needs a commit does the absent ``commits``
+    field become the defect.
+    """
     manifest_present, fresh = _manifest_freshness(record)
     if not manifest_present or not fresh:
         return
@@ -740,6 +797,7 @@ def _require_commit_for_changed_manifest(
         or not manifest.get("changed_paths")
         or _prose_changed_paths_name_no_paths(manifest)
         or manifest.get("commits")
+        or not _changed_paths_inside_repository(manifest, record)
     ):
         return
     raise CrewError(
