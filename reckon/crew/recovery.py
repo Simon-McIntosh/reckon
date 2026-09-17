@@ -2419,6 +2419,18 @@ def _watch_snapshot(
         # reader to answer or read a manifest for.
         "needs_help_complete": row.get("needs_help_complete"),
         "wait_overdue": row.get("wait_overdue"),
+        # The rest of a declared wait travels beside its probe's verdict:
+        # whether the condition probe has run at all and what it last observed,
+        # the horizon the wait was declared against, and the brief a resumed
+        # worker reads. A run that declares no wait has taken no measurement, so
+        # None is the explicit unmeasured state and a zero never stands in for
+        # one.
+        "wait_condition_state": row.get("wait_condition_state"),
+        "wait_observed": row.get("wait_observed"),
+        "expected_horizon_seconds": (row.get("external_wait") or {}).get(
+            "expected_horizon_seconds"
+        ),
+        "resume_brief": (row.get("external_wait") or {}).get("resume_brief"),
         # The manifest facts the fold needs to detect a rewrite: the effective
         # status (empty while a live process defers a terminal report, so a
         # deferred report never reads like a verdict), the commit list, and the
@@ -2653,6 +2665,18 @@ def _watch_transition(
         "lifting_condition": snapshot.get("lifting_condition"),
         "resets_at": snapshot.get("resets_at"),
         "next_action": snapshot.get("next_action"),
+        # The declared wait's own facts, beside the condition that lifts it: the
+        # probe's verdict and last observation, the horizon the wait was
+        # declared against, and the brief a resumed worker reads. Carried whole
+        # so a renderer can tell a probe that never ran from one still pending,
+        # and can hold the wait's age against its horizon without re-deriving
+        # either. None is the explicit unmeasured state — a run that declares no
+        # wait has taken no measurement, so no zero stands in for one.
+        "wait_condition_state": snapshot.get("wait_condition_state"),
+        "wait_observed": snapshot.get("wait_observed"),
+        "wait_overdue": snapshot.get("wait_overdue"),
+        "expected_horizon_seconds": snapshot.get("expected_horizon_seconds"),
+        "resume_brief": snapshot.get("resume_brief"),
         "needs_help_complete": snapshot.get("needs_help_complete"),
     }
     if snapshot.get("manifest_rewritten"):
