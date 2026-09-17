@@ -540,9 +540,10 @@ def declares_a_wait(event: Mapping[str, Any]) -> bool:
     Read from the declaration's own facts, never from the state word: a run
     whose declaration is incomplete is classified by what failed to parse,
     which is a different word from the one a well-formed wait renders on a
-    skewed clock. A row that declares nothing carries none of these keys, so
-    absence is the unmeasured state for the run as a whole and no marker can
-    be derived from it.
+    skewed clock. A run declaring no wait emits None for all of them, so the
+    marker cannot be derived from an ordinary row; a manifest asking to wait
+    emits the horizon and the overdue flag even when nothing can be probed,
+    which is the situation the row has to name.
     """
     if event.get("wait_condition_state") is not None:
         return True

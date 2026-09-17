@@ -260,3 +260,49 @@ def test_the_marker_adds_to_the_needs_action_glyph_rather_than_replacing_it() ->
     clause = t._reason(held, "needs-help", 45)
     assert clause.startswith(ticker_module.UNPROBED_MARKER + "?")
     assert "?" in clause
+
+
+def test_a_real_run_declaring_no_wait_carries_no_marker(tmp_path: Path) -> None:
+    """The payload control: an ordinary manifest, through the whole pipeline.
+
+    The synthetic rows above are built to the shape the composer produces, and
+    a predicate reading the wrong fact would still pass them — a run that
+    declares nothing emits None for all five, but so would any value the
+    composer defaults. This reads the event the composer actually builds from
+    a manifest that declares no wait, which is the population most rows belong
+    to and the one a marker must never touch.
+    """
+    snapshot = _snapshot(
+        tmp_path, run_id="r-no-wait", manifest_text="status: working\n"
+    )
+    event = _event(snapshot)
+    for fact in (
+        "wait_condition_state",
+        "wait_observed",
+        "wait_overdue",
+        "expected_horizon_seconds",
+        "resume_brief",
+    ):
+        assert event[fact] is None, f"{fact} was invented for a run declaring no wait"
+    # The marker can only live in the reason clause, so an empty clause is
+    # the statement that the row is unchanged for a run that declares nothing.
+    assert grid()._reason(event, str(event.get("to_state") or ""), 45) == ""
+
+
+def test_a_real_waiting_manifest_that_cannot_be_probed_carries_the_marker(
+    tmp_path: Path,
+) -> None:
+    """The reachable shape, read end to end: a manifest asking to wait.
+
+    A complete declaration is probed on every snapshot, so the unprobed case is
+    a manifest that asks to wait and cannot be read as one — the classifier
+    renders it working and the row said nothing about the wait it declared.
+    """
+    snapshot = _snapshot(
+        tmp_path, run_id="r-waiting-bare", manifest_text="status: waiting\n"
+    )
+    event = _event(snapshot)
+    assert event["wait_condition_state"] is None, "the fixture produced a verdict"
+    assert event["expected_horizon_seconds"] is not None, "no wait was declared at all"
+    clause = grid()._reason(event, str(event.get("to_state") or ""), 45)
+    assert clause.startswith(ticker_module.UNPROBED_MARKER)
