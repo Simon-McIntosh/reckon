@@ -219,6 +219,28 @@ def _visible_text(el) -> str:
     return el.get_text(" ", strip=True) if el else ""
 
 
+def _prose_text(el) -> str:
+    """Visible text with the verbatim subtrees removed.
+
+    Text inside ``<pre>`` and ``<code>`` renders literally, so an asterisk
+    pair there is the subject a document is quoting rather than markdown a
+    reader was meant to see rendered.
+    """
+
+    if not el:
+        return ""
+    parts: list[str] = []
+    for node in el.find_all(string=True):
+        for parent in node.parents:
+            if getattr(parent, "name", None) in ("pre", "code"):
+                break
+        else:
+            text = str(node).strip()
+            if text:
+                parts.append(text)
+    return " ".join(parts)
+
+
 def _load_mounts() -> dict[str, Path]:
     mounts_file = _mounts_path()
     if not mounts_file.exists():
@@ -616,13 +638,14 @@ def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
 
     for cls, el in body_scopes:
         txt = _visible_text(el)
-        if _MD_BOLD.search(txt):
+        prose = _prose_text(el)
+        if _MD_BOLD.search(prose):
             out.append(
                 Finding(
                     "error",
                     "md-bold",
                     f"literal markdown **bold** in <{cls}> — author <strong>…</strong>"
-                    f" (renders verbatim): '{_MD_BOLD.search(txt).group()[:40]}…'",
+                    f" (renders verbatim): '{_MD_BOLD.search(prose).group()[:40]}…'",
                 )
             )
         # Leading list/heading markers only meaningful on the raw inner text.
