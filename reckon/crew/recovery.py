@@ -120,6 +120,7 @@ RECOVERY_VERBS = {
     "unwritten": "resume",
     "ready": "resume",
     "abandoned": "recover",
+    "refused-at-admission": "resume",
     "wait-aged": "investigate",
 }
 RECOVERY_CLASSIFICATIONS = tuple(RECOVERY_VERBS)
@@ -136,6 +137,7 @@ ACTIONABLE_RECOVERY_CLASSIFICATIONS = frozenset(
         "unwritten",
         "ready",
         "abandoned",
+        "refused-at-admission",
         "wait-aged",
     }
 )
@@ -583,6 +585,124 @@ def _stream_retry_block(
         "limit_kind": str(budget.get("rate_limit_type") or "rate-limit"),
         "retries": int(match.group(1)),
         "resets_at": str(budget.get("resets_at") or "unknown"),
+    }
+
+
+# The client substitutes this exact string into a message's model field when no
+# model served the turn, so it is a marker rather than a model name.
+_SYNTHETIC_MODEL = "<synthetic>"
+
+
+def _assistant_refusal_text(message: Mapping[str, Any]) -> str:
+    """The prose of a synthetic assistant message, or the empty string."""
+    content = message.get("content")
+    if not isinstance(content, list):
+        return ""
+    parts = [
+        str(block.get("text") or "")
+        for block in content
+        if isinstance(block, Mapping) and block.get("type") == "text"
+    ]
+    return " ".join(parts).strip()
+
+
+def _result_turned_no_tokens(event: Mapping[str, Any]) -> bool:
+    """Whether a result record reports an error turn that generated nothing.
+
+    Every token counter zero and a zero API duration are what separate a turn
+    the client refused before dispatching from one that ran and then failed —
+    a failed turn still reports the tokens it spent and the API duration it
+    waited on.
+    """
+    if event.get("is_error") is not True:
+        return False
+    try:
+        if int(event.get("duration_api_ms") or 0) != 0:
+            return False
+        if int(event.get("num_turns") or 0) > 1:
+            return False
+    except (TypeError, ValueError):
+        return False
+    usage = event.get("usage")
+    if not isinstance(usage, Mapping):
+        return False
+    for key in (
+        "input_tokens",
+        "output_tokens",
+        "cache_creation_input_tokens",
+        "cache_read_input_tokens",
+    ):
+        try:
+            if int(usage.get(key) or 0) != 0:
+                return False
+        except (TypeError, ValueError):
+            return False
+    return True
+
+
+def _admission_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
+    """The marks of a run the backend refused before serving its first turn.
+
+    A refusal at admission ends the run in three lines: an assistant record
+    whose model is the client's substitution for "no model served this turn"
+    (the literal ``<synthetic>``), carrying ``error: invalid_request`` with the
+    reason it refused; and a result record whose terminal reason is
+    ``blocking_limit`` with a zero API duration and every token counter zero.
+    Together they say no model was reached at all, which is a different stop
+    from a worker whose process died mid-turn. The generic dead-process
+    classification cannot say which happened, so this one names it and carries
+    the paths a reader acts on.
+
+    Requiring the zero-token result beside the synthetic message is deliberate:
+    a stream that merely mentions the same words while doing real work returns
+    None, and an ordinary failed turn — which reports the tokens it spent —
+    cannot reach this reading. None means the ordinary dead-process arms
+    classify the run, so this gate never widens them.
+    """
+    if record.get("launch") != "cli":
+        return None
+    log = Path(str(record.get("log_path") or ""))
+    if not log.is_file():
+        return None
+    refusal_reason = ""
+    terminal_reason = ""
+    zero_token_error = False
+    try:
+        with log.open(encoding="utf-8", errors="replace") as handle:
+            for line in handle:
+                try:
+                    event = json.loads(line)
+                except (ValueError, TypeError):
+                    continue
+                if not isinstance(event, Mapping):
+                    continue
+                kind = str(event.get("type") or "")
+                if kind == "assistant":
+                    message = event.get("message")
+                    if not isinstance(message, Mapping):
+                        continue
+                    if str(message.get("model") or "") != _SYNTHETIC_MODEL:
+                        continue
+                    if str(event.get("error") or "") != "invalid_request":
+                        continue
+                    text = _assistant_refusal_text(message)
+                    if text:
+                        refusal_reason = text
+                elif kind == "result":
+                    terminal_reason = str(event.get("terminal_reason") or "")
+                    if _result_turned_no_tokens(event):
+                        zero_token_error = True
+    except OSError:
+        return None
+    if (
+        not refusal_reason
+        or terminal_reason != "blocking_limit"
+        or not zero_token_error
+    ):
+        return None
+    return {
+        "reason": refusal_reason,
+        "terminal_reason": terminal_reason,
     }
 
 
@@ -1288,6 +1408,15 @@ def classify_pointer(
         if (refusal_block or retry_block or budget_hold)
         else _background_wait_signal(record)
     )
+    # A refusal at admission is read from the stream's own marks, not from the
+    # budget block: it is not a spend refusal — nothing was requested — and the
+    # block carries no budget to refuse from. It is resolved here so the
+    # dead-process chain consults the stream once for the shape.
+    admission_refusal = (
+        None
+        if (refusal_block or retry_block or exhaustion_block or budget_hold)
+        else _admission_refusal(record)
+    )
     terminal = phase in ("complete", "failed")
     moment = _utc_seconds() if now_seconds is None else float(now_seconds)
     wait = _manifest_wait(
@@ -1675,6 +1804,28 @@ def classify_pointer(
             f"inspect the worktree at {record.get('worktree')}; the committed "
             "work is safe and can be promoted or resumed once a manifest "
             "documents it"
+        )
+    elif alive is False and admission_refusal is not None:
+        # A run the backend refused at admission is named for what it is rather
+        # than folded into the abandoned bucket. The process is gone and no
+        # manifest was delivered in both cases, but here the stop is that no
+        # model ever served a turn — a fact the stream states and the generic
+        # bucket cannot, so a reader is spared diagnosing a vanish as the lane
+        # fault they already know about. The narrow arm sits beside the
+        # abandoned reading and takes nothing from it: a genuine vanish carries
+        # none of these marks and still reads abandoned.
+        classification = "refused-at-admission"
+        detail = (
+            "refused at admission: the backend returned no turn "
+            f"({admission_refusal['reason']!r}, terminal reason "
+            f"{admission_refusal['terminal_reason']!r}) with every token "
+            "counter zero; no model was reached"
+        )
+        action = (
+            f"read the refusing stream {record.get('log_path')} and launch log "
+            f"{record.get('stderr_path')}; the run never reached a model, and a "
+            "resume replaces the pointer, so keep the stream as the durable "
+            "record of the refusal"
         )
     elif terminal and alive is False:
         # Abandoned requires positive proof of death: the process table says
