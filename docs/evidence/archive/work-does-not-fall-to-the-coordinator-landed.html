@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-does-not-fall-to-the-coordinator-landed">
+  <meta name="plan-title" content="Work Does Not Fall To The Coordinator — Landed Evidence">
+  <meta name="plan-summary" content="Cumulative implementation evidence for removing coordinator hand-compensations from the crew surface.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-evidence-for" content="work-does-not-fall-to-the-coordinator">
+  <meta name="plan-verifies" content="work-does-not-fall-to-the-coordinator#s2">
+  <title>Work Does Not Fall To The Coordinator — Landed Evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header>
+    <p class="eyebrow">Execution evidence · cumulative record</p>
+    <h1>Work Does Not Fall To The Coordinator — Landed Evidence</h1>
+    <p class="lead">Verified implementation outcomes for work moved from coordinator compensation into the Reckon surface.</p>
+  </header>
+
+  <section id="s2-roster-write-commits">
+    <h2>Roster registration commits its own write</h2>
+    <p><strong>Defect reproduced before repair.</strong> The public member-add command exited successfully while <code>git status --porcelain</code> reported <code>?? docs/</code>; source inspection found no commit anywhere in the registration path. The failing falsifier landed in commit <code>588c56c4</code>.</p>
+    <p>Commit <code>0b73f64e</code> added an explicit, default-off commit option to <code>ledger.register_member</code> and enabled it only from <code>crew_member_add</code>. The command now stages and commits only <code>docs/state/&lt;project&gt;/crew.json</code> under a <code>chore(roster):</code> subject with a non-empty body and no parsed trailers. Internal and direct registrations retain the prior non-committing default, so dispatch authority and timing are unchanged.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Base</th><th>Landed</th><th>Delta</th></tr></thead>
+      <tbody>
+        <tr><td>Focused falsifiers</td><td>member-add case failed with dirty <code>docs/</code></td><td>2 passed in 0.97s</td><td>public commit and default non-commit both proved</td></tr>
+        <tr><td>Roster/member assertion set on <code>all_debug</code></td><td>34 failed, 335 passed</td><td>34 failed, 337 passed</td><td>0 added failure IDs, 0 removed failure IDs</td></tr>
+        <tr><td>Discarded global-registration candidate</td><td>34 failed, 335 passed</td><td>36 failed, 334 passed</td><td>3 added failures; rejected as too broad</td></tr>
+      </tbody>
+    </table>
+    <p>Changed product paths: <code>reckon/ledger.py</code> and <code>reckon/cli.py</code>. Regression coverage: <code>tests/test_roster_write_commits.py</code>. Full logs are recorded in the node manifest.</p>
+  </section>
+</main>
+</body>
+</html>
