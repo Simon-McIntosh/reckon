@@ -17,6 +17,7 @@ from pathlib import Path
 import pytest
 
 from reckon import ledger
+from reckon.crew import routing
 
 PROJECT = "proj"
 
@@ -218,6 +219,28 @@ def test_an_intended_removal_of_every_member_succeeds_with_the_flag(repo) -> Non
     )
 
     assert ledger.members(PROJECT, repo) == []
+
+
+def test_the_idle_reaper_still_retires_a_session_member(repo) -> None:
+    """The granted caller: the reaper's whole purpose is to drop idle rows.
+
+    Without the intent flag the guard would refuse it, so this asserts both
+    that the removal happens and that it is reached as an AGREED removal rather
+    than a silent one.
+    """
+    ledger.register_member(
+        PROJECT,
+        "session-abc",
+        harness="alpha",
+        root=repo,
+        now="2020-01-01T00:00:00Z",
+    )
+    ledger.register_member(PROJECT, "clive-1", harness="alpha", root=repo)
+
+    result = routing.reap_idle_session_members(PROJECT, root=repo)
+
+    assert result["reaped"] == ["session-abc"]
+    assert _ids(repo) == ["clive-1"]
 
 
 # ── Isolation
