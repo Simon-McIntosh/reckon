@@ -585,6 +585,19 @@
       Asserted by two cases in <code>tests/test_crew_prompts.py</code> that fail at base and pass at
       the commit. Landed under commit <code>9c51724b</code>. Full record:
       <a href="/reckon/evidence/archive/crew-observability-truth-landed#manifest-wait-fields-carry-literal-examples">&#167;12 wait fields landed</a>.</p>
+    <p class="landed-summary">The checkpoint key is now offered to any worker recording progress,
+      not only to a resumed worker whose wait is met. The manifest line and the time fence both
+      point a worker recording progress at any point at <code>checkpoint</code>, and the fence
+      states that the wait block declares a wait actually held rather than a note about where
+      work stands; the key, the time fence&rsquo;s motivating clauses, and the wait fields with
+      their literal examples are otherwise unchanged. Measured on a fresh worker that received a
+      prompt carrying both the checkpoint key and the probe literal and still wrote
+      <code>status: waiting</code> with <code>wait_condition: reading plan section 12 and
+      reproducing the defect</code> while its node held a free slot. Asserted by a new case in
+      <code>tests/test_crew_prompts.py</code> that fails against the base prompt source and passes
+      at the commit; the prompt-asserting cohort passes 108 with zero failures. Landed under
+      commit <code>d0956c85</code>. Full record:
+      <a href="/reckon/evidence/archive/crew-observability-truth-landed#checkpoint-key-offered-to-any-worker">&#167;12 checkpoint key landed</a>.</p>
 
     <h2 id="s13">&#167;13 &mdash; A quiet fleet and a working one look identical, because nothing reports a wave</h2>
     <p><strong>Directed by the lead 2026-09-09, after a session spent counting completions by
