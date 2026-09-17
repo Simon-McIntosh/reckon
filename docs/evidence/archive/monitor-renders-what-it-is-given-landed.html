@@ -253,6 +253,153 @@ five present in event: {'wait_condition_state': True, 'wait_observed': True,
       merged-head attribution run over the full set belongs to the wave.
     </p>
 
+
+
+  <header class="plan-header">
+    <h1>The monitor renders what it is given — cumulative execution-evidence record</h1>
+    <p class="plan-summary">Anchors below record the measurement the monitor's
+    state vocabulary prompted: whether a run labelled <code>abandoned</code> had in
+    fact finished its work. The finding is a census, not a repair.</p>
+  </header>
+
+  <section id="abandoned-census">
+    <h2>Anchor &mdash; the abandoned census, 224(run) of 270(transition)</h2>
+
+    <p><strong>Question.</strong> Two live panes showed
+    <code>dispatched &rarr; abandoned</code> with <em>"the process is gone without a
+    complete manifest"</em>. The classification is defensible by construction
+    (<code>recovery.py</code> requires positive proof of death). The open question
+    was whether the runs it labelled had <em>finished</em> and merely failed to leave
+    a manifest the classifier accepts.</p>
+
+    <p><strong>Population.</strong> Every <code>to_state=abandoned</code> row in
+    <code>~/.config/reckon/crew/watch/*.events</code>:</p>
+
+    <table>
+      <caption>Census over the five projects that recorded an abandonment.</caption>
+      <thead><tr><th>Measure</th><th>Count</th><th>Of</th><th>Share</th></tr></thead>
+      <tbody>
+        <tr><td>Abandoned transitions</td><td>270</td><td>&mdash;</td><td>&mdash;</td></tr>
+        <tr><td>&hellip; genuine <code>transition</code> rows / <code>baseline</code> inventory rows</td><td>261 / 9</td><td>270</td><td>&mdash;</td></tr>
+        <tr><td>Distinct run ids</td><td><strong>224</strong></td><td>270</td><td>&mdash;</td></tr>
+        <tr><td>&hellip; transitions by project: nova / reckon / imas-codex / imas-efit / imas-ambix</td><td>99 / 80 / 69 / 19 / 3</td><td>270</td><td>&mdash;</td></tr>
+        <tr><td>&hellip; distinct runs by project, same order</td><td>71 / 71 / 63 / 16 / 3</td><td>224</td><td>&mdash;</td></tr>
+        <tr><td>Run directories still resolve</td><td><strong>224</strong></td><td>224</td><td>100%</td></tr>
+        <tr><td>Worktrees still resolve</td><td><strong>55</strong></td><td>224</td><td>24.6%</td></tr>
+        <tr><td>Worktrees not resolvable (neither for nor against)</td><td>169</td><td>224</td><td>75.4%</td></tr>
+        <tr><td>&hellip; of the 55, base resolves and is an ancestor of HEAD</td><td>48</td><td>55</td><td>87.3%</td></tr>
+        <tr><td><strong>Commits beyond base</strong></td><td><strong>33</strong></td><td>48</td><td>33/55 = 60.0%, 33/48 = 68.8%</td></tr>
+        <tr><td>Zero commits beyond base</td><td>15</td><td>48</td><td>31.3%</td></tr>
+        <tr><td>Commits dated inside the run's own dispatch&rarr;abandon window</td><td>24</td><td>48</td><td>50.0%</td></tr>
+        <tr><td>Manifests present in the run directory</td><td>143</td><td>224</td><td>63.8%</td></tr>
+        <tr><td>&hellip; written inside the run's own window</td><td>80</td><td>143</td><td>55.9%</td></tr>
+        <tr><td>&hellip; recording <code>status: complete</code> inside that window</td><td><strong>21</strong></td><td>80</td><td>26.2%</td></tr>
+        <tr><td>Ledger rows in <code>docs/state/&lt;project&gt;/crew.json</code></td><td>196</td><td>224</td><td>87.5%</td></tr>
+        <tr><td>&hellip; recording &ge;1 commit</td><td>102</td><td>224</td><td>45.5%</td></tr>
+        <tr><td>&hellip; reaching <code>gate: passed</code></td><td>108</td><td>224</td><td>48.2%</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Classifier generations.</strong> The arm refusing <code>abandoned</code>
+    when commits exist past base landed in <code>e662009c</code> at
+    <code>2026-09-14T21:57Z</code>. <strong>217 of the 270 transitions predate it</strong>
+    (186 runs) and 53 postdate it (38 runs). Pooling them compares two predicates
+    under one word. On the post-guard population, <strong>2 of 38 runs</strong> still
+    show a commit dated inside their own window
+    (<code>r-20260914T192229213809-msc-compile-host-memory</code>,
+    <code>r-20260914T221330292225-borrowed-figure-is-not-the-lanes-own</code>); the
+    guard's own source reads <code>record['worktree']</code> and
+    <code>record['base_sha']</code> from the live pointer, so a pointer missing
+    either field defeats the guard by returning zero.</p>
+
+    <table>
+      <caption>The 55 runs whose worktree survives; commits past base, commits inside
+        the run's own window, and the run-directory manifest status. Rows with 84 and
+        4 commits are a reused worktree path carrying peer merges &mdash; neither has
+        a ledger commit and both read <code>gate: not-run</code>.</caption>
+      <thead><tr><th>Run</th><th>Project</th><th>Commits past base</th><th>Inside own window</th><th>Manifest status</th></tr></thead>
+      <tbody>
+        <tr><td><code>r-20260915T134345728165-the-reconstruction-keeps-its-settings</code></td><td>reckon</td><td>84</td><td>0</td><td>&mdash;</td></tr>
+        <tr><td><code>r-20260914T061257489152-cca-oracle-start-newton-probe</code></td><td>nova</td><td>13</td><td>1</td><td>complete</td></tr>
+        <tr><td><code>r-20260914T084551837947-cca-limiter-read-resolution-audit</code></td><td>nova</td><td>5</td><td>2</td><td>complete</td></tr>
+        <tr><td><code>r-20260914T192229213809-msc-compile-host-memory</code></td><td>nova</td><td>5</td><td>3</td><td>complete</td></tr>
+        <tr><td><code>r-20260914T152520426459-cca-dual-stencil-census</code></td><td>nova</td><td>4</td><td>1</td><td>in_progress</td></tr>
+        <tr><td><code>r-20260914T191922430587-msc-loop-structure-audit</code></td><td>nova</td><td>4</td><td>1</td><td>running</td></tr>
+        <tr><td><code>r-20260914T192415162684-msc-scanned-trip-loop-prototype</code></td><td>nova</td><td>4</td><td>1</td><td>complete</td></tr>
+        <tr><td><code>r-20260915T161848926966-the-reconstruction-keeps-its-settings</code></td><td>reckon</td><td>4</td><td>0</td><td>&mdash;</td></tr>
+        <tr><td><code>r-20260906T131920953151-dvf-displacement-decomposition</code></td><td>nova</td><td>3</td><td>1</td><td>complete</td></tr>
+        <tr><td><code>r-20260907T165338820236-mcs-trip-quantum-compiled</code></td><td>nova</td><td>3</td><td>2</td><td>waiting</td></tr>
+        <tr><td><code>r-20260910T114647655089-cca-read-representation-discriminator</code></td><td>nova</td><td>2</td><td>2</td><td>&mdash;</td></tr>
+        <tr><td><code>r-20260914T160341537156-cca-wholecell-rows-reposed-fixture</code></td><td>nova</td><td>2</td><td>1</td><td>complete</td></tr>
+        <tr><td><code>r-20260903T100619180204-n-reviewing-excludes-the-sidecar</code></td><td>imas-codex</td><td>1</td><td>1</td><td>&mdash;</td></tr>
+        <tr><td><code>r-20260903T122158950114-n-catalog-isn-pin-0-8-7</code></td><td>imas-codex</td><td>1</td><td>1</td><td>&mdash;</td></tr>
+        <tr><td><code>r-20260903T130354731677-n-loader-refuses-a-broken-sidecar</code></td><td>imas-codex</td><td>1</td><td>0</td><td>&mdash;</td></tr>
+        <tr><td><code>r-20260917T053329075867-agents-circuit-count-wording</code></td><td>imas-efit</td><td>1</td><td>0</td><td>in-progress</td></tr>
+        <tr><td><code>r-20260908T053945581129-pfs-psi-unit-label</code></td><td>nova</td><td>1</td><td>1</td><td>complete</td></tr>
+        <tr><td><code>r-20260908T071448583940-nia-certificate-raster-receipt</code></td><td>nova</td><td>1</td><td>1</td><td>failed</td></tr>
+        <tr><td><code>r-20260910T151523673841-cca-gate-b-frozen-current-flux-image</code></td><td>nova</td><td>1</td><td>1</td><td>in_progress</td></tr>
+        <tr><td><code>r-20260910T204525520366-cca-gate-b-finish-and-attribute</code></td><td>nova</td><td>1</td><td>1</td><td>in_progress</td></tr>
+        <tr><td><code>r-20260911T031135184437-cca-coupling-geometry-pytree</code></td><td>nova</td><td>1</td><td>1</td><td>&mdash;</td></tr>
+        <tr><td><code>r-20260911T044629802980-cca-gate-c-certificate-resolve-2</code></td><td>nova</td><td>1</td><td>1</td><td>running</td></tr>
+        <tr><td><code>r-20260911T114531295791-cca-newton-step-on-geometry</code></td><td>nova</td><td>1</td><td>1</td><td>running</td></tr>
+        <tr><td><code>r-20260903T080238660957-liveness-is-derived-not-remembered</code></td><td>reckon</td><td>1</td><td>0</td><td>in-progress</td></tr>
+        <tr><td><code>r-20260903T080329021153-the-working-bucket-counts-only-work</code></td><td>reckon</td><td>1</td><td>0</td><td>&mdash;</td></tr>
+        <tr><td><code>r-20260903T080729884133-the-promotion-gate-reads-the-attribution</code></td><td>reckon</td><td>1</td><td>0</td><td>&mdash;</td></tr>
+        <tr><td><code>r-20260903T092028743047-the-transition-carries-the-role-it-renders</code></td><td>reckon</td><td>1</td><td>0</td><td>&mdash;</td></tr>
+        <tr><td><code>r-20260906T135853178572-a-woken-run-leaves-no-corpse</code></td><td>reckon</td><td>1</td><td>1</td><td>in_progress</td></tr>
+        <tr><td><code>r-20260910T064052393937-hpdw-a-silent-shadow-is-a-reported-shadow</code></td><td>reckon</td><td>1</td><td>1</td><td>in_progress</td></tr>
+        <tr><td><code>r-20260910T094705298244-n-brnbc-the-prompt-carries-the-evidence-discipline</code></td><td>reckon</td><td>1</td><td>1</td><td>in_progress</td></tr>
+        <tr><td><code>r-20260914T143307893065-coordinator-reserve-declared</code></td><td>reckon</td><td>1</td><td>0</td><td>complete</td></tr>
+        <tr><td><code>r-20260914T160254183141-severity-floor-on-the-fence</code></td><td>reckon</td><td>1</td><td>1</td><td>complete</td></tr>
+        <tr><td><code>r-20260914T221330292225-borrowed-figure-is-not-the-lanes-own</code></td><td>reckon</td><td>1</td><td>1</td><td>complete</td></tr>
+        <tr><td><code>r-20260903T125400804871-n-loader-reads-the-sidecar</code></td><td>imas-codex</td><td>0</td><td>0</td><td>&mdash;</td></tr>
+        <tr><td><code>r-20260916T091403254499-inert-mode-refusal</code></td><td>imas-efit</td><td>0</td><td>0</td><td>&mdash;</td></tr>
+        <tr><td><code>r-20260916T203300574845-ddout-case-rename</code></td><td>imas-efit</td><td>0</td><td>0</td><td>&mdash;</td></tr>
+        <tr><td><code>r-20260902T175455056646-sdw-efit-parity-current-default</code></td><td>nova</td><td>0</td><td>0</td><td>&mdash;</td></tr>
+        <tr><td><code>r-20260902T175958370522-fsa-raster-receipt</code></td><td>nova</td><td>0</td><td>0</td><td>&mdash;</td></tr>
+        <tr><td><code>r-20260903T192828819327-scr-remedy-presettlement-solovev</code></td><td>nova</td><td>0</td><td>0</td><td>in_progress</td></tr>
+        <tr><td><code>r-20260907T164632408244-s19-hygiene-audit</code></td><td>nova</td><td>0</td><td>0</td><td>running</td></tr>
+        <tr><td><code>r-20260914T060300686740-hpdw-the-dependent-projects-join-the-shadow</code></td><td>reckon</td><td>0</td><td>0</td><td>in_progress</td></tr>
+        <tr><td><code>r-20260914T060114956932-hpdw-every-promotion-checks-the-two-stores-agree</code></td><td>reckon</td><td>0</td><td>0</td><td>&mdash;</td></tr>
+        <tr><td><code>r-20260914T143417615980-burn-meter-on-crew</code></td><td>reckon</td><td>0</td><td>0</td><td>in_progress</td></tr>
+        <tr><td><code>r-20260914T192602370920-rev-severity-floor-on-the-fence</code></td><td>reckon</td><td>0</td><td>0</td><td>complete</td></tr>
+        <tr><td><code>r-20260915T003709760304-rev-borrowed-figure</code></td><td>reckon</td><td>0</td><td>0</td><td>complete</td></tr>
+        <tr><td><code>r-20260915T104957057904-rev-template</code></td><td>reckon</td><td>0</td><td>0</td><td>complete</td></tr>
+        <tr><td><code>r-20260915T105206157683-rev-leafsilence</code></td><td>reckon</td><td>0</td><td>0</td><td>complete</td></tr>
+        <tr><td><code>r-20260915T105434382705-rev-prosekey</code></td><td>reckon</td><td>0</td><td>0</td><td>complete</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>The 21 in-window complete manifests.</strong> Spot-checked against
+    their own timestamps rather than trusted: on
+    <code>r-20260908T053945581129-pfs-psi-unit-label</code> the manifest was written
+    at <code>05:45:58Z</code>, the run abandoned at <code>05:46:21Z</code> &mdash; 23
+    seconds later &mdash; and the file is a worker-authored record naming commit
+    <code>33a9fa25</code> and 17 passing tests. On
+    <code>r-20260914T160254183141-severity-floor-on-the-fence</code>: manifest
+    <code>18:10:49Z</code>, abandoned <code>18:11:31Z</code>, 42 seconds later, later
+    <code>abandoned &rarr; promoted</code>. A further 63 manifests exist but were
+    written <em>after</em> the abandonment, by a resume, and prove nothing about the
+    run that was abandoned.</p>
+
+    <p><strong>Verdict.</strong> The measurement does not establish that the name is
+    wrong. Half the population is unmeasurable (169 of 224 worktrees gone, so the
+    work is neither present nor absent); a substantial minority demonstrably finished
+    (21 in-window complete manifests, 24 in-window commits); and 217 of 270
+    transitions predate the commits-beyond-base guard, so the sample pools two
+    predicates under one word. No repair and no rename is proposed &mdash; the
+    question was only whether the work was finished.</p>
+
+    <p><strong>Reproduce.</strong> Sources: <code>~/.config/reckon/crew/watch/*.events</code>
+    (population); <code>~/.config/reckon/crew/runs/&lt;run_id&gt;/{prompt.txt,manifest.md}</code>
+    (worktree path, recorded base, manifest status and mtime);
+    <code>Code/&lt;repo&gt;/docs/state/&lt;project&gt;/crew.json</code> (ledger
+    corroboration and <code>commits[]</code>); <code>git -C &lt;worktree&gt; rev-list
+    --count &lt;base&gt;..HEAD</code> and <code>git log --format=%cI --no-merges
+    &lt;base&gt;..HEAD</code> (the commit counts). All counts at revision
+    <code>760d6cc7</code>.</p>
+  </section>
+
 </main>
 </body>
 </html>

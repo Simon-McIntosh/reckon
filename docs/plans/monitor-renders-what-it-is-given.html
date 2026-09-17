@@ -265,6 +265,43 @@ try:
     <p>Neither half is sufficient alone, which is the property this plan's measures are
     built around.</p>
 
+    <h2 id="s9">&sect;9 &mdash; What the word abandoned measured</h2>
+
+    <p>The lead's review of two live panes asked whether an <code>abandoned</code> row
+    was a false positive: the worker may have finished and failed only to leave a
+    manifest the classifier accepts. The census is recorded at
+    <a href="/reckon/research/what-abandoned-means-in-practice">What Abandoned Means
+    in Practice</a>, with its per-run evidence at
+    <a href="/reckon/evidence/archive/monitor-renders-what-it-is-given-landed#abandoned-census">the
+    abandoned census anchor</a>.</p>
+
+    <p><strong>The measurement does not establish that the name is wrong.</strong>
+    Over 270 abandoned transitions and 224 distinct runs across five projects: every
+    run directory resolves (224/224), but only <strong>55 worktrees</strong> still
+    do, so <strong>169 runs (75.4%) are neither for nor against</strong> &mdash; the
+    work is neither present nor absent. Of the 48 whose base resolves, <strong>33
+    hold commits beyond base</strong> and 24 hold commits dated inside the run's own
+    window. A substantial minority demonstrably finished: <strong>21 runs wrote a
+    <code>status: complete</code> manifest inside their own window</strong> before the
+    label landed.</p>
+
+    <p><strong>The sample pools two classifier generations.</strong> The arm refusing
+    <code>abandoned</code> when a run holds commits beyond its base
+    (<code>recovery.py:1660</code>) landed in <code>e662009c</code> at
+    <code>2026-09-14T21:57Z</code>; <strong>217 of the 270 transitions predate it</strong>.
+    On the 38 post-guard runs, two still hold a commit inside their own window, so the
+    guard is neither shown broken nor shown to hold universally &mdash; its source
+    reads <code>record['worktree']</code> and <code>record['base_sha']</code> from the
+    live pointer, so a pointer missing either field returns zero.</p>
+
+    <p><strong>So <code>abandoned</code> has been an accurate statement about the
+    process and an unreliable one about the work</strong>, most sharply before the
+    guard landed. Whether it remains unreliable now cannot be settled from this
+    population, which is contaminated and half-unresolvable; it needs a prospective
+    sample taken while worktrees still exist. <strong>No repair and no rename is
+    proposed</strong> &mdash; the question was only whether the work was finished.
+    This is a measurement, not a section of the renderer, and it changes no row.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="waiting-counter-letter" data-choice="" data-by="" data-when="">

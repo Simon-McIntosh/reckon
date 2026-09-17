@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="doc">
+  <meta name="plan-slug" content="what-abandoned-means-in-practice">
+  <meta name="plan-title" content="What Abandoned Means in Practice">
+  <meta name="plan-summary" content="A census of 270 abandoned transitions across five projects: all 224 run directories resolve, only 55 worktrees still exist, and of the 48 with a usable base 33 hold commits past it. The name is not shown to be wrong — the population is contaminated by a classifier generation that predated the commits-beyond-base guard.">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-tags" content="crew,reckon-tooling,observability">
+  <meta name="plan-informs" content="monitor-renders-what-it-is-given">
+  <title>What Abandoned Means in Practice | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <header class="plan-header">
+      <h1>What Abandoned Means in Practice</h1>
+      <p class="plan-summary">A run reads <code>abandoned</code> when its process is
+      gone and nothing is eligible for promotion. The open question, raised against
+      two live panes, was whether that label lands on runs that in fact
+      <strong>finished</strong> and only failed to write a manifest. This is the
+      measurement: 270 abandoned transitions, 224 distinct runs, five projects.</p>
+    </header>
+
+    <section id="question">
+      <h2>&sect;&mdash; The claim under test</h2>
+      <p>The monitor showed <code>dispatched &rarr; abandoned</code> beside
+      <em>"the process is gone without a complete manifest"</em>. Read as a claim
+      about the worker, that looks like a false positive: the worker may have
+      finished and simply failed to leave a record the classifier accepts. Read as a
+      claim about the process, it is exact.</p>
+      <p><code>recovery.py</code> reaches <code>abandoned</code> only on
+      <strong>positive proof of death.</strong> The arm requires a terminal stored
+      phase, <code>alive is False</code> from the process table, no non-terminal
+      manifest, and &mdash; since commit <code>recovery.py:1660</code> &mdash;
+      <strong>zero commits beyond the recorded base</strong>. So the classification is
+      defensible by construction, and the question this document answers is a
+      different one: did the runs it labelled have work to show?</p>
+    </section>
+
+    <section id="population">
+      <h2>&sect;&mdash; The population, and what "resolves" means</h2>
+      <p>The sample is every <code>to_state=abandoned</code> row in
+      <code>~/.config/reckon/crew/watch/*.events</code>: <strong>270 transitions</strong>
+      over <strong>224 distinct run ids</strong> (32 runs were re-abandoned after a
+      retry) across <strong>five projects</strong> &mdash; nova 99, reckon 80,
+      imas-codex 69, imas-efit 19, imas-ambix 3. Nine of the 270 are
+      <code>baseline</code> rows (inventory written when a follower attaches) and 261
+      are genuine transitions.</p>
+      <p>A run "resolves" if its <strong>run directory</strong>
+      (<code>~/.config/reckon/crew/runs/&lt;run_id&gt;</code>) survives and, for the
+      commit question, if its <strong>worktree</strong> survives. The worktree path
+      and the recorded base come from the run directory's own
+      <code>prompt.txt</code> (all 224 yield a path) and, where the worker wrote one,
+      its <code>manifest.md</code>; the base is corroborated against the per-project
+      crew ledger <code>docs/state/&lt;project&gt;/crew.json</code>.</p>
+    </section>
+
+    <section id="funnel">
+      <h2>&sect;&mdash; Result</h2>
+
+      <figure>
+        <svg viewBox="0 0 720 300" width="100%" role="img"
+             aria-label="Funnel: 270 transitions to 224 runs, of which all 224 run directories survive but only 55 worktrees do; 48 have a usable base, 33 hold commits past it, and 24 hold commits dated inside the run's own window.">
+          <text x="8" y="18" font-family="system-ui" font-size="13" font-weight="600" fill="#1a1a1a">abandoned transitions</text>
+          <rect x="8" y="26" width="560" height="26" fill="#4a6fa5"/>
+          <text x="578" y="44" font-family="system-ui" font-size="13" fill="#1a1a1a">270</text>
+
+          <text x="8" y="76" font-family="system-ui" font-size="13" font-weight="600" fill="#1a1a1a">distinct runs</text>
+          <rect x="8" y="84" width="464" height="26" fill="#5b83b8"/>
+          <text x="482" y="102" font-family="system-ui" font-size="13" fill="#1a1a1a">224</text>
+
+          <text x="8" y="134" font-family="system-ui" font-size="13" font-weight="600" fill="#1a1a1a">run directories survive</text>
+          <rect x="8" y="142" width="464" height="26" fill="#7f9dc4"/>
+          <text x="482" y="160" font-family="system-ui" font-size="13" fill="#1a1a1a">224 &nbsp;(100%)</text>
+
+          <text x="8" y="192" font-family="system-ui" font-size="13" font-weight="600" fill="#1a1a1a">worktrees survive</text>
+          <rect x="8" y="200" width="114" height="26" fill="#b3261e"/>
+          <text x="132" y="218" font-family="system-ui" font-size="13" fill="#1a1a1a">55 &nbsp;(24.6%)</text>
+          <text x="8" y="246" font-family="system-ui" font-size="12" font-style="italic" fill="#666">of those 55: 48 have a usable base</text>
+
+          <text x="330" y="192" font-family="system-ui" font-size="13" font-weight="600" fill="#1a1a1a">commits past base</text>
+          <rect x="330" y="200" width="68" height="26" fill="#2e7d32"/>
+          <text x="408" y="218" font-family="system-ui" font-size="13" fill="#1a1a1a">33 &nbsp;of 48</text>
+
+          <text x="330" y="246" font-family="system-ui" font-size="13" font-weight="600" fill="#1a1a1a">inside the run's own window</text>
+          <rect x="330" y="254" width="50" height="26" fill="#66a06a"/>
+          <text x="390" y="272" font-family="system-ui" font-size="13" fill="#1a1a1a">24</text>
+        </svg>
+        <figcaption>Every run directory survives; three quarters of the worktrees do
+        not. Of the 48 whose base still resolves, 33 hold commits past it &mdash; but a
+        reused worktree path carries peer merges, so only 24 carry commits dated
+        inside the run's own dispatch&rarr;abandon window.</figcaption>
+      </figure>
+
+      <table>
+        <thead>
+          <tr><th>Measure</th><th>Count</th><th>Of</th><th>Share</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Abandoned transitions</td><td>270</td><td>&mdash;</td><td>&mdash;</td></tr>
+          <tr><td>Distinct runs</td><td>224</td><td>270</td><td>&mdash;</td></tr>
+          <tr><td>Run directories still resolve</td><td><strong>224</strong></td><td>224</td><td>100%</td></tr>
+          <tr><td>Worktrees still resolve</td><td><strong>55</strong></td><td>224</td><td>24.6%</td></tr>
+          <tr><td>Worktrees not resolvable</td><td>169</td><td>224</td><td>75.4%</td></tr>
+          <tr><td>&hellip; of the 55, base resolves and is an ancestor</td><td>48</td><td>55</td><td>87.3%</td></tr>
+          <tr><td>&hellip; base unresolvable or not an ancestor</td><td>7</td><td>55</td><td>12.7%</td></tr>
+          <tr><td><strong>Commits beyond base</strong></td><td><strong>33</strong></td><td>48</td><td>68.8%</td></tr>
+          <tr><td>Zero commits beyond base</td><td>15</td><td>48</td><td>31.3%</td></tr>
+          <tr><td>Commits dated inside the run's own window</td><td>24</td><td>48</td><td>50.0%</td></tr>
+        </tbody>
+      </table>
+
+      <p><strong>The headline count.</strong> Of the runs whose worktree still
+      resolves and whose base can be resolved, <strong>33 of 48 &mdash; 68.8% &mdash;
+      hold commits beyond the recorded base.</strong> Taken alone that would answer
+      the plan's question in the direction the lead suspected. The next section is
+      why it does not.</p>
+    </section>
+
+    <section id="instruments">
+      <h2>&sect;&mdash; Two independent instruments, and where each one lies</h2>
+      <p>Three sources record whether a run delivered, and they cover different
+      populations. None is complete, and two of them over-count unless read
+      carefully.</p>
+
+      <table>
+        <thead>
+          <tr><th>Source</th><th>Coverage</th><th>What it shows</th><th>Its failure mode</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Worktree commits past base</td>
+            <td>55 / 224 runs</td>
+            <td>33 runs delivered committed work</td>
+            <td>A <em>reused</em> worktree path accumulates peer merges; <code>base..HEAD</code> then counts another run's commits</td>
+          </tr>
+          <tr>
+            <td>Per-project crew ledger <code>commits[]</code></td>
+            <td>196 / 224 runs</td>
+            <td>102 runs recorded &ge;1 commit; 108 reached <code>gate: passed</code></td>
+            <td>Survives worktree cleanup but only covers runs the coordinator later promoted &mdash; absence is not evidence of failure</td>
+          </tr>
+          <tr>
+            <td>Run-directory <code>manifest.md</code></td>
+            <td>143 / 224 runs</td>
+            <td>80 written inside the run's own window; <strong>21 of those record <code>status: complete</code></strong></td>
+            <td>The file is rewritten by a later resume, so an mtime <em>after</em> the abandon time proves nothing about the run that was abandoned</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>The reused-worktree confound, measured</h3>
+      <p>A worktree directory is named for its node, and node names recur across
+      waves, so a worktree path is reused. Then <code>base..HEAD</code> counts
+      whatever the branch has accumulated since &mdash; including the coordinator's
+      own <code>promote(...)</code> merges of <em>other</em> runs. Measured on
+      <code>r-20260915T134345728165-the-reconstruction-keeps-its-settings</code>: the
+      worktree shows <strong>84</strong> commits past its base, yet its ledger row
+      records <strong>zero</strong> commits and <code>gate: not-run</code>, and the
+      range is full of peer promotion merges. Restricting to commits whose committer
+      date falls inside the run's own <code>dispatched_at &rarr; abandoned_at</code>
+      window removes the confound and drops the count from 33 to <strong>24</strong>.</p>
+
+      <h3>The manifest-age trap</h3>
+      <p>A run-directory manifest that says <code>complete</code> is only evidence
+      about <em>that</em> run if it was written during the run. Of 143 manifests,
+      <strong>63 were written after the abandonment</strong> &mdash; by a resume or a
+      later attempt at the same node &mdash; and read as completion only if their
+      age is ignored. The 80 written inside the dispatch&rarr;abandon window are the
+      usable set, and <strong>21 of those say <code>complete</code></strong>: the
+      worker had already recorded a finished node before the label landed.</p>
+    </section>
+
+    <section id="generations">
+      <h2>&sect;&mdash; The population spans two classifier generations</h2>
+      <p>The decisive caveat. The arm that refuses <code>abandoned</code> when a run
+      holds commits past its base did not exist for most of this sample. It landed
+      in <code>e662009c</code>, <em>fix(crew): never classify a run abandoned while
+      its work survives</em>, at <strong>2026-09-14T21:57Z</strong>. Before it, a
+      dead process with a complete-but-unread manifest and commits in the tree could
+      be labelled abandoned exactly as the lead observed.</p>
+
+      <table>
+        <thead>
+          <tr><th>Generation</th><th>Transitions</th><th>Runs</th><th>Runs holding commits past base</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Before <code>e662009c</code> (<code>abandoned</code> had no commits guard)</td><td>217</td><td>186</td><td>many &mdash; the label is not comparable</td></tr>
+          <tr><td>After <code>e662009c</code></td><td>53</td><td>38</td><td><strong>5</strong> with commits past base; <strong>2</strong> inside their own window</td></tr>
+        </tbody>
+      </table>
+
+      <p><strong>The falsifier.</strong> If the guard holds, no post-guard run should
+      carry commits past its base. Measured: 15 of 38 post-guard runs still show
+      commits from <em>some</em> source, and of those only <strong>2</strong> hold a
+      commit dated inside their own window
+      (<code>r-20260914T192229213809-msc-compile-host-memory</code>, 3 commits,
+      ledger <code>gate: passed</code>; and
+      <code>r-20260914T221330292225-borrowed-figure-is-not-the-lanes-own</code>, 1
+      commit, ledger <code>gate: passed</code>). The other 13 owe their counts to
+      peer merges on a reused path or to commits recorded <em>after</em> the
+      abandonment, at promotion. So the guard is <strong>not shown to be broken</strong>,
+      and it is <strong>not shown to hold universally</strong> either: two post-guard
+      runs delivered committed work inside their own window and were still labelled
+      abandoned. The arm reads <code>record['worktree']</code> and
+      <code>record['base_sha']</code> from the live pointer, so a pointer that lacks
+      either field, or one whose worktree was cleaned before the sweep, defeats the
+      guard by returning zero &mdash; a mechanism consistent with both survivors and
+      not yet distinguished from a chained-attempt artefact.</p>
+    </section>
+
+    <section id="verdict">
+      <h2>&sect;&mdash; Answer</h2>
+      <p><strong>The measurement does not establish that the name is wrong.</strong>
+      It establishes three things instead:</p>
+      <ul>
+        <li><strong>Three quarters of the population is unmeasurable.</strong> 169 of 224 runs
+        (75.4%) have no worktree left, so for the large majority the work is neither
+        present nor absent &mdash; there is nothing to count. A verdict drawn from the
+        resolvable minority is a verdict about the minority.</li>
+        <li><strong>A substantial minority demonstrably finished.</strong> 21 runs
+        wrote <code>status: complete</code> inside their own window before being
+        labelled abandoned, and 24 hold commits dated inside that window. Those are
+        runs whose worker finished; the label described the process, not the work.</li>
+        <li><strong>The sample is contaminated by an older classifier.</strong> 217 of
+        270 transitions predate the commits-beyond-base guard. Pooling them with the
+        53 that postdate it compares two different predicates under one word.</li>
+      </ul>
+      <p>The honest reading is that <em>abandoned</em> has been an accurate statement
+      about <strong>the process</strong> and an unreliable statement about
+      <strong>the work</strong>, most sharply in the generation before the guard
+      landed. Whether it remains unreliable now cannot be settled from this
+      population; it needs a prospective sample &mdash; every abandoned run from a
+      date after <code>e662009c</code> measured while its worktree still exists.</p>
+      <p><strong>Deliberately not claimed.</strong> No repair is proposed and no
+      rename is proposed; the question was only whether the work was finished. The
+      per-project ledger's <code>commits[]</code> count (102 runs) is reported as a
+      cross-check, not as the measure: it covers only runs the coordinator later
+      promoted, so it under-counts and its gaps are silent.</p>
+    </section>
+
+    <section id="reproduce">
+      <h2>&sect;&mdash; Reproducing</h2>
+      <p>The census reads three sources and writes one table:</p>
+      <pre><code># population
+python3 - &lt;&lt;'EOF'   # 270 transitions, 224 distinct run ids
+import json, glob, os
+from collections import Counter
+rows = []
+for path in glob.glob(os.path.expanduser('~/.config/reckon/crew/watch/*.events')):
+    for line in open(path, errors='replace'):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if row.get('to_state') == 'abandoned' or row.get('state') == 'abandoned':
+            rows.append(row)
+runs = {}
+for row in rows:
+    runs.setdefault(str(row.get('run_id')), str(row.get('project')))
+print('transitions', len(rows), Counter(str(r.get('project')) for r in rows))
+print('distinct   ', len(runs), Counter(runs.values()))
+EOF
+
+# per-run resolution
+#   worktree + base  &lt;- crew/runs/&lt;run_id&gt;/{prompt.txt,manifest.md}
+#   base corroborated &lt;- Code/&lt;repo&gt;/docs/state/&lt;project&gt;/crew.json
+#   base..HEAD        &lt;- git -C &lt;worktree&gt; rev-list --count &lt;base&gt;..HEAD
+#   own window        &lt;- git -C &lt;worktree&gt; log --format=%cI --no-merges &lt;base&gt;..HEAD
+#   found: 55/224 worktrees resolve, 33/48 with commits past base, 24 in own window</code></pre>
+      <p>Every figure in this document is reproducible from those three sources at
+      the revision named in the evidence record; the per-run table is carried there
+      alongside the aggregates.</p>
+    </section>
+
+  </main>
+</body>
+</html>
