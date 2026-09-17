@@ -96,6 +96,41 @@
       <li><code>~/.config/reckon/crew/runs/r-20260917T092744990303-dispatch-does-not-recompose-the-project-per-claim/after-gate.log</code></li>
     </ul>
   </section>
+
+  <section id="s2-roster-commit-content-agreement">
+    <h2>Roster commit content agrees with its message</h2>
+    <p><strong>The previously recorded mismatch reproduced at base
+    <code>51c2b9e0</code>.</strong> A default registration of <code>internal-a</code>
+    left the roster uncommitted; a subsequent <code>commit=True</code> registration of
+    <code>public-b</code> created one commit whose subject was
+    <code>chore(roster): register public-b</code> while its content carried both members.
+    The checkout was clean afterward, so the earlier registration had been silently
+    absorbed rather than left visible.</p>
+
+    <p>Commits <code>cf9afcf1</code> and <code>c57ec115</code> choose the explicit-refusal
+    design. Before writing, a committing registration now inspects only the roster path.
+    If that path is dirty, it compares the current roster with <code>HEAD</code>, names the
+    blocking registrations, and refuses. The reproduced sequence now reports
+    <code>cannot commit roster registration 'public-b': uncommitted member registration(s):
+    internal-a</code>, creates zero commits, retains <code>internal-a</code>, and never writes
+    <code>public-b</code>.</p>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Base</th><th>After</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Dirty-roster sequence</td><td>1 commit; message names <code>public-b</code>; content carries 2 members</td><td>0 commits; refusal names <code>internal-a</code>; content carries 1 member</td><td>Message/content ambiguity is impossible without discarding the earlier write.</td></tr>
+        <tr><td>Focused controls</td><td>New falsifier failed because no refusal occurred</td><td>3 passed</td><td>Clean public add still commits once; default still writes without committing; unrelated dirty content stays unstaged and uncommitted.</td></tr>
+        <tr><td>Roster/member cohort on <code>all_debug</code></td><td>33 failed, 338 passed</td><td>33 failed, 339 passed</td><td>0 added and 0 removed failure IDs.</td></tr>
+      </tbody>
+    </table>
+
+    <p>The empty failure delta is instrumented rather than inferred: the known baseline
+    failure <code>tests/test_ledger.py::test_completion_promotes_the_pointer_into_the_repositorys_ledger</code>
+    appears in both extracted sets. Every repository fixture lives under pytest's temporary
+    directory, and the new falsifier asserts the real checkout's status is byte-identical
+    before and after the sequence. Full receipts are under
+    <code>~/.config/reckon/crew/runs/r-20260917T095804364622-the-roster-commit-carries-only-what-it-names/</code>.</p>
+  </section>
 </main>
 
   <main class="plan-doc">
