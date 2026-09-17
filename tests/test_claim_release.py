@@ -28,7 +28,6 @@ from reckon.crew import claims
 from reckon.crew.node import CrewError
 from reckon.crew.runs import plan_scope_lanes
 
-
 PROJECT = "demo"
 CLAIMED = "package/one.py"
 OTHER = "package/two.py"
@@ -115,7 +114,11 @@ def test_a_released_claim_lets_a_second_writer_declare_the_path(
     home, repo: Path
 ) -> None:
     _write_pointer(
-        "run-held", repo=repo, paths=(CLAIMED,), pid=_stopped_pid(), host=socket.gethostname()
+        "run-held",
+        repo=repo,
+        paths=(CLAIMED,),
+        pid=_stopped_pid(),
+        host=socket.gethostname(),
     )
     assert _live_conflicts(repo, CLAIMED)
     report = claims.release_claim("run-held", reason="worker blocked at its fence")
@@ -147,7 +150,9 @@ def test_release_refuses_a_worker_that_is_still_running(home, repo: Path) -> Non
         host=socket.gethostname(),
     )
     with pytest.raises(claims.ClaimAmendmentRefusedError):
-        claims.release_claim("run-live", reason="moving a claim held by a running worker")
+        claims.release_claim(
+            "run-live", reason="moving a claim held by a running worker"
+        )
     assert claims.declared_claim_paths("run-live") == (CLAIMED,)
     assert _live_conflicts(repo, CLAIMED)
 
@@ -169,3 +174,60 @@ def test_release_refuses_a_pointer_that_records_no_process(home, repo: Path) -> 
     with pytest.raises(claims.ClaimAmendmentRefusedError):
         claims.release_claim("run-unborn", reason="the worker may spawn any instant")
     assert claims.declared_claim_paths("run-unborn") == (CLAIMED,)
+
+
+def test_releasing_one_path_keeps_the_other_declared(home, repo: Path) -> None:
+    _write_pointer(
+        "run-held",
+        repo=repo,
+        paths=(CLAIMED, OTHER),
+        pid=_stopped_pid(),
+        host=socket.gethostname(),
+    )
+    report = claims.release_claim(
+        "run-held", paths=(CLAIMED,), reason="one path was never written"
+    )
+    assert report.removed == (CLAIMED,)
+    assert claims.declared_claim_paths("run-held") == (OTHER,)
+    assert _live_conflicts(repo, CLAIMED) == []
+    assert _live_conflicts(repo, OTHER)
+
+
+def test_release_refuses_a_path_the_run_never_declared(home, repo: Path) -> None:
+    _write_pointer(
+        "run-held",
+        repo=repo,
+        paths=(CLAIMED,),
+        pid=_stopped_pid(),
+        host=socket.gethostname(),
+    )
+    with pytest.raises(CrewError):
+        claims.release_claim("run-held", paths=("package/missing.py",), reason="typo")
+    assert claims.declared_claim_paths("run-held") == (CLAIMED,)
+
+
+def test_narrowing_that_drops_nothing_is_refused(home, repo: Path) -> None:
+    _write_pointer(
+        "run-held",
+        repo=repo,
+        paths=(CLAIMED, OTHER),
+        pid=_stopped_pid(),
+        host=socket.gethostname(),
+    )
+    with pytest.raises(CrewError):
+        claims.narrow_claim("run-held", keep=(CLAIMED, OTHER), reason="no change")
+
+
+def test_removing_the_pointer_releases_the_claim_as_promotion_does(
+    home, repo: Path
+) -> None:
+    _write_pointer(
+        "run-done",
+        repo=repo,
+        paths=(CLAIMED,),
+        pid=_stopped_pid(),
+        host=socket.gethostname(),
+    )
+    assert _live_conflicts(repo, CLAIMED)
+    (crew.live_dir() / "run-done.json").unlink()
+    assert _live_conflicts(repo, CLAIMED) == []
