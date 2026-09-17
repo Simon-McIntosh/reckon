@@ -341,6 +341,9 @@ try:
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260917T045944162163-the-wait-facts-reach-the-event" data-who="crew-review-reflex" data-when="2026-09-17T06:28:31.758Z">
     <div class="r-comment-body"><p>A declared wait&#x27;s five facts now reach the transition event at recovery.py:2675, so a renderer can show what a worker is waiting on. Verified at the merged head. Review 91/100; four findings carried as follow-ons, including that the node&#x27;s named cohort never completed, so the merged-head attribution run is owed by the wave rather than by this node.</p></div>
 </div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20260917T091121375999-the-sweep-fixture-declares-a-spawned-run" data-who="the-sweep-fixture-declares-a-spawned-run" data-when="2026-09-17T11:16:50+02:00">
+    <div class="r-comment-body"><p>The shared <code>_waiting_pointer</code> fixture now declares the two launcher facts observed on a real spawned-run pointer: <code>launch: "cli"</code> and a non-empty <code>argv</code>. The recorded failure reproduced first as <code>assert [] == ['r-waiting-condition']</code> at the unchanged resumed-run assertion; removing the keys after repair reproduced the same failure. With them present, the assigned cohort reports 45 passed and 0 failed, including the five other tests using the fixture. Implementation commit <code>b528813d</code>; full measurements at <a href="/reckon/evidence/archive/monitor-renders-what-it-is-given-landed.html#s6-spawned-wait-fixture">the spawned-wait fixture evidence anchor</a>.</p></div>
+</div>
 </section>
 </main>
 </body>

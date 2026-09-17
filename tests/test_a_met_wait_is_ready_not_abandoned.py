@@ -34,6 +34,8 @@ def _waiting_pointer(tmp_path: Path, *, alive: bool) -> dict:
         "log_path": str(tmp_path / "stream.jsonl"),
         "stderr_path": str(tmp_path / "stderr.log"),
         "worktree": str(worktree),
+        "launch": "cli",
+        "argv": ["fixture-agent", "exec"],
         "backend": "fixture-lane",
         "session_id": "fixture-session",
         "node": {
