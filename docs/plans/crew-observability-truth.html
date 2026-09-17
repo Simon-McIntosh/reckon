@@ -633,6 +633,25 @@
       unrelated to this check. Landed under commit <code>ca539bcc</code>. Full record:
       <a href="/reckon/evidence/archive/crew-observability-truth-landed#literal-markdown-check-reads-prose-not-verbatim-subtrees">&#167;12 literal-markdown landed</a>.</p>
 
+    <p class="landed-summary">The literal-markdown exclusion is now asserted against a specimen
+      the test file owns rather than against this plan. The test had bound itself to this
+      document and required it to carry no asterisk pair in prose, which a plan that gains
+      comments every session cannot promise: a pair added to any comment body in this file failed
+      the test for a reason that had nothing to do with the check. The specimen carries the three
+      shapes that motivated the exclusion &mdash; the pair inside a <code>&lt;pre&gt;</code> block,
+      the pair inside a <code>&lt;code&gt;</code> span, and one pair in genuine prose &mdash; using
+      the measured parser-output spellings rather than invented input, so the quiet half is not a
+      check on an empty document. This file is still read, by a comparison that cannot be moved by
+      its content: the pairs reported for it equal the pairs reported for the same document with
+      its verbatim subtrees stripped, which holds for a pair added or removed anywhere in it
+      &mdash; verbatim or prose &mdash; and separates only if a verbatim pair begins to be
+      reported as prose. Both halves of the falsifier were run rather than asserted: with a
+      literal asterisk pair injected into a comment body of this plan the unrepaired test failed
+      and the repaired file passed, and a second pair added to the specimen&#8217;s prose failed
+      the specimen test by name. The gate cohort moves from 42 passed at the base to 45 passed,
+      exit 0 at both, zero added failures. Landed under commit <code>dc60bae3</code>. Full record:
+      <a href="/reckon/evidence/archive/crew-observability-truth-landed#audit-specimen-owned-by-its-own-test">&#167;12 audit specimen landed</a>.</p>
+
     <p class="landed-summary">Attribution verified by direct measurement, not assertion: the
       twelve failures in <code>tests/test_crew_orientation.py</code> and
       <code>tests/test_gate_evidence.py</code> are pre-existing rather than added. Both files

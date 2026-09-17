@@ -1192,6 +1192,54 @@ reading taken as an authority it was not.</p>
       <code>test_mcp_recovery.py::test_resume_reattaches_a_session_only_the_stream_carries</code>.</p>
   </section>
 
+<section id="audit-specimen-owned-by-its-own-test">
+    <h3>§12 — The audit test asserts against a specimen it owns</h3>
+    <p>Node <code>the-audit-test-carries-its-own-specimen</code>. Commit
+      <code>dc60bae3</code> changed only <code>tests/test_doccheck_code_spans.py</code>, the
+      file that asserted the literal-markdown exclusion against a living document.</p>
+    <p><strong>Reproduction:</strong> the test bound the exclusion to
+      <code>docs/plans/crew-observability-truth.html</code> and asserted that auditing
+      <code>**status:**</code>-shaped content there emitted no <code>md-bold</code> finding. That
+      document moves every session, so a pair added to any comment body in it failed the test
+      for a reason unrelated to the check. Measured: with one paragraph carrying a literal
+      asterisk pair injected ahead of the §12 heading, the base test failed
+      (<code>1 failed, 9 passed</code>) on
+      <code>test_a_plan_quoting_asterisks_only_in_verbatim_subtrees_has_no_bold_finding</code>,
+      and the repaired file passed (<code>13 passed</code>) against the same injected document.
+      The plan file was restored to byte-identical afterwards.</p>
+    <p><strong>Mechanism:</strong> the specimen now lives in the test. It carries the pair inside
+      a <code>&lt;pre&gt;</code> block, the pair inside a <code>&lt;code&gt;</code> span, and one
+      pair in genuine prose, and the assertions run against it rather than against the live
+      document. The quoted spellings are the measured parser-output lines, not invented input,
+      and the same spellings are asserted to report when they are prose, so the quiet half is
+      not a check on empty input. The live document is still read, by a comparison insensitive to
+      its content: the pairs reported for the plan equal the pairs reported for the same document
+      with its <code>&lt;pre&gt;</code> and <code>&lt;code&gt;</code> subtrees stripped. That
+      equality holds for a pair added or removed anywhere in the document, verbatim or prose,
+      and moves apart only if a verbatim pair starts
+      being reported as prose. Nothing a session writes into that document can fail this file.</p>
+    <table>
+      <thead><tr><th>Falsifier half</th><th>Edit</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>the repair is needed</td>
+          <td>a literal asterisk pair added to a comment body in the live plan</td>
+          <td>base test <strong>failed</strong> (1 failed, 9 passed); repaired file
+            <strong>passed</strong> (13 passed)</td></tr>
+        <tr><td>the assertion still bites</td>
+          <td>a second pair added to the specimen's prose</td>
+          <td><strong>failed</strong> (1 failed, 12 passed) on the specimen test, naming both
+            pairs in the finding list</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Measure:</strong> the gate cohort
+      (<code>test_doccheck_code_spans.py</code>, <code>test_doccheck.py</code>,
+      <code>test_audit.py</code>) moves from <strong>42 passed</strong> at base
+      <code>f524c223</code> to <strong>45 passed</strong> at the commit, exit 0 at both
+      &mdash; three added cases, zero added failures, every pre-existing case unchanged.</p>
+    <p><strong>Leaves behind:</strong> none. No live-document check remains that a content edit
+      to <code>crew-observability-truth.html</code> can turn red.</p>
+  </section>
+
 </main>
 </body>
 </html>
