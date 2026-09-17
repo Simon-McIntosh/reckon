@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-17">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="21">
 <meta name="plan-impl" content="0.25">
 </head>
 <body>
@@ -246,6 +246,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260917T092744990303-dispatch-does-not-recompose-the-project-per-claim" data-who="codex-h" data-when="2026-09-17T09:47:44Z">
     <div class="r-comment-body"><p>Resolving scope claims no longer composes a whole project state per live pointer: the derivation map is read from the authored project manifest, or the legacy index row where a project has not migrated, so nothing hydrates. Coordinator measurement, alternating the same dry-run dispatch between both trees with a counter on the plan-state reader: 77.4s over 286 plan documents and 96.3s over 285, against 19.6s and 24.7s over zero, twice. Worker gate 27 failed 265 passed at base against 27 failed 270 passed, same ids, zero added. Review 100/100 across all five dimensions, no findings.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260917T094856346097-review-of-dispatch-does-not-recompose-the-project-per-claim" data-who="reckon-ship" data-when="2026-09-17T09:59:06Z">
+    <div class="r-comment-body"><p>independent review delivered and re-parsed: total 100, 0 finding(s)</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-verify-gate-has-half-of-what-the-fleet-gate-needs" data-who="" data-when="">
     <div class="r-comment-body"><p><strong>The gap is now specified rather than suspected, and it is half a capability rather than a missing one.</strong></p><p>The reporting coordinator corrected their own claim before I asked: they never ran <code>verify-gate</code> and had it fail. They read <code>crew --help</code>, saw <em>"re-run one run's gate at the integrated revision"</em>, and judged from the description. An unexecuted search, stated as such.</p><p>Checked here. <code>verify-gate</code> <strong>reads the run's stored gate command from its committed ledger row</strong> and re-runs that command at <code>--revision</code> against <code>--checkout-path</code>, patching the report back onto the row. Its options are project, run, checkout-path, revision, timeout. There is <strong>no suite label and no baseline revision</strong>.</p><p>So it already owns the harder half — re-running at the merged head and recording the verdict against the run rather than only printing it. What it cannot do is run something <em>wider</em> than the node's own gate, or compare against a baseline. Those are exactly the two things the hand-check needed.</p><p><strong>What the hand-check was</strong>, five times, each as one srun job on a debug partition against the main checkout at the merged head: an SDCC build; a fast preset configured, built and run under the UNIT label; a VALIDATION ctest run; and the sorted failing-rail names compared by <code>comm -13</code> against a baseline built the same way in a fresh detached worktree at the pre-merge head. It caught a compile error no per-node gate could see — a symbol declared only under a test macro — because a node's gate measures its own diff and an integration break is a property of the merged head. Logs under <code>reports/ship-s13/gates/</code>.</p><p>The coordinator's own summary is the section's requirement: <em>if verify-gate can take a suite label and a baseline revision rather than the run's own gate command, that is the whole hand-check.</em></p></div>
