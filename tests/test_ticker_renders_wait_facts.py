@@ -115,8 +115,17 @@ def test_the_reason_carries_the_marker_and_the_verdict_it_stands_for() -> None:
     assert not bare.startswith(marker)
 
 
-def test_a_row_declaring_no_wait_renders_exactly_as_it_did() -> None:
-    """The carriage is additive: a run with no wait reads as it always has."""
+def test_a_row_declaring_no_wait_is_unchanged_by_absent_or_none_facts() -> None:
+    """The carriage is additive: the two event shapes a run with no wait can
+    reach the renderer in produce one row.
+
+    The two shapes are the pre-facts one, with none of the five keys present,
+    and the facts one, with all five present and None — the shape the composer
+    emits for a run that declares nothing. Compared here as one rendering, so a
+    predicate that keyed on a fact's *presence* rather than its value would show
+    the difference, and the clause is asserted empty because a row that
+    declares no wait has nothing for the marker to stand for.
+    """
     bare = row()
     explicit = row(
         wait_condition_state=None,

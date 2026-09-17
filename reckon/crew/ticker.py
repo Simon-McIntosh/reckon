@@ -229,26 +229,35 @@ SETTLED_STATES = frozenset(
 _CELLS = ("working", "blocked", "unpromoted")
 _WAIT_CELL = "waiting"
 
-# The single-letter suffix each fleet counter renders as. The pane teaches the
-# mapping without a legend in the stream: the same words stand in the state
-# column on other rows, so a reader already knows b means blocked before they
-# reach the count column.
+# What each fleet counter renders its bucket name as, appended to the count.
+# Three are the first letter of the word the state column already prints —
+# working, blocked, unpromoted — so the pane teaches the mapping without
+# carrying a legend in the stream: a reader knows b means blocked before they
+# reach the count column, having read the word on another row. The waiting
+# bucket is the exception, so it spells its name out. Its state word is
+# `waiting`, whose first letter is w and not the letter it used to carry; q was
+# the first letter of `waiting`'s bucket, `queued` — a word no column printed,
+# which is exactly why the count could not be decoded from the pane and read as
+# a request-queue depth instead. Spelling it needs no mapping to learn, and it
+# leaves every other counter untouched.
 STAT_LETTER = {
     "working": "w",
     "blocked": "b",
     "unpromoted": "u",
-    "waiting": "q",
+    "waiting": "queued",
 }
 
-# Two digits and a single-letter suffix per counter, joined by a bare middle
-# dot with no surrounding space. Two digits cover any fleet the dispatcher
-# opens; a wider count pushes its own label rather than silently misaligning
-# the column beside it. The two-digit alignment keeps the block a constant
-# width as counts change, so the right edge of the row never moves, and the
-# reclaimed separator space funds the model and effort cells without taking
-# width from the reason.
+# Two digits and the bucket label per counter, joined by a bare middle dot with
+# no surrounding space. Two digits cover any fleet the dispatcher opens; a
+# wider count pushes its own label rather than silently misaligning the column
+# beside it. The label is one character for three buckets and the spelled word
+# for the waiting one, so the block is sized from the labels themselves rather
+# than assumed at one character each. The two-digit alignment keeps the block a
+# constant width as counts change, so the right edge of the row never moves,
+# and the reclaimed separator space funds the model and effort cells without
+# taking width from the reason.
 _MAX_CELLS = (*_CELLS, _WAIT_CELL)
-STATS = sum(2 + 1 for _ in _MAX_CELLS) + (len(_MAX_CELLS) - 1)
+STATS = sum(2 + len(STAT_LETTER[label]) for label in _MAX_CELLS) + (len(_MAX_CELLS) - 1)
 
 # The widest the fixed columns can be, plus the stats block and one gap. A width
 # below this cannot be honoured without wrapping, so it is raised to this.
@@ -257,11 +266,14 @@ STATS = sum(2 + 1 for _ in _MAX_CELLS) + (len(_MAX_CELLS) - 1)
 # effort cell at seven, the four fleet counters and the measure cells (wall and
 # rate) in full — the measures sit behind the counters now, and the row no
 # longer carries model seconds, tokens or the dollar figure, which frees exactly
-# the columns that moved to the free text. Against the 180-column DEFAULT_WIDTH
-# budget that leaves 41 for the reason, and 69 on the 208-column pane this
-# workstation measures (its observed cut, read directly with no inset
-# subtracted) — both clear the 12-column floor below which a clause is not worth
-# reading, and 41 at the default is what a later added column spends first.
+# the columns that moved to the free text. The waiting counter's spelled word is
+# five columns wider than the single letter it replaced, so this floor moved by
+# that much and the reason's share of a fixed pane moved with it. Against the
+# 180-column DEFAULT_WIDTH budget that still leaves more than 30 for the reason,
+# and more than 60 on the 208-column pane this workstation measures (its
+# observed cut, read directly with no inset subtracted) — both clear the
+# 12-column floor below which a clause is not worth reading, and the 180-column
+# figure is what a later added column spends first.
 MIN_WIDTH = (
     CLOCK
     + GAP
@@ -788,10 +800,13 @@ class Ticker:
     def _stats(self, event: Mapping[str, Any]) -> list[tuple[str, Any]]:
         """The fleet after this transition, as a grid whose digits line up.
 
-        Each counter is its number followed by the state's single letter, so a
-        zero is dimmed rather than dropped: blanking it would leave trailing
-        whitespace and take the right edge ragged, and a reader waiting for a
-        drain needs to see the count reach zero, not see it disappear.
+        Each counter is its number followed by the bucket's own label: the
+        state's initial for the three the state column already spells, and the
+        whole word for the waiting bucket, whose name that column never
+        printed. A zero is dimmed rather than dropped: blanking it would leave
+        trailing whitespace and take the right edge ragged, and a reader
+        waiting for a drain needs to see the count reach zero, not see it
+        disappear.
         """
         cells: list[tuple[str, Any]] = []
         labels = (*_CELLS, _WAIT_CELL) if _WAIT_CELL in event else _CELLS
