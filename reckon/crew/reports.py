@@ -398,9 +398,10 @@ def _unknown_status_word_manifest_message(path: str | None, word: object) -> str
     where = f" at {path}" if path else ""
     recognised = ", ".join(sorted(MANIFEST_STATUSES))
     return (
-        f"cannot read manifest{where}: status {word!r} is not a recognised "
-        f"manifest status (recognised: {recognised}); expected a JSON object "
-        "or the 'key: value' text form carrying one of those statuses"
+        f"refused manifest{where}: field 'status' rejected value {word!r} "
+        f"because it is not a recognised manifest status (recognised: "
+        f"{recognised}); the manifest structure and all remaining fields "
+        "parsed successfully"
     )
 
 
