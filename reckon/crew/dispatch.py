@@ -3172,7 +3172,16 @@ def dispatch(
                 if resolution.sandbox_write_roots is None
                 else [str(path) for path in resolution.sandbox_write_roots]
             ),
-            "session_reuse": bool(backend.get("session_reuse")),
+            # A backend permitting a run to continue an earlier session is a
+            # property of the configuration, so it is named as one: a reader
+            # taking a bare ``session_reuse`` for an observation reaches a true
+            # answer to a question nobody asked. Whether this run actually
+            # carried a session is written from its own launch below.
+            "session_reuse_capable": bool(backend.get("session_reuse")),
+            # Overwritten from the launched argv for a spawned run. An
+            # in-harness launch is delegated, not spawned, so reckon cannot put
+            # a prior session on its command line and the value stays false.
+            "session_resumed": False,
             "member": effective_member,
             # The configuration that actually ran the node, recorded now because
             # a later config layer change makes it unreconstructable — and
@@ -3255,6 +3264,7 @@ def dispatch(
                     "pid_start_time": spawned_start_time,
                     "argv": list(plan.argv),
                     "dialect": plan.dialect,
+                    "session_resumed": _launched_prior_session(plan) is not None,
                 }
             )
         else:
@@ -3454,6 +3464,26 @@ def _adopt_launched_workers_from_reexec() -> None:
             _LAUNCHED_WORKERS_WAKE.set()
     if adopted:
         _ensure_launched_worker_reaper()
+
+
+def _launched_prior_session(plan: _backends.LaunchPlan | None) -> str | None:
+    """Return the prior session this launch carried into argv, or None.
+
+    A backend's ``session_reuse`` setting says the lane permits a run to
+    continue an earlier session; only the command line says whether this run
+    did. The plan records the session it was handed, and the answer is read
+    back off the plan's own argv so a plan naming a session its command line
+    does not carry is not reported as a resumption.
+    """
+    if plan is None:
+        return None
+    session = plan.resumed_session
+    if not session:
+        return None
+    carried = str(session)
+    if str(session) not in [str(token) for token in plan.argv]:
+        return None
+    return carried
 
 
 def _spawn(
@@ -4348,7 +4378,8 @@ def change_lane(
                     if resolution.sandbox_write_roots is None
                     else [str(path) for path in resolution.sandbox_write_roots]
                 ),
-                "session_reuse": bool(backend.get("session_reuse")),
+                "session_reuse_capable": bool(backend.get("session_reuse")),
+                "session_resumed": _launched_prior_session(target_plan) is not None,
                 "agent": _stamp_agent_display(
                     _agent_configuration(resolution.backend, target_launch, backend),
                     backend,
@@ -4458,6 +4489,12 @@ def record_resumption(
                 "phase": "working",
                 "attempt": int(record.get("attempt") or 1) + 1,
                 "attempt_kind": "resume",
+                # This is reached only after the resume plan resolved a
+                # recorded session and put it on the launched command line, so
+                # this attempt carried one. The live pointer does not keep the
+                # resumption's argv, which is why the fact is stated here
+                # rather than derived from it.
+                "session_resumed": True,
                 "attempt_started_at": attempt_started_at or _utc_now(),
                 "manifest_baseline_mtime_ns": (
                     _manifest_mtime_ns(record.get("manifest_path") or "")
