@@ -205,6 +205,67 @@
     adjacent on the display. This is the cheapest of the three repairs and independent of
     the other two.</p>
 
+    <h3 id="s5-landed">&sect;5 &mdash; Landed: the counter spells its own word</h3>
+
+    <p><strong>The waiting counter renders <code>3queued</code> instead of <code>3q</code>.</strong>
+    The decision <code>waiting-counter-letter</code> locked <em>spell-out-queued</em>, and
+    <code>STAT_LETTER</code> now spells that one bucket's name while the other three keep
+    their initial. The compact rule is intact &mdash; a counter is its count followed by a
+    short form of its bucket's name &mdash; and what <code>q</code> failed at is visible in
+    the table itself: <code>w</code>, <code>b</code> and <code>u</code> are the initial of
+    the word the state column already prints for that bucket &mdash; working, blocked,
+    unpromoted &mdash; so a reader learns the mapping off any other row in the pane.
+    <code>q</code> was the initial of <code>queued</code>, a word no column printed, so
+    nothing on the surface could teach it and it read as request-queue depth beside a model
+    serve that has a genuine one. The comment above the table claimed the pane taught every
+    entry in the state column; that was true of three and false of the fourth, and it now
+    says so and names the waiting bucket as the exception.</p>
+
+    <p><strong>Width is the cost, and the reason pays it.</strong> The spelled cell is five
+    columns wider, so the counter block goes from 15 columns to 20 and its floor,
+    <code>MIN_WIDTH</code>, from 139 to 144. A row is still exactly the width it was asked
+    for at 180 and at 208 columns, because the reason cell absorbs what remains; the block
+    holds one width as counts change &mdash; zero, nine, ten and ninety-nine occupy the same
+    columns &mdash; so the row's right edge never moves; and a zero is still rendered rather
+    than dropped and dimmed, which is what lets a reader watch a drain reach it.</p>
+
+    <figure>
+      <img src="/reckon/figures/queued-counter/waiting-counter-spells-queued.svg"
+           alt="Two monitor rows drawn against a column ruler. At base the waiting cell reads
+                3q and the reason begins at column 136; with the change it reads 3queued and
+                the reason begins at column 141. Both rows end at column 180.">
+      <figcaption>The same event rendered at 180 columns by the base revision's renderer and
+      by the one carrying the change. Every column boundary in the drawing is read off those
+      two rows rather than placed by hand, so it cannot drift from the renderer.</figcaption>
+    </figure>
+
+    <p><strong>The falsifier.</strong> The substring <code>queued</code> does not occur
+    anywhere in the row the base revision renders, and the base revision maps the bucket to
+    <code>q</code>, so all three assertions added here fail against it and pass with the
+    change. Measured over the three files this section's work touches, run with the same
+    invocation at both revisions: 98 passed at base <code>7dfae503</code>, 101 at head, the
+    delta being exactly the three added assertions and zero added failures. The three
+    failures at base are recorded in
+    <a href="/reckon/evidence/archive/monitor-renders-what-it-is-given-landed.html#s5-counter-spells-its-own-word">the
+    &sect;5 counter evidence anchor</a>.</p>
+
+    <p><strong>The third review finding on &sect;4 was repaired here, by renaming rather than
+    by freezing a rendering.</strong>
+    <code>test_a_row_declaring_no_wait_renders_exactly_as_it_did</code> compared two renders
+    both taken at head &mdash; the bare event against the explicit-<code>None</code> one
+    &mdash; so it could not see the base its name claimed. The additive contract it actually
+    asserts is worth keeping, and it is stated in the name it now carries: the bare event has
+    all five wait keys <em>absent</em> and the explicit one has them all present and None, and
+    the predicate reads a key's value rather than its presence, so a presence-keyed predicate
+    would show the difference. A recorded base rendering was rejected as the alternative
+    because a 180-character literal embeds the local clock, which is the failure mode this
+    project has already recorded against date-derived literals.</p>
+
+    <p><strong>Not covered here.</strong> Three further &sect;5 comments were raised on the
+    same pane &mdash; the counter block's placement, its workstation-wide scope against
+    session-scoped rows, and the repeated model name &mdash; and none is touched by this
+    node. They are recorded as follow-ons.</p>
+
     <h2 id="s6">&sect;6 &mdash; A dry run that returns before the thing it predicts</h2>
 
     <p>The same shape at a third site, in <code>resumption.py</code>'s <code>sweep()</code>:</p>

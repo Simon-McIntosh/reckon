@@ -166,6 +166,76 @@ def test_stat_letters_align_at_a_fixed_column_across_one_and_two_digits(grid):
         assert letter_columns(one)[letter] == letter_columns(twelve)[letter], letter
 
 
+def test_the_waiting_counter_spells_the_word_the_state_column_never_prints(grid):
+    """The waiting cell spells the bucket's own name rather than its initial.
+
+    `waiting` is what the state column says, and its initial is w — the letter
+    the working bucket already carries — so the count used q, the first letter
+    of the bucket's own name `queued`, a word no column showed anywhere. A count
+    that cannot be read off the pane is one a reader decodes as a request-queue
+    depth instead, standing as it does beside a serve with a queue of its own.
+    The cell therefore renders the whole word, which needs no mapping to learn
+    and collides with nothing else in the block.
+    """
+    line = plain(grid.render(_event(working=2, blocked=0, unpromoted=0, waiting=3)))
+    assert ticker_module.STAT_LETTER["waiting"] == "queued"
+    assert " 3queued" in line
+    # The old spelling left a bare `3q` on the row; nothing on it may now read
+    # as a one-letter bucket whose meaning is never shown.
+    assert " 3q " not in line
+    assert not re.search(r"\d{1,2}q(?!ueued)", line)
+
+
+def test_the_spelled_counter_keeps_the_block_a_constant_width_across_counts():
+    """A count from zero to two digits moves no letter and no right edge.
+
+    The spelled word is five columns wider than the letter it replaced, and the
+    two-digit alignment that keeps the block's right edge fixed still holds with
+    it: a reader scanning up the counter block finds every counter, and the
+    whole row, on the same screen column whatever the fleet is doing.
+    """
+    for width in (180, 208):
+        rows = {
+            count: plain(
+                ticker_module.Ticker(width=width, color=False).render(
+                    _event(
+                        working=count,
+                        blocked=count,
+                        unpromoted=count,
+                        waiting=count,
+                    )
+                )
+            )
+            for count in (0, 9, 10, 99)
+        }
+        # Every row is exactly the requested width with the wider cell present.
+        assert {len(row) for row in rows.values()} == {width}, width
+        # The block's right edge — where the spelled word ends — holds its own
+        # column at every count, so the right edge never moves.
+        edges = {row.index("queued") + len("queued") for row in rows.values()}
+        assert len(edges) == 1, (width, edges)
+        # And the digit columns still align too: the block begins at one column
+        # whether the count beside it is one digit or two.
+        assert len({row.index(f"{count:>2}w") for count, row in rows.items()}) == 1
+
+
+def test_the_spelled_counter_still_renders_a_zero_rather_than_dropping_it():
+    """A zero is dimmed, never blanked — the property the wider cell must keep.
+
+    The cell is dimmed rather than dropped so a reader watching a drain sees the
+    count reach zero instead of seeing it disappear; a zero that vanished would
+    take the column with it and leave the right edge ragged. Spelling the word
+    must not change that, so the zero still occupies its cell and still carries
+    the dim style.
+    """
+    painter = ticker_module.Ticker(width=180, color=True)
+    line = painter.render(_event(working=0, blocked=0, unpromoted=0, waiting=0))
+    assert " 0queued" in plain(line)
+    assert ticker_module._DIM in line
+    # The dimmed zero is the waiting cell's, not some neighbour's.
+    assert ticker_module._DIM + " 0queued" in line
+
+
 def test_the_baseline_glyph_is_not_a_glyph_the_row_already_uses(grid):
     """The arrow column must say something no other column repeats.
 
