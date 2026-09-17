@@ -1275,6 +1275,54 @@ reading taken as an authority it was not.</p>
       added file; the formatter check is clean on both.</p>
   </section>
 
+  <section id="structure-balance-reported">
+    <h2 id="structure-balance-reported-h">&sect;12 &mdash; An unbalanced document reports its own structure</h2>
+    <p><strong>Defect reproduced before repair.</strong> <code>reckon audit-doc</code> reported
+    <code>OK</code> on a document carrying seven <code>&lt;section&gt;</code> openings against six
+    closings and two <code>&lt;header&gt;</code> elements, so every section after the unclosed one
+    nested inside it rather than standing beside it. Base reading, quoted verbatim:
+    <code>work-does-not-fall-to-the-coordinator-landed.html: OK</code>, exit 0. The check could not
+    see it because the audit read the parsed tree, and BeautifulSoup repairs an unclosed section
+    into a well-formed one: every later check read a valid document while the authored section tree
+    was wrong, which is a confident wrong answer rather than an honest absence.</p>
+    <p><strong>Measure.</strong> The new check is an <code>html.parser</code> scan of the raw tag
+    stream, tracking open <code>&lt;section&gt;</code> elements and counting
+    <code>&lt;header&gt;</code> elements; it never reads the repaired soup. Two defects report at
+    <code>error</code> &mdash; an unclosed section and a stray closing tag &mdash; because the
+    parser re-parents following siblings for the first and drops the second, so in both cases the
+    rendered structure and the authored one disagree and nothing says so. A second
+    <code>&lt;header&gt;</code> reports at <code>warn</code>: it renders and moves no section
+    boundary, but the shell owns one header and a second is the trace of content from another
+    document spliced in. On the same document the check now reports one error and one warning and
+    the audit exits non-zero.</p>
+    <table>
+      <thead><tr><th>Reading</th><th>Base</th><th>At the check</th></tr></thead>
+      <tbody>
+        <tr><td>Specimen document</td><td><code>OK</code>, exit 0</td><td>1 error + 1 warn, exit 1</td></tr>
+        <tr><td>New structural suite</td><td>7 failed, 6 passed</td><td>13 passed</td></tr>
+        <tr><td>Prescribed doccheck cohort</td><td>7 failed, 41 passed</td><td>48 passed</td></tr>
+        <tr><td>Wider doccheck-consumer cohort</td><td>9 failed, 130 passed</td><td>2 failed, 137 passed</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Falsifier.</strong> Seven cases fail at the unrepaired source and pass at the
+    check: four unclosed-section shapes (named, unnamed, an unclosed outer beside a closed inner,
+    and the id named for the element left open), two stray-closing shapes, and a repeated header.
+    Six cases stay silent at both: a balanced document with one header, deliberately nested
+    sections each closed, prose that merely names the defect, an escaped section tag inside a code
+    span, one header alone, and no header at all. Zero added failures in the wider cohort: its two
+    remaining failures are identical at base and at the check, and the other seven are the seven
+    the new check removes. Tests build their own specimens, because a check asserted against a
+    live document fails the day that document is legitimately repaired.</p>
+    <p><strong>Existing debt, reported and not repaired.</strong> Across <code>docs/</code> the
+    check flags <strong>21 documents</strong>: 7 with an unclosed section and 19 with a repeated
+    header, five carrying both. The unclosed seven are
+    <code>a-live-worker-can-be-reached-landed.html</code> (2),
+    <code>crew-observability-truth-landed.html</code> (4),
+    <code>work-does-not-fall-to-the-coordinator-landed.html</code> (1), and four anchor sections
+    inside the cumulative records; the repeated-header 19 are plan documents whose section-badge
+    headers make a second <code>&lt;header&gt;</code>. No document is repaired by this change.</p>
+  </section>
+
 </main>
 </body>
 </html>
