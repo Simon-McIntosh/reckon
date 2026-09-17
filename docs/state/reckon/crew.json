@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-17T11:07:17",
+  "updated": "2026-09-17T11:41:33",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -142329,6 +142329,230 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260917T045944162163-the-wait-facts-reach-the-event",
+        "plan": "monitor-renders-what-it-is-given",
+        "section": "\u00a73",
+        "node": "the-wait-facts-reach-the-event",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 1417,
+                "cached_input_tokens": 815827,
+                "input_tokens": 817246,
+                "output_tokens": 620,
+                "reasoning_output_tokens": 0,
+                "total_tokens": 817866,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "a7379194-9bc5-48d1-b6e1-fc5b39871bc3",
+            "session_id": "ship-s18-20260915"
+          },
+          "done_when": "A test asserts the event built by the transition composer at reckon/crew/recovery.py:2630 carries all five keys with the values the snapshot holds, and that each is None rather than zero or absent when unmeasured. Confirm the defect first: quote in your manifest that the composed event today contains next_action and lifting_condition and none of the five, and that the only event.update() adds _spend_facts. Change no rendering and no row. Run tests/test_crew_recovery.py plus every tests/ file asserting on recovery.py; report failures as a delta against base, never an absolute count.",
+          "estimated_hours": 1.0,
+          "goal": "Carry wait_condition_state, wait_observed, wait_overdue, expected_horizon_seconds and resume_brief from the snapshot into the transition event, so a renderer can reach them.",
+          "id": "the-wait-facts-reach-the-event",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-17T04:59:45Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/manifests/the-wait-facts-reach-the-event.md",
+          "plan": "monitor-renders-what-it-is-given",
+          "requested_backend": "clive",
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a73",
+          "spec_level": "guided",
+          "time_budget": "40m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/recovery.py",
+            "tests/test_wait_facts_reach_the_event.py",
+            "docs/evidence/archive/monitor-renders-what-it-is-given-landed.html",
+            "docs/plans/monitor-renders-what-it-is-given.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "crew-review-reflex",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-17T05:01:02Z",
+        "completed_at": "2026-09-17T06:28:31.758Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 5232,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 5249,
+        "stalled": true,
+        "time_budget": "40m",
+        "base_sha": "7efeeb7739b01368936246291627fb6141849549",
+        "commits": [
+          "545aecb1a12a11860d4ec72e145bd3454e95eedb",
+          "35c6baabcf4e1332740d5eb6b4e439b4214adcea"
+        ],
+        "changed_lines": {
+          "added": 366,
+          "removed": 0,
+          "files": 4
+        },
+        "tests_added": 4,
+        "gate": "passed",
+        "gate_check": {
+          "command": "PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q the recovery-asserting cohort",
+          "exit_status": 1,
+          "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260917T045944162163-the-wait-facts-reach-the-event/manifest.md",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/manifests/the-wait-facts-reach-the-event.md",
+        "scope_changed": false,
+        "session_id": "23e6cf6a-c3bc-4b6e-b2c9-231d24c6e6ad",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 12323372,
+            "input_tokens_cumulative": 12323372,
+            "output_tokens": 54287,
+            "output_tokens_cumulative": 54287,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-17T06:28:31.758Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "5m",
+          "requested": true,
+          "waived_runs": []
+        },
+        "review": {
+          "status": "parsed",
+          "scores": {
+            "durability": 20,
+            "evidence": 15,
+            "fit": 16,
+            "goal_fidelity": 20,
+            "scope_discipline": 20
+          },
+          "absent": [],
+          "total": 91
+        },
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 12486909,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 5244.396,
+          "generated_tokens": 63399,
+          "generation_seconds": 3754.17,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 33.8,
+          "machine_seconds": 1490.226,
+          "peak_input_tokens": 162237,
+          "tokens_per_second": 16.89,
+          "wall_tokens_per_second": 12.09
+        },
+        "follow_on_paths": [
+          "tests/test_crew.py",
+          "tests/test_crew_finished_display.py",
+          "test_crew_orphan.py",
+          "test_crew_surface.py",
+          "test_crew_watch_lifetime.py",
+          "tests/test_schema.py::test_cross_project_conformance[imas-ambix:dsv41-flash-four-card-throughput-landed"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": "Run tests",
+          "override": false,
+          "role": "implement",
+          "status": "compatible"
+        },
+        "attempt_kind": "dispatch",
+        "attempt": 1,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s18-20260915/the-wait-facts-reach-the-event",
+          "session_id": "23e6cf6a-c3bc-4b6e-b2c9-231d24c6e6ad",
+          "session_source": "stream",
+          "retained_at": "2026-09-17T06:28:31.758Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 107.0,
+        "orientation_input_tokens": 3486717.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -142557,6 +142781,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1560
+    "_version": 1561
   }
 }
