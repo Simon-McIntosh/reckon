@@ -82,6 +82,7 @@
         <tr><td>§10</td><td><a href="#positive-gate-exit-outranks-quoted-diagnostic">positive-gate-exit-outranks-quoted-diagnostic</a></td><td>1601c27c, ebca263f</td><td>run outcome</td></tr>
         <tr><td>§12</td><td><a href="#manifest-wait-fields-carry-literal-examples">manifest-wait-fields-carry-literal-examples</a></td><td>9c51724b</td><td>run outcome</td></tr>
         <tr><td>§12</td><td><a href="#checkpoint-key-offered-to-any-worker">checkpoint-key-offered-to-any-worker</a></td><td>d0956c85</td><td>run outcome</td></tr>
+        <tr><td>§12</td><td><a href="#unrecognised-status-field-refusal">unrecognised-status-field-refusal</a></td><td>839f8ad9</td><td>run outcome</td></tr>
       </tbody>
     </table>
   </section>
@@ -1031,6 +1032,37 @@ reading taken as an authority it was not.</p>
     fails with an <code>AssertionError</code> raised inside
     <code>_manifest_line(prompt, "checkpoint")</code>. The nine prompt-asserting files pass 108
     of 108 at the commit, zero failures, with no added Ruff finding.</p>
+  </section>
+
+  <section id="unrecognised-status-field-refusal">
+    <h3>§12 — An unrecognised status identifies the field it rejected</h3>
+    <p>Run
+      <code>r-20260917T101445063904-a-refusal-names-the-field-it-choked-on</code>.
+      Commit <code>839f8ad9</code>, 54 insertions and 13 deletions over
+      <code>reckon/crew/reports.py</code> and
+      <code>tests/test_manifest_parse_format.py</code>.</p>
+    <p><strong>Reproduction:</strong> the manifest was structurally readable and every field
+      except its status was valid, but the refusal used the same opening as a corrupt document:
+      <code>cannot read manifest: status 'done' is not a recognised manifest status</code>.
+      The malformed-JSON control also began <code>cannot read manifest</code>, so a reader had to
+      infer whether the parser had rejected one value or the document itself.</p>
+    <p><strong>Outcome:</strong> the unknown-word refusal now reads
+      <code>refused manifest: field 'status' rejected value 'done' because it is not a
+      recognised manifest status</code> and ends by stating that the manifest structure and all
+      remaining fields parsed successfully. A malformed JSON body retains its existing
+      <code>cannot read manifest</code> refusal and never claims that the remainder parsed.
+      The accepted status vocabulary is unchanged; in particular, <code>done</code> remains
+      rejected rather than becoming an alias for <code>complete</code>.</p>
+    <p><strong>Measure:</strong> one property case exercises 159 systematically generated and
+      representative unrecognised tokens, including the two live spellings, and requires each
+      refusal to name the <code>status</code> field, quote its value, and state that the remainder
+      parsed. Two structural controls require the inverse message. Every currently recognised
+      status still parses to itself, and the message carries no plan, sprint, or run-id label.
+      The prescribed four-file gate reads <strong>13 failed, 128 passed</strong> at base
+      <code>782cc561</code> and <strong>13 failed, 133 passed</strong> after the repair; all
+      thirteen failure identities are unchanged, so added failures are zero. The focused parser
+      file passes 104 of 104 cases. Both Ruff findings in the touched source file are identical
+      to the base revision, with none in the touched test file.</p>
   </section>
 
 </main>
