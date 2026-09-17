@@ -23,8 +23,8 @@
   <title>Both Shapes Of What Should Run Next | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-15">
-<meta name="plan-version" content="10">
+<meta name="plan-modified" content="2026-09-17">
+<meta name="plan-version" content="11">
 </head>
 <body>
   <main class="plan-doc">
@@ -181,14 +181,14 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="denominator-repair" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="denominator-repair" data-choice="both-denominator-first" data-by="Simon McIntosh" data-when="2026-09-17T20:55:49+00:00">
     <p class="r-dec-q">How does a closure containing an abandoned member reach a complete completion figure?</p>
     <p class="r-dec-opts">
       <button class="r-opt" data-value="terminal-leaves-denominator">A terminal non-shipped member leaves the denominator, as a deferred one does</button>
       <button class="r-opt" data-value="stage-scoped-membership">A stage-scoped dependency resolves membership to the section rather than the plan</button>
       <button class="r-opt" data-value="both">Both, with the denominator change first and membership as its own change</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Both repairs land, and the denominator change goes first. Taking a terminal non-shipped member out of the denominator, exactly as a deferred member already leaves it, makes the completion figure reachable at once and introduces no new concept — one rule covering two cases. Stage-scoped membership then follows as its own change, verified against a figure that is already correct, which is the ordering that makes the second change independently checkable rather than entangled with the first. Neither alone is sufficient: the denominator repair leaves membership resolved at the plan, which is the coarseness that produced the miscount, and stage-scoped membership on its own never lets an abandoned member out of the denominator, so it answers a question nobody asked here. Sequencing also splits this plan, which is the sprint&#x27;s critical path at ten worker-hours, into two shippable pieces so the roadmap stops reporting an unreachable hundred percent before the whole of it is done. The severity half of this decision is not a fresh ruling: the plan&#x27;s own §2 done-when requires the finding to be visible to a reader without refusing execution, which is the literal text of the warn option, and that clause excludes error because error refuses execution and excludes info because the precedent it would match reports sixteen times and gates nothing.</p>
     </div>
 <div class="r-dec" data-key="handle-finding-severity" data-choice="warn" data-by="reckon-ship" data-when="2026-09-15T05:16:20+00:00">
     <p class="r-dec-q">At what severity does an endpoint with no handle report?</p>
@@ -224,7 +224,7 @@
     <div class="r-comment-body"><p>independent review of the endpoint-handle node; scored 89 and found one unauthorised suppression at roadmap.py:1501, repaired under a follow-on node</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260915T074158881440-the-endpoint-finding-silences-only-a-leaf" data-who="codex-e" data-when="2026-09-15T07:53:09Z">
-    <div class="r-comment-body"><p>the endpoint-without-handle finding keys on live descendants rather than the endpoint plan&#x27;s own terminal status; review scored 95 with no defect found. Promoted from a scoring state the display would not clear: the reviewer wrote its no-defects note into the derived &#x27;absent&#x27; field, whose truthiness gates the scoring-to-promotable transition, so the surface asked for a review already on disk</p></div>
+    <div class="r-comment-body"><p>the endpoint-without-handle finding keys on live descendants rather than the endpoint plan's own terminal status; review scored 95 with no defect found. Promoted from a scoring state the display would not clear: the reviewer wrote its no-defects note into the derived 'absent' field, whose truthiness gates the scoring-to-promotable transition, so the surface asked for a review already on disk</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260915-the-field-landed-on-the-adjacent-surface" data-who="reckon-ship" data-when="2026-09-15T11:35:00Z">
     <div class="r-comment-body"><p><strong>§3 LANDED — commits <code>51361af0</code> and <code>1a9fa39c</code>, merged, 38 tests passing with a proper failing-first reproduction (2 failed on <code>KeyError endpoint_closures</code>, then 2 passed). The feature is live and substantially correct, and it landed on the adjacent surface.</strong></p><p>Measured against a live read of this project immediately after the merge:</p><pre>immediate_roadmap   rows=16   carrying endpoint_closures = 16

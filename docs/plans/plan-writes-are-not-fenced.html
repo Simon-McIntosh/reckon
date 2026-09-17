@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-17">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -132,7 +132,7 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="who-loses-a-race" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="who-loses-a-race" data-choice="make-the-append-commutative" data-by="Simon McIntosh" data-when="2026-09-17T20:55:38+00:00">
     <p class="r-dec-q">When a plan edit and a promotion&#x27;s landing write meet, who is
         inconvenienced? Fencing the landing write refuses a promotion at the moment a
         worker&#x27;s result is recorded; serializing is a rule with no check and cannot help two
@@ -143,7 +143,7 @@
       <button class="r-opt" data-value="commutative-append">make the append commutative</button>
       <button class="r-opt" data-value="serialize-with-a-check">serialize, with a check that enforces it</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">The failure that cost data was a lost update whose version counter advanced, so nothing raised a conflict and nothing could be noticed. Only the commutative append removes that case outright. It does not remove the race, and the plan is right to say so, but it changes the residue from a lost update into an append ordering question, which is benign for comments and severe for nothing. Fencing the landing write converts the silent loss into a refusal at the most expensive moment there is, as a worker&#x27;s result is being recorded — and that shape was measured on 2026-09-17, when a promotion that refused after writing the plan left its run unpromotable and dirtied the plan so the next dispatch refused on the dirt while naming a section that was fine. Serializing cannot help writers who cannot see each other, which is the actual topology: five coordinator sessions ran concurrently on this workstation that evening in separate processes with no shared lock, so the check that would enforce it is a distributed lock under a simpler name. The accepted costs are that this is the largest of the three changes and that the meaning of the version counter has to be revisited as part of it, since a counter that advances on a lost update is itself part of what went wrong.</p>
     </div>
 </section>
 
