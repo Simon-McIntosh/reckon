@@ -617,6 +617,21 @@
       removes those same three failures with zero added against base. Landed under commit
       <code>0d3c6cf5</code>. Full record:
       <a href="/reckon/evidence/archive/crew-observability-truth-landed#nested-manifest-key-stays-nested">&#167;12 nested-key evidence</a>.</p>
+    <p class="landed-summary">The literal-markdown check now reads prose with the verbatim
+      subtrees removed, so a document that quotes an asterisk pair inside a code span or a
+      <code>&lt;pre&gt;</code> block no longer reports an error it cannot clear without deleting
+      correct content. This plan is the case that showed it: its subject is manifest formatting,
+      so it quotes spellings such as the asterisk-wrapped status key as sample data, all 19 of
+      its asterisk pairs sit in a verbatim subtree, and the check reported 5 errors against
+      content that was right. Measured before and after on this file, in kind and count:
+      <code>md-bold</code> 5 &rarr; 0; <code>md-list-or-heading</code> 4 &rarr; 4 and
+      <code>pre-long-line</code> 3 &rarr; 3, unchanged. An asterisk pair in ordinary prose
+      still reports, including prose inside a body class, so a real formatting defect stays
+      visible. The new tests fail four cases at the unrepaired source and pass at
+      the commit; the doccheck-asserting cohort moves from 2 failed / 168 passed at base to
+      2 failed / 178 passed, zero added failures, the two being identical pre-existing failures
+      unrelated to this check. Landed under commit <code>ca539bcc</code>. Full record:
+      <a href="/reckon/evidence/archive/crew-observability-truth-landed#literal-markdown-check-reads-prose-not-verbatim-subtrees">&#167;12 literal-markdown landed</a>.</p>
 
     <h2 id="s13">&#167;13 &mdash; A quiet fleet and a working one look identical, because nothing reports a wave</h2>
     <p><strong>Directed by the lead 2026-09-09, after a session spent counting completions by

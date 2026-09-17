@@ -1099,6 +1099,49 @@ reading taken as an authority it was not.</p>
       source file, and the formatter check passes.</p>
   </section>
 
+<section id="literal-markdown-check-reads-prose-not-verbatim-subtrees">
+    <h3>§12 — The literal-markdown check reads prose, not verbatim subtrees</h3>
+    <p>Node <code>an-audit-error-a-reader-cannot-clear</code>. Commit
+      <code>ca539bcc</code> changed <code>reckon/doccheck.py</code> by 25 insertions and 2
+      deletions, and added <code>tests/test_doccheck_code_spans.py</code>.</p>
+    <p><strong>Reproduction:</strong> at base <code>b5d298c2</code>, auditing
+      <code>docs/plans/crew-observability-truth.html</code> reported <strong>5 error</strong>,
+      every one <code>md-bold</code>, against 4 <code>md-list-or-heading</code> warnings and 3
+      <code>pre-long-line</code> notices. The file's subject is manifest formatting, so it quotes
+      spellings such as the asterisk-wrapped status key as sample data: it carries 19 literal
+      double-asterisk occurrences, 12 inside <code>&lt;pre&gt;</code> blocks and 7 inside
+      <code>&lt;code&gt;</code> spans, one of those the Python dictionary unpacking in a code
+      span. Zero are markdown a reader was meant to see rendered, so all five errors were on
+      content that was correct.</p>
+    <p><strong>Mechanism:</strong> the check built its text with <code>get_text</code>, which
+      flattens <code>&lt;pre&gt;</code> and <code>&lt;code&gt;</code> into the surrounding
+      visible text, so a literal quoted inside one of them read as rendered markdown. The check
+      now takes its text from <code>_prose_text</code>, which removes those subtrees before the
+      text is read. The leading-marker warning still reads the raw inner text and is unchanged.</p>
+    <table>
+      <thead><tr><th>Finding</th><th>Base</th><th>After</th></tr></thead>
+      <tbody>
+        <tr><td><code>md-bold</code> (error)</td><td>5</td><td>0</td></tr>
+        <tr><td><code>md-list-or-heading</code> (warn)</td><td>4</td><td>4</td></tr>
+        <tr><td><code>pre-long-line</code> (info)</td><td>3</td><td>3</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Measure:</strong> the plan audits <strong>0 error, 4 warn, 3 info</strong> after
+      the repair, against <strong>5 error, 4 warn, 3 info</strong> at base &mdash; only
+      <code>md-bold</code> moves, and the leading-marker warning is untouched. The domain was
+      ranged rather than the one file: an asterisk pair in ordinary prose still reports, in a
+      paragraph and in a body class; an asterisk pair inside a code span, a code span nested in
+      a body class, a <code>&lt;pre&gt;</code> block, a <code>&lt;pre&gt;</code> nested in a
+      body class, and the Python dictionary unpacking all stay quiet. The new file fails four
+      of its ten cases at the unrepaired source and passes all ten at the commit. The
+      doccheck-asserting cohort moves from <strong>2 failed, 168 passed</strong> to
+      <strong>2 failed, 178 passed</strong>: zero added failures, the same two failing at base
+      and head and both unrelated to this check:
+      <code>test_provenance.py::test_spa_sources_keep_typed_facets_and_provenance_direction</code>
+      and
+      <code>test_mcp_recovery.py::test_resume_reattaches_a_session_only_the_stream_carries</code>.</p>
+  </section>
+
 </main>
 </body>
 </html>
