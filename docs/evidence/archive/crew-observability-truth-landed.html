@@ -84,6 +84,7 @@
         <tr><td>§12</td><td><a href="#checkpoint-key-offered-to-any-worker">checkpoint-key-offered-to-any-worker</a></td><td>d0956c85</td><td>run outcome</td></tr>
         <tr><td>§12</td><td><a href="#unrecognised-status-field-refusal">unrecognised-status-field-refusal</a></td><td>839f8ad9</td><td>run outcome</td></tr>
         <tr><td>§12</td><td><a href="#nested-manifest-key-stays-nested">nested-manifest-key-stays-nested</a></td><td>0d3c6cf5</td><td>run outcome</td></tr>
+        <tr><td>§12</td><td><a href="#a-refusal-at-admission-is-named">a-refusal-at-admission-is-named</a></td><td>1f519333</td><td>run outcome</td></tr>
       </tbody>
     </table>
   </section>
@@ -1097,6 +1098,81 @@ reading taken as an authority it was not.</p>
       and head: its fixture supplies a non-git temporary directory to a promotion path that now
       requires a git worktree. Ruff remains at the same two pre-existing findings in the touched
       source file, and the formatter check passes.</p>
+  </section>
+
+  <section id="a-refusal-at-admission-is-named">
+    <h3>&#167;12 &mdash; A run the backend refused at admission is named for the refusal</h3>
+    <p>Run <code>r-20260917T145958453238-a-refusal-at-admission-says-so</code>. Commit
+    <code>1f519333</code>, 151 insertions in <code>reckon/crew/recovery.py</code> and 300
+    insertions in a new test file.</p>
+    <p><strong>Defect reproduction, quoted from the recorded instance
+    <code>r-20260917T103829858481-evidence-record-row-coverage</code>.</strong> Its
+    <code>stream.jsonl</code> is three lines and its <code>stderr.log</code> is short. The
+    assistant record carries <code>model: "&lt;synthetic&gt;"</code> &mdash; the literal
+    placeholder the client substitutes when no model served the turn &mdash; with
+    <code>error: "invalid_request"</code> and content reading <em>Prompt is too long</em>. The
+    result record carries <code>terminal_reason: "blocking_limit"</code>,
+    <code>is_error: true</code>, <code>num_turns: 1</code>, <code>duration_api_ms: 0</code>, and
+    every token counter zero. The worker never reached the engine. At the node base
+    <code>b5d298c2</code>, reading that pointer with a dead process and no terminal manifest
+    returned <code>classification = 'abandoned'</code> with the detail <em>the process is gone
+    without a complete manifest</em> &mdash; the same bucket as a worker that crashed mid-turn
+    having done real work.</p>
+    <p><strong>Why the bucket mattered beyond the mislabel.</strong> A coordinator on another
+    fleet read one of these deaths as a known serving defect and reported it to a third fleet as
+    a second instance of their problem. That fleet's own discriminator scores zero on both of its
+    terms, so it was never that shape, and the report had to be retracted. A classification that
+    named the refusal at its source would have stopped the report at the first reader.</p>
+    <p><strong>Mechanism.</strong> The admission marks are read together and only together,
+    because each near neighbour carries half of them: a bad model id also produces a
+    no-model-served message with a zero-token error result but carries no prompt-length refusal,
+    and a genuinely worked turn carries the blocking-limit result without the synthetic model.
+    The new arm sits beside the <code>abandoned</code> arm rather than inside it, requires a
+    <code>cli</code> run whose process is gone, and is resolved only after every dead-lane gate
+    (provider refusal, retry, exhaustion, budget hold) has declined. Its row names the refusal
+    text, the terminal reason, and both the refusing stream and the launch log, because a resume
+    replaces the pointer and the failed attempt&rsquo;s record does not survive it.</p>
+    <figure>
+<svg viewBox="0 0 880 424" width="100%" style="max-width:880px" role="img" aria-labelledby="classpath-title" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif" font-size="12">
+        <title id="classpath-title">The classification path a dead run's pointer walks, in order: liveness first, then the manifest's terminal status, then the dead-lane gates, then the admission-refusal marks; a pointer reaching the end is abandoned.</title>
+        <defs>
+          <marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" xmlns="http://www.w3.org/2000/svg" fill="#55627a"/>
+          </marker>
+        </defs>
+        <rect x="16" y="16" width="326" height="40" rx="5" fill="#eef2f7" stroke="#8a9cb4"/>
+        <text x="28" y="41" fill="#22303f">1. Is the process alive (host and pid match)?</text>
+        <line x1="342" y1="36" x2="480" y2="36" stroke="#55627a" stroke-width="1.3" marker-end="url(#arw)"/>
+        <rect x="486" y="16" width="378" height="40" rx="5" fill="#eef7ee" stroke="#7fa07f"/>
+        <text x="498" y="41" fill="#22303f">running — liveness outranks any stream reading</text>
+        <line x1="56" y1="56" x2="56" y2="94" stroke="#55627a" stroke-width="1.3" marker-end="url(#arw)"/>
+        <rect x="16" y="98" width="326" height="40" rx="5" fill="#eef2f7" stroke="#8a9cb4"/>
+        <text x="28" y="123" fill="#22303f">2. Does the manifest record a terminal status?</text>
+        <line x1="342" y1="118" x2="480" y2="118" stroke="#55627a" stroke-width="1.3" marker-end="url(#arw)"/>
+        <rect x="486" y="98" width="378" height="40" rx="5" fill="#eef7ee" stroke="#7fa07f"/>
+        <text x="498" y="123" fill="#22303f">scored from that status, never abandoned</text>
+        <line x1="56" y1="138" x2="56" y2="176" stroke="#55627a" stroke-width="1.3" marker-end="url(#arw)"/>
+        <rect x="16" y="180" width="326" height="40" rx="5" fill="#eef2f7" stroke="#8a9cb4"/>
+        <text x="28" y="205" fill="#22303f">3. Does the stream carry a dead-lane gate?</text>
+        <line x1="342" y1="200" x2="480" y2="200" stroke="#55627a" stroke-width="1.3" marker-end="url(#arw)"/>
+        <rect x="486" y="180" width="378" height="40" rx="5" fill="#eef7ee" stroke="#7fa07f"/>
+        <text x="498" y="205" fill="#22303f">blocked, or held on a metered lane</text>
+        <line x1="56" y1="220" x2="56" y2="258" stroke="#55627a" stroke-width="1.3" marker-end="url(#arw)"/>
+        <rect x="16" y="262" width="326" height="40" rx="5" fill="#fff4d6" stroke="#d8a33a"/>
+        <text x="28" y="287" fill="#22303f">4. Do the admission marks appear together?</text>
+        <line x1="342" y1="282" x2="480" y2="282" stroke="#55627a" stroke-width="1.3" marker-end="url(#arw)"/>
+        <rect x="486" y="262" width="378" height="40" rx="5" fill="#fff4d6" stroke="#d8a33a"/>
+        <text x="498" y="287" fill="#22303f">refused-at-admission — resume, and keep the stream</text>
+        <line x1="56" y1="302" x2="56" y2="364" stroke="#55627a" stroke-width="1.3" marker-end="url(#arw)"/>
+        <rect x="16" y="368" width="326" height="40" rx="5" fill="#f7eef0" stroke="#b48a99"/>
+        <text x="28" y="393" fill="#22303f">dead process, no terminal manifest, no admission marks</text>
+        <rect x="486" y="368" width="378" height="40" rx="5" fill="#f7eef0" stroke="#b48a99"/>
+        <text x="498" y="393" fill="#22303f">abandoned — the arm that keeps its meaning</text>
+      </svg>
+      <figcaption>The decision order the arms follow, drawn from the module: a live process, a terminal manifest and a dead-lane gate each answer before the admission marks are consulted, so the new arm cannot swallow a neighbour, and only a pointer that walks the whole path is <code>abandoned</code>.</figcaption>
+    </figure>
+    <p><strong>Falsifier and its range.</strong> The gate is <code>tests/test_admission_refusal_is_named.py</code> (8 new cases) beside <code>tests/test_crew_recovery.py</code>, <code>tests/test_crew_recover.py</code> and <code>tests/test_a_met_wait_is_ready_not_abandoned.py</code>. Against base <code>b5d298c2</code> the cohort reads <strong>1 failed, 121 passed</strong>; at <code>1f519333</code> it reads <strong>1 failed, 129 passed</strong> &mdash; the same single pre-existing failure, <code>test_refusal_recovery_remedy_survives_promotion</code>, at both revisions, and therefore <strong>zero added</strong>. The falsifier ranges over the domain rather than the one recorded stream: an admission-marked run classifies refused-at-admission; a genuinely vanished run with no manifest still abandons; and a terminal manifest path keeps its own reading.</p>
+    <p><strong>Positive control, asserted rather than assumed.</strong> A live process carrying the marks, an in-harness run carrying them, a worked turn whose result carries the blocking-limit shape without the synthetic model, and a synthetic-message run whose terminal reason is <code>api_error</code> instead of <code>blocking_limit</code> each keep their prior classification; the recorded <code>claude-failed-turn.jsonl</code> fixture stays <code>abandoned</code> and the <code>tests/fixtures/backends/codex-usage-limit.jsonl</code> fixture stays <code>blocked</code>, so no existing bucket was widened to cover the new case.</p>
   </section>
 
 </main>
