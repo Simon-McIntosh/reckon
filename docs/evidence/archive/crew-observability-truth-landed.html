@@ -85,6 +85,7 @@
         <tr><td>§12</td><td><a href="#checkpoint-key-offered-to-any-worker">checkpoint-key-offered-to-any-worker</a></td><td>d0956c85</td><td>run outcome</td></tr>
         <tr><td>§12</td><td><a href="#unrecognised-status-field-refusal">unrecognised-status-field-refusal</a></td><td>839f8ad9</td><td>run outcome</td></tr>
         <tr><td>§12</td><td><a href="#nested-manifest-key-stays-nested">nested-manifest-key-stays-nested</a></td><td>0d3c6cf5</td><td>run outcome</td></tr>
+        <tr><td>§12</td><td><a href="#block-scalar-ends-at-the-field-column">block-scalar-ends-at-the-field-column</a></td><td>dbd96dbd</td><td>run outcome</td></tr>
       </tbody>
     </table>
   </section>
@@ -1217,6 +1218,61 @@ reading taken as an authority it was not.</p>
       seventy-eighth node on both trees, and an isolated probe of that node exits
       <code>124</code> at base and at head alike. Ruff's finding set on the touched source is
       identical to base's seven.</p>
+  </section>
+
+  <section id="block-scalar-ends-at-the-field-column">
+    <h3>§12 — A block scalar ends where the fields resume, at any manifest indent</h3>
+    <p>Run <code>r-20260917T155903879703-a-block-scalar-ends-where-the-fields-resume</code>.
+      Commit <code>dbd96dbd</code> changed <code>reckon/crew/reports.py</code> by 21 insertions and
+      6 deletions, and added <code>tests/test_manifest_block_indent.py</code> by 127 insertions:
+      7 cases, 9 test items, two of them parametrised over three indents.</p>
+    <p><strong>Reproduction, quoted from both revisions. A manifest whose every line is indented
+      by two spaces, carrying <code>node</code>, <code>status</code>, a <code>tests</code> block
+      scalar with an indented body, and then <code>commits</code>, read at base
+      <code>dbd5cc1a</code> as <code>tests='seven passed\ncommits:\n- abc1234'</code> with
+      <code>commits=[]</code>; the same manifest written without the leading two-space indent
+      read as <code>tests='seven passed'</code> with <code>commits=['abc1234']</code>. So the
+      indented manifest reported that its own <code>commits</code> line was part of the
+      <code>tests</code> value, and that the node had committed nothing.</strong></p>
+    <p><strong>Why it matters.</strong> <code>commits</code> is the field a promotion resolves a
+      run by, so emptying <code>commits</code> removes the field that records what the run
+      landed. The shape is not exotic: a manifest fenced or blockquoted inside a message arrives
+      with every line indented, and the value the reader lost is the one a coordinator acts on.</p>
+    <p><strong>Mechanism.</strong> The block-continuation test asked only whether a line was
+      indented or at column zero, so it treated a following field's own leading whitespace as
+      block body whenever the fields are indented. The block now ends at a line at or left of the
+      column the manifest's own fields occupy — the same least-indented-field column the reader
+      already derives to establish its top level. Blank lines and any line indented deeper than
+      that column still continue the block.</p>
+    <p><strong>Readings across the domain, measured at base <code>dbd5cc1a</code> and at the
+      commit, parsing the same body at each indent:</strong></p>
+    <table>
+      <thead><tr><th>Manifest shape</th><th>commits at base</th><th>commits at the commit</th></tr></thead>
+      <tbody>
+        <tr><td>no indent</td><td><code>['abc1234']</code></td><td><code>['abc1234']</code></td></tr>
+        <tr><td>two-space indent</td><td><strong><code>[]</code></strong></td><td><code>['abc1234']</code></td></tr>
+        <tr><td>four-space indent</td><td><strong><code>[]</code></strong></td><td><code>['abc1234']</code></td></tr>
+        <tr><td>tab indent</td><td><strong><code>[]</code></strong></td><td><code>['abc1234']</code></td></tr>
+        <tr><td>block scalar last, nothing after it</td><td><code>['abc1234']</code></td><td><code>['abc1234']</code></td></tr>
+        <tr><td>block body indented left of the field column</td><td><strong><code>[]</code></strong></td><td><code>['abc1234']</code></td></tr>
+      </tbody>
+    </table>
+    <p>A body indented left of the field column ends the block rather than continuing it, and the
+      fields after the block are still read. The orphaned body line belongs to no field and is
+      dropped, which is how a body line left of the column was already treated.</p>
+    <p><strong>Measure.</strong> The six readings in bold are the falsifier: each fails at base and
+      passes at the commit, and each asserts the following field parses as a field. The prescribed
+      cohort of four files — the new file plus the nested-key file, the parse-format file and
+      the crew-recovery file — reads <strong>7 failed, 204 passed</strong> with the base revision's
+      <code>reports.py</code> loaded and <strong>1 failed, 210 passed</strong> at the commit; the
+      six removed failures are exactly the new file's, and the one that remains,
+      <code>test_refusal_recovery_remedy_survives_promotion</code>, is identical at both
+      revisions (its fixture hands a non-git temporary directory to a separate change that
+      requires a git worktree). The base reading was taken with a driver that loads
+      <code>git show of the base revision</code> as the module under test, so the worktree was
+      never reverted. Ruff reports the same two pre-existing findings in the touched source
+      file at base and at the commit (<code>SIM102</code>, <code>FURB167</code>) and none in the
+      added file; the formatter check is clean on both.</p>
   </section>
 
 </main>

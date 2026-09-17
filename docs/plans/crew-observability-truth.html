@@ -644,6 +644,23 @@
       that asserted it. Full record:
       <a href="/reckon/evidence/archive/crew-observability-truth-landed#orientation-gate-evidence-attribution">&#167;12 failure attribution measured</a>.</p>
 
+    <p class="landed-summary">A block scalar now ends where the following field begins, whatever
+      the manifest&rsquo;s own indentation. The reader ended a block only at column zero, so in a
+      manifest presented with every line indented &mdash; the shape a fenced or quoted manifest
+      arrives in &mdash; the following fields&rsquo; own leading whitespace read as block body:
+      every field after a block scalar was folded into its value, and the field that emptied was
+      <code>commits</code>, the one a promotion resolves a run by. Measured at base
+      <code>dbd5cc1a</code>: the two-space-indented manifest read
+      <code>tests='seven passed\ncommits:\n- abc1234'</code> with <code>commits=[]</code>, while
+      the same body unindented read <code>commits=['abc1234']</code>. A block now ends at a line
+      at or left of the column the fields themselves occupy &mdash; the least-indented-field column
+      the reader already derives &mdash; while a blank line and any deeper-indented line still
+      continue it. The falsifier ranges over no indent, two, four spaces and tab indentation, a
+      block scalar as the final field, and a body indented left of the field column; all six
+      indented readings fail at base and pass at the commit, and a multi-line body is kept whole
+      at each indent. Landed under commit <code>dbd96dbd</code>. Full record:
+      <a href="/reckon/evidence/archive/crew-observability-truth-landed#block-scalar-ends-at-the-field-column">&#167;12 block-scalar evidence</a>.</p>
+
     <h2 id="s13">&#167;13 &mdash; A quiet fleet and a working one look identical, because nothing reports a wave</h2>
     <p><strong>Directed by the lead 2026-09-09, after a session spent counting completions by
     hand.</strong> Every signal this surface emits is per-run. The follower reports one line per
