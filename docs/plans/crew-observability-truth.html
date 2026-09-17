@@ -629,6 +629,29 @@
       that asserted it. Full record:
       <a href="/reckon/evidence/archive/crew-observability-truth-landed#orientation-gate-evidence-attribution">&#167;12 failure attribution measured</a>.</p>
 
+    <p class="landed-summary">One extraction now answers which watch rows are real arrivals.
+      <strong>Filed here at the dispatch&rsquo;s stated coordinate, and the coordinate does not
+      match the section:</strong> this section is authored about manifest lines, and the landed
+      work is a canonical arrival filter over the crew watch streams &mdash; recorded plainly so
+      the coordinator can re-home the record rather than read it as evidence about the manifest
+      reader. The work itself: <code>extract_watch_arrivals</code> in
+      <code>reckon/crew/query.py</code> classifies every row as an arrival, a state change or
+      re-inventory, keyed on first appearance per node rather than on event class, and both of the
+      filters fleets wrote by hand are wrong against the live corpus &mdash; keeping only
+      <code>event == "transition"</code> drops 2,317 of 2,931 nodes whose first row is a baseline
+      with a null <code>from_state</code>, and keeping every baseline row invents 170 arrivals out
+      of 2,462 baseline rows because a re-attaching follower re-inventories the fleet in one
+      instant. The burst test that separates those from a genuine same-second wave is explicit,
+      since a node whose only row is a re-inventory has no earlier row to fail a node-level rule.
+      Stamps are the other half and are never assumed: JSON rows return UTC, and 1,658 rendered
+      ticker rows return <code>observed_at_zone: unknown</code> rather than a local wall clock
+      read as UTC. No command is wired, because <code>reckon/cli.py</code> is outside this node;
+      the entry point the caller should add is recorded in the manifest follow-ons. Landed under
+      commit <code>d9e18423</code>; 8 new tests pass and the three prescribed sibling suites are
+      unchanged at 21, with zero added failures against base <code>ee356a93</code>, where the new
+      file fails collection with <code>ImportError</code>. Full record and figure:
+      <a href="/reckon/evidence/archive/crew-observability-truth-landed#one-extraction-answers-which-watch-rows-are-arrivals">arrivals extraction landed</a>.</p>
+
     <h2 id="s13">&#167;13 &mdash; A quiet fleet and a working one look identical, because nothing reports a wave</h2>
     <p><strong>Directed by the lead 2026-09-09, after a session spent counting completions by
     hand.</strong> Every signal this surface emits is per-run. The follower reports one line per
