@@ -244,13 +244,24 @@ def parse_manifest(text: str, *, path: str | None = None) -> dict[str, Any]:
     return fields
 
 
+def _line_indent(raw: str) -> int:
+    """Return the number of leading whitespace characters on a line's raw form."""
+    return len(raw) - len(raw.lstrip(" \t"))
+
+
 def _parse_text_manifest(text: str, *, path: str | None = None) -> dict[str, Any]:
     """Read the tolerant ``key: value`` text form, keeping unknown keys.
 
     The least-indented recognised manifest field establishes the top-level
     column. This preserves a whole manifest presented inside an indented
     Markdown block while preventing a key indented beneath a parent from being
-    promoted into the top-level mapping.
+    promoted into the top-level mapping. That same column is the block scalar's
+    floor: a block body is written deeper than the fields around it, so a
+    following field ends the block. Anchoring the end at column zero instead
+    folds every field after a block scalar into its value whenever the manifest
+    is wholly indented, because there the fields themselves begin with
+    whitespace; the field that quietly empties is the commit list a promotion
+    reads.
 
     A top-level line carrying a second manifest key after its value is refused
     here rather than misparsed: the tolerant reader would otherwise fold the
@@ -264,7 +275,7 @@ def _parse_text_manifest(text: str, *, path: str | None = None) -> dict[str, Any
     block_lines: list[str] = []
     manifest_indent = min(
         (
-            len(raw) - len(raw.lstrip(" \t"))
+            _line_indent(raw)
             for raw in text.splitlines()
             if _MARKDOWN_MANIFEST_FIELD_RE.match(raw)
         ),
@@ -282,7 +293,7 @@ def _parse_text_manifest(text: str, *, path: str | None = None) -> dict[str, Any
         # Workers commonly present manifest fields as Markdown list items or
         # emphasize their keys. Restrict the decorated form to the manifest
         # vocabulary so a prose bullet containing a colon stays prose.
-        indent = len(raw) - len(raw.lstrip(" \t"))
+        indent = _line_indent(raw)
         if indent != manifest_indent:
             return None
         decorated = _MARKDOWN_MANIFEST_FIELD_RE.match(raw)
@@ -297,9 +308,13 @@ def _parse_text_manifest(text: str, *, path: str | None = None) -> dict[str, Any
     for line_no, raw in enumerate(text.splitlines(), start=1):
         line = raw.strip()
         if block_key is not None:
-            # A blank or indented line continues the block; only a line with
-            # content starting at column 0 is a new top-level entry.
-            if line == "" or raw[:1] in (" ", "\t"):
+            # A blank line continues the block, and so does any line indented
+            # past the column the manifest's own fields occupy. A block scalar's
+            # body is written deeper than its key, which in a wholly indented
+            # manifest is a column well right of zero; ending the block only at
+            # column zero folds every following field into this value. A line at
+            # or left of the field column is where the next field begins.
+            if line == "" or _line_indent(raw) > manifest_indent:
                 block_lines.append(line)
                 continue
             flush_block()
