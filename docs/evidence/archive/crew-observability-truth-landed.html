@@ -81,6 +81,7 @@
         <tr><td>§19</td><td><a href="#landing-comment-does-not-duplicate-the-worker-record">landing-comment-does-not-duplicate-the-worker-record</a></td><td>8bc1083</td><td>run outcome</td></tr>
         <tr><td>§10</td><td><a href="#positive-gate-exit-outranks-quoted-diagnostic">positive-gate-exit-outranks-quoted-diagnostic</a></td><td>1601c27c, ebca263f</td><td>run outcome</td></tr>
         <tr><td>§12</td><td><a href="#manifest-wait-fields-carry-literal-examples">manifest-wait-fields-carry-literal-examples</a></td><td>9c51724b</td><td>run outcome</td></tr>
+        <tr><td>§12</td><td><a href="#checkpoint-key-offered-to-any-worker">checkpoint-key-offered-to-any-worker</a></td><td>d0956c85</td><td>run outcome</td></tr>
       </tbody>
     </table>
   </section>
@@ -910,6 +911,34 @@ reading taken as an authority it was not.</p>
     (<code>976dba6</code>), with the identical single pre-existing failure in
     <code>tests/test_mcp_recovery.py</code> present at both revisions &mdash; zero failures
     added.</p>
+  </section>
+
+  <section id="checkpoint-key-offered-to-any-worker">
+    <h3>§12 — The checkpoint key is offered to any worker recording progress</h3>
+    <p>Run <code>r-20260917T050158346954-the-checkpoint-slot-is-offered-to-every-worker</code>.
+    Commit <code>d0956c85</code>, 6 insertions and 2 deletions over 2 files (1 source template,
+    1 test).</p>
+    <p><strong>Defect reproduction, both specimens quoted.</strong> The template's checkpoint
+    line read <em>checkpoint: &lt;only when not setting status to waiting: one line recording
+    where work stands and what comes next, so a resumed worker whose wait is met leaves a
+    checkpoint rather than a wait block&gt;</em>, and every motivating clause in the time fence
+    above it also named a resumed worker whose wait is met, so the wait block was the only shape
+    the block described for a worker that merely wanted to record where it stood. Run
+    <code>r-20260917T045830452259</code> received a prompt carrying both the checkpoint key and
+    the probe literal and still wrote <code>status: waiting</code> with
+    <code>wait_condition: reading plan section 12 and reproducing the defect</code> and
+    <code>wait_probe: [&quot;true&quot;]</code> &mdash; a fresh worker, its node holding a free
+    slot, using the wait block for an orientation note instead of declaring a wait.</p>
+    <p><strong>Measure:</strong> the checkpoint line and the time fence now both point a worker
+    at the checkpoint key whenever it records progress without declaring a wait, and the fence
+    states that the wait block declares a wait actually held rather than a note about where work
+    stands. The key, the wait fields and their literal examples are unchanged, so the change is
+    guidance rather than schema. A new case in <code>tests/test_crew_prompts.py</code> asserts
+    the introduced literal <em>any worker recording progress at any point</em> in both the
+    manifest checkpoint line and the time fence; run against the base prompt source the case
+    fails with an <code>AssertionError</code> raised inside
+    <code>_manifest_line(prompt, "checkpoint")</code>. The nine prompt-asserting files pass 108
+    of 108 at the commit, zero failures, with no added Ruff finding.</p>
   </section>
 
 </main>
