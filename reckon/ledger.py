@@ -702,14 +702,17 @@ def member(
     return None
 
 
-def _commit_roster_write(project: str, member_id: str, path: Path) -> None:
-    """Commit one requested roster write without sweeping other staged paths."""
+def _roster_checkout(project: str, path: Path) -> tuple[Path, Path]:
+    """Resolve the checkout and repository-relative path for one roster."""
     resolved_path = path.expanduser().resolve()
+    discovery_root = resolved_path.parent
+    while not discovery_root.exists() and discovery_root != discovery_root.parent:
+        discovery_root = discovery_root.parent
     discovered = subprocess.run(
         [
             "git",
             "-C",
-            str(resolved_path.parent),
+            str(discovery_root),
             "rev-parse",
             "--show-toplevel",
         ],
@@ -729,6 +732,76 @@ def _commit_roster_write(project: str, member_id: str, path: Path) -> None:
             f"roster for {project!r} resolved outside its git checkout: "
             f"{resolved_path} is not beneath {checkout}"
         ) from exc
+    return checkout, relative_path
+
+
+def _refuse_dirty_roster_commit(
+    project: str,
+    member_id: str,
+    path: Path,
+    current_members: list[dict[str, Any]],
+) -> None:
+    """Refuse a named commit when the roster already carries another write."""
+    checkout, relative_path = _roster_checkout(project, path)
+    status = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(checkout),
+            "status",
+            "--porcelain=v1",
+            "--untracked-files=all",
+            "--",
+            str(relative_path),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if status.returncode != 0:
+        raise LedgerError(
+            f"cannot inspect roster before registering {member_id!r}: "
+            f"{status.stderr.strip() or status.stdout.strip()}"
+        )
+    if not status.stdout.strip():
+        return
+
+    committed = subprocess.run(
+        ["git", "-C", str(checkout), "show", f"HEAD:{relative_path.as_posix()}"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    committed_members: list[dict[str, Any]] = []
+    if committed.returncode == 0:
+        try:
+            payload = json.loads(committed.stdout)
+            committed_members = list(payload.get("data", {}).get("members", []))
+        except (AttributeError, TypeError, ValueError):
+            committed_members = []
+
+    current_by_id = {str(item.get("id")): item for item in current_members}
+    committed_by_id = {str(item.get("id")): item for item in committed_members}
+    changed_members = sorted(
+        member
+        for member in current_by_id.keys() | committed_by_id.keys()
+        if current_by_id.get(member) != committed_by_id.get(member)
+    )
+    if changed_members:
+        obstruction = "uncommitted member registration(s): " + ", ".join(
+            changed_members
+        )
+    else:
+        obstruction = f"uncommitted roster content at {relative_path}"
+    raise LedgerError(
+        f"cannot commit roster registration {member_id!r}: {obstruction}; "
+        "commit or discard that roster write before retrying"
+    )
+
+
+def _commit_roster_write(project: str, member_id: str, path: Path) -> None:
+    """Commit one requested roster write without sweeping other staged paths."""
+    checkout, relative_path = _roster_checkout(project, path)
 
     staged = subprocess.run(
         ["git", "-C", str(checkout), "add", "--", str(relative_path)],
@@ -807,6 +880,13 @@ def register_member(
     if not str(harness).strip():
         raise LedgerError("a member must name the harness it dispatches to")
     data, version = load(project, root)
+    if commit:
+        _refuse_dirty_roster_commit(
+            project,
+            member_id,
+            ledger_path(project, root),
+            data["members"],
+        )
     existing = next(
         (
             dict(item)
