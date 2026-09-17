@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-does-not-fall-to-the-coordinator-landed">
+  <meta name="plan-evidence-for" content="work-does-not-fall-to-the-coordinator">
+  <meta name="plan-verifies" content="work-does-not-fall-to-the-coordinator#s2">
+  <title>Work Does Not Fall To The Coordinator | Landed Evidence</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Work Does Not Fall To The Coordinator — Landed Evidence</h1>
+
+    <section id="the-landing-comment-names-its-writer">
+      <h2>The landing comment names its writer</h2>
+      <p><code>reckon/crew/promotion.py</code> now attributes a comment written by
+      promotion to <code>reckon-ship</code>, while the existing committed-record
+      check continues to preserve <code>worker-a</code> when the worker actually
+      authored the plan comment. A repeated run id is idempotent only when its
+      stored body is unchanged; a different narrative now refuses explicitly
+      rather than reporting that stale text was recorded.</p>
+
+      <table>
+        <thead>
+          <tr><th>Measure</th><th>Before</th><th>After</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Coordinator-written <code>who</code></td>
+            <td><code>worker-a</code></td>
+            <td><code>reckon-ship</code></td>
+          </tr>
+          <tr>
+            <td>Same id, changed narrative</td>
+            <td>Unqualified success; stale body retained</td>
+            <td>Explicit refusal; stale body left untouched</td>
+          </tr>
+          <tr>
+            <td>Focused falsifiers and controls</td>
+            <td>2 failed, 3 passed</td>
+            <td>5 passed</td>
+          </tr>
+          <tr>
+            <td>Required cohort on <code>all_debug</code></td>
+            <td>22 failed, 303 passed</td>
+            <td>22 failed, 308 passed; 0 added failure ids</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>The unchanged-body retry still writes nothing, and the fourth attempt
+      still succeeds after three consecutive version conflicts. Every fixture
+      uses a temporary repository and temporary crew home, with assertions that
+      the repository's real docs paths and crew home receive no fixture record.
+      The base and repaired cohorts were captured separately on the same SDCC
+      debug partition after a login-node run exposed an unrelated live process
+      at a fixture's synthetic PID; both completed on compute and returned the
+      same 22 pre-existing failure ids.
+      Implementation: <code>7bf1f8d662e70522dac9d38ea8c8fd1d2cafec05</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
