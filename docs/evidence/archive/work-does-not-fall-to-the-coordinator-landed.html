@@ -184,5 +184,83 @@
       Implementation: <code>7bf1f8d662e70522dac9d38ea8c8fd1d2cafec05</code>.</p>
     </section>
   </main>
+
+  <main class="plan-doc">
+    <h1>Work Does Not Fall To The Coordinator — Landed Evidence</h1>
+
+    <section id="s2-claim-release">
+      <h2>A write claim can be narrowed or released without a promotion</h2>
+      <p>A run's declared write paths are created at dispatch and were, until this
+      change, destroyed only at promotion. <code>--write-path</code> appears in the help
+      of one of the 31 <code>crew</code> subcommands, <code>dispatch</code>, and the
+      scan finds it there as its own positive control; no <code>crew claim</code>
+      subcommand exists. A coordinator whose worker blocked at its fence therefore had
+      two moves, both wrong: hand-edit the live pointer under the shared crew config
+      home, or redispatch and discard every turn of context the worker held.</p>
+
+      <p><code>reckon/crew/claims.py</code> (commit
+      <code>c754cfe2a37fd5e4e25ab3523078804de99f0020</code>) adds
+      <code>release_claim</code> and <code>narrow_claim</code>, which rewrite the
+      pointer's <code>node.write_paths</code> and report the amendment as a
+      <code>ClaimAmendment</code> — previous and current declarations, the paths
+      removed, and any unintegrated work the stopped run still holds. Nothing is wired
+      to a command: <code>reckon/cli.py</code> is owned by a second node, so the module
+      is the deliverable and the intended entry point is
+      <code>crew claim narrow|release</code>, rendering <code>ClaimAmendment.as_dict()</code>.</p>
+
+      <h3>Refusal is the mechanism</h3>
+      <p>An amendment is admitted only for a worker shown to have stopped, and "shown"
+      is narrow by design: a live process refuses; a pointer whose
+      <code>launcher_host</code> is not this host refuses, because a pid answers only
+      on the machine that issued it and the crew config home is shared across login
+      nodes; and a pointer that records no process yet refuses, because the pointer is
+      written before its worker is spawned. Ones that cannot be answered refuse rather
+      than being read as dead.</p>
+
+      <table>
+        <thead><tr><th>Measure</th><th>Base <code>6c577fa2</code></th><th>Landed</th><th>Delta</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Release path present</td>
+            <td><code>git cat-file -e …:reckon/crew/claims.py</code> exits 128</td>
+            <td>module present; 10 focused tests pass</td>
+            <td>the falsifier's precondition, absent before</td>
+          </tr>
+          <tr>
+            <td>Claim check (<code>plan_scope_lanes</code>) after release</td>
+            <td>no release is expressible</td>
+            <td>a second writer declaring the path raises no live conflict</td>
+            <td>the falsifier itself</td>
+          </tr>
+          <tr>
+            <td><code>tests/test_crew.py</code> on <code>all_debug</code></td>
+            <td>11 failed, 193 passed</td>
+            <td>11 failed, 193 passed</td>
+            <td>0 added failure ids, identical identifier set</td>
+          </tr>
+          <tr>
+            <td>Three-file cohort</td>
+            <td>10 failed, 24 passed</td>
+            <td>10 failed, 24 passed</td>
+            <td>0 added; all ten are in <code>test_crew_cross_project_claims.py</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>The positive controls are the untouched claim that still refuses a second
+      writer, and the pointer removal that releases the claim exactly as promotion
+      does. The range covers a terminal run's release, a two-path claim narrowed to
+      one, and a release attempted against a live process — which refuses and leaves
+      the declaration intact — plus a foreign launching host, a pointer with no
+      process, an undeclared path, and a narrowing that drops nothing. Fixtures use a
+      temporary repository and a temporary crew home, and the fixture asserts the real
+      crew config home is unchanged afterwards, because this module writes there. Both
+      cohorts ran on <code>all_debug</code> with the whole run captured once to
+      <code>/tmp/claim_gate_heavy.log</code> and
+      <code>/tmp/claim_base_heavy.log</code>. Changed paths:
+      <code>reckon/crew/claims.py</code> and <code>tests/test_claim_release.py</code>,
+      both new; no existing file is modified.</p>
+    </section>
+  </main>
 </body>
 </html>
