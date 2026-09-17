@@ -91,7 +91,10 @@ fences:
   manifest_required: true
   enforce_budget_watchdog: false
   budget_grace_multiple: 1.5
-  unreconciled_run_grace: 5m
+  # Three fleets measure a two-to-six minute promotion beat, and the grace has
+  # to outlast the coordinator's own merge, verification at the merged head and
+  # promotion rather than fire in the middle of it.
+  unreconciled_run_grace: 15m
 
 worktree:
   cleanup: conservative

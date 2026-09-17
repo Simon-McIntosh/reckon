@@ -566,7 +566,7 @@ def test_a_shelf_life_of_zero_or_less_is_accepted_as_ageing_disabled(layers):
 
 def test_unreconciled_run_grace_resolves_with_layer_provenance(layers):
     shipped = resolve_files(layers)
-    assert shipped.config["fences"]["unreconciled_run_grace"] == "5m"
+    assert shipped.config["fences"]["unreconciled_run_grace"] == "15m"
     assert shipped.origin("fences.unreconciled_run_grace") == "shipped"
 
     write(layers["project"], "fences:\n  unreconciled_run_grace: 12m\n")
