@@ -322,6 +322,98 @@
       intent). Regression coverage: <code>tests/test_roster_loss_guard.py</code>.
       Logs are recorded in the node manifest.</p>
     </section>
+  <section id="the-commit-guard-asks-about-repository-paths">
+    <h2>§2 — The commit guard asks about repository paths</h2>
+
+    <p><strong>Defect reproduced before repair.</strong> A run whose manifest was
+    <code>status: complete</code>, whose <code>commits</code> field was correctly empty, and whose
+    <code>changed_paths</code> named only absolute paths outside its repository was refused by
+    <code>_require_commit_for_changed_manifest</code> in <code>reckon/crew/promotion.py</code> with
+    <em>“has a complete manifest with changed_paths, but the manifest field 'commits' is
+    missing”</em>. That is the shape of a review or investigate run: its deliverable lands under
+    the crew reviews directory, so there is nothing inside any repository to commit and the run
+    could never be reconciled. At base the outside-only case raised that error and failed.</p>
+
+    <p>The guard now asks whether any named path resolves under the run's own repository root: a
+    relative path is repository-relative, an absolute path resolves as written, and a path
+    anywhere else — a store directory, a scratch path under the crew home — requires no commit
+    here. A run whose paths all lie outside its repository therefore promotes.</p>
+
+    <svg viewBox="0 0 900 420" role="img"
+         aria-label="Decision flow: a complete manifest with changed_paths and no commits refuses only when a named path resolves under the run's repository root; otherwise it promotes."
+         style="max-width:100%;height:auto">
+      <defs>
+        <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3"
+                orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0 L8,3 L0,6 z" fill="#666"/>
+        </marker>
+      </defs>
+      <g font-family="system-ui, sans-serif" font-size="14" fill="#222">
+        <rect x="250" y="10" width="400" height="40" rx="8" fill="#eef3fa" stroke="#7a91b0"/>
+        <text x="450" y="35" text-anchor="middle">status: complete, changed_paths named, not prose-none</text>
+
+        <line x1="450" y1="50" x2="450" y2="80" stroke="#666" marker-end="url(#arrow)"/>
+
+        <rect x="250" y="80" width="400" height="40" rx="8" fill="#eef3fa" stroke="#7a91b0"/>
+        <text x="450" y="105" text-anchor="middle">commits: empty</text>
+
+        <line x1="450" y1="120" x2="450" y2="150" stroke="#666" marker-end="url(#arrow)"/>
+
+        <rect x="200" y="150" width="500" height="46" rx="8" fill="#fdf3e3" stroke="#c99a4a"/>
+        <text x="450" y="178" text-anchor="middle">any named path resolves under the run's repository root?</text>
+
+        <line x1="330" y1="196" x2="180" y2="250" stroke="#666" marker-end="url(#arrow)"/>
+        <text x="230" y="235" text-anchor="middle" fill="#0a6b2d">no</text>
+
+        <line x1="570" y1="196" x2="720" y2="250" stroke="#666" marker-end="url(#arrow)"/>
+        <text x="670" y="235" text-anchor="middle" fill="#a11">yes</text>
+
+        <rect x="40" y="250" width="280" height="44" rx="8" fill="#e8f6ec" stroke="#4a9a63"/>
+        <text x="180" y="277" text-anchor="middle">promote, citing no commit</text>
+
+        <rect x="580" y="250" width="280" height="44" rx="8" fill="#fbeaea" stroke="#a14a4a"/>
+        <text x="720" y="277" text-anchor="middle">refuse: commits field is missing</text>
+
+        <text x="450" y="360" text-anchor="middle" fill="#555">
+          A path outside the repository — a review JSON under the crew reviews directory — requires
+        </text>
+        <text x="450" y="382" text-anchor="middle" fill="#555">
+          no commit here, so the run is reconciled rather than stranded unreconciled forever.
+        </text>
+      </g>
+    </svg>
+
+    <table>
+      <thead><tr><th>Case</th><th>Base <code>53f34ea1</code></th><th>Landed <code>0db13b01</code></th></tr></thead>
+      <tbody>
+        <tr>
+          <td>(a) only absolute paths outside the repository</td>
+          <td>1 failed (the refusal)</td>
+          <td>promotes, <code>commits == []</code></td>
+        </tr>
+        <tr>
+          <td>(b) one relative path under the repository</td>
+          <td>refused</td>
+          <td>refused, same message</td>
+        </tr>
+        <tr>
+          <td>(c) one in-repository path beside outside paths</td>
+          <td>refused</td>
+          <td>refused, same message</td>
+        </tr>
+        <tr>
+          <td>(d) an absolute path resolving under the repository</td>
+          <td>refused</td>
+          <td>refused, same message</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>(a) is the falsifier: it failed at base—the exact <code>CrewError</code> above—and passes at
+    the repair, so the test measures the defect rather than restating the code. (b)–(d) are the
+    controls that keep the repaired guard from over-correcting: each is refused at base and still
+    refused after, so the change narrows the guard in one direction only.</p>
+  </section>
   </main>
 </body>
 </html>
