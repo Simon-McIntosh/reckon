@@ -679,9 +679,14 @@
       <code>yaml.safe_load</code>, because a composed scalar keeps its literal text and an
       identifier resembling a number is not retyped; the two landed literal-identifier markers
       still pass. Tolerance is kept for prose and pipe blocks, comma-separated scalars, bracketed
-      number lists and inline evidence blocks. The prescribed five-file gate reads 7 failed, 170
-      passed with the base reader and 177 passed at the commit, and the commit adds no lint
-      findings. Landed under commit <code>eb74752d</code>. Full record:
+      number lists and inline evidence blocks, and a list field&rsquo;s items are the text the
+      worker wrote rather than whatever the parser types that text to be &mdash; a commit subject
+      carrying a colon composes as a mapping, and reading it as one puts a dict where an object
+      id belongs. That last case was found by reading this node&rsquo;s own finished manifest
+      through the changed reader, and it is guarded by three cases in the test file. The
+      prescribed five-file gate reads 7 failed, 173 passed with the base reader and 180 passed at
+      the commit, and the section adds no lint findings. Landed under commits
+      <code>eb74752d</code> and <code>2a94b12c</code>. Full record:
       <a href="/reckon/evidence/archive/crew-observability-truth-landed#manifest-is-read-through-a-declared-schema">&#167;12 declared-schema evidence</a>.</p>
 
     <h2 id="s13">&#167;13 &mdash; A quiet fleet and a working one look identical, because nothing reports a wave</h2>

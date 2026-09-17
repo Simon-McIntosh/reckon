@@ -1278,9 +1278,10 @@ reading taken as an authority it was not.</p>
 <section id="manifest-is-read-through-a-declared-schema">
     <h3>§12 — A manifest is read through a declared schema by a real parser</h3>
     <p>Run <code>r-20260917T204518586334-the-manifest-is-read-through-a-declared-schema</code>.
-      Commit <code>eb74752d</code> changed <code>reckon/crew/reports.py</code> by 247 insertions
-      and 52 deletions, and added <code>tests/test_manifest_declared_schema.py</code> with eight
-      cases across four defects and their negative half. The base reading was taken in a detached
+      Commits <code>eb74752d</code> and <code>2a94b12c</code> changed <code>reckon/crew/reports.py</code> by 247 insertions
+      and 52 deletions, and added <code>tests/test_manifest_declared_schema.py</code> with eleven
+      cases across four defects, their negative half, and three guards against the shape the
+      composed parse itself can mis-type. The base reading was taken in a detached
       worktree at the base revision <code>a880113f</code>, so the working tree was never reverted
       and the same environment served both readings.</p>
     <p><strong>Why a schema and not an eighth repair.</strong> Each of the four defects below was
@@ -1353,14 +1354,25 @@ reading taken as an authority it was not.</p>
       inline JSON evidence block, and a prose line inside a field body &mdash; which is why the
       body-continuation branch drops the line without closing the field, the behaviour the landed
       block-scalar fix depends on.</p>
-    <p><strong>Measure.</strong> The prescribed five-file gate reads <strong>7 failed, 170
-      passed</strong> with the base revision&rsquo;s <code>reports.py</code> and <strong>177
+    <p><strong>Measure.</strong> The prescribed five-file gate reads <strong>7 failed, 173
+      passed</strong> with the base revision&rsquo;s <code>reports.py</code> and <strong>180
       passed, 0 failed</strong> at the commit; the seven removed failures are exactly the new
-      file&rsquo;s, and one case in it passed at base (<code>test_a_field_after_the_list_is_still_read</code>,
-      which is the control that the failure is about the commas and not about the reader losing
-      the list entirely). Ruff finds two pre-existing findings in the touched source file
+      file&rsquo;s defect cases, and four cases in it pass at base (the control that the failure
+      is about the commas rather than about the reader losing the list, and the three colon
+      guards below, which the line scanner satisfied by never composing a structure at all).
+      Ruff finds two pre-existing findings in the touched source file
       (<code>SIM102</code>, <code>FURB167</code>) at both revisions and none in the added file,
-      and the formatter check is clean on both, so the commit adds no findings.</p>
+      and the formatter check is clean on both, so the section adds no findings.</p>
+    <p><strong>Found by dogfooding.</strong> Reading this node&rsquo;s own finished manifest through
+      the changed reader showed a commit entry written as a sha followed by a subject containing a
+      colon, composing as a one-key mapping, so
+      <code>commits</code> held a dict where an object id belongs and a promotion would render it
+      into a command. The line scanner never composed a structure, so this shape read as text at
+      base; the schema-reading version had to be told that an item under a field whose schema is a
+      list of values is the text written, which <code>_literal_list_items</code> takes back from
+      the item&rsquo;s own span of the source. This is the same failure mode the section exists
+      for (a wrong value carried forward as a plausible one) arriving through the new mechanism,
+      and it is why the three colon guards are cases in the file rather than a note.</p>
   </section>
 
 </main>
