@@ -125,6 +125,15 @@
     docstring: a zero would assert a measurement nobody took. This section adds no
     rendering and changes no row; it makes the facts available to one.</p>
 
+    <p class="landed-summary"><strong>Landed 2026-09-17.</strong> The snapshot
+    reducer carries the five facts beside the <code>wait_overdue</code> flag it
+    already held, and the transition event copies all five from the snapshot.
+    Confirmed before the change: the composed event held <code>next_action</code>
+    and <code>lifting_condition</code> and none of the five, and the only
+    <code>event.update()</code> added <code>_spend_facts</code>. A run declaring
+    no wait carries <code>None</code> for each, never zero and never absent.
+    No rendering changed.</p>
+
     <h2 id="s4">&sect;4 &mdash; Render the facts the row is now given</h2>
 
     <p>With the fields carried, the renderer can answer the question the incident asked.

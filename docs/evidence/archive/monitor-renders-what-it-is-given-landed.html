@@ -140,6 +140,119 @@ try:
     is made here too, because a prediction that cannot see the launcher's evidence cannot
     predict the launcher.</p>
   </section>
+
+
+    <h2 id="overview">Record scope</h2>
+    <p>
+      One landed outcome against
+      <a href="/reckon/monitor-renders-what-it-is-given">monitor-renders-what-it-is-given</a>,
+      &sect;3, on 2026-09-17. The anchor below names its commit and the measure
+      its landing reported, rather than restating a verdict.
+    </p>
+
+    <h2 id="the-boundary">The boundary, before and after</h2>
+    <p>
+      Five facts are computed on the classified row and a reader could not reach
+      any of them: the snapshot the follower reduces from carried one, and the
+      transition event carried none. The table is the presence matrix at each
+      boundary.
+    </p>
+    <figure>
+      <svg viewBox="0 0 720 150" width="100%" role="img"
+           aria-label="Zero of five wait facts reached the transition event before the change; five of five afterwards.">
+        <text x="8" y="20" font-family="system-ui" font-size="14" font-weight="600" fill="#1a1a1a">facts present in the event</text>
+        <text x="8" y="52" font-family="system-ui" font-size="13" fill="#666">before</text>
+        <rect x="80" y="38" width="560" height="18" fill="#eee" stroke="#bbb"/>
+        <rect x="80" y="38" width="0" height="18" fill="#2e7d32"/>
+        <text x="104" y="52" font-family="system-ui" font-size="13" fill="#b3261e">0 of 5</text>
+        <text x="8" y="92" font-family="system-ui" font-size="13" fill="#666">after</text>
+        <rect x="80" y="78" width="560" height="18" fill="#eee" stroke="#bbb"/>
+        <rect x="80" y="78" width="560" height="18" fill="#2e7d32"/>
+        <text x="600" y="92" font-family="system-ui" font-size="13" fill="#1a1a1a" text-anchor="end">5 of 5</text>
+      </svg>
+      <figcaption>Measured against the composed event: zero of the five
+      before, all five after, each <code>None</code> when the run declares no
+      wait.</figcaption>
+    </figure>
+
+    <table class="measures">
+      <thead>
+        <tr><th>Fact</th><th>Snapshot before</th><th>Snapshot after</th><th>Event after</th></tr>
+        <tr><td><code>wait_condition_state</code></td><td>absent</td><td>present</td><td>present</td></tr>
+        <tr><td><code>wait_observed</code></td><td>absent</td><td>present</td><td>present</td></tr>
+        <tr><td><code>wait_overdue</code></td><td>present</td><td>present</td><td>present</td></tr>
+        <tr><td><code>expected_horizon_seconds</code></td><td>absent</td><td>present</td><td>present</td></tr>
+        <tr><td><code>resume_brief</code></td><td>absent</td><td>present</td><td>present</td></tr>
+      </thead>
+    </table>
+
+    <h2 id="reproductions">The reproduction, before and after</h2>
+    <p>
+      A composed event built from a snapshot holding all five, run against the
+      base revision and against the change. The base run is the falsifier: the
+      keys are absent, not merely unread.
+    </p>
+    <pre class="recout">base revision 7efeeb77
+next_action in event: True
+lifting_condition in event: True
+five present in event: {'wait_condition_state': False, 'wait_observed': False,
+  'wait_overdue': False, 'expected_horizon_seconds': False, 'resume_brief': False}
+
+with the change
+five present in event: {'wait_condition_state': True, 'wait_observed': True,
+  'wait_overdue': True, 'expected_horizon_seconds': True, 'resume_brief': True}</pre>
+
+    <h2 id="measure">The measure and its delta</h2>
+    <p>
+      &sect;3's measure is a test that asserts the event carries all five keys
+      with the values the snapshot holds, and that each is <code>None</code> when
+      unmeasured. Against the base revision the same file fails three of three;
+      against the change it passes three of three. The failures are the evidence
+      that the assertion is a guard and not a tautology.
+    </p>
+    <table class="measures">
+      <thead>
+        <tr><th>Run</th><th>Result</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>tests/test_wait_facts_reach_the_event.py</code> at base</td><td>3 failed</td></tr>
+        <tr><td><code>tests/test_wait_facts_reach_the_event.py</code> with the change</td><td>3 passed</td></tr>
+        <tr><td><code>tests/test_crew_recovery.py</code> at base (2.23s)</td><td>2 failed, 89 passed</td></tr>
+        <tr><td><code>tests/test_crew_recovery.py</code> with the change (5.51s)</td><td>1 failed, 90 passed</td></tr>
+        <tr><td>Crew cohort, per-file at base</td><td>5 files carrying 9 non-passing tests</td></tr>
+        <tr><td>Crew cohort, per-file with the change</td><td>5 files carrying 8 non-passing tests</td></tr>
+      </tbody>
+    </table>
+    <p>
+      No new failure is attributable to the change; the non-passing counts are
+      equal or lower at every file. The single shared
+      <code>test_crew_recovery.py</code> failure is present at the base revision,
+      and the cohort's non-passing files carry sandbox-dependent failures
+      (<code>test_crew_watch_lifetime.py</code>, <code>test_crew_surface.py</code>)
+      that reproduce without the change.
+    </p>
+
+    <h2 id="anchors">Landed outcomes</h2>
+    <table class="measures">
+      <tbody>
+        <tr id="the-wait-facts-reach-the-event">
+          <td><code>feat(crew): carry a declared wait's facts into the transition event</code></td>
+          <td>Five wait facts reach the transition event from the snapshot; each
+          is <code>None</code> rather than zero or absent when unmeasured.
+          No rendering changed.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="not-covered">What this record does not cover</h2>
+    <p>
+      The renderer change (&sect;4) and the counter-letter decision (&sect;5) are
+      untouched: this anchor records the carriage only. The cohort run over every
+      file naming <code>recovery</code> wedges before the summary line prints, so
+      the per-file results above are the aperture this node could close; a
+      merged-head attribution run over the full set belongs to the wave.
+    </p>
+
 </main>
 </body>
 </html>
