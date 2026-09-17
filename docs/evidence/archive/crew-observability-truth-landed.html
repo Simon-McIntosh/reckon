@@ -1190,6 +1190,33 @@ reading taken as an authority it was not.</p>
       <code>test_provenance.py::test_spa_sources_keep_typed_facets_and_provenance_direction</code>
       and
       <code>test_mcp_recovery.py::test_resume_reattaches_a_session_only_the_stream_carries</code>.</p>
+
+    <h3>&#167;12 &mdash; A run record says whether the run resumed, not whether its lane could</h3>
+    <p>Run <code>r-20260917T145144464105-a-run-record-says-whether-it-resumed</code>. Commit
+      <code>1f250057</code> changed <code>reckon/crew/dispatch.py</code> by 39 insertions and 2
+      deletions, and added <code>tests/test_run_record_reports_actual_resume.py</code> with 281
+      insertions.</p>
+    <p><strong>Reproduction, measured here rather than quoted:</strong> the record copied the
+      backend's <code>session_reuse</code> setting onto the pointer, so the field answered true for
+      a run that only could have continued an earlier session. Live pointers carried it true on
+      <strong>51 of 51</strong>, 47 of those holding no <code>session_id</code>; re-measured the
+      same day, true on <strong>50 of 50</strong>, 46 without a session id, and 2 whose argv
+      actually carried a prior session.</p>
+    <p><strong>Mechanism:</strong> <code>session_resumed</code> is derived from the launched argv by
+      <code>_launched_prior_session</code>, which returns the session only when the plan's own
+      command line carries it, so the fact comes from this run's launch and not from the lane's
+      configuration, which stays visible as <code>session_reuse_capable</code>. All three writers
+      carry the pair: the fresh dispatch record, the lane-change <code>move</code>, and the resume
+      attempt.</p>
+    <p><strong>Measure:</strong> the new file reports <strong>5 failed</strong> at base and
+      <strong>5 passed</strong> at the commit, so the falsifier holds. The rest of the prescribed
+      cohort — <code>test_crew_members</code>, <code>test_crew_ephemeral_members</code> and
+      <code>test_dispatch_lane_disagreement</code> — reports <strong>5 failed and 6 passed</strong>
+      at head with the identical five cases failing at base, so zero failures are added.
+      <strong><code>test_crew.py</code> is not-run in the delta:</strong> it stalls at its
+      seventy-eighth node on both trees, and an isolated probe of that node exits
+      <code>124</code> at base and at head alike. Ruff's finding set on the touched source is
+      identical to base's seven.</p>
   </section>
 
 </main>
