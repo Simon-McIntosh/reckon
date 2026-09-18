@@ -103,6 +103,29 @@ waits for one rather than refusing, and re-attaches by itself when a later wave
 arms a fresh seat. Attaching late loses nothing either — it opens with a
 baseline of every live run, then streams.
 
+To carry a peer's runs beside your own — after a handover, or while a peer
+coordinator is working the same sprint — name them on the same `Monitor`, one
+`--observe-session` per session. Never open a second `Monitor` for them:
+
+```
+Monitor({
+  command: 'reckon crew follow --project <project> --session <yours>'
+         + ' --observe-session <peer-a> --observe-session <peer-b>',
+  description: '<project> <sprint-or-plan>',
+  persistent: true,
+})
+```
+
+**This host expires a monitor and the expiry is not a fleet event.** The notice
+reads `Monitor expired after 30m with N events delivered`, and from that moment
+the session has no delivering follower — so the next `reckon crew dispatch` is
+refused with `watcher-required` (exit 8), which is the first many coordinators
+learn of it. `timeout_ms` is capped at 1800000, so a session outlasting thirty
+minutes **will** meet this at least once. Re-arm on the expiry notice, before
+anything else, with the same flag set including every `--observe-session`;
+re-attaching replays a baseline of every live run, so nothing that happened in
+the gap is lost.
+
 ### Filtering
 
 Do not build a shell filter, and do not add a state filter by default. The

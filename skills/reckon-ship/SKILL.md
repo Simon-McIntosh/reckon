@@ -690,8 +690,38 @@ them is the measured cause of finished runs sitting unnoticed for hours:
 monitor: the single `reckon crew follow --project P --session S` follower, one
 per session. A second follower on the same session is a defect, not
 redundancy — registration is single-holder and a second streams read-only, so it
-delivers nothing and adds no safety. To watch more than your own runs, attach
-the additional sessions to the one monitor; never arm a second follower.
+delivers nothing and adds no safety.
+
+**To watch more than your own runs, name them on the one follower with
+`--observe-session`, repeated per session. Never arm a second follower.**
+
+```bash
+reckon crew follow --project <project> --session <yours> \
+  --observe-session <peer-a> --observe-session <peer-b>
+```
+
+Observed rows arrive in the same pane carrying an owner glyph, so a row that is
+not yours is visible as such at a glance. **Observing registers nothing for the
+named session:** it does not vouch for delivery, that session's own dispatch
+still meets `watcher-required` without a follower of its own, and it is not a
+substitute for one. Reach for it when you inherit a peer's runs, when a
+coordinator hands over, or when you need a peer's fleet beside your own — which
+is exactly when a second follower is most tempting and least useful.
+
+**Replacing a follower is how you change what it observes.** There is no
+command to attach a session to a running one: arm the replacement with the
+fuller flag set, then stop the old one. The replacement streams read-only until
+the first holder goes and takes over the registration within a poll, so the
+order is safe in either direction and no line is lost.
+
+**The trailing figures are the project's fleet, and `--session` does not narrow
+them.** The rows are scoped and the counts are not, so a scoped follower reading
+`8w` may be showing you a peer's workers. Measured 2026-09-18 across two
+projects: one coordinator reported sixteen live workers in a sprint that had
+eight, and a reader whose own last worker had stopped saw a non-zero working
+count and waited for a transition that could never come. **Never read the
+posture line as your own inventory** — call `crew(project, view="live")` and
+count the runs whose session is yours.
 
 **A live producer is not your wake-up.** The seat is project-global and delivery
 is session-local, so `watcher_live` and `seat_held` read true while this session
