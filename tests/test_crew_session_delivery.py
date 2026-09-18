@@ -667,22 +667,20 @@ def test_a_registration_mid_write_is_not_read_as_unknown_delivery(home) -> None:
         thread.join(timeout=2)
 
 
-def test_a_row_that_is_not_live_says_which_condition_ended_it(home) -> None:
-    """A stale registration must not read as coverage.
+def _released_registration(project: str, session: str) -> Path:
+    """Write a registration whose lock is free and whose process is gone.
 
-    Its `since` records when it attached, so a dead row's only timestamp makes
-    it look older and better established rather than stale — and a consumer
-    counting rows to ask "is this project covered" is then answered by a
-    registration that ended. Reported by a session that read `followers` as 2
-    while one of them was dead.
+    The file is what a released registration leaves behind: releasing the lock
+    never unlinks it, which is why the payload counts released registrations
+    rather than listing one row for every session name that has followed.
     """
-    path = runs.follower_lock_path("proj", "departed")
+    path = runs.follower_lock_path(project, session)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(
             {
-                "project": "proj",
-                "session": "departed",
+                "project": project,
+                "session": session,
                 "pid": 999_999_999,
                 "pid_start_time": "1",
                 "delivery": "stream",
@@ -690,22 +688,51 @@ def test_a_row_that_is_not_live_says_which_condition_ended_it(home) -> None:
             }
         )
     )
+    return path
+
+
+def test_a_released_registration_is_counted_not_listed(home) -> None:
+    """A released registration is a number, not a row.
+
+    The registry is append-only, so listing it handed a reader one row per
+    registration that had ever existed and a not_live_because sentence to
+    decode before it could ask whether the project was covered. The payload
+    states the released remainder as a count instead, and the row set holds
+    nothing but the registrations that deliver.
+    """
+    _released_registration("proj", "departed-one")
+    _released_registration("proj", "departed-two")
 
     with runs.follower_claim("proj", "attached", delivery="stream"):
         payload = runs.project_watch_visibility("proj")
 
-    rows = {row["session"]: row for row in payload["followers"]}
-    assert set(rows) == {"departed", "attached"}, "the array stays lossless"
-    assert payload["followers_live"] == 1, "the count answers coverage, not the length"
+    rows = payload["followers"]
+    assert len(rows) == 1, "exactly one follower row"
+    assert [row["session"] for row in rows] == ["attached"], (
+        "only the delivering registration is a row"
+    )
+    assert payload["followers_live"] == 1
+    assert payload["followers_released"] == 2, (
+        "two released registrations, stated as a count, not listed as rows"
+    )
     assert payload["delivering_sessions"] == ["attached"]
+    assert "not_live_because" not in rows[0]
 
-    assert rows["attached"]["live"] is True
-    assert "not_live_because" not in rows["attached"]
 
-    departed = rows["departed"]
-    assert departed["live"] is False
-    assert "is gone" in departed["not_live_because"]
-    assert departed["since"] == "2026-09-01T09:00:00Z", (
+def test_a_released_registration_still_states_why_it_stopped(home) -> None:
+    """The reason survives the row: a single named session still answers it.
+
+    Counting released registrations instead of listing them must not cost a
+    reader the ability to learn why one registration stopped delivering, which
+    is the meaning the listed row used to carry.
+    """
+    _released_registration("proj", "departed")
+
+    state = runs.follower_state("proj", "departed")
+    assert state["live"] is False
+    assert "the registration was released" in state["not_live_because"]
+    assert "is gone" in state["not_live_because"]
+    assert state["follower"]["started_at"] == "2026-09-01T09:00:00Z", (
         "its only timestamp is its attach time, which is why the reason matters"
     )
 
