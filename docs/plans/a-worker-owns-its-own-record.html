@@ -23,6 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;deferred&quot;}">
+<meta name="plan-modified" content="2026-09-18">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -190,8 +192,8 @@
     two gates must be written as one pass over that function rather than two.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-<h2><span class="sec">&sect;</span> Decisions</h2>
-<div class="r-dec" data-key="vision-review-lane" data-by="" data-when="">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="vision-review-lane" data-choice="" data-by="" data-when="">
     <p class="r-dec-q">When a figure needs a human-equivalent look, which lane
         reviews it? The local lane is exempt by instruction, and the codex lane is
         held until 21 September.</p>
@@ -205,15 +207,18 @@
 </section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-<h2><span class="sec">&sect;</span> Followups</h2>
-<article class="r-fu" data-id="f-awo-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-18" data-recommends-skill="/reckon-ship a-worker-owns-its-own-record &sect;2" data-resolved-at="" data-resolved-by="">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-awo-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-18" data-recommends-skill="/reckon-ship a-worker-owns-its-own-record §2" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Grant the scope before gating on it, because the gate is unfair otherwise</h4>
-    <div class="r-fu-body"><p><strong>&sect;2 goes first and &sect;3 cannot precede it.</strong> Refusing a landing that records nothing, while briefs still exclude the record from scope, punishes workers for a scope their coordinator withheld. Grant the default scope, let a wave run under it, and only then gate the promotion.</p><p><strong>&sect;5 can run in parallel and is independent of both.</strong> It reports on artifacts that already exist and blocks nothing; its cheapest half is the stranded-figure listing, which is a read over worktrees.</p><p><strong>&sect;4 is contract text and follows &sect;2</strong>, because naming a figure as a deliverable in a brief whose scope excludes the figures directory is the current failure restated.</p><p><strong>Measure this plan by produced records, not by intentions.</strong> The number that matters is the proportion of passing implement runs whose commits touch their own plan or evidence record, measured before and after &sect;2. A count of figures is a weaker signal, because the authoring rules correctly prefer a table to an imagified one and a node may rightly produce none.</p></div>
-    <pre class="r-fu-prompt">/reckon-ship a-worker-owns-its-own-record &sect;2</pre>
+    <div class="r-fu-body"><p><strong>§2 goes first and §3 cannot precede it.</strong> Refusing a landing that records nothing, while briefs still exclude the record from scope, punishes workers for a scope their coordinator withheld. Grant the default scope, let a wave run under it, and only then gate the promotion.</p><p><strong>§5 can run in parallel and is independent of both.</strong> It reports on artifacts that already exist and blocks nothing; its cheapest half is the stranded-figure listing, which is a read over worktrees.</p><p><strong>§4 is contract text and follows §2</strong>, because naming a figure as a deliverable in a brief whose scope excludes the figures directory is the current failure restated.</p><p><strong>Measure this plan by produced records, not by intentions.</strong> The number that matters is the proportion of passing implement runs whose commits touch their own plan or evidence record, measured before and after §2. A count of figures is a weaker signal, because the authoring rules correctly prefer a table to an imagified one and a node may rightly produce none.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship a-worker-owns-its-own-record §2</pre>
     </article>
 </section>
 
   <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-the-picture-lands-and-the-receipt-does-not" data-who="reckon-ship" data-when="2026-09-18T14:45:00Z">
+    <div class="r-comment-body"><p><strong>Correcting this section's own headline within the hour of writing it, because opening the stranded worktree changed the finding.</strong> &sect;5 says 21 figures are stranded in a worktree unmerged since 25 August. That count is right and the conclusion drawn from it is wrong.</p><p><strong>What is actually in there.</strong> The commit adds 21 files: 10 PNGs, 10 per-view DOM receipts and a capture index. Comparing each against <code>main</code>: <strong>all 10 PNGs are byte-identical to files already on main.</strong> The capture index differs, and the 10 DOM receipts exist only in the worktree, at roughly 494&nbsp;KB each.</p><p><strong>And the reason is not that the worktree was forgotten.</strong> Its capture index is stamped <code>2026-08-25T12:57:06Z</code>; main's is stamped <code>2026-09-01T18:39:05Z</code>. A later run of the same capture harness landed on main a week afterwards. So nothing of current value is stranded here &mdash; the worktree holds a <em>superseded</em> capture, and the images from it reached main by a route that made this commit redundant.</p><p><strong>The real finding is the one the count concealed, and it is worse.</strong> Main carries 19 PNGs and exactly one JSON under the <code>after/</code> captures &mdash; the index. <strong>Neither capture landed its per-view DOM receipts.</strong> Not the 25 August run, whose receipts are stranded, and not the 1 September run that superseded it, which appears never to have committed them at all. So the systematic behaviour is not that figures are lost; it is that <strong>the picture lands and the machine-readable receipt behind it does not</strong>, every time.</p><p>That binds &sect;4 directly rather than &sect;5. &sect;4 asks a worker on a text-only lane to verify its own figure through the figure's structure and its data receipt. This measurement says the receipt is the half that systematically fails to reach the repository, so the verification &sect;4 specifies would today have nothing on main to verify against. A figure whose receipt is missing is a claim without its evidence, which is the same defect as a gate verdict without its log.</p><p><strong>A second, structural finding falls out of trying to dispose of the worktree.</strong> Cleanup policy removes a worktree only when it is clean <em>and</em> its commit is reachable from the primary branch. This one is clean and will <em>never</em> be reachable, because its content was superseded rather than merged. So a worktree holding superseded work satisfies the safety half forever and the reachability half never, and accumulates by construction &mdash; which is why one has sat here for three weeks with no live pointer and nothing reporting it. The recovery view &sect;5 builds must therefore distinguish <em>unmerged and unique</em> from <em>unmerged and superseded</em>; only the first is work at risk, and only the second is safe to retire. Reporting a single count of unmerged figures would have told this coordinator to rescue 4.9&nbsp;MB of obsolete DOM dumps.</p></div>
+</div>
 </section>
 
   </main>
