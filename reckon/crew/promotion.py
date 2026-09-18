@@ -2677,23 +2677,55 @@ def _plan_state_for_run(
     return state if isinstance(state, Mapping) else {}
 
 
-def _plan_remaining_sections(state: Mapping[str, Any]) -> list[str]:
-    """Return the plan's declared implementable sections.
+_LANDING_COMMENT_PREFIX = "c-run-"
 
-    A plan that has not persisted a classification falls back to the section
-    identities its gates and comment anchors name, so the refusal still lists
-    authored sections a reader can act on.
+
+def _landed_sections(state: Mapping[str, Any]) -> set[str]:
+    """Return the sections a landing comment already records.
+
+    A promoted run appends one section comment under a run-derived id, so the
+    presence of that id is the plan's own record that work landed against the
+    section. A comment written for any other reason carries another id and
+    says nothing about a landing.
     """
+    comments = state.get("comments")
+    if not isinstance(comments, Mapping):
+        return set()
+    landed: set[str] = set()
+    for raw_section, entries in comments.items():
+        if not isinstance(entries, (list, tuple)):
+            continue
+        for entry in entries:
+            if isinstance(entry, Mapping) and str(entry.get("id") or "").startswith(
+                _LANDING_COMMENT_PREFIX
+            ):
+                landed.add(str(raw_section).strip())
+                break
+    return landed
+
+
+def _plan_remaining_sections(state: Mapping[str, Any]) -> list[str]:
+    """Return the plan's sections that still have work to land.
+
+    A landing already recorded on a section is subtracted, so the refusal
+    names work a reader can still pick up rather than a section that has been
+    delivered. Beyond that, a declared ``implementable`` section is
+    outstanding until it is reclassified, and a plan that has not persisted a
+    classification falls back to the section identities its gates and comment
+    anchors name.
+    """
+    landed = _landed_sections(state)
     declarations = state.get("section_declarations")
     if isinstance(declarations, Mapping):
         return sorted(
             section
             for section, classification in declarations.items()
             if str(classification).strip() == "implementable"
+            and str(section).strip() not in landed
         )
     from reckon._schema import plan_section_anchors
 
-    return sorted(plan_section_anchors(state))
+    return sorted(plan_section_anchors(state) - landed)
 
 
 _IMPL_MOVE_ENFORCED_ROLES = frozenset({"implement", "test"})
@@ -2711,11 +2743,12 @@ def _require_impl_moved(
 ) -> dict[str, Any]:
     """Compare the plan's impl at promotion against the value at dispatch.
 
-    Landing work is supposed to advance the plan it lands against. Two nova
-    plans sat at zero percent across five landed nodes each because nothing in
-    the landing path made the plan move, so this converts the habit into a
-    check. Every exemption is named in the returned record, and the refusal
-    names the flag that waives it so recording a reason is one word of work.
+    Landing work is supposed to advance the plan it lands against, and nothing
+    in the landing path made the plan move: plans sat at zero percent while
+    nodes landed against them one after another, so this converts the habit
+    into a check. Every exemption is named in the returned record, and the
+    refusal names the flag that waives it so recording a reason is one word of
+    work.
     """
 
     role = str(record.get("role") or "")

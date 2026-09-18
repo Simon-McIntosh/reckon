@@ -21,6 +21,20 @@ PROJECT = "proj"
 PLAN = "plan-a"
 
 
+LANDING_COMMENT_ID = "c-run-r-20260918T070000000000-node-a"
+
+
+def _landing_comment(section: str) -> dict:
+    """A section comment as a promoted run writes one, under its run-derived id."""
+    return {
+        "id": LANDING_COMMENT_ID,
+        "who": "crew",
+        "when": "2026-09-18T07:00:00Z",
+        "quote": None,
+        "body": f"<p>the work for {section} landed</p>",
+    }
+
+
 def _write_plan(path: Path, state: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     bare = (
@@ -388,3 +402,159 @@ def test_dispatch_stores_no_figure_for_a_plan_that_records_no_impl(
 
     assert record["plan_impl_at_dispatch"] is None
     assert crew.read_pointer(record["run_id"])["plan_impl_at_dispatch"] is None
+
+
+def test_a_section_that_already_landed_is_not_listed_as_outstanding(
+    repository: Path,
+) -> None:
+    """One landed section and one outstanding is listed as the outstanding one.
+
+    A section comment under a run-derived id is the plan's own record that work
+    landed there. Without subtracting, a landed section reads as work to pick
+    up, and the reader is sent at work that is already delivered. A comment
+    written for another reason carries another id and stays outstanding.
+    """
+    _set_plan(
+        repository,
+        impl=0.5,
+        section_declarations={"s2": "implementable", "s3": "implementable"},
+        comments={"s2": [_landing_comment("s2")]},
+    )
+    run_id = "r-20260918T080850000000-node-a"
+    _write_pointer(repository, run_id, plan_impl_at_dispatch=0.5)
+
+    with pytest.raises(crew.CrewError) as refusal:
+        _promote(repository, run_id, gate="passed", outcome="the work landed")
+
+    message = str(refusal.value)
+    assert "s3" in message
+    assert "s2" not in message.split("Sections still to land:")[1]
+
+
+def test_a_plan_whose_sections_carry_no_landing_comment_still_lists_them(
+    repository: Path,
+) -> None:
+    """Subtraction is keyed on the landing id, not on a comment existing."""
+    _set_plan(
+        repository,
+        impl=0.5,
+        section_declarations={"s2": "implementable"},
+        comments={
+            "s2": [
+                {
+                    "id": "c-review-note",
+                    "who": "coordinator",
+                    "when": "2026-09-18T07:00:00Z",
+                    "quote": None,
+                    "body": "<p>a note, not a landing</p>",
+                }
+            ]
+        },
+    )
+    run_id = "r-20260918T080900000000-node-a"
+    _write_pointer(repository, run_id, plan_impl_at_dispatch=0.5)
+
+    with pytest.raises(crew.CrewError) as refusal:
+        _promote(repository, run_id, gate="passed", outcome="the work landed")
+
+    assert "s2" in str(refusal.value).split("Sections still to land:")[1]
+
+
+def test_a_node_naming_no_plan_is_exempt_and_says_so(repository: Path) -> None:
+    """A run whose task names no plan has no plan to have moved."""
+    _set_plan(repository, impl=0.5)
+    run_id = "r-20260918T081000000000-node-a"
+    _write_pointer(repository, run_id, plan="", plan_impl_at_dispatch=0.5)
+
+    promoted = _promote(repository, run_id, gate="passed", outcome="no plan named")
+
+    assert promoted["impl_move"]["verdict"] == "exempt"
+    assert promoted["impl_move"]["reason"] == "node-names-no-plan"
+
+
+def test_a_plan_that_cannot_be_read_is_exempt_and_says_so(
+    repository: Path,
+) -> None:
+    """An unreadable plan is exempt rather than refused on a figure that is absent."""
+    _set_plan(repository, impl=0.5)
+    run_id = "r-20260918T081100000000-node-a"
+    _write_pointer(repository, run_id, plan="no-such-plan", plan_impl_at_dispatch=0.5)
+
+    promoted = _promote(repository, run_id, gate="passed", outcome="plan unreadable")
+
+    assert promoted["impl_move"]["verdict"] == "exempt"
+    assert promoted["impl_move"]["reason"] == "plan-unreadable"
+
+
+def test_a_plan_recording_no_impl_is_exempt_and_says_so(repository: Path) -> None:
+    """A readable plan carrying no impl cannot be compared, so it is exempt."""
+    run_id = "r-20260918T081200000000-node-a"
+    _write_pointer(repository, run_id, plan_impl_at_dispatch=0.5)
+
+    promoted = _promote(repository, run_id, gate="passed", outcome="no impl recorded")
+
+    assert promoted["impl_move"]["verdict"] == "exempt"
+    assert promoted["impl_move"]["reason"] == "plan-records-no-impl"
+
+
+def _invoke_complete_cli(run_id: str, gate_log: Path, *extra: str):
+    """Drive `crew complete` through its command line, as a coordinator does."""
+    from click.testing import CliRunner
+
+    from reckon.cli import main as cli_main
+
+    return CliRunner().invoke(
+        cli_main,
+        [
+            "crew",
+            "complete",
+            "--run",
+            run_id,
+            "--gate",
+            "passed",
+            "--outcome",
+            "the work landed",
+            "--gate-command",
+            "probe check",
+            "--gate-exit-status",
+            "0",
+            "--gate-log-path",
+            str(gate_log),
+            *extra,
+        ],
+    )
+
+
+def test_the_cli_flag_promotes_a_landing_that_did_not_move_the_plan(
+    repository: Path, tmp_path: Path
+) -> None:
+    """The waiver reaches the guard from the command line, not only from the API.
+
+    A flag whose parsing has no test is a call site nothing covers: the guard
+    would be exercised while the flag that waives it stayed unread. So this
+    runs the command as written, first without the flag to read the refusal,
+    then with it to read the reason on the ledger row.
+    """
+    _set_plan(repository, impl=0.5)
+    run_id = "r-20260918T081300000000-node-a"
+    _write_pointer(repository, run_id, plan_impl_at_dispatch=0.5)
+    gate_log = tmp_path / "gate.log"
+    gate_log.write_text("probe check passed\n", encoding="utf-8")
+
+    refused = _invoke_complete_cli(run_id, gate_log)
+
+    assert refused.exit_code != 0
+    assert "--no-impl-change" in refused.output
+    assert pointer_path(run_id).exists()
+
+    promoted = _invoke_complete_cli(
+        run_id,
+        gate_log,
+        "--no-impl-change",
+        "the section's impl is moved by a sibling node",
+    )
+
+    assert promoted.exit_code == 0
+    row = _ledger_row(repository, run_id)
+    assert row["impl_move"]["verdict"] == "waived"
+    assert row["impl_move"]["reason"] == "the section's impl is moved by a sibling node"
