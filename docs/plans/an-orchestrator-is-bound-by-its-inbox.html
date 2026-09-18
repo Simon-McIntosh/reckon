@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="an-orchestrator-is-bound-by-its-inbox">
+  <meta name="plan-title" content="An Orchestrator Is Bound By Its Inbox">
+  <meta name="plan-summary" content="Returning work is a duty, not a queue: reviews dispatch themselves, plans are read before release, and the signals an orchestrator acts on are true.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="14.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint" content="S18">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <title>An Orchestrator Is Bound By Its Inbox | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-09-18">
+<meta name="plan-version" content="1">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">§1 &mdash; An orchestrator has two halves and only one of them is automatic</h2>
+
+    <p>Dispatch is reflexive. A coordinator reads a plan, cuts nodes, and sends
+    them, and every part of that is prompted by the work itself. The return half
+    is not. Work that comes back has to be merged, conflicts have to be resolved,
+    a blocked run has to be unblocked and an unpromoted one has to be promoted
+    &mdash; and nothing asks for any of it. The orchestrator is the only thing
+    that knows those duties exist, which means they are discharged exactly as
+    often as it remembers.</p>
+
+    <p>That is not a discipline problem to be solved by trying harder, and this
+    plan does not propose a checklist. It proposes that the three duties which
+    can be automatic become automatic, that the one which cannot be automatic be
+    made visible in a form that prompts action, and that the signals all of this
+    rests on be true. Each is separately measured below.</p>
+
+    <svg viewBox="0 0 660 190" width="100%" role="img"
+         aria-label="The orchestrator loop, with the three points at which returning work currently stops."
+         style="max-width:660px;font-family:system-ui,-apple-system,sans-serif">
+      <rect x="1" y="34" width="118" height="42" fill="#fff" stroke="#444" stroke-width="1"/>
+      <text x="60" y="52" text-anchor="middle" font-size="13" fill="#111">read plan</text>
+      <text x="60" y="68" text-anchor="middle" font-size="13" fill="#111">cut nodes</text>
+
+      <rect x="151" y="34" width="118" height="42" fill="#fff" stroke="#444" stroke-width="1"/>
+      <text x="210" y="60" text-anchor="middle" font-size="13" fill="#111">dispatch</text>
+
+      <rect x="301" y="34" width="118" height="42" fill="#fff" stroke="#444" stroke-width="1"/>
+      <text x="360" y="60" text-anchor="middle" font-size="13" fill="#111">worker runs</text>
+
+      <rect x="451" y="34" width="118" height="42" fill="#fff" stroke="#444" stroke-width="1"/>
+      <text x="510" y="52" text-anchor="middle" font-size="13" fill="#111">review,</text>
+      <text x="510" y="68" text-anchor="middle" font-size="13" fill="#111">merge, promote</text>
+
+      <line x1="119" y1="55" x2="149" y2="55" stroke="#444" stroke-width="1"/>
+      <line x1="269" y1="55" x2="299" y2="55" stroke="#444" stroke-width="1"/>
+      <line x1="419" y1="55" x2="449" y2="55" stroke="#444" stroke-width="1"/>
+      <path d="M 569 55 L 600 55 L 600 130 L 60 130 L 60 78" fill="none" stroke="#444" stroke-width="1"/>
+      <polygon points="60,76 56,84 64,84" fill="#444"/>
+
+      <line x1="477" y1="24" x2="477" y2="34" stroke="#b03a2e" stroke-width="2"/>
+      <line x1="510" y1="24" x2="510" y2="34" stroke="#b03a2e" stroke-width="2"/>
+      <line x1="543" y1="24" x2="543" y2="34" stroke="#b03a2e" stroke-width="2"/>
+      <text x="510" y="16" text-anchor="middle" font-size="13" fill="#b03a2e">nothing prompts any of these three</text>
+
+      <text x="330" y="152" text-anchor="middle" font-size="13" fill="#555">Every arrow left of the break is driven by the work.</text>
+      <text x="330" y="170" text-anchor="middle" font-size="13" fill="#555">Every duty right of it is driven only by the orchestrator remembering.</text>
+    </svg>
+    <p><em>The orchestrator loop. The outbound half is prompted by the plan; the
+    return half is prompted by nothing.</em></p>
+
+    <h2 id="s2">§2 &mdash; A finished run dispatches its own review</h2>
+
+    <p>When a run reaches a terminal state with a manifest it is classified
+    <code>scoring</code>, which means finished and awaiting an independent
+    review. Promotion is correctly refused until that review exists. Nothing
+    creates it.</p>
+
+    <p><strong>The command is already composed.</strong>
+    <code>_review_dispatch_action</code> at <code>reckon/crew/recovery.py:145</code>
+    builds the complete dispatch for the review a scoring run needs &mdash;
+    project, plan, section, node id, goal, done-when, write path, time budget,
+    session and <code>--local</code> &mdash; and returns it as a <em>string</em>
+    for a person to read and retype. The system knows exactly what to run and
+    prints it instead of running it.</p>
+
+    <p><strong>What that costs, measured 2026-09-18 across this workstation.</strong>
+    Six runs sat in <code>scoring</code> at one moment, four on reckon and two on
+    nova, each waiting on a command already written out in full. Within one
+    reckon session nine runs accumulated unreconciled across a working day, four
+    of them with their code already merged to the main branch and the ledger not
+    knowing it; the oldest had been waiting fourteen hours. The coordinator's own
+    account when asked was <em>two are being handled, seven are not</em>.</p>
+
+    <p><strong>The rule.</strong> A run entering <code>scoring</code> dispatches
+    its own review to the local lane, as a reflex, without being asked. The sole
+    exception is the local lane being unavailable, in which case the run is
+    recorded as awaiting review with the lane's state as the reason, and the
+    review dispatches when the lane returns. The dispatch is subject to the same
+    admission checks as any other &mdash; scope, member, follower, context fit
+    &mdash; because an automatic dispatch that bypasses admission is worse than a
+    manual one that does not.</p>
+
+    <h2 id="s3">§3 &mdash; A plan is not released until something has read it back</h2>
+
+    <p>A plan is written by one agent and executed by many. Between those two
+    moments nothing checks that what was written says what its author meant, and
+    the failure mode is not a typo &mdash; it is a sentence that reads
+    differently to the executor than to the author.</p>
+
+    <p><strong>Measured on this project, 2026-09-17 to 18.</strong> A decision was
+    locked with the note <em>spell out queued then there is no ambiguity</em>. The
+    coordinator read that as an instruction to render the whole word in the fleet
+    counter, and cut a node accordingly. The lead had meant the bucket should be
+    <em>named</em> queued so that its existing letter <code>q</code> decoded. The
+    node did exactly what it was asked, the change merged, and every session on
+    the workstation lost five columns of the reason clause on every row until it
+    was reverted the following morning. A reader whose only job was to restate the
+    decision in its own words before dispatch would have surfaced the divergence
+    in one turn, at no cost to anyone.</p>
+
+    <p><strong>The rule.</strong> When a plan is authored or materially revised,
+    <code>reckon-edit</code> dispatches a rubber-duck review to the local lane: a
+    read-only node whose deliverable is a restatement of the plan's intent, its
+    decisions and its done-whens in the reviewer's own words, plus any place where
+    two readings are possible. The orchestrator acts on the findings before the
+    plan is released. <strong>An unreviewed plan is refused for execution</strong>
+    &mdash; not warned about &mdash; because a warning at dispatch time is read by
+    the same agent that skipped the review.</p>
+
+    <p>Two properties keep this cheap. The review is read-only, so it needs no
+    worktree and no write scope beyond its own record. And it is bounded by the
+    plan, not by the codebase: its input is one document, which is why it can run
+    on the local lane in minutes while an implementation review cannot.</p>
+
+    <h2 id="s4">§4 &mdash; The inbox is a duty, and a total is not an inbox</h2>
+
+    <p>The fleet counter renders four quantities in one grammar &mdash;
+    <code>6w&middot; 1b&middot; 4u&middot; 1q</code>. Two of them are the
+    orchestrator's inbox: a blocked run needs a decision, an unpromoted one needs
+    merging, reviewing or recording. Two are work in progress and need nothing.
+    All four look identical, so the pair that demands action does not stand out
+    from the pair that forbids it.</p>
+
+    <p><strong>Nothing re-raises the inbox.</strong> The follower emits on state
+    change, so a run that became unpromoted at 03:00 produced one transition and
+    is silent from then on. Its count persists on every subsequent row &mdash;
+    always present, never new &mdash; and a figure that is always there stops
+    being read.</p>
+
+    <p><strong>And a total cannot show whether the inbox is being worked.</strong>
+    Measured while draining this session: the coordinator cleared one blocked item
+    and reported the count had moved from two to one. It had, on exactly one row,
+    for a few seconds; a different run entered the same bucket moments later and
+    the lead's screen read two throughout. The count was stable while its
+    membership turned over completely. Worse, the two were not comparable in kind
+    &mdash; one was a dead review correctly recorded, the other a healthy worker
+    whose stream had been written 162 seconds earlier and which was misclassified
+    by the placeholder-wait defect of &sect;5.</p>
+
+    <p><strong>The rule.</strong> The actionable cells carry identity or age, not
+    only a total: the oldest item's age, and a count of items unchanged since the
+    reader last saw a row. The orchestrator's duties are named where a coordinator
+    reads them before dispatching rather than discovered when something breaks
+    &mdash; an orchestrator dispatches <em>and</em> is bound to merge, resolve,
+    unblock and promote what returns.</p>
+
+    <h2 id="s5">§5 &mdash; The signals must be true</h2>
+
+    <p>Everything above rests on the monitor reporting what is so. Five
+    independent measurements on 2026-09-17 and 18, from four sessions across four
+    projects, say it does not. They are one family: a field that reads as state
+    and is not, a write that is accepted and does nothing, a count derived from
+    references that do not exist.</p>
+
+    <table>
+      <thead><tr><th>Signal</th><th>What it says</th><th>What is so</th><th>Measured by</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>transitions as the only event</td>
+          <td>a run with no events is idle</td>
+          <td>2 events across a run's whole life and 0 project-wide during its 30-minute working window; manifest mtime frozen 4.5&nbsp;h before it died</td>
+          <td>imas-codex</td>
+        </tr>
+        <tr>
+          <td><code>wait-aged</code></td>
+          <td>a declared wait has gone overdue</td>
+          <td>escalated at 1804&nbsp;s while the newest stream file was 0 minutes old and still growing</td>
+          <td>imas-efit</td>
+        </tr>
+        <tr>
+          <td>manifest <code>status</code></td>
+          <td>the run's own state</td>
+          <td>13 of the 18 words the pane can print are refused by the reader, so a worker copying the display makes its own manifest unreadable; 4 of 13 live runs host-wide were unreadable for this reason</td>
+          <td>nova, reckon</td>
+        </tr>
+        <tr>
+          <td><code>process_alive</code></td>
+          <td>the worker is running</td>
+          <td>the pointer's pid is the launching process, which exits while the worker runs on; read as authoritative three times and wrong three times, twice concluding a fleet was dead while streams were being written that second</td>
+          <td>reckon, imas-efit</td>
+        </tr>
+        <tr>
+          <td>blocker <code>archived</code> and <code>blocks_n</code></td>
+          <td>a blocker is retired; N sprint items depend on it</td>
+          <td>the archived write is accepted, bumps the version and is inert because the flag is derived from the file path; <code>blocks_n</code> reads 10 for one blocker while no sprint item in the tree carries a <code>blocked_by</code> reference at all</td>
+          <td>imas-efit</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>The shared remedy is a liveness signal keyed on freshness rather
+    than on change.</strong> Newest-stream mtime is the one fact that has not
+    failed: every proxy for it has. A run that is demonstrably producing output is
+    working, whatever its manifest last said, and nothing should escalate, age or
+    classify it otherwise. The same principle retires the rest of the table &mdash;
+    a state that cannot be re-derived from something observable is a stored
+    opinion, and a stored opinion carries no observation time.</p>
+
+    <p><strong>A placeholder is not a declaration.</strong> Four distinct wordings
+    of a self-satisfying wait stanza were logged across two projects in one night,
+    including <code>wait_probe: ["true"]</code> with <code>wait_terminal:
+    exit:0</code> and a condition string that said in plain English that nothing
+    was awaited. One was written deliberately as a durable checkpoint before a long
+    compose step, which is good discipline being punished by the state machine.
+    The classifier must read what a field says rather than that it exists.</p>
+
+    <h2 id="s6">§6 &mdash; What this plan does not own</h2>
+
+    <p>The row's rendering &mdash; column widths, counter letters, colour,
+    truncation &mdash; belongs to <code>monitor-renders-what-it-is-given</code>,
+    and the findings in &sect;4 and &sect;5 are recorded there as well as here.
+    This plan owns the <em>obligation</em>: what an orchestrator must do with a
+    signal once it is true, and which of those duties stop being manual.</p>
+
+    <p>Removing a compensation the coordinator performs by hand belongs to
+    <code>work-does-not-fall-to-the-coordinator</code>. The distinction is that
+    that plan retires hand-work which should not exist; this one automates duties
+    which should exist and currently depend on memory.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="unreviewed-plan-refusal-surface" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Where does an unreviewed plan get refused — at
+        dispatch of its first node, or at the ship invocation that reads it?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="refuse-at-dispatch">refuse at dispatch</button>
+      <button class="r-opt" data-value="refuse-at-ship">refuse at ship</button>
+      <button class="r-opt" data-value="refuse-at-both">refuse at both</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="review-backlog-when-lane-returns" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">When the local lane was unavailable and then returns,
+        does the backlog of awaiting-review runs dispatch all at once, or at a
+        bounded rate?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="all-at-once">all at once</button>
+      <button class="r-opt" data-value="bounded-rate">bounded rate</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-obi-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-18" data-recommends-skill="/reckon-ship an-orchestrator-is-bound-by-its-inbox §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Dispatch the review reflex first, because its command is already written</h4>
+    <div class="r-fu-body"><p><strong>§2 goes first and is the cheapest of the four, because the hard part exists.</strong> <code>_review_dispatch_action</code> at <code>reckon/crew/recovery.py:145</code> already composes the entire review dispatch and returns it as a string. The node makes the caller run it rather than print it, subject to the same admission checks as any dispatch, with the local lane being unavailable as the sole exception and recorded as the reason rather than silently skipped.</p><p><strong>Order and why.</strong> §2 first: it is bounded, its measure is a count that drops, and it removes a class of backlog immediately. §5 second, because §4's inbox is only worth surfacing once the states feeding it are true — an age on a false <code>unreadable</code> is a louder wrong answer. §4 third. §3 last, because it changes an authoring skill rather than a runtime and needs the <code>unreviewed-plan-refusal-surface</code> decision locked first.</p><p><strong>Both decisions are open and §3 is blocked on the first of them.</strong> §2, §4 and §5 can start now.</p><p><strong>Falsifier for §2, to be written before the change:</strong> a run reaching <code>scoring</code> with the local lane serving has a review run in flight without a coordinator issuing a command, and the same run with the lane unavailable records the lane's state as its reason and dispatches the review when the lane returns. Range over both, and assert the negative half: a scoring run whose review already exists does not dispatch a second one.</p><p><strong>Do not measure this plan by whether the counters look better.</strong> The count is the thing §4 argues is uninformative on its own; measure it by whether a finished run is reviewed without anyone asking, and by the age of the oldest unreconciled item rather than how many there are.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship an-orchestrator-is-bound-by-its-inbox §2</pre>
+    </article>
+</section>
+
+    
+
+  </main>
+</body>
+</html>
