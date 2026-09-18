@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="an-orchestrator-is-bound-by-its-inbox-landed">
+  <meta name="plan-title" content="An orchestrator is bound by its inbox — cumulative execution-evidence record">
+  <meta name="plan-summary" content="The watch payload reports only the follower registrations that deliver and counts the released remainder, with the measure that fired at base and head and the out-of-scope test whose update belongs to the coordinator.">
+  <meta name="plan-evidence-for" content="an-orchestrator-is-bound-by-its-inbox">
+  <meta name="plan-verifies" content="an-orchestrator-is-bound-by-its-inbox#s5">
+  <meta name="plan-recorded-at" content="2026-09-18">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; git worktrees; crew dispatch across local and metered lanes">
+  <title>An orchestrator is bound by its inbox — cumulative execution-evidence record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>An orchestrator is bound by its inbox — cumulative execution-evidence record</h1>
+    <p class="plan-summary">Run-outcomes recorded against
+    <code>an-orchestrator-is-bound-by-its-inbox</code>, one stable anchor per material result. Each
+    names the commit that landed it, preserves the quantitative measure the run itself reported,
+    and states the mechanism the run replaced.</p>
+  </header>
+
+  <section id="anchors">
+    <h2>Anchors</h2>
+    <table>
+      <thead><tr><th>Section</th><th>Anchor</th><th>Commit</th><th>Outcome</th></tr></thead>
+      <tbody>
+        <tr><td>&sect;5</td><td><a href="#follower-listing-reports-what-delivers">follower-listing-reports-what-delivers</a></td><td>c0a07f8f</td><td>landed</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="follower-listing-reports-what-delivers">
+    <h2>&sect;5 — The follower listing reports what delivers</h2>
+    <p>Run <code>r-20260918T141708546499-the-follower-listing-reports-what-delivers</code>. Commit
+    <code>c0a07f8f</code>, 100 insertions and 12 deletions across <code>reckon/crew/runs.py</code>
+    and <code>tests/test_follower_freshness.py</code> — exactly the two authorised source paths.</p>
+
+    <p><strong>Mechanism.</strong> A follower registration is an advisory <code>flock</code> on
+    <code>&lt;watch&gt;/&lt;project&gt;.followers/&lt;session&gt;-&lt;hash&gt;.lock</code>. Releasing the
+    lock is correct and complete for liveness; nothing unlinks the <em>file</em>, so the registry
+    held one row per session name that had ever followed the project. Each non-delivering row
+    carried a <code>not_live_because</code> sentence explaining the row rather than the payload
+    omitting it. <code>project_watch_visibility</code> now builds its <code>followers</code> array
+    from the delivering rows only and reports <code>followers_released</code> always — present and
+    zero when nothing has been released, never omitted.</p>
+
+    <table>
+      <thead><tr><th>Directory contents</th><th>Before</th><th>After</th></tr></thead>
+      <tbody>
+        <tr><td>1 delivering, 26 released</td><td>27 rows, <code>followers_live: 1</code></td><td>1 row, <code>followers_released: 26</code></td></tr>
+        <tr><td>1 delivering, 0 released</td><td>1 row, no released figure</td><td>1 row, <code>followers_released: 0</code></td></tr>
+        <tr><td>1 delivering older than 3 released</td><td>4 rows, ordered by mtime</td><td>1 row, still delivered</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Measure — the gate fired in both directions.</strong>
+    <code>tests/test_follower_freshness.py</code>: 5 passed at the worktree head. Run against the
+    base revision of <code>reckon/crew/runs.py</code> the same file is <strong>3 failed, 2
+    passed</strong>, the three failures being exactly the three new tests — so the defect
+    reproduces and the tests are not written to the new shape. Age never decides delivery: a
+    registration whose file was given a 2020 mtime, older than every released row, is still
+    reported. No file under the follower directory is unlinked on any read path, asserted by
+    counting the twenty-seven files still on disk after the payload was read: unlinking one would
+    race a fresh inode against the stable address the lock scheme rests on.</p>
+
+    <p><strong>Liveness is unchanged, proven by the tests that do not move.</strong> The flock
+    scheme, the pid and <code>pid_start_time</code> check, the parent-consumer check and the
+    observed delivery mode decide every row exactly as before; the two pre-existing reloader tests
+    in the file pass unchanged at base and at head.</p>
+
+    <p><strong>Delta across the eight consumer test files.</strong> Base: 3 failures, all
+    pre-existing and process-table dependent
+    (<code>test_dispatch_refuses_when_the_stale_record_claims_a_live_watcher</code>,
+    <code>test_dispatch_admits_a_running_producer_whose_record_says_absent</code>,
+    <code>test_an_orphaned_watcher_is_replaced_rather_than_refused</code>) — 68 passed. Head: the
+    same 3 failures plus one — 67 passed.
+    <code>tests/test_crew_session_delivery.py::test_a_row_that_is_not_live_says_which_condition_ended_it</code>
+    asserts <em>the array stays lossless</em> and requires the released row and its
+    <code>not_live_because</code> to appear in <code>followers</code>, which is the behaviour §5
+    replaces. Its update is outside this node's write scope and stands as a follow_on.</p>
+  </section>
+</main>
+</body>
+</html>
