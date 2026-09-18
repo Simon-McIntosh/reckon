@@ -227,24 +227,29 @@ SETTLED_STATES = frozenset(
 )
 
 _CELLS = ("working", "blocked", "unpromoted")
-_WAIT_CELL = "waiting"
+_WAIT_CELL = "queued"
+
+# The event field each bucket's count arrives in. Only the queued bucket is
+# named differently from its field: the scheduler's own word for a run it has
+# admitted but not started is `waiting`, and the counter names the bucket so
+# that its letter is the bucket's initial like every other one.
+_COUNT_FIELD = {"queued": "waiting"}
 
 # What each fleet counter renders its bucket name as, appended to the count.
-# Three are the first letter of the word the state column already prints —
-# working, blocked, unpromoted — so the pane teaches the mapping without
-# carrying a legend in the stream: a reader knows b means blocked before they
-# reach the count column, having read the word on another row. The waiting
-# bucket is the exception, so it spells its name out. Its state word is
-# `waiting`, whose first letter is w and not the letter it used to carry; q was
-# the first letter of `waiting`'s bucket, `queued` — a word no column printed,
-# which is exactly why the count could not be decoded from the pane and read as
-# a request-queue depth instead. Spelling it needs no mapping to learn, and it
-# leaves every other counter untouched.
+# One character each, so the block stays narrow enough to leave the reason
+# clause readable on every pane this workstation measures: a label spelled out
+# in full costs every row five columns and takes them from the free text, which
+# is the cell a reader is actually trying to read. Three labels are the first
+# letter of the word the state column already prints — working, blocked,
+# unpromoted — so the pane teaches those without carrying a legend. The waiting
+# bucket's q is the initial of `queued`, the bucket's own name, which no column
+# prints today; that gap is a naming question for the state vocabulary and not
+# a reason to spend width here.
 STAT_LETTER = {
     "working": "w",
     "blocked": "b",
     "unpromoted": "u",
-    "waiting": "queued",
+    "queued": "q",
 }
 
 # Two digits and the bucket label per counter, joined by a bare middle dot with
@@ -800,20 +805,20 @@ class Ticker:
     def _stats(self, event: Mapping[str, Any]) -> list[tuple[str, Any]]:
         """The fleet after this transition, as a grid whose digits line up.
 
-        Each counter is its number followed by the bucket's own label: the
-        state's initial for the three the state column already spells, and the
-        whole word for the waiting bucket, whose name that column never
-        printed. A zero is dimmed rather than dropped: blanking it would leave
+        Each counter is its number followed by the initial of the bucket it
+        counts, so the letter is decodable from the bucket's own name rather
+        than from a legend the stream does not carry. A zero is dimmed rather than dropped: blanking it would leave
         trailing whitespace and take the right edge ragged, and a reader
         waiting for a drain needs to see the count reach zero, not see it
         disappear.
         """
         cells: list[tuple[str, Any]] = []
-        labels = (*_CELLS, _WAIT_CELL) if _WAIT_CELL in event else _CELLS
+        wait_field = _COUNT_FIELD.get(_WAIT_CELL, _WAIT_CELL)
+        labels = (*_CELLS, _WAIT_CELL) if wait_field in event else _CELLS
         for index, label in enumerate(labels):
             if index:
                 cells += [("·", "dim")]
-            count = int(event.get(label) or 0)
+            count = int(event.get(_COUNT_FIELD.get(label, label)) or 0)
             cells.append((f"{count:>2}{STAT_LETTER[label]}", None if count else "dim"))
         return cells
 

@@ -166,27 +166,27 @@ def test_stat_letters_align_at_a_fixed_column_across_one_and_two_digits(grid):
         assert letter_columns(one)[letter] == letter_columns(twelve)[letter], letter
 
 
-def test_the_waiting_counter_spells_the_word_the_state_column_never_prints(grid):
-    """The waiting cell spells the bucket's own name rather than its initial.
+def test_the_queued_counter_carries_the_initial_of_its_own_bucket(grid):
+    """The waiting cell's letter is the initial of the bucket it counts.
 
-    `waiting` is what the state column says, and its initial is w — the letter
-    the working bucket already carries — so the count used q, the first letter
-    of the bucket's own name `queued`, a word no column showed anywhere. A count
-    that cannot be read off the pane is one a reader decodes as a request-queue
-    depth instead, standing as it does beside a serve with a queue of its own.
-    The cell therefore renders the whole word, which needs no mapping to learn
-    and collides with nothing else in the block.
+    Three buckets take the initial of the state word the row's own state column
+    prints, so a reader decodes them without a legend. The fourth counts runs
+    the scheduler has admitted and not started, which that column prints as
+    `waiting` — whose initial w the working bucket already holds. Naming the
+    bucket `queued` restores the rule for it: q is that name's own initial, so
+    every counter in the block is decoded the same way and none of them spends
+    the width a spelled word would take from the reason clause.
     """
     line = plain(grid.render(_event(working=2, blocked=0, unpromoted=0, waiting=3)))
-    assert ticker_module.STAT_LETTER["waiting"] == "queued"
-    assert " 3queued" in line
-    # The old spelling left a bare `3q` on the row; nothing on it may now read
-    # as a one-letter bucket whose meaning is never shown.
-    assert " 3q " not in line
-    assert not re.search(r"\d{1,2}q(?!ueued)", line)
+    assert ticker_module.STAT_LETTER["queued"] == "q"
+    assert ticker_module._COUNT_FIELD["queued"] == "waiting"
+    assert " 3q" in line
+    # The count still arrives in the event's own `waiting` field; only the
+    # bucket the counter names has changed.
+    assert "queued" not in line
 
 
-def test_the_spelled_counter_keeps_the_block_a_constant_width_across_counts():
+def test_the_queued_counter_keeps_the_block_a_constant_width_across_counts():
     """A count from zero to two digits moves no letter and no right edge.
 
     The spelled word is five columns wider than the letter it replaced, and the
@@ -212,14 +212,14 @@ def test_the_spelled_counter_keeps_the_block_a_constant_width_across_counts():
         assert {len(row) for row in rows.values()} == {width}, width
         # The block's right edge — where the spelled word ends — holds its own
         # column at every count, so the right edge never moves.
-        edges = {row.index("queued") + len("queued") for row in rows.values()}
+        edges = {row.index("q", row.index("u")) + 1 for row in rows.values()}
         assert len(edges) == 1, (width, edges)
         # And the digit columns still align too: the block begins at one column
         # whether the count beside it is one digit or two.
         assert len({row.index(f"{count:>2}w") for count, row in rows.items()}) == 1
 
 
-def test_the_spelled_counter_still_renders_a_zero_rather_than_dropping_it():
+def test_the_queued_counter_still_renders_a_zero_rather_than_dropping_it():
     """A zero is dimmed, never blanked — the property the wider cell must keep.
 
     The cell is dimmed rather than dropped so a reader watching a drain sees the
@@ -230,10 +230,10 @@ def test_the_spelled_counter_still_renders_a_zero_rather_than_dropping_it():
     """
     painter = ticker_module.Ticker(width=180, color=True)
     line = painter.render(_event(working=0, blocked=0, unpromoted=0, waiting=0))
-    assert " 0queued" in plain(line)
+    assert " 0q" in plain(line)
     assert ticker_module._DIM in line
     # The dimmed zero is the waiting cell's, not some neighbour's.
-    assert ticker_module._DIM + " 0queued" in line
+    assert ticker_module._DIM + " 0q" in line
 
 
 def test_the_baseline_glyph_is_not_a_glyph_the_row_already_uses(grid):
