@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-18">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -168,12 +168,12 @@
     <div class="r-fu-body"><p>Deliver §6. Files: <code>reckon/flight.py</code>, <code>reckon/mcp_views.py</code>, <code>reckon/cli.py</code>, tests. Reads coverage from the roadmap when f-wss-002 has landed and prints the column as unavailable before then.</p></div>
     <pre class="r-fu-prompt">/reckon-ship work-scheduling-surface §6</pre>
     </article>
-<article class="r-fu" data-id="f-wss-006" data-status="open" data-written-by="nova S19 coordinator, from the reckon coordinator&#x27;s handover" data-written-at="2026-09-18T09:40:00Z" data-recommends-skill="/reckon-ship" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-wss-006" data-status="resolved" data-written-by="nova S19 coordinator, from the reckon coordinator&#x27;s handover" data-written-at="2026-09-18T09:40:00Z" data-recommends-skill="/reckon-ship" data-resolved-at="2026-09-18T09:53:42+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Reviews dispatch themselves: run the composed review dispatch instead of printing it</h4>
     <div class="r-fu-body"><p><code>reckon/crew/recovery.py</code> near line 145 (<code>_review_dispatch_action</code>) composes the complete review dispatch for a run in <code>scoring</code> (project, plan, section, node id, goal, done-when, write path, time budget, session, local flag) and returns it as a string for a human to retype. Six runs across this workstation sat in scoring on 2026-09-18 waiting for that keystroke. Make the recovery sweep dispatch the review itself when the run's session has an attached follower and the lane has headroom, recording the dispatched review run id on the scoring run's pointer, and keep the printed command only as the fallback when dispatch is refused. Handed over by the reckon coordinator who first measured it; runs after the wait-marker node releases <code>recovery.py</code>.</p></div>
     <pre class="r-fu-prompt">/reckon-ship work-scheduling-surface — deliver f-wss-006: the recovery sweep dispatches the composed review itself and records the review run id on the scoring pointer</pre>
     </article>
-<article class="r-fu" data-id="f-wss-007" data-status="open" data-written-by="nova S19 coordinator" data-written-at="2026-09-18T09:40:00Z" data-recommends-skill="/reckon-ship" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-wss-007" data-status="resolved" data-written-by="nova S19 coordinator" data-written-at="2026-09-18T09:40:00Z" data-recommends-skill="/reckon-ship" data-resolved-at="2026-09-18T09:53:42+00:00" data-resolved-by="">
     <h4 class="r-fu-title">The follower&#x27;s fleet counter carries critical-path coverage as cp:N</h4>
     <div class="r-fu-body"><p>Once §3 lands the coverage figure, the follower's fleet counter in <code>reckon/crew/ticker.py</code> gains a <code>cp:N</code> cell counting live runs on the pushed sprint's critical path, read from live pointers with a living process and never from transition events (a working run that never rewrites its manifest emits no transitions for its whole life, measured by imas-codex: two events over a run's life, none in a thirty-minute working window). Runs after the ticker pointer another session holds reconciles.</p></div>
     <pre class="r-fu-prompt">/reckon-ship work-scheduling-surface — deliver f-wss-007: the cp:N cell on the follower&#x27;s counter from live pointers, not transitions</pre>
