@@ -27,7 +27,9 @@ def _write_plan(path: Path, state: dict) -> None:
         "<!doctype html><html><head>"
         f'<meta name="docs-project" content="{PROJECT}">'
         f"<title>{state['slug']}</title>"
-        '</head><body><main class="plan-doc"></main></body></html>\n'
+        '</head><body><main class="plan-doc">'
+        '<h2 id="s2">&sect;2 &mdash; Section two</h2>'
+        "</main></body></html>\n"
     )
     path.write_text(_plan_html.write_state(bare, state), encoding="utf-8")
 
@@ -298,3 +300,91 @@ def test_the_dispatch_reader_returns_none_for_an_unset_impl(repository: Path) ->
     from reckon.crew.dispatch import _plan_impl_at_dispatch
 
     assert _plan_impl_at_dispatch(PROJECT, PLAN, repository) is None
+
+
+DISPATCH_CONFIG = {
+    "default_backend": "native",
+    "backends": {
+        "native": {
+            "launch": "in-harness",
+            "model": "embedded-model",
+            "effort": "high",
+            "sandbox": "worktree-full",
+            "time_budget": "20m",
+        }
+    },
+    "roles": {"implement": {}},
+    "fences": {"time_budget": "20m", "needs_help_after_failures": 2},
+}
+
+
+def _provision_fleet_script(repository: Path) -> None:
+    scripts = repository / "skills" / "reckon-ship" / "scripts"
+    scripts.mkdir(parents=True, exist_ok=True)
+    source = (
+        Path(__file__).parents[1]
+        / "skills"
+        / "reckon-ship"
+        / "scripts"
+        / "worktree_fleet.py"
+    )
+    (scripts / "worktree_fleet.py").write_text(
+        source.read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    _git(repository, "add", "skills")
+    _git(repository, "commit", "-q", "-m", "test: provision the fleet script")
+
+
+def _dispatch_one(repository: Path, tmp_path: Path, node_id: str) -> dict:
+    node = crew.TaskNode(
+        id=node_id,
+        goal="land the section the plan names",
+        plan=PLAN,
+        section="s2",
+        spec_level="guided",
+        done_when="the section's tests pass and the plan records the advance",
+        write_paths=["package/target.py"],
+        time_budget="20m",
+        manifest_path=str(tmp_path / "worker.md"),
+    )
+    return crew.dispatch(
+        node=node,
+        project=PROJECT,
+        repo=repository,
+        config=DISPATCH_CONFIG,
+        session="dispatch-session",
+        launcher=lambda *args, **kwargs: 42001,
+        check_budget=False,
+    )
+
+
+def test_dispatch_itself_stores_the_plans_impl_on_the_run_record(
+    repository: Path, tmp_path: Path
+) -> None:
+    """The dispatch path stores the figure, not only the reader it calls.
+
+    A test of the reader alone stays green if the record literal stops calling
+    it, so this drives a real dispatch and reads both the record it returned
+    and the pointer it wrote.
+    """
+    _provision_fleet_script(repository)
+    _set_plan(repository, impl=0.4)
+    _git(repository, "add", "docs")
+    _git(repository, "commit", "-q", "-m", "test: the plan carries an impl")
+
+    record = _dispatch_one(repository, tmp_path, "impl-move-node")
+
+    assert record["plan_impl_at_dispatch"] == 0.4
+    assert crew.read_pointer(record["run_id"])["plan_impl_at_dispatch"] == 0.4
+
+
+def test_dispatch_stores_no_figure_for_a_plan_that_records_no_impl(
+    repository: Path, tmp_path: Path
+) -> None:
+    """A plan with no impl dispatches, recording absence rather than a zero."""
+    _provision_fleet_script(repository)
+
+    record = _dispatch_one(repository, tmp_path, "no-impl-node")
+
+    assert record["plan_impl_at_dispatch"] is None
+    assert crew.read_pointer(record["run_id"])["plan_impl_at_dispatch"] is None
