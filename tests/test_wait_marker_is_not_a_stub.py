@@ -83,6 +83,16 @@ RECORDED_STUB_FIELDS: dict[str, str] = {
         "wait_terminal: exit:0\n"
         "resume_brief: read the composed report\n"
     ),
+    # The ledger's own condition, quoted from the resume sweep that acted on
+    # it: checked 2, resumed 1, observed exit:0. This one says "no external
+    # resource", not "condition", and it is the injury — the sweep resumed a
+    # live healthy worker that was editing its worktree.
+    "the-ledger-condition-that-was-acted-on": (
+        "status: waiting\n"
+        "wait_condition: no external resource is awaited - this first write "
+        "records orientation before the first edit; the wait ends when the "
+        "harness is rewritten to complete at the end of this turn\n"
+    ),
 }
 
 STUB_IDS = sorted(RECORDED_STUB_FIELDS)

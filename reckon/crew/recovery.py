@@ -1136,17 +1136,19 @@ def _wait_condition_declares_no_wait(condition: str) -> bool:
     sentence must *open* with it, so a real condition that merely mentions
     ``none`` later is left alone; the phrase written while the condition is
     still unestablished ("exploring; not yet set"); and a sentence stating in
-    plain English that no external condition is being awaited ("no external
-    condition is awaited; this is an interim progress record written before the
-    report is composed"). Every one of those declared its own absence, and each
-    was escalated anyway on the presence of the field alone.
+    plain English that nothing is being awaited, in either wording a worker
+    reached for: "no external condition is awaited; this is an interim progress
+    record written before the report is composed", and the ledger's own
+    "no external resource is awaited - this first write records orientation
+    before the first edit". Every one of those declared its own absence, and
+    each was escalated anyway on the presence of the field alone.
     """
     text = condition.strip()
     if re.match(r"none(?:\s|$)", text, re.IGNORECASE):
         return True
     if re.search(r"\bnot yet set\b", text, re.IGNORECASE):
         return True
-    if re.search(r"\bno\s+external\s+condition\b", text, re.IGNORECASE):
+    if re.search(r"\bno\s+external\b[^.;]{0,60}\bawaited\b", text, re.IGNORECASE):
         return True
     return bool(
         re.search(r"\bnothing\s+(?:is\s+|to\s+be\s+)?awaited\b", text, re.IGNORECASE)
