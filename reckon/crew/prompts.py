@@ -246,16 +246,16 @@ FENCE — EVIDENCE (this measure is the done-when; state it quantitatively)
 FENCE — DELIVERY
   Write your manifest to {manifest_path} BEFORE finishing, then reply with that path and a summary.
   If that exact path is not writable, STOP and report a blocker; a manifest written anywhere else means delivery cannot be found. Long output and logs go on disk.
-MANIFEST (write exactly these keys; after reading the plan, observe path and revision in the assigned tree and make these first three lines your first write)
+MANIFEST (write exactly these keys; after reading the plan, observe path and revision in the assigned tree and make these first three lines your first write; those three lines are the orientation write — record them under status: in-progress with a checkpoint line, and leave the wait fields empty until you are actually waiting on an external condition)
   orientation_worktree: <output of pwd>
   orientation_base_sha: <output of git rev-parse HEAD>
   orientation_write_paths: {orientation_scope}
   node: {node.id}
-  status: waiting | complete | blocked | failed
-  wait_condition: <only when setting status to waiting: one line stating what is being waited on, and what must happen for the wait to end>
-  wait_probe: <only when setting status to waiting: the shell-free argument vector that answers the condition, run in your worktree; for example ["squeue","-h","-j","1271081"]>
-  wait_terminal: <only when setting status to waiting: the probe output values that mean the wait is over; they are matched against the probe's last line, with exit:<code> standing in when it prints nothing; for example exit:0>
-  resume_brief: <only when setting status to waiting: what the resumed self does next>
+  status: in-progress | waiting | complete | blocked | failed
+  wait_condition: <only when an external condition is actually awaited — never at the orientation write: one line stating what is being waited on, and what must happen for the wait to end>
+  wait_probe: <only when an external condition is actually awaited — never at the orientation write: the shell-free argument vector that answers the condition, run in your worktree; for example ["squeue","-h","-j","1271081"]>
+  wait_terminal: <only when an external condition is actually awaited — never at the orientation write: the probe output values that mean the wait is over; they are matched against the probe's last line, with exit:<code> standing in when it prints nothing; for example exit:0>
+  resume_brief: <only when an external condition is actually awaited — never at the orientation write: what the resumed self does next>
   checkpoint: <when you are recording progress and not setting status to waiting — any worker recording progress at any point, not only a resumed worker whose wait is met: one line recording where work stands and what comes next, so you leave a checkpoint rather than a wait block>
   commits: <sha list>
   changed_paths: <explicit list>

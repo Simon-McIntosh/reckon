@@ -1122,6 +1122,44 @@ def _wait_expected_seconds(
     return seconds, ""
 
 
+def _wait_condition_declares_no_wait(condition: str) -> bool:
+    """True when the condition's own prose says there is nothing to wait on.
+
+    A worker told to write its manifest before starting long output writes its
+    first one at orientation, and a healthy worker offered wait fields at that
+    moment fills them with a note about where it is rather than what it awaits.
+    Two of those notes were recorded: a condition that opens with the word
+    ``none`` ("none - this is an interim checkpoint, not a held wait"), read
+    here exactly as the changed-paths prose-none rule reads that word — the
+    sentence must *open* with it, so a real condition that merely mentions
+    ``none`` later is left alone — and the phrase a worker writes while the
+    condition is still unestablished ("exploring; not yet set").
+    """
+    text = condition.strip()
+    if re.match(r"none(?:\s|$)", text, re.IGNORECASE):
+        return True
+    return bool(re.search(r"\bnot yet set\b", text, re.IGNORECASE))
+
+
+# A probe that cannot report a pending state is not a probe: the null command
+# succeeds whatever is happening and prints nothing, so a declaration resting on
+# it reads terminal on every sweep, however completely the other fields are
+# filled in.
+_WAIT_PROBE_NO_OP_COMMANDS = frozenset({"true", ":", "exit"})
+
+
+def _wait_probe_is_a_no_op(probe: Sequence[str]) -> bool:
+    """True when a present probe can report nothing but success.
+
+    Only a probe that is actually present is read this way: an absent one is
+    the incomplete-declaration case the reader already reports, so the two
+    outcomes stay distinguishable.
+    """
+    if not probe:
+        return False
+    return Path(str(probe[0])).name in _WAIT_PROBE_NO_OP_COMMANDS
+
+
 def _manifest_wait(
     manifest_data: Mapping[str, Any],
     manifest: Path,
@@ -1129,12 +1167,26 @@ def _manifest_wait(
     now_seconds: float,
     stale_after_seconds: int,
 ) -> dict[str, Any] | None:
-    """Return the complete external-wait declaration carried by a manifest."""
+    """Return the external-wait declaration a manifest actually holds.
+
+    None means the manifest holds no wait — either it is not waiting at all, or
+    it carries the four wait fields without a wait in them. A worker recording
+    where it stands at orientation is not a parked run during an orientation:
+    reading the mere presence of the fields as a declaration put healthy
+    workers in the waiting column, aged them into wait-aged, and offered them
+    to the resume sweep, which resumed them on a probe that was trivially
+    true. A declaration whose condition names no wait, or whose probe cannot
+    report a pending state, is therefore no declaration at all.
+    """
     if str(manifest_data.get("status") or "").strip().lower() != WAITING_STATUS:
         return None
     condition = str(manifest_data.get("wait_condition") or "").strip()
     probe = _wait_probe(manifest_data.get("wait_probe"))
     terminal = _wait_terminal_values(manifest_data.get("wait_terminal"))
+    if _wait_condition_declares_no_wait(condition):
+        return None
+    if _wait_probe_is_a_no_op(probe):
+        return None
     resume_brief = str(manifest_data.get("resume_brief") or "").strip()
     missing = [
         name
