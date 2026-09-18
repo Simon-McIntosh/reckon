@@ -951,8 +951,48 @@ def _derived_sprint_state(members: list[dict[str, Any]]) -> str:
         _progress(member) > 0.0 or str(member.get("status") or "") == "active"
         for member in found
     ):
-        return "active"
+        return "in-progress"
     return "planned"
+
+
+# A sprint's own status is a scheduling fact (open, active/pushed, planned);
+# "in-progress" describes the work inside it. Comparing the two reported drift
+# on every open sprint whose members had started, so the member-derived label
+# is treated as compatible with any non-terminal stored status.
+_DRIFT_MEMBER_PROGRESS_STORED = frozenset({"planned", "open", "active"})
+
+
+def _drift_is_member_progress(stored: str, derived: str) -> bool:
+    """Return True when a member-derived label does not contradict the stored one."""
+    return (
+        derived == "in-progress"
+        and stored.lower() in _DRIFT_MEMBER_PROGRESS_STORED
+    )
+
+
+def _sprint_status_buckets(
+    sprints: list[dict[str, Any]], declared_active: str | None
+) -> tuple[str | None, list[str]]:
+    """Derive the pushed sprint and the open-sprint bucket from sprint status.
+
+    ``active`` means pushed and exactly one sprint may carry it, so the unique
+    active row is the authority; the declared value survives only while the
+    statuses cannot settle it (none active, or more of them, which the audit
+    reports at error severity). ``open`` sprints — work remains and this is not
+    the one being pushed — are returned as their own bucket.
+    """
+    active_ids = [
+        str(sprint.get("id") or "")
+        for sprint in sprints
+        if str(sprint.get("status") or "").lower() == "active"
+    ]
+    unique = active_ids[0] if len(active_ids) == 1 else None
+    open_ids = [
+        str(sprint.get("id") or "")
+        for sprint in sprints
+        if str(sprint.get("status") or "").lower() == "open"
+    ]
+    return (unique or declared_active), open_ids
 
 
 def _dependency_endpoints(
@@ -1106,6 +1146,9 @@ def build_roadmap(
         project, sprints, all_plans
     )
     membership, sprint_order = _sprint_membership(sprints, project)
+    active_sprint_id, open_sprint_ids = _sprint_status_buckets(
+        sprints, active_sprint_id
+    )
     resolved_sprint_items = _resolved_sprint_items(project, sprints, all_plans)
     open_sprints = _open_sprints(sprints, all_plans, resolved_sprint_items)
     schedule_horizon = _schedule_horizon(project_manifest)
@@ -1880,6 +1923,7 @@ def build_roadmap(
                         }
                     }
                     if sprint_status != derived_state
+                    and not _drift_is_member_progress(sprint_status, derived_state)
                     else {}
                 ),
             }
@@ -1915,6 +1959,7 @@ def build_roadmap(
         "project": project,
         "scope": {"sprint": sprint_id, "plans": len(plan_values)},
         "active_sprint_id": active_sprint_id,
+        "open_sprints": open_sprint_ids,
         "completion": {
             "plans": len(plan_values),
             "completed": completed_count,

@@ -946,6 +946,7 @@ _OP_VOCAB = {
     "fail": "{op:'fail', id, evidence} — closes a declared gate as failed while preserving negative evidence.",
     "retire_prose": "{op:'retire_prose', preimage:'<exact authored HTML>'} — removes one exact authored fragment outside every section[data-reckon], atomically with the batch's structured ops.",
     "move": "{op:'move', target:'sprint_item', slug, to, to_version} — selected source sprint; checks both versions and preserves item metadata.",
+    "push": "{op:'push'} — selected sprint resource; marks it active (pushed) and demotes any other active sprint to open in the same versioned write.",
     "create": "edit_plan(..., expected_version=0, create=True) on a NEW slug → creates a plan or named project resource selected by doc_type.",
 }
 
@@ -1310,7 +1311,7 @@ def _audit_sprint_findings(
             _finding(
                 "sprint",
                 "multiple-active-sprints",
-                "warn",
+                "error",
                 f"multiple sprints are marked active: {', '.join(active_ids)}",
                 extra={"active_ids": active_ids},
             )
@@ -1349,6 +1350,32 @@ def _audit_sprint_findings(
         "abandoned",
         "historical",
     }
+    if len(active_ids) == 1:
+        pushed_id = active_ids[0]
+        pushed_items = (sprint_map.get(pushed_id) or {}).get("items", []) or []
+        ready_on_pushed = [
+            slug
+            for item in pushed_items
+            if (slug := _sprint_item_slug(item))
+            and slug in plan_map
+            and str(plan_map[slug].get("status") or "").lower()
+            not in terminal_plan_statuses
+            and float(plan_map[slug].get("impl", 0.0) or 0.0) < 1.0
+        ]
+        if not ready_on_pushed:
+            findings.append(
+                _finding(
+                    "sprint",
+                    "pushed-sprint-has-no-ready-work",
+                    "warn",
+                    (
+                        f"pushed sprint {pushed_id!r} holds no plan with ready work; "
+                        "the pushed path has nothing for dispatch to pick up"
+                    ),
+                    extra={"sprint_id": pushed_id},
+                )
+            )
+
     assigned: dict[str, str] = {}
     for sprint_id, sprint in sprint_map.items():
         sprint_is_actionable = sprint.get("status") not in closed_sprint_statuses
@@ -1735,7 +1762,7 @@ def _update_sprint(
     if bad:
         return {"ok": False, "error": f"use dedicated tools for: {sorted(bad)}"}
 
-    valid_statuses = {"planned", "active", "done"}
+    valid_statuses = {"planned", "open", "active", "done"}
     if "status" in updates and updates["status"] not in valid_statuses:
         return {
             "ok": False,
@@ -1865,7 +1892,7 @@ def _create_sprint(
 
     Returns { ok, project, sprint_id, new_version[, warning] } or a conflict.
     """
-    valid_statuses = {"planned", "active", "done"}
+    valid_statuses = {"planned", "open", "active", "done"}
     if status not in valid_statuses:
         return {
             "ok": False,
