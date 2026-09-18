@@ -818,7 +818,7 @@ def _resolved_gc_repo(
     the checkout registered in mounts is the answer gc must give even when the
     caller's current directory belongs to a different repository entirely —
     the measured defect: three different projects returned byte-identical
-    counts scanned from the reckon checkout, and nova's 124 reclaimable
+    counts scanned from the reckon checkout, and one project's reclaimable
     worktrees were reported as zero. An explicit
     ``--repo`` that disagrees with that registration is refused naming both
     paths, unless the caller states the cross-pairing deliberately with
