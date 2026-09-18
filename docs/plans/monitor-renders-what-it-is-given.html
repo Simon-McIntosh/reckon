@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-18">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="26">
 <meta name="plan-sprint" content="S18">
 <meta name="plan-impl" content="0.75">
 </head>
@@ -408,6 +408,40 @@ try:
     proposed</strong> &mdash; the question was only whether the work was finished.
     This is a measurement, not a section of the renderer, and it changes no row.</p>
 
+    <h2 id="s10">&sect;10 &mdash; The critical-path coverage cell, and why it waits</h2>
+
+    <p>The counter block answers how much work is in flight and says nothing about
+    <em>which</em> work. A fleet can read <code>7w</code> all day while the plan on
+    the critical path has nobody on it &mdash; measured on nova, 2026-09-18: the
+    roadmap ranked the critical path first for a whole sprint while twelve runs
+    closed plans already between 85 and 99 percent complete, and the path itself
+    carried zero workers. A coverage cell on the row is what makes that visible
+    where a coordinator already looks, rather than in a report nobody opens
+    mid-wave.</p>
+
+    <p><strong>This section owns the cell and not the figure</strong>, and the
+    split is the project's rule rather than a preference here. The coverage figure
+    is a derived fact a reader without a pane would also want, so it is computed
+    once in Python and consumed by the surface. Deriving it a second time inside
+    the renderer would be two implementations of one truth &mdash; the same defect
+    with a longer fuse, because nothing fails when the copies drift.</p>
+
+    <p><strong>The figure belongs to <code>work-scheduling-surface</code> &sect;3</strong>
+    &mdash; roadmap coverage per open path, computed from live pointers whose
+    process is alive rather than from transition events. That section is queued
+    behind its own plan's push-status node because the two share
+    <code>reckon/roadmap.py</code>. Its coordinator offered to let this cell read
+    live pointers directly and to have &sect;3 adopt the same helper afterwards.
+    <strong>That offer is declined</strong>: it places the first implementation of
+    a derived fact inside a renderer and then asks the owning module to follow it.
+    Waiting costs a queue position and buys one derivation.</p>
+
+    <p><strong>Done when</strong> the row carries a coverage cell for the critical
+    path whose value comes from the roadmap's own derivation rather than from any
+    figure computed in <code>ticker.py</code>, asserted against a fixture in which
+    coverage and the working count <em>disagree</em> &mdash; they must differ, or
+    the assertion passes on a renderer showing the wrong number.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="waiting-counter-letter" data-choice="spell-out-queued" data-by="Simon McIntosh" data-when="2026-09-17T20:41:43+00:00">
@@ -504,6 +538,13 @@ try:
 <div class="r-comment" data-section="_top" data-id="c-a-total-cannot-show-that-an-inbox-is-being-worked" data-who="reckon-ship" data-when="">
     <div class="r-comment-body"><p><strong>A stronger form of the finding above, caught by the lead while the drain was running.</strong> The coordinator reported that the blocked count had moved from two to one. It had — on exactly one row, for a few seconds. By the next row it read two again, and the lead's screen showed two throughout. Both statements were true of the same display.</p><p>What happened between those rows is the point: one blocked item was recorded and cleared, and a different run entered the same bucket moments later. <strong>The count was stable while its membership turned over completely.</strong> A total can express how many and never which, so it cannot distinguish a backlog being worked from a backlog standing still — and those are the only two states a reader of that cell is trying to tell apart.</p><p>The consequence misleads in both directions. A coordinator who clears an item sees no movement and concludes the work did not land. A reader watching a steady <code>2b</code> for an hour cannot tell whether it is the same two runs untouched or twenty runs passing through.</p><p><strong>And the two were not comparable in kind.</strong> Measured at that moment, one was a dead review correctly recorded, and its replacement was a <em>healthy worker</em> whose stream had been written 162 seconds earlier and whose manifest carried a placeholder <code>waiting</code> stanza from orientation — the defect recorded at <code>c-a-frozen-manifest-is-invisible-for-its-whole-working-life</code>. The cell counted a real item and a false one identically, and the false one arrived because of a defect this plan already owns.</p><p><strong>What this asks for, beyond the previous comment.</strong> The actionable cell needs identity or age, not only a total: the oldest item's age, or a count of items unchanged since the reader last saw them. A number that reads the same for “two items, untouched, fourteen hours” and “two items, both new since your last row” is not reporting the quantity a coordinator acts on.</p></div>
 </div>
+</section>
+<section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="g-coverage-figure-exists" data-section="s10" data-gated-sections="s10" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">the roadmap derives coverage per open path from live pointers whose process is alive, so the cell has a figure to render that it does not compute itself</h4>
+    <p class="r-gate-required-evidence">work-scheduling-surface §3 landed, with its derivation callable outside the HTTP handler</p>
+    </div>
 </section>
 </main>
 </body>
