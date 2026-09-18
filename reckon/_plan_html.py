@@ -666,6 +666,41 @@ def _render_research(research: list) -> str:
     )
 
 
+def merge_comment_collections(current: object, incoming: object) -> dict[str, list]:
+    """Union two section-addressed comment collections without dropping an entry.
+
+    Comments are append-only, so a write carrying fewer of them than the file
+    already holds is a writer whose base revision moved under it: the entries it
+    lacks are a concurrent append rather than a removal. Merging by section and
+    id makes that append commutative — whichever writer lands second keeps both
+    — while an entry the file holds first keeps its position, so the result does
+    not depend on which writer arrived last.
+    """
+    merged: dict[str, list] = {}
+    for source in (current, incoming):
+        if not isinstance(source, dict):
+            continue
+        for section, items in source.items():
+            if not isinstance(items, list):
+                continue
+            bucket = merged.setdefault(str(section), [])
+            seen = {
+                str(item.get("id") or "")
+                for item in bucket
+                if isinstance(item, dict) and item.get("id")
+            }
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                ident = str(item.get("id") or "")
+                if ident and ident in seen:
+                    continue
+                bucket.append(item)
+                if ident:
+                    seen.add(ident)
+    return merged
+
+
 def _render_comments(comments: dict) -> str:
     if not comments or not isinstance(comments, dict):
         return ""

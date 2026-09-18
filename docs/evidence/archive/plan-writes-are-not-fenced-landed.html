@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="plan-writes-are-not-fenced-landed">
+  <meta name="plan-title" content="Plan writes are not fenced — cumulative execution-evidence record">
+  <meta name="plan-summary" content="Run outcomes recorded against reckon:plan-writes-are-not-fenced, one stable anchor per material result, each naming its commit sha and the quantitative measure the run reported. Covers the reproduction of the silent lost update at the base revision and the serialised, commutative-append write path that closes it.">
+  <meta name="plan-evidence-for" content="plan-writes-are-not-fenced">
+  <meta name="plan-verifies" content="plan-writes-are-not-fenced#s5">
+  <meta name="plan-recorded-at" content="2026-09-18">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; detached git worktree; pytest under the shared project environment">
+  <title>Plan writes are not fenced — cumulative execution-evidence record | reckon</title>
+  <link rel="stylesheet" href="/reckon/_shared/foundation.css">
+  <link rel="stylesheet" href="/reckon/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Plan writes are not fenced — cumulative execution-evidence record</h1>
+    <p class="plan-summary">Run outcomes recorded against
+    <code>plan-writes-are-not-fenced</code>, one stable anchor per material result. Each names
+    the commit that landed it, preserves the quantitative measure the run itself reported, and
+    states the mechanism the run replaced.</p>
+  </header>
+
+  <section id="anchors">
+    <h2>Anchors</h2>
+    <table>
+      <thead><tr><th>Section</th><th>Anchor</th><th>Commit</th><th>Outcome</th></tr></thead>
+      <tbody>
+        <tr><td>&sect;5</td><td><a href="#s5-commutative-append-is-not-refused">s5-commutative-append-is-not-refused</a></td><td>36330a4</td><td>landed</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="s5-commutative-append-is-not-refused">
+    <h2>&sect;5 — A comment append meeting a landing write is not refused and not lost</h2>
+    <p>Commit <code>36330a4</code>, 181 insertions and 41 deletions across
+    <code>reckon/_store.py</code>, <code>reckon/_plan_html.py</code> and
+    <code>tests/test_landing_append_is_commutative.py</code>.</p>
+
+    <p><strong>Reproduced first, at the base revision.</strong> Two writers, a comment append and
+    the landing write a promotion performs, were rendezvoused at the render step so each had
+    proven its own version check before either replaced the file. Both passed. The failure the
+    reproduction reported verbatim:</p>
+    <blockquote><code>AssertionError: a comment was discarded on the meeting: ['c-edit'] at version
+    1; outcomes {'edit': FileNotFoundError(2, 'No such file or directory'), 'landing': 1}</code></blockquote>
+    <p>The reading that matters is not the count but the shape. The landing writer returned
+    version 1, so <em>a</em> write landed and the returned counter agreed with it. The file on
+    disk held the other writer's comment, because both writers had rendered to one shared
+    <code>.html.tmp</code> path and the landing writer's own <code>replace</code> call moved the
+    other writer's bytes into place. The other writer's <code>replace</code> then found no
+    temporary file left and raised. Two writers, one comment surviving, one version — a silent
+    lost update with the counter advancing, which is the &sect;1 shape and not a near one.</p>
+
+    <p><strong>The mechanism, and what it replaces.</strong> Neither candidate repair alone was
+    sufficient and the two are separable:</p>
+    <table>
+      <thead><tr><th>Change</th><th>What it closes</th></tr></thead>
+      <tbody>
+        <tr><td>Per-file lock over the version check and the replacement</td><td>the shared-temporary-file race and the two-winners outcome: the writer that arrives second is decided by the file rather than by scheduling, and the loser is refused rather than clobbering</td></tr>
+        <tr><td>Comment collections unioned by section and id before a write that lost its base</td><td>the refusal itself: an append is commutative, so the writer that did not lose content should not be turned away, and both writers' comments survive the meeting</td></tr>
+        <tr><td>A write that disagrees about anything other than the comments</td><td>still a real conflict — merging it would silently revert the other writer's change, so it still raises</td></tr>
+        <tr><td>One parse helper for both the reader and the re-reading writer</td><td>a comparison that could never agree: the two sides must be shaped identically to be comparable</td></tr>
+      </tbody>
+    </table>
+    <p>A comment is append-only, which is why the residue becomes an append-ordering question
+    rather than a lost update. Position is kept from the file, so the result does not depend on
+    which writer arrived last.</p>
+
+    <p><strong>Positive control, asserted in the same test.</strong> A sequential append after the
+    meeting still lands and still advances the version, and the full identifier set is asserted
+    afterwards. A fence that refuses everything passes the falsifier alone; this one cannot.</p>
+
+    <p><strong>Measure, judged by delta against the base revision.</strong> The focused cohort —
+    the test files covering the plan-write path — with both counts as digits:</p>
+    <table>
+      <thead><tr><th>Revision</th><th>Result</th><th>Failures</th></tr></thead>
+      <tbody>
+        <tr><td>base <code>6f492d0f</code></td><td>1 failed, 181 passed</td><td><code>test_north_star_write...</code></td></tr>
+        <tr><td>change <code>36330a4</code></td><td>1 failed, 183 passed</td><td>same single pre-existing failure</td></tr>
+      </tbody>
+    </table>
+    <p>Zero added failures and two passing. The single failure is pre-existing at the base
+    revision and outside this change's write paths: it asserts a set of plan-set fields and
+    <code>section_declarations</code> is not touched by the diff, which is confirmed by reading the
+    symbol at the base revision rather than by the failure's own text.</p>
+    <p>The merged-head verification of this change belongs to a separately dispatched test node;
+    this record covers only this node's own change.</p>
+  </section>
+</main>
+</body>
+</html>

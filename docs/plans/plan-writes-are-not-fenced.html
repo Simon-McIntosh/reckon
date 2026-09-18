@@ -130,6 +130,26 @@
     <code>edit_plan</code> still succeeds and still advances the version. Without it a fence
     that refuses everything passes the falsifier.</p>
 
+    <p><strong>Landed 2026-09-18</strong> (commit <code>36330a4</code>). The write path now holds a
+    per-file lock across the version check and the replacement, and a comment append whose base
+    revision moved under it is merged by section and id rather than refused, so both writers
+    survive the meeting; a write that disagrees about anything other than the comments is still a
+    real conflict and still raises. The falsifier does fail at the base revision, and in the shape
+    this plan measured rather than in a near one: two writers rendezvoused at the render step both
+    passed their version check, the landing writer's own replace call moved the other writer's
+    rendered file into place
+    (<code>AssertionError: a comment was discarded on the meeting: ['c-edit'] at version 1;
+    outcomes {'edit': FileNotFoundError(2, 'No such file or directory'), 'landing': 1}</code>), so
+    one comment was gone, the other writer's replace found no temporary file left, and the counter
+    read 1 for two landed writes. The same test carries the positive control: a sequential append
+    after the meeting still lands and still advances the version, so a sequential edit is not
+    caught by the fence. Measure: the focused cohort covering the plan-write path ran
+    1 failed / 181 passed at the base revision and 1 failed / 183 passed at the change, the single
+    failure pre-existing at the base and unrelated
+    (<code>tests/test_north_star_write.py::test_north_star_is_the_only_plan_set_field_added</code>),
+    so the delta is zero added and two passing. Full record:
+    <a href="/reckon/evidence/archive/plan-writes-are-not-fenced-landed#s5-commutative-append-is-not-refused">&sect;5 landed</a>.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="who-loses-a-race" data-choice="make-the-append-commutative" data-by="Simon McIntosh" data-when="2026-09-17T20:55:38+00:00">
