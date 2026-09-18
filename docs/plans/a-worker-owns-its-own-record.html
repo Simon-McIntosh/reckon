@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-worker-owns-its-own-record">
+  <meta name="plan-title" content="A Worker Owns Its Own Record">
+  <meta name="plan-summary" content="Every node is scoped to its own plan, evidence record and figures directory by default, and a landing that records nothing is refused rather than noticed.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="12.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint" content="S18">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-informs" content="an-orchestrator-is-bound-by-its-inbox">
+  <title>A Worker Owns Its Own Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;deferred&quot;}">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h1>A Worker Owns Its Own Record</h1>
+
+    <p class="lede">A worker is the only agent that knows what its change did, what
+    its figure shows, and which of its measurements survived. It is therefore the
+    right author of its plan section, its evidence record and its figures &mdash;
+    and today it routinely writes none of them, not because it declines but
+    because its brief handed it a scope that made the record someone else's file.</p>
+
+    <h2 id="s1">&sect;1 &mdash; The scope was always available; only the brief withheld it</h2>
+
+    <p>The obvious explanation for a missing evidence record is that the worker
+    could not write it. That explanation is wrong here, and the code says so in
+    its own comment. <code>reckon/crew/dispatch.py</code> exempts the plan file
+    and the cumulative evidence record from exclusive-claim machinery, and the
+    comment ends with the sentence this plan turns on:</p>
+
+    <blockquote><p>The plan file and cumulative evidence record are write claims
+    every node on the plan holds, so they cannot be exclusive to one of them
+    &hellip; <strong>They are exempted from the exclusive-claim machinery, never
+    from the declared write scope.</strong></p></blockquote>
+
+    <p>So the paths were never contended and never forbidden. They were simply
+    absent from briefs, and a path a node has not declared is a path its worker
+    will not write. Measured on the nova project: six nodes in one session were
+    dispatched with the plan and evidence record deliberately excluded, because
+    the coordinator believed a sibling node's claim covered them. It did not, and
+    could not &mdash; that is exactly what the exemption exists to prevent.</p>
+
+    <p><strong>The exemption is per plan.</strong> A node declaring another
+    plan's record is still refused against a live node on that plan, verified on
+    nova by a cut-cell node refused against a live millisecond node. So the
+    default scope this plan grants is the node's <em>own</em> plan's records;
+    cross-plan record writes stay with the coordinator, where the merge that
+    reconciles them can be sequenced.</p>
+
+    <p><strong>A worker given the scope does the work.</strong> The positive
+    control landed here today:
+    <code>docs/figures/registration-commit/roster_write_order.png</code>, from a
+    node whose brief declared <code>docs/figures/registration-commit</code>
+    explicitly. It shipped the figure <em>and</em> its generator,
+    <code>roster_write_order.py</code>, in the same commit. Nothing about that
+    worker was different; its brief named the directory.</p>
+
+    <h2 id="s2">&sect;2 &mdash; Every node is scoped to its own record by default</h2>
+
+    <p><strong>The rule.</strong> <code>crew dispatch</code> adds three paths to
+    every implement, test and investigate node without the coordinator declaring
+    them: the node's own plan file, its cumulative evidence record, and a figures
+    directory for the node. The coordinator opts out explicitly or not at all.</p>
+
+    <p><strong>And it refuses a brief that scopes them out.</strong> This is the
+    half that makes it stick. A brief carrying text to the effect that the plan
+    or evidence record is not this node's to edit is refused at dispatch, naming
+    the path and the sentence, because that sentence is the measured cause: it
+    was written by coordinators who believed they were preventing a conflict that
+    the exemption had already prevented.</p>
+
+    <p><strong>Falsifier, to be written before the change.</strong> A node
+    dispatched with no write paths declared beyond its source files comes back
+    with its plan and evidence record in scope; a node whose brief excludes them
+    is refused with both named. Assert the negative half too: a node on plan A
+    does <em>not</em> silently acquire plan B's record, and an investigate node in
+    a read-only sandbox is scoped without being granted a write capability it
+    cannot exercise.</p>
+
+    <h2 id="s3">&sect;3 &mdash; A landing that records nothing is refused</h2>
+
+    <p>Scope alone is permission, not practice. The gate belongs where the run
+    becomes evidence: <code>crew complete</code> on a passing implement or test
+    run refuses when the run's commits touch neither the plan nor the evidence
+    record. The escape is <code>--no-record REASON</code>, which lands on the
+    ledger row, so a deliberately recordless promotion stays distinguishable from
+    one that recorded nothing by accident &mdash; the same shape as the existing
+    <code>--no-commit</code>.</p>
+
+    <p>A second, weaker check rides with it: when a node's write paths include a
+    figures directory and the evidence anchor it added carries no figure, the
+    promotion warns. A warning rather than a refusal, because a node can
+    legitimately declare a figures directory and conclude that a table
+    communicates the result better &mdash; which the authoring rules explicitly
+    prefer.</p>
+
+    <h2 id="s4">&sect;4 &mdash; A figure is a named deliverable, not a courtesy</h2>
+
+    <p>The contract text in <code>reckon/crew/prompts.py</code> and
+    <code>skills/reckon-ship</code> names the figure as a deliverable with a
+    topic directory, a statement of what it shows, and the plotting rules &mdash;
+    rather than leaving illustration as a standing encouragement that competes
+    with a time budget.</p>
+
+    <p><strong>How a worker verifies a figure it cannot see.</strong> The lanes
+    that produce most figures are text-only, and a worker that cannot open a PNG
+    can still verify the thing that matters: the SVG's structure and the data
+    receipt behind it. So figures are saved as twins &mdash; a PNG for the
+    document and an SVG whose element tree the worker asserts against &mdash; or,
+    better and already practised here, the figure ships beside the script that
+    generated it, which makes it reproducible rather than merely checkable. A
+    text-only lane never opens the PNG and must not claim to have looked at it.</p>
+
+    <p><strong>Vision review is exempt on the local lane.</strong> The local lane
+    does not review images, by the lead's instruction. Where a figure genuinely
+    needs an eye, it routes to a vision-capable lane &mdash; see the open decision
+    below, which is the lead's to make.</p>
+
+    <p><strong>One trap worth stating so it is not learned by refusal:</strong>
+    the placeholder validator refuses angle-bracket text in a done-when, so a
+    brief naming a literal such as a bracketed sha is rejected as an
+    unsubstituted placeholder. Describe the deliverable instead of templating
+    it.</p>
+
+    <h2 id="s5">&sect;5 &mdash; An artifact written where nothing owns it is lost</h2>
+
+    <p>The stranded-figure census on nova is 139 figures across 47 worktrees: 31
+    untracked because <code>*.png</code> is gitignored there and workers never
+    force-add, and 108 committed in worktrees that were never merged.</p>
+
+    <p><strong>That cause does not transfer to reckon, and checking rather than
+    inheriting it changes the remedy.</strong> reckon's <code>.gitignore</code>
+    carries no image rule at all &mdash; <code>*.py[cod]</code>,
+    <code>*.egg-info/</code>, <code>*.log</code>, and nothing else &mdash; so the
+    force-add half is nova-specific. reckon's own exposure, measured as figures
+    <em>added over each worktree's base</em> rather than total files present:</p>
+
+    <table>
+      <thead><tr><th>Where</th><th>Figures</th><th>State</th><th>Age</th></tr></thead>
+      <tbody>
+        <tr><td><code>n-after-capture-evidence</code></td><td>21</td><td>committed, worktree never merged</td><td>25 Aug, three weeks</td></tr>
+        <tr><td><code>feed-captures-with-their-own-gate</code></td><td>9</td><td>untracked, worktree since merged</td><td>14 Sep</td></tr>
+        <tr><td>every other worktree</td><td>0</td><td>&mdash;</td><td>&mdash;</td></tr>
+      </tbody>
+    </table>
+
+    <p>Thirty, not a hundred and thirty-nine. The number is smaller and the shape
+    is identical, and the age is the part that should alarm: a worktree carrying
+    21 pieces of served-surface evidence has been sitting unmerged since 25
+    August, and nothing in any view says so.</p>
+
+    <p><strong>The same defect has a second instance nobody was looking for.</strong>
+    <code>*.log</code> <em>is</em> gitignored in reckon, so gate logs cannot be
+    committed and land on bare <code>/tmp</code> names instead. A run dispatched
+    on 17 September cites <code>/tmp/gate_final.log</code>; that file was
+    rewritten at 10:09 the following morning by a different run. The promotion
+    read it, the contents happened to still agree, and nothing would have said so
+    had they not. A gate log is evidence with the same standing as a figure, and
+    it is being written where nothing owns it.</p>
+
+    <p><strong>What this section builds.</strong> The follower and drain views
+    list figures committed in unmerged worktrees and untracked figures under
+    <code>docs/figures</code>, so a coordinator sees stranded artifacts before
+    removing a worktree rather than after. Gate logs move under the run
+    directory, which is already where the well-behaved runs put them.</p>
+
+    <h2 id="s6">&sect;6 &mdash; What this plan does not own</h2>
+
+    <p>Whether a review record can state its own incompleteness, and whether a
+    finished run dispatches its own review, belong to
+    <code>an-orchestrator-is-bound-by-its-inbox</code>. The distinction is that
+    that plan governs what happens to a run <em>after</em> it reports; this one
+    governs what the run is scoped and required to produce <em>while</em> it
+    works. They meet at <code>crew complete</code>, where both add a gate, and the
+    two gates must be written as one pass over that function rather than two.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">&sect;</span> Decisions</h2>
+<div class="r-dec" data-key="vision-review-lane" data-by="" data-when="">
+    <p class="r-dec-q">When a figure needs a human-equivalent look, which lane
+        reviews it? The local lane is exempt by instruction, and the codex lane is
+        held until 21 September.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="claude-lane">route to a claude lane</button>
+      <button class="r-opt" data-value="defer-to-codex">wait for the codex lane</button>
+      <button class="r-opt" data-value="no-vision-review">no vision review; structural checks only</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">&sect;</span> Followups</h2>
+<article class="r-fu" data-id="f-awo-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-18" data-recommends-skill="/reckon-ship a-worker-owns-its-own-record &sect;2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Grant the scope before gating on it, because the gate is unfair otherwise</h4>
+    <div class="r-fu-body"><p><strong>&sect;2 goes first and &sect;3 cannot precede it.</strong> Refusing a landing that records nothing, while briefs still exclude the record from scope, punishes workers for a scope their coordinator withheld. Grant the default scope, let a wave run under it, and only then gate the promotion.</p><p><strong>&sect;5 can run in parallel and is independent of both.</strong> It reports on artifacts that already exist and blocks nothing; its cheapest half is the stranded-figure listing, which is a read over worktrees.</p><p><strong>&sect;4 is contract text and follows &sect;2</strong>, because naming a figure as a deliverable in a brief whose scope excludes the figures directory is the current failure restated.</p><p><strong>Measure this plan by produced records, not by intentions.</strong> The number that matters is the proportion of passing implement runs whose commits touch their own plan or evidence record, measured before and after &sect;2. A count of figures is a weaker signal, because the authoring rules correctly prefer a table to an imagified one and a node may rightly produce none.</p></div>
+    <pre class="r-fu-prompt">/reckon-ship a-worker-owns-its-own-record &sect;2</pre>
+    </article>
+</section>
+
+  <section data-reckon="comments" id="comments" class="r-comments">
+</section>
+
+  </main>
+</body>
+</html>
