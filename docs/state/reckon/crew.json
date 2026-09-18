@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-18T16:52:45",
+  "updated": "2026-09-18T17:15:10",
   "project": "reckon",
   "doc": "crew",
   "data": {
@@ -182152,6 +182152,320 @@
         "store_write": {
           "status": "written"
         }
+      },
+      {
+        "run_id": "r-20260918T141708546499-the-follower-listing-reports-what-delivers",
+        "plan": "an-orchestrator-is-bound-by-its-inbox",
+        "section": "\u00a75",
+        "node": "the-follower-listing-reports-what-delivers",
+        "node_definition": {
+          "coordinator": {
+            "authoring_turn": {
+              "source": "claude-code-session-transcript",
+              "status": "measured",
+              "tokens": {
+                "cache_creation_input_tokens": 603,
+                "cached_input_tokens": 276485,
+                "input_tokens": 277090,
+                "output_tokens": 2195,
+                "reasoning_output_tokens": 204,
+                "total_tokens": 279285,
+                "uncached_input_tokens": 2
+              }
+            },
+            "harness": "claude-code",
+            "runtime_session_id": "a7379194-9bc5-48d1-b6e1-fc5b39871bc3",
+            "session_id": "ship-s18-20260915"
+          },
+          "done_when": "tests in tests/test_follower_freshness.py build a follower directory holding one delivering registration beside twenty-six released ones and assert the watch payload carries exactly one follower row and a released count of twenty-six. A second case asserts that a directory with no released registrations carries a released count of zero rather than omitting the field. A third asserts a delivering registration is reported whatever its age, by giving its file a modification time older than every released row and requiring it still appear. Liveness itself is unchanged: the flock scheme, the pid and parent-pid checks and the delivery-mode observation keep their current results, proven by the remainder of tests/test_follower_freshness.py passing unchanged against the base revision. No file under the follower directory is unlinked on any read path, because unlinking there races a fresh inode against a stable one.",
+          "estimated_hours": null,
+          "goal": "make the project watch payload report the follower registrations that deliver plus a count of the ones whose registration was released, rather than one row for every session name that has ever followed the project",
+          "id": "the-follower-listing-reports-what-delivers",
+          "lane_declaration": {
+            "backend": null,
+            "headroom": null,
+            "metered": false,
+            "observed_at": null,
+            "read_at": "2026-09-18T14:17:09Z",
+            "resolved_backend": "clive",
+            "utilisation_pct": null
+          },
+          "lane_reading": {
+            "age_seconds": null,
+            "binding_observed": "unknown",
+            "detail": "lane document carries no 'binding_observed'",
+            "headroom": "unknown",
+            "mean_context": "unknown",
+            "observed_at": null,
+            "state": "unknown",
+            "suggested_shelf_life_seconds": null
+          },
+          "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260918T141708546499-the-follower-listing-reports-what-delivers/manifest.md",
+          "plan": "an-orchestrator-is-bound-by-its-inbox",
+          "requested_backend": null,
+          "requires_decisions": [],
+          "role": "implement",
+          "section": "\u00a75",
+          "spec_level": "guided",
+          "time_budget": "50m",
+          "token_budget": null,
+          "write_paths": [
+            "reckon/crew/runs.py",
+            "tests/test_follower_freshness.py",
+            "docs/plans/an-orchestrator-is-bound-by-its-inbox.html",
+            "docs/evidence/archive/an-orchestrator-is-bound-by-its-inbox-landed.html"
+          ]
+        },
+        "role": "implement",
+        "spec_level": "guided",
+        "member": "session-2ee3c7846cb0257834e7",
+        "backend": "clive",
+        "local": true,
+        "agent": {
+          "alias": "dsv4.1-flash",
+          "backend": "clive",
+          "effort": "high",
+          "launch": "cli",
+          "local": true,
+          "model": "deepseek-v4.1-flash",
+          "sandbox": "worktree-full",
+          "usable_input_window": 480000
+        },
+        "dispatched_at": "2026-09-18T14:17:17Z",
+        "completed_at": "2026-09-18T15:09:52.290Z",
+        "completed_at_source": "terminal_event",
+        "worker_seconds": 3141,
+        "worker_seconds_source": "stream_events",
+        "wall_seconds": 3155,
+        "stalled": false,
+        "time_budget": "50m",
+        "base_sha": "10af337f9cdc595382899b55e3a1fd76fdefd7a4",
+        "commits": [
+          "c0a07f8fe59158fe920c71d64599e8a002ddb2df",
+          "972769852ace90bc3be98f32b6ca11ee72915f0e"
+        ],
+        "changed_lines": {
+          "added": 195,
+          "removed": 12,
+          "files": 4
+        },
+        "tests_added": 3,
+        "gate": "passed",
+        "gate_check": {
+          "command": "pytest tests/test_follower_freshness.py tests/test_crew_session_delivery.py at the merged head",
+          "exit_status": 1,
+          "log_path": "/run/user/39486/claude-39486/-home-ITER-mcintos-Code-reckon/a7379194-9bc5-48d1-b6e1-fc5b39871bc3/scratchpad/merged-gate.log",
+          "log_digest": null
+        },
+        "suite_delta": null,
+        "failure_classification": null,
+        "outcome": "",
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260918T141708546499-the-follower-listing-reports-what-delivers/manifest.md",
+        "scope_changed": false,
+        "session_id": "df4c57a4-0c6d-4992-b59b-fbc12633e48b",
+        "budget": {
+          "headroom": "unknown",
+          "utilisation_pct": null,
+          "rate_limit_type": null,
+          "rate_limit_period_minutes": null,
+          "resets_at": null,
+          "threshold_status": null,
+          "surpassed_threshold": null,
+          "tokens": {
+            "cache_creation_input_tokens": 0,
+            "cache_creation_input_tokens_cumulative": 0,
+            "cache_read_input_tokens": 0,
+            "cache_read_input_tokens_cumulative": 0,
+            "inference_geo": "",
+            "input_tokens": 1908653,
+            "input_tokens_cumulative": 1908653,
+            "output_tokens": 10371,
+            "output_tokens_cumulative": 10371,
+            "service_tier": "standard",
+            "speed": "standard"
+          },
+          "cost_usd": null,
+          "refusal": false,
+          "detail": "no rate-limit event in the stream yet",
+          "cost_usd_cumulative": null,
+          "cost_usd_imputed": true
+        },
+        "lane_receipt": {
+          "quota_state": "unmeasured",
+          "observed_at": "2026-09-18T15:09:52.290Z",
+          "effective_context_window": "unmeasured",
+          "quota_windows": [],
+          "notional_cost_usd": "unmeasured",
+          "rate_basis": "unmeasured",
+          "unmeasured": {
+            "effective_context_window": "missing_rollout",
+            "notional_cost_usd": "missing_rollout",
+            "rate_basis": "missing_rollout",
+            "quota_windows": "unmetered"
+          }
+        },
+        "lineage": null,
+        "shadow_controlled": null,
+        "shadow_patch": "",
+        "unreconciled_override": {
+          "grace": "15m",
+          "requested": true,
+          "waived_runs": [
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 4545,
+              "budget_seconds": 3300,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but the attached review is parses; an independent review must be produced before promotion",
+              "elapsed_seconds": 7845,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 55256,
+              "log_fresh": false,
+              "manifest_commits": [
+                "eb74752d read a worker manifest through its declared schema: the schema maps every field to the shapes it accepts and a body is composed with yaml.compose, so a value's type comes from the declaration rather than from joining and re-splitting a line",
+                "2a94b12c keep a list field's items as the text the worker wrote: an item that composes as a mapping (a commit subject carrying a colon) is taken back from its own span of the source, so an identifier is never read as a dict",
+                "3132277c land the plan record, the evidence anchor and the figure",
+                "37b04bf8 record the list-item defect, the three colon guards and the corrected gate readings in the plan and in the evidence anchor"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "59ea39a4ae44a768fbd29c53ac897ddb1cb00cd4d595c58f1c71fb25563b5f78",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260917T204518586334-the-manifest-is-read-through-a-declared-schema/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan crew-observability-truth --section '\u00a712' --role review --spec-level exact --node review-of-the-manifest-is-read-through-a-declared-schema --goal 'attach an independent review to run r-20260917T204518586334-the-manifest-is-read-through-a-declared-schema' --done-when 'the review for r-20260917T204518586334-the-manifest-is-read-through-a-declared-schema parses all five score dimensions' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260917T204518586334-the-manifest-is-read-through-a-declared-schema.json --time-budget 55m --session ship-s18-20260915 --local",
+              "node": "the-manifest-is-read-through-a-declared-schema",
+              "phase": "blocked",
+              "plan": "crew-observability-truth",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": true,
+              "review_status": "parses",
+              "run_id": "r-20260917T204518586334-the-manifest-is-read-through-a-declared-schema",
+              "session": "ship-s18-20260915",
+              "terminal_age_seconds": 55336,
+              "terminal_at": "2026-09-17T22:54:55Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s18-20260915/the-manifest-is-read-through-a-declared-schema"
+            },
+            {
+              "budget_overrun": true,
+              "budget_overrun_seconds": 3059,
+              "budget_seconds": 3300,
+              "classification": "scoring",
+              "commits_beyond_base": 0,
+              "detail": "the worker manifest reports completion, but the attached review is parsed-placeholder; an independent review must be produced before promotion",
+              "elapsed_seconds": 6359,
+              "external_wait": null,
+              "lifting_condition": null,
+              "liveness_proven": true,
+              "log_age_seconds": 14441,
+              "log_fresh": false,
+              "manifest_commits": [
+                "de8b5e8d",
+                "750bc474",
+                "0d734fb8",
+                "395450ae"
+              ],
+              "manifest_derived": false,
+              "manifest_digest": "ecff176d59c57d819f37c00ef31fb4fc5f17d8b5b87f34dee8efe0e33b37fded",
+              "manifest_error": null,
+              "manifest_file_present": true,
+              "manifest_fresh": true,
+              "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260917T222556171246-an-orientation-stub-declares-no-wait/manifest.md",
+              "manifest_present": true,
+              "manifest_reported_status": "complete",
+              "manifest_status": "complete",
+              "marker": null,
+              "needs_help_complete": null,
+              "next_action": "reckon crew dispatch --project reckon --plan crew-observability-truth --section '\u00a712' --role review --spec-level exact --node review-of-an-orientation-stub-declares-no-wait --goal 'attach an independent review to run r-20260917T222556171246-an-orientation-stub-declares-no-wait' --done-when 'the review for r-20260917T222556171246-an-orientation-stub-declares-no-wait parses all five score dimensions' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260917T222556171246-an-orientation-stub-declares-no-wait.json --time-budget 55m --session ship-s18-20260915 --local",
+              "node": "an-orientation-stub-declares-no-wait",
+              "phase": "complete",
+              "plan": "crew-observability-truth",
+              "process_alive": false,
+              "project": "reckon",
+              "recovery": "review",
+              "recovery_classification": "scoring",
+              "resets_at": null,
+              "review_error": null,
+              "review_present": true,
+              "review_status": "parsed-placeholder",
+              "run_id": "r-20260917T222556171246-an-orientation-stub-declares-no-wait",
+              "session": "ship-s18-20260915",
+              "terminal_age_seconds": 14659,
+              "terminal_at": "2026-09-18T10:12:53Z",
+              "wait_age_seconds": null,
+              "wait_condition_state": null,
+              "wait_observed": null,
+              "wait_overdue": null,
+              "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s18-20260915/an-orientation-stub-declares-no-wait"
+            }
+          ]
+        },
+        "review": null,
+        "throughput": {
+          "cumulative_cached_input_tokens": 0,
+          "cumulative_input_tokens": 1908653,
+          "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+          "elapsed_seconds": 769.158,
+          "generated_tokens": 10371,
+          "generation_seconds": 679.91,
+          "input_budget_tokens": 480000,
+          "input_utilisation_pct": 27.8,
+          "machine_seconds": 89.248,
+          "peak_input_tokens": 133392,
+          "tokens_per_second": 15.25,
+          "wall_tokens_per_second": 13.48
+        },
+        "follow_on_paths": [
+          "tests/test_crew_session_delivery.py::test_a_row_that_is_not_live_says_which_condition_ended_it",
+          "/"
+        ],
+        "dispute_count": 0,
+        "execution_fit": {
+          "allowed": true,
+          "execution_capable": true,
+          "matched_measure": null,
+          "override": false,
+          "role": "implement",
+          "status": "no-execution-measure"
+        },
+        "attempt_kind": "resume",
+        "attempt": 2,
+        "duration_measurement": null,
+        "scope_acceptances": null,
+        "no_commit": null,
+        "commit_resolution": null,
+        "worktree_retention": {
+          "classification": "retained-for-resume",
+          "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s18-20260915/the-follower-listing-reports-what-delivers",
+          "session_id": "df4c57a4-0c6d-4992-b59b-fbc12633e48b",
+          "session_source": "pointer",
+          "retained_at": "2026-09-18T15:09:52.290Z"
+        },
+        "boundary_waiver": null,
+        "resume_waiver": null,
+        "watch_override": null,
+        "tool_steps": 54.0,
+        "orientation_input_tokens": 991998.0,
+        "store_write": {
+          "status": "written"
+        }
       }
     ],
     "holds": [
@@ -182436,6 +182750,6 @@
         "resumption_fired": false
       }
     ],
-    "_version": 1655
+    "_version": 1656
   }
 }
