@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="The dispatch record carries the plan's impl, and promotion refuses a passing implement landing whose plan impl did not move, unless a reason is recorded.">
   <meta name="plan-evidence-for" content="work-scheduling-surface">
   <meta name="plan-verifies" content="work-scheduling-surface#s5">
-  <meta name="plan-commits" content="f61eda4a">
+  <meta name="plan-commits" content="f61eda4a,f2303a99,ae004f38,af5df689,a6f4bfb3">
   <meta name="plan-artifacts" content="tests/test_promotion_requires_impl_move.py,reckon/crew/promotion.py,reckon/crew/dispatch.py,reckon/cli.py">
   <meta name="plan-recorded-at" content="2026-09-18">
   <meta name="plan-verdict" content="passed">
@@ -55,26 +55,26 @@ impl is not this run's to move, state that reason</pre>
 
     <section id="verification">
       <h2>Verification</h2>
-      <p><strong>The guard was shown to fire, not assumed to fire.</strong> The new test file was run unchanged against the base revision <code>acb5d608 — 16 failed, 0 passed</code> — and against the head of this node — <code>16 passed</code>. A passing head alone would show only that the tests are green; the base run is what shows they depend on the change.</p>
+      <p><strong>The guard was shown to fire, not assumed to fire.</strong> The new test file was run unchanged against the base revision <code>acb5d608 — 22 failed, 0 passed</code> — and against the head of this node — <code>22 passed</code>. A passing head alone would show only that the tests are green; the base run is what shows they depend on the change.</p>
       <p>The existing promotion suite was run at the same selection on both revisions: <code>3 failed, 100 passed</code> at base and <code>3 failed, 100 passed</code> at head, the identical three test ids. Zero failures were added. The three are the same refusal in <code>_require_committable_checkout</code> — the fixture's temporary repository is not recognised as a git worktree — and reproduce at the base revision, so they are pre-existing and outside this node's write scope rather than a regression.</p>
       <table>
         <thead><tr><th>Run</th><th>Result</th></tr></thead>
         <tbody>
-          <tr><td>new tests at base <code>acb5d608</code></td><td>16 failed</td></tr>
-          <tr><td>new tests at head</td><td>16 passed</td></tr>
+          <tr><td>new tests at base <code>acb5d608</code></td><td>22 failed</td></tr>
+          <tr><td>new tests at head</td><td>22 passed</td></tr>
           <tr><td>existing promotion suite at base</td><td>3 failed, 100 passed</td></tr>
           <tr><td>existing promotion suite at head</td><td>3 failed, 100 passed (same ids)</td></tr>
           <tr><td><code>tests/test_schema.py</code> at head</td><td>1464 passed, 1 foreign-mount conformance failure (<code>imas-ambix</code>, unrelated)</td></tr>
         </tbody>
       </table>
-      <p><strong>The storing half is asserted where it happens.</strong> Two of the sixteen sites drive a real <code>crew.dispatch</code> against a committed plan and read the record it returned and the pointer it wrote, one plan carrying an <code>impl</code> and one carrying none. A test of the reader alone would stay green if the record literal inside <code>dispatch</code> stopped calling it, so a value nothing writes would have read as covered. Both drive the plan's own section heading, which dispatch validates against before it will dispatch at all.</p>
+      <p><strong>The storing half is asserted where it happens.</strong> Two of the twenty-two sites drive a real <code>crew.dispatch</code> against a committed plan and read the record it returned and the pointer it wrote, one plan carrying an <code>impl</code> and one carrying none. A test of the reader alone would stay green if the record literal inside <code>dispatch</code> stopped calling it, so a value nothing writes would have read as covered. Both drive the plan's own section heading, which dispatch validates against before it will dispatch at all.</p>
       <p>Syntax was checked with the project interpreter's <code>py_compile</code> on each edited file before the commit, and lint was measured by delta against the base copies: no finding was added to any staged path.</p>
     </section>
 
     <section id="carry">
       <h2>Two sentences the coordinator carries into the plan and this record</h2>
       <p>Read <code>plan_impl_at_dispatch</code> off the run record to move a plan's impl as its work lands: a passing implement or test landing whose plan impl is unchanged is now refused, and the refusal names <code>--no-impl-change REASON</code> so that a landing which legitimately does not move the plan records why in one word.</p>
-      <p>The guard is demonstrated by a refusal, not by a green suite: 14 of 14 new tests fail at the base revision and pass at the head, while the existing promotion suite fails the same three tests at both revisions and therefore gained none.</p>
+      <p>The guard is demonstrated by a refusal, not by a green suite: 22 of 22 new tests fail at the base revision and pass at the head, while the existing promotion suite fails the same three tests at both revisions and therefore gained none.</p>
     </section>
   </main>
 </body>
