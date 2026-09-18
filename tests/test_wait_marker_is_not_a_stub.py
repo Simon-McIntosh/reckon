@@ -24,6 +24,8 @@ wait-aged when overdue.
 
 from __future__ import annotations
 
+import os
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -67,6 +69,20 @@ RECORDED_STUB_FIELDS: dict[str, str] = {
         "wait_terminal: exit:0\n"
         "resume_brief: continue implementation\n"
     ),
+    # The deliberate one. This worker wrote the wait fields on purpose, as a
+    # durable checkpoint before a long compose step, which is the discipline
+    # the delivery contract asks for — and its condition states in plain
+    # English that nothing is awaited, which the classifier escalated anyway on
+    # the presence of the field alone. Removing the fields from the orientation
+    # stub cannot reach this worker, because it wrote them later and meant to.
+    "a-deliberate-checkpoint-before-a-long-step": (
+        "status: waiting\n"
+        "wait_condition: no external condition is awaited; this is an interim "
+        "progress record written before the report is composed\n"
+        'wait_probe: ["true"]\n'
+        "wait_terminal: exit:0\n"
+        "resume_brief: read the composed report\n"
+    ),
 }
 
 STUB_IDS = sorted(RECORDED_STUB_FIELDS)
@@ -97,12 +113,18 @@ def _manifest_text(
     return "\n".join(lines) + "\n"
 
 
-def _pointer(tmp_path: Path, body: str, *, alive: bool = True) -> dict:
+def _pointer(
+    tmp_path: Path,
+    body: str,
+    *,
+    alive: bool = True,
+    stream_written_at: float | None = None,
+) -> dict:
     worktree = tmp_path / "worktree"
     worktree.mkdir(parents=True, exist_ok=True)
     manifest = tmp_path / "manifest.md"
     manifest.write_text(body, encoding="utf-8")
-    return {
+    record = {
         "run_id": "r-orientation-stub",
         "project": "fixture-project",
         "process_alive": alive,
@@ -122,6 +144,15 @@ def _pointer(tmp_path: Path, body: str, *, alive: bool = True) -> dict:
             "write_paths": [],
         },
     }
+    # A run with no stream file has taken no measurement, which is the state
+    # every case above reads; only a case that needs a demonstrably writing run
+    # asks for one, and it is dated by hand so the age is derived rather than
+    # written down.
+    if stream_written_at is not None:
+        stream = tmp_path / "stream.jsonl"
+        stream.write_text('{"type":"assistant"}\n', encoding="utf-8")
+        os.utime(stream, (stream_written_at, stream_written_at))
+    return record
 
 
 def _genuine_wait_body() -> str:
@@ -148,6 +179,26 @@ def test_a_recorded_stub_declares_no_wait(tmp_path: Path, stub_id: str) -> None:
 
     # No declaration reaches any reader: the sweep, the pane and the resume
     # ladder all read the run's wait through this one call.
+    assert recovery.external_wait(pointer, now_seconds=NOW_SECONDS) is None
+
+
+def test_the_condition_alone_declares_no_wait_without_a_probe(tmp_path: Path) -> None:
+    """The prose reading stands on its own, not only through the probe rule.
+
+    A condition saying in plain English that nothing is awaited is the primary
+    reading: this case carries no wait_probe at all, so nothing but the
+    condition's own words can decide it.
+    """
+    pointer = _pointer(
+        tmp_path,
+        _manifest_text(
+            "status: waiting\n"
+            "wait_condition: no external condition is awaited; this is an "
+            "interim progress record written before the report is composed\n"
+            "resume_brief: read the composed report\n"
+        ),
+    )
+
     assert recovery.external_wait(pointer, now_seconds=NOW_SECONDS) is None
 
 
@@ -280,6 +331,77 @@ def test_a_genuine_wait_is_still_a_resume_candidate_when_its_probe_terminates(
 
     assert report["checked"] == 1
     assert [row["run_id"] for row in report["resumed"]] == [pointer["run_id"]]
+
+
+# ── A declared wait does not age while the run is producing output ────────
+
+
+def test_a_wait_overdue_by_its_declaration_does_not_age_over_a_live_stream(
+    tmp_path: Path,
+) -> None:
+    """A run writing output is producing, not parked, whatever it declares.
+
+    Measured: a run was escalated from waiting to wait-aged at 1804 seconds
+    while its newest stream file was zero minutes old and still growing, so a
+    coordinator had to take a second reading before believing the alarm. The
+    age is read against the run's own output here, so the alarm is only raised
+    once the output has actually stopped.
+    """
+    declared_at = NOW_SECONDS - 1804
+    pointer = _pointer(
+        tmp_path,
+        _manifest_text(
+            _genuine_wait_body(),
+            expected="1m",
+            started=datetime.fromtimestamp(declared_at, tz=timezone.utc).isoformat(),
+        ),
+        stream_written_at=NOW_SECONDS - 5,
+    )
+
+    row = recovery.classify_pointer(
+        pointer,
+        condition_test=lambda _p, _w: {
+            "state": "pending",
+            "observed": "RUNNING",
+            "detail": "the job is still queued",
+        },
+        now_seconds=NOW_SECONDS,
+    )
+
+    assert row["external_wait"] is not None
+    assert row["external_wait"]["age_seconds"] <= 5
+    assert row["wait_overdue"] is False
+    assert row["recovery_classification"] == "waiting"
+    assert row["recovery_classification"] != "wait-aged"
+
+
+def test_the_same_declaration_ages_once_its_stream_stops(tmp_path: Path) -> None:
+    """The stream guard suppresses an alarm, it does not disable the clock: the
+    same declaration whose stream is quiet for the declared horizon still ages.
+    """
+    quiet_at = NOW_SECONDS - 1804
+    pointer = _pointer(
+        tmp_path,
+        _manifest_text(
+            _genuine_wait_body(),
+            expected="1m",
+            started=datetime.fromtimestamp(quiet_at, tz=timezone.utc).isoformat(),
+        ),
+        stream_written_at=quiet_at,
+    )
+
+    row = recovery.classify_pointer(
+        pointer,
+        condition_test=lambda _p, _w: {
+            "state": "pending",
+            "observed": "RUNNING",
+            "detail": "the job is still queued",
+        },
+        now_seconds=NOW_SECONDS,
+    )
+
+    assert row["wait_overdue"] is True
+    assert row["recovery_classification"] == "wait-aged"
 
 
 # ── Controls: the prose and probe rules must not overshoot ────────────────
