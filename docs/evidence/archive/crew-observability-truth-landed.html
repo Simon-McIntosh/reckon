@@ -1594,6 +1594,111 @@ reading taken as an authority it was not.</p>
       introduced, so it is recorded rather than repaired here.</p>
   </section>
 
+  <section id="one-extraction-answers-which-watch-rows-are-arrivals">
+    <h3>One extraction answers which watch rows are arrivals</h3>
+    <p><strong>Landed</strong> under commit <code>d9e18423</code>, extended by <code>f17ab71c</code>
+    for the rendered arrival below. Three fleets filtered the same watch streams three ways and got
+    three answers, so the question moves out of each caller into <code>extract_watch_arrivals</code>
+    in <code>reckon/crew/query.py</code>, returning arrivals, state changes and re-inventory rows on
+    one shape, each stamped in UTC or explicitly unknown.</p>
+    <p><strong>Both failure modes reproduced against the tree, not asserted.</strong> Reading the
+    six live streams under <code>~/.config/reckon/crew/watch/</code> through the shipped function, at
+    2026-09-18T09:26Z: <strong>12,446 rows, 3,031 nodes, 2,314 rendered rows</strong>. Every figure
+    below is that reading's own output and each is stated with its derivation, because the streams
+    are append-only and a count quoted without its population stops being true while nobody edits
+    anything.</p>
+    <table>
+      <thead><tr><th>Reader</th><th>Result</th><th>Defect</th></tr></thead>
+      <tbody>
+        <tr><td>keep only <code>event == "transition"</code></td><td>0 of 3,031 nodes get their
+          real arrival: 2,417 are re-dated to a later movement, 23 are lost entirely</td>
+          <td>drops genuine arrivals: a dispatch a follower first observes is written as a baseline
+          with a null <code>from_state</code></td></tr>
+        <tr><td>keep every baseline row</td><td>2,621 baseline rows read as arrivals, of which 204
+          are invented</td><td>invents arrivals: a re-attaching follower emits one baseline row per
+          live run at a single instant</td></tr>
+        <tr><td>first appearance per node, plus the burst test</td><td>3,031 arrivals, 9,186 state
+          changes, 229 re-inventory rows</td><td>&mdash;</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Derivation of each figure.</strong> First-row event class, counted per node: 2,417 nodes
+    first appear as a baseline and 614 as a rendered transition, which is every node. Nodes with no
+    transition row anywhere in their own stream: 23. Baseline rows on disk: 2,621, of which 204 are
+    members of a re-inventory burst. The 229 rows in the re-inventory bucket are those 204 plus 25
+    rows recording that a manifest was rewritten; the remaining 9,186 are state changes. An earlier
+    version of this record put the transition-only loss at 2,317 of 2,931, which read a
+    first-row-baseline count as a missing-transition count. The two populations are different: the
+    loss is the 23, and the other 2,417 are re-dated rather than dropped, because a later transition
+    exists for them. Corrected by re-deriving from the function's own output on the date stamped
+    above.</p>
+    <p>The re-inventory half is measurable directly: the largest same-instant baseline burst on
+    disk covers ten nodes in the reading stamped above, every one of them already carrying earlier
+    rows, and one stream opens with an inventory of runs that were live before the file existed. A
+    node whose only row is such a burst row is the case the node-level rule alone gets wrong, which
+    is why the burst test is explicit rather than inferred.</p>
+    <p><strong>An arrival the pane renders without a source state.</strong> A rendered row whose only
+    token left of the arrow is the node carries no source state, because the pane is showing that
+    node for the first time. Measured over the same reading: <strong>656</strong> rendered rows have
+    that shape and <strong>614</strong> of them are a node's first row, so it is the shape most
+    arrivals in rendered form take. The extraction first required two tokens left of the arrow and
+    returned <code>None</code> for the one-token row, discarding the arrival it exists to find and
+    reporting the node's next row in its place. The regression fixture is the arrival at line 1 of
+    the imas-ambix stream, <code>16:29:36 clive-reuse-map &rarr; dispatched</code>, and against the
+    pre-fix parser it fails by reporting line 4 instead of line 1. The rendered fixtures now come
+    from the corpus: the only rendered shapes on disk are the arrow with one token to the left of it
+    (656 rows) and with two (1,658 rows), so a fixture in any other shape cannot fail on the defect
+    the corpus has. An earlier fixture in this record used a bullet row, a shape the renderer can
+    emit for a baseline but which appears zero times across the six streams.</p>
+    <p><strong>Stamps.</strong> 2,314 rendered ticker rows are recovered from the mixed-format
+    streams, and every one is returned with <code>observed_at_zone: unknown</code>: a rendered row
+    carries a wall clock in the reader's local zone with no offset and no date, so assuming UTC is
+    how a merged view manufactured a descending limb out of a concurrent ascent. Zero rows are
+    returned with a non-UTC stamp, and ordering never depends on a stamp at all &mdash; rows are
+    positioned by their offset in the append-only stream, which is chronological by construction
+    &mdash; so an unknown-zone row is still classified correctly and only its stamp is withheld.</p>
+    <figure>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 250" width="720" height="250" font-family="sans-serif" font-size="13" role="img" aria-label="Decision flow from a watch row to arrival, state change or re-inventory">
+        <rect width="720" height="250" fill="#ffffff"/>
+        <rect x="20" y="20" width="150" height="40" rx="6" fill="#eef3fa" stroke="#5a7fa8"/>
+        <text x="95" y="45" text-anchor="middle">watch row</text>
+        <path d="M170 40 H210" stroke="#5a7fa0" fill="none"/>
+        <rect x="210" y="14" width="220" height="52" rx="6" fill="#f7f7f2" stroke="#8a8a70"/>
+        <text x="320" y="35" text-anchor="middle">earliest row for this node</text>
+        <text x="320" y="53" text-anchor="middle">in the stream?</text>
+        <path d="M430 30 H500" stroke="#3f7a4f" fill="none"/>
+        <text x="450" y="24" fill="#3f7a4f">yes</text>
+        <path d="M320 66 V96 H500" stroke="#a05a2c" fill="none"/>
+        <text x="330" y="112" fill="#a05a2c">no</text>
+        <rect x="500" y="10" width="200" height="44" rx="6" fill="#eaf5ec" stroke="#3f7a4f"/>
+        <text x="600" y="28" text-anchor="middle">ARRIVAL</text>
+        <text x="600" y="45" text-anchor="middle" font-size="11">whatever its event class</text>
+        <rect x="500" y="80" width="200" height="60" rx="6" fill="#fbeee4" stroke="#a05a2c"/>
+        <text x="600" y="100" text-anchor="middle">transition -&gt; state change</text>
+        <text x="600" y="118" text-anchor="middle" font-size="11">baseline -&gt; re-inventory</text>
+        <text x="600" y="133" text-anchor="middle" font-size="11">(inventory, never news)</text>
+        <rect x="20" y="160" width="680" height="74" rx="6" fill="#fafafa" stroke="#cccccc"/>
+        <text x="36" y="182" font-weight="bold">Measured exception: a re-inventory burst</text>
+        <text x="36" y="202">A same-instant group of two or more baseline rows in one stream, one member already carrying</text>
+        <text x="36" y="219">an earlier row, is one inventory of a fleet already running: every member is re-inventory, including a</text>
+        <text x="36" y="236">node whose only row it is. A same-second group with no known member is a wave, not an inventory.</text>
+      </svg>
+      <figcaption>Watch-row classification, including the burst exception the node-level rule alone gets wrong.</figcaption>
+    </figure>
+    <p><strong>Gate.</strong> <code>tests/test_transition_extraction.py</code> added: 9 passed, with
+    the three prescribed siblings unchanged at 21 passed, and the same 21 at base
+    <code>ee356a93</code> &mdash; zero added failures. The new file fails collection at base with
+    <code>ImportError: cannot import name 'extract_watch_arrivals'</code>, because the extraction
+    does not exist there. The rendered-arrival fix was measured against the pre-fix parser in the
+    same interpreter: two tests fail there and nine pass after it, so the fixtures now reach the
+    defect rather than around it. Range over the domain, per the brief: a node first seen as
+    baseline, first seen as transition, seen across two follower sessions, a node whose only row is
+    a burst row, a wave sharing one stamp with no known member, a rendered arrival with no source
+    state, and a stream with no baseline rows at all. Every rendered fixture is a verbatim line of a
+    live stream with its stream and line named at the fixture. No command is wired:
+    <code>reckon/cli.py</code> is outside this node's scope, so the entry point it should expose is
+    recorded under follow-ons.</p>
+  </section>
+
 </main>
 </body>
 </html>
