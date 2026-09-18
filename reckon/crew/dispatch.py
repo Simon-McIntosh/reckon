@@ -2688,6 +2688,20 @@ def _resolved_wave_id(project: str, session: str, requested: str) -> str:
     return f"wave-{uuid.uuid4().hex}"
 
 
+def _plan_impl_at_dispatch(
+    project: str, plan: str, root: str | Path | None
+) -> float | None:
+    """Read the plan's impl now, for the promotion-time comparison.
+
+    Imported lazily because the promotion module imports this one at module
+    load; the reader lives there so the value recorded here and the value
+    compared at promotion come from one implementation.
+    """
+    from reckon.crew.promotion import plan_impl_at
+
+    return plan_impl_at(project, plan, root)
+
+
 def dispatch(
     *,
     node: TaskNode,
@@ -3191,6 +3205,13 @@ def dispatch(
             "worktree": worktree["path"],
             "base": worktree["base"],
             "base_sha": worktree["base_sha"],
+            # The plan's impl at dispatch, so promotion can refuse a passing
+            # implement landing whose plan did not move. An unreadable value
+            # stays absent, which exempts the run rather than recording a false
+            # zero that would look like a plan that never moved.
+            "plan_impl_at_dispatch": _plan_impl_at_dispatch(
+                project, node.plan, ledger_root
+            ),
             "suite_command": suite_command,
             "prompt_path": str(prompt_path),
             "log_path": str(log_path),

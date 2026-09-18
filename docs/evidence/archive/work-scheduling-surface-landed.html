@@ -127,5 +127,58 @@
     </table>
   </section>
 </main>
+  <main class="plan-doc">
+    <h2 id="impl-move">Promotion refuses a landing whose plan did not move</h2>
+    <p>Nothing in the landing path tied a passing landing to plan progress. It does now, and the guard is shown refusing rather than assumed to refuse.</p>
+
+    <section id="s5">
+      <h2>&sect;5 &mdash; The check, and the refusal it produces</h2>
+      <p>The dispatch record now carries the plan's parsed <code>impl</code> at dispatch, on both the live pointer and the ledger row. Promotion reads the plan's <code>impl</code> at completion and compares the two for implement and test roles whose gate passed. When they are equal the promotion is refused, quoting both figures and the plan's remaining sections, before either store is written:</p>
+      <pre>run 'r-20260918T080000000000-node-a' promotes a passing implement run, but plan
+'plan-a' impl did not move: 0.5 at dispatch and 0.5 at completion. Sections
+still to land: s2, s3. Advance the plan's impl as the work lands, or record why
+it did not move with `reckon crew complete --run ... --gate passed
+--no-impl-change REASON` (the reason lands on the ledger row); if the plan's
+impl is not this run's to move, state that reason</pre>
+      <p>The waiver records its reason on the ledger row beside the dispatch figure, and the exemption is recorded as data rather than as silence: each exempt run carries <code>impl_move.verdict = "exempt"</code> with the reason that exempted it (<code>role-not-enforced:&lt;role&gt;</code>, <code>failure-classification:&lt;classification&gt;</code>, <code>gate-not-passing</code>, <code>no-impl-recorded-at-dispatch</code>).</p>
+      <table>
+        <thead><tr><th>Case</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td>implement, gate passed, impl equal</td><td>refused, both figures and the remaining sections quoted, flag named</td></tr>
+          <tr><td>same, with <code>--no-impl-change REASON</code></td><td>promoted, <code>waived</code>, reason on the ledger row</td></tr>
+          <tr><td>implement, gate passed, impl advanced</td><td>promoted, <code>moved</code></td></tr>
+          <tr><td>dispatched before the record existed</td><td>exempt, <code>no-impl-recorded-at-dispatch</code>, field absent from the row</td></tr>
+          <tr><td>review, investigate, cleanup</td><td>exempt, <code>role-not-enforced</code></td></tr>
+          <tr><td>negative-result, correct-refusal</td><td>exempt, <code>failure-classification</code></td></tr>
+          <tr><td>gate not passed</td><td>exempt, <code>gate-not-passing</code></td></tr>
+        </tbody>
+      </table>
+      <p>An unreadable or unset impl is recorded as absent, never as a zero, so a plan that has never moved cannot be confused with a plan unreadable at dispatch. The plan reader lives in the promotion module and is imported lazily by dispatch, so the figure recorded at dispatch and the figure compared at completion come from one implementation.</p>
+    </section>
+
+    <section id="verification">
+      <h2>Verification</h2>
+      <p><strong>The guard was shown to fire, not assumed to fire.</strong> The new test file was run unchanged against the base revision <code>acb5d608 — 22 failed, 0 passed</code> — and against the head of this node — <code>22 passed</code>. A passing head alone would show only that the tests are green; the base run is what shows they depend on the change.</p>
+      <p>The existing promotion suite was run at the same selection on both revisions: <code>3 failed, 100 passed</code> at base and <code>3 failed, 100 passed</code> at head, the identical three test ids. Zero failures were added. The three are the same refusal in <code>_require_committable_checkout</code> — the fixture's temporary repository is not recognised as a git worktree — and reproduce at the base revision, so they are pre-existing and outside this node's write scope rather than a regression.</p>
+      <table>
+        <thead><tr><th>Run</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>new tests at base <code>acb5d608</code></td><td>22 failed</td></tr>
+          <tr><td>new tests at head</td><td>22 passed</td></tr>
+          <tr><td>existing promotion suite at base</td><td>3 failed, 100 passed</td></tr>
+          <tr><td>existing promotion suite at head</td><td>3 failed, 100 passed (same ids)</td></tr>
+          <tr><td><code>tests/test_schema.py</code> at head</td><td>1464 passed, 1 foreign-mount conformance failure (<code>imas-ambix</code>, unrelated)</td></tr>
+        </tbody>
+      </table>
+      <p><strong>The storing half is asserted where it happens.</strong> Two of the twenty-two sites drive a real <code>crew.dispatch</code> against a committed plan and read the record it returned and the pointer it wrote, one plan carrying an <code>impl</code> and one carrying none. A test of the reader alone would stay green if the record literal inside <code>dispatch</code> stopped calling it, so a value nothing writes would have read as covered. Both drive the plan's own section heading, which dispatch validates against before it will dispatch at all.</p>
+      <p>Syntax was checked with the project interpreter's <code>py_compile</code> on each edited file before the commit, and lint was measured by delta against the base copies: no finding was added to any staged path.</p>
+    </section>
+
+    <section id="carry">
+      <h2>Two sentences the coordinator carries into the plan and this record</h2>
+      <p>Read <code>plan_impl_at_dispatch</code> off the run record to move a plan's impl as its work lands: a passing implement or test landing whose plan impl is unchanged is now refused, and the refusal names <code>--no-impl-change REASON</code> so that a landing which legitimately does not move the plan records why in one word.</p>
+      <p>The guard is demonstrated by a refusal, not by a green suite: 22 of 22 new tests fail at the base revision and pass at the head, while the existing promotion suite fails the same three tests at both revisions and therefore gained none.</p>
+    </section>
+  </main>
 </body>
 </html>
