@@ -796,11 +796,28 @@ live run. The stream carries worker transitions and fleet posture and nothing
 else: follower status is not fleet state, and the session that needs telling
 about its registration is one trying to dispatch, which the guard tells there.
 Each line's
-`N working · N blocked · N unpromoted` is the fleet **after** that transition,
-so two landings in one cycle read as two, and a promotion reports the fleet it
-leaves behind. The three buckets partition the fleet: `working` is work in
-progress, `blocked` is everything that has stopped and needs you (a stall or a
-failure included), `unpromoted` is delivered work waiting on a gate.
+`N working · N blocked · N unpromoted · N queued` is the fleet **after** that
+transition, so two landings in one cycle read as two, and a promotion reports
+the fleet it leaves behind. **Four** buckets partition the fleet, not three:
+`working` is work in progress, `blocked` is everything that has stopped and
+needs you (a stall or a failure included), `unpromoted` is delivered work
+waiting on a gate, and `queued` is a run whose declared external condition is
+still outstanding. They sum to the runs in flight, which is why none of them is
+called `live` — a pointer count in that position reads as work in progress and
+is not.
+
+Two spellings meet here and both are correct in their own place: the event
+field is `waiting`, the counter's bucket is named `queued`, and the row renders
+its initial `q`. The bucket carries the second name so that its letter is the
+initial of a word, as `w`, `b` and `u` are; the field keeps the scheduler's own
+word. Read `1q` as one run waiting on a condition it declared.
+
+**The figures are the project's fleet, and `--session` does not narrow them.**
+The rows a scoped follower prints are yours; the counts trailing them are
+everyone's. Measured 2026-09-18 on two projects: a coordinator read `14w` beside
+its own session's rows and told its user sixteen workers were live in a sprint
+that had eight. Never take the posture line as your own inventory — ask
+`crew(project, view="live")` and count the runs whose session is yours.
 
 ### Follow flags
 
