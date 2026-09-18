@@ -264,10 +264,17 @@ def _resolve_html_file(
 
 
 @contextmanager
-def _json_envelope_lock(path: Path):
-    """Serialise the version check and replacement for one JSON envelope."""
+def _serialized_path_lock(path: Path, namespace: str):
+    """Serialise a read-check-replace critical section for one store file.
+
+    Two writers that both pass a version check before either replaces the file
+    produce a lost update whose counter still advances: nothing raises a
+    conflict, so nothing can be noticed. Holding this lock makes the check and
+    the replacement one step, so the writer that arrives second is decided by
+    the file rather than by scheduling.
+    """
     identity = hashlib.sha256(str(path.resolve()).encode()).hexdigest()
-    lock_path = _config_home() / "locks" / "envelopes" / f"{identity}.lock"
+    lock_path = _config_home() / "locks" / namespace / f"{identity}.lock"
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with lock_path.open("a+b") as handle:
         fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
@@ -275,6 +282,13 @@ def _json_envelope_lock(path: Path):
             yield
         finally:
             fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+@contextmanager
+def _json_envelope_lock(path: Path):
+    """Serialise the version check and replacement for one JSON envelope."""
+    with _serialized_path_lock(path, "envelopes"):
+        yield
 
 
 def _load_json_envelope(path: Path) -> tuple[dict, int]:
@@ -391,27 +405,20 @@ def _unparsed_section_warnings(html_text: str, state: dict[str, Any]) -> list[st
     return out
 
 
-def _read_state(
+def _state_from_text(
     project: str,
-    slug: str,
+    text: str,
     root: str | Path | None = None,
-    artifact_type: str | None = None,
-) -> tuple[dict, int]:
-    """Read the semantic HTML state for a plan slug.
+) -> dict:
+    """Parse plan HTML into the state dict both readers and writers see.
 
-    ``root`` (a checkout repo root) targets that checkout's ``docs`` dir;
-    defaults to the mounts-registered (main) checkout.
-
-    Returns:
-        (state_dict, current_version) where version = state.get("version", 0).
-        Returns ({}, 0) if the HTML file or state is absent.
+    The writer re-reads through here rather than through a bare parse, so the
+    dict it compares against the caller's is shaped exactly like the dict that
+    caller read: a comparison of the two would otherwise always disagree on the
+    derived diagnostics one side carries and the other does not.
     """
     from reckon import _plan_html
 
-    html_file = _resolve_html_file(project, slug, root, artifact_type)
-    if html_file is None or not html_file.is_file():
-        return {}, 0
-    text = html_file.read_text(encoding="utf-8", errors="replace")
     state = _plan_html.read_state(text)
     _add_north_star_diagnostic(project, state, root)
     for warning in _unparsed_section_warnings(text, state):
@@ -428,6 +435,29 @@ def _read_state(
         if warning not in warnings:
             warnings.append(warning)
         state["compatibility_warnings"] = warnings
+    return state
+
+
+def _read_state(
+    project: str,
+    slug: str,
+    root: str | Path | None = None,
+    artifact_type: str | None = None,
+) -> tuple[dict, int]:
+    """Read the semantic HTML state for a plan slug.
+
+    ``root`` (a checkout repo root) targets that checkout's ``docs`` dir;
+    defaults to the mounts-registered (main) checkout.
+
+    Returns:
+        (state_dict, current_version) where version = state.get("version", 0).
+        Returns ({}, 0) if the HTML file or state is absent.
+    """
+    html_file = _resolve_html_file(project, slug, root, artifact_type)
+    if html_file is None or not html_file.is_file():
+        return {}, 0
+    text = html_file.read_text(encoding="utf-8", errors="replace")
+    state = _state_from_text(project, text, root)
     version = int(state.get("version", 0) or 0)
     return state, version
 
@@ -469,6 +499,55 @@ def _add_north_star_diagnostic(
     ]
 
 
+#: Keys a plan write restates rather than authors, so two writers always agree
+#: about them and they must not decide whether the stamps make two writers
+#: comparable at all.
+_STATE_STAMPS = frozenset(["version", "modified"])
+
+
+def _plan_write_target(
+    project: str,
+    slug: str,
+    root: str | Path | None,
+    artifact_type: str | None,
+) -> Path:
+    """The file a plan write will reach, whether or not it exists yet."""
+    html_file = _resolve_html_file(project, slug, root, artifact_type)
+    if html_file is not None:
+        return html_file
+    docs_dir = _docs_dir_for_project(project, root)
+    if docs_dir is None:
+        return _config_home() / "locks" / "unresolved" / f"{project}-{slug}.html"
+    return docs_dir / "plans" / f"{slug}.html"
+
+
+def _comment_append_onto_current(data: dict, current: dict) -> dict | None:
+    """Merge a comment append whose base revision moved under it.
+
+    A comment append is the one write shape that is commutative: comments are
+    append-only, and a write carrying entries the file does not hold has added
+    them rather than replaced the collection. When the file's comments and the
+    write's other fields agree, the two collections are merged so both writers
+    survive the meeting. ``None`` means the writers disagree about the document
+    itself — a real conflict, for the caller to report rather than resolve;
+    merging it would silently revert the other writer's change.
+    """
+    from reckon import _plan_html
+
+    incoming = {k: v for k, v in dict(data).items() if k not in _STATE_STAMPS}
+    held = {k: v for k, v in dict(current).items() if k not in _STATE_STAMPS}
+    incoming_comments = incoming.pop("comments", None)
+    held_comments = held.pop("comments", None)
+    if incoming != held:
+        return None
+    if not isinstance(incoming_comments, dict) or not incoming_comments:
+        return None
+    merged = _plan_html.merge_comment_collections(held_comments, incoming_comments)
+    if merged == held_comments:
+        return None
+    return merged
+
+
 def _write_state(
     project: str,
     slug: str,
@@ -485,6 +564,28 @@ def _write_state(
 
     Raises VersionConflict on mismatch.
     Returns the new version.
+    """
+    with _serialized_path_lock(
+        _plan_write_target(project, slug, root, artifact_type), "plans"
+    ):
+        return _write_state_locked(
+            project, slug, data, expected_version, root, artifact_type, retire_preimages
+        )
+
+
+def _write_state_locked(
+    project: str,
+    slug: str,
+    data: dict,
+    expected_version: int,
+    root: str | Path | None = None,
+    artifact_type: str | None = None,
+    retire_preimages: list[str] | None = None,
+) -> int:
+    """The version check and the replacement of one plan HTML file.
+
+    Runs with the plan's write lock held, so the file the check sees is the file
+    the replacement overwrites.
     """
     from reckon import _plan_html
 
@@ -550,13 +651,17 @@ def _write_state(
             )
         cur_state: dict = {}
         cur_version = 0
+        text = html_file.read_text(encoding="utf-8", errors="replace")
     else:
         text = html_file.read_text(encoding="utf-8", errors="replace")
-        cur_state = _plan_html.read_state(text)
+        cur_state = _state_from_text(project, text, root)
         cur_version = int(cur_state.get("version", 0) or 0)
 
     if expected_version != cur_version:
-        raise VersionConflict(expected_version, cur_version, cur_state)
+        merged_comments = _comment_append_onto_current(data, cur_state)
+        if merged_comments is None:
+            raise VersionConflict(expected_version, cur_version, cur_state)
+        data = {**dict(data), "comments": merged_comments}
 
     new_data = dict(data)
     state_type = canonical_type(new_data.get("type"))
@@ -581,7 +686,6 @@ def _write_state(
     new_data["modified"] = date.today().isoformat()
     new_data["version"] = cur_version + 1
 
-    text = html_file.read_text(encoding="utf-8", errors="replace")
     source_text = text
     try:
         for preimage in retire_preimages or []:
@@ -846,27 +950,28 @@ def replace_plan_text(
     resource = matches[0]
     _refuse_immutable_snapshot(resource)
     html_file = resource.path
-    text = html_file.read_text(encoding="utf-8", errors="strict")
-    current_state = _plan_html.read_state(text)
-    current_version = int(current_state.get("version", 0) or 0)
-    if expected_version != current_version:
-        raise VersionConflict(expected_version, current_version, current_state)
+    with _serialized_path_lock(html_file, "plans"):
+        text = html_file.read_text(encoding="utf-8", errors="strict")
+        current_state = _plan_html.read_state(text)
+        current_version = int(current_state.get("version", 0) or 0)
+        if expected_version != current_version:
+            raise VersionConflict(expected_version, current_version, current_state)
 
-    replaced = _replace_authored_html(
-        text,
-        old_html,
-        new_html,
-        selector_name="old_html",
-    )
+        replaced = _replace_authored_html(
+            text,
+            old_html,
+            new_html,
+            selector_name="old_html",
+        )
 
-    stamped_state = dict(current_state)
-    stamped_state["modified"] = date.today().isoformat()
-    stamped_state["version"] = current_version + 1
-    rendered = _plan_html.write_state(replaced, stamped_state)
-    tmp = html_file.with_suffix(".html.tmp")
-    tmp.write_text(rendered, encoding="utf-8")
-    tmp.replace(html_file)
-    return current_version + 1, html_file
+        stamped_state = dict(current_state)
+        stamped_state["modified"] = date.today().isoformat()
+        stamped_state["version"] = current_version + 1
+        rendered = _plan_html.write_state(replaced, stamped_state)
+        tmp = html_file.with_suffix(".html.tmp")
+        tmp.write_text(rendered, encoding="utf-8")
+        tmp.replace(html_file)
+        return current_version + 1, html_file
 
 
 def patch_plan(
