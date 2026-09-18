@@ -34,6 +34,7 @@
       <tbody>
         <tr><td>&sect;5</td><td><a href="#follower-listing-reports-what-delivers">follower-listing-reports-what-delivers</a></td><td>c0a07f8f</td><td>landed</td></tr>
         <tr><td>&sect;5</td><td><a href="#released-registration-is-counted-not-listed">released-registration-is-counted-not-listed</a></td><td>80f28c39</td><td>landed</td></tr>
+        <tr><td>&sect;5</td><td><a href="#a-released-registration-is-swept-by-age">a-released-registration-is-swept-by-age</a></td><td>a77bd30b</td><td>landed</td></tr>
       </tbody>
     </table>
   </section>
@@ -245,6 +246,69 @@
     unconfigured) and through <code>BudgetHold</code>, and the reported reason is asserted to be
     the recorded reason &mdash; the run says why it is still awaiting review rather than only
     that it is.</p>
+  </section>
+
+  <section id="a-released-registration-is-swept-by-age">
+    <h2>&sect;5 — A released registration is swept by age</h2>
+    <p>Run <code>r-20260918T161024019059-a-released-registration-is-swept-by-age</code>. Commit
+    <code>a77bd30b</code>, 173 insertions across <code>reckon/crew/runs.py</code> and
+    <code>tests/test_follower_freshness.py</code> — the two authorised source paths, with no
+    deletions and no new imports.</p>
+
+    <p><strong>Mechanism.</strong> The previous anchor made the payload count the released
+    registrations instead of listing them; nothing yet removed a file. Releasing a registration
+    drops its advisory lock and leaves the path in place on purpose, and a read path must not
+    unlink either, because a reader that did would put two inodes behind one session's name — a
+    claimant opening the old file and a fresh one on the same path would each hold the lock. So
+    the registry only grows, and <code>sweep_released_followers</code> is the one explicit
+    maintenance call that trims it: it takes each file's lock itself, unlinks only when the lock
+    is free <em>and</em> the file is older than the threshold, and returns the entries it removed
+    so the caller reports a count. A claimant arriving while the sweep holds the lock is refused
+    by <code>_FollowerRegistration.acquire</code> rather than silently succeeding.</p>
+
+    <table>
+      <thead><tr><th>Directory contents</th><th>Sweep result</th></tr></thead>
+      <tbody>
+        <tr><td>3 released, all past the threshold</td><td>3 removed (<code>len(removed) == 3</code>) and the directory is empty</td></tr>
+        <tr><td>1 delivering, older than every released entry</td><td>kept; still reported delivering after the sweep ran</td></tr>
+        <tr><td>1 released a minute ago</td><td>kept, so a session restarting keeps its name</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Measure — each half was shown to fire, not merely to pass.</strong> Four tests in
+    <code>tests/test_follower_freshness.py</code> cover the removal and count, the delivering
+    registration surviving at twice the threshold's age, the recently released registration
+    surviving, and no read path calling the sweep. Each was falsified against a patched copy of
+    the package: dropping the held-lock check, dropping the age check, adding a sweep call inside
+    <code>list_followers</code>, and reporting removals without unlinking each turned exactly the
+    corresponding test red, and the unpatched copy ran all four green.</p>
+
+    <p><strong>Delta.</strong> The pair <code>tests/test_follower_freshness.py</code> and
+    <code>tests/test_crew_session_delivery.py</code> is <strong>35 passed</strong> at the head,
+    against the same pair at the merged head before this node's four tests were added. The
+    consumer set around the payload and the watcher
+    (<code>test_crew_watch_visibility</code>, <code>test_crew_orphan</code>,
+    <code>test_crew_live_listing</code>, <code>test_crew_monitor_output</code>,
+    <code>test_crew_dispatch_arming</code>, <code>test_crew_gc</code>) is
+    <strong>3 failed / 41 passed</strong>, and the three fail on
+    <code>CrewError: node is not dispatchable — spec-level: no specification level is declared</code>,
+    a dispatch-preflight refusal raised in <code>dispatch.py</code> that no change to
+    <code>runs.py</code> can produce. The change is purely additive to that module — no
+    deletions, no new imports — so it is reported as pre-existing rather than triaged.</p>
+
+    <p><strong>Yield measured on the live registry, not estimated.</strong> Across the six
+    mounted projects the follower directories hold <strong>73 registrations: 6 delivering and 67
+    released</strong>, with the released remainder spread from a day to seventeen days old. A
+    threshold of seven days would remove 48 of the 67 released files and a threshold of fourteen
+    days 25 — which is what the sweep's default of fourteen days buys: a window that outlasts any
+    plausible restart, and a residue the caller can state.</p>
+
+    <figure>
+      <img src="/reckon/figures/follower-registry/registry-composition.png"
+        alt="Left: stacked bars per project showing delivering and released registrations, 6 and 67 overall. Right: histogram of the ages of the released registrations with the 7-day and 14-day thresholds marked, removing 48 and 25 respectively.">
+      <figcaption>The registry census and the ages at which a sweep by age would act. Reckon
+      holds 28 registrations, one of which delivers.</figcaption>
+    </figure>
   </section>
 </main>
 </body>
