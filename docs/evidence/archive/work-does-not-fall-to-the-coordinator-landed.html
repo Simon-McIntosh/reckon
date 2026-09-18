@@ -601,6 +601,63 @@
       <code>reckon/crew/claims.py</code> and <code>tests/test_claim_release.py</code>,
       both new; no existing file is modified.</p>
     </section>
+  <section id="s2-dispatch-registers-commits">
+    <h2>A dispatch commits the session member it registers for itself</h2>
+    <p><strong>Defect reproduced before repair.</strong> A dispatch handed no member
+    provisions one under its own session, and that registration path wrote the roster
+    without requesting a commit. At base <code>7dfae503</code>, after a session
+    registration succeeded, <code>git rev-list --count base..HEAD</code> was
+    <code>0</code> and <code>git status --porcelain -- docs/state/proj/crew.json</code>
+    reported the file untracked: the row existed only in the checkout that wrote it and
+    rode whichever commit came next. A declared member's registration never sits in that
+    state, because the registration code commits what it writes.</p>
+    <p>Commit <code>6a0bb500</code> requests the commit at the call site that performs
+    the write. <code>_register_session_member</code> passes <code>commit=True</code> to
+    <code>ledger.register_member</code>, so the row reaches the repository as
+    <code>chore(roster): register &lt;id&gt;</code> under a subject naming the member and a
+    commit carrying only <code>docs/state/&lt;project&gt;/crew.json</code>. A commit that
+    fails is surfaced as a <code>CrewError</code> naming the uncommitted registration
+    instead of being retried into a registration the caller believes landed.</p>
+    <p><strong>The committing registration exposed an ordering defect in the same path.</strong>
+    A dispatch reaps idle session rows before it registers its own, so both roster writes
+    land in one checkout in sequence. A reap left in the tree is content that is not the
+    registration's to record, so the registration's commit must refuse it — and then the
+    dispatch provisions no member at all. The reaper now commits the removal it writes,
+    and skips that commit when the roster already carries content that is not its own,
+    which leaves the write in the tree exactly as an unrequested write would and leaves the
+    next named commit to refuse it. The skip is what keeps a roster whose checkout cannot
+    answer, and a concurrent peer's uncommitted registration, from being absorbed.</p>
+
+    <figure style="margin:1.2rem 0;">
+      <img src="/reckon/figures/registration-commit/roster_write_order.png"
+           alt="Left: the reap commits before the registration commits, and an uncommitted reap would be refused by the registration that follows it. Right: the four-file gate moves from ten failures at base to three pre-existing failures at the repair."
+           style="width:100%;height:auto;">
+      <figcaption>The order of the two roster writes a dispatch makes, and the gate delta.
+      Panel A is the sequence the reaper's commit exists for: the registration commits the
+      row it writes and refuses any roster content that is not its own, so a reap left
+      uncommitted would refuse the registration and leave the dispatch with no member.
+      Panel B: the seven falsifiers fail at base and pass at the repair, with the three
+      pre-existing <code>test_crew_members.py</code> failures unchanged either side.</figcaption>
+    </figure>
+
+    <table>
+      <thead><tr><th>Measure</th><th>Base <code>7dfae503</code></th><th>Repair <code>6a0bb500</code></th><th>Delta</th></tr></thead>
+      <tbody>
+        <tr><td>Four-file gate (<code>test_member_registration_commits.py</code>, <code>test_roster_write_commits.py</code>, <code>test_roster_loss_guard.py</code>, <code>test_crew_members.py</code>)</td><td>10 failed, 19 passed</td><td>3 failed, 26 passed</td><td>0 added failures; the 7 registrations falsifiers all fixed</td></tr>
+        <tr><td>Pre-existing failures</td><td>3 (<code>test_crew_members.py</code>)</td><td>3, identical ids</td><td>unchanged</td></tr>
+        <tr><td>A caller that does not ask to commit</td><td>write left untracked</td><td>write left untracked</td><td>positive control holds</td></tr>
+        <tr><td>A commit that fails</td><td>registration reported as success</td><td>surfaced as <code>CrewError</code>, tree left for retry</td><td>the failure is named rather than hidden</td></tr>
+      </tbody>
+    </table>
+
+    <p>The three remaining failures raise <em>spec-level: no specification level is
+    declared</em> from <code>reckon/crew/dispatch.py:2787</code> and fail identically at base
+    with the source unchanged; they sit outside this node's write scope and were not
+    touched.</p>
+    <p>Regression coverage: <code>tests/test_member_registration_commits.py</code>
+    (nine tests, each building a throwaway repository and a temporary crew home). Changed
+    product paths: <code>reckon/crew/routing.py</code> and <code>reckon/ledger.py</code>.</p>
+  </section>
   </main>
 </body>
 </html>

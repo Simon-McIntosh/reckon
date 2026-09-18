@@ -678,6 +678,7 @@ def write(
     root: str | Path | None = None,
     *,
     allow_member_removal: bool = False,
+    commit: bool = False,
 ) -> int:
     """Write the ledger, refusing a stale expected version.
 
@@ -698,21 +699,48 @@ def write(
     for that reason, and the caller's re-read then faces the guard on a
     current roster. Reporting a membership difference drawn from a stale view
     would aim the caller at the wrong remedy.
+
+    ``commit`` states at the call site that the caller is committing the roster
+    change it is making: the retirement the write records is committed at once,
+    under a subject naming the members it dropped, rather than waiting to ride
+    whichever change touches the roster next. The commit is skipped when the
+    roster already holds content that is not this write's to record, or when
+    the roster's checkout cannot answer for it. The write is then left in the
+    tree exactly as an unrequested write would be, and the next named commit
+    refuses it on those same grounds, which is what a caller without a
+    checkout to commit into would have seen anyway. A committed write drops at least
+    one member: a write that changes nothing has nothing to commit, and says so
+    rather than leaving an empty commit behind.
     """
     path = ledger_path(project, root)
     incoming_members = list(data.get("members", []))
     stored, stored_version = load(project, root)
-    dropping = expected_version == stored_version and not allow_member_removal
-    if dropping:
-        dropped = dropped_member_ids(stored["members"], incoming_members)
-        if dropped:
-            raise LedgerError(
-                f"refusing to write the ledger for {project!r}: this write drops "
-                f"roster member(s) {', '.join(dropped)} that the stored roster "
-                "holds, which is how a roster empties itself without anyone "
-                "asking; pass allow_member_removal=True when the removal is "
-                "intended"
+    dropped = (
+        dropped_member_ids(stored["members"], incoming_members)
+        if expected_version == stored_version
+        else []
+    )
+    if dropped and not allow_member_removal:
+        raise LedgerError(
+            f"refusing to write the ledger for {project!r}: this write drops "
+            f"roster member(s) {', '.join(dropped)} that the stored roster "
+            "holds, which is how a roster empties itself without anyone "
+            "asking; pass allow_member_removal=True when the removal is "
+            "intended"
+        )
+    if commit and not dropped:
+        raise LedgerError(
+            f"nothing to commit for {project!r}: commit=True names the roster "
+            "rows a write dropped, and this write dropped none"
+        )
+    obstruction = None
+    if commit:
+        try:
+            obstruction = _roster_obstruction(
+                project, ", ".join(dropped), path, stored["members"]
             )
+        except LedgerError as exc:
+            obstruction = str(exc)
     payload = {
         "members": sorted(
             (dict(member) for member in incoming_members),
@@ -722,7 +750,7 @@ def write(
         "holds": list(data.get("holds", [])),
     }
     try:
-        return _store._write_json_envelope(
+        version = _store._write_json_envelope(
             path, project, LEDGER_SLUG, payload, expected_version
         )
     except _store.VersionConflict as exc:
@@ -730,6 +758,11 @@ def write(
             f"ledger for {project!r} moved from version {exc.expected} to "
             f"{exc.current} while this write was being prepared; re-read and retry"
         ) from exc
+    if commit and obstruction is None:
+        _commit_roster_write(
+            project, "chore(roster): retire " + ", ".join(dropped), path
+        )
+    return version
 
 
 # ── The roster ──────────────────────────────────────────────────────────────
@@ -783,13 +816,25 @@ def _roster_checkout(project: str, path: Path) -> tuple[Path, Path]:
     return checkout, relative_path
 
 
-def _refuse_dirty_roster_commit(
+def _roster_obstruction(
     project: str,
     member_id: str,
     path: Path,
     current_members: list[dict[str, Any]],
-) -> None:
-    """Refuse a named commit when the roster already carries another write."""
+) -> str | None:
+    """Describe roster content a named commit cannot claim, or None when clean.
+
+    A commit names one change, so it can only be made while the roster holds
+    nothing else unrecorded. The comparison is on member rows rather than on
+    dirtiness alone: a roster rewritten with the rows it already held is not a
+    write anyone would be publishing under someone else's subject.
+
+    Reporting the obstruction rather than raising lets a caller that is
+    entitled to proceed without a commit, such as the idle reaper whose
+    removal stands whether or not it can be recorded, leave the write in the
+    tree exactly as an unrequested write would, and lets the next named commit
+    refuse it on the same grounds.
+    """
     checkout, relative_path = _roster_checkout(project, path)
     status = subprocess.run(
         [
@@ -808,11 +853,11 @@ def _refuse_dirty_roster_commit(
     )
     if status.returncode != 0:
         raise LedgerError(
-            f"cannot inspect roster before registering {member_id!r}: "
+            f"cannot inspect the roster before committing {member_id!r}: "
             f"{status.stderr.strip() or status.stdout.strip()}"
         )
     if not status.stdout.strip():
-        return
+        return None
 
     committed = subprocess.run(
         ["git", "-C", str(checkout), "show", f"HEAD:{relative_path.as_posix()}"],
@@ -836,18 +881,27 @@ def _refuse_dirty_roster_commit(
         if current_by_id.get(member) != committed_by_id.get(member)
     )
     if changed_members:
-        obstruction = "uncommitted member registration(s): " + ", ".join(
-            changed_members
-        )
-    else:
-        obstruction = f"uncommitted roster content at {relative_path}"
+        return "uncommitted member registration(s): " + ", ".join(changed_members)
+    return f"uncommitted roster content at {relative_path}"
+
+
+def _refuse_dirty_roster_commit(
+    project: str,
+    member_id: str,
+    path: Path,
+    current_members: list[dict[str, Any]],
+) -> None:
+    """Refuse a candidate commit when the roster already carries another write."""
+    obstruction = _roster_obstruction(project, member_id, path, current_members)
+    if obstruction is None:
+        return
     raise LedgerError(
         f"cannot commit roster registration {member_id!r}: {obstruction}; "
         "commit or discard that roster write before retrying"
     )
 
 
-def _commit_roster_write(project: str, member_id: str, path: Path) -> None:
+def _commit_roster_write(project: str, subject: str, path: Path) -> None:
     """Commit one requested roster write without sweeping other staged paths."""
     checkout, relative_path = _roster_checkout(project, path)
 
@@ -871,10 +925,10 @@ def _commit_roster_write(project: str, member_id: str, path: Path) -> None:
             "commit",
             "--only",
             "-m",
-            f"chore(roster): register {member_id}",
+            subject,
             "-m",
             (
-                "Commit the project roster immediately so member registration "
+                "Commit the project roster immediately so this roster change "
                 "cannot ride an unrelated later change."
             ),
             "--",
@@ -970,7 +1024,9 @@ def register_member(
     ] + [entry]
     write(project, data, version, root)
     if commit:
-        _commit_roster_write(project, member_id, ledger_path(project, root))
+        _commit_roster_write(
+            project, f"chore(roster): register {member_id}", ledger_path(project, root)
+        )
     return entry
 
 
