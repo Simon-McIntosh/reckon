@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="an-orchestrator-can-discharge-a-refusal">
+  <meta name="plan-title" content="An Orchestrator Can Discharge A Refusal">
+  <meta name="plan-summary" content="A guard that refuses without naming a way through is a stop: 42 refusal sites, 5 discharges, and a verified row unreconciled for three days.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="8.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S18">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-blocks" content="a-live-worker-can-be-reached">
+  <title>An Orchestrator Can Discharge A Refusal | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+
+    <h2 id="s1">&sect;1 &mdash; A refusal with no way through is a stop wearing a guard's clothes</h2>
+
+    <p>Reckon's promotion surface is careful, and it should be. It refuses a
+    passing gate with no evidence, a verifier that edited source, a commitless
+    promotion that did not say so, a run whose session is still resumable. Each
+    of those refusals was added because something went wrong without one, and
+    none of them is the problem here.</p>
+
+    <p>The problem is what an orchestrator does <em>next</em>. A refusal is only
+    a guard if there is a way through it: a waiver to state, a different verdict
+    the evidence does support, or a named owner for the repair. Where there is
+    none, the guard stops being a check on the work and becomes a wall across
+    it &mdash; and the run behind that wall does not disappear. It sits as a live
+    pointer, counts against the project's unreconciled total, and eventually
+    refuses every new dispatch in the project through the grace fence. One
+    unanswerable refusal propagates into a fleet-wide stop.</p>
+
+    <p><strong>Measured on this project, 2026-09-18.</strong> The run
+    <code>r-20260915T093545453615-the-guard-holds-at-the-merged-head</code> has
+    been terminal for <strong>three days</strong>. It is a merged-head
+    verification and it succeeded: 505 passed against 20 failed at first parent
+    <code>08a0bfbe</code>, 518 against the same 20 at merge <code>9b92f6fe</code>,
+    failure-set difference <strong>0 added and 0 removed</strong>. Its worktree
+    is clean, its head is an ancestor of the branch, and an independent review
+    scored it 20 / 20 / 19 / 19 / 19. Everything a promotion is supposed to check
+    is satisfied, and it cannot be promoted.</p>
+
+    <h2 id="s2">&sect;2 &mdash; The refusal surface grew and the discharge surface did not</h2>
+
+    <p>That row is not unlucky. It is the expected outcome of an asymmetry that
+    can be counted, and the counting is the point &mdash; this is a ratio, not an
+    anecdote.</p>
+
+    <table>
+      <thead><tr><th>Surface</th><th>Count</th><th>How it was counted</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>refusal sites in the promotion path</td>
+          <td><strong>42</strong></td>
+          <td><code>raise CrewError</code> in <code>reckon/crew/promotion.py</code></td>
+        </tr>
+        <tr>
+          <td>discharges offered by the only promotion route</td>
+          <td><strong>5</strong></td>
+          <td><code>--waive-suite-delta</code>, <code>--waive-boundary-refusal</code>,
+              <code>--waive-resume-path</code>, <code>--accept-path</code>,
+              <code>--no-commit</code>, from <code>crew complete --help</code></td>
+        </tr>
+        <tr>
+          <td>refusals whose own message names a way through</td>
+          <td><strong>9 of 42</strong></td>
+          <td>the message body mentions a waiver, an accept-path, or a re-promotion</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>So <strong>33 of 42 refusals tell the caller that something is wrong and
+    not what to do about it</strong>. That is the mechanism by which a careful
+    surface becomes an impassable one: every incident adds a refusal, because a
+    refusal is what prevents a recurrence, and nothing adds the matching
+    discharge, because at the moment a guard is written the case it wrongly
+    catches has not happened yet.</p>
+
+    <p>The count also explains why this is worth a plan rather than a fix. Repairing
+    the one guard that caught this row leaves the ratio at 33 of 42, and the next
+    orchestrator meets the next one.</p>
+
+    <h2 id="s3">&sect;3 &mdash; Three exits, and all of them are closed</h2>
+
+    <p>An orchestrator holding a refused promotion has exactly three commands and
+    a fourth move that is not a command. Every one of them fails on this row, for
+    a different reason, which is what makes it a good specimen rather than a
+    one-off.</p>
+
+    <svg viewBox="0 0 700 250" width="100%" role="img"
+         aria-label="A finished, reviewed, verified run meets four possible moves and every one is closed."
+         style="max-width:700px;font-family:system-ui,-apple-system,sans-serif">
+      <rect x="1" y="98" width="150" height="54" fill="#fff" stroke="#444" stroke-width="1"/>
+      <text x="76" y="118" text-anchor="middle" font-size="13" fill="#111">finished run</text>
+      <text x="76" y="134" text-anchor="middle" font-size="13" fill="#555">reviewed, verified</text>
+
+      <line x1="151" y1="125" x2="205" y2="125" stroke="#444" stroke-width="1"/>
+      <line x1="205" y1="30" x2="205" y2="220" stroke="#444" stroke-width="1"/>
+
+      <line x1="205" y1="30"  x2="255" y2="30"  stroke="#444" stroke-width="1"/>
+      <line x1="205" y1="93"  x2="255" y2="93"  stroke="#444" stroke-width="1"/>
+      <line x1="205" y1="157" x2="255" y2="157" stroke="#444" stroke-width="1"/>
+      <line x1="205" y1="220" x2="255" y2="220" stroke="#444" stroke-width="1"/>
+
+      <text x="263" y="26" font-size="13" fill="#111">crew complete</text>
+      <text x="263" y="42" font-size="13" fill="#555">refused: the cited log contradicts the verdict</text>
+
+      <text x="263" y="89" font-size="13" fill="#111">waive it</text>
+      <text x="263" y="105" font-size="13" fill="#555">no waiver reaches this refusal</text>
+
+      <text x="263" y="153" font-size="13" fill="#111">crew discard</text>
+      <text x="263" y="169" font-size="13" fill="#555">removes the pointer, records nothing</text>
+
+      <text x="263" y="216" font-size="13" fill="#111">repair the guard</text>
+      <text x="263" y="232" font-size="13" fill="#555">the file is claimed by another session's run</text>
+
+      <line x1="637" y1="18"  x2="637" y2="46"  stroke="#b03a2e" stroke-width="2"/>
+      <line x1="637" y1="81"  x2="637" y2="109" stroke="#b03a2e" stroke-width="2"/>
+      <line x1="637" y1="145" x2="637" y2="173" stroke="#b03a2e" stroke-width="2"/>
+      <line x1="637" y1="208" x2="637" y2="236" stroke="#b03a2e" stroke-width="2"/>
+    </svg>
+    <p><em>Every move available to an orchestrator holding this run, and the
+    reason each is closed. The fourth is not a command, which is the finding.</em></p>
+
+    <p><strong>Promote.</strong> Refused, and correctly by its own rule: the
+    verdict asserted is <code>passed</code> and the cited log's recorded exit is
+    non-zero. See &sect;5 for why the log nonetheless shows a pass.</p>
+
+    <p><strong>Waive.</strong> There is no waiver for this refusal. The five that
+    exist were each written for a specific earlier incident, and this is not one
+    of them. An orchestrator cannot state a reason, because there is no field to
+    state it in.</p>
+
+    <p><strong>Discard.</strong> <code>reckon crew discard</code> removes a
+    non-running pointer <em>without recording promoted evidence</em>. It would
+    clear the count, and it would delete the only record that this verification
+    happened &mdash; the merged-head measurement, the failure-set difference, the
+    review scores. <strong>Discard is the move a blocked orchestrator is most
+    likely to reach for, and it is the one that destroys evidence.</strong> A
+    surface whose only escape from a wrong refusal is to erase the work is
+    training its users to erase work.</p>
+
+    <p><strong>Repair the guard.</strong> Not a command, unbounded in size, and on
+    this occasion blocked outright: <code>reckon/crew/promotion.py</code> is held
+    by a live run in another coordinator's session. The orchestrator's last resort
+    depends on a file it may not touch.</p>
+
+    <h2 id="s4">&sect;4 &mdash; Every refusal names its discharge</h2>
+
+    <p>The rule this plan proposes is one sentence: <strong>a refusal that cannot
+    be discharged is not permitted to exist.</strong> Each of the 42 carries one
+    of exactly three things, and which one is a property of the refusal rather
+    than a judgement made at the call site:</p>
+
+    <ul>
+      <li><strong>A waiver</strong> &mdash; the check is a heuristic, so a caller
+      who can see more than the check can state a reason and proceed. The reason
+      lands on the ledger row, so a waived promotion is permanently
+      distinguishable from a clean one.</li>
+      <li><strong>An alternative verdict</strong> &mdash; the evidence does not
+      support what was asserted but does support something else, and the refusal
+      says what. A gate asserted <code>passed</code> whose log shows otherwise can
+      be re-promoted as <code>failed</code> or <code>not-run</code>; the refusal
+      should name that rather than leave the caller to infer it.</li>
+      <li><strong>A named owner</strong> &mdash; the refusal is correct and
+      nothing the caller can say changes it, so the message names what must
+      change and who currently holds it. This is the case that has no surface at
+      all today, and &sect;6 is about it.</li>
+    </ul>
+
+    <p><strong>Why a discharge must be recorded rather than silent.</strong> The
+    objection to waivers is real and this plan takes it seriously: a guard
+    everyone can wave through is a guard that reports a protection it does not
+    provide, which is the failure this project has recorded repeatedly. The answer
+    is that a discharge is <em>evidence</em>, not permission. It carries the
+    refusal's identity, the caller's stated reason, and a timestamp, onto a
+    committed row. That makes waivers countable &mdash; and a refusal being waived
+    often is the signal that it is mis-specified, which is exactly the information
+    nobody has today, because the current alternative is a discard that records
+    nothing at all.</p>
+
+    <p><strong>Done when</strong> every refusal reachable from
+    <code>reckon crew complete</code> carries one of the three, asserted by a test
+    that enumerates the refusal sites and fails on any that carries none &mdash;
+    so the property holds for refusals added later, which is the whole point.
+    Range the assertion over the refusal surface itself rather than over a list of
+    known refusals: a fixed list is a snapshot of a moving number and goes stale
+    the first time someone adds a guard. The negative half is asserted too: a
+    refusal whose discharge is a waiver still refuses when the waiver is absent.</p>
+
+    <h2 id="s5">&sect;5 &mdash; The guard that produced this reads a proxy as the thing itself</h2>
+
+    <p>The specific defect is worth its own section, because the obvious repair is
+    the wrong one and the right one generalises.</p>
+
+    <p>At <code>reckon/crew/promotion.py:464</code>:</p>
+
+    <pre>if recorded != 0 and re.search(r"\bcommand not found\b", log_text):</pre>
+
+    <p>It refuses a <code>passed</code> verdict when the cited log's recorded exit
+    is non-zero <strong>and</strong> its text contains <code>command not
+    found</code> anywhere. Both conjuncts matter, and missing the first is easy
+    &mdash; this coordinator quoted the guard without it and was corrected by a
+    peer before cutting a node for the wrong repair.</p>
+
+    <p><strong>What it catches here.</strong> Line 77 of the row's log is
+    <code>"bash: line 1: rekon crew frobnicate: command not found\n"</code>. That
+    is a doctor test's own fixture, misspelled <code>rekon</code> deliberately, sitting
+    inside captured test output. The recorded exit is 1 because the gate is judged
+    by <em>delta against a red base</em> &mdash; the project's own rule, since a
+    shared checkout carries peer failures in flight. So both conjuncts hold on a
+    run that passed, and the guard cannot tell the difference.</p>
+
+    <p><strong>Why "distinguish fixture text from shell output" is not the
+    repair.</strong> It is the first thing that suggests itself and it is
+    insufficient, because the exit status genuinely agrees with the string. The
+    deeper fault is that the check answers <em>did the gate command run?</em> with
+    a <strong>negative signature</strong> &mdash; it infers absence from the
+    appearance of a diagnostic. A negative signature is a proxy, and this project
+    has recorded the same shape before: a commit sha checked by width rather than
+    resolved, a stream path read as the backend, an unchanged pid read as no
+    re-exec.</p>
+
+    <p><strong>The positive control is already in the log.</strong> A pytest run
+    that emits its own summary line &mdash; <code>N passed, M failed in Xs</code>
+    &mdash; is direct evidence that the command ran, and direct evidence outranks
+    any inference from a substring. <strong>Done when</strong> a log carrying the
+    gate's own completion evidence promotes despite the diagnostic appearing in
+    captured output, and &mdash; the half that must be written first &mdash; a log
+    carrying the diagnostic and <em>no</em> completion evidence still refuses.
+    Without the second assertion a guard that never fires passes the test.</p>
+
+    <p>The specimen is the row itself: its log is at
+    <code>~/.config/reckon/crew/runs/r-20260915T093545453615-the-guard-holds-at-the-merged-head/after.log</code>,
+    and a successful promotion of that row is the end-to-end proof. Note that
+    <code>reckon crew complete</code> is the sole promotion route and its
+    gate-evidence requirement is unconditional there while the underlying ledger
+    call stays permissive for internal callers, so a test written against the
+    ledger call passes without ever exercising the refusal.</p>
+
+    <p><strong>Provenance, checked rather than assumed.</strong> <code>941fc6d4</code>
+    added the guard and no repair commit exists anywhere in history. An open
+    followup on <code>a-live-worker-can-be-reached</code> has recorded this defect
+    as <em>reproduced, owned elsewhere and has a repair in flight</em> since
+    2026-09-15, naming no run. Two coordinators independently found no such run.
+    That record is itself an instance of the plan-staleness problem: a sentence
+    true when written, false since, and read as current by everyone downstream
+    &mdash; and in this case it kept a row blocked for three days on an assurance
+    nobody was acting on.</p>
+
+    <h2 id="s6">&sect;6 &mdash; When the repair is in a file someone else holds</h2>
+
+    <p>The third discharge in &sect;4 &mdash; a named owner &mdash; has no surface
+    today, and what filled the gap on this occasion is worth writing down precisely
+    because every step of it was a compensation.</p>
+
+    <p>To find out who held <code>promotion.py</code>, this coordinator read
+    <code>crew(project, view="scopes")</code> for the claim map, matched the
+    claiming run to its session, then identified the owning coordinator by walking
+    process ancestry from that session's follower consumer pid up through
+    <code>uv</code>, <code>bash</code> and <code>claude</code> to the zellij server
+    &mdash; because a crew session id is not a harness session name and nothing
+    maps between them. Only then could a message be sent.</p>
+
+    <p>That worked, and it is not a procedure anyone should have to rediscover.
+    <code>reckon crew directory</code> already names every live coordinator, its
+    repository, its plans and whether it is still dispatching. The missing step is
+    the join: <strong>a refusal whose repair lands in a claimed path should name
+    the claiming run, its node and its coordinator session</strong>, so the
+    orchestrator's next move is to contact a named peer rather than to conduct an
+    investigation. <code>scope-conflict</code> at dispatch already does exactly
+    this &mdash; it refuses and names the owning run &mdash; so the surface exists
+    and is simply not reached from the promotion path.</p>
+
+    <p><strong>Done when</strong> a refusal whose stated repair path is a
+    repository file reports that file's live claim if one exists, naming the run,
+    the node and the session, and says so explicitly when the file is unclaimed
+    &mdash; because "no claim" is the answer that lets an orchestrator proceed and
+    is currently indistinguishable from not having looked.</p>
+
+    <h2 id="s7">&sect;7 &mdash; What this plan does not own</h2>
+
+    <p>Making the return half of the orchestrator loop automatic &mdash; reviews
+    that dispatch themselves, an inbox that prompts, signals that are true &mdash;
+    belongs to <code>an-orchestrator-is-bound-by-its-inbox</code>. That plan is
+    about duties nothing reminds you to discharge. This one is about a duty you
+    are trying to discharge and cannot, which is why they are siblings rather than
+    one plan: the first is defeated by forgetting, the second by refusing.</p>
+
+    <p>The unfenced plan write belongs to <code>plan-writes-are-not-fenced</code>,
+    and the rendering of the counters to
+    <code>monitor-renders-what-it-is-given</code>. Neither is touched here.</p>
+
+    <p>This plan also does not propose relaxing any existing guard. Every one of
+    the 42 refusals stays. What changes is that each acquires a stated way
+    through, and the one in &sect;5 acquires a correct test for the thing it is
+    actually asking about.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+
+      <div class="r-dec" data-key="discharge-surface-shape" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">Does each refusal get its own named waiver flag, or is
+        there one keyed waiver that takes a refusal identity and a reason?</p>
+        <p class="r-dec-ctx">A flag per refusal is how the current five arose, and
+        it is safe in the sense that each is deliberate, reviewed and narrow. It is
+        also how the surface fell 33 behind, because a flag is only written once a
+        refusal has wrongly caught something, and by then someone is already stuck.
+        One keyed waiver &mdash; <code>--waive &lt;refusal-id&gt; "&lt;reason&gt;"</code>
+        recorded on the row &mdash; makes the discharge surface grow with the
+        refusal surface by construction and makes waivers countable per refusal.
+        Its cost is that every guard becomes waivable at once, including guards
+        whose whole value is that they cannot be argued with.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="flag-per-refusal">a named flag per refusal</button>
+          <button class="r-opt" data-value="one-keyed-waiver">one keyed waiver taking a refusal id and reason</button>
+          <button class="r-opt" data-value="keyed-waiver-with-opt-out">one keyed waiver, with refusals able to declare themselves unwaivable</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+
+      <div class="r-dec" data-key="undischargeable-row-disposition" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">What becomes of a row whose refusal is correct and whose
+        repair is owned by someone else?</p>
+        <p class="r-dec-ctx">Today it stays unreconciled, and once past the grace
+        window it refuses every new dispatch in the project &mdash; so one row
+        another session must fix stops a fleet. The alternatives are a recorded
+        disposition that stops the clock without promoting (honest, but a new way
+        for work to be quietly parked), or leaving the pressure in place on the
+        argument that a blocked fleet is what gets the repair done. The measured
+        case argues against the last: this row applied that pressure for three days
+        and produced no repair, because the coordinator who could feel the pressure
+        was not the one who could act on it.</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="blocked-on-repair-disposition">a recorded blocked-on-repair disposition naming the owner</button>
+          <button class="r-opt" data-value="stays-unreconciled">stays unreconciled and keeps the pressure on</button>
+          <button class="r-opt" data-value="disposition-with-expiry">a recorded disposition that expires and re-raises</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-aocdar-001" data-status="open"
+               data-written-by="reckon-create" data-written-at="2026-09-18"
+               data-recommends-skill="/reckon-ship an-orchestrator-can-discharge-a-refusal §5"
+               data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Land the one guard first, because it has a specimen; the general rule needs a decision</h4>
+        <div class="r-fu-body">
+          <p><strong>&sect;5 goes first and is the only section that can start
+          today.</strong> It is bounded, it has an end-to-end specimen &mdash; a
+          real row that must promote when the repair lands and must still refuse
+          without it &mdash; and it needs no decision. The one thing it does need
+          is <code>reckon/crew/promotion.py</code>, currently claimed by
+          <code>wss-promotion-requires-impl-move</code> in the
+          <code>nova-wss-20260918</code> session. That coordinator has been asked
+          to release the file or take the repair; either answer unblocks the node,
+          and neither has been assumed.</p>
+
+          <p><strong>&sect;4 and &sect;6 wait on the two decisions</strong>, and
+          they wait on them in that order. <code>discharge-surface-shape</code>
+          governs what &sect;4 builds, and it is genuinely the lead's: the
+          trade-off is between a surface that cannot fall behind and a guard that
+          cannot be argued with, and both readings are defensible.
+          <code>undischargeable-row-disposition</code> only becomes answerable once
+          the third discharge exists, because naming an owner is what a disposition
+          would record.</p>
+
+          <p><strong>The falsifier for &sect;4, to be written before the
+          change:</strong> the test enumerates the refusal sites from the source
+          rather than from a list, so a refusal added later with no discharge fails
+          it. A fixed list of 42 would pass forever while the surface moves, which
+          is the same defect as a test that hardcodes today's date. Assert the
+          negative half as well: a refusal whose discharge is a waiver must still
+          refuse when the waiver is absent, or the property is satisfied by making
+          everything pass.</p>
+
+          <p><strong>Do not measure this plan by the unreconciled count
+          falling.</strong> The count falls fastest by discarding rows, which is
+          the outcome &sect;3 identifies as the worst one available. Measure it by
+          whether a refused orchestrator has a next move that is neither erasing
+          the work nor editing the tool, and by how long the oldest
+          undischargeable row waits with a named owner against how long this one
+          waited with none.</p>
+        </div>
+        <pre class="r-fu-prompt">/reckon-ship an-orchestrator-can-discharge-a-refusal §5</pre>
+      </article>
+    </section>
+
+  </main>
+</body>
+</html>
