@@ -1926,6 +1926,7 @@ def complete(
     resume_waiver: str = "",
     discard_resume_worktree: bool = False,
     accepted_paths: Mapping[str, str] | None = None,
+    no_impl_change: str = "",
 ) -> dict[str, Any]:
     """Promote a run, or finish cleanup when its record already landed."""
     verdict = str(gate).strip().lower()
@@ -2030,6 +2031,7 @@ def complete(
             discard_resume_worktree=discard_resume_worktree,
             accepted_paths=accepted_paths,
             commit_list_shortfall=commit_list_shortfall,
+            no_impl_change=no_impl_change,
         )
         if commit_list_shortfall is not None:
             result["commit_list_shortfall"] = dict(commit_list_shortfall)
@@ -2617,6 +2619,171 @@ def _review_row_block(project: str, run_id: str) -> dict[str, Any] | None:
     return review_module.ledger_block(stored)
 
 
+def plan_impl_at(
+    project: str,
+    plan: str,
+    root: str | Path | None,
+) -> float | None:
+    """Return a plan's persisted impl, or None when unset or unreadable.
+
+    A plan that has never carried a ``plan-impl`` scalar reads as unset rather
+    than as zero, so a promotion can tell "the plan never moved" from "the plan
+    has no impl to compare".
+    """
+    if not project or not plan:
+        return None
+    try:
+        state, _version = _store.read_plan(project, plan, root, artifact_type="plan")
+    except (OSError, ValueError, _store.OpError):
+        return None
+    return _plan_impl_from_state(state)
+
+
+def _plan_impl_from_state(state: Any) -> float | None:
+    if not isinstance(state, Mapping) or state.get("type") != "plan":
+        return None
+    value = state.get("impl")
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _plan_state_for_run(
+    record: Mapping[str, Any], *, fallback_root: str | Path | None
+) -> dict[str, Any]:
+    """Read the run's plan from the repository its dispatch authority names.
+
+    The impl comparison must read the plan the run was dispatched against, so
+    the authority's plan repository is preferred over the ledger checkout — a
+    caller may point ``--checkout-path`` at another tree.
+    """
+    project = str(record.get("project") or "")
+    plan = str((record.get("node") or {}).get("plan") or "")
+    if not project or not plan:
+        return {}
+    root: str | Path | None = fallback_root
+    authority = record.get("authority")
+    if isinstance(authority, Mapping):
+        plan_authority = authority.get("plan")
+        if isinstance(plan_authority, Mapping) and plan_authority.get("repository"):
+            root = str(plan_authority["repository"])
+    try:
+        state, _version = _store.read_plan(project, plan, root, artifact_type="plan")
+    except (OSError, ValueError, _store.OpError):
+        return {}
+    return state if isinstance(state, Mapping) else {}
+
+
+def _plan_remaining_sections(state: Mapping[str, Any]) -> list[str]:
+    """Return the plan's declared implementable sections.
+
+    A plan that has not persisted a classification falls back to the section
+    identities its gates and comment anchors name, so the refusal still lists
+    authored sections a reader can act on.
+    """
+    declarations = state.get("section_declarations")
+    if isinstance(declarations, Mapping):
+        return sorted(
+            section
+            for section, classification in declarations.items()
+            if str(classification).strip() == "implementable"
+        )
+    from reckon._schema import plan_section_anchors
+
+    return sorted(plan_section_anchors(state))
+
+
+_IMPL_MOVE_ENFORCED_ROLES = frozenset({"implement", "test"})
+_IMPL_MOVE_EXEMPT_CLASSIFICATIONS = frozenset({"negative-result", "correct-refusal"})
+
+
+def _require_impl_moved(
+    run_id: str,
+    record: Mapping[str, Any],
+    *,
+    gate: str,
+    failure_classification: str,
+    no_impl_change: str,
+    plan_state: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Compare the plan's impl at promotion against the value at dispatch.
+
+    Landing work is supposed to advance the plan it lands against. Two nova
+    plans sat at zero percent across five landed nodes each because nothing in
+    the landing path made the plan move, so this converts the habit into a
+    check. Every exemption is named in the returned record, and the refusal
+    names the flag that waives it so recording a reason is one word of work.
+    """
+
+    role = str(record.get("role") or "")
+    node = record.get("node") or {}
+    plan = str(node.get("plan") or "")
+    recorded = record.get("plan_impl_at_dispatch")
+    if isinstance(recorded, (int, float)) and not isinstance(recorded, bool):
+        recorded_value = float(recorded)
+    else:
+        recorded_value = None
+    check: dict[str, Any] = {
+        "plan": plan,
+        "at_dispatch": recorded_value,
+        "at_complete": None,
+    }
+    if role not in _IMPL_MOVE_ENFORCED_ROLES:
+        check["verdict"] = "exempt"
+        check["reason"] = f"role-not-enforced:{role or 'unknown'}"
+        return check
+    if str(failure_classification).strip().lower() in _IMPL_MOVE_EXEMPT_CLASSIFICATIONS:
+        check["verdict"] = "exempt"
+        check["reason"] = f"failure-classification:{failure_classification}"
+        return check
+
+    if str(gate).strip().lower() != "passed":
+        check["verdict"] = "exempt"
+        check["reason"] = "gate-not-passing"
+        return check
+    if not plan:
+        check["verdict"] = "exempt"
+        check["reason"] = "node-names-no-plan"
+        return check
+    if not plan_state:
+        check["verdict"] = "exempt"
+        check["reason"] = "plan-unreadable"
+        return check
+    current = _plan_impl_from_state(plan_state)
+    check["at_complete"] = current
+    if recorded_value is None:
+        # A run dispatched before this check existed carries no value to
+        # compare; it is exempt rather than treated as a plan that never moved.
+        check["verdict"] = "exempt"
+        check["reason"] = "no-impl-recorded-at-dispatch"
+        return check
+    if current is None:
+        check["verdict"] = "exempt"
+        check["reason"] = "plan-records-no-impl"
+        return check
+    if current != recorded_value:
+        check["verdict"] = "moved"
+        return check
+    if str(no_impl_change).strip():
+        check["verdict"] = "waived"
+        check["reason"] = str(no_impl_change).strip()
+        return check
+    remaining = _plan_remaining_sections(plan_state)
+    listed = ", ".join(remaining) if remaining else "(none declared)"
+    raise CrewError(
+        f"run {run_id!r} promotes a passing {role} run, but plan {plan!r} impl "
+        f"did not move: {recorded_value:g} at dispatch and {current:g} at "
+        f"completion. Sections still to land: {listed}. Advance the plan's impl "
+        f"as the work lands, or record why it did not move with "
+        f"`reckon crew complete --run {run_id} --gate passed "
+        f"--no-impl-change REASON` (the reason lands on the ledger row); if the "
+        f"plan's impl is not this run's to move, state that reason"
+    )
+
+
 def _complete_locked(
     run_id: str,
     *,
@@ -2640,6 +2807,7 @@ def _complete_locked(
     discard_resume_worktree: bool = False,
     accepted_paths: Mapping[str, str] | None = None,
     commit_list_shortfall: Mapping[str, Any] | None = None,
+    no_impl_change: str = "",
 ) -> dict[str, Any]:
     """Promote a finished run into the owning repository's committed ledger.
 
@@ -2831,6 +2999,18 @@ def _complete_locked(
     boundary_waived = _require_repository_tree_boundary(
         run_id, record, waiver_reason=boundary_waiver
     )
+    # A passing implement or test run is refused when the plan it landed against
+    # did not move, unless the reason is recorded. The check reads the plan from
+    # its own repository, ahead of anything this promotion writes.
+    plan_state = _plan_state_for_run(record, fallback_root=ledger_root)
+    impl_move = _require_impl_moved(
+        run_id,
+        record,
+        gate=gate,
+        failure_classification=failure_classification,
+        no_impl_change=no_impl_change,
+        plan_state=plan_state,
+    )
 
     session_id = record.get("session_id") or stream.session_id
     lane_receipt = _harvest_lane_receipt(
@@ -2950,6 +3130,11 @@ def _complete_locked(
     # so a later reader can tell it from one that recorded nothing by accident.
     if str(no_commit).strip():
         run["no_commit"] = str(no_commit).strip()
+    # The impl comparison and its outcome ride the row, so a later audit can
+    # separate a plan that moved from one promoted against a recorded waiver.
+    if impl_move.get("at_dispatch") is not None:
+        run["plan_impl_at_dispatch"] = impl_move["at_dispatch"]
+    run["impl_move"] = dict(impl_move)
     # A presented-list shortfall survives on the record so a reader of the
     # ledger sees the boundary check may have been under-scoped, not only the
     # coordinator that was looking at the immediate report.
@@ -3094,6 +3279,7 @@ def _complete_locked(
         "plan_comment": comment,
         "release": release,
         "store": store_outcome,
+        "impl_move": dict(impl_move),
     }
 
 

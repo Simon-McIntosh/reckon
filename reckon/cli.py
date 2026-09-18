@@ -2760,6 +2760,16 @@ def _ledger_module():
         "to this run; repeat for each path."
     ),
 )
+@click.option(
+    "--no-impl-change",
+    default="",
+    metavar="REASON",
+    help=(
+        "Promote a passing implement or test run whose plan impl did not move "
+        "since dispatch, and record why it did not. Worded as a reason you give, "
+        "not a rebuke: some landings legitimately do not move the plan."
+    ),
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_complete(
     run_id,
@@ -2780,6 +2790,7 @@ def crew_complete(
     waive_boundary_refusal,
     waive_resume_path,
     accepted_paths,
+    no_impl_change,
     pretty,
 ):
     """Promote one finished run into the owning repository's committed ledger.
@@ -2817,6 +2828,7 @@ def crew_complete(
             boundary_waiver=waive_boundary_refusal,
             resume_waiver=waive_resume_path,
             accepted_paths=dict(accepted_paths),
+            no_impl_change=no_impl_change,
         )
     except ledger_module.SuiteDeltaError as exc:
         _emit(
