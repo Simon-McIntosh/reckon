@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-scheduling-surface-landed">
+  <meta name="plan-title" content="Work scheduling surface — cumulative execution-evidence record">
+  <meta name="plan-summary" content="Execution evidence for work-scheduling-surface, accumulating one section per landed node. Opens with the portfolio flight, which reads every mounted project on one screen.">
+  <meta name="plan-evidence-for" content="work-scheduling-surface">
+  <meta name="plan-recorded-at" content="2026-09-18">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-environment" content="Linux workstation; reckon crew node dispatched into a detached worktree; tests run with the main checkout's virtualenv through UV_PROJECT_ENVIRONMENT">
+  <title>Work scheduling surface — cumulative execution-evidence record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1>Work scheduling surface — cumulative execution-evidence record</h1>
+    <p class="plan-summary">One section per landed node, accumulating as work lands.</p>
+  </header>
+
+  <section id="portfolio-flight">
+    <h2>§6 — Portfolio flight across every mounted project</h2>
+
+    <p>The portfolio answers with one row per registered mount, ranked by the pushed
+    sprint's uncovered critical hours descending. It reuses the roadmap reader and the
+    flight readers, and adds no state file: the mounts come from registration, the live
+    width and the unreconciled count come from the live pointers the crew already writes.
+    The table below names each figure, the surface that answers it and the evidence.</p>
+
+    <table>
+      <caption>What landed in §6, by figure, with the surface that answers it.</caption>
+      <thead><tr><th>Figure</th><th>Surface</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>The selector</td>
+          <td><code>reckon/flight.py</code> — <code>PORTFOLIO_PROJECT</code>; a project argument of <code>*</code> answers with the portfolio instead of resolving one config</td>
+          <td>real-mount read: 13 projects, exit 0</td>
+        </tr>
+        <tr>
+          <td>Column set</td>
+          <td><code>PORTFOLIO_COLUMNS</code>, one tuple so the columns are a list rather than a convention each reader restates</td>
+          <td><code>test_row_carries_every_column</code> asserts every column on every row</td>
+        </tr>
+        <tr>
+          <td>Pushed sprint and theme</td>
+          <td>the roadmap's own active sprint, with the theme stamped from the discovered sprint resources, because sprint rows carry membership and progress but not the theme</td>
+          <td>real read: <code>nova</code> answers S10 with its theme; a project with no pushed sprint answers a null id, not the string <code>None</code></td>
+        </tr>
+        <tr>
+          <td>Critical path and its length</td>
+          <td>the roadmap's <code>critical_path</code>, its plans, elapsed hours and worker hours carried unchanged</td>
+          <td>real read: <code>nova</code> at 46.8 elapsed hours over two plans</td>
+        </tr>
+        <tr>
+          <td>Coverage of that path</td>
+          <td><code>_path_coverage</code>: a path plan is covered when a run on it has a living process</td>
+          <td>real read: <code>reckon</code> covered by one live run on <code>an-orchestrator-is-bound-by-its-inbox</code>; a stopped process covers nothing</td>
+        </tr>
+        <tr>
+          <td>Live width by role</td>
+          <td>the living pointers grouped by their declared role</td>
+          <td>real read: <code>reckon</code> at 9 — 5 implement, 3 review, 1 investigate</td>
+        </tr>
+        <tr>
+          <td>Unreconciled runs</td>
+          <td>the closure predicate the fleet already shares; a run whose turn is still open counts as working, and any other run with no disposition excusing it counts here</td>
+          <td>a handed-off pointer is reconciled; a disposition outlived by its run is not</td>
+        </tr>
+        <tr>
+          <td>Lane headroom and its age</td>
+          <td><code>_project_lane_reading</code>: the newest lane document's headroom with that same reading's age, never one reading's figure with another's age</td>
+          <td>a project with no readable lane document answers unknown with a null age</td>
+        </tr>
+        <tr>
+          <td>Ranking</td>
+          <td>uncovered critical hours descending, alphabetical only as the tiebreak</td>
+          <td>the suite's two fake projects rank in opposite orders by name and by hours, so a name-sorted table fails rather than passing by coincidence</td>
+        </tr>
+        <tr>
+          <td>Crew read path</td>
+          <td><code>reckon/mcp_views.py</code> — <code>portfolio_view</code>, at summary, detail and raw depths, paginated, deriving nothing the report did not answer</td>
+          <td>the view's three depths asserted in <code>test_flight_portfolio.py</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Caveats a reader should carry</h3>
+
+    <ul>
+      <li><strong>The crew view name is not wired.</strong> <code>portfolio_view</code> exists and is
+      asserted, but the literal view name a caller passes to <code>crew(view=...)</code> lives in a
+      view list and a literal type that <code>reckon/mcp.py</code> holds, and a concurrent node held
+      that file for the whole of this node's run. Until one line is added there, the portfolio is
+      reachable through the flight project key and not by its own view name.</li>
+      <li><strong>The CLI prints the report as JSON.</strong> <code>reckon flight --project '*'</code>
+      emits the portfolio inside the CLI's existing JSON envelope, so the ranked rows are all present
+      and the columns that sort them are readable, but a rendered table would need an edit to
+      <code>reckon/cli.py</code>, which another node held.</li>
+      <li><strong>The read is heavy.</strong> A real-mount pass over all thirteen registered projects
+      took 155 s, because each project's docs tree is discovered and each live pointer is classified
+      against the process table. This belongs on a compute partition, not the login node.</li>
+      <li><strong>A live pointer launched on another host reports its stored liveness as unproven.</strong>
+      That is the crew contract rather than a defect here, and it is why the row carries the classifier's
+      own answer instead of re-deriving one.</li>
+      <li><strong>One unreadable project reports its refusal on its own row</strong> and in the report's
+      errors list, and sorts last rather than posing as a project with nothing left to cover.</li>
+    </ul>
+  </section>
+
+  <section id="evidence-index">
+    <h2>Evidence index</h2>
+
+    <table>
+      <caption>Logs and records behind the claims above.</caption>
+      <thead><tr><th>Evidence</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>Node manifest</td><td><code>~/.config/reckon/crew/runs/r-20260918T085656170170-wss-portfolio-flight/manifest.md</code></td></tr>
+        <tr><td>Baseline test log</td><td><code>~/.config/reckon/crew/reports/reckon/nova-wss/portfolio/base-test_flight.log</code> — exit 0, 80 passed</td></tr>
+        <tr><td>Portfolio test log</td><td><code>~/.config/reckon/crew/reports/reckon/nova-wss/portfolio/test_flight_portfolio.log</code> — exit 0, 86 passed, no failures added against the baseline</td></tr>
+        <tr><td>Real-mount smoke log</td><td><code>~/.config/reckon/crew/reports/reckon/nova-wss/portfolio/smoke.log</code> — exit 0, 13 projects, 154.9 s</td></tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+</body>
+</html>

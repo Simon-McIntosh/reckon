@@ -129,6 +129,19 @@
     pushed sprint's uncovered critical hours descending, so the project whose longest path is most starved
     reads first. The view reuses the roadmap and flight readers and adds no state file.</p>
 
+    <p>Landed 2026-09-18. <code>reckon flight --project '*'</code> composes the portfolio from every
+    registered mount: one row per project carrying the pushed sprint and its theme, the critical path
+    with its elapsed length, that path's coverage, live width by role, the unreconciled run count, and
+    the newest lane reading with its age, sorted by uncovered critical hours descending. Coverage is
+    counted from each project's live pointers whose process is alive and never from transition events,
+    because a working run rewrites its manifest only when it finishes; the roadmap's own coverage field
+    has not landed, so this view derives that figure locally and reuses the roadmap reader for the rest.
+    <code>reckon/mcp_views.py</code> exposes it as <code>portfolio_view</code> with summary, detail and
+    raw depths; naming it as a crew view needs one entry in the view list that <code>reckon/mcp.py</code>
+    holds, and another node held that file. A real-mount read of all thirteen mounted projects answered
+    in 155 s, so this read belongs on a compute partition rather than the login node. No state file is
+    added.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="off-path-refusal-timing" data-choice="report-first" data-by="nova lead via nova S19 coordinator, agreed with the reckon coordinator" data-when="2026-09-18">

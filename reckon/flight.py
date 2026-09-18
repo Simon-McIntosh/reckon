@@ -33,6 +33,7 @@ import re
 import shutil
 import subprocess
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -1049,9 +1050,22 @@ def flight_report(
     *,
     overrides: Mapping[str, Any] | None = None,
     probe_auth: bool = False,
+    portfolio_sources: Mapping[str, Any] | None = None,
     **resolve_kwargs: Any,
 ) -> dict[str, Any]:
-    """Build the whole machine-readable answer: config, provenance, availability."""
+    """Build the whole machine-readable answer: config, provenance, availability.
+
+    The portfolio project key (``*``) selects no project layer and no single
+    config to resolve, so it answers with :func:`portfolio_report` instead:
+    one row per mounted project, ranked by uncovered critical hours.
+    ``portfolio_sources`` is the test seam carrying the mounts, live pointers
+    and readers that composition consumes.
+    """
+    if project == PORTFOLIO_PROJECT:
+        return {
+            "project": PORTFOLIO_PROJECT,
+            "portfolio": portfolio_report(**(portfolio_sources or {})),
+        }
     resolved = resolve(project, overrides=overrides, **resolve_kwargs)
     return {
         "availability": probe_availability(resolved.config, probe_auth=probe_auth),
@@ -1066,6 +1080,323 @@ def flight_report(
             resolved.config
         ),
         "warnings": list(resolved.warnings),
+    }
+
+
+# ── Portfolio ───────────────────────────────────────────────────────────────
+
+# The cross-project selector, shared with the roadmap's portfolio read: a
+# project argument of ``*`` means every mounted project rather than a project
+# actually named ``*``.
+PORTFOLIO_PROJECT = "*"
+
+# The row keys in fixed order, so the table's columns are one list rather than
+# a smaller convention each reader restates.
+PORTFOLIO_COLUMNS = (
+    "project",
+    "pushed_sprint",
+    "critical_path",
+    "coverage",
+    "uncovered_critical_hours",
+    "live_width",
+    "live_width_by_role",
+    "unreconciled_runs",
+    "lane_headroom",
+    "lane_reading_age_seconds",
+)
+
+
+def _project_roadmap(project: str, docs_dir: Path) -> dict[str, Any]:
+    """Build one mounted project's roadmap, restoring each sprint's theme.
+
+    Sprint rows carry membership and progress but not the sprint's theme, and
+    the portfolio names the pushed sprint by both. The theme is stamped here,
+    where the discovered sprint resources are already in hand, rather than
+    re-discovered by every reader that wants one.
+    """
+    from reckon._store import read_plan
+    from reckon.roadmap import build_roadmap
+    from reckon.serve import discover_plans
+
+    repo_root = docs_dir.parent
+    discovered = discover_plans(docs_dir, project, docs_dir / "state")
+    index_data, _index_version = read_plan(project, "index", repo_root)
+    project_rows = index_data.get("projects") or []
+    roadmap = build_roadmap(
+        project,
+        list(discovered.get("inventory") or []),
+        list(discovered.get("sprints") or []),
+        active_sprint_id=(
+            discovered.get("active_sprint_id") or index_data.get("active_sprint_id")
+        ),
+        project_manifest=(
+            project_rows[0]
+            if project_rows and isinstance(project_rows[0], dict)
+            else {}
+        ),
+    )
+    themes = {
+        str(sprint.get("id")): str(sprint.get("theme") or "")
+        for sprint in discovered.get("sprints") or []
+        if isinstance(sprint, Mapping) and sprint.get("id")
+    }
+    for row in roadmap.get("sprints") or []:
+        if isinstance(row, dict):
+            row.setdefault("theme", themes.get(str(row.get("id")), ""))
+    return roadmap
+
+
+def _project_lane_reading(project: str, docs_dir: Path) -> dict[str, Any]:
+    """Report the project's newest lane reading: its headroom and its age.
+
+    Each backend's lane document is read fresh and one row is reported, because
+    pairing the newest age with a different reading's headroom would report a
+    figure no lane currently reports. A project that declares no readable lane
+    document reports ``unknown`` with a null age rather than a stale figure:
+    absence of a reading is not a healthy lane.
+    """
+    try:
+        config = resolve(project, checkout_path=docs_dir.parent).config
+    except FlightConfigError:
+        return {"lane_headroom": "unknown", "lane_reading_age_seconds": None}
+    readings = [
+        _probe_lane_document(backend)
+        for backend in (config.get("backends") or {}).values()
+        if isinstance(backend, Mapping)
+    ]
+    aged = []
+    for reading in readings:
+        age = reading.get("lane_age_seconds")
+        if isinstance(age, (int, float)) and not isinstance(age, bool):
+            aged.append((float(age), reading))
+    if not aged:
+        return {"lane_headroom": "unknown", "lane_reading_age_seconds": None}
+    age_seconds, newest = min(aged, key=lambda item: item[0])
+    return {
+        "lane_headroom": newest.get("lane_headroom", "unknown"),
+        "lane_reading_age_seconds": round(age_seconds),
+    }
+
+
+def _path_coverage(
+    path_plans: list[str],
+    length_hours: float,
+    rows: list[dict[str, Any]],
+) -> tuple[dict[str, Any], float]:
+    """Count the live runs standing on a critical path, and the hours left bare.
+
+    A path plan is covered when at least one run whose process is alive targets
+    it. The uncovered fraction of the path's elapsed length is the hours no
+    worker currently stands on, which is what ranks one project above another.
+    Liveness comes from the pointer's own classification, never from transition
+    events: a working run rewrites its manifest only when it finishes, so an
+    event-based reading calls a whole live fleet absent.
+    """
+    live_by_plan: dict[str, list[str]] = {}
+    for row in rows:
+        if row.get("process_alive") is not True:
+            continue
+        plan = str(row.get("plan") or "")
+        if plan:
+            live_by_plan.setdefault(plan, []).append(str(row.get("run_id") or ""))
+    total = len(path_plans)
+    covered_plans = [plan for plan in path_plans if live_by_plan.get(plan, [])]
+    runs = [
+        {"run_id": run_id, "plan": plan}
+        for plan in path_plans
+        for run_id in live_by_plan.get(plan, [])
+    ]
+    covered_fraction = len(covered_plans) / total if total else 1.0
+    coverage = {
+        "plans": total,
+        "covered_plans": len(covered_plans),
+        "covered_fraction": round(covered_fraction, 4),
+        "live_runs": len(runs),
+        "runs": runs,
+    }
+    return coverage, round(length_hours * (1.0 - covered_fraction), 3)
+
+
+def _portfolio_live_rows(
+    pointers: Iterable[Mapping[str, Any]],
+    classifier: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
+) -> dict[str, list[dict[str, Any]]]:
+    """Classify the live pointers and group the rows by project.
+
+    Classification is the liveness authority, and it is host-aware: a pid is
+    meaningful only on the machine that issued it, so a pointer launched
+    elsewhere carries its stored answer as unproven rather than having its
+    process table read from here. Only the fields the portfolio reads are kept,
+    so a caller cannot mistake a row for the classifier's whole answer.
+    """
+    from reckon.crew import recovery as recovery_module
+
+    classify = classifier or recovery_module.classify_pointer
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for pointer in pointers:
+        if not isinstance(pointer, Mapping):
+            continue
+        project = str(pointer.get("project") or "")
+        if not project:
+            continue
+        classified = classify(pointer)
+        recorded = pointer.get("closure_disposition")
+        disposition = (
+            str(recorded.get("kind") or "") if isinstance(recorded, Mapping) else ""
+        )
+        classification = str(classified.get("classification") or "")
+        grouped.setdefault(project, []).append(
+            {
+                "run_id": str(classified.get("run_id") or ""),
+                "plan": str(classified.get("plan") or ""),
+                "role": str(pointer.get("role") or ""),
+                "classification": classification,
+                "process_alive": classified.get("process_alive"),
+                # A run whose turn is still open is not awaiting anyone's
+                # reconciliation, so it is not counted here; anything else that
+                # carries no disposition excusing it — including a run that
+                # declared ``still-working`` and has since stopped — is the
+                # forgotten work this column exists to surface. The closure
+                # drain narrows the same predicate to pointers past their grace
+                # window and already finished with; the portfolio reports the
+                # whole population, so a pointer still inside its grace window
+                # is visible here before the drain would name it.
+                "unreconciled": classification != "running"
+                and not recovery_module.closure_disposition_valid(
+                    disposition, classification
+                ),
+            }
+        )
+    return grouped
+
+
+def _portfolio_row(
+    project: str,
+    rows: list[dict[str, Any]],
+    roadmap: Mapping[str, Any],
+    lane: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Reduce one project's roadmap, live pointers and lane reading to one row."""
+    critical = roadmap.get("critical_path")
+    critical = critical if isinstance(critical, Mapping) else {}
+    path_plans = [str(plan) for plan in (critical.get("plans") or [])]
+    length_hours = float(critical.get("length_hours") or 0.0)
+    coverage, uncovered_hours = _path_coverage(path_plans, length_hours, rows)
+    alive = [row for row in rows if row.get("process_alive") is True]
+    by_role: dict[str, int] = {}
+    for row in alive:
+        role = str(row.get("role") or "") or "unspecified"
+        by_role[role] = by_role.get(role, 0) + 1
+    pushed_id = str(roadmap.get("active_sprint_id") or "")
+    theme = ""
+    for sprint in roadmap.get("sprints") or []:
+        if isinstance(sprint, Mapping) and str(sprint.get("id")) == pushed_id:
+            theme = str(sprint.get("theme") or "")
+            break
+    return {
+        "project": project,
+        "pushed_sprint": {"id": pushed_id or None, "theme": theme},
+        "critical_path": {
+            "plans": path_plans,
+            "length_hours": length_hours,
+            "length_unit": str(critical.get("length_unit") or "elapsed-hours"),
+            "worker_hours": float(critical.get("worker_hours") or 0.0),
+            "effort_unit": str(critical.get("effort_unit") or ""),
+        },
+        "coverage": coverage,
+        "uncovered_critical_hours": uncovered_hours,
+        "live_width": len(alive),
+        "live_width_by_role": dict(sorted(by_role.items())),
+        "unreconciled_runs": sum(1 for row in rows if row.get("unreconciled")),
+        "lane_headroom": lane.get("lane_headroom", "unknown"),
+        "lane_reading_age_seconds": lane.get("lane_reading_age_seconds"),
+    }
+
+
+def _read_roadmap(
+    project: str,
+    docs_dir: Path,
+    reader: Callable[[str, Path], Mapping[str, Any]],
+) -> tuple[Mapping[str, Any], str]:
+    """Read one project's roadmap, reporting a failure instead of raising it.
+
+    One malformed project must not take the whole table down with it, and a
+    silent zero is worse than a named gap, so the refusal text is carried on
+    the row and repeated in the report's own ``errors`` list where a reader
+    scanning the sort order cannot miss it.
+    """
+    try:
+        return reader(project, docs_dir), ""
+    except Exception as exc:  # noqa: BLE001 — a bad project is data, not a crash
+        return {}, f"{project}: {type(exc).__name__}: {exc}"
+
+
+def portfolio_report(
+    *,
+    mounts: Mapping[str, str | Path] | None = None,
+    live_pointers: Iterable[Mapping[str, Any]] | None = None,
+    roadmap_reader: Callable[[str, Path], Mapping[str, Any]] | None = None,
+    lane_reader: Callable[[str, Path], Mapping[str, Any]] | None = None,
+    classifier: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Compose one row per mounted project, ranked by uncovered critical hours.
+
+    Rows sort by the pushed sprint's uncovered critical hours descending, so
+    the project whose critical path has the most bare hours sits first. The
+    figures are read from the roadmap, the live pointers and each project's own
+    lane reading; nothing is derived from a transition event, and no state file
+    is added.
+    """
+    mounted = mounted_project_docs() if mounts is None else mounts
+    if live_pointers is None:
+        from reckon.crew.runs import list_live
+
+        live_pointers = list_live()
+    read_roadmap = roadmap_reader or _project_roadmap
+    read_lane = lane_reader or _project_lane_reading
+    grouped = _portfolio_live_rows(live_pointers, classifier=classifier)
+    rows: list[dict[str, Any]] = []
+    errors: list[str] = []
+    for project in sorted(mounted):
+        docs_dir = Path(mounted[project])
+        roadmap, roadmap_error = _read_roadmap(project, docs_dir, read_roadmap)
+        if roadmap_error:
+            errors.append(roadmap_error)
+            rows.append(
+                {
+                    "project": project,
+                    "error": roadmap_error,
+                    "uncovered_critical_hours": None,
+                }
+            )
+            continue
+        rows.append(
+            _portfolio_row(
+                project,
+                grouped.get(project, []),
+                roadmap,
+                read_lane(project, docs_dir),
+            )
+        )
+    rows.sort(
+        key=lambda row: (
+            row["uncovered_critical_hours"] is None,
+            -(row["uncovered_critical_hours"] or 0.0),
+            row["project"],
+        )
+    )
+    return {
+        "projects": len(rows),
+        "columns": list(PORTFOLIO_COLUMNS),
+        "errors": errors,
+        "live_width": sum(int(row.get("live_width") or 0) for row in rows),
+        "unreconciled_runs": sum(
+            int(row.get("unreconciled_runs") or 0) for row in rows
+        ),
+        "uncovered_critical_hours": round(
+            sum(float(row["uncovered_critical_hours"] or 0.0) for row in rows), 3
+        ),
+        "rows": rows,
     }
 
 

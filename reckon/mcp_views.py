@@ -2356,3 +2356,67 @@ def roadmap_view(
     result["finding_counts"] = _roadmap_finding_counts(findings)
     result["pagination"] = pagination
     return result
+
+
+def _portfolio_row_view(row: Mapping[str, Any], view: str) -> dict[str, Any]:
+    """Project one portfolio row, reducing only the coverage runs in summary.
+
+    A row is already flat and already ranked, so the projection is a selection
+    rather than a re-derivation: nothing here computes a figure the report did
+    not answer, which is what keeps this view and any other reader of the same
+    report from disagreeing.
+    """
+    rendered = dict(row)
+    if view == "summary":
+        coverage = row.get("coverage")
+        if isinstance(coverage, Mapping):
+            rendered["coverage"] = {
+                key: value for key, value in coverage.items() if key != "runs"
+            }
+    return rendered
+
+
+def portfolio_view(
+    report: Mapping[str, Any],
+    *,
+    view: str | None = None,
+    cursor: str | None = None,
+    limit: int | None = None,
+) -> dict[str, Any]:
+    """Render the cross-project portfolio, one row per mounted project.
+
+    The report arrives already ranked by uncovered critical hours descending
+    and already carrying every column, so this view selects and paginates
+    rather than deriving: ``summary`` returns the ranked table with each row's
+    coverage reduced to its counts, ``detail`` keeps the coverage runs that
+    explain which run stands on which path plan, and ``raw`` returns the report
+    unchanged for a reader that wants the lossless answer.
+    """
+    selected = normalize_view(view)
+    if selected not in {"summary", "detail", "raw"}:
+        raise ViewRequestError(
+            "invalid_view",
+            "Portfolios support summary, detail, or raw views.",
+            "Use summary for the ranked table, detail for coverage runs, or raw.",
+        )
+    rows = [row for row in report.get("rows") or [] if isinstance(row, Mapping)]
+    if selected == "raw":
+        return {"project": "*", "view": "raw", "data": dict(report)}
+    page, pagination = paginate(list(rows), cursor=cursor, limit=limit)
+    return {
+        "project": "*",
+        "view": selected,
+        "columns": list(report.get("columns") or ()),
+        # The totals are the report's own, so a paginated page states the fleet
+        # figure rather than the page's sum — a caller reading the first page
+        # of a large fleet must not mistake a page total for the fleet total.
+        "totals": {
+            "projects": report.get("projects", len(rows)),
+            "live_width": report.get("live_width", 0),
+            "unreconciled_runs": report.get("unreconciled_runs", 0),
+            "uncovered_critical_hours": report.get("uncovered_critical_hours", 0.0),
+        },
+        "errors": list(report.get("errors") or []),
+        "rows": [_portfolio_row_view(row, selected) for row in page],
+        "pagination": pagination,
+    }
