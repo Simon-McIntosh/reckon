@@ -1499,6 +1499,101 @@ reading taken as an authority it was not.</p>
       and it is why the three colon guards are cases in the file rather than a note.</p>
   </section>
 
+<section id="the-declared-schema-reads-what-the-old-reader-read">
+    <h3>§12 — The declared schema reads what the old reader read</h3>
+    <p>Run <code>r-20260918T081711944084-the-declared-schema-reads-what-the-old-reader-read</code>,
+      landing under commit <code>52c04865</code> in <code>reckon/crew/reports.py</code> and
+      <code>tests/test_manifest_declared_schema.py</code>. The schema reader replaced a line
+      scanner that had accepted manifests this repository had already archived, so the
+      compatibility question was measured rather than assumed: every manifest under
+      <code>~/.config/reckon/crew/runs/*/manifest.md</code> was read by both readers and the
+      schema reader refused <strong>27</strong> the scanner accepted, plus one it crashed on.</p>
+    <table>
+      <thead><tr><th>Refusal shape</th><th>Count</th><th>What the worker wrote</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>test_logs</code></td>
+          <td><strong>13</strong></td>
+          <td>labelled entries: a <code>gate_after:</code> / <code>baseline_gate:</code> /
+            <code>pin_mutation_check:</code> block of paths</td>
+        </tr>
+        <tr>
+          <td><code>artifacts</code></td>
+          <td><strong>11</strong></td>
+          <td>one labelled entry, e.g.
+            <code>patch: retained in the worktree (shadow run — no commit)</code></td>
+        </tr>
+        <tr>
+          <td><code>artifacts</code> follow-on form, <code>follow_ons</code></td>
+          <td><strong>1</strong></td>
+          <td>a numbered list, <code>1. …</code> through <code>4. …</code>, each entry carrying
+            its own colon</td>
+        </tr>
+        <tr>
+          <td><code>commits</code></td>
+          <td><strong>1</strong></td>
+          <td>three sha-and-subject lines written with no bullet</td>
+        </tr>
+        <tr>
+          <td>no refusal &mdash; a crash</td>
+          <td><strong>1</strong></td>
+          <td><code>failure_ids: {{see baseline_ids.json — 51 fully-qualified pytest node ids,
+            …}}</code> under <code>baseline_suite</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>Each of the four refusal shapes is the same event: a field declared as a list commonly has
+      its entries <em>labelled</em> by the worker, which composes as a mapping where the field
+      declares a list. The fifth is
+      <code>TypeError: cannot use 'dict' as a dict key</code> &mdash; the braced note composes as a
+      mapping used as a mapping&rsquo;s own key, an unhashable key that raised out of
+      <code>parse_manifest</code> rather than being read, so a delivered manifest presented as a
+      crashed reader.</p>
+    <p><strong>What a mapping in a list field means</strong> (stated in the module docstring): one
+      item per line, each item the worker&rsquo;s own text for that line, in the order written,
+      with its label kept. Both alternatives were rejected on what a consumer receives. Refusing
+      the shape is the observed defect &mdash; 27 delivered manifests turned into errors.
+      Decoding it as the mapping itself hands a dict&rsquo;s <em>keys</em> to
+      <code>_cited_log_paths</code>, which validates log paths and reads them, so a path would be
+      replaced by a label. Splitting to values only would drop the label that makes a
+      <code>follow_ons</code> entry legible. One item per line is the single answer that keeps
+      every path, every object id and every label exactly where the worker wrote it.</p>
+    <p><strong>The refusal is narrowed, not dropped.</strong> A shape no field declares &mdash; a
+      mapping body under a text-only field such as <code>node:</code> &mdash; still raises
+      <code>ManifestParseError</code> naming the field, and the case asserts the field name is in
+      the message, so a value whose type the schema cannot place is never carried forward as a
+      plausible one. That property is the schema&rsquo;s purpose and it is why the repair changes
+      the shape of the <em>checks</em> rather than the strictness of the reader.</p>
+    <p><strong>Composing is unchanged.</strong> The reader still decodes with
+      <code>yaml.compose</code> and still takes each scalar from <code>node.value</code>, which is
+      what keeps a literal identifier from being retyped and what makes the four original defects
+      stay fixed. The negative half is asserted in the same file: a commit list of three shas
+      whose third subject contains a comma still reads as <strong>three</strong> entries and not
+      four, and a <code>tests</code> field written as a nested mapping still reads as that mapping
+      rather than the empty string. A change that had restored the 27 by returning the reader to
+      line scanning would fail those two assertions, and it is why they are quoted in the plan.</p>
+    <p><strong>Evidence.</strong> Six cases were added, each built from the real text of one
+      corpus manifest quoted into the test rather than read from disk at run time, and each fails
+      against the base reader: five raise
+      <code>ManifestParseError: … field 'X' carries a mapping where the manifest schema accepts
+      list</code> and one raises the <code>TypeError</code>. The corpus comparison re-run at the
+      commit reads <strong>27 of 27 parse, 0 refuse</strong>. The prescribed five-file gate
+      (<code>test_manifest_declared_schema</code>, <code>test_manifest_parse_format</code>,
+      <code>test_manifest_nested_keys</code>, <code>test_manifest_block_indent</code>,
+      <code>test_crew_promotion</code>) reads <strong>180 passed, 0 failed</strong> with the base
+      reader and <strong>187 passed, 0 failed</strong> at the commit; the seven added passes are
+      the new cases, and a per-file ruff comparison finds the same two pre-existing findings in
+      <code>reports.py</code> at both revisions (<code>SIM102</code>, <code>FURB167</code>) and
+      none in the added file, so the section adds no findings.</p>
+    <p><strong>Carried forward.</strong> The literal-scalar guarantee has one sharp edge this node
+      did not widen: a composed scalar keeps its literal text, so
+      <code>exit_status: 1</code>, <code>completed: true</code> and
+      <code>failure_count: 51</code> arrive as strings and a suite observation&rsquo;s typed
+      fields read as <code>None</code> where the old reader produced a plain string for the
+      field. That is a typed-value loss in the schema reader and not a regression this node
+      introduced, so it is recorded rather than repaired here.</p>
+  </section>
+
 </main>
 </body>
 </html>
