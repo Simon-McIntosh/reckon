@@ -141,6 +141,13 @@
     </div>
 </section>
 
+    <section data-reckon="comments" id="comments" class="r-comments">
+<h2><span class="sec">§ Comments</span></h2>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260918T085137364285-wss-push-status-one-pushed-sprint" data-who="wss-push-status" data-when="2026-09-18T09:57:49Z">
+    <div class="r-comment-body"><p>§2 landed in two commits. The status enum carries <code>open</code>; a <code>push</code> op on a sprint resource promotes the pushed sprint and demotes any other active sprint in one versioned write, under one resource-lock set behind a single journal with compensating recovery, so a stale version or unknown id changes neither sprint; the roadmap derives <code>active_sprint_id</code> from the unique active row and reports <code>open_sprints</code> as its own bucket; member progress derives <code>in-progress</code> and no longer shows as drift against a non-terminal stored status; the audit raises <code>multiple-active-sprints</code> to error and adds <code>pushed-sprint-has-no-ready-work</code> at warn; and the sprint skill documents open, active-means-pushed and the push op. Gate: <code>tests/test_sprint_push_status.py tests/test_mcp_roadmap.py</code> 24 passed, exit 0. Three things are recorded rather than smoothed over. First, the gate names only those two files, but an existing sibling test carries the superseded label: <code>tests/test_roadmap_sprint_derivation.py:66</code> still asserts the old derived label, measured 1 failed / 1 passed, diff exactly the derived label. That file sits outside this node's fence and was not edited; the repair is the two literals in that one test. Second, the op is placed on the sprint resource being pushed rather than literally on the project resource, because <code>project.json</code> is forbidden by <code>PROJECT_DERIVED_FIELDS</code> from carrying <code>active_sprint_id</code> and sprints are separate resources; re-routing the surface is a small change in <code>apply_resource_ops</code> only. Third, plan state is untouched by design — the pushed sprint and the plan's own metadata are the coordinator's write, and the stating of the new tests is evidence rather than proof that a later merge keeps them.</p></div>
+</div>
+</section>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-wss-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="nova S19 coordinator" data-written-at="2026-09-18T09:00:00Z" data-recommends-skill="/reckon-ship work-scheduling-surface §2" data-resolved-at="" data-resolved-by="">
