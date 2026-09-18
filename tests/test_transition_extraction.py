@@ -7,12 +7,15 @@ streams on this workstation show why:
 * keeping only ``event == "transition"`` drops genuine arrivals. A dispatch a
   follower first observes has no prior state to transition from, so it is
   recorded as a baseline with a null ``from_state``. Across the six live
-  streams, 2313 of 2316 nodes first appear as a baseline row, and 13 never had
-  a transition row at all.
+  streams at 2026-09-18T09:26Z (12446 rows) 2417 of 3031 nodes first appear as
+  a baseline row, so a transition-only filter re-dates every one of those to a
+  later movement, and 23 of the 3031 have no transition row anywhere, so it
+  loses them outright.
 * keeping every baseline row invents arrivals. A follower that re-attaches
   re-inventories the whole fleet in one instant, one baseline row per live run.
-  The largest such burst on disk covers nine nodes in the same second, every
-  one of them already carrying earlier rows.
+  The largest such burst on disk covers ten nodes in the same second, every one
+  of them already carrying earlier rows, and 204 of the 2621 baseline rows on
+  disk are members of such a burst.
 
 The discriminator is first appearance per node, refined by a direct test for
 the re-inventory burst, because a run dispatched before the recording began has
@@ -31,7 +34,15 @@ from pathlib import Path
 from reckon.crew.query import extract_watch_arrivals, parse_watch_row
 
 TRANSITION_ARROW = "\N{RIGHTWARDS ARROW}"
-BASELINE_ARROW = "\N{BULLET}"
+
+# Every rendered fixture below is a verbatim line of a live watch stream, with
+# the stream and line number named at the fixture. The corpus is the authority
+# for what a rendered row looks like: 2314 rendered rows across the six streams,
+# in exactly two shapes — an arrow with one token to its left (656 rows, a node
+# appearing for the first time) and an arrow with two (1658 rows). A fixture in
+# a shape the corpus never produces cannot fail on the defect the corpus has,
+# which is how an earlier version of this file passed while the parser dropped
+# the arrival it existed to find.
 
 
 def _row(
@@ -278,13 +289,17 @@ def test_every_stamp_is_utc_or_explicitly_unknown(tmp_path: Path) -> None:
     The rendered line carries a wall clock in the reader's LOCAL zone with no
     offset and no date, so treating a rendering as UTC is how a concurrent
     ascent becomes a descending limb in a merged view.
+
+    Verbatim from the reckon stream, line 1 — the arrival that opens that
+    stream, and the same arrival that opens the imas-ambix stream.
     """
     rendered = (
-        "06:45:38  reading-mode-and-palette      " + BASELINE_ARROW + " dispatched"
+        "06:45:38  reading-mode-and-palette      → dispatched              "
+        "1 live · 0 blocked · 0 unpromoted"
     )
     path = _stream(
         tmp_path,
-        "demo-abc123.events",
+        "reckon-18dc8a86709b.events",
         [
             _row("alpha", event="baseline", observed_at="2026-09-17T10:00:00Z"),
             rendered + "\n",
@@ -306,16 +321,70 @@ def test_every_stamp_is_utc_or_explicitly_unknown(tmp_path: Path) -> None:
 
 
 def test_a_rendered_transition_row_is_read_not_guessed() -> None:
+    """Two tokens left of the arrow is a movement between two named states.
+
+    Verbatim from the imas-ambix stream, line 4: the node holds the arrival at
+    line 1 and this row is the movement that follows it, so the pair pins the
+    one-token reading above to the same stream.
+    """
     rendered = (
-        "07:02:56  shadow-prior-art-scout  dispatched "
-        + TRANSITION_ARROW
-        + " complete     2 live"
+        "16:31:11  clive-reuse-map               dispatched → working      "
+        "3 live · 0 blocked · 0 unpromoted"
     )
-    row = parse_watch_row(rendered, path=Path("/w/demo-x.events"), line_number=9)
+    row = parse_watch_row(
+        rendered,
+        path=Path("/w/imas-ambix-fd8fbc1b4563.events"),
+        line_number=4,
+    )
     assert row is not None
     assert row["event"] == "transition"
-    assert row["node"] == "shadow-prior-art-scout"
+    assert row["node"] == "clive-reuse-map"
     assert row["from_state"] == "dispatched"
-    assert row["to_state"] == "complete"
-    assert row["project"] == "demo"
+    assert row["to_state"] == "working"
+    assert row["project"] == "imas-ambix"
     assert row["observed_at_zone"] == "unknown"
+
+
+def test_a_rendered_row_without_a_source_state_is_still_an_arrival(
+    tmp_path: Path,
+) -> None:
+    """An arrival rendered as an arrow row has no source state to print.
+
+    Verbatim from the imas-ambix stream, line 1 - the node, then the arrow,
+    with nothing between them but the empty source-state column's padding.
+    A node the follower sees for the first time has nothing to transition from,
+    so the pane prints the node alone. Re-derived over the six live streams at
+    2026-09-18T09:26Z: 12446 rows, 3031 nodes, 2314 rendered rows, of which 656
+    carry the one-token shape and 614 of those are a node's first row. A parser
+    requiring two tokens left of the arrow discards the arrival it exists to
+    find and reports the node's next row, a state change, in its place. The JSON
+    row below stands for that next row, so the assertion is about which row is
+    the arrival rather than about whether the node appears at all.
+    """
+    rendered = (
+        "16:29:36  clive-reuse-map               "
+        + TRANSITION_ARROW
+        + " dispatched              1 live · 0 blocked · 0 unpromoted"
+    )
+    path = _stream(
+        tmp_path,
+        "imas-ambix-fd8fbc1b4563.events",
+        [
+            rendered + "\n",
+            _row(
+                "clive-reuse-map",
+                event="transition",
+                from_state="dispatched",
+                to_state="working",
+                observed_at="2026-09-17T10:05:00Z",
+                project="imas-ambix",
+            ),
+        ],
+    )
+    result = extract_watch_arrivals([path])
+
+    arrivals = [row for row in result["arrivals"] if row["node"] == "clive-reuse-map"]
+    assert len(arrivals) == 1
+    assert arrivals[0]["line"] == 1
+    assert arrivals[0]["rendered"] is True
+    assert arrivals[0]["to_state"] == "dispatched"

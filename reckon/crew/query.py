@@ -372,14 +372,15 @@ def runs_view(
 # the question a reader has — *which rows are arrivals*. Two filters that look
 # natural are both wrong, measured against the live streams on this workstation:
 #
-#   * keeping only ``event == "transition"`` drops genuine arrivals. Of 2316
-#     nodes across the 6 live streams, 2313 first appear as a baseline row and
-#     13 never had a transition row at all, so the filter reports a fleet that
-#     never dispatched most of what ran.
+#   * keeping only ``event == "transition"`` drops genuine arrivals. Across the
+#     6 live streams at 2026-09-18T09:26Z (12446 rows, 3031 nodes) 2417 nodes
+#     first appear as a baseline row and 23 never had a transition row at all,
+#     so the filter re-dates most of the fleet and loses the rest.
 #   * keeping every baseline row invents arrivals. A follower that re-attaches
 #     re-inventories every live run in one instant, emitting one baseline row
-#     per run: the largest such burst on disk covers 9 nodes in the same second,
-#     every one of them already carrying earlier rows.
+#     per run: the largest such burst on disk covers 10 nodes in the same second,
+#     every one of them already carrying earlier rows, and 204 of the 2621
+#     baseline rows on disk belong to a burst.
 #
 # The discriminator is first appearance per node, not event class: the earliest
 # row for a node is its arrival whatever its class, later transitions are real
@@ -463,6 +464,11 @@ def _rendered_row(text: str) -> dict[str, Any] | None:
         return None
     body = match.group("body").strip()
     from_state: str | None = None
+    # The pane draws a baseline with a bullet and no source state at all
+    # (ticker.py: BASELINE_ARROW when is_baseline). No stream on disk carries
+    # that shape yet — the rendered rows that exist all use the transition
+    # arrow, including the one-token arrivals — but the live renderer can
+    # produce it, so it is read rather than dropped.
     if _BASELINE_ARROW in body:
         left, _, right = body.partition(_BASELINE_ARROW)
         event = "baseline"
@@ -470,10 +476,15 @@ def _rendered_row(text: str) -> dict[str, Any] | None:
         left, _, right = body.partition(_TRANSITION_ARROW)
         event = "transition"
         tokens = left.split()
-        if len(left) < 2 or len(tokens) < 2:
+        if not tokens:
             return None
-        from_state = tokens[-1]
-        left = left[: left.rfind(from_state)]
+        # One token left of the arrow is an arrival, not a malformed line: the
+        # follower saw the node first, so there is no source state to print and
+        # the node is the only token. Requiring two tokens here discards that
+        # arrival and reports the node's next row in its place.
+        if len(tokens) > 1:
+            from_state = tokens[-1]
+            left = left[: left.rfind(from_state)]
     else:
         return None
     right_tokens = right.split()
