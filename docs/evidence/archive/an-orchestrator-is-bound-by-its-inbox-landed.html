@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="an-orchestrator-is-bound-by-its-inbox-landed">
   <meta name="plan-title" content="An orchestrator is bound by its inbox — cumulative execution-evidence record">
-  <meta name="plan-summary" content="The watch payload reports only the follower registrations that deliver and counts the released remainder, with the measure that fired at base and head and the out-of-scope test whose update belongs to the coordinator.">
+  <meta name="plan-summary" content="The watch payload reports only the follower registrations that deliver and counts the released remainder, and the test that pinned the old lossless array is replaced by one counting the released rows and relocating the reason to the per-session read.">
   <meta name="plan-evidence-for" content="an-orchestrator-is-bound-by-its-inbox">
   <meta name="plan-verifies" content="an-orchestrator-is-bound-by-its-inbox#s5">
   <meta name="plan-recorded-at" content="2026-09-18">
@@ -33,6 +33,7 @@
       <thead><tr><th>Section</th><th>Anchor</th><th>Commit</th><th>Outcome</th></tr></thead>
       <tbody>
         <tr><td>&sect;5</td><td><a href="#follower-listing-reports-what-delivers">follower-listing-reports-what-delivers</a></td><td>c0a07f8f</td><td>landed</td></tr>
+        <tr><td>&sect;5</td><td><a href="#released-registration-is-counted-not-listed">released-registration-is-counted-not-listed</a></td><td>80f28c39</td><td>landed</td></tr>
       </tbody>
     </table>
   </section>
@@ -86,6 +87,49 @@
     asserts <em>the array stays lossless</em> and requires the released row and its
     <code>not_live_because</code> to appear in <code>followers</code>, which is the behaviour §5
     replaces. Its update is outside this node's write scope and stands as a follow_on.</p>
+  </section>
+
+  <section id="released-registration-is-counted-not-listed">
+    <h2>&sect;5 — The released registration is counted, not listed</h2>
+    <p>Run <code>r-20260918T152119878325-the-released-registration-is-counted-not-listed</code>.
+    Commit <code>80f28c39</code>, 47 insertions and 20 deletions across
+    <code>tests/test_crew_session_delivery.py</code> — the one authorised test path.</p>
+
+    <p><strong>Mechanism.</strong> <code>test_a_row_that_is_not_live_says_which_condition_ended_it</code>
+    pinned the pre-existing contract that the <code>followers</code> array stays lossless: a released
+    registration still appeared as a row, carrying its <code>not_live_because</code> sentence. That is
+    exactly the shape &sect;5 replaces, so the test fails at the merged head by construction. It is
+    replaced by two cases that pin the new contract without discarding the meaning the old one
+    protected.</p>
+
+    <table>
+      <thead><tr><th>Directory contents</th><th>Before (&sect;5 base)</th><th>After</th></tr></thead>
+      <tbody>
+        <tr><td>1 delivering, 2 released</td><td>3 rows, one per registration, each released row carrying its reason</td><td>1 row (the delivering registration), <code>followers_released: 2</code></td></tr>
+        <tr><td>reason for a released registration</td><td>read off its row in the array</td><td>read off <code>follower_state(project, session)</code> for a single named session</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Measure — the gate fired in both directions.</strong> The pair
+    <code>tests/test_follower_freshness.py</code> currently requires a released registration to
+    appear in the <code>followers</code> array with its <code>not_live_because</code> sentence,
+    against the current state of one failure: run at the base revision it is <strong>1 failed,
+    0.63s</strong> with <code>AssertionError: the array stays lossless</code> at
+    <code>tests/test_crew_session_delivery.py:698</code>. At the worktree head the same pair is
+    <strong>31 passed in 11.43s</strong>, zero failures — so the defect reproduces at base and the
+    replacement is not written to a shape that only the new code satisfies.</p>
+
+    <p><strong>The protected meaning is relocated, not dropped.</strong>
+    <code>list_followers</code> still reports every registration that has ever followed, and
+    <code>follower_state</code> exposes the same <code>_follower_liveness</code> verdict per session.
+    The replacement asserts that a released registration's reason text
+    (<em>the registration was released &hellip; is gone</em>) remains reachable for a single named
+    session, and that its recorded <code>started_at</code> survives. So the reachability the old
+    row-level assertion bought is still tested; only the array's row count moved.</p>
+
+    <p><strong>Scope discipline.</strong> Only the one superseded test was replaced; no other test in
+    the file changed. The pair runs green at the merged head, closing the follow_on recorded by
+    <code>c0a07f8f</code>.</p>
   </section>
 </main>
 </body>
