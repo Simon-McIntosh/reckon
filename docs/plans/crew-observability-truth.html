@@ -726,6 +726,33 @@
       <code>eb74752d</code> and <code>2a94b12c</code>. Full record:
       <a href="/reckon/evidence/archive/crew-observability-truth-landed#manifest-is-read-through-a-declared-schema">&#167;12 declared-schema evidence</a>.</p>
 
+    <p class="landed-summary">Every manifest the line-scanning reader accepted is accepted
+      again, and the four defects the schema was introduced to fix stay fixed. Against the
+      manifests workers had already delivered under the crew configuration home, the
+      declared-schema reader refused <strong>27</strong> that the previous reader accepted
+      &mdash; 13 on <code>test_logs</code>, 11 on <code>artifacts</code>, one on
+      <code>follow_ons</code> and one on <code>commits</code>, each a field whose entries a
+      worker labelled, composing as a mapping where the field declares a list &mdash; and one
+      farther manifest did not refuse at all but crashed the reader with
+      <code>TypeError: cannot use 'dict' as a dict key</code>, a braced note standing
+      where a list of node ids belongs. A mapping body under a list field now reads as
+      <strong>one item per line</strong>, each item the worker&rsquo;s own text in the order
+      written with its label kept, so a path or an object id is never replaced by a dict key;
+      and a mapping composed as a mapping&rsquo;s own key is read from its span of the source
+      rather than raising, so no delivered manifest can crash the reader. The refusal is kept
+      where <em>no</em> field declares the shape: a mapping body under a text-only field is
+      still a <code>ManifestParseError</code> naming the field, so the strictness the schema
+      was built for is narrowed rather than dropped. Six cases were added to the schema test
+      file, each built from the real text of one corpus manifest quoted into the test, and
+      each one fails against the base reader. The negative half is asserted: a three-commit
+      list whose last subject carries a comma still reads as three entries rather than four,
+      and a nested mapping under <strong>tests</strong> still reads as that mapping rather than
+      the empty string &mdash; so this is not the reader returned to line scanning. Of the 27,
+      <strong>27 now parse and none still refuses</strong>. The prescribed five-file gate reads
+      180 passed with the base reader and 187 passed, 0 failed at the commit, and the section
+      adds no lint findings. Landed under commit <code>52c04865</code>. Full record:
+      <a href="/reckon/evidence/archive/crew-observability-truth-landed#the-declared-schema-reads-what-the-old-reader-read">&#167;12 reading-what-the-old-reader-read evidence</a>.</p>
+
     <h2 id="s13">&#167;13 &mdash; A quiet fleet and a working one look identical, because nothing reports a wave</h2>
     <p><strong>Directed by the lead 2026-09-09, after a session spent counting completions by
     hand.</strong> Every signal this surface emits is per-run. The follower reports one line per
