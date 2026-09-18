@@ -6,14 +6,14 @@
   <meta name="docs-project" content="reckon">
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="an-orchestrator-is-bound-by-its-inbox-landed">
-  <meta name="plan-title" content="An orchestrator is bound by its inbox — cumulative execution-evidence record">
-  <meta name="plan-summary" content="The watch payload reports only the follower registrations that deliver and counts the released remainder, and the test that pinned the old lossless array is replaced by one counting the released rows and relocating the reason to the per-session read.">
+  <meta name="plan-title" content="An orchestrator is bound by its inbox &mdash; cumulative execution-evidence record">
+  <meta name="plan-summary" content="Execution evidence for the plan, one anchor per landed node: the review reflex that dispatches what recovery already composes, and the watch payload that reports only delivering follower registrations and counts the released remainder.">
   <meta name="plan-evidence-for" content="an-orchestrator-is-bound-by-its-inbox">
-  <meta name="plan-verifies" content="an-orchestrator-is-bound-by-its-inbox#s5">
+  <meta name="plan-verifies" content="an-orchestrator-is-bound-by-its-inbox#s2,an-orchestrator-is-bound-by-its-inbox#s5">
   <meta name="plan-recorded-at" content="2026-09-18">
   <meta name="plan-verdict" content="pass">
-  <meta name="plan-environment" content="Linux workstation; git worktrees; crew dispatch across local and metered lanes">
-  <title>An orchestrator is bound by its inbox — cumulative execution-evidence record | reckon</title>
+  <meta name="plan-environment" content="Linux workstation; git worktrees; crew dispatch on the local lane">
+  <title>An orchestrator is bound by its inbox &mdash; cumulative execution-evidence record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 </head>
@@ -130,6 +130,121 @@
     <p><strong>Scope discipline.</strong> Only the one superseded test was replaced; no other test in
     the file changed. The pair runs green at the merged head, closing the follow_on recorded by
     <code>c0a07f8f</code>.</p>
+    <h1>A finished run dispatches its own review &mdash; landed evidence</h1>
+    <p class="plan-summary">The &sect;2 done-when passes on the recovery sweep: a scoring run with
+    no review and a serving local lane has a review run in flight with no coordinator issuing
+    a command, the contained half is asserted before the loud one, an unavailable lane is
+    recorded with the lane&rsquo;s own state as the reason and dispatches when the lane returns,
+    and the follower admission that refuses a hand-typed dispatch refuses the automatic one by
+    the same code and the same message. Four tests, four passes; the failing count over the
+    cohort is unchanged from the base revision.</p>
+  </header>
+
+  </section>
+
+  <section id="mechanism">
+    <h2>The change</h2>
+    <p><code>_review_dispatch_fields</code> in <code>reckon/crew/recovery.py</code> owns the
+    composition once &mdash; project, plan, section, node id, goal, done-when, write path, time
+    budget, session &mdash; and <code>_review_dispatch_argv</code>,
+    <code>_review_dispatch_action</code> and the new
+    <code>dispatch_review_for_run</code> all read it, so the command a record carries and the
+    dispatch it performs cannot drift apart. <code>dispatch_review_for_run</code> takes one
+    scoring run and returns a report rather than raising: <code>dispatched</code> says a review
+    run is now in flight, <code>awaiting_lane</code> says the lane was unavailable and the
+    reason is recorded against the run, <code>refused</code> carries whatever admission said no.
+    <code>recover</code> runs the reflex for every scoring run it classifies and reports the
+    outcome per run alongside its existing counts.</p>
+    <p>The node is dispatched as <code>role=review</code> with a write path outside the
+    repository, because the review role is repository-write-restricted and the review store
+    lives under the delivery root. The dispatch passes <code>watch_required=True</code>, which
+    is the same admission a coordinator&rsquo;s <code>crew dispatch</code> passes. The refusal
+    is caught rather than propagated, and that is deliberate: the caller is a sweep over the
+    fleet, and one run&rsquo;s refusal must not stop the rest. The refusal itself still comes
+    from <code>dispatch</code>.</p>
+  </section>
+
+  <section id="figure">
+    <h2>The path, and where each assertion sits on it</h2>
+    <svg viewBox="0 0 720 210" width="100%" role="img" aria-label="Decision path of the review reflex with the four assertions marked">
+      <rect x="4" y="76" width="126" height="48" rx="6" fill="#eef" stroke="#88a"></rect>
+      <text x="67" y="98" font-size="12" text-anchor="middle">scoring run</text>
+      <text x="67" y="113" font-size="12" text-anchor="middle">(manifest complete)</text>
+      <rect x="166" y="16" width="160" height="48" rx="6" fill="#efe" stroke="#8a8"></rect>
+      <text x="246" y="38" font-size="12" text-anchor="middle">review parses, or a review</text>
+      <text x="246" y="53" font-size="12" text-anchor="middle">run is already in flight?</text>
+      <text x="246" y="88" font-size="11" text-anchor="middle">yes &#8594; dispatch nothing</text>
+      <text x="246" y="103" font-size="11" text-anchor="middle">&#10003; assertion 2 (first)</text>
+      <line x1="130" y1="88" x2="164" y2="50" stroke="#88a"></line>
+      <rect x="360" y="16" width="160" height="48" rx="6" fill="#ffe" stroke="#cc8"></rect>
+      <text x="440" y="38" font-size="12" text-anchor="middle">local lane serving?</text>
+      <text x="440" y="88" font-size="11" text-anchor="middle">no &#8594; awaiting-lane, reason</text>
+      <text x="440" y="103" font-size="11" text-anchor="middle">&#10003; assertion 3</text>
+      <line x1="326" y1="50" x2="358" y2="40" stroke="#88a"></line>
+      <rect x="556" y="16" width="158" height="48" rx="6" fill="#fee" stroke="#a88"></rect>
+      <text x="635" y="38" font-size="12" text-anchor="middle">dispatch() admission</text>
+      <text x="635" y="53" font-size="12" text-anchor="middle">scope&#183;member&#183;follower&#183;budget</text>
+      <line x1="520" y1="40" x2="554" y2="40" stroke="#88a"></line>
+      <rect x="556" y="76" width="158" height="48" rx="6" fill="#eef" stroke="#88a"></rect>
+      <text x="635" y="98" font-size="12" text-anchor="middle">review run in flight</text>
+      <text x="635" y="113" font-size="11" text-anchor="middle">&#10003; assertion 1</text>
+      <line x1="635" y1="64" x2="635" y2="74" stroke="#88a"></line>
+      <text x="500" y="140" font-size="11" text-anchor="middle">follower refusal on the same path</text>
+      <text x="500" y="155" font-size="11" text-anchor="middle">&#10003; assertion 4</text>
+      <line x1="600" y1="124" x2="560" y2="140" stroke="#a88" stroke-dasharray="3 3"></line>
+    </svg>
+    <p>The same <code>dispatch</code> call decides all four. Nothing in the reflex re-implements
+    an admission check; assertion 4 is the claim that this is so, and the follower gate on the
+    automatic path is the one asserted to still fire.</p>
+  </section>
+
+  <section id="digits">
+    <h2>The digits</h2>
+    <p>Gate, run over the same cohort at both revisions with the shared environment&rsquo;s
+    interpreter: <code>tests/test_crew_recovery.py tests/test_ledger.py
+    tests/test_crew_scoring_state.py</code>.</p>
+    <p>Base <code>cabde677</code>: <strong>3 failed, 191 passed</strong>.</p>
+    <p>Head <code>799a4adc</code>, plus the new module&rsquo;s four tests:
+    <strong>3 failed, 195 passed</strong>.</p>
+    <p>Zero failures added, four passes added. The three failures are identical in identity on
+    both sides &mdash; <code>test_refusal_recovery_remedy_survives_promotion</code>,
+    <code>test_completion_promotes_the_pointer_into_the_repositorys_ledger</code> and
+    <code>test_a_promoted_row_carries_the_budget_fallback_its_pointer_held</code> &mdash; and all
+    three are the same worktree-removal refusal in <code>routing.py:912</code>, a live pointer
+    claiming a worktree across tests. They are environmental, and the base tree reproduces them
+    at the same count.</p>
+  </section>
+
+  <section id="finding">
+    <h2>What the suite was suppressing, and why it matters to the test</h2>
+    <p>The suite&rsquo;s autouse configuration fixture sets
+    <code>RECKON_WATCH_ARMING=off</code> for every module it does not mark, and
+    <code>dispatch</code> converts a suppressed arming into a <em>recorded waiver</em> rather
+    than a refusal. So the first version of the refusal assertion read
+    <code>dispatched: True</code> &mdash; not because the gate was broken but because the
+    environment had waived the requirement it asserts. The module now carries
+    <code>pytestmark = pytest.mark.arms_watch_producer</code> and arms a real producer, which is
+    the only form in which assertion 4 means anything.</p>
+    <p>This is recorded because it is the shape of a test that passes for the wrong reason: an
+    environment that disables the guard makes the assertion succeed on the path where it
+    should fail. The waiver is correct behaviour for the fleet and a trap for a test that
+    borrows the fleet&rsquo;s environment.</p>
+  </section>
+
+  <section id="boundary">
+    <h2>The boundary of what landed</h2>
+    <p>The reflex is reached through <code>recover</code>, the sweep. It is not yet wired into
+    the dispatch ticker, so a run that reaches <code>scoring</code> and a coordinator who never
+    sweeps still see the old behaviour: the state&rsquo;s <code>action</code> remains the command
+    string. <code>ticker.py</code> and <code>cli.py</code> are outside this node&rsquo;s write
+    scope and were not touched, so this is a follow-on rather than an omission: the composition,
+    the lane handling and the admission path are shared and already exercised, and the ticker
+    call is one line at the point where it currently prints the action.</p>
+    <p>The lane-unavailable branch is exercised through the config resolution
+    (<code>flight.select_local_backend</code> raises when <code>local_backend</code> is
+    unconfigured) and through <code>BudgetHold</code>, and the reported reason is asserted to be
+    the recorded reason &mdash; the run says why it is still awaiting review rather than only
+    that it is.</p>
   </section>
 </main>
 </body>

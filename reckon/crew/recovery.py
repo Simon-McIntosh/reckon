@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import fcntl
 import hashlib
+import importlib
 import json
 import os
 import re
@@ -33,7 +34,6 @@ from reckon.crew.reports import (
     parse_manifest,
 )
 from reckon.crew.routing import _signal_process_group
-from reckon.crew.ticker import NEEDS_ACTION, Ticker, _agent_label
 from reckon.crew.runs import (
     _manifest_freshness,
     _mutate_pointer,
@@ -44,9 +44,10 @@ from reckon.crew.runs import (
     _utc_now,
     _write_watch_record,
     list_live,
+    read_pointer,
     watch_lock_path,
 )
-
+from reckon.crew.ticker import NEEDS_ACTION, Ticker, _agent_label
 
 # The classifier reaches liveness through the module at the point of call, so
 # replacing the definition on its owning module replaces what classification
@@ -143,33 +144,75 @@ ACTIONABLE_RECOVERY_CLASSIFICATIONS = frozenset(
 )
 
 
-def _review_dispatch_action(record: Mapping[str, Any]) -> str:
-    """Return the review dispatch that advances one scoring run."""
+REVIEW_NODE_PREFIX = "review-of-"
+
+
+def _review_dispatch_fields(record: Mapping[str, Any]) -> dict[str, str]:
+    """The facts a scoring run's review dispatch is built from.
+
+    Composed from the run's own record so the command a reader may still retype
+    and the command the reflex runs come from one source: two compositions of
+    the same dispatch is how a displayed command and an executed one drift
+    apart while each stays correct when read on its own.
+    """
     node = record.get("node") or {}
     run_id = str(record.get("run_id") or "")
     project = str(record.get("project") or "")
-    plan = str(node.get("plan") or "")
-    section = str(node.get("section") or "")
     source_node = str(node.get("id") or run_id)
-    session = str(record.get("session") or "<session>")
-    time_budget = str(node.get("time_budget") or "20m")
-    goal = f"attach an independent review to run {run_id}"
-    done_when = f"the review for {run_id} parses all five score dimensions"
-    return " ".join(
-        (
-            "reckon crew dispatch",
-            f"--project {shlex.quote(project)}",
-            f"--plan {shlex.quote(plan)}",
-            f"--section {shlex.quote(section)}",
-            "--role review --spec-level exact",
-            f"--node {shlex.quote(f'review-of-{source_node}')}",
-            f"--goal {shlex.quote(goal)}",
-            f"--done-when {shlex.quote(done_when)}",
-            f"--write-path {shlex.quote(str(review_module.review_path(project, run_id)))}",
-            f"--time-budget {shlex.quote(time_budget)}",
-            f"--session {shlex.quote(session)} --local",
-        )
-    )
+    return {
+        "run_id": run_id,
+        "project": project,
+        "plan": str(node.get("plan") or ""),
+        "section": str(node.get("section") or ""),
+        "source_node": source_node,
+        "node_id": f"{REVIEW_NODE_PREFIX}{source_node}",
+        "session": str(record.get("session") or "<session>"),
+        "time_budget": str(node.get("time_budget") or "20m"),
+        "goal": f"attach an independent review to run {run_id}",
+        "done_when": (
+            f"the review for {run_id} stores a parsed record scoring all 5 "
+            "dimensions in the range 0..20"
+        ),
+        "write_path": str(review_module.review_path(project, run_id)),
+    }
+
+
+def _review_dispatch_argv(record: Mapping[str, Any]) -> list[str]:
+    """The review dispatch as an argument vector, ready to run or to print."""
+    fields = _review_dispatch_fields(record)
+    return [
+        "reckon",
+        "crew",
+        "dispatch",
+        "--project",
+        fields["project"],
+        "--plan",
+        fields["plan"],
+        "--section",
+        fields["section"],
+        "--role",
+        "review",
+        "--spec-level",
+        "exact",
+        "--node",
+        fields["node_id"],
+        "--goal",
+        fields["goal"],
+        "--done-when",
+        fields["done_when"],
+        "--write-path",
+        fields["write_path"],
+        "--time-budget",
+        fields["time_budget"],
+        "--session",
+        fields["session"],
+        "--local",
+    ]
+
+
+def _review_dispatch_action(record: Mapping[str, Any]) -> str:
+    """Return the review dispatch that advances one scoring run."""
+    return " ".join(shlex.quote(part) for part in _review_dispatch_argv(record))
 
 
 def _stored_review(record: Mapping[str, Any]) -> tuple[dict[str, Any] | None, str]:
@@ -199,6 +242,265 @@ def _review_is_complete(review: Mapping[str, Any] | None) -> bool:
         and isinstance(review.get("total"), int)
         and not isinstance(review.get("total"), bool)
     )
+
+
+# ── The review reflex: a scoring run runs the command it composed ───────────
+# A run that reaches scoring has already had its whole review dispatch composed
+# and returned as a string, and leaving it there is what left six runs waiting
+# on one workstation at one moment and nine unreconciled across a working day.
+# The reflex below runs that command instead of printing it. It is deliberately
+# built on the same dispatch a coordinator would type, so every admission check
+# — scope, member, follower, context fit, budget — decides the automatic path
+# too: an automatic dispatch that bypasses admission is worse than a manual one
+# that does not, because nobody is watching it.
+
+# The pointer field recording what the reflex did, so a sweep can tell a review
+# it already launched from one it has not, and so a reader can see why a run is
+# still in scoring rather than guessing.
+REVIEW_DISPATCH_FIELD = "review_dispatch"
+
+
+def _review_in_flight(record: Mapping[str, Any]) -> str:
+    """The review run already standing for this scoring run, or empty.
+
+    Two facts are consulted because the durable one fails soft. The dispatch
+    record the reflex wrote is the precise answer, but a review launched by a
+    coordinator by hand carries no such record; the deterministic node id the
+    review dispatch names is, so a hand-launched review is found by identity.
+    A recorded run whose pointer is gone is not in flight — the review died —
+    and the reflex is free to dispatch again rather than wait on a run that no
+    longer exists.
+    """
+    fields = _review_dispatch_fields(record)
+    recorded = record.get(REVIEW_DISPATCH_FIELD)
+    if isinstance(recorded, Mapping):
+        run_id = str(recorded.get("run_id") or "")
+        if run_id and read_pointer(run_id):
+            return run_id
+    project = fields["project"]
+    if not project:
+        return ""
+    for pointer in list_live(project=project):
+        node = pointer.get("node") or {}
+        if str(node.get("id") or "") == fields["node_id"]:
+            return str(pointer.get("run_id") or "")
+    return ""
+
+
+def _record_review_dispatch(
+    run_id: str,
+    *,
+    status: str,
+    reason: str,
+    review_run_id: str = "",
+) -> None:
+    """Write the reflex's outcome onto the run it acted for.
+
+    A skip is recorded as loudly as a dispatch: the plan's own review of this
+    node found that a review which ran and wrote nothing is indistinguishable
+    from one that was never dispatched, and a reflex that fires into that
+    ambiguity re-fires against the same run forever.
+    """
+    if not run_id:
+        return
+
+    def record(pointer: dict[str, Any]) -> dict[str, Any]:
+        pointer[REVIEW_DISPATCH_FIELD] = {
+            "status": status,
+            "reason": reason,
+            "run_id": review_run_id or None,
+            "at": _utc_now(),
+            "attempt": int((pointer.get(REVIEW_DISPATCH_FIELD) or {}).get("attempt") or 0)
+            + 1,
+        }
+        return pointer
+
+    _mutate_pointer(run_id, record)
+
+
+def _resolved_review_config(
+    project: str, config: Mapping[str, Any] | None
+) -> Mapping[str, Any]:
+    """The flight config a review dispatch resolves its local lane against."""
+    if config is not None:
+        return config
+    from reckon import flight
+
+    return flight.resolve(project=project).config
+
+
+def dispatch_review_for_run(
+    record: Mapping[str, Any],
+    *,
+    config: Mapping[str, Any] | None = None,
+    launcher: Callable[..., Any] | None = None,
+) -> dict[str, Any]:
+    """Run the review dispatch a scoring run has already composed for itself.
+
+    The return value is the reflex's own report, not a command: ``dispatched``
+    says whether a review run is now in flight, ``run_id`` names it, and
+    ``reason`` explains a false. Nothing here is raised for an ordinary refusal
+    — a scope, member, follower, context-fit or budget refusal is *reported*
+    and recorded against the run, because the caller is a sweep that must reach
+    the rest of the fleet. The refusal itself still comes from dispatch, so the
+    automatic path is refused exactly where a manual dispatch is rather than
+    being waved through.
+    """
+    run_id = str(record.get("run_id") or "")
+    row = classify_pointer(record)
+    if row["classification"] != "scoring":
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "reason": f"the run is not awaiting review ({row['classification']})",
+        }
+    review, review_error = _stored_review(record)
+    if review is not None or review_error:
+        # A stored review is evidence, readable or not. Regenerating over an
+        # unparseable one would discard what the reviewer actually wrote, so
+        # the run is left for its coordinator with the reason named.
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "review_status": "unreadable" if review_error else "present",
+            "reason": (
+                "a review is already stored for this run and is not a complete "
+                "parse; repair or replace it rather than dispatching a second"
+            ),
+        }
+    in_flight = _review_in_flight(record)
+    if in_flight:
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "reason": "a review is already in flight as a live run",
+            "review_run_id": in_flight,
+        }
+
+    fields = _review_dispatch_fields(record)
+    project = fields["project"]
+    repo = str(record.get("repo") or "")
+    if not project or not repo:
+        reason = "the run records no project or repository to dispatch against"
+        _record_review_dispatch(run_id, status="refused", reason=reason)
+        return {"run_id": run_id, "dispatched": False, "reason": reason}
+
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    from reckon.crew.dispatch import BudgetHold
+    from reckon.crew.node import TaskNode
+
+    resolved = _resolved_review_config(project, config)
+    try:
+        from reckon import flight
+
+        resolved = flight.select_local_backend(resolved)
+    except Exception as exc:  # noqa: BLE001 - the configured lane is the reason
+        reason = (
+            f"the local lane is unavailable: {exc}"
+        )
+        _record_review_dispatch(run_id, status="awaiting-lane", reason=reason)
+        return {"run_id": run_id, "dispatched": False, "awaiting_lane": True, "reason": reason}
+
+    node = TaskNode(
+        id=fields["node_id"],
+        goal=fields["goal"],
+        plan=fields["plan"],
+        section=fields["section"],
+        role="review",
+        spec_level="exact",
+        done_when=fields["done_when"],
+        write_paths=[fields["write_path"]],
+        time_budget=fields["time_budget"],
+    )
+    try:
+        launched = dispatch_module.dispatch(
+            node=node,
+            project=project,
+            repo=repo,
+            config=resolved,
+            session=fields["session"],
+            launcher=launcher,
+            watch_required=True,
+            local=True,
+        )
+    except BudgetHold as exc:
+        reason = f"the local lane is unavailable: {exc}"
+        _record_review_dispatch(run_id, status="awaiting-lane", reason=reason)
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "awaiting_lane": True,
+            "lane": getattr(exc, "verdict", None),
+            "reason": reason,
+        }
+    except CrewError as exc:
+        # Scope, member, follower, context-fit, plan visibility and competence
+        # refusals all arrive here. The automatic path must not be the one place
+        # they are skipped, so the refusal is recorded and reported rather than
+        # caught and shrugged off.
+        _record_review_dispatch(run_id, status="refused", reason=str(exc))
+        return {"run_id": run_id, "dispatched": False, "refused": True, "reason": str(exc)}
+
+    review_run_id = str(launched.get("run_id") or "")
+    _record_review_dispatch(
+        run_id,
+        status="dispatched",
+        reason=f"the review dispatched automatically as run {review_run_id}",
+        review_run_id=review_run_id,
+    )
+    return {
+        "run_id": run_id,
+        "dispatched": True,
+        "review_run_id": review_run_id,
+        "reason": f"dispatched the composed review as run {review_run_id}",
+    }
+
+
+def dispatch_awaiting_reviews(
+    *,
+    project: str | None = None,
+    config: Mapping[str, Any] | None = None,
+    launcher: Callable[..., Any] | None = None,
+) -> dict[str, Any]:
+    """Dispatch the review every scoring run composes, and report each outcome.
+
+    This is the reflex's entry point: called on a sweep, it is what makes a run
+    entering scoring dispatch its own review without anyone issuing the
+    ``reckon crew dispatch`` a coordinator would otherwise have to retype. A
+    run whose review is already stored or already in flight is left alone, so
+    the sweep is idempotent and the negative half of the property holds — a
+    reflex that re-fires would manufacture runs rather than reviews.
+    """
+    reports: list[dict[str, Any]] = []
+    dispatched: list[str] = []
+    refused: list[dict[str, Any]] = []
+    awaiting_lane: list[str] = []
+    for pointer in list_live(project=project):
+        if str(pointer.get("project") or "") and project and str(
+            pointer.get("project")
+        ) != project:
+            continue
+        scan: dict[str, Any] | None = None
+        try:
+            scan = classify_pointer(pointer)
+        except Exception:  # noqa: BLE001 - one unreadable run must not stop the sweep
+            scan = None
+        if scan is None or scan["classification"] != "scoring":
+            continue
+        report = dispatch_review_for_run(pointer, config=config, launcher=launcher)
+        reports.append(report)
+        if report.get("dispatched"):
+            dispatched.append(str(report.get("review_run_id") or ""))
+        elif report.get("awaiting_lane"):
+            awaiting_lane.append(str(report.get("run_id") or ""))
+        elif report.get("refused"):
+            refused.append(report for report in (report,))
+    return {
+        "reports": reports,
+        "dispatched": dispatched,
+        "refused": refused,
+        "awaiting_lane": awaiting_lane,
+    }
 
 
 SELF_LIFTING_RECOVERY_CLASSIFICATIONS = frozenset({"waiting", "paused"})
@@ -3321,19 +3623,30 @@ def recover(
     *,
     project: str | None = None,
     config: Mapping[str, Any] | None = None,
+    launcher: Callable[..., Any] | None = None,
 ) -> dict[str, Any]:
-    """Classify every live pointer, repairing the record and nothing else.
+    """Classify every live pointer, repairing the record and launching reviews.
 
     Each pointer is re-observed first, so the classification rests on the
     current stream and process table rather than on whatever the last writer
     believed. What gets repaired is the *record*: no worktree is removed, no
-    process is signalled, and no run is promoted on this command's initiative —
-    a completed-but-unpromoted run is reported with its manifest path so the
+    process is reaped, and no run is promoted on this command's initiative — a
+    completed-but-unpromoted run is reported with its manifest path so the
     orchestrator can promote it deliberately.
+
+    One thing this command does launch, by design: a run in ``scoring`` has a
+    complete review dispatch already composed for it, and leaving that command
+    as a string for someone to retype is the defect this sweep exists to
+    close. The review is dispatched on the same admission path any dispatch
+    takes, and a refusal — scope, member, follower, context fit, budget, or an
+    unavailable local lane — is recorded against the run with its reason
+    rather than swallowed, so the run says why it is still awaiting review
+    instead of looking identical to a review that ran and wrote nothing.
     """
     from reckon.crew.dispatch import observe
 
     reports = []
+    scoring: list[dict[str, Any]] = []
     for pointer in list_live():
         if project and str(pointer.get("project") or "") != project:
             continue
@@ -3350,6 +3663,8 @@ def recover(
         if unreadable:
             report["detail"] = f"{report['detail']} (stream unreadable — {unreadable})"
         reports.append(report)
+        if report["classification"] == "scoring":
+            scoring.append(observed)
     counts = {
         name: sum(1 for item in reports if item["classification"] == name)
         for name in (
@@ -3364,4 +3679,15 @@ def recover(
         count = sum(1 for item in reports if item["classification"] == name)
         if count:
             counts[name] = count
-    return {"runs": reports, "counts": counts, "classes": list(RECOVERY_CLASSES)}
+    reflex = [
+        dispatch_review_for_run(record, config=config, launcher=launcher)
+        for record in scoring
+    ]
+    return {
+        "runs": reports,
+        "counts": counts,
+        "classes": list(RECOVERY_CLASSES),
+        "reviews_dispatched": [r["review_run_id"] for r in reflex if r.get("dispatched")],
+        "reviews_awaiting_lane": [r["run_id"] for r in reflex if r.get("awaiting_lane")],
+        "reviews_refused": [r for r in reflex if r.get("refused")],
+    }
