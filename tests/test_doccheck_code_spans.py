@@ -9,12 +9,28 @@ speak about an asterisk pair in ordinary prose.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from reckon.doccheck import audit_html
 
 ROOT = Path(__file__).parents[1]
 PLAN_QUOTING_ASTERISKS = ROOT / "docs" / "plans" / "crew-observability-truth.html"
+
+# The specimen the exclusion is asserted against. It is owned by this file and
+# carries the shapes that motivated the exclusion — an asterisk pair inside a
+# ``<code>`` span and one inside a ``<pre>`` block — plus one pair in genuine
+# prose, so the check is shown separating the two outcomes. The quoted lines
+# reproduce the spellings measured against the live parser.
+QUOTED_SPECIMEN = (
+    "<p>the block spells the status key <code>**status:**</code> for a worker to"
+    " copy</p>"
+    "<pre>- status: done                    -&gt; REFUSED\n"
+    "- **status**: done                  -&gt; REFUSED</pre>"
+)
+PROSE_SPECIMEN = (
+    "<p>this sentence literally spells **bold** where a reader would see stars</p>"
+)
 
 
 def _bare(body: str = "") -> str:
@@ -99,7 +115,44 @@ def test_leading_marker_warning_is_untouched_by_the_verbatim_exclusion():
     assert "md-list-or-heading" in codes
 
 
-def test_a_plan_quoting_asterisks_only_in_verbatim_subtrees_has_no_bold_finding():
-    plan = PLAN_QUOTING_ASTERISKS
-    codes = [f.code for f in audit_html(plan.read_text(encoding="utf-8"))]
+def test_a_document_quoting_asterisks_only_in_verbatim_subtrees_has_no_bold_finding():
+    codes = _codes(QUOTED_SPECIMEN)
     assert "md-bold" not in codes
+
+
+def test_the_same_quoted_spellings_report_when_they_are_prose():
+    codes = _codes(
+        "<p>the block spells the status key **status:** for a worker to copy,"
+        " and the parser prints **status**: done              -&gt; REFUSED</p>"
+    )
+    assert "md-bold" in codes
+
+
+def test_a_specimen_separates_a_prose_asterisk_pair_from_the_quoted_ones():
+    findings = audit_html(_bare(QUOTED_SPECIMEN + PROSE_SPECIMEN))
+    bold = [f.message for f in findings if f.code == "md-bold"]
+    assert len(bold) == 1, bold
+    assert "**bold**" in bold[0]
+
+
+def test_the_live_plan_reports_no_pair_from_its_verbatim_subtrees():
+    """The plan that motivated the exclusion stays in the set, read live.
+
+    Auditing it must report the same asterisk pairs whether or not its verbatim
+    subtrees are present, because none of the pairs those subtrees carry is
+    prose. That comparison is insensitive to the plan's content: a pair added to
+    or removed from any of its parts — verbatim or prose — yields the identical
+    finding on both sides, so no edit a session makes to that living document
+    can fail this file. Only a parser change that started reporting a pair
+    inside a ``<pre>`` or ``<code>`` subtree as prose would move the two apart.
+    """
+    plan_text = PLAN_QUOTING_ASTERISKS.read_text(encoding="utf-8")
+    without_verbatim = re.sub(
+        r"<(?:pre|code)\b.*?</(?:pre|code)>", "", plan_text, flags=re.DOTALL
+    )
+    assert without_verbatim != plan_text, "the plan carries no verbatim subtree"
+
+    def bold(html: str) -> list[str]:
+        return [f.message for f in audit_html(html) if f.code == "md-bold"]
+
+    assert bold(plan_text) == bold(without_verbatim)
