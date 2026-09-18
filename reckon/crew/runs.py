@@ -1725,6 +1725,89 @@ def list_followers(project: str) -> list[dict[str, Any]]:
     return rows
 
 
+# A released registration keeps its file: ``release`` drops the advisory lock
+# and leaves the path in place on purpose, because a second follower may hold the
+# same inode read-only and take over. Nothing on a read path removes one either —
+# a reader that unlinked while another process was opening the same path would
+# put two inodes behind one session's name, and a claim on each would look
+# successful. So the directory only grows, one file per session that has ever
+# followed the project, and only an explicit maintenance call trims it. The
+# window is generous by design: it has to outlast any pause between a released
+# registration and the session restarting, and longer than that leaves a residue
+# the caller can reason about rather than a registry that grows without bound.
+FOLLOWER_REGISTRY_STALE_SECONDS = 14 * 24 * 60 * 60
+
+
+def sweep_released_followers(
+    project: str,
+    *,
+    stale_after_seconds: float = FOLLOWER_REGISTRY_STALE_SECONDS,
+    now: float | None = None,
+) -> list[dict[str, Any]]:
+    """Remove released registrations older than ``stale_after_seconds``.
+
+    A registration is removed only when two things hold at once: its advisory
+    lock is free, so nothing is delivering from it, and its file is older than
+    the threshold, so a session that released moments ago and is restarting is
+    left alone. The check that keeps a delivering registration is the lock and
+    not the timestamp — a follower armed in the morning and still delivering at
+    night survives a sweep whose other candidates are half its age — so this is
+    safe to run against a directory holding a live follower.
+
+    The sweep takes each file's lock before unlinking it, which is the one place
+    a registration file is removed. A caller must not invoke it from a read path:
+    unlinking there races a process opening the same path, letting one hold the
+    old inode and the other a fresh one for a single session. Even here a claim
+    that arrives while the sweep holds the lock is refused by
+    :meth:`_FollowerRegistration.acquire` rather than silently succeeding, so run
+    it from an explicit maintenance path where no registration is in flight; the
+    residual window is a claimant that has opened the path without yet taking the
+    lock.
+
+    ``now`` supplies the reference time and lets a caller reason about a fixed
+    clock. Returns one entry per removed registration, so the caller reports a
+    count rather than re-listing the directory to discover it.
+    """
+    directory = follower_dir(project)
+    if not directory.is_dir():
+        return []
+    reference = time.time() if now is None else now
+    removed: list[dict[str, Any]] = []
+    for path in sorted(directory.glob("*.lock")):
+        try:
+            handle = path.open("a+b")
+        except OSError:
+            continue
+        try:
+            try:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                # Its lock is held, so it delivers right now whatever its age.
+                continue
+            try:
+                try:
+                    age = reference - path.stat().st_mtime
+                except OSError:
+                    continue
+                if age < stale_after_seconds:
+                    continue
+                session = str(_read_watch_record(handle).get("session") or path.stem)
+                path.unlink()
+            finally:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        finally:
+            handle.close()
+        removed.append(
+            {
+                "project": project,
+                "session": session,
+                "path": str(path),
+                "age_seconds": age,
+            }
+        )
+    return removed
+
+
 def watch_state(project: str, *, session: str | None = None) -> dict[str, Any]:
     """Return the paste-ready arming line and process-backed watcher liveness."""
     arming_line = _watch_arming_line(project)
