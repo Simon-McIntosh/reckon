@@ -19,12 +19,25 @@ identifier that happens to look numeric is never re-typed. ``compose`` is what
 keeps the reader's two fixed defects fixed: ``1e5`` is an object id, not a
 float, and a value's type comes from the schema rather than from splitting.
 
+A list field is commonly written with its entries labelled — ``test_logs:``
+followed by ``gate_after: <path>`` lines, or a ``commits`` block of
+sha-and-subject lines carrying no bullet — and that text composes as a mapping
+where the field declares a list. What a mapping in a list field means is one
+item per line, each item the worker's own text for that line in the order
+written. Both alternatives are worse than reading it: refusing it turned 27
+delivered manifests on disk into refusals the previous line-scanning reader had
+accepted, and taking it as the mapping itself hands a consumer a dict's keys
+where paths and object ids belong.
+
 Tolerance is preserved deliberately. A body whose composed shape the field
 accepts is that shape; a body that is not well-formed YAML, or whose shape the
 field does not declare, falls back to the text the worker wrote whenever the
 field accepts text. A field that accepts neither the composed shape nor text is
 refused, naming the field and the shapes the schema declares, because a wrong
-value carried forward as a plausible one is worse than an honest refusal.
+value carried forward as a plausible one is worse than an honest refusal. A
+mapping that composes as another mapping's key is unhashable, and it is read as
+its own text rather than raising: no manifest a worker delivered may crash the
+reader.
 """
 
 from __future__ import annotations
@@ -423,7 +436,12 @@ def _shape_of(value: Any) -> str:
     return "text"
 
 
-def _decode_yaml_node(node: Any) -> Any:
+def _span_source_text(source: str, first: Any, last: Any) -> str:
+    """The worker's own text between two composed nodes, whitespace-normalised."""
+    return " ".join(source[first.start_mark.index : last.end_mark.index].split())
+
+
+def _decode_yaml_node(node: Any, source: str) -> Any:
     """Decode a composed YAML node, keeping every scalar's literal text.
 
     A sequence becomes a list, a mapping becomes a dict, and a scalar becomes
@@ -432,12 +450,27 @@ def _decode_yaml_node(node: Any) -> Any:
     what stops an object identifier that resembles a number (``1e5``) being
     written as one (``100000.0``): the schema, not YAML's implicit typing,
     decides a field's type.
+
+    ``source`` is the composed text, which a key that is not a scalar composes
+    into more than a string and so cannot become a dict key. Such a key stands in
+    as its own span of the source rather than raising out of the reader.
     """
     if isinstance(node, yaml.SequenceNode):
-        return [_decode_yaml_node(child) for child in node.value]
+        return [_decode_yaml_node(child, source) for child in node.value]
     if isinstance(node, yaml.MappingNode):
-        return {_decode_yaml_node(k): _decode_yaml_node(v) for k, v in node.value}
+        return {
+            _decode_mapping_key(key, source): _decode_yaml_node(value, source)
+            for key, value in node.value
+        }
     return node.value
+
+
+def _decode_mapping_key(node: Any, source: str) -> Any:
+    """A mapping key, taken as its own text when it is not hashable."""
+    key = _decode_yaml_node(node, source)
+    return (
+        _span_source_text(source, node, node) if isinstance(key, (dict, list)) else key
+    )
 
 
 def _compose_node(text: str) -> Any:
@@ -462,19 +495,26 @@ def _compose_document(text: str) -> Any:
     node = _compose_node(text)
     if node is None:
         return None
-    return _decode_yaml_node(node)
+    return _decode_yaml_node(node, text)
 
 
 def _literal_list_items(text: str) -> list[str] | None:
-    """A sequence's items as the worker wrote them, each one literal text.
+    """A field body's items as the worker wrote them, each one literal text.
 
-    An item that YAML types as a mapping is not the writer's intent for a field
-    whose items are identifiers: a commit subject carrying a colon composes as a
-    one-key mapping, and reading that as a dict hands a later command a mapping
-    where an object id belongs. The item's own span of the source stands in for
-    it instead, which is what keeps a subject whole however it is punctuated.
+    Two shapes are read, and an item is literal text in both. A sequence's items
+    are the writer's items, and an item that YAML types as a mapping is not the
+    writer's intent for a field whose items are identifiers: a commit subject
+    carrying a colon composes as a one-key mapping, and reading that as a dict
+    hands a later command a mapping where an object id belongs. A mapping's
+    entries are the lines a worker labelled its list with, so each entry is one
+    item, keeping its label attached to the value it was written for rather than
+    splitting the pair on its colon. In both shapes the writer's own span of the
+    source stands in for the item, which is what keeps it whole however it is
+    punctuated.
     """
     node = _compose_node(text)
+    if isinstance(node, yaml.MappingNode):
+        return [_span_source_text(text, key, value) for key, value in node.value]
     if not isinstance(node, yaml.SequenceNode):
         return None
     items = []
@@ -482,8 +522,7 @@ def _literal_list_items(text: str) -> list[str] | None:
         if isinstance(child, yaml.ScalarNode):
             items.append(child.value)
         else:
-            span = text[child.start_mark.index : child.end_mark.index]
-            items.append(" ".join(span.split()))
+            items.append(_span_source_text(text, child, child))
     return items
 
 
@@ -538,8 +577,9 @@ def _read_field_body(
     if name in _IDENTIFIER_FIELDS or allowed == _LIST_SHAPE:
         # A list field's items are the text the worker wrote, not whatever YAML
         # types that text to be: an item carrying a colon composes as a mapping,
-        # and an object id or a path is not a dict. A mapping written under a
-        # list-only field is refused below instead.
+        # and so does a field whose entries the worker labelled. Both are read
+        # as one item per line — an object id, a path and a labelled entry are
+        # not dicts, and a dict's keys where they belong is a silent misread.
         items = _literal_list_items(body)
         if items is not None:
             return items
@@ -555,10 +595,11 @@ def _read_field_body(
     if allowed is None or shape in allowed:
         return value
     if shape == "mapping":
-        # A nested mapping under a field whose schema accepts a simpler shape is
-        # the malformed pair this reader refuses, rather than flattening it into
-        # a comma list or emptying it to a blank — either of which reads as a
-        # protection the worker never wrote.
+        # A nested mapping under a field whose schema accepts text alone is the
+        # malformed pair this reader refuses, rather than flattening it into a
+        # comma list or emptying it to a blank — either of which reads as a
+        # protection the worker never wrote. A list field does not reach here:
+        # its mapping body was read as one item per labelled line above.
         raise ManifestParseError(_schema_shape_message(path, name, shape, allowed))
     return _joined_body_text(lines) if shape == "list" else "\n".join(lines).strip()
 
